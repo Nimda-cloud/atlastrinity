@@ -36,7 +36,7 @@
             "connect_timeout": 30,
             "args": [
                 "-m",
-                "mcp_server.terminal_server"
+                "src.mcp_server.terminal_server"
             ],
             "description": "Terminal command execution with CWD persistence",
             "disabled": false,
@@ -79,7 +79,7 @@
             "connect_timeout": 60,
             "args": [
                 "-m",
-                "mcp_server.git_server"
+                "src.mcp_server.git_server"
             ],
             "description": "Git operations for local repositories",
             "disabled": false,
@@ -93,7 +93,7 @@
             "connect_timeout": 60,
             "args": [
                 "-m",
-                "mcp_server.vibe_server"
+                "src.mcp_server.vibe_server"
             ],
             "description": "Vibe CLI wrapper for self-healing, planning, and agent utilities",
             "disabled": false,
@@ -109,7 +109,7 @@
             "connect_timeout": 60,
             "args": [
                 "-m",
-                "mcp_server.memory_server"
+                "src.mcp_server.memory_server"
             ],
             "description": "Knowledge graph for persistent memory",
             "disabled": false,
@@ -138,7 +138,7 @@
             "connect_timeout": 60,
             "args": [
                 "-m",
-                "mcp_server.github_server"
+                "src.mcp_server.github_server"
             ],
             "env": {
                 "GITHUB_TOKEN": "${GITHUB_TOKEN}"
@@ -155,7 +155,7 @@
             "connect_timeout": 60,
             "args": [
                 "-m",
-                "mcp_server.duckduckgo_search_server"
+                "src.mcp_server.duckduckgo_search_server"
             ],
             "description": "Web search with DuckDuckGo (no API key required)",
             "disabled": false,
@@ -183,7 +183,7 @@
             "connect_timeout": 120,
             "args": [
                 "-m",
-                "mcp_server.whisper_server"
+                "src.mcp_server.whisper_server"
             ],
             "env": {
                 "WHISPER_MODEL": "small",
@@ -251,7 +251,7 @@
             "connect_timeout": 60,
             "args": [
                 "-m",
-                "mcp_server.graph_server"
+                "src.mcp_server.graph_server"
             ],
             "description": "Knowledge Graph visualization and export",
             "disabled": false,
