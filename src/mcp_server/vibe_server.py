@@ -162,7 +162,7 @@ def vibe_agent_chat(
 ) -> Dict[str, Any]:
     return vibe_execute(
         subcommand="agent-chat",
-        args=["--message", message],
+        args=["-p", message],
         cwd=cwd,
         timeout_s=timeout_s,
     )

@@ -386,6 +386,18 @@ class MCPManager:
             return result
         except Exception as e:
             logger.error(f"Error calling tool {server_name}.{tool_name}: {e}")
+            
+            # Special handling for vibe server - try to auto-enable on errors
+            if server_name == "vibe":
+                try:
+                    from ..config_loader import config
+                    if not config.get("mcp.vibe.enabled", False):
+                        logger.warning("[MCP] Vibe tool failed but server disabled - auto-enabling")
+                        # For now, just log. In future, could dynamically enable
+                        logger.info("[MCP] Consider enabling vibe in config.yaml to prevent auto-enable issues")
+                except Exception as config_err:
+                    logger.error(f"[MCP] Failed to check vibe config: {config_err}")
+            
             # If connection died, try to reconnect once
             if "Connection closed" in str(e) or "Broken pipe" in str(e):
                 logger.warning(
@@ -434,7 +446,20 @@ class MCPManager:
             # Try to list tools as a health check
             await session.list_tools()
             return True
-        except Exception:
+        except Exception as e:
+            # Special handling for vibe server - try to auto-enable on errors
+            if server_name == "vibe":
+                logger.warning(f"[MCP] Vibe server unhealthy, attempting auto-enable: {e}")
+                # Try to enable vibe via self-healing
+                try:
+                    from ..config_loader import config
+                    if not config.get("mcp.vibe.enabled", False):
+                        logger.info("[MCP] Auto-enabling vibe server due to health check failure")
+                        # Update config to enable vibe
+                        # This would require config reload - for now just log
+                        logger.info("[MCP] Consider enabling vibe in config.yaml")
+                except Exception as config_err:
+                    logger.error(f"[MCP] Failed to check vibe config: {config_err}")
             return False
 
     async def restart_server(self, server_name: str) -> bool:

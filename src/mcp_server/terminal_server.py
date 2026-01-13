@@ -10,7 +10,7 @@ import os
 import shlex
 import subprocess
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from mcp.server import FastMCP
 
@@ -39,6 +39,7 @@ async def execute_command(
     stderr_file: Optional[str] = None,
     capture_exit_code: bool = False,
     capture_timestamp: bool = False,
+    **kwargs: Any,
 ) -> str:
     """
     Execute a terminal command in a persistent shell session (maintains CWD).

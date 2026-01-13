@@ -155,6 +155,12 @@ def search(query: str, limit: int = 10) -> Dict[str, Any]:
 
 
 @server.tool()
+def search_nodes(query: str, limit: int = 10) -> Dict[str, Any]:
+    """Alias for search function to maintain compatibility"""
+    return search(query, limit)
+
+
+@server.tool()
 def delete_entity(name: str) -> Dict[str, Any]:
     name = str(name or "").strip()
     if not name:

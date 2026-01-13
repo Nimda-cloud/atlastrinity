@@ -212,7 +212,7 @@ Respond ONLY with JSON:
         history: list,
         overall_goal: str = "",
     ) -> str:
-        return f"""Verify the result of the following step.
+        return f"""Verify the result of the following step using MCP tools FIRST, screenshots only when necessary.
 
 OVERALL GOAL: {overall_goal}
 STRATEGIC GUIDANCE (Follow this!):
@@ -226,25 +226,30 @@ Shared Context (for correct paths and global situation): {context_info}
 
 Verification History (Tool actions taken during this verification): {history}
 
-Analyze the screenshot (if present) and history. If you are 100% sure, give a final verdict.
-IF NOT SURE, or if you need to see the GUI to verify a visual result, use the 'macos-use.screenshot' tool to request a screenshot.
+PRIORITY ORDER FOR VERIFICATION:
+1. Use MCP tools to verify results (filesystem, terminal, git, etc.)
+2. Check files, directories, command outputs directly
+3. ONLY use screenshots for visual/UI verification when explicitly needed
+
+Analyze the current situation. If you can verify using MCP tools, do that first.
+Use 'macos-use.screenshot' ONLY when you need to verify visual elements, UI, or when explicitly mentioned in expected result.
 
 CRITICAL: When rejecting a result (verified: false), you MUST provide:
 1. "description": Detailed technical explanation in English (what went wrong, what was expected vs what happened)
-2. "issues": Array of specific problems found (e.g., ["App not opened", "Wrong window active", "Missing UI element"])
+2. "issues": Array of specific problems found (e.g., ["File not created", "Command failed", "Wrong directory structure"])
 3. "voice_message": Clear Ukrainian message for Atlas and Tetyana explaining the rejection
 4. "confidence": Your confidence level (0.0-1.0)
-5. "remediation_suggestions": Array of actionable fixes (e.g., ["Retry with correct app name", "Check permissions"])
+5. "remediation_suggestions": Array of actionable fixes (e.g., ["Create missing file", "Run command with correct flags"])
 
 Example REJECTION response:
 {{
   "action": "verdict",
   "verified": false,
   "confidence": 0.8,
-  "description": "Expected to see a consent dialog or Terminal prompt for user input. Instead, only Terminal app was opened with no visible consent message. The step requires explicit user confirmation which is not present.",
-  "issues": ["No consent dialog visible", "Terminal opened but empty", "Missing user prompt"],
-  "voice_message": "Результат не прийнято. Не бачу діалогу згоди або запиту в терміналі. Потрібна чітка інструкція для користувача.",
-  "remediation_suggestions": ["Display consent message in Terminal using echo command", "Create notification dialog using osascript", "Save consent request to file on Desktop"]
+  "description": "Expected to find directory 'mac-discovery' with specific structure, but directory does not exist. File system verification shows the directory was not created.",
+  "issues": ["Directory 'mac-discovery' not found", "No project structure created"],
+  "voice_message": "Результат не прийнято. Директорія 'mac-discovery' не створена. Потрібно створити правильну структуру проєкту.",
+  "remediation_suggestions": ["Create mac-discovery directory", "Add required subdirectories (scripts, docs)", "Initialize project structure"]
 }}
 """
 

@@ -192,13 +192,22 @@ class Grisha:
         step_id = step.get("id", 0)
         expected = step.get("expected_result", "")
 
+        # PRIORITY: Use MCP tools first, screenshots only when explicitly needed
+        # Only take screenshot if explicitly requested or if visual verification is clearly needed
+        visual_verification_needed = (
+            "visual" in expected.lower() or 
+            "screenshot" in expected.lower() or
+            "ui" in expected.lower() or
+            "interface" in expected.lower() or
+            "window" in expected.lower()
+        )
+
         if (
-            not screenshot_path
+            not visual_verification_needed
+            or not screenshot_path
             or not isinstance(screenshot_path, str)
             or not os.path.exists(screenshot_path)
         ):
-            # NO LONGER PROACTIVE: We only take it if the strategy explicitly demands it
-            # or if the first reasoning pass decides it needs visual proof.
             screenshot_path = None
 
         context_info = shared_context.to_dict()

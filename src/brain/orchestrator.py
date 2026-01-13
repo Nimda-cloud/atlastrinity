@@ -68,6 +68,18 @@ class Trinity:
 
     async def initialize(self):
         """Async initialization of system components"""
+        # Initialize state if not exists
+        if not hasattr(self, "state") or not self.state:
+            self.state = {
+                "messages": [],
+                "system_state": SystemState.IDLE.value,
+                "current_plan": None,
+                "step_results": [],
+                "error": None,
+                "logs": [],
+            }
+            logger.info("[ORCHESTRATOR] State initialized during initialize()")
+        
         # Start MCP health check loop
         mcp_manager.start_health_monitoring(interval=60)
         # Initialize DB
@@ -286,11 +298,13 @@ class Trinity:
     def get_state(self) -> Dict[str, Any]:
         """Return current system state for API"""
         if not hasattr(self, "state") or not self.state:
+            logger.warning("[ORCHESTRATOR] State not initialized, returning default state")
             return {
                 "system_state": SystemState.IDLE.value,
                 "current_task": "Waiting for input...",
                 "active_agent": "ATLAS",
                 "logs": [],
+                "step_results": [],
             }
 
         # Determine active agent based on system state
@@ -345,6 +359,7 @@ class Trinity:
             "active_agent": active_agent,
             "messages": messages,
             "logs": self.state.get("logs", [])[-50:],
+            "step_results": self.state.get("step_results", []),
             "metrics": metrics_collector.get_metrics(),
         }
 
@@ -388,6 +403,13 @@ class Trinity:
                 saved_state = state_manager.restore_session(session_id)
                 if saved_state:
                     self.state = saved_state
+                    # Ensure critical fields exist after restoration
+                    if "step_results" not in self.state:
+                        self.state["step_results"] = []
+                    if "logs" not in self.state:
+                        self.state["logs"] = []
+                    if "error" not in self.state:
+                        self.state["error"] = None
                     logger.info("[ORCHESTRATOR] State restored from Redis")
                     # CRITICAL: Verify that the DB IDs in the restored state actually exist
                     await self._verify_db_ids()
@@ -740,36 +762,56 @@ class Trinity:
                     "atlas", f"Крок {step_id} не вдався. Шукаю рішення..."
                 )
                 try:
+
+                    # Collect recent logs for context
+                    recent_logs = []
+                    if self.state and "logs" in self.state:
+                       recent_logs = [
+                           f"[{l.get('agent', 'SYS')}] {l.get('message', '')}"
+                           for l in self.state["logs"][-20:]
+                       ]
+                    log_context = "\n".join(recent_logs)
+
                     vibe_msg = (
-                        "You are a repair assistant for a failing step in AtlasTrinity. "
-                        "Return concise actionable guidance.\n\n"
+                        "URGENT: TRIGGERING AUTONOMOUS SELF-HEALING.\n"
+                        "You are an expert autonomous repair agent. Tetyana execution failed.\n\n"
                         f"Step ID: {step_id}\n"
                         f"Action: {step.get('action', '')}\n"
-                        f"Error: {last_error}\n"
-                        "\nIf proposing code changes, describe what files/changes are needed."
+                        f"Error: {last_error}\n\n"
+                        "RECENT LOGS:\n"
+                        f"{log_context}\n\n"
+                        "INSTRUCTIONS:\n"
+                        "1. Analyze the logs and error above.\n"
+                        "2. ACTIVELY FIX the issue by running commands, editing files, or installing dependencies.\n"
+                        "3. Do NOT just give advice. PERFORM the fix.\n"
+                        "4. Return a summary of what you fixed."
                     )
+                    
+                    await self._log(f"Engaging Vibe Self-Healing for Step {step_id} (Timeout: 300s)...", "orchestrator")
+                    await self._speak("atlas", f"Активував Vibe для виправлення кроку {step_id}...")
+
                     vibe_res = await asyncio.wait_for(
                         mcp_manager.call_tool(
                             "vibe",
                             "vibe_agent_chat",
                             {
                                 "message": vibe_msg,
-                                "timeout_s": 60,
+                                "timeout_s": 300,  # 5 minutes for deep debugging
                                 "cwd": str(PROJECT_ROOT),
                             },
                         ),
-                        timeout=70.0,
+                        timeout=310.0,
                     )
                     vibe_text = self._extract_vibe_payload(
                         self._mcp_result_to_text(vibe_res)
                     )
                     if vibe_text:
-                        last_error = last_error + "\n\nVIBE_HINT:\n" + vibe_text[:4000]
+                        last_error = last_error + "\n\nVIBE_FIX_REPORT:\n" + vibe_text[:4000]
                         await self._log(
-                            f"Vibe hint captured for step {step_id}", "system"
+                            f"Vibe completed self-healing for step {step_id}", "system"
                         )
-                except Exception:
-                    pass
+                except Exception as ve:
+                    await self._log(f"Vibe self-healing failed: {ve}", "error")
 
                 try:
                     # Ask Atlas for help
@@ -932,7 +974,19 @@ class Trinity:
                 await self._log("Preparing verification...", "system")
                 await asyncio.sleep(0.5)
 
-                screenshot = await self.grisha.take_screenshot()
+                # Only take screenshot if visual verification is needed
+                expected = step.get("expected_result", "").lower()
+                visual_verification_needed = (
+                    "visual" in expected or 
+                    "screenshot" in expected or
+                    "ui" in expected or
+                    "interface" in expected or
+                    "window" in expected
+                )
+                
+                screenshot = None
+                if visual_verification_needed:
+                    screenshot = await self.grisha.take_screenshot()
 
                 # GRISHA'S AWARENESS: Pass the full result (including thoughts) and the goal
                 verify_result = await self.grisha.verify_step(

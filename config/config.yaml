@@ -74,14 +74,14 @@ mcp:
   applescript:
     enabled: false
   github:
-    enabled: false
+    enabled: true
   duckduckgo_search:
-    enabled: false
+    enabled: true
   brave_search:
-    enabled: false
+    enabled: true
   # === TIER 4: OPTIONAL (Вимкнені) ===
   docker:
-    enabled: false
+    enabled: true
   postgres:
     enabled: false
   slack:

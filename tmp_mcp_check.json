@@ -1,1 +1,0 @@
-{"mcpServers": {"docker": {"command": "python3", "args": ["-c", "from fake_missing_module import main; main()"]}}}
