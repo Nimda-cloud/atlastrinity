@@ -96,14 +96,15 @@
                 "-m",
                 "src.mcp_server.vibe_server"
             ],
-            "description": "Vibe CLI wrapper for self-healing, planning, and agent utilities",
+            "description": "Mistral AI-powered CLI for self-healing, debugging, code review, and smart planning. Tools: vibe_prompt, vibe_analyze_error, vibe_code_review, vibe_smart_plan, vibe_ask. All output visible in logs.",
             "disabled": false,
             "tier": 2,
             "agents": [
                 "atlas",
                 "tetyana",
                 "grisha"
-            ]
+            ],
+            "note": "Runs in programmatic CLI mode (--output json), not interactive TUI. Max output: 500KB."
         },
         "fetch": {
             "command": "bunx",

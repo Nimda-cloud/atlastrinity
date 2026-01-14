@@ -772,32 +772,27 @@ class Trinity:
                        ]
                     log_context = "\n".join(recent_logs)
 
-                    vibe_msg = (
-                        "URGENT: TRIGGERING AUTONOMOUS SELF-HEALING.\n"
-                        "You are an expert autonomous repair agent. Tetyana execution failed.\n\n"
+                    # Construct detailed error context for Vibe
+                    error_context = (
                         f"Step ID: {step_id}\n"
                         f"Action: {step.get('action', '')}\n"
-                        f"Error: {last_error}\n\n"
-                        "RECENT LOGS:\n"
-                        f"{log_context}\n\n"
-                        "INSTRUCTIONS:\n"
-                        "1. Analyze the logs and error above.\n"
-                        "2. ACTIVELY FIX the issue by running commands, editing files, or installing dependencies.\n"
-                        "3. Do NOT just give advice. PERFORM the fix.\n"
-                        "4. Return a summary of what you fixed."
                     )
                     
                     await self._log(f"Engaging Vibe Self-Healing for Step {step_id} (Timeout: 300s)...", "orchestrator")
+                    await self._log(f"[VIBE] Error to analyze: {last_error[:200]}...", "vibe")
                     await self._speak("atlas", f"Активував Vibe для виправлення кроку {step_id}...")
 
+                    # Use vibe_analyze_error for programmatic CLI mode with full logging
                     vibe_res = await asyncio.wait_for(
                         mcp_manager.call_tool(
                             "vibe",
-                            "vibe_agent_chat",
+                            "vibe_analyze_error",
                             {
-                                "message": vibe_msg,
-                                "timeout_s": 300,  # 5 minutes for deep debugging
+                                "error_message": f"{error_context}\n{last_error}",
+                                "log_context": log_context,
                                 "cwd": str(PROJECT_ROOT),
+                                "timeout_s": 300,  # 5 minutes for deep debugging
+                                "auto_fix": True,  # Enable auto-fixing
                             },
                         ),
                         timeout=310.0,
