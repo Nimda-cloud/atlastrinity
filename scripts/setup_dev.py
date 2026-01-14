@@ -99,7 +99,7 @@ def ensure_directories():
 def check_system_tools():
     """Перевіряє наявність базових інструментів"""
     print_step("Перевірка базових інструментів...")
-    tools = ["brew", "bun", "swift", "npm"]
+    tools = ["brew", "bun", "swift", "npm", "vibe"]
     missing = []
 
     for tool in tools:
@@ -112,6 +112,12 @@ def check_system_tools():
                         .decode()
                         .splitlines()[0]
                     )
+                elif tool == "vibe":
+                    # Vibe might not support --version or behave differently, try standard
+                    try:
+                        version = subprocess.check_output([tool, "--version"], timeout=2).decode().strip()
+                    except:
+                        version = "detected"
                 else:
                     version = (
                         subprocess.check_output([tool, "--version"]).decode().strip()
@@ -120,7 +126,10 @@ def check_system_tools():
             except:
                 print_success(f"{tool} знайдено")
         else:
-            print_warning(f"{tool} НЕ знайдено")
+            if tool == "vibe":
+                 print_warning("Vibe CLI не знайдено! (Потрібен для coding tasks)")
+            else:
+                 print_warning(f"{tool} НЕ знайдено")
             missing.append(tool)
 
     if "bun" in missing:
@@ -501,6 +510,7 @@ def install_deps():
             "@modelcontextprotocol/server-slack",
             "@modelcontextprotocol/server-postgres",
             "@modelcontextprotocol/server-sequential-thinking",
+            "@modelcontextprotocol/server-memory",
             "@mcpcentral/mcp-time",
             "@buggyhunter/context7-mcp",
             "chrome-devtools-mcp",
@@ -572,6 +582,19 @@ def sync_configs():
                             agents.append("grisha")
                             config["mcpServers"]["memory"]["agents"] = agents
                             print_info("Додано Grisha до memory сервера")
+                            
+                    # Додаємо Vibe сервер якщо його немає
+                    if "vibe" not in config.get("mcpServers", {}):
+                        print_info("Додавання vibe MCP сервера до конфігурації...")
+                        config.setdefault("mcpServers", {})["vibe"] = {
+                            "command": "python3",
+                            "args": ["-m", "src.mcp_server.vibe_server"],
+                            "description": "AI Coding Assistant & Self-Healing (Mistral)",
+                            "disabled": False,
+                            "tier": 2,
+                            "agents": ["atlas", "vibe"], # atlas uses it, vibe is the persona
+                        }
+                        print_success("Vibe MCP сервер додано")
 
                     with open(mcp_config, "w") as f:
                         json.dump(config, f, indent=2, ensure_ascii=False)
@@ -737,6 +760,7 @@ def main():
     print("  - memory: Граф знань (Atlas, Grisha, Tetyana)")
     print("  - notes: Текстові нотатки та звіти (Atlas, Grisha, Tetyana)")
     print("  - terminal: Команди shell (Tetyana)")
+    print("  - vibe: Coding Agent & Self-Healing (Atlas)")
     print("  - filesystem: Файлові операції (Tetyana, Grisha)")
     print("  - sequential-thinking: Глибоке мислення (Grisha)")
     print("  - macos-use: Нативний контроль macOS (Tetyana, Grisha)")
