@@ -610,7 +610,14 @@ Please type your response below and press Enter:
                     or args.get("code")
                     or args.get("script")
                     or args.get("args")
+                    or args.get("action")
                 )
+                # Last resort: if only one arg and it's a string, assume it's the command
+                if not cmd and args and len(args) == 1:
+                    first_val = list(args.values())[0]
+                    if isinstance(first_val, str):
+                        cmd = first_val
+
                 if cmd:
                     if isinstance(cmd, (list, dict)):
                         cmd = str(cmd)
@@ -944,6 +951,27 @@ Please type your response below and press Enter:
 
             # MacOS Use Fixes
             if server_name == "macos-use":
+                # Robust mappings for Swift binary tools
+                if mcp_tool in ["click", "click_and_traverse"]:
+                    mcp_tool = "macos-use_click_and_traverse"
+                if mcp_tool in ["type", "type_and_traverse", "write"]:
+                    mcp_tool = "macos-use_type_and_traverse"
+                if mcp_tool in ["press", "press_key", "hotkey", "key", "press_key_and_traverse"]:
+                    mcp_tool = "macos-use_press_key_and_traverse"
+                if mcp_tool in ["refresh", "tree", "get_tree", "refresh_traversal"]:
+                    mcp_tool = "macos-use_refresh_traversal"
+                if mcp_tool in ["open", "launch", "open_app"]:
+                    mcp_tool = "macos-use_open_application_and_traverse"
+                    # Map common args to 'identifier'
+                    if "identifier" not in args:
+                        args["identifier"] = (
+                            args.get("app_name")
+                            or args.get("path")
+                            or args.get("name")
+                            or args.get("app")
+                            or ""
+                        )
+
                 if mcp_tool == "screenshot":
                     # Fallback to native screenshot since macos-use has no such tool
                     logger.info(
@@ -1141,6 +1169,27 @@ Please type your response below and press Enter:
             elif action == "search_app":
                 app_name = args.get("app_name", "") or args.get("text", "")
                 import subprocess  # noqa: E402
+
+                # 0. Try robust macos-use_open_application_and_traverse first
+                # This gives us the PID and Accessibility Tree, which is superior to just opening
+                try:
+                    logger.info(f"[TETYANA] Attempting to open '{app_name}' via macos-use native tool...")
+                    res = await mcp_manager.call_tool(
+                        "macos-use",
+                        "macos-use_open_application_and_traverse",
+                        {"identifier": app_name},
+                    )
+                    # Helper to check if MCP call was actually successful
+                    formatted = self._format_mcp_result(res)
+                    if formatted.get("success") and not formatted.get("error"):
+                        logger.info(f"[TETYANA] Successfully opened '{app_name}' via macos-use.")
+                        return formatted
+                    else:
+                        logger.warning(
+                            f"[TETYANA] macos-use open failed, falling back to legacy: {formatted.get('error')}"
+                        )
+                except Exception as e:
+                    logger.warning(f"[TETYANA] macos-use open exception: {e}")
 
                 # 1. Try 'open -a'
                 try:
