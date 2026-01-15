@@ -254,7 +254,7 @@ Do not suggest creating a plan, just talk."""
         - Output JSON matching the format in your SYSTEM PROMPT.
         - 'goal', 'reason', and 'action' descriptions MUST be in English (technical precision).
         - 'voice_summary' MUST be in UKRAINIAN (for the user).
-        - **NO META-STEPS**: Skip steps like "Think about X", "Classify Y", or "Verify Z". Only plan DIRECT tasks.
+        - **META-PLANNING AUTHORIZED**: If the task is complex, you MAY include reasoning steps (using `sequential-thinking`) to discover the path forward. Do not just say "no steps found". Goal achievement is mandatory.
 
         Steps should be atomic and logical.
         """

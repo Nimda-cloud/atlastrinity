@@ -427,6 +427,20 @@ class Atlas:
         response = await self.llm.ainvoke(messages)
         plan_data = self._parse_response(response.content)
 
+        # META-PLANNING FALLBACK: If planner failed to generate steps, force reasoning
+        if not plan_data.get("steps"):
+            logger.info("[ATLAS] No direct steps found. Engaging Meta-Planning via sequential-thinking...")
+            reasoning = await self.use_sequential_thinking(task_text)
+            if reasoning.get("success"):
+                # Re-try planning with reasoning context
+                prompt += f"\n\nRESEARCH FINDINGS:\n{str(reasoning.get('analysis'))}"
+                messages = [
+                    SystemMessage(content=self.SYSTEM_PROMPT),
+                    HumanMessage(content=prompt),
+                ]
+                response = await self.llm.ainvoke(messages)
+                plan_data = self._parse_response(response.content)
+
         self.current_plan = TaskPlan(
             id=str(uuid.uuid4())[:8],
             goal=plan_data.get("goal", enriched_request.get("enriched_request", "")),
