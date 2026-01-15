@@ -450,6 +450,70 @@ class Atlas:
 
         return self.current_plan
 
+    async def use_sequential_thinking(self, task: str) -> Dict[str, Any]:
+        """
+        Engage sequential-thinking MCP server for deep reasoning and meta-planning.
+        """
+        from ..mcp_manager import mcp_manager  # noqa: E402
+        
+        logger.info(f"[ATLAS] Deep Reasoning for: {task[:50]}...")
+        
+        prompt = f"""You are Atlas's Reasoning Core. Analyze this task and suggest 3-5 concrete technical steps.
+        TASK: {task}
+        
+        USE 'sequentialthinking' tool to brainstorm and provide a structured analysis.
+        """
+        
+        try:
+            # We call it twice - once for the thought, once for the analysis.
+            # But the primary evidence is the thought sequence itself.
+            res = await mcp_manager.call_tool(
+                "sequential-thinking",
+                "sequentialthinking",
+                {
+                    "thought": f"Initial analysis of goal: {task}",
+                    "thoughtNumber": 1,
+                    "totalThoughts": 3,
+                    "nextThoughtNeeded": True
+                }
+            )
+            
+            # Follow up with more details
+            res2 = await mcp_manager.call_tool(
+                "sequential-thinking",
+                "sequentialthinking",
+                {
+                    "thought": f"Exploring technical barriers and alternatives for {task}...",
+                    "thoughtNumber": 2,
+                    "totalThoughts": 3,
+                    "nextThoughtNeeded": True
+                }
+            )
+            
+            # Final synthesis
+            res3 = await mcp_manager.call_tool(
+                "sequential-thinking",
+                "sequentialthinking",
+                {
+                    "thought": f"Final strategy formulated for {task}.",
+                    "thoughtNumber": 3,
+                    "totalThoughts": 3,
+                    "nextThoughtNeeded": False
+                }
+            )
+            
+            # Combine thoughts into a 'result'
+            analysis = (
+                f"THOUGHT 1: {res.get('content', '')}\n"
+                f"THOUGHT 2: {res2.get('content', '')}\n"
+                f"THOUGHT 3: {res3.get('content', '')}"
+            )
+            
+            return {"success": True, "analysis": analysis}
+        except Exception as e:
+            logger.error(f"[ATLAS] Sequential thinking failed: {e}")
+            return {"success": False, "error": str(e)}
+
     async def get_grisha_report(self, step_id: int) -> Optional[str]:
         """Retrieve Grisha's detailed rejection report from notes or memory"""
         from ..mcp_manager import mcp_manager  # noqa: E402

@@ -1462,6 +1462,19 @@ Please type your response below and press Enter:
                 if mcp_tool in ["ask", "question"]:
                     mcp_tool = "vibe_ask"
 
+                # Argument Normalization for Vibe
+                if mcp_tool == "vibe_prompt":
+                    if "objective" in args and "prompt" not in args:
+                        args["prompt"] = args.pop("objective")
+                    if "question" in args and "prompt" not in args:
+                        args["prompt"] = args.pop("question")
+                elif mcp_tool == "vibe_smart_plan":
+                    if "prompt" in args and "objective" not in args:
+                        args["objective"] = args.pop("prompt")
+                elif mcp_tool == "vibe_ask":
+                    if "prompt" in args and "question" not in args:
+                        args["question"] = args.pop("prompt")
+
                 if mcp_tool in ["set_clipboard", "clipboard_set", "copy"]:
                     mcp_tool = "macos-use_set_clipboard"
 
