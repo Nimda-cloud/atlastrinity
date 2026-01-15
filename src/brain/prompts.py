@@ -295,6 +295,11 @@ PRIORITY ORDER FOR VERIFICATION:
 Analyze the current situation. If you can verify using MCP tools, do that first.
 Use 'macos-use.screenshot' ONLY when you need to verify visual elements, UI, or when explicitly mentioned in expected result.
 
+TRUST THE TOOLS:
+- If an MCP tool (like terminal, filesystem) returns a success result (lines, file content, process ID), ACCEPT IT.
+- Do NOT reject technical success just because you didn't see it visually.
+- If the goal was to kill a process and 'pgrep' returns nothing, that is SUCCESS.
+
 CRITICAL: When rejecting a result (verified: false), you MUST provide:
 1. "description": Detailed technical explanation in English (what went wrong, what was expected vs what happened)
 2. "issues": Array of specific problems found (e.g., ["File not created", "Command failed", "Wrong directory structure"])

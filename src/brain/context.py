@@ -43,6 +43,20 @@ class SharedContext:
     last_update: Optional[datetime] = None
     available_tools_summary: str = ""
 
+    def __post_init__(self):
+        # Auto-detect CWD on startup
+        try:
+            cwd = os.getcwd()
+            if "/Documents/GitHub/" in cwd:
+                self.current_working_directory = cwd
+                self.last_successful_path = cwd
+                # Infer project
+                parts = cwd.split("/Documents/GitHub/")
+                if len(parts) > 1:
+                    self.active_project = parts[1].split("/")[0]
+        except Exception:
+            pass
+
     def update_path(self, path: str, operation: str = "access") -> None:
         """
         Update context with a new successful path.
@@ -57,7 +71,7 @@ class SharedContext:
                 parts = path.split("/Documents/GitHub/")
                 if len(parts) > 1:
                     project_part = parts[1].split("/")[0]
-                    if project_part and project_part != "atlastrinity":
+                    if project_part:
                         self.active_project = project_part
                         self.current_working_directory = f"{GITHUB_ROOT}/{project_part}"
 

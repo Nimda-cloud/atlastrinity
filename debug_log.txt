@@ -1,0 +1,300 @@
+2026-01-15 01:53:17,604 - brain - INFO - [TETYANA] Attempting autonomous fix: terminal
+2026-01-15 01:53:17,605 - brain - INFO - [TETYANA] Syn-map: terminal -> terminal
+2026-01-15 01:53:17,606 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 01:53:17,616 - brain - INFO - [TETYANA] Step failed. Reflexion Attempt 2/2. Error: Execution failed: [Errno 35] Resource temporarily unavailable
+2026-01-15 01:53:30,438 - brain - INFO - [TETYANA] Attempting autonomous fix: execute_command
+2026-01-15 01:53:30,438 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 01:53:30,438 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 01:53:30,442 - brain - INFO - [TETYANA] Autonomous fix SUCCESS!
+2026-01-15 01:53:30,450 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 01:53:31,813 - brain - INFO - [SYSTEM] Preparing verification...
+2026-01-15 01:53:32,333 - brain - INFO - [GRISHA] Using cached strategy for: Execute 'find /Users/olegkizym...
+2026-01-15 01:53:36,663 - brain - INFO - [GRISHA] Rejection report saved to memory for step 2
+2026-01-15 01:53:36,678 - brain - INFO - [GRISHA] Rejection report saved to notes for step 2
+2026-01-15 01:53:36,679 - brain - INFO - [GRISHA] Команда для підрахунку файлів у домашній директорії не була виконана через технічну помилку: відсутній параметр 'command' у запиті до інструменту. Результат не може бути підтверджений. Будь ласка, перевірте правильність виклику інструменту та повторіть спробу.
+2026-01-15 01:53:44,732 - brain - INFO - [WARNING] Step 2 Attempt 3 failed: Grisha rejected: The step intended to execute the command 'find /Users/olegkizyma -type f | head -5' to display the first 5 files in the home directory. However, the MCP tool failed to execute the command due to a validation error: the 'command' field was missing in the tool invocation. No output was produced, and no files were listed. As MCP tools are preferred for authoritative verification of filesystem operations, and the command did not run successfully, the result cannot be verified. There is no need for a screenshot, as the failure is at the tool invocation level, not the UI. Issues: Command execution failed due to missing 'command' field, No file list output produced, Filesystem was not queried
+2026-01-15 01:53:44,808 - brain - ERROR - [NOTIFY] Failed to send notification: [Errno 35] Resource temporarily unavailable
+2026-01-15 01:53:44,808 - brain - INFO - [ORCHESTRATOR] Atlas Recovery for Step 2...
+2026-01-15 01:53:44,810 - brain - INFO - [ATLAS] Крок 2 зупинився. Шукаю рішення.
+2026-01-15 01:53:45,890 - brain - INFO - [ORCHESTRATOR] Engaging Vibe Self-Healing for Step 2 (Timeout: 300s)...
+2026-01-15 01:53:45,948 - brain - INFO - [VIBE] [VIBE] Error to analyze: Grisha rejected: The step intended to execute the command 'find /Users/olegkizyma -type f | head -5' to display the first 5 files in the home directory. However, the MCP tool failed to execute the com...
+2026-01-15 01:53:45,950 - brain - INFO - [ATLAS] Залучаю Vibe для глибинного аналізу помилки у кроці 2.
+2026-01-15 01:53:47,480 - brain - INFO - [SYSTEM] Vibe completed self-healing for step 2
+2026-01-15 01:53:47,555 - brain - INFO - [ATLAS] Helping Tetyana with context: {'cwd': '/Users/olegkizyma/Documents/GitHub', 'project': '', 'last_path': '', 'recent_files': [], 'operation_count': 0, 'last_op': ''}
+2026-01-15 01:53:52,734 - brain - INFO - [ATLAS] Виникла технічна помилка при виконанні команди через неправильне формування запиту. Я перепланую дії, щоб команда була виконана коректно та результат був підтверджений.
+2026-01-15 01:53:57,090 - brain - INFO - [SYSTEM] Executing 2 recovery steps for 2
+2026-01-15 01:53:57,098 - brain - ERROR - [NOTIFY] Failed to send notification: [Errno 35] Resource temporarily unavailable
+2026-01-15 01:53:57,098 - brain - INFO - [ORCHESTRATOR] Step 2.1, Attempt 1: Re-attempt the command using the MCP tool, ensuring the 'command' and 'kwargs' fields are correctly included: Execute 'find /Users/olegkizyma -type f | head -5' to list the first 5 files in the home directory.
+2026-01-15 01:53:57,108 - brain - INFO - [TETYANA] Executing step 2.1...
+2026-01-15 01:54:00,408 - brain - INFO - [TETYANA] Thought (English): The atomic step requires executing a shell command ('find /Users/olegkizyma -type f | head -5') and displaying its output. The MCP SERVER CATALOG lists 'terminal' as the tool for terminal command exec...
+2026-01-15 01:54:00,409 - brain - INFO - [TETYANA] Syn-map: terminal -> terminal
+2026-01-15 01:54:00,410 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 01:54:00,503 - brain - INFO - [TETYANA] Step failed. Reflexion Attempt 1/2. Error: Execution failed: [Errno 35] Resource temporarily unavailable
+2026-01-15 01:54:08,495 - brain - INFO - [TETYANA] Attempting autonomous fix: terminal
+2026-01-15 01:54:08,496 - brain - INFO - [TETYANA] Syn-map: terminal -> terminal
+2026-01-15 01:54:08,496 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 01:54:08,502 - brain - INFO - [TETYANA] Autonomous fix SUCCESS!
+2026-01-15 01:54:08,504 - brain - INFO - [TETYANA] Виконую команду для виведення перших 5 файлів у домашній директорії '/Users/olegkizyma'. Результат буде показано нижче.
+2026-01-15 01:54:11,619 - brain - ERROR - [NOTIFY] Failed to send notification: [Errno 35] Resource temporarily unavailable
+2026-01-15 01:54:11,619 - brain - INFO - [ORCHESTRATOR] Step 2.2, Attempt 1: If the MCP tool fails again due to technical validation errors, execute the command directly in the terminal and capture the output for Grisha to verify.
+2026-01-15 01:54:11,622 - brain - INFO - [TETYANA] Executing step 2.2...
+2026-01-15 01:54:16,172 - brain - INFO - [TETYANA] Thought (English): The atomic step requires executing a shell command directly in the terminal to list the first 5 files (with full paths) in '/Users/olegkizyma', capturing the output for Grisha to verify. The 'terminal...
+2026-01-15 01:54:16,172 - brain - INFO - [TETYANA] Syn-map: terminal -> terminal
+2026-01-15 01:54:16,172 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 01:54:16,175 - brain - INFO - [TETYANA] Виконую команду в терміналі для отримання перших 5 файлів у '/Users/olegkizyma'. Результат буде передано Гриші для перевірки.
+2026-01-15 01:54:19,188 - brain - ERROR - [NOTIFY] Failed to send notification: [Errno 35] Resource temporarily unavailable
+2026-01-15 01:54:19,190 - brain - INFO - [ATLAS] Evaluating execution quality for goal: Зроби це...
+2026-01-15 01:54:23,765 - brain - INFO - [ATLAS] Evaluation complete. Score: 0.0
+2026-01-15 01:54:23,766 - brain - INFO - [ATLAS] Verification Fail: Score 0.0. Analysis: Завдання не було виконано: жодна з команд не була успішно виконана через технічні помилки у викликах MCP інструменту (відсутність обов'язкових полів 'kwargs' або 'command'). Всі спроби завершилися помилками валідації, тому не було отримано жодного результату для перевірки. Шлях був неефективним — замість швидкого вирішення проблема повторювалася кілька разів без коректної корекції формату виклику. Це не є 'золотим шляхом', а навпаки — приклад, як не слід організовувати виконання: необхідно одразу перевіряти коректність аргументів для інструменту та уникати циклічних невдалих спроб.
+2026-01-15 01:54:23,788 - brain - INFO - [STATE] Session cleared: current_session
+2026-01-15 01:54:23,792 - brain - INFO - [CONSOLIDATION] Starting structured memory consolidation...
+2026-01-15 01:54:23,848 - brain - INFO - [CONSOLIDATION] Fetched 5 tasks from DB
+2026-01-15 01:54:23,885 - brain - INFO - [CONSOLIDATION] Complete: 0 new lessons derived from failures.
+2026-01-15 02:16:12,391 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:16:12,419 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:16:12,823 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:16:13,788 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:16:20,079 - brain - INFO - [GRISHA] Initialized with Vision=gpt-4o, Strategy=raptor-mini
+2026-01-15 02:16:20,202 - brain - INFO - AtlasTrinity Brain is waking up...
+2026-01-15 02:16:20,202 - brain - INFO - [ORCHESTRATOR] State initialized during initialize()
+2026-01-15 02:16:20,279 - brain - INFO - [MCP] Starting health check loop (interval=60s)
+2026-01-15 02:16:20,321 - brain - INFO - [GRISHA] Auditor ready. Vision: gpt-4o
+2026-01-15 02:16:20,322 - brain - INFO - [LifeSpan] Warming up voice engines...
+2026-01-15 02:16:21,873 - brain - INFO - [Services] Docker not responding, attempting to launch...
+2026-01-15 02:16:24,495 - brain - INFO - [LifeSpan] STT model loaded successfully.
+2026-01-15 02:16:24,515 - brain - INFO - [Services] Launching Docker Desktop app...
+2026-01-15 02:16:25,242 - brain - INFO - [Services] Waiting for Docker to wake up... (0s)
+2026-01-15 02:16:31,265 - brain - INFO - [Services] ✓ Docker is now active.
+2026-01-15 02:16:39,111 - brain - INFO - [LifeSpan] Voice engines are ready.
+2026-01-15 02:16:39,822 - brain - INFO - [Services] All system services are ready.
+2026-01-15 02:17:10,671 - brain - INFO - Received request: Зміни настройки розміщення вікон програм на стандарт принятий, бо зараз розміщення вікон відбувається  один біля одного, де крає однієї підходять до країв іншої програми.
+2026-01-15 02:17:10,716 - brain - INFO - [SYSTEM] New Request: Зміни настройки розміщення вікон програм на стандарт принятий, бо зараз розміщення вікон відбувається  один біля одного, де крає однієї підходять до країв іншої програми.
+2026-01-15 02:17:10,719 - brain - INFO - Connecting to MCP server: macos-use...
+2026-01-15 02:17:10,811 - brain - INFO - Connected to macos-use
+2026-01-15 02:17:10,813 - brain - INFO - Connecting to MCP server: filesystem...
+2026-01-15 02:17:11,642 - brain - INFO - Connected to filesystem
+2026-01-15 02:17:11,643 - brain - INFO - Connecting to MCP server: terminal...
+2026-01-15 02:17:12,193 - brain - INFO - Connected to terminal
+2026-01-15 02:17:12,194 - brain - INFO - Connecting to MCP server: sequential-thinking...
+2026-01-15 02:17:14,616 - brain - INFO - Connected to sequential-thinking
+2026-01-15 02:17:16,352 - brain - INFO - [ATLAS] Це запит на зміну налаштувань розміщення вікон програм, тобто інструкція виконати дію, а не створити нове програмне забезпечення чи вести просту розмову.
+2026-01-15 02:17:33,946 - brain - INFO - [ATLAS] Deep Thinking: Analyzing strategy for 'Change the window arrangement settings to the stan...'
+2026-01-15 02:17:34,312 - brain - INFO - [MEMORY] Found 2 similar tasks
+2026-01-15 02:17:49,315 - brain - INFO - [SYSTEM] Atlas is thinking... (Planning logic flow)
+2026-01-15 02:17:54,740 - brain - INFO - [STATE] Session saved: current_session
+2026-01-15 02:17:54,741 - brain - INFO - [ATLAS] План готовий. 5 кроків. Тетяно, виконуй.
+2026-01-15 02:18:01,186 - brain - INFO - [NOTIFY] Sent: AtlasTrinity (20%)
+2026-01-15 02:18:01,186 - brain - INFO - [ORCHESTRATOR] Step 1, Attempt 1: List installed applications to identify common window managers (Magnet, Rectangle, Moom, etc.)
+2026-01-15 02:18:01,186 - brain - INFO - [TETYANA] Розпочинаю крок 0: .
+2026-01-15 02:18:04,887 - brain - INFO - [TETYANA] Executing step 1...
+2026-01-15 02:18:04,887 - brain - INFO - [TETYANA] Fetching fresh MCP catalog for context...
+2026-01-15 02:18:04,889 - brain - INFO - Connecting to MCP server: chrome-devtools...
+2026-01-15 02:18:05,507 - brain - INFO - Connected to chrome-devtools
+2026-01-15 02:18:05,507 - brain - INFO - Connecting to MCP server: git...
+2026-01-15 02:18:05,967 - brain - INFO - Connected to git
+2026-01-15 02:18:05,967 - brain - INFO - Connecting to MCP server: vibe...
+2026-01-15 02:18:06,364 - brain - INFO - Connected to vibe
+2026-01-15 02:18:06,365 - brain - INFO - Connecting to MCP server: fetch...
+2026-01-15 02:18:06,749 - brain - INFO - Connected to fetch
+2026-01-15 02:18:06,750 - brain - INFO - Connecting to MCP server: puppeteer...
+2026-01-15 02:18:06,888 - brain - INFO - [TETYANA] Dynamically inspecting server: filesystem
+2026-01-15 02:18:07,752 - brain - INFO - Connected to puppeteer
+2026-01-15 02:18:10,300 - brain - INFO - [TETYANA] Thought (English): The atomic step requires listing installed applications to identify common window managers. Since the context is a filesystem server and the goal is to inventory installed window manager apps, the bes...
+2026-01-15 02:18:10,301 - brain - INFO - [TETYANA] Path resolved: /Applications -> /Users/olegkizyma/Documents/GitHub/Applications
+2026-01-15 02:18:10,301 - brain - INFO - [TETYANA] Explicit server dispatch: filesystem.list_directory
+2026-01-15 02:18:10,311 - brain - INFO - [TETYANA] Я зараз перегляну список встановлених програм у папці /Applications, щоб знайти менеджери вікон, такі як Magnet, Rectangle, Moom тощо.
+2026-01-15 02:18:28,403 - brain - INFO - [ORCHESTRATOR] Step 2, Attempt 1: Check for running processes related to window managers using 'ps aux | grep -Ei "magnet|rectangle|moom"'
+2026-01-15 02:18:28,404 - brain - INFO - [TETYANA] Executing step 2...
+2026-01-15 02:18:28,404 - brain - INFO - [TETYANA] Dynamically inspecting server: terminal
+2026-01-15 02:18:34,980 - brain - INFO - [TETYANA] Thought (English): The atomic step requires executing a shell command to check for running processes related to window managers (magnet, rectangle, moom) using 'ps aux | grep -Ei "magnet|rectangle|moom"'. The best tool ...
+2026-01-15 02:18:34,981 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:18:34,981 - brain - INFO - [TETYANA] Explicit server dispatch: terminal.execute_command
+2026-01-15 02:18:35,061 - brain - INFO - [TETYANA] Виконую команду для перевірки запущених процесів, пов'язаних з менеджерами вікон (magnet, rectangle, moom). Результат покаже список активних процесів.
+2026-01-15 02:18:53,889 - brain - INFO - [ORCHESTRATOR] Step 3, Attempt 1: Quit any detected window manager apps via UI automation or menu bar interaction
+2026-01-15 02:18:53,890 - brain - INFO - [TETYANA] Executing step 3...
+2026-01-15 02:18:53,891 - brain - INFO - [TETYANA] Dynamically inspecting server: macos-use
+2026-01-15 02:18:59,453 - brain - INFO - [TETYANA] Thought (English): The atomic step requires quitting any detected third-party window manager apps via UI automation or menu bar interaction. To do this, I first need to open/activate each detected window manager applica...
+2026-01-15 02:18:59,453 - brain - INFO - [TETYANA] macOS-use map: macos-use_open_application_and_traverse -> macos-use.macos-use_open_application_and_traverse
+2026-01-15 02:18:59,453 - brain - INFO - [TETYANA] Explicit server dispatch: macos-use.macos-use_open_application_and_traverse
+2026-01-15 02:18:59,480 - brain - INFO - [TETYANA] Step failed. Reflexion Attempt 1/2. Error: {
+  "primaryActionError" : "Application not found for identifier: 'DetectedWindowManagerAppNameOrBundleID'"
+}
+2026-01-15 02:19:11,878 - brain - INFO - [TETYANA] Attempting autonomous fix: execute_command
+2026-01-15 02:19:11,879 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:19:11,879 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 02:19:13,049 - brain - INFO - [TETYANA] Autonomous fix SUCCESS!
+2026-01-15 02:19:13,050 - brain - INFO - [TETYANA] Виконую відкриття та аналіз вікна менеджера для завершення його роботи через меню або автоматизацію інтерфейсу.
+2026-01-15 02:19:26,258 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 02:19:32,922 - brain - INFO - [SYSTEM] Preparing verification...
+2026-01-15 02:19:35,167 - brain - INFO - [GRISHA] Capturing active application window...
+2026-01-15 02:19:35,602 - brain - INFO - [GRISHA] Vision composite saved: /Users/olegkizyma/.config/atlastrinity/screenshots/grisha_vision_021935.jpg
+2026-01-15 02:19:41,233 - brain - INFO - [GRISHA] Strategy devised: **Verification Strategy**
+
+**1. VISION FIRST:**  
+*What should I see on the screenshot to confirm success?*
+
+- The menu bar should NOT display any icons or indicators belonging to third-party window m...
+2026-01-15 02:19:48,829 - brain - INFO - Connecting to MCP server: memory...
+2026-01-15 02:19:49,395 - brain - INFO - Connected to memory
+2026-01-15 02:19:49,408 - brain - INFO - [GRISHA] Rejection report saved to memory for step 3
+2026-01-15 02:19:49,408 - brain - INFO - Connecting to MCP server: notes...
+2026-01-15 02:19:49,762 - brain - INFO - Connected to notes
+2026-01-15 02:19:49,772 - brain - INFO - [GRISHA] Rejection report saved to notes for step 3
+2026-01-15 02:19:49,772 - brain - INFO - [GRISHA] Результат не прийнято.
+2026-01-15 02:19:54,050 - brain - INFO - [WARNING] Step 3 Attempt 1 failed: Grisha rejected: 
+2026-01-15 02:19:54,051 - brain - INFO - [ORCHESTRATOR] Step 3, Attempt 2: Quit any detected window manager apps via UI automation or menu bar interaction
+2026-01-15 02:19:54,051 - brain - INFO - [TETYANA] Executing step 3...
+2026-01-15 02:19:54,051 - brain - INFO - [TETYANA] Attempt 2 - fetching Grisha's rejection feedback...
+2026-01-15 02:19:54,065 - brain - INFO - [TETYANA] Retrieved Grisha's feedback from notes for step 3
+2026-01-15 02:19:54,065 - brain - INFO - [TETYANA] Dynamically inspecting server: macos-use
+2026-01-15 02:19:59,463 - brain - INFO - [TETYANA] Thought (English): The atomic step requires quitting any detected third-party window manager apps via UI automation or menu bar interaction. The available tools are designed for interacting with macOS applications via a...
+2026-01-15 02:19:59,464 - brain - INFO - [TETYANA] macOS-use map: macos-use_open_application_and_traverse -> macos-use.macos-use_open_application_and_traverse
+2026-01-15 02:19:59,464 - brain - INFO - [TETYANA] Explicit server dispatch: macos-use.macos-use_open_application_and_traverse
+2026-01-15 02:19:59,479 - brain - INFO - [TETYANA] Step failed. Reflexion Attempt 1/2. Error: {
+  "primaryActionError" : "Application not found for identifier: 'Magnet'"
+}
+2026-01-15 02:20:08,777 - brain - INFO - [TETYANA] Attempting autonomous fix: execute_command
+2026-01-15 02:20:08,777 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:20:08,777 - brain - INFO - [TETYANA] Server-map: detected direct server call to 'terminal'
+2026-01-15 02:20:08,784 - brain - INFO - [TETYANA] Autonomous fix SUCCESS!
+2026-01-15 02:20:08,785 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 02:20:14,859 - brain - INFO - [SYSTEM] Preparing verification...
+2026-01-15 02:20:15,595 - brain - INFO - [GRISHA] Capturing active application window...
+2026-01-15 02:20:15,939 - brain - INFO - [GRISHA] Vision composite saved: /Users/olegkizyma/.config/atlastrinity/screenshots/grisha_vision_022015.jpg
+2026-01-15 02:20:15,939 - brain - INFO - [GRISHA] Using cached strategy for: Quit any detected window manag...
+2026-01-15 02:20:25,590 - brain - INFO - [GRISHA] Rejection report saved to memory for step 3
+2026-01-15 02:20:25,599 - brain - INFO - [GRISHA] Rejection report saved to notes for step 3
+2026-01-15 02:20:25,599 - brain - INFO - [GRISHA] Результат не прийнято.
+2026-01-15 02:20:29,328 - brain - INFO - [WARNING] Step 3 Attempt 2 failed: Grisha rejected: 
+2026-01-15 02:20:29,329 - brain - INFO - [ORCHESTRATOR] Step 3, Attempt 3: Quit any detected window manager apps via UI automation or menu bar interaction
+2026-01-15 02:20:29,329 - brain - INFO - [TETYANA] Executing step 3...
+2026-01-15 02:20:29,329 - brain - INFO - [TETYANA] Attempt 3 - fetching Grisha's rejection feedback...
+2026-01-15 02:20:29,351 - brain - INFO - [TETYANA] Retrieved Grisha's feedback from notes for step 3
+2026-01-15 02:20:29,351 - brain - INFO - [TETYANA] Dynamically inspecting server: macos-use
+2026-01-15 02:20:34,279 - brain - INFO - [TETYANA] Thought (English): The atomic step requires quitting any detected third-party window manager apps on macOS via UI automation or menu bar interaction. The available tools are focused on interacting with applications via ...
+2026-01-15 02:20:34,280 - brain - INFO - [TETYANA] macOS-use map: macos-use_press_key_and_traverse -> macos-use.macos-use_press_key_and_traverse
+2026-01-15 02:20:34,280 - brain - INFO - [TETYANA] Explicit server dispatch: macos-use.macos-use_press_key_and_traverse
+2026-01-15 02:20:34,608 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 02:29:52,463 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:29:52,490 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:29:52,666 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:29:52,914 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:30:14,435 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:30:14,450 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:30:14,603 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:30:14,816 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:30:59,940 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:30:59,955 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:31:00,128 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:31:00,345 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:34:44,342 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:34:44,366 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:34:44,552 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:34:44,777 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:34:49,712 - brain - INFO - [TETYANA] Executing step 2...
+2026-01-15 02:34:49,716 - brain - INFO - [TETYANA] FAST PATH: Skipping reasoning for simple tool 'terminal'
+2026-01-15 02:35:10,504 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:35:10,519 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:35:10,702 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:35:10,921 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:35:15,887 - brain - INFO - [TETYANA] Executing step 2...
+2026-01-15 02:35:15,890 - brain - INFO - [TETYANA] Thought (English): I see file.txt was found in step 1....
+2026-01-15 02:40:02,586 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/olegkizyma/.config/atlastrinity/chromadb
+2026-01-15 02:40:02,601 - brain - INFO - [MEMORY] Lessons: 175 | Strategies: 6
+2026-01-15 02:40:02,761 - brain - INFO - Loading MCP config from: /Users/olegkizyma/.config/atlastrinity/mcp/config.json
+2026-01-15 02:40:02,986 - brain - INFO - [STATE] Redis connected at localhost:6379
+2026-01-15 02:40:07,395 - brain - INFO - [GRISHA] Initialized with Vision=gpt-4o, Strategy=raptor-mini
+2026-01-15 02:40:07,401 - brain - INFO - [ORCHESTRATOR] State initialized during initialize()
+2026-01-15 02:40:07,432 - brain - INFO - [MCP] Starting health check loop (interval=60s)
+2026-01-15 02:40:07,445 - brain - INFO - [GRISHA] Auditor ready. Vision: gpt-4o
+2026-01-15 02:40:07,446 - brain - INFO - [STATE] Session restored: current_session
+2026-01-15 02:40:07,446 - brain - INFO - [ORCHESTRATOR] State restored from Redis
+2026-01-15 02:40:07,446 - brain - INFO - [SYSTEM] New Request: Create a file named 'dev_mode_test.txt' in the current directory with the text 'AtlasTrinity Dev Test Successful', then check if it exists.
+2026-01-15 02:40:07,447 - brain - INFO - Connecting to MCP server: macos-use...
+2026-01-15 02:40:07,470 - brain - INFO - Connected to macos-use
+2026-01-15 02:40:07,471 - brain - INFO - Connecting to MCP server: filesystem...
+2026-01-15 02:40:08,240 - brain - INFO - Connected to filesystem
+2026-01-15 02:40:08,241 - brain - INFO - Connecting to MCP server: terminal...
+2026-01-15 02:40:08,674 - brain - INFO - Connected to terminal
+2026-01-15 02:40:08,675 - brain - INFO - Connecting to MCP server: sequential-thinking...
+2026-01-15 02:40:15,313 - brain - INFO - [ATLAS] Це запит на виконання конкретної дії: створити файл з певним текстом і перевірити його існування. Користувач не просить розробити програму чи написати код, а лише виконати просту технічну операцію.
+2026-01-15 02:40:20,194 - brain - INFO - Connected to sequential-thinking
+2026-01-15 02:40:42,988 - brain - INFO - [ATLAS] Deep Thinking: Analyzing strategy for 'Create a file named 'dev_mode_test.txt' in the cur...'
+2026-01-15 02:40:43,286 - brain - INFO - [MEMORY] Found 2 similar tasks
+2026-01-15 02:40:58,288 - brain - INFO - [SYSTEM] Atlas is thinking... (Planning logic flow)
+2026-01-15 02:41:07,806 - brain - INFO - [STATE] Session saved: current_session
+2026-01-15 02:41:07,807 - brain - INFO - [ATLAS] План готовий. 2 кроки. Тетяно, виконуй.
+2026-01-15 02:41:13,644 - brain - INFO - [NOTIFY] Sent: AtlasTrinity (50%)
+2026-01-15 02:41:13,644 - brain - INFO - [ORCHESTRATOR] Step 1, Attempt 1: Execute: echo 'AtlasTrinity Dev Test Successful' > dev_mode_test.txt to create the file with the required content.
+2026-01-15 02:41:13,645 - brain - INFO - [TETYANA] Розпочинаю крок 0: .
+2026-01-15 02:41:17,049 - brain - INFO - [TETYANA] Executing step 1...
+2026-01-15 02:41:17,050 - brain - INFO - [TETYANA] Fetching fresh MCP catalog for context...
+2026-01-15 02:41:17,053 - brain - INFO - Connecting to MCP server: chrome-devtools...
+2026-01-15 02:41:19,051 - brain - INFO - [TETYANA] Dynamically inspecting server: terminal
+2026-01-15 02:41:20,383 - brain - INFO - Connected to chrome-devtools
+2026-01-15 02:41:24,820 - brain - INFO - [TETYANA] Thought (English): The atomic step requires executing a shell command to create a file named 'dev_mode_test.txt' in the directory '/Users/olegkizyma/Documents/GitHub' with the content 'AtlasTrinity Dev Test Successful'....
+2026-01-15 02:41:24,820 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:41:24,820 - brain - INFO - [TETYANA] Explicit server dispatch: terminal.execute_command
+2026-01-15 02:41:24,846 - brain - INFO - [TETYANA] Виконую команду для створення файлу 'dev_mode_test.txt' з потрібним текстом у вашій директорії проекту.
+2026-01-15 02:41:35,708 - brain - INFO - [NOTIFY] Sent: AtlasTrinity (100%)
+2026-01-15 02:41:35,708 - brain - INFO - [ORCHESTRATOR] Step 2, Attempt 1: Execute: test -f dev_mode_test.txt && echo 'File exists' to verify the file's existence.
+2026-01-15 02:41:35,709 - brain - INFO - [TETYANA] Executing step 2...
+2026-01-15 02:41:35,709 - brain - INFO - [TETYANA] Dynamically inspecting server: terminal
+2026-01-15 02:41:43,129 - brain - INFO - [TETYANA] Thought (English): The atomic step requires verifying the existence of 'dev_mode_test.txt' in the current directory using a terminal command. The best tool is 'execute_command' since it allows running shell commands in ...
+2026-01-15 02:41:43,130 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:41:43,130 - brain - INFO - [TETYANA] Explicit server dispatch: terminal.execute_command
+2026-01-15 02:41:43,156 - brain - INFO - [TETYANA] Виконую перевірку наявності файлу 'dev_mode_test.txt' у поточній директорії. Якщо файл існує, ви побачите повідомлення 'File exists'.
+2026-01-15 02:41:56,745 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 02:42:02,883 - brain - INFO - [SYSTEM] Preparing verification...
+2026-01-15 02:42:03,386 - brain - INFO - Connecting to MCP server: notes...
+2026-01-15 02:42:03,878 - brain - INFO - Connected to notes
+2026-01-15 02:42:09,958 - brain - INFO - [GRISHA] Strategy devised: **Verification Strategy**
+
+**1. VISION FIRST:**  
+To confirm success via screenshot, you should see terminal output that includes the line:  
+`File exists`  
+This indicates that the command `test -f d...
+2026-01-15 02:42:22,272 - brain - INFO - Connecting to MCP server: memory...
+2026-01-15 02:42:22,632 - brain - INFO - Connected to memory
+2026-01-15 02:42:22,642 - brain - INFO - [GRISHA] Rejection report saved to memory for step 2
+2026-01-15 02:42:22,647 - brain - INFO - [GRISHA] Rejection report saved to notes for step 2
+2026-01-15 02:42:22,647 - brain - INFO - [GRISHA] Результат не прийнято.
+2026-01-15 02:42:26,391 - brain - INFO - [WARNING] Step 2 Attempt 1 failed: Grisha rejected: 
+2026-01-15 02:42:26,392 - brain - INFO - [ORCHESTRATOR] Step 2, Attempt 2: Execute: test -f dev_mode_test.txt && echo 'File exists' to verify the file's existence.
+2026-01-15 02:42:26,393 - brain - INFO - [TETYANA] Executing step 2...
+2026-01-15 02:42:26,393 - brain - INFO - [TETYANA] Attempt 2 - fetching Grisha's rejection feedback...
+2026-01-15 02:42:26,417 - brain - INFO - [TETYANA] Retrieved Grisha's feedback from notes for step 2
+2026-01-15 02:42:26,417 - brain - INFO - [TETYANA] Dynamically inspecting server: terminal
+2026-01-15 02:42:32,379 - brain - INFO - [TETYANA] Thought (English): The atomic step requires verifying the existence of 'dev_mode_test.txt' in the current directory using a terminal command. The correct tool is 'execute_command' as per the schema. The command 'test -f...
+2026-01-15 02:42:32,379 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:42:32,379 - brain - INFO - [TETYANA] Explicit server dispatch: terminal.execute_command
+2026-01-15 02:42:32,390 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 02:42:38,427 - brain - INFO - [SYSTEM] Preparing verification...
+2026-01-15 02:42:38,943 - brain - INFO - [GRISHA] Using cached strategy for: Execute: test -f dev_mode_test...
+2026-01-15 02:42:48,251 - brain - INFO - [GRISHA] Rejection report saved to memory for step 2
+2026-01-15 02:42:48,258 - brain - INFO - [GRISHA] Rejection report saved to notes for step 2
+2026-01-15 02:42:48,259 - brain - INFO - [GRISHA] Результат не прийнято.
+2026-01-15 02:42:52,000 - brain - INFO - [WARNING] Step 2 Attempt 2 failed: Grisha rejected: 
+2026-01-15 02:42:52,001 - brain - INFO - [ORCHESTRATOR] Step 2, Attempt 3: Execute: test -f dev_mode_test.txt && echo 'File exists' to verify the file's existence.
+2026-01-15 02:42:52,001 - brain - INFO - [TETYANA] Executing step 2...
+2026-01-15 02:42:52,001 - brain - INFO - [TETYANA] Attempt 3 - fetching Grisha's rejection feedback...
+2026-01-15 02:42:52,020 - brain - INFO - [TETYANA] Retrieved Grisha's feedback from notes for step 2
+2026-01-15 02:42:52,020 - brain - INFO - [TETYANA] Dynamically inspecting server: terminal
+2026-01-15 02:43:05,464 - brain - INFO - [TETYANA] Thought (English): The atomic step requires verifying the existence of 'dev_mode_test.txt' in the current directory using a terminal command. The previous command 'test -f dev_mode_test.txt && echo 'File exists'' is tec...
+2026-01-15 02:43:05,464 - brain - INFO - [TETYANA] Syn-map: execute_command -> terminal
+2026-01-15 02:43:05,464 - brain - INFO - [TETYANA] Explicit server dispatch: terminal.execute_command
+2026-01-15 02:43:05,482 - brain - INFO - [TETYANA] Крок 0 завершено. Гріша, верифікуй.
+2026-01-15 02:43:11,674 - brain - INFO - [SYSTEM] Preparing verification...
+2026-01-15 02:43:12,187 - brain - INFO - [GRISHA] Using cached strategy for: Execute: test -f dev_mode_test...
+2026-01-15 02:43:17,453 - brain - INFO - [GRISHA] Rejection report saved to memory for step 2
+2026-01-15 02:43:17,463 - brain - INFO - [GRISHA] Rejection report saved to notes for step 2
+2026-01-15 02:43:17,463 - brain - INFO - [GRISHA] Результат не прийнято.
+2026-01-15 02:43:21,208 - brain - INFO - [WARNING] Step 2 Attempt 3 failed: Grisha rejected: 
+2026-01-15 02:43:21,277 - brain - INFO - [NOTIFY] Sent: AtlasTrinity застряла
+2026-01-15 02:43:21,278 - brain - INFO - [ORCHESTRATOR] Atlas Recovery for Step 2...
+2026-01-15 02:43:21,278 - brain - INFO - [ATLAS] Крок 2 зупинився. Шукаю рішення.
+2026-01-15 02:43:26,276 - brain - INFO - [ORCHESTRATOR] Engaging Vibe Self-Healing for Step 2 (Timeout: 300s)...
+2026-01-15 02:43:26,277 - brain - INFO - [VIBE] [VIBE] Error to analyze: Grisha rejected: ...
+2026-01-15 02:43:26,277 - brain - INFO - [ATLAS] Залучаю Vibe для глибинного аналізу помилки у кроці 2.
+2026-01-15 02:43:32,714 - brain - INFO - Connecting to MCP server: vibe...
+2026-01-15 02:43:33,077 - brain - INFO - Connected to vibe

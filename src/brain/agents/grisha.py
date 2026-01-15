@@ -388,6 +388,7 @@ class Grisha:
             ]
 
             response = await self.llm.ainvoke(messages)
+            logger.info(f"[GRISHA] Raw LLM Response: {response.content}")
             data = self._parse_response(response.content)
 
             if data.get("action") == "call_tool":
@@ -560,7 +561,7 @@ class Grisha:
                     step_id=step_id,
                     verified=data.get("verified", False),
                     confidence=confidence,
-                    description=data.get("description", ""),
+                    description=data.get("description") or f"No description provided. Raw data: {data}",
                     issues=data.get("issues", []),
                     voice_message=data.get("voice_message", ""),
                     screenshot_analyzed=screenshot_path is not None,
