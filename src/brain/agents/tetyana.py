@@ -731,11 +731,14 @@ Please type your response below and press Enter:
                     monologue.get("proposed_action")
                     or step.get("tool_call")
                     or {
-                        "name": step.get("tool"),
+                        "name": step.get("tool") or "",
                         "args": step.get("args")
                         or {"action": step.get("action"), "path": step.get("path")},
                     }
                 )
+
+                if not tool_call.get("name"):
+                    logger.warning("[TETYANA] LLM monologue missing 'proposed_action'. Using fallback step info.")
                 
                 # VISION OVERRIDE: If Vision found the element with high confidence, use its suggestion
                 if vision_result and vision_result.get("found") and vision_result.get("suggested_action"):
@@ -898,6 +901,7 @@ Please type your response below and press Enter:
     async def _execute_tool(self, tool_call: Dict[str, Any]) -> Dict[str, Any]:
         """Executes the tool call with robust mapping and synonym support"""
         from ..logger import logger  # noqa: E402
+        logger.info(f"[TETYANA] Dispatching tool: {tool_call.get('name', 'None')} with args: {str(tool_call.get('args', {}))[:200]}")
 
         # Safety check: ensure tool_call is a dict
         if not isinstance(tool_call, dict):
@@ -907,8 +911,28 @@ Please type your response below and press Enter:
             return {"success": False, "error": f"Invalid tool_call: {tool_call}"}
 
         # Robust name extraction
-        tool_name = (tool_call.get("name") or tool_call.get("tool") or "").lower()
+        tool_name = (tool_call.get("name") or tool_call.get("tool") or "").strip().lower()
         args = tool_call.get("args") or tool_call.get("arguments") or {}
+
+        # --- INFER TOOL NAME IF MISSING ---
+        if not tool_name:
+            action_raw = str(args.get("action", "")).lower()
+            command_raw = str(args.get("command", "")).lower()
+            logger.info(f"[TETYANA] Inferring tool. Action: '{action_raw[:50]}...', Command: '{command_raw[:50]}...'")
+            
+            if "vibe" in action_raw or "vibe" in command_raw:
+                tool_name = "vibe_prompt"
+                logger.info("[TETYANA] Inferred tool: vibe_prompt")
+            elif any(kw in action_raw for kw in ["click", "type", "press", "screenshot"]):
+                tool_name = "macos-use"
+                logger.info("[TETYANA] Inferred tool: macos-use")
+            elif any(kw in action_raw for kw in ["read", "write", "list", "save"]):
+                tool_name = "filesystem"
+                logger.info("[TETYANA] Inferred tool: filesystem")
+            elif action_raw:
+                # If we have an action but no tool, try to use the action as the tool name
+                tool_name = action_raw
+                logger.info(f"[TETYANA] Using action as tool: {tool_name}")
 
         # --- UNIVERSAL TOOL SYNONYMS & INTENT ---
         terminal_synonyms = [

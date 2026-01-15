@@ -16,6 +16,7 @@ Updated: 2026-01-14
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os

@@ -88,7 +88,15 @@ AVAILABLE VIBE TOOLS:
      - question: The question (required)
    Example: vibe_ask(question="What's the best way to handle async errors in Python?")
 
-6. **vibe_which**
+6. **vibe_execute_subcommand**
+   Purpose: Execute a specific Vibe CLI subcommand (non-AI utility)
+   Args:
+     - subcommand: 'list-editors', 'run', 'enable', 'disable', 'install', etc. (required)
+     - args: List of string arguments (optional)
+     - cwd: Working directory (optional)
+   Example: vibe_execute_subcommand(subcommand="list-editors")
+
+7. **vibe_which**
    Purpose: Check Vibe CLI installation path and version
    Example: vibe_which()
 
