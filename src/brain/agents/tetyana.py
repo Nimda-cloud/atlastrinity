@@ -767,7 +767,7 @@ Please type your response below and press Enter:
 
         # --- PHASE 3: TECHNICAL REFLEXION (if failed) ---
         # OPTIMIZATION: Skip LLM reflexion for transient errors
-        max_self_fixes = 2
+        max_self_fixes = 3
         fix_count = 0
 
         while not tool_result.get("success") and fix_count < max_self_fixes:
@@ -792,6 +792,22 @@ Please type your response below and press Enter:
             logger.info(
                 f"[TETYANA] Step failed. Reflexion Attempt {fix_count}/{max_self_fixes}. Error: {error_msg}"
             )
+
+            # ULTIMATE FIX: Invoke VIBE for deep healing on final attempts
+            if fix_count == max_self_fixes:
+                 logger.info("[TETYANA] Reflexion limit reached. Invoking VIBE for ultimate self-healing...")
+                 v_res = await self._call_mcp_direct("vibe", "vibe_analyze_error", {
+                     "error_message": error_msg,
+                     "auto_fix": True
+                 })
+                 # Check if vibe fixed it
+                 if v_res.get("success"):
+                      logger.info("[TETYANA] VIBE self-healing reported SUCCESS. Retrying original tool...")
+                      tool_result = await self._execute_tool(tool_call)
+                      if tool_result.get("success"):
+                          break
+                 else:
+                      logger.warning(f"[TETYANA] VIBE self-healing failed: {v_res.get('error')}")
 
             try:
                 tools_summary = (

@@ -660,6 +660,44 @@ class MCPManager:
 
         return summary
 
+    async def restart_server(self, server_name: str) -> bool:
+        """Restart a specific MCP server"""
+        logger.info(f"[MCP] Restarting server: {server_name}")
+        
+        # 1. Stop if running
+        async with self._lock:
+            if server_name in self._close_events:
+                self._close_events[server_name].set()
+            
+            task = self._connection_tasks.get(server_name)
+            if task:
+                try:
+                    await asyncio.wait_for(task, timeout=5.0)
+                except Exception:
+                    task.cancel()
+            
+            # Clear internal state
+            self.sessions.pop(server_name, None)
+            self._connection_tasks.pop(server_name, None)
+            self._close_events.pop(server_name, None)
+            self._session_futures.pop(server_name, None)
+
+        # 2. Reconnect on next use (or immediately)
+        session = await self.get_session(server_name)
+        return session is not None
+
+    async def query_db(self, query: str, params: Optional[Dict] = None) -> List[Dict]:
+        """Execute a raw SQL query (for debugging/self-healing)"""
+        if not db_manager.available:
+            return [{"error": "Database not available"}]
+        
+        try:
+            async with await db_manager.get_session() as session:
+                result = await session.execute(text(query), params or {})
+                return [dict(row._mapping) for row in result]
+        except Exception as e:
+            return [{"error": str(e)}]
+
     async def cleanup(self):
         """Close all connections"""
         logger.info("Closing all MCP connections...")

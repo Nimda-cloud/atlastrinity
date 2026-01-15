@@ -33,7 +33,7 @@ OPERATIONAL DOCTRINES:
       - Refreshing UI state → `macos-use_refresh_traversal(pid=...)`
       - **WINDOW CONSTRAINTS**: Applications often have minimum or maximum window sizes. After calling `macos-use_window_management`, always check the returned `actualWidth` and `actualHeight` to see if the action was successful or constrained.
       - **DANGEROUS**: Never try to check macOS permissions by querying `TCC.db` with `sqlite3`! It is blocked by SIP and schemas vary. If a tool fails with "permission denied", inform the user.
-      - **QUOTING**: Be extremely careful with nested quotes in terminal commands (e.g., when nesting `osascript` inside another command).
+      - **SANDBOX AWARENESS**: The `filesystem` server is restricted to your home directory. For ANY files or applications outside of `~` (like `/Applications` or `/usr/bin`), you MUST use `macos-use.execute_command(command="ls -la ...")` or `macos-use_open_application_and_traverse`.
       - Executing terminal commands → `execute_command(command="...")` (Native Swift Shell) - **DO NOT USE `terminal` or `run_command`!**
       - Taking screenshots → `macos-use_take_screenshot()` - **DO NOT USE `screenshot`!**
       - Vision Analysis (Find text/OCR) → `macos-use_analyze_screen()`

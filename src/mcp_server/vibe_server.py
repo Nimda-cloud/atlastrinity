@@ -43,6 +43,10 @@ except Exception:
     MAX_OUTPUT_CHARS = 500000  # 500KB for large logs
     DISALLOW_INTERACTIVE = True
 
+from pathlib import Path
+PROJECT_ROOT = str(Path(__file__).parent.parent.parent)
+LOG_DIR = str(Path.home() / ".config" / "atlastrinity" / "logs")
+
 
 # CLI-only subcommands (no TUI)
 ALLOWED_SUBCOMMANDS = {
@@ -328,6 +332,11 @@ def vibe_analyze_error(
     prompt_parts = [
         "AUTONOMOUS ERROR ANALYSIS AND REPAIR",
         "",
+        f"CONTEXT:",
+        f"- Project Root: {PROJECT_ROOT}",
+        f"- Logs Directory: {LOG_DIR}",
+        f"- OS: macOS",
+        "",
         f"ERROR MESSAGE:\n{error_message}",
     ]
 
@@ -342,11 +351,13 @@ def vibe_analyze_error(
             [
                 "",
                 "INSTRUCTIONS:",
-                "1. Analyze the error thoroughly",
-                "2. Identify the root cause",
-                "3. ACTIVELY FIX the issue by editing files or running commands",
-                "4. Verify the fix works",
-                "5. Provide a summary of what was fixed",
+                "1. Analyze the error thoroughly using logs and source code.",
+                "2. Identify the root cause.",
+                "3. ACTIVELY FIX the issue (edit code, run commands).",
+                "4. If you modify Swift code in 'vendor/mcp-server-macos-use', you MUST recompile it by running 'swift build -c release' in that directory.",
+                "5. After any fix to an MCP server, use 'vibe_restart_mcp_server(server_name)' to apply changes.",
+                "6. Verify the fix works.",
+                "7. Provide a detailed summary.",
             ]
         )
     else:
@@ -578,6 +589,28 @@ def vibe_ask(
             result["parsed_response"] = None
 
     return result
+
+
+@server.tool()
+async def vibe_restart_mcp_server(server_name: str) -> Dict[str, Any]:
+    """
+    Restart a specific MCP server (e.g., 'macos-use', 'filesystem').
+    Use this after modifying source code or fixing a crash.
+    """
+    from ..brain.mcp_manager import mcp_manager
+    success = await mcp_manager.restart_server(server_name)
+    return {"success": success, "restarted": server_name}
+
+
+@server.tool()
+async def vibe_query_db(query: str, params: Optional[Dict] = None) -> Dict[str, Any]:
+    """
+    Query the internal AtlasTrinity database (PostgreSQL).
+    Tables: tasks, task_steps, tool_executions, logs, kg_nodes, kg_edges.
+    """
+    from ..brain.mcp_manager import mcp_manager
+    results = await mcp_manager.query_db(query, params)
+    return {"success": True, "results": results}
 
 
 if __name__ == "__main__":

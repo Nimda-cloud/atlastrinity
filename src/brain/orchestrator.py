@@ -65,6 +65,7 @@ class Trinity:
 
         # Initialize graph
         self.graph = self._build_graph()
+        self._log_lock = asyncio.Lock()
 
     async def initialize(self):
         """Async initialization of system components"""
@@ -177,18 +178,19 @@ class Trinity:
 
         # DB Persistence
         if db_manager.available:
-            try:
-                async with await db_manager.get_session() as session:
-                    entry = DBLog(
-                        level=type.upper(),
-                        source=source,
-                        message=text_str,
-                        metadata_blob={"type": type},
-                    )
-                    session.add(entry)
-                    await session.commit()
-            except Exception as e:
-                logger.error(f"DB Log failed: {e}")
+            async with self._log_lock:
+                try:
+                    async with await db_manager.get_session() as session:
+                        entry = DBLog(
+                            level=type.upper(),
+                            source=source,
+                            message=text_str,
+                            metadata_blob={"type": type},
+                        )
+                        session.add(entry)
+                        await session.commit()
+                except Exception as e:
+                    logger.error(f"DB Log failed: {e}")
 
         if self.state:
             # Basic log format for API

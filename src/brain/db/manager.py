@@ -19,12 +19,19 @@ class DatabaseManager:
     def __init__(self):
         self._engine = None
         self._session_maker = None
+        self._semaphore = asyncio.Semaphore(15)  # Limit concurrent connections
         self.available = False
 
     async def initialize(self):
         """Initialize DB connection and create tables if missing."""
         try:
-            self._engine = create_async_engine(DB_URL, echo=False)
+            self._engine = create_async_engine(
+                DB_URL, 
+                echo=False,
+                pool_size=20,
+                max_overflow=10,
+                pool_pre_ping=True
+            )
 
             # Create tables
             async with self._engine.begin() as conn:
