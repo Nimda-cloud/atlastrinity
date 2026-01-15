@@ -300,22 +300,26 @@ TRUST THE TOOLS:
 - Do NOT reject technical success just because you didn't see it visually.
 - If the goal was to kill a process and 'pgrep' returns nothing, that is SUCCESS.
 
-CRITICAL: When rejecting a result (verified: false), you MUST provide:
-1. "description": Detailed technical explanation in English (what went wrong, what was expected vs what happened)
-2. "issues": Array of specific problems found (e.g., ["File not created", "Command failed", "Wrong directory structure"])
-3. "voice_message": Clear Ukrainian message for Atlas and Tetyana explaining the rejection
-4. "confidence": Your confidence level (0.0-1.0)
-5. "remediation_suggestions": Array of actionable fixes (e.g., ["Create missing file", "Run command with correct flags"])
+Respond STRICTLY in JSON.
+
+Example SUCCESS response:
+{{
+  "action": "verdict",
+  "verified": true,
+  "confidence": 1.0,
+  "description": "Terminal output confirms file was created successfully.",
+  "voice_message": "Завдання виконано."
+}}
 
 Example REJECTION response:
 {{
   "action": "verdict",
   "verified": false,
   "confidence": 0.8,
-  "description": "Expected to find directory 'mac-discovery' with specific structure, but directory does not exist. File system verification shows the directory was not created.",
-  "issues": ["Directory 'mac-discovery' not found", "No project structure created"],
-  "voice_message": "Результат не прийнято. Директорія 'mac-discovery' не створена. Потрібно створити правильну структуру проєкту.",
-  "remediation_suggestions": ["Create mac-discovery directory", "Add required subdirectories (scripts, docs)", "Initialize project structure"]
+  "description": "Expected to find directory 'mac-discovery' with specific structure, but directory does not exist.",
+  "issues": ["Directory 'mac-discovery' not found"],
+  "voice_message": "Результат не прийнято. Директорія не створена.",
+  "remediation_suggestions": ["Create mac-discovery directory"]
 }}
 """
 

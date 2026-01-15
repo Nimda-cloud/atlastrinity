@@ -967,4 +967,32 @@ Timestamp: {timestamp}
                 return json.loads(content[start:end])
         except json.JSONDecodeError:
             pass
+
+        # FUZZY PARSING: Handle YAML-like or plain text success responses
+        # Often LLMs return success as key-value pairs instead of JSON
+        try:
+            data = {}
+            lines = content.strip().split("\n")
+            for line in lines:
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    key = key.strip().lower()
+                    value = value.strip()
+                    # Handle boolean values
+                    if value.lower() == "true":
+                        data[key] = True
+                    elif value.lower() == "false":
+                        data[key] = False
+                    # Handle digits
+                    elif value.replace(".", "", 1).isdigit():
+                        data[key] = float(value)
+                    else:
+                        data[key] = value
+            
+            # If we found at least 'verified', consider it a valid fuzzy parse
+            if "verified" in data:
+                return data
+        except Exception:
+            pass
+
         return {"raw": content}

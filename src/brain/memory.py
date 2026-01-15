@@ -244,6 +244,10 @@ class LongTermMemory:
             return similar
 
         except Exception as e:
+            # Catch specific ChromaDB internal errors that might occur during query execution
+            if "Internal error" in str(e) or "Error finding id" in str(e):
+                 logger.warning(f"[MEMORY] ChromaDB internal query error (ignoring): {e}")
+                 return []
             logger.error(f"[MEMORY] Failed to recall tasks: {e}")
             return []
 
