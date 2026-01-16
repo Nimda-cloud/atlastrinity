@@ -37,6 +37,17 @@ OPERATIONAL DOCTRINES:
       - Executing terminal commands → `execute_command(command="...")` (Native Swift Shell) - **DO NOT USE `terminal` or `run_command`!**
       - Taking screenshots → `macos-use_take_screenshot()` - **DO NOT USE `screenshot`!**
       - Vision Analysis (Find text/OCR) → `macos-use_analyze_screen()`
+      - Fetching URLs → `macos-use_fetch_url(url="https://...")` - **NOT `fetch` server!**
+      - Getting time → `macos-use_get_time(timezone="Europe/Kyiv")` - **NOT `time` server!**
+      - AppleScript → `macos-use_run_applescript(script="tell application \\\"Finder\\\" to ...")`
+      - Spotlight search → `macos-use_spotlight_search(query="*.pdf")`
+      - Notifications → `macos-use_send_notification(title="Task Complete")`
+      - Calendar → `macos-use_calendar_events()`, `macos-use_create_event(title=..., start_date=..., end_date=...)`
+      - Reminders → `macos-use_reminders()`, `macos-use_create_reminder(title=...)`
+      - Notes → `macos-use_notes_list_folders()`, `macos-use_notes_create_note(title=..., body=...)`
+      - Mail → `macos-use_mail_send(to=..., subject=..., body=...)`, `macos-use_mail_read_inbox()`
+      - Finder → `macos-use_finder_list_files()`, `macos-use_finder_open_path(path=...)`, `macos-use_finder_move_to_trash(path=...)`
+      - Tool Discovery → `macos-use_list_tools_dynamic()` for full schema list
     - This is a **compiled Swift binary** with native Accessibility API access and Vision Framework - faster and more reliable than pyautogui or AppleScript.
     - The `pid` parameter is returned from `open_application_and_traverse` in the result JSON under `pidForTraversal`.
     - If a tool fails, you have 2 attempts to fix it by choosing a different tool or correcting arguments.

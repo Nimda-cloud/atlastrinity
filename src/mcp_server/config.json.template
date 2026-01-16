@@ -4,7 +4,7 @@
     "macos-use": {
       "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use",
       "connect_timeout": 60,
-      "description": "Native macOS control: mouse, keyboard, UI automation, screenshots, Vision (OCR), Fetch URL, Time, AppleScript, Calendar, Reminders, Spotlight, Notifications, Notes, Mail, Dynamic Help, and terminal command execution (Replaces 'terminal', 'fetch', 'time', 'applescript', 'apple-mcp')",
+      "description": "UNIVERSAL macOS control (39 tools): GUI automation, Vision/OCR, Terminal, Fetch URL, Time, AppleScript, Calendar, Reminders, Notes, Mail, Finder, Spotlight, Notifications. PRIMARY server for ALL macOS interactions.",
       "permissions": {
         "accessibility": true,
         "screen_recording": true
@@ -15,7 +15,7 @@
         "tetyana",
         "grisha"
       ],
-      "note": "Requires swift build in vendor/mcp-server-macos-use. Acts as the original MCP for system control. Now includes Fetch URL, Time, and AppleScript functionality."
+      "note": "Compiled Swift binary. Replaces: fetch, time, apple-mcp, applescript, terminal."
     },
     "filesystem": {
       "command": "npx",
@@ -94,18 +94,7 @@
       ],
       "note": "Runs in programmatic CLI mode (--output json), not interactive TUI. Max output: 500KB."
     },
-    "fetch": {
-      "command": "bunx",
-      "args": [
-        "mcp-server-fetch-typescript"
-      ],
-      "description": "Fetch content from URLs (HTML to Markdown)",
-      "disabled": false,
-      "tier": 2,
-      "agents": [
-        "tetyana"
-      ]
-    },
+    "_comment_fetch": "REMOVED: fetch - use macos-use_fetch_url instead",
 
     "memory": {
       "command": "python3",
@@ -138,19 +127,7 @@
       ]
     },
     "_comment_tier3": "=== TIER 3: MEDIUM (За потреби) ===",
-    "apple-mcp": {
-      "command": "bunx",
-      "args": [
-        "--no-cache",
-        "apple-mcp@latest"
-      ],
-      "description": "Integration with Apple apps - MIGRATED TO MACOS-USE",
-      "disabled": true,
-      "tier": 3,
-      "agents": [
-        "tetyana"
-      ]
-    },
+    "_comment_apple_mcp": "REMOVED: apple-mcp - use macos-use Calendar/Reminders/Notes/Mail tools instead",
     "github": {
       "command": "python3",
       "connect_timeout": 60,
@@ -278,19 +255,7 @@
         "atlas"
       ]
     },
-    "time": {
-      "command": "bunx",
-      "connect_timeout": 60,
-      "args": [
-        "@mcpcentral/mcp-time"
-      ],
-      "description": "Time and timezone utilities",
-      "disabled": false,
-      "tier": 4,
-      "agents": [
-        "tetyana"
-      ]
-    }
+    "_comment_time": "REMOVED: time - use macos-use_get_time instead"
   },
   "_metadata": {
     "version": "3.0",

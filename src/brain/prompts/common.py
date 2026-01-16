@@ -6,33 +6,52 @@ DEFAULT_REALM_CATALOG = """
 AVAILABLE REALMS (MCP Servers):
 
 TIER 1 - CORE:
-- filesystem: File operations. Tools: read_file, write_file, list_directory.
-- macos-use: **PRIORITY NATIVE COMMANDER** (Swift binary).
-  Tools:
-    - `macos-use_open_application_and_traverse`: Open apps. Args: identifier (app name/path/bundleID)
-    - `macos-use_click_and_traverse`: Click at coordinates. Args: pid (int), x (float), y (float)
-    - `macos-use_right_click_and_traverse`: Context menu click. Args: pid (int), x (float), y (float)
-    - `macos-use_double_click_and_traverse`: Double click. Args: pid (int), x (float), y (float)
-    - `macos-use_drag_and_drop_and_traverse`: Drag and drop. Args: pid (int), startX, startY, endX, endY
-    - `macos-use_type_and_traverse`: Type text. Args: pid (int), text (string)
-    - `macos-use_press_key_and_traverse`: Press keys/shortcuts. Args: pid (int), keyName (string), modifierFlags (array)
-    - `macos-use_scroll_and_traverse`: Scroll. Args: pid (int), direction (up/down/left/right), amount (int)
-    - `macos-use_refresh_traversal`: Force refresh UI tree. Args: pid (int)
-    - `macos-use_window_management`: Move/Resize/Min/Max. Args: pid (int), action (move/resize/minimize/maximize/make_front)
-    - `macos-use_set_clipboard` / `macos-use_get_clipboard`: Clipboard access.
-    - `macos-use_system_control`: Media/Volume/Brightness. Args: action (play_pause, volume_up, etc.)
-    - `macos-use_take_screenshot`: Native Screenshot (Alias: `screenshot`). Returns Base64.
-    - `macos-use_analyze_screen`: Apple Vision OCR (Alias: `ocr`, `analyze`).
-    - `execute_command`: **PRIMARY TERMINAL**. Native Swift Shell (Alias: `terminal`, `sh`, `bash`).
-  ALWAYS use `macos-use` for ALL GUI automation and Terminal interactions. It is a compiled Swift binary running locally!
+- filesystem: File operations (read, write, list). Restricted to home directory.
+- macos-use: **UNIVERSAL MACOS COMMANDER** (Swift binary - 39 tools).
+  GUI AUTOMATION:
+    - `macos-use_open_application_and_traverse`: Open apps by name/path/bundleID
+    - `macos-use_click_and_traverse`: Click at (x, y)
+    - `macos-use_right_click_and_traverse`: Context menu
+    - `macos-use_double_click_and_traverse`: Double click
+    - `macos-use_drag_and_drop_and_traverse`: Drag from start to end
+    - `macos-use_type_and_traverse`: Type text
+    - `macos-use_press_key_and_traverse`: Press keys/shortcuts
+    - `macos-use_scroll_and_traverse`: Scroll direction
+    - `macos-use_refresh_traversal`: Force refresh UI tree
+    - `macos-use_window_management`: Move/Resize/Min/Max windows
+  SYSTEM:
+    - `macos-use_take_screenshot`: Capture screen (Base64 PNG)
+    - `macos-use_analyze_screen`: Apple Vision OCR
+    - `macos-use_set_clipboard` / `macos-use_get_clipboard`: Clipboard
+    - `macos-use_system_control`: Media/Volume/Brightness
+  TERMINAL:
+    - `execute_command`: PRIMARY shell access (aliases: terminal, sh, bash)
+  PRODUCTIVITY:
+    - `macos-use_calendar_events`, `macos-use_create_event`
+    - `macos-use_reminders`, `macos-use_create_reminder`
+    - `macos-use_notes_*` (list_folders, create_note, get_content)
+    - `macos-use_mail_send`, `macos-use_mail_read_inbox`
+  UTILITIES:
+    - `macos-use_fetch_url`: Fetch web content → Markdown (REPLACES fetch server)
+    - `macos-use_get_time`: System time with timezone (REPLACES time server)
+    - `macos-use_run_applescript`: Execute AppleScript
+    - `macos-use_spotlight_search`: File search using mdfind
+    - `macos-use_send_notification`: System notifications
+  FINDER:
+    - `macos-use_finder_list_files`, `macos-use_finder_get_selection`
+    - `macos-use_finder_open_path`, `macos-use_finder_move_to_trash`
+  DISCOVERY:
+    - `macos-use_list_tools_dynamic`: Get full tool list with schemas
+    
+  ALWAYS use `macos-use` for ALL GUI automation, Terminal, fetch, time, and Apple app interactions!
+  
 - sequential-thinking: Step-by-step reasoning for complex decisions.
 
 TIER 2 - HIGH PRIORITY:
-- fetch: URL content extraction. Tool: fetch_url.
 - duckduckgo-search: Web search. Tool: search.
 - memory: Knowledge graph access.
-- notes: Storing/Reading feedback and reports. Tools: create_note, read_note.
-- vibe: **AI-POWERED DEBUGGING & SELF-HEALING** (Mistral CLI integration).
+- notes: Internal note storage for agent feedback/reports.
+- vibe: AI-POWERED DEBUGGING (Mistral CLI).
 - git: Local repository operations.
 
 TIER 3-4 - OPTIONAL:
@@ -42,7 +61,12 @@ TIER 3-4 - OPTIONAL:
 - postgres: Database access.
 - whisper-stt: Speech-to-text.
 
-CRITICAL: Do NOT invent high-level tools (e.g., 'scrape_and_extract'). Use only the real TOOLS found inside these Realms after Inspection.
+DEPRECATED (REMOVED - now in macos-use):
+- fetch → Use macos-use_fetch_url
+- time → Use macos-use_get_time
+- apple-mcp → Use macos-use Calendar/Reminders/Notes/Mail tools
+
+CRITICAL: Do NOT invent high-level tools. Use only the real TOOLS found inside these Realms.
 """
 
 # Vibe MCP tools documentation for agents

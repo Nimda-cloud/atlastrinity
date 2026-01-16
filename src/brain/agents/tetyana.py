@@ -261,6 +261,112 @@ class Tetyana:
             "optional": ["params"],
             "types": {"query": str, "params": dict},
         },
+        # === NEW: Productivity Apps ===
+        "macos-use_calendar_events": {
+            "required": [],
+            "optional": ["days_ahead"],
+            "types": {"days_ahead": int},
+        },
+        "macos-use_create_event": {
+            "required": ["title", "start_date", "end_date"],
+            "optional": ["notes", "calendar_name"],
+            "types": {"title": str, "start_date": str, "end_date": str, "notes": str, "calendar_name": str},
+        },
+        "macos-use_reminders": {
+            "required": [],
+            "optional": ["list_name"],
+            "types": {"list_name": str},
+        },
+        "macos-use_create_reminder": {
+            "required": ["title"],
+            "optional": ["list_name", "due_date", "notes"],
+            "types": {"title": str, "list_name": str, "due_date": str, "notes": str},
+        },
+        "macos-use_notes_list_folders": {
+            "required": [],
+            "types": {},
+        },
+        "macos-use_notes_create_note": {
+            "required": ["title"],
+            "optional": ["body", "folder"],
+            "types": {"title": str, "body": str, "folder": str},
+        },
+        "macos-use_notes_get_content": {
+            "required": ["note_id"],
+            "types": {"note_id": str},
+        },
+        "macos-use_mail_send": {
+            "required": ["to", "subject", "body"],
+            "optional": ["from_account"],
+            "types": {"to": str, "subject": str, "body": str, "from_account": str},
+        },
+        "macos-use_mail_read_inbox": {
+            "required": [],
+            "optional": ["limit"],
+            "types": {"limit": int},
+        },
+        # === NEW: Finder ===
+        "macos-use_finder_list_files": {
+            "required": [],
+            "optional": ["path"],
+            "types": {"path": str},
+        },
+        "macos-use_finder_get_selection": {
+            "required": [],
+            "types": {},
+        },
+        "macos-use_finder_open_path": {
+            "required": ["path"],
+            "types": {"path": str},
+        },
+        "macos-use_finder_move_to_trash": {
+            "required": ["path"],
+            "types": {"path": str},
+        },
+        # === NEW: Utilities ===
+        "macos-use_fetch_url": {
+            "required": ["url"],
+            "optional": ["timeout"],
+            "types": {"url": str, "timeout": int},
+        },
+        "fetch_url": {  # alias
+            "required": ["url"],
+            "optional": ["timeout"],
+            "types": {"url": str, "timeout": int},
+        },
+        "macos-use_get_time": {
+            "required": [],
+            "optional": ["timezone"],
+            "types": {"timezone": str},
+        },
+        "get_time": {  # alias
+            "required": [],
+            "optional": ["timezone"],
+            "types": {"timezone": str},
+        },
+        "macos-use_run_applescript": {
+            "required": ["script"],
+            "types": {"script": str},
+        },
+        "run_applescript": {  # alias
+            "required": ["script"],
+            "types": {"script": str},
+        },
+        "macos-use_spotlight_search": {
+            "required": ["query"],
+            "optional": ["scope"],
+            "types": {"query": str, "scope": str},
+        },
+        "macos-use_send_notification": {
+            "required": ["title"],
+            "optional": ["subtitle", "body"],
+            "types": {"title": str, "subtitle": str, "body": str},
+        },
+        # === Discovery ===
+        "macos-use_list_tools_dynamic": {
+            "required": [],
+            "types": {},
+        },
     }
 
     NAME = AgentPrompts.TETYANA["NAME"]
