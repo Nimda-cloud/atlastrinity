@@ -664,20 +664,20 @@ class Grisha:
         # AND we see evidence of Terminal/TextEdit opened (user can respond there), accept it.
         step_action_lower = step.get("action", "").lower()
         consent_keywords = [
-            "consent",
-            "approval",
-            "confirm",
-            "agree",
-            "permission",
+            "ask user",
+            "request user consent",
+            "await user approval",
+            "get user confirmation",
+            "confirm with user",
             "згод",
             "підтверд",
             "дозвіл",
         ]
-        is_consent_step = any(
-            kw in step_action_lower or kw in expected.lower() for kw in consent_keywords
-        )
+        is_manual_consent = any(
+            kw in step_action_lower for kw in consent_keywords
+        ) or step.get("requires_consent", False) is True
 
-        if is_consent_step and verification_history:
+        if is_manual_consent and verification_history:
             # Check if Terminal or similar was opened
             opened_app = any(
                 "terminal" in str(h).lower() or "textedit" in str(h).lower()
@@ -797,8 +797,8 @@ Timestamp: {timestamp}
                     attributes={
                         "type": "verification_rejection",
                         "step_id": str(step_id),
-                        "issues": verification.issues,
-                        "description": verification.description,
+                        "issues": "; ".join(verification.issues) if isinstance(verification.issues, list) else str(verification.issues),
+                        "description": str(verification.description),
                         "timestamp": timestamp
                     }
                 )

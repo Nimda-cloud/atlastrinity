@@ -435,13 +435,16 @@ IMPORTANT:
         step_action_lower = str(step.get("action", "")).lower()
         
         # FIX: More strict consent detection to prevent loops
-        # Only treat as consent request if explicitly asked for user interaction
+        # Technical steps like "confirm directory results" should NOT trigger consent.
+        # Consent is only for dangerous or ambiguous actions requiring HUMAN input.
         is_consent_request = (
             "ask user" in step_action_lower
             or "request user consent" in step_action_lower
             or "await user approval" in step_action_lower
             or "get user confirmation" in step_action_lower
-            or "confirm" in step_action_lower
+            or "confirm with user" in step_action_lower
+            or ("confirm" in step_action_lower and "user" in step_action_lower)
+            or ("approval" in step_action_lower and "user" in step_action_lower)
             or "preferences" in step_action_lower
             or step.get("requires_consent", False) is True
         )
