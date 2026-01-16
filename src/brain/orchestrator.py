@@ -29,6 +29,7 @@ from .db.schema import LogEntry as DBLog
 from .db.schema import Session as DBSession
 from .db.schema import Task as DBTask
 from .db.schema import TaskStep as DBStep
+from .db.schema import ToolExecution as DBToolExecution
 from .knowledge_graph import knowledge_graph
 from .logger import logger
 from .mcp_manager import mcp_manager
@@ -890,8 +891,14 @@ class Trinity:
         """Atomic execution logic with recursion and dynamic temperature"""
         # Starting message logic
         # Simple heuristic: If it's a top level step (no dots) and first attempt
-        if "." not in str(step_id) and attempt == 1 and str(step_id) == "1":
-            await self._speak("tetyana", self.tetyana.get_voice_message("starting"))
+        if "." not in str(step_id) and attempt == 1:
+            # Pass step_id and description to get a meaningful announcement
+            msg = self.tetyana.get_voice_message(
+                "starting", 
+                step=step_id, 
+                description=step.get("action", "")
+            )
+            await self._speak("tetyana", msg)
         elif "." in str(step_id):
             # It's a sub-step/recovery step
             pass
@@ -973,6 +980,23 @@ class Trinity:
                     step_copy["bus_messages"] = [m.to_dict() for m in bus_messages]
 
                 result = await self.tetyana.execute_step(step_copy, attempt=attempt)
+                
+                # Log tool execution to DB for Grisha's audit
+                if db_manager.available and db_step_id and result.tool_call:
+                    try:
+                        async with await db_manager.get_session() as db_sess:
+                            tool_exec = DBToolExecution(
+                                step_id=db_step_id,
+                                server_name=result.tool_call.get("server") or result.tool_call.get("realm") or "unknown",
+                                tool_name=result.tool_call.get("name") or "unknown",
+                                arguments=result.tool_call.get("args") or {},
+                                result=str(result.result)[:10000], # Cap size
+                            )
+                            db_sess.add(tool_exec)
+                            await db_sess.commit()
+                            logger.info(f"[ORCHESTRATOR] Logged tool execution: {tool_exec.tool_name}")
+                    except Exception as e:
+                        logger.error(f"Failed to log tool execution to DB: {e}")
                 
                 # Handle proactive help requested by Tetyana
                 if result.error == "proactive_help_requested":

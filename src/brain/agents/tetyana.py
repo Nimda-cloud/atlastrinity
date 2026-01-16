@@ -434,17 +434,28 @@ IMPORTANT:
         # we can't automate it fully. Open Terminal and inform the user.
         step_action_lower = str(step.get("action", "")).lower()
         
-        # FIX: More strict consent detection to prevent loops
-        # Technical steps like "confirm directory results" should NOT trigger consent.
-        # Consent is only for dangerous or ambiguous actions requiring HUMAN input.
+        # FIX: Even stricter consent logic. 
+        # Must MUST mention a human/user to trigger a terminal popup.
+        user_keywords = ["user", "human", "oleg", "me", "operator", "owner", "користувач", "людин", "олег", "мені"]
+        # Filter out technical "user" references that don't mean the HUMAN operator
+        technical_user_refs = ["active user", "system user", "user home", "user account", "user directory"]
+        
+        # Check if it has a user ref that is NOT one of the technical ones
+        has_user_ref = any(u in step_action_lower for u in user_keywords)
+        if any(tr in step_action_lower for tr in technical_user_refs):
+            # If the ONLY user ref is a technical one, don't count it
+            remaining_action = step_action_lower
+            for tr in technical_user_refs:
+                remaining_action = remaining_action.replace(tr, "")
+            has_user_ref = any(u in remaining_action for u in user_keywords)
+        
         is_consent_request = (
-            "ask user" in step_action_lower
-            or "request user consent" in step_action_lower
-            or "await user approval" in step_action_lower
-            or "get user confirmation" in step_action_lower
-            or "confirm with user" in step_action_lower
-            or ("confirm" in step_action_lower and "user" in step_action_lower)
-            or ("approval" in step_action_lower and "user" in step_action_lower)
+            ("ask" in step_action_lower and has_user_ref)
+            or ("request" in step_action_lower and "consent" in step_action_lower)
+            or ("await" in step_action_lower and "approval" in step_action_lower)
+            or ("get" in step_action_lower and "confirmation" in step_action_lower and has_user_ref)
+            or ("confirm" in step_action_lower and has_user_ref)
+            or ("approval" in step_action_lower and has_user_ref)
             or "preferences" in step_action_lower
             or step.get("requires_consent", False) is True
         )
@@ -1157,7 +1168,7 @@ Please type your response below and press Enter:
                     "fetch": "fetch",
                     "duckduckgo-search": "duckduckgo_search",
                     "terminal": "execute_command",
-                    "macos-use": "screenshot",
+                    "macos-use": "execute_command",
                     "time": "get_current_time",
                     "sequential-thinking": "sequentialthinking",
                     "filesystem": "read_file",
@@ -2309,20 +2320,94 @@ Please type your response below and press Enter:
             else:
                 essence = desc[:50] + "..."
 
-        # Translate commonly used technical prefixes if English
+        # Translate commonly used technical prefixes and terms
         essence = essence.lower()
-        if essence.startswith("create"):
-            essence = essence.replace("create", "Створюю", 1)
-        elif essence.startswith("update"):
-            essence = essence.replace("update", "Оновлюю", 1)
-        elif essence.startswith("check"):
-            essence = essence.replace("check", "Перевіряю", 1)
-        elif essence.startswith("install"):
-            essence = essence.replace("install", "Встановлюю", 1)
-        elif essence.startswith("run"):
-            essence = essence.replace("run", "Запускаю", 1)
-        elif essence.startswith("execute"):
-            essence = essence.replace("execute", "Виконую", 1)
+        
+        # 1. Action Mapping (Verbs)
+        translations = {
+            "create": "Створюю",
+            "update": "Оновлюю",
+            "check": "Перевіряю",
+            "install": "Встановлюю",
+            "run": "Запускаю",
+            "execute": "Виконую",
+            "call": "Викликаю",
+            "search": "Шукаю",
+            "list": "Переглядаю",
+            "read": "Читаю",
+            "write": "Записую",
+            "delete": "Видаляю",
+            "find": "Шукаю",
+            "open": "Відкриваю",
+            "take": "Роблю",
+            "analyze": "Аналізую",
+            "confirm": "Підтверджую",
+            "verify": "Верифікую"
+        }
+        
+        for eng, ukr in translations.items():
+            if essence.startswith(eng):
+                essence = essence.replace(eng, ukr, 1)
+                break
+
+        # 2. Key Object Mapping (Nouns)
+        vocabulary = {
+            "filesystem": "файлову систему",
+            "directory": "папку",
+            "directories": "папки",
+            "file": "файл",
+            "files": "файли",
+            "desktop": "робочий стіл",
+            "allowed": "дозволені",
+            "terminal": "термінал",
+            "screenshot": "знімок екрана",
+            "screen": "екран",
+            "notes": "нотатки",
+            "note": "нотатку",
+            "calendar": "календар",
+            "reminder": "нагадування",
+            "reminders": "нагадування",
+            "mail": "пошту",
+            "email": "пошту",
+            "notification": "сповіщення",
+            "element": "елемент",
+            "elements": "елементи",
+            "application": "програму",
+            "apps": "програми",
+            "browser": "браузер",
+            "path": "шлях",
+            "contents": "вміст",
+            "confirm": "підтвердити",
+            "resolve": "визначити",
+            "expand": "розгорнути",
+            "home": "домашній",
+            "canonical": "канонічний",
+            "active": "активного",
+            "task": "завдання",
+            "plan": "план",
+            "steps": "кроки",
+            "step": "крок"
+        }
+
+        words = essence.split()
+        translated_words = []
+        for word in words:
+            clean_word = word.strip(".,()[]{}'\"$").lower()
+            if clean_word in vocabulary:
+                translated_words.append(vocabulary[clean_word])
+            elif clean_word in ["$home", "home"]:
+                translated_words.append("домашню папку")
+            elif len(clean_word) > 1 and all(c in "0123456789abcdefABCDEF-/" for c in clean_word):
+                # Skip UUIDs, paths or hex ids which sound bad in TTS
+                continue
+            else:
+                translated_words.append(word)
+        
+        essence = " ".join(translated_words)
+
+        # Clean up any leftover English characters to avoid TTS stutter
+        # (Simple heuristic: only keep Cyrillic, numbers and Basic punctuation)
+        # Actually, we keep it for now but the mapping covers 90%
 
         # Construct message based on state
         if action == "completed":
