@@ -987,7 +987,7 @@ class Trinity:
                     help_resp = await self.atlas.help_tetyana(step_copy, result.result)
                     await self._speak("atlas", help_resp)
                     # Re-run the step with Atlas's guidance as bus feedback
-                    from ..message_bus import AgentMsg, MessageType, message_bus # noqa: E402
+
                     await message_bus.send(AgentMsg(
                         from_agent="atlas",
                         to_agent="tetyana",
