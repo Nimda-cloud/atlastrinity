@@ -921,16 +921,10 @@ class Trinity:
                 # For now, let's just use a simple counter or 0 for subtasks if it fails validation,
                 # BUT wait, the schema defines it as Integer.
                 # I will create a hash/counter for the DB or just 0.
-                seq_num = 0
-                try:
-                    seq_num = int(float(step_id))  # works for "1", "3.0" but not "3.1"
-                except Exception:
-                    seq_num = 0  # Subtasks represent 0
-
                 async with await db_manager.get_session() as db_sess:
                     new_step = DBStep(
                         task_id=self.state["db_task_id"],
-                        sequence_number=seq_num,
+                        sequence_number=str(step_id),
                         action=f"[{step_id}] {step.get('action', '')}",
                         tool=step.get("tool", ""),
                         status="RUNNING",

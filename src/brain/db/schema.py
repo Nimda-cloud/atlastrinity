@@ -56,7 +56,7 @@ class TaskStep(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tasks.id"))
 
-    sequence_number: Mapped[int] = mapped_column(Integer)
+    sequence_number: Mapped[str] = mapped_column(String(50))
     action: Mapped[str] = mapped_column(Text)
     tool: Mapped[str] = mapped_column(String(100))
 
