@@ -34,6 +34,8 @@ except ImportError:
     MODELS_DIR = CONFIG_ROOT / "models" / "tts"
     WHISPER_DIR = CONFIG_ROOT / "models" / "faster-whisper"
     MCP_DIR = CONFIG_ROOT / "mcp"
+    WORKSPACE_DIR = CONFIG_ROOT / "workspace"
+    VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 
 
 class SetupStep(Enum):

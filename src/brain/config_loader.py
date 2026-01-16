@@ -115,7 +115,11 @@ class SystemConfig:
             "mcp": {
                 "terminal": {"enabled": True},
                 "filesystem": {"enabled": True},
-                "macos-use": {"enabled": True},
+                "macos_use": {"enabled": True},
+                "vibe": {
+                    "enabled": True,
+                    "workspace": str(CONFIG_ROOT / "vibe_workspace")
+                }
             },
             "security": {
                 "dangerous_commands": ["rm -r", "mkfs"],

@@ -66,7 +66,8 @@ DIRS = {
     "tts_models": CONFIG_ROOT / "models" / "tts",
     "stt_models": CONFIG_ROOT / "models" / "faster-whisper",
     "mcp": CONFIG_ROOT / "mcp",
-    "workspace": Path.home() / "AtlasProjects",
+    "workspace": CONFIG_ROOT / "workspace",
+    "vibe_workspace": CONFIG_ROOT / "vibe_workspace",
 }
 
 

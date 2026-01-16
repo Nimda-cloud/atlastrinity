@@ -54,11 +54,15 @@ try:
     # Increased for large log analysis
     MAX_OUTPUT_CHARS = int(get_config_value("vibe", "max_output_chars", 500000))
     DISALLOW_INTERACTIVE = bool(get_config_value("vibe", "disallow_interactive", True))
+    
+    # Resolve global vibe_workspace
+    VIBE_WORKSPACE = get_config_value("vibe", "workspace", str(Path.home() / ".config" / "atlastrinity" / "vibe_workspace"))
 except Exception:
     VIBE_BINARY = "vibe"
     DEFAULT_TIMEOUT_S = 1200.0
     MAX_OUTPUT_CHARS = 500000  # 500KB for large logs
     DISALLOW_INTERACTIVE = True
+    VIBE_WORKSPACE = str(Path.home() / ".config" / "atlastrinity" / "vibe_workspace")
 
 from pathlib import Path
 PROJECT_ROOT = str(Path(__file__).parent.parent.parent)
@@ -447,12 +451,17 @@ async def vibe_prompt(
         )
     """
     eff_timeout = timeout_s if timeout_s is not None else DEFAULT_TIMEOUT_S
+    eff_cwd = cwd if cwd is not None else VIBE_WORKSPACE
+    
+    # Ensure workspace exists
+    if not os.path.exists(eff_cwd):
+        os.makedirs(eff_cwd, exist_ok=True)
 
-    logger.info(f"[VIBE] Processing prompt: {prompt[:100]}...")
+    logger.info(f"[VIBE] Processing prompt: {prompt[:100]}... (CWD: {eff_cwd})")
 
     return await _run_vibe_programmatic(
         prompt=prompt,
-        cwd=cwd,
+        cwd=eff_cwd,
         timeout_s=eff_timeout,
         output_format=output_format,
         auto_approve=auto_approve,
@@ -536,12 +545,17 @@ async def vibe_analyze_error(
 
     prompt = "\n".join(prompt_parts)
     eff_timeout = timeout_s if timeout_s is not None else 300.0
+    eff_cwd = cwd if cwd is not None else VIBE_WORKSPACE
+    
+    # Ensure workspace exists
+    if not os.path.exists(eff_cwd):
+        os.makedirs(eff_cwd, exist_ok=True)
 
-    logger.info(f"[VIBE] Starting error analysis (auto_fix={auto_fix})")
+    logger.info(f"[VIBE] Starting error analysis (auto_fix={auto_fix}, CWD={eff_cwd})")
 
     return await _run_vibe_programmatic(
         prompt=prompt,
-        cwd=cwd,
+        cwd=eff_cwd,
         timeout_s=eff_timeout,
         output_format="json",
         auto_approve=auto_fix,  # Only auto-approve if auto_fix is True
