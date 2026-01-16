@@ -866,6 +866,7 @@ Please type your response below and press Enter:
                 feedback=grisha_feedback,
                 previous_results=previous_results,
                 goal_context=shared_context.get_goal_context(),
+                bus_messages=step.get("bus_messages"),
             )
 
             try:

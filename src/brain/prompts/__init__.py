@@ -14,7 +14,6 @@ class AgentPrompts:
     TETYANA = TETYANA
     GRISHA = GRISHA
 
-    @staticmethod
     def tetyana_reasoning_prompt(
         step: str,
         context: dict,
@@ -22,6 +21,7 @@ class AgentPrompts:
         feedback: str = "",
         previous_results: list = None,
         goal_context: str = "",
+        bus_messages: list = None,
     ) -> str:
         feedback_section = (
             f"\n        PREVIOUS REJECTION FEEDBACK (from Grisha):\n        {feedback}\n"
@@ -43,16 +43,21 @@ class AgentPrompts:
 
         goal_section = f"\n        {goal_context}\n" if goal_context else ""
 
+        bus_section = ""
+        if bus_messages:
+            bus_section = f"\n        REAL-TIME MESSAGES FROM OTHER AGENTS (Bus):\n        {bus_messages}\n"
+
         return f"""Analyze how to execute this atomic step: {step}.
         {goal_section}
         CONTEXT: {context}
         {results_section}
         {feedback_section}
+        {bus_section}
         {tools_summary}
 
         Your task is to choose the BEST tool and arguments.
         CRITICAL: Follow the 'Schema' provided for each tool EXACTLY. Ensure parameter names and types match.
-        If there is feedback from Grisha above, ADAPT your strategy to address his concerns.
+        If there is feedback from Grisha or other agents above, ADAPT your strategy to address their concerns.
 
         Respond in JSON:
         {{
@@ -96,10 +101,6 @@ class AgentPrompts:
     }}
     """
 
-    @staticmethod
-    def grisha_strategy_prompt(
-        step_action: str, expected_result: str, context: dict, goal_context: str = ""
-    ) -> str:
         return f"""You are the Verification Strategist. 
         Your task is to create a robust verification plan for the following step:
         
@@ -110,6 +111,9 @@ class AgentPrompts:
         Design a strategy using the available environment resources. 
         Choose whether to use Vision (screenshots/OCR) or MCP Tools (system data/files) or BOTH.
         Prefer high-precision native tools for data and Vision for visual state.
+        
+        CRITICAL: Focus ONLY on proving that THIS specific step succeeded as expected.
+        Do not demand the entire goal to be finished if this is just one step in a sequence.
 
         Strategy:
         """
@@ -154,6 +158,11 @@ class AgentPrompts:
     Use 'macos-use_take_screenshot' for visual UI verification.
     Use 'macos-use_analyze_screen' for screen text (OCR) analysis.
     
+    CRITICAL VERIFICATION RULE:
+    - You are verifying STEP {step_id}: "{step_action}".
+    - If the "Actual Output" or Tool Results prove that THIS step's "Expected Result" is met, then VERIFIED=TRUE.
+    - Do NOT reject the result because the overall task/goal is not yet finished. You are only auditor for this atomic step.
+
     TRUST THE TOOLS:
     - If an MCP tool returns a success result (process ID, file content, search results), ACCEPT IT.
     - REASONING TOOLS: If 'sequential-thinking' or 'vibe_ask' provides a thought process or analysis, TRUST IT as proof of execution for logic-based steps.
