@@ -238,6 +238,8 @@ class Atlas:
         - You can read files and fetch URLs using `macos-use_fetch_url`.
         - You can search memory (KG) using `memory_search_nodes`.
         - You can check system info (calendar, notes, mail) using `macos-use` tools.
+        - You can EXPLORE AND DISCOVER local code/files using `macos-use_spotlight_search`, `filesystem_list_directory`, and `filesystem_search_files`.
+        - You can READ AND ANALYZE code using `filesystem_read_file`.
         """
 
         # 2. Generate Super Prompt
@@ -261,7 +263,7 @@ class Atlas:
         messages.append(HumanMessage(content=user_request))
 
         # 3. Autonomous Tool-Loop for Informational Queries
-        MAX_CHAT_TURNS = 3
+        MAX_CHAT_TURNS = 5
         current_turn = 0
         
         # Define "Safe" Informational Tools for Chat Mode
@@ -272,6 +274,7 @@ class Atlas:
             {"name": "macos-use_fetch_url", "description": "Fetch content from a specific URL (documentation, articles)."},
             
             # System & Context
+            {"name": "macos-use_spotlight_search", "description": "Search for files and apps on the Mac using Spotlight (Fast)."},
             {"name": "macos-use_list_files", "description": "List files in a specific directory for system info."},
             {"name": "macos-use_get_reminders", "description": "Retrieve the list of reminders from Apple Reminders."},
             {"name": "macos-use_get_calendar_events", "description": "Retrieve calendar events from Apple Calendar."},
@@ -285,16 +288,18 @@ class Atlas:
             
             # Reasoning & Local Data
             {"name": "sequentialthinking_tools", "description": "Use deep thinking for complex reasoning or analysis."},
-            {"name": "filesystem_read_file", "description": "Read content of a local file to explain its logic."}
+            {"name": "filesystem_list_directory", "description": "List contents of a local directory to see the project structure."},
+            {"name": "filesystem_search_files", "description": "Search for specific files by name or pattern in a directory (recursive)."},
+            {"name": "filesystem_read_file", "description": "Read content of a local file (code, logs, config)."}
         ]
         
-        # Bind tools to the LLM session
-        self.llm.bind_tools(tools)
+        # Bind tools to a specialized LLM instance for this chat session
+        llm_with_tools = self.llm.bind_tools(tools)
         
         logger.info(f"[ATLAS] Starting capable chat for: {user_request[:50]}...")
         
         while current_turn < MAX_CHAT_TURNS:
-            response = await self.llm.ainvoke(messages)
+            response = await llm_with_tools.ainvoke(messages)
             
             # If model provided a direct answer without tools, we are done
             if not response.tool_calls:
@@ -311,38 +316,45 @@ class Atlas:
                 
                 if "duckduckgo" in tool_name:
                     mcp_server = "duckduckgo-search"
+                    mcp_tool = tool_name.replace("duckduckgo_", "").replace("duckduckgo-search_", "")
                 elif "macos-use" in tool_name:
                     mcp_server = "macos-use"
+                    mcp_tool = tool_name.replace("macos-use_", "")
                 elif "memory" in tool_name:
                     mcp_server = "memory"
+                    mcp_tool = tool_name.replace("memory_", "")
                 elif "postgres" in tool_name:
                     mcp_server = "postgres"
+                    mcp_tool = tool_name.replace("postgres_", "")
                 elif "sequential" in tool_name:
                     mcp_server = "sequential-thinking"
                     mcp_tool = "sequentialthinking_tools"
                 elif "filesystem" in tool_name:
                     mcp_server = "filesystem"
+                    mcp_tool = tool_name.replace("filesystem_", "")
                 
                 if mcp_server:
                     logger.info(f"[ATLAS CHAT] Calling tool: {mcp_server}:{mcp_tool}")
                     try:
+                        # Add assistant choice to history
+                        messages.append(response)
+                        
                         result = await mcp_manager.call_tool(mcp_server, mcp_tool, args)
+                        
                         # Format result for context
                         from langchain_core.messages import ToolMessage
                         res_str = str(result)
-                        if len(res_str) > 2000:
-                            res_str = res_str[:2000] + "...(truncated)"
+                        if len(res_str) > 2500:
+                            res_str = res_str[:2500] + "...(truncated)"
                             
-                        messages.append(response) # Add assistant choice
                         messages.append(ToolMessage(
                             content=res_str,
                             tool_call_id=tool_call.get("id", "chat_call")
                         ))
                     except Exception as e:
                         logger.warning(f"[ATLAS CHAT] Tool execution failed: {e}")
-                        messages.append(response)
                         messages.append(ToolMessage(
-                            content=f"Error: {e}",
+                            content=f"Error executing {mcp_server}:{mcp_tool}: {e}",
                             tool_call_id=tool_call.get("id", "chat_call")
                         ))
                 else:

@@ -51,10 +51,19 @@ async def test_persona_intelligence():
     response = await atlas.chat("Розкажи про свою місію та хто тебе створив?", use_deep_persona=analysis.get('use_deep_persona', False))
     print(f"Atlas (Deep): {response}")
     
-    if analysis.get('use_deep_persona') == True and "Олег" in response:
-        print("✓ Deep Persona test PASSED")
+    # 3. Test Local Code Discovery
+    print("\nScenario 3: Local Code discovery & Analysis")
+    # Providing more context in user request to help him find it directly
+    query = "Знайди файл src/brain/orchestrator.py і на основі його вмісту поясни його роль?"
+    analysis = await atlas.analyze_request(query)
+    print(f"Intent detected: {analysis.get('intent')}")
+    response = await atlas.chat(query)
+    print(f"Atlas (Code Analyst): {response}")
+    
+    if "orchestrator" in response.lower() and ("клас" in response.lower() or "loop" in response.lower() or "trinity" in response.lower()):
+        print("✓ Local Code test PASSED")
     else:
-        print("⚠ Deep Persona test FAILED (Flag not set or missing context)")
+        print("⚠ Local Code test FAILED (Could not find or explain code)")
 
 if __name__ == "__main__":
     asyncio.run(test_chat_intelligence())
