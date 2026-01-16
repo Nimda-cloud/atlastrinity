@@ -21,6 +21,8 @@ class AgentPrompts:
         tools_summary: str = "",
         feedback: str = "",
         previous_results: list = None,
+        global_goal: str = "",
+        parent_action: str = "",
     ) -> str:
         feedback_section = (
             f"\n        PREVIOUS REJECTION FEEDBACK (from Grisha):\n        {feedback}\n"
@@ -40,8 +42,12 @@ class AgentPrompts:
                 formatted_results.append(res_str)
             results_section = f"\n        RESULTS OF PREVIOUS STEPS (Use this data to fill arguments):\n        {formatted_results}\n"
 
-        return f"""Analyze how to execute this atomic step: {step}.
+        goal_section = f"\n        GLOBAL GOAL: {global_goal}\n" if global_goal else ""
+        parent_section = f"\n        INTERMEDIATE GOAL (Context of parent step): {parent_action}\n" if parent_action else ""
 
+        return f"""Analyze how to execute this atomic step: {step}.
+        {goal_section}
+        {parent_section}
         CONTEXT: {context}
         {results_section}
         {feedback_section}

@@ -32,7 +32,8 @@ from .knowledge_graph import knowledge_graph
 from .logger import logger
 from .mcp_manager import mcp_manager
 from .memory import long_term_memory
-from .metrics import metrics_collector
+from .message_bus import AgentMsg, MessageType, message_bus  # noqa: E402
+from .metrics import metrics_collector  # noqa: E402
 from .notifications import notifications
 from .state_manager import state_manager
 from .voice.tts import VoiceManager
@@ -934,12 +935,46 @@ class Trinity:
             )
         else:
             try:
-                # Inject context results (last 3 for relevance) so Tetyana knows what happened
+                # Inject context results (last 10 for better relevance)
                 step_copy = step.copy()
                 if self.state and "step_results" in self.state:
-                    step_copy["previous_results"] = self.state["step_results"][-3:]
+                    step_copy["previous_results"] = self.state["step_results"][-10:]
+                
+                # Global context
+                step_copy["global_goal"] = self.state["current_plan"].goal if self.state.get("current_plan") else "Achieve the user request"
+                
+                # Intermediate goal (parent action if in recursion)
+                if "." in str(step_id):
+                    # For ID "3.1", we want plan step 3
+                    parent_id = str(step_id).rsplit(".", 1)[0]
+                    # Search for parent action in history or plan
+                    parent_action = "Unknown context"
+                    if self.state.get("current_plan"):
+                        for p_step in self.state["current_plan"].steps:
+                            if str(p_step.get("id")) == parent_id:
+                                parent_action = p_step.get("action")
+                                break
+                    step_copy["parent_action"] = parent_action
+                
+                # Check message bus for specific feedback from other agents
+                bus_messages = await message_bus.receive("tetyana", mark_read=True)
+                if bus_messages:
+                    step_copy["bus_messages"] = [m.to_dict() for m in bus_messages]
 
                 result = await self.tetyana.execute_step(step_copy, attempt=attempt)
+                
+                # Log interaction to Knowledge Graph if successful
+                if result.success and result.tool_call:
+                     await knowledge_graph.add_node(
+                         node_type="TOOL",
+                         node_id=f"tool:{result.tool_call.get('name')}",
+                         attributes={"last_used_step": str(step_id), "success": True}
+                     )
+                     await knowledge_graph.add_edge(
+                         source_id=f"task:{self.state.get('db_task_id', 'unknown')}",
+                         target_id=f"tool:{result.tool_call.get('name')}",
+                         relation="USED"
+                     )
                 if result.voice_message:
                     await self._speak("tetyana", result.voice_message)
             except Exception as e:
@@ -1005,6 +1040,7 @@ class Trinity:
                         if self.state.get("current_plan")
                         else "Task"
                     ),
+                    task_id=self.state.get("db_task_id"),
                 )
                 if not verify_result.verified:
                     result.success = False

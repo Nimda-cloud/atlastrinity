@@ -328,9 +328,10 @@ class Grisha:
     async def verify_step(
         self,
         step: Dict[str, Any],
-        result: Dict[str, Any],
+        result: Any,
         screenshot_path: Optional[str] = None,
         overall_goal: str = "",
+        task_id: Optional[str] = None,
     ) -> VerificationResult:
         """
         Verifies the result of step execution using Vision and MCP Tools
@@ -682,7 +683,7 @@ class Grisha:
 
                 # Save detailed rejection report to memory if verification failed
                 if not verification.verified:
-                    await self._save_rejection_report(step_id, step, verification)
+                    await self._save_rejection_report(step_id, step, verification, task_id=task_id)
 
                 return verification
 
@@ -743,12 +744,18 @@ class Grisha:
         )
 
     async def _save_rejection_report(
-        self, step_id: int, step: Dict[str, Any], verification: VerificationResult
+        self,
+        step_id: int,
+        step: Dict[str, Any],
+        verification: VerificationResult,
+        task_id: Optional[str] = None,
     ) -> None:
         """Save detailed rejection report to memory and notes servers for Atlas and Tetyana to access"""
         from datetime import datetime  # noqa: E402
 
+        from ..knowledge_graph import knowledge_graph  # noqa: E402
         from ..mcp_manager import mcp_manager  # noqa: E402
+        from ..message_bus import AgentMsg, MessageType, message_bus  # noqa: E402
 
         try:
             timestamp = datetime.now().isoformat()
@@ -808,6 +815,50 @@ Timestamp: {timestamp}
                 logger.info(f"[GRISHA] Rejection report saved to notes for step {step_id}")
             except Exception as e:
                 logger.warning(f"[GRISHA] Failed to save to notes: {e}")
+
+            # Save to knowledge graph (Structured Semantic Memory)
+            try:
+                node_id = f"rejection:step_{step_id}_{int(datetime.now().timestamp())}"
+                await knowledge_graph.add_node(
+                    node_type="CONCEPT",
+                    node_id=node_id,
+                    attributes={
+                        "type": "verification_rejection",
+                        "step_id": str(step_id),
+                        "issues": verification.issues,
+                        "description": verification.description,
+                        "timestamp": timestamp
+                    }
+                )
+                # Link to the task (use task_id if provided)
+                source_id = f"task:{task_id}" if task_id else f"task:rejection_{step_id}"
+                await knowledge_graph.add_edge(
+                    source_id=source_id,
+                    target_id=node_id,
+                    relation="REJECTED"
+                )
+                logger.info(f"[GRISHA] Rejection node added to Knowledge Graph for step {step_id}")
+            except Exception as e:
+                logger.warning(f"[GRISHA] Failed to update Knowledge Graph: {e}")
+
+            # Send to Message Bus (Real-time typed communication)
+            try:
+                msg = AgentMsg(
+                    from_agent="grisha",
+                    to_agent="tetyana",
+                    message_type=MessageType.REJECTION,
+                    payload={
+                        "step_id": str(step_id),
+                        "issues": verification.issues,
+                        "description": verification.description,
+                        "remediation": getattr(verification, "remediation_suggestions", [])
+                    },
+                    step_id=str(step_id)
+                )
+                await message_bus.send(msg)
+                logger.info(f"[GRISHA] Rejection message sent to Tetyana via Message Bus")
+            except Exception as e:
+                logger.warning(f"[GRISHA] Failed to send message to bus: {e}")
 
         except Exception as e:
             logger.warning(f"[GRISHA] Failed to save rejection report: {e}")

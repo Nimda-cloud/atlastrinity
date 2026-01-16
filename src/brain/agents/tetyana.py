@@ -750,6 +750,8 @@ Please type your response below and press Enter:
                 tools_summary=tools_summary,
                 feedback=grisha_feedback,
                 previous_results=previous_results,
+                global_goal=step.get("global_goal", ""),
+                parent_action=step.get("parent_action", ""),
             )
 
             try:
