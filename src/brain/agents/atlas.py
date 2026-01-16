@@ -464,11 +464,19 @@ class Atlas:
                 }
             )
             
+            # Helper to extract text from result
+            def _get_text(r):
+                if isinstance(r, dict):
+                    return str(r.get("content", r.get("error", "")))
+                if hasattr(r, "content") and isinstance(r.content, list):
+                    return "".join([getattr(item, "text", "") for item in r.content if hasattr(item, "text")])
+                return str(r)
+
             # Combine thoughts into a 'result'
             analysis = (
-                f"THOUGHT 1: {res.get('content', '')}\n"
-                f"THOUGHT 2: {res2.get('content', '')}\n"
-                f"THOUGHT 3: {res3.get('content', '')}"
+                f"THOUGHT 1: {_get_text(res)}\n"
+                f"THOUGHT 2: {_get_text(res2)}\n"
+                f"THOUGHT 3: {_get_text(res3)}"
             )
             
             return {"success": True, "analysis": analysis}
