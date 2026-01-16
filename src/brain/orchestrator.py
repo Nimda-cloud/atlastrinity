@@ -495,7 +495,7 @@ class Trinity:
             logger_task = asyncio.create_task(keep_alive_logging())
 
             try:
-                plan = await asyncio.wait_for(planning_task, timeout=config.get("orchestrator", {}).get("task_timeout", 600.0))
+                plan = await asyncio.wait_for(planning_task, timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0))
             finally:
                 logger_task.cancel()
                 try:
@@ -688,7 +688,6 @@ class Trinity:
                 # Format: "Action description"
                 # Ideally we want the intent/action name, but result might just contain output.
                 # We need to map back to the Plan if possible, but the 'result' dict here
-                # might not have the original action text.
                 # Use action description if available
                 val = item.get("action")
                 if not val:
@@ -748,7 +747,7 @@ class Trinity:
                 try:
                     step_result = await asyncio.wait_for(
                         self.execute_node(self.state, step, step_id, attempt=attempt),
-                        timeout=config.get("orchestrator", {}).get("task_timeout", 600.0),
+                        timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
                     )
                     if step_result.success:
                         step_success = True
@@ -790,7 +789,7 @@ class Trinity:
                     error_context = f"Step ID: {step_id}\n" f"Action: {step.get('action', '')}\n"
 
                     await self._log(
-                        f"Engaging Vibe Self-Healing for Step {step_id} (Timeout: {config.get('orchestrator', {}).get('task_timeout', 600)}s)...",
+                        f"Engaging Vibe Self-Healing for Step {step_id} (Timeout: {config.get('orchestrator', {}).get('task_timeout', 1200)}s)...",
                         "orchestrator",
                     )
                     await self._log(f"[VIBE] Error to analyze: {last_error[:200]}...", "vibe")
@@ -807,11 +806,11 @@ class Trinity:
                                 "error_message": f"{error_context}\n{last_error}",
                                 "log_context": log_context,
                                 "cwd": str(PROJECT_ROOT),
-                                "timeout_s": int(config.get("orchestrator", {}).get("task_timeout", 600)),  # Dynamic timeout
+                                "timeout_s": int(config.get("orchestrator", {}).get("task_timeout", 1200)),  # Dynamic timeout
                                 "auto_fix": True,  # Enable auto-fixing
                             },
                         ),
-                        timeout=310.0,
+                        timeout=int(config.get("orchestrator", {}).get("task_timeout", 1200)) + 10,
                     )
                     vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
                     if vibe_text:

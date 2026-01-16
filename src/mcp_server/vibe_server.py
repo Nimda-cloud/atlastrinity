@@ -15,7 +15,6 @@ Updated: 2026-01-14
 """
 
 from __future__ import annotations
-
 import asyncio
 import json
 import logging
@@ -23,24 +22,40 @@ import os
 import shutil
 import subprocess
 from typing import Any, Dict, List, Optional
-
+from pathlib import Path
 from mcp.server import FastMCP
 
 # Setup logging for visibility in Electron app
 logger = logging.getLogger("vibe_mcp")
 logger.setLevel(logging.INFO)
 
+# Standard path for AtlasTrinity logs
+try:
+    _log_dir = Path.home() / ".config" / "atlastrinity" / "logs"
+    _log_dir.mkdir(parents=True, exist_ok=True)
+    # Use simple FileHandler for brain.log visibility
+    fh = logging.FileHandler(_log_dir / "brain.log", encoding="utf-8")
+    fh.setFormatter(logging.Formatter("%(asctime)s - vibe_mcp - %(levelname)s - %(message)s"))
+    logger.addHandler(fh)
+    # Also keep stderr for internal mcp console visibility
+    import sys
+    sh = logging.StreamHandler(sys.stderr)
+    sh.setFormatter(logging.Formatter("[VIBE_MCP] %(message)s"))
+    logger.addHandler(sh)
+except Exception:
+    pass # Fallback to default if log dir unreachable
+
 try:
     from .config_loader import get_config_value
 
     VIBE_BINARY = get_config_value("vibe", "binary", "vibe")
-    DEFAULT_TIMEOUT_S = float(get_config_value("vibe", "timeout_s", 600))
+    DEFAULT_TIMEOUT_S = float(get_config_value("vibe", "timeout_s", 1200))
     # Increased for large log analysis
     MAX_OUTPUT_CHARS = int(get_config_value("vibe", "max_output_chars", 500000))
     DISALLOW_INTERACTIVE = bool(get_config_value("vibe", "disallow_interactive", True))
 except Exception:
     VIBE_BINARY = "vibe"
-    DEFAULT_TIMEOUT_S = 600.0
+    DEFAULT_TIMEOUT_S = 1200.0
     MAX_OUTPUT_CHARS = 500000  # 500KB for large logs
     DISALLOW_INTERACTIVE = True
 
@@ -110,6 +125,7 @@ async def _run_vibe(
         env.update({k: str(v) for k, v in extra_env.items()})
 
     logger.info(f"[VIBE] Executing: {' '.join(argv)}")
+    logger.info(f"⚡ [VIBE-LIVE] Vibe engine initializing architectures... (Max timeout: {timeout_s}s)")
 
     try:
         process = await asyncio.create_subprocess_exec(
@@ -146,6 +162,16 @@ async def _run_vibe(
                     logger.info(f"📺 [VIBE-LIVE] {text}")
 
         # Run reading tasks concurrently with a timeout
+        # Heartbeat task for deep reasoning phase
+        async def heartbeat_worker():
+            reasoning_ticks = 0
+            while process.returncode is None:
+                await asyncio.sleep(45)
+                if process.returncode is None:
+                    reasoning_ticks += 1
+                    logger.info(f"🧠 [VIBE-LIVE] Vibe is deep-reasoning... (Tick {reasoning_ticks}, API response pending)")
+        
+        hb_task = asyncio.create_task(heartbeat_worker())
         try:
             await asyncio.wait_for(
                 asyncio.gather(
@@ -162,8 +188,10 @@ async def _run_vibe(
             except:
                 pass
             error_msg = f"Vibe CLI timed out after {timeout_s}s"
-            logger.error(f"[VIBE] {error_msg}")
-            return {"error": error_msg, "command": argv}
+            logger.error(f"❌ [VIBE-LIVE] {error_msg}")
+            return {"success": False, "error": error_msg}
+        finally:
+            hb_task.cancel()
 
         stdout = "".join(stdout_chunks)
         stderr = "".join(stderr_chunks)
@@ -280,6 +308,7 @@ async def vibe_which() -> Dict[str, Any]:
 
     # Get version
     try:
+        logger.info(f"⚡ [VIBE-LIVE] Starting Vibe CLI to get version...")
         process = await asyncio.create_subprocess_exec(
             vibe_path, "--version",
             stdout=asyncio.subprocess.PIPE,
