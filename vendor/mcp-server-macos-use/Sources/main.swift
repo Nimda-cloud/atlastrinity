@@ -12,6 +12,28 @@ import Vision
 // --- Persistent State ---
 var persistentCWD: String = FileManager.default.currentDirectoryPath
 
+// Helper for flexible ISO8601 parsing
+func parseISO8601(from string: String) -> Date? {
+    let formatters: [ISO8601DateFormatter] = [
+        {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime]
+            return f
+        }(),
+        {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return f
+        }(),
+    ]
+    for formatter in formatters {
+        if let date = formatter.date(from: string) {
+            return date
+        }
+    }
+    return nil
+}
+
 // --- Vision / Screenshot Helpers ---
 
 struct VisionElement: Encodable {
@@ -1208,11 +1230,13 @@ func setupAndStartServer() async throws -> Server {
                 let isoFormatter = ISO8601DateFormatter()
                 isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-                guard let start = isoFormatter.date(from: startStr),
-                    let end = isoFormatter.date(from: endStr)
+                guard let start = parseISO8601(from: startStr),
+                    let end = parseISO8601(from: endStr)
                 else {
                     return CallTool.Result(
-                        content: [.text("Invalid date format. Use ISO8601.")], isError: true)
+                        content: [
+                            .text("Invalid date format. Use ISO8601 (e.g. 2024-01-01T12:00:00Z).")
+                        ], isError: true)
                 }
 
                 let semaphore = DispatchSemaphore(value: 0)
@@ -1240,9 +1264,11 @@ func setupAndStartServer() async throws -> Server {
                 let dateStr = try getRequiredString(from: params.arguments, key: "date")
                 let isoFormatter = ISO8601DateFormatter()
                 isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                guard let date = isoFormatter.date(from: dateStr) else {
+                guard let date = parseISO8601(from: dateStr) else {
                     return CallTool.Result(
-                        content: [.text("Invalid date format. Use ISO8601.")], isError: true)
+                        content: [
+                            .text("Invalid date format. Use ISO8601 (e.g. 2024-01-01T12:00:00Z).")
+                        ], isError: true)
                 }
 
                 let semaphore = DispatchSemaphore(value: 0)
@@ -1338,22 +1364,10 @@ func setupAndStartServer() async throws -> Server {
                 let title = try getRequiredString(from: params.arguments, key: "title")
                 let message = try getRequiredString(from: params.arguments, key: "message")
 
-                let content = UNMutableNotificationContent()
-                content.title = title
-                content.body = message
-                content.sound = UNNotificationSound.default
-
-                let request = UNNotificationRequest(
-                    identifier: UUID().uuidString, content: content, trigger: nil)
-                let sem = DispatchSemaphore(value: 0)
-                UNUserNotificationCenter.current().add(request) { error in
-                    if let error = error {
-                        fputs("Error adding notification: \(error)\n", stderr)
-                    }
-                    sem.signal()
-                }
-                sem.wait()
-                return CallTool.Result(content: [.text("Notification sent")])
+                let script =
+                    "display notification \"\(message.replacingOccurrences(of: "\"", with: "\\\""))\" with title \"\(title.replacingOccurrences(of: "\"", with: "\\\""))\""
+                let output = runShellCommand("osascript -e '\(script)'")
+                return CallTool.Result(content: [.text("Notification sent via AppleScript.")])
 
             // --- Notes Handlers ---
             case notesListFoldersTool.name:

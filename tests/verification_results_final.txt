@@ -1,0 +1,1627 @@
+Starting verification of binary at: /Users/olegkizyma/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use
+-> Sending initialize (ID: 1)
+DEBUG: Read from stdout: {"id":1,"jsonrpc":"2.0","result":{"capabilities":{"tools":{"listChanged":true}},"protocolVersion":"2024-11-05","serverInfo":{"name":"SwiftMacOSServerDirect","version":"1.3.0"}}}
+DEBUG: Parsed JSON: {
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "capabilities": {
+      "tools": {
+        "listChanged": true
+      }
+    },
+    "protocolVersion": "2024-11-05",
+    "serverInfo": {
+      "name": "SwiftMacOSServerDirect",
+      "version": "1.3.0"
+    }
+  }
+}
+<- Init Response: {
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "capabilities": {
+      "tools": {
+        "listChanged": true
+      }
+    },
+    "protocolVersion": "2024-11-05",
+    "serverInfo": {
+      "name": "SwiftMacOSServerDirect",
+      "version": "1.3.0"
+    }
+  }
+}
+-> Sending notifications/initialized (Notification)
+-> Sending tools/list (ID: 2)
+DEBUG: Read from stdout: {"id":2,"jsonrpc":"2.0","result":{"tools":[{"description":"Opens/activates an application and then traverses its accessibility tree.","inputSchema":{"properties":{"identifier":{"description":"REQUIRED... (11091 chars)
+DEBUG: Parsed JSON: {
+  "id": 2,
+  "jsonrpc": "2.0",
+  "result": {
+    "tools": [
+      {
+        "description": "Opens/activates an application and then traverses its accessibility tree.",
+        "inputSchema": {
+          "properties": {
+            "identifier": {
+              "description": "REQUIRED. App name, path, or bundle ID.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "identifier"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_open_application_and_traverse"
+      },
+      {
+        "description": "Simulates a click at the given coordinates within the app specified by PID, then traverses its acces... (114 chars)",
+        "inputSchema": {
+          "properties": {
+            "animationDuration": {
+              "description": "OPTIONAL. Duration of the animation in seconds.",
+              "type": "number"
+            },
+            "pid": {
+              "description": "OPTIONAL. PID of the target application. Defaults to frontmost app.",
+              "type": "number"
+            },
+            "showAnimation": {
+              "description": "OPTIONAL. Show visual feedback animation (green circle).",
+              "type": "boolean"
+            },
+            "x": {
+              "description": "REQUIRED. X coordinate for the click.",
+              "type": "number"
+            },
+            "y": {
+              "description": "REQUIRED. Y coordinate for the click.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_click_and_traverse"
+      },
+      {
+        "description": "Simulates a right-click (context menu) at the specified coordinates.",
+        "inputSchema": {
+          "properties": {
+            "pid": {
+              "description": "OPTIONAL. PID of the target application. Defaults to frontmost app.",
+              "type": "number"
+            },
+            "x": {
+              "description": "REQUIRED. Screen X coordinate.",
+              "type": "number"
+            },
+            "y": {
+              "description": "REQUIRED. Screen Y coordinate.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_right_click_and_traverse"
+      },
+      {
+        "description": "Simulates a double-click at the specified coordinates.",
+        "inputSchema": {
+          "properties": {
+            "pid": {
+              "description": "OPTIONAL. PID of the target application. Defaults to frontmost app.",
+              "type": "number"
+            },
+            "x": {
+              "description": "REQUIRED. Screen X coordinate.",
+              "type": "number"
+            },
+            "y": {
+              "description": "REQUIRED. Screen Y coordinate.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_double_click_and_traverse"
+      },
+      {
+        "description": "Simulates a mouse drag-and-drop action.",
+        "inputSchema": {
+          "properties": {
+            "endX": {
+              "description": "REQUIRED. End X coordinate.",
+              "type": "number"
+            },
+            "endY": {
+              "description": "REQUIRED. End Y coordinate.",
+              "type": "number"
+            },
+            "pid": {
+              "description": "OPTIONAL. PID of the target application. Defaults to frontmost app.",
+              "type": "number"
+            },
+            "startX": {
+              "description": "REQUIRED. Start X coordinate.",
+              "type": "number"
+            },
+            "startY": {
+              "description": "REQUIRED. Start Y coordinate.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "startX",
+            "startY",
+            "endX",
+            "endY"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_drag_and_drop_and_traverse"
+      },
+      {
+        "description": "Simulates typing text into the app specified by PID, then traverses its accessibility tree.",
+        "inputSchema": {
+          "properties": {
+            "pid": {
+              "description": "OPTIONAL. PID of the target application window. Defaults to frontmost app.",
+              "type": "number"
+            },
+            "text": {
+              "description": "REQUIRED. Text to type.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_type_and_traverse"
+      },
+      {
+        "description": "Simulates pressing a specific key (like Return, Enter, Escape, Tab, Arrow Keys, regular characters) ... (163 chars)",
+        "inputSchema": {
+          "properties": {
+            "keyName": {
+              "description": "REQUIRED. Name of the key to press (e.g., 'Return', 'Enter', 'Escape', 'Tab', 'ArrowUp', 'Delete', '... (162 chars)",
+              "type": "string"
+            },
+            "modifierFlags": {
+              "description": "OPTIONAL. Modifier keys to hold (e.g., ['Command', 'Shift']). Valid: CapsLock, Shift, Control, Optio... (139 chars)",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "pid": {
+              "description": "OPTIONAL. PID of the target application window. Defaults to frontmost app.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "keyName"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_press_key_and_traverse"
+      },
+      {
+        "description": "Simulates a mouse scroll wheel action in a specific direction.",
+        "inputSchema": {
+          "properties": {
+            "amount": {
+              "description": "OPTIONAL. Amount to scroll (default 3).",
+              "type": "number"
+            },
+            "direction": {
+              "description": "REQUIRED. Direction to scroll: 'up', 'down', 'left', 'right'.",
+              "type": "string"
+            },
+            "pid": {
+              "description": "OPTIONAL. PID of the target application. Defaults to frontmost app.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "direction"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_scroll_and_traverse"
+      },
+      {
+        "description": "Traverses the accessibility tree of the application specified by PID.",
+        "inputSchema": {
+          "properties": {
+            "pid": {
+              "description": "OPTIONAL. PID of the application to traverse. Defaults to frontmost app.",
+              "type": "number"
+            }
+          },
+          "required": [],
+          "type": "object"
+        },
+        "name": "macos-use_refresh_traversal"
+      },
+      {
+        "description": "Manages application windows (move, resize, minimize, maximize, make_front).",
+        "inputSchema": {
+          "properties": {
+            "action": {
+              "description": "REQUIRED. Action: 'move', 'resize', 'minimize', 'maximize', 'make_front'.",
+              "type": "string"
+            },
+            "height": {
+              "description": "Optional Height for resize.",
+              "type": "number"
+            },
+            "pid": {
+              "description": "OPTIONAL. PID of the application. Defaults to frontmost app.",
+              "type": "number"
+            },
+            "width": {
+              "description": "Optional Width for resize.",
+              "type": "number"
+            },
+            "x": {
+              "description": "Optional X for move.",
+              "type": "number"
+            },
+            "y": {
+              "description": "Optional Y for move.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_window_management"
+      },
+      {
+        "description": "Execute a terminal command in a persistent shell session (maintains CWD).",
+        "inputSchema": {
+          "properties": {
+            "command": {
+              "description": "REQUIRED. The shell command to execute.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        "name": "execute_command"
+      },
+      {
+        "description": "Alias for execute_command.",
+        "inputSchema": {
+          "properties": {
+            "command": {
+              "description": "REQUIRED. The shell command to execute.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        "name": "terminal"
+      },
+      {
+        "description": "Captures a screenshot of the main display and returns it as a Base64 encoded PNG string.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "macos-use_take_screenshot"
+      },
+      {
+        "description": "Alias for macos-use_take_screenshot.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "screenshot"
+      },
+      {
+        "description": "Uses native Apple Vision framework to detect text (OCR) on the screen. Returns coordinates and text ... (108 chars)",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "macos-use_analyze_screen"
+      },
+      {
+        "description": "Alias for macos-use_analyze_screen.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "ocr"
+      },
+      {
+        "description": "Alias for macos-use_analyze_screen.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "analyze"
+      },
+      {
+        "description": "Sets the system clipboard text content.",
+        "inputSchema": {
+          "properties": {
+            "animationDuration": {
+              "description": "OPTIONAL. Duration of the animation in seconds.",
+              "type": "number"
+            },
+            "showAnimation": {
+              "description": "OPTIONAL. Show visual focus animation.",
+              "type": "boolean"
+            },
+            "text": {
+              "description": "REQUIRED. Text to set to clipboard.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_set_clipboard"
+      },
+      {
+        "description": "Returns the current system clipboard text content.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "macos-use_get_clipboard"
+      },
+      {
+        "description": "Controls system media, volume, and brightness.",
+        "inputSchema": {
+          "properties": {
+            "action": {
+              "description": "Action: 'play_pause', 'next', 'previous', 'volume_up', 'volume_down', 'mute', 'brightness_up', 'brig... (113 chars)",
+              "type": "string"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_system_control"
+      },
+      {
+        "description": "Fetches content from a URL and converts HTML to text/markdown using SwiftSoup.",
+        "inputSchema": {
+          "properties": {
+            "url": {
+              "description": "REQUIRED. The URL to fetch.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_fetch_url"
+      },
+      {
+        "description": "Returns the current system time.",
+        "inputSchema": {
+          "properties": {
+            "timezone": {
+              "description": "OPTIONAL. Timezone identifier (e.g., 'America/Los_Angeles'). Defaults to system.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "macos-use_get_time"
+      },
+      {
+        "description": "Executes an arbitrary AppleScript.",
+        "inputSchema": {
+          "properties": {
+            "script": {
+              "description": "REQUIRED. The AppleScript code to execute.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "script"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_run_applescript"
+      },
+      {
+        "description": "Fetch calendar events for a date range.",
+        "inputSchema": {
+          "properties": {
+            "end": {
+              "description": "End date (ISO8601 or natural language)",
+              "type": "string"
+            },
+            "start": {
+              "description": "Start date (ISO8601 or natural language)",
+              "type": "string"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_calendar_events"
+      },
+      {
+        "description": "Create a calendar event.",
+        "inputSchema": {
+          "properties": {
+            "date": {
+              "description": "Event date",
+              "type": "string"
+            },
+            "title": {
+              "description": "Event title",
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "date"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_create_event"
+      },
+      {
+        "description": "Fetch incomplete reminders.",
+        "inputSchema": {
+          "properties": {
+            "list": {
+              "description": "Optional list name filter",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "macos-use_reminders"
+      },
+      {
+        "description": "Create a new reminder.",
+        "inputSchema": {
+          "properties": {
+            "title": {
+              "description": "Reminder title",
+              "type": "string"
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_create_reminder"
+      },
+      {
+        "description": "Search for files using Spotlight (mdfind).",
+        "inputSchema": {
+          "properties": {
+            "query": {
+              "description": "Filename search query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_spotlight_search"
+      },
+      {
+        "description": "Send a native macOS system notification.",
+        "inputSchema": {
+          "properties": {
+            "message": {
+              "description": "Notification body text",
+              "type": "string"
+            },
+            "title": {
+              "description": "Notification title",
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "message"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_send_notification"
+      },
+      {
+        "description": "List all folders in Apple Notes.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "macos-use_notes_list_folders"
+      },
+      {
+        "description": "Create a new note in Apple Notes.",
+        "inputSchema": {
+          "properties": {
+            "body": {
+              "description": "HTML or plain text content. First line becomes title.",
+              "type": "string"
+            },
+            "folder": {
+              "description": "Optional folder name.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "body"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_notes_create_note"
+      },
+      {
+        "description": "Get the HTML content of a note by name.",
+        "inputSchema": {
+          "properties": {
+            "name": {
+              "description": "Name/Title of the note to find.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_notes_get_content"
+      },
+      {
+        "description": "Send an email using Apple Mail.",
+        "inputSchema": {
+          "properties": {
+            "body": {
+              "description": "Email body content",
+              "type": "string"
+            },
+            "subject": {
+              "description": "Subject line",
+              "type": "string"
+            },
+            "to": {
+              "description": "Recipient email address",
+              "type": "string"
+            }
+          },
+          "required": [
+            "to",
+            "subject",
+            "body"
+          ],
+          "type": "object"
+        },
+        "name": "macos-use_mail_send"
+      },
+      {
+        "description": "Read recent subject lines from Apple Mail Inbox.",
+        "inputSchema": {
+          "properties": {
+            "limit": {
+              "description": "Number of recent messages to read (default 5)",
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "name": "macos-use_mail_read_inbox"
+      },
+      {
+        "description": "Returns a detailed JSON structure describing all available tools, their schemas, and usage examples.",
+        "inputSchema": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": "macos-use_list_tools_dynamic"
+      }
+    ]
+  }
+}
+
+Found 35 tools.
+
+--- Testing tool: macos-use_open_application_and_traverse ---
+-> Sending tools/call (ID: 3)
+DEBUG: Read from stdout: {"id":3,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"openResult\" : {\n    \"appName\" : \"Finder\",\n    \"pid\" : 588,\n    \"processingTimeSeconds\" : \"0.072\"\n  },\n  \"traversalPid\" : 588\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 3,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"openResult\" : {\n    \"appName\" : \"Finder\",\n    \"pid\" : 588,\n    \"processingTimeSeconds\" : \"0.072... (131 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_click_and_traverse ---
+-> Sending tools/call (ID: 4)
+DEBUG: Read from stdout: {"id":4,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 588\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 4,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 588\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_right_click_and_traverse ---
+-> Sending tools/call (ID: 5)
+DEBUG: Read from stdout: {"id":5,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 5,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_double_click_and_traverse ---
+-> Sending tools/call (ID: 6)
+DEBUG: Read from stdout: {"id":6,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 6,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_drag_and_drop_and_traverse ---
+-> Sending tools/call (ID: 7)
+DEBUG: Read from stdout: {"id":7,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 7,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_type_and_traverse ---
+-> Sending tools/call (ID: 8)
+DEBUG: Read from stdout: {"id":8,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 8,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_press_key_and_traverse ---
+-> Sending tools/call (ID: 9)
+DEBUG: Read from stdout: {"id":9,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 9,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_scroll_and_traverse ---
+-> Sending tools/call (ID: 10)
+DEBUG: Read from stdout: {"id":10,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 10,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_refresh_traversal ---
+-> Sending tools/call (ID: 11)
+DEBUG: Read from stdout: {"id":11,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"traversalPid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 11,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"traversalPid\" : 996\n}",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_window_management ---
+-> Sending tools/call (ID: 12)
+DEBUG: Read from stdout: {"id":12,"jsonrpc":"2.0","result":{"content":[{"text":"{\n  \"action\" : \"make_front\",\n  \"actualHeight\" : 640,\n  \"actualWidth\" : 880,\n  \"actualX\" : 12,\n  \"actualY\" : 52,\n  \"note\" : \"Window dimensions might be constrained by the application.\",\n  \"pid\" : 996\n}","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 12,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "{\n  \"action\" : \"make_front\",\n  \"actualHeight\" : 640,\n  \"actualWidth\" : 880,\n  \"actualX\" : 12,\n  \"act... (200 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: execute_command ---
+-> Sending tools/call (ID: 13)
+DEBUG: Read from stdout: {"id":13,"jsonrpc":"2.0","result":{"content":[{"text":"verified\n","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 13,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "verified\n",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: terminal ---
+-> Sending tools/call (ID: 14)
+DEBUG: Read from stdout: {"id":14,"jsonrpc":"2.0","result":{"content":[{"text":"verified\n","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 14,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "verified\n",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_take_screenshot ---
+-> Sending tools/call (ID: 15)
+DEBUG: Read from stdout: {"id":15,"jsonrpc":"2.0","result":{"content":[{"text":"/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAANXKADAAQAAAABAAAIsAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNB... (1181779 chars)
+DEBUG: Parsed JSON: {
+  "id": 15,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAANXKADAAQA... (1181688 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: screenshot ---
+-> Sending tools/call (ID: 16)
+DEBUG: Read from stdout: {"id":16,"jsonrpc":"2.0","result":{"content":[{"text":"/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAANXKADAAQAAAABAAAIsAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNB... (1181535 chars)
+DEBUG: Parsed JSON: {
+  "id": 16,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAANXKADAAQA... (1181444 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_analyze_screen ---
+-> Sending tools/call (ID: 17)
+DEBUG: Read from stdout: {"id":17,"jsonrpc":"2.0","result":{"content":[{"text":"[\n  {\n    \"confidence\" : 0.5,\n    \"height\" : 24.821428298950313,\n    \"text\" : \"ClearVPN\",\n    \"width\" : 129.24418640136722,\n    \... (21180 chars)
+DEBUG: Parsed JSON: {
+  "id": 17,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "[\n  {\n    \"confidence\" : 0.5,\n    \"height\" : 24.821428298950313,\n    \"text\" : \"ClearVPN\",\n    \"width... (18844 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: ocr ---
+-> Sending tools/call (ID: 18)
+DEBUG: Read from stdout: {"id":18,"jsonrpc":"2.0","result":{"content":[{"text":"[\n  {\n    \"confidence\" : 0.5,\n    \"height\" : 24.821428298950313,\n    \"text\" : \"ClearVPN\",\n    \"width\" : 129.24418640136722,\n    \... (21186 chars)
+DEBUG: Parsed JSON: {
+  "id": 18,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "[\n  {\n    \"confidence\" : 0.5,\n    \"height\" : 24.821428298950313,\n    \"text\" : \"ClearVPN\",\n    \"width... (18850 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: analyze ---
+-> Sending tools/call (ID: 19)
+DEBUG: Read from stdout: {"id":19,"jsonrpc":"2.0","result":{"content":[{"text":"[\n  {\n    \"confidence\" : 0.5,\n    \"height\" : 24.821428298950313,\n    \"text\" : \"ClearVPN\",\n    \"width\" : 129.24418640136722,\n    \... (21179 chars)
+DEBUG: Parsed JSON: {
+  "id": 19,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "[\n  {\n    \"confidence\" : 0.5,\n    \"height\" : 24.821428298950313,\n    \"text\" : \"ClearVPN\",\n    \"width... (18843 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_set_clipboard ---
+-> Sending tools/call (ID: 20)
+DEBUG: Read from stdout: {"id":20,"jsonrpc":"2.0","result":{"content":[{"text":"Clipboard updated.","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 20,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Clipboard updated.",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_get_clipboard ---
+-> Sending tools/call (ID: 21)
+DEBUG: Read from stdout: {"id":21,"jsonrpc":"2.0","result":{"content":[{"text":"mcp_verified","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 21,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "mcp_verified",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_system_control ---
+-> Sending tools/call (ID: 22)
+DEBUG: Read from stdout: {"id":22,"jsonrpc":"2.0","result":{"content":[{"text":"Executed system control: mute","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 22,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Executed system control: mute",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_fetch_url ---
+-> Sending tools/call (ID: 23)
+DEBUG: Read from stdout: {"id":23,"jsonrpc":"2.0","result":{"content":[{"text":"Example Domain Example Domain This domain is for use in documentation examples without needing permission. Avoid use in operations. Learn more","type":"text"}],"isError":false}}
+DEBUG: Parsed JSON: {
+  "id": 23,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Example Domain Example Domain This domain is for use in documentation examples without needing permi... (142 chars)",
+        "type": "text"
+      }
+    ],
+    "isError": false
+  }
+}
+
+--- Testing tool: macos-use_get_time ---
+-> Sending tools/call (ID: 24)
+DEBUG: Read from stdout: {"id":24,"jsonrpc":"2.0","result":{"content":[{"text":"piątek, 16 stycznia 2026 o 17:32:40 czas wschodnioeuropejski standardowy","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 24,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "pi\u0105tek, 16 stycznia 2026 o 17:32:40 czas wschodnioeuropejski standardowy",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_run_applescript ---
+-> Sending tools/call (ID: 25)
+DEBUG: Read from stdout: {"id":25,"jsonrpc":"2.0","result":{"content":[{"text":"running","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 25,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "running",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_calendar_events ---
+-> Sending tools/call (ID: 26)
+DEBUG: Read from stdout: {"id":26,"jsonrpc":"2.0","result":{"content":[{"text":"Access denied","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 26,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Access denied",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_create_event ---
+-> Sending tools/call (ID: 27)
+DEBUG: Read from stdout: {"id":27,"jsonrpc":"2.0","result":{"content":[{"text":"Access denied","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 27,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Access denied",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_reminders ---
+-> Sending tools/call (ID: 28)
+DEBUG: Read from stdout: {"id":28,"jsonrpc":"2.0","result":{"content":[{"text":"Access denied","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 28,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Access denied",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_create_reminder ---
+-> Sending tools/call (ID: 29)
+DEBUG: Read from stdout: {"id":29,"jsonrpc":"2.0","result":{"content":[{"text":"Access denied","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 29,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Access denied",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_spotlight_search ---
+-> Sending tools/call (ID: 30)
+DEBUG: Read from stdout: {"id":30,"jsonrpc":"2.0","result":{"content":[{"text":"","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 30,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_send_notification ---
+-> Sending tools/call (ID: 31)
+DEBUG: Read from stdout: {"id":31,"jsonrpc":"2.0","result":{"content":[{"text":"Notification sent via AppleScript.","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 31,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Notification sent via AppleScript.",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_notes_list_folders ---
+-> Sending tools/call (ID: 32)
+DEBUG: Read from stdout: {"id":32,"jsonrpc":"2.0","result":{"content":[{"text":"Notes","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 32,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Notes",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_notes_create_note ---
+-> Sending tools/call (ID: 33)
+DEBUG: Read from stdout: {"id":33,"jsonrpc":"2.0","result":{"content":[{"text":"Note created.","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 33,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Note created.",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_notes_get_content ---
+-> Sending tools/call (ID: 34)
+DEBUG: Read from stdout: {"id":34,"jsonrpc":"2.0","result":{"content":[{"text":"<div>Test note from MCP</div>\n","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 34,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "<div>Test note from MCP</div>\n",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_mail_send ---
+-> Sending tools/call (ID: 35)
+DEBUG: Read from stdout: {"id":35,"jsonrpc":"2.0","result":{"content":[{"text":"Email sent.","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 35,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Email sent.",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_mail_read_inbox ---
+-> Sending tools/call (ID: 36)
+DEBUG: Read from stdout: {"id":36,"jsonrpc":"2.0","result":{"content":[{"text":"Inbox is empty","type":"text"}]}}
+DEBUG: Parsed JSON: {
+  "id": 36,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Inbox is empty",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+--- Testing tool: macos-use_list_tools_dynamic ---
+-> Sending tools/call (ID: 37)
+DEBUG: Read from stdout: {"id":37,"jsonrpc":"2.0","result":{"content":[{"text":"Available Tools:\n- macos-use_open_application_and_traverse: Opens/activates an application and then traverses its accessibility tree.\n- macos-u... (3104 chars)
+DEBUG: Parsed JSON: {
+  "id": 37,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "Available Tools:\n- macos-use_open_application_and_traverse: Opens/activates an application and then ... (2993 chars)",
+        "type": "text"
+      }
+    ]
+  }
+}
+
+
+=== VERIFICATION SUMMARY ===
+macos-use_open_application_and_traverse  | PASSED                    | Success
+macos-use_click_and_traverse             | PASSED                    | Success
+macos-use_right_click_and_traverse       | PASSED                    | Success
+macos-use_double_click_and_traverse      | PASSED                    | Success
+macos-use_drag_and_drop_and_traverse     | PASSED                    | Success
+macos-use_type_and_traverse              | PASSED                    | Success
+macos-use_press_key_and_traverse         | PASSED                    | Success
+macos-use_scroll_and_traverse            | PASSED                    | Success
+macos-use_refresh_traversal              | PASSED                    | Success
+macos-use_window_management              | PASSED                    | Success
+execute_command                          | PASSED                    | Success
+terminal                                 | PASSED                    | Success
+macos-use_take_screenshot                | PASSED                    | Success
+screenshot                               | PASSED                    | Success
+macos-use_analyze_screen                 | PASSED                    | Success
+ocr                                      | PASSED                    | Success
+analyze                                  | PASSED                    | Success
+macos-use_set_clipboard                  | PASSED                    | Success
+macos-use_get_clipboard                  | PASSED                    | Success
+macos-use_system_control                 | PASSED                    | Success
+macos-use_fetch_url                      | PASSED                    | Success
+macos-use_get_time                       | PASSED                    | Success
+macos-use_run_applescript                | PASSED                    | Success
+macos-use_calendar_events                | PASSED                    | Success
+macos-use_create_event                   | PASSED                    | Success
+macos-use_reminders                      | PASSED                    | Success
+macos-use_create_reminder                | PASSED                    | Success
+macos-use_spotlight_search               | PASSED                    | Success
+macos-use_send_notification              | PASSED                    | Success
+macos-use_notes_list_folders             | PASSED                    | Success
+macos-use_notes_create_note              | PASSED                    | Success
+macos-use_notes_get_content              | PASSED                    | Success
+macos-use_mail_send                      | PASSED                    | Success
+macos-use_mail_read_inbox                | PASSED                    | Success
+macos-use_list_tools_dynamic             | PASSED                    | Success
+
+=== STDERR LOGS ===
+log: main: starting server (async).
+log: main: calling setupAndStartServer()...
+log: setupAndStartServer: entering function.
+log: setupAndStartServer: defined 35 tools: ["macos-use_open_application_and_traverse", "macos-use_click_and_traverse", "macos-use_right_click_and_traverse", "macos-use_double_click_and_traverse", "macos-use_drag_and_drop_and_traverse", "macos-use_type_and_traverse", "macos-use_press_key_and_traverse", "macos-use_scroll_and_traverse", "macos-use_refresh_traversal", "macos-use_window_management", "execute_command", "terminal", "macos-use_take_screenshot", "screenshot", "macos-use_analyze_screen", "ocr", "analyze", "macos-use_set_clipboard", "macos-use_get_clipboard", "macos-use_system_control", "macos-use_fetch_url", "macos-use_get_time", "macos-use_run_applescript", "macos-use_calendar_events", "macos-use_create_event", "macos-use_reminders", "macos-use_create_reminder", "macos-use_spotlight_search", "macos-use_send_notification", "macos-use_notes_list_folders", "macos-use_notes_create_note", "macos-use_notes_get_content", "macos-use_mail_send", "macos-use_mail_read_inbox", "macos-use_list_tools_dynamic"]
+log: setupAndStartServer: server instance created (SwiftMacOSServerDirect) version 1.3.0.
+log: setupAndStartServer: registered ReadResource handler (dummy).
+log: setupAndStartServer: registered ListResources handler (dummy).
+log: setupAndStartServer: registered ListPrompts handler (dummy).
+log: setupAndStartServer: registered ListTools handler.
+log: setupAndStartServer: registered CallTool handler.
+log: setupAndStartServer: created StdioTransport.
+log: setupAndStartServer: calling server.start()...
+log: setupAndStartServer: server.start() completed (background task launched).
+log: setupAndStartServer: returning server instance.
+log: main: setupAndStartServer() successful, server instance obtained.
+log: main: server started, calling server.waitUntilCompleted()...
+log: handler(ListTools): received request.
+log: handler(ListTools): responding with 35 tools: ["macos-use_open_application_and_traverse", "macos-use_click_and_traverse", "macos-use_right_click_and_traverse", "macos-use_double_click_and_traverse", "macos-use_drag_and_drop_and_traverse", "macos-use_type_and_traverse", "macos-use_press_key_and_traverse", "macos-use_scroll_and_traverse", "macos-use_refresh_traversal", "macos-use_window_management", "execute_command", "terminal", "macos-use_take_screenshot", "screenshot", "macos-use_analyze_screen", "ocr", "analyze", "macos-use_set_clipboard", "macos-use_get_clipboard", "macos-use_system_control", "macos-use_fetch_url", "macos-use_get_time", "macos-use_run_applescript", "macos-use_calendar_events", "macos-use_create_event", "macos-use_reminders", "macos-use_create_reminder", "macos-use_spotlight_search", "macos-use_send_notification", "macos-use_notes_list_folders", "macos-use_notes_create_note", "macos-use_notes_get_content", "macos-use_mail_send", "macos-use_mail_read_inbox", "macos-use_list_tools_dynamic"]
+log: handler(CallTool): received request for tool: macos-use_open_application_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["identifier": com.apple.finder]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): constructed PrimaryAction: open(identifier: "com.apple.finder")
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: open(identifier: "com.apple.finder") with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+info: [Coordinator] Primary action is 'open', attempting to get PID for 'com.apple.finder'...
+info: starting AppOpenerOperation for: com.apple.finder
+info: interpreting 'com.apple.finder' as an application name or bundleID, searching...
+info: found application url via bundleID 'com.apple.finder': /System/Library/CoreServices/Finder.app
+info: [0.005s] finished 'application discovery (url: /System/Library/CoreServices/Finder.app, bundleID: com.apple.finder)'
+info: checking running applications for bundle id: com.apple.finder
+info: found running instance with pid 588 for bundle id com.apple.finder.
+info: [0.000s] finished 'pre-finding existing process (pid: 588)'
+info: attempting to open/activate application: Finder
+info: [Task @MainActor] executing workspace.openApplication...
+info: [Task @MainActor] got pid 588 from NSRunningApplication.
+info: [0.067s] finished 'opening/activating application async call completed'
+info: using pre-found pid 588.
+info: [0.000s] finished 'determining final pid (using 588)'
+success: application 'Finder' active (pid: 588).
+info: total processing time: 0.072 seconds
+info: [Coordinator] App opened successfully. PID: 588.
+info: [Coordinator] Effective PID for subsequent steps: 588
+info: [Coordinator] Primary action finished. Applying delay: 0.2s (before post-action traversal)
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "openResult" : {
+    "appName" : "Finder",
+    "pid" : 588,
+    "processingTimeSeconds" : "0.072"
+  },
+  "traversalPid" : 588
+}
+log: handler(CallTool): received request for tool: macos-use_click_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["x": 100, "y": 100]
+log: resolvePid: using frontmost application 'Finder' (PID: 588)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(588), delayAfterAction: 0.2)
+log: getRequiredDouble: converting int 100 to double for key 'x'
+log: getRequiredDouble: converting int 100 to double for key 'y'
+log: handler(CallTool): constructed PrimaryAction: input(action: MacosUseSDK.InputAction.click(point: (100.0, 100.0)))
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: input(action: MacosUseSDK.InputAction.click(point: (100.0, 100.0))) with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(588), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 588
+info: [Coordinator] Executing primary input action...
+log: simulating click AND visualizing at (100.0, 100.0) (duration: 0.8)
+log: simulating left click AND visualize at: (100.0, 100.0), duration: 0.8s
+log: simulating left click at: (100.0, 100.0)
+log: left click simulation complete.
+log: left click simulation and visualization dispatched.
+info: [Coordinator] Primary action finished. Applying delay: 0.2s (before post-action traversal)
+info: showVisualFeedback using calculated size (154.0, 154.0) for .circle type (ignores input size (30.0, 30.0)).
+debug: Creating feedback window with AppKit frame: (23.0, 935.0, 154.0, 154.0)
+debug: Creating overlay window with frame: (23.0, 935.0, 154.0, 154.0), type: circle
+debug: Applying pulse/fade animation to circle overlay layer.
+debug: Visual feedback window displayed. It will remain until the tool exits.
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 588
+}
+log: handler(CallTool): received request for tool: macos-use_right_click_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["x": 100, "y": 100]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: getRequiredDouble: converting int 100 to double for key 'x'
+log: getRequiredDouble: converting int 100 to double for key 'y'
+log: handler(CallTool): constructed PrimaryAction: traverseOnly
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: traverseOnly with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Primary action is 'traverseOnly', skipping action execution.
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_double_click_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["x": 100, "y": 100]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: getRequiredDouble: converting int 100 to double for key 'x'
+log: getRequiredDouble: converting int 100 to double for key 'y'
+log: handler(CallTool): constructed PrimaryAction: traverseOnly
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: traverseOnly with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Primary action is 'traverseOnly', skipping action execution.
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_drag_and_drop_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["endX": 110, "startX": 100, "startY": 100, "endY": 110]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: getRequiredDouble: converting int 100 to double for key 'startX'
+log: getRequiredDouble: converting int 100 to double for key 'startY'
+log: getRequiredDouble: converting int 110 to double for key 'endX'
+log: getRequiredDouble: converting int 110 to double for key 'endY'
+log: handler(CallTool): constructed PrimaryAction: traverseOnly
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: traverseOnly with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Primary action is 'traverseOnly', skipping action execution.
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_type_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["text": verifying, "pid": 0]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): constructed PrimaryAction: input(action: MacosUseSDK.InputAction.type(text: "verifying"))
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: input(action: MacosUseSDK.InputAction.type(text: "verifying")) with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Executing primary input action...
+log: simulating text writing AND visualizing caption "verifying" (auto duration)
+log: simulating text writing AND visualizing caption: "verifying", duration: 1.0s
+log: simulating text writing: "verifying" (using AppleScript)
+log: text writing simulation complete.
+log: text writing simulation complete, caption visualization dispatched.
+info: [Coordinator] Primary action finished. Applying delay: 0.2s (before post-action traversal)
+log: [Main Thread] Displaying text writing caption at screen center: (855.0, 556.0).
+info: showVisualFeedback called for point (855.0, 556.0), type caption(text: "verifying"), size (450.0, 100.0), duration 1.0s.
+debug: Creating feedback window with AppKit frame: (630.0, 506.0, 450.0, 100.0)
+debug: Creating overlay window with frame: (630.0, 506.0, 450.0, 100.0), type: caption(text: "verifying")
+debug: Applying entrance and fade-out animations to caption overlay layer.
+debug: Visual feedback window displayed. It will remain until the tool exits.
+debug: OverlayView drawing caption: 'verifying'
+debug: OverlayView drawing caption text 'verifying' in rect (10.0, 28.5, 430.0, 43.0)
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_press_key_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["keyName": Return, "modifierFlags": []]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): parsed modifierFlags: CGEventFlags(rawValue: 0)
+log: handler(CallTool): constructed PrimaryAction: input(action: MacosUseSDK.InputAction.press(keyName: "Return", flags: __C.CGEventFlags(rawValue: 0)))
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: input(action: MacosUseSDK.InputAction.press(keyName: "Return", flags: __C.CGEventFlags(rawValue: 0))) with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Executing primary input action...
+log: simulating key press Return (36) AND visualizing (duration: 0.8)
+log: simulating key press (code: 36, flags: 0) AND visualizing caption '[KEY PRESS]', duration: 0.8s
+log: simulating key press: (code: 36, flags: 0)
+log: key press simulation complete.
+log: key press simulation complete, caption visualization dispatched.
+info: [Coordinator] Primary action finished. Applying delay: 0.2s (before post-action traversal)
+log: [Main Thread] Displaying key press caption at screen center: (855.0, 556.0).
+info: showVisualFeedback called for point (855.0, 556.0), type caption(text: "[KEY PRESS]"), size (250.0, 80.0), duration 0.8s.
+debug: Creating feedback window with AppKit frame: (730.0, 516.0, 250.0, 80.0)
+debug: Creating overlay window with frame: (730.0, 516.0, 250.0, 80.0), type: caption(text: "[KEY PRESS]")
+debug: Applying entrance and fade-out animations to caption overlay layer.
+debug: Visual feedback window displayed. It will remain until the tool exits.
+debug: OverlayView drawing caption: '[KEY PRESS]'
+debug: OverlayView drawing caption text '[KEY PRESS]' in rect (10.0, 18.5, 230.0, 43.0)
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_scroll_and_traverse.
+log: handler(CallTool): arguments received (raw MCP): ["direction": down, "amount": 1]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): constructed PrimaryAction: traverseOnly
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: traverseOnly with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Primary action is 'traverseOnly', skipping action execution.
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_refresh_traversal.
+log: handler(CallTool): arguments received (raw MCP): ["pid": 0]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): constructed PrimaryAction: traverseOnly
+log: handler(CallTool): executing performAction on MainActor via Task...
+info: [Coordinator] Starting action: traverseOnly with options: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+info: [Coordinator] Effective PID for subsequent steps: 996
+info: [Coordinator] Primary action is 'traverseOnly', skipping action execution.
+info: [Coordinator] Animation requested, but no elements found in the final traversal to highlight.
+info: [Coordinator] Action sequence finished.
+log: handler(CallTool): performAction task completed.
+log: handler(CallTool): successfully serialized ActionResult to JSON string:
+{
+  "traversalPid" : 996
+}
+log: handler(CallTool): received request for tool: macos-use_window_management.
+log: handler(CallTool): arguments received (raw MCP): ["pid": 0, "action": make_front]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: execute_command.
+log: handler(CallTool): arguments received (raw MCP): ["command": echo 'verified']
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: terminal.
+log: handler(CallTool): arguments received (raw MCP): ["command": echo 'verified']
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_take_screenshot.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: screenshot.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_analyze_screen.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: ocr.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: analyze.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_set_clipboard.
+log: handler(CallTool): arguments received (raw MCP): ["text": mcp_verified]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_get_clipboard.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_system_control.
+log: handler(CallTool): arguments received (raw MCP): ["action": mute]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_fetch_url.
+log: handler(CallTool): arguments received (raw MCP): ["url": https://example.com]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_get_time.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_run_applescript.
+log: handler(CallTool): arguments received (raw MCP): ["script": return "running"]
+log: resolvePid: using frontmost application 'ClearVPN' (PID: 996)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(996), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_calendar_events.
+log: handler(CallTool): arguments received (raw MCP): ["end": 2024-01-02T00:00:00.000Z, "start": 2024-01-01T00:00:00.000Z]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_create_event.
+log: handler(CallTool): arguments received (raw MCP): ["date": 2024-01-01T00:00:00.000Z, "title": Test Event]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_reminders.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_create_reminder.
+log: handler(CallTool): arguments received (raw MCP): ["title": Test Reminder]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_spotlight_search.
+log: handler(CallTool): arguments received (raw MCP): ["query": README.md]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_send_notification.
+log: handler(CallTool): arguments received (raw MCP): ["title": Test, "message": Verification running]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_notes_list_folders.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_notes_create_note.
+log: handler(CallTool): arguments received (raw MCP): ["body": Test note from MCP]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_notes_get_content.
+log: handler(CallTool): arguments received (raw MCP): ["name": Test note from MCP]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_mail_send.
+log: handler(CallTool): arguments received (raw MCP): ["to": test@example.com, "subject": Test, "body": Hello]
+log: resolvePid: using frontmost application 'Antigravity' (PID: 90363)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(90363), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_mail_read_inbox.
+log: handler(CallTool): arguments received (raw MCP): ["limit": 1]
+log: resolvePid: using frontmost application 'Mail' (PID: 96459)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(96459), delayAfterAction: 0.2)
+log: handler(CallTool): received request for tool: macos-use_list_tools_dynamic.
+log: handler(CallTool): arguments received (raw MCP): [:]
+log: resolvePid: using frontmost application 'Mail' (PID: 96459)
+log: handler(CallTool): constructed ActionOptions: ActionOptions(traverseBefore: false, traverseAfter: false, showDiff: false, onlyVisibleElements: false, showAnimation: true, animationDuration: 0.8, pidForTraversal: Optional(96459), delayAfterAction: 0.2)
+
