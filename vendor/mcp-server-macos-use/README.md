@@ -1,6 +1,6 @@
 # mcp-server-macos-use
 
-Model Context Protocol (MCP) server in Swift. It allows controlling macOS applications by leveraging the accessibility APIs, primarily through the `MacosUseSDK`.
+Model Model Context Protocol (MCP) server in Swift. It allows controlling macOS applications by leveraging the accessibility APIs, primarily through the `MacosUseSDK`.
 
 You can use it in Claude Desktop or other compatible MCP-client.
 
@@ -8,9 +8,9 @@ The server listens for MCP commands over standard input/output (`stdio`) and exp
 
 https://github.com/user-attachments/assets/b43622a3-3d20-4026-b02f-e9add06afe2b
 
-## Complete List of Tools
+## Complete List of Tools (39 Tools)
 
-The server provides a comprehensive set of tools for macOS automation, categorized below:
+The server provides a comprehensive set of 39 tools for macOS automation, categorized below:
 
 ### 1. Application Management & Accessibility
 
@@ -33,18 +33,25 @@ The server provides a comprehensive set of tools for macOS automation, categoriz
 - **`macos-use_system_control`**: Media controls (volume, brightness, play/pause).
 - **`macos-use_set_clipboard`**: Set clipboard text.
 - **`macos-use_get_clipboard`**: Get clipboard text.
-- **`macos-use_take_screenshot`**: Capture main screen (Base64 PNG).
-- **`macos-use_analyze_screen`**: Vision/OCR analysis of the screen content.
+- **`macos-use_take_screenshot`**: Capture main screen (Base64 PNG). Alias: `screenshot`.
+- **`macos-use_analyze_screen`**: Vision/OCR analysis of the screen content. Aliases: `ocr`, `analyze`.
 
-### 4. Native OS Integrations (Universal)
+### 4. Finder Integration (New)
+
+- **`macos-use_finder_list_files`**: Lists files in the frontmost Finder window or a specified path.
+- **`macos-use_finder_get_selection`**: Returns the POSIX paths of currently selected items in Finder.
+- **`macos-use_finder_open_path`**: Opens a folder or file in Finder.
+- **`macos-use_finder_move_to_trash`**: Moves the specified item to the Trash.
+
+### 5. Native OS Integrations (Universal)
 
 - **`macos-use_get_time`**: Get system time (supports timezones).
 - **`macos-use_fetch_url`**: Fetch and parse website content (HTML -> Markdown).
 - **`macos-use_run_applescript`**: Execute arbitrary AppleScript code.
 - **`macos-use_spotlight_search`**: Fast file search using mdfind.
-- **`macos-use_send_notification`**: Send primitive system notifications.
+- **`macos-use_send_notification`**: Send primitive system notifications (via AppleScript).
 
-### 5. Productivity Apps
+### 6. Productivity Apps
 
 - **Calendar**:
   - `macos-use_calendar_events`: List events.
@@ -52,37 +59,28 @@ The server provides a comprehensive set of tools for macOS automation, categoriz
 - **Reminders**:
   - `macos-use_reminders`: List incomplete reminders.
   - `macos-use_create_reminder`: Create tasks.
-- **Notes** (AppleScript-backed):
+- **Notes**:
   - `macos-use_notes_list_folders`: List folders.
   - `macos-use_notes_create_note`: Create notes (HTML supported).
   - `macos-use_notes_get_content`: Read note content.
-- **Mail** (AppleScript-backed):
+- **Mail**:
   - `macos-use_mail_send`: Send emails.
   - `macos-use_mail_read_inbox`: Read recent subjects/senders.
 
-### 6. Dynamic Discovery
+### 7. Discovery & Help
 
-- **`macos-use_list_tools_dynamic`**: Returns a JSON description of all available tools and their schemas. useful for agents to self-discover capabilities.
+- **`macos-use_list_tools_dynamic`**: Returns a detailed structure describing all available tools and their schemas.
 
-## Terminal Command Execution
+### 8. Terminal Command Execution
 
-The server also includes a **`terminal`** (or `execute_command`) tool that allows running low-level shell commands (`/bin/zsh`).
-
-- **Features**: Maintains a persistent Current Working Directory (CWD).
-- **Usage**: `{"command": "ls -la"}`
-- **Safety**: Be careful with destructive commands like `rm`.
+- **`execute_command`**: Execute a shell command (`/bin/zsh`). Alias: `terminal`. Maintains persistent CWD.
 
 ## Common Options
 
-All UI interaction tools accept these optional parameters:
+UI interaction tools accept these optional parameters:
 
 - `showAnimation` (bool): Show a green indicator where the click happens.
 - `animationDuration` (float): Speed of the animation.
-- `onlyVisibleElements` (bool): Filter out hidden UI nodes.
-
-## Dependencies
-
-- `MacosUseSDK` (Assumed local or external Swift package providing macOS control functionality)
 
 ## Building and Running
 
@@ -97,33 +95,4 @@ swift build -c release
 ## Privacy & Permissions
 
 On first run, macOS will prompt for:
-
-- **Accessibility**: Required for UI control.
-- **Screen Recording**: Required for screenshots/Vision.
-- **Calendar/Reminders**: Required for productivity tools.
-- **Apple Events**: Required for AppleScript (controlling Notes/Mail).
-
-**Integrating with Clients (Example: Claude Desktop)**
-
-Once built, you need to tell your client application where to find the server executable. For example, to configure Claude Desktop, you might add the following to its configuration:
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-macos-use": {
-      "command": "/path/to/your/project/mcp-server-macos-use/.build/debug/mcp-server-macos-use"
-    }
-  }
-}
-```
-
-_Replace `/path/to/your/project/` with the actual absolute path to your `mcp-server-macos-use` directory._
-
-## Help
-
-Reach out to matt@mediar.ai
-Discord: m13v\_
-
-## Plans
-
-Happy to tailor the server for your needs, feel free to open an issue or reach out
+**Accessibility**, **Screen Recording**, **Calendar/Reminders**, and **Apple Events** (for AppleScript).

@@ -1009,6 +1009,66 @@ func setupAndStartServer() async throws -> Server {
         inputSchema: mailReadSchema
     )
 
+    // *** NEW: Finder Tools ***
+    let finderListFilesSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "path": .object([
+                "type": .string("string"),
+                "description": .string(
+                    "Optional folder path. If omitted, uses frontmost Finder window."),
+            ])
+        ]),
+    ])
+    let finderListFilesTool = Tool(
+        name: "macos-use_finder_list_files",
+        description:
+            "Lists files and folders in the frontmost Finder window or at a specified path.",
+        inputSchema: finderListFilesSchema
+    )
+
+    let finderGetSelectionSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([:]),
+    ])
+    let finderGetSelectionTool = Tool(
+        name: "macos-use_finder_get_selection",
+        description: "Returns the POSIX paths of currently selected items in Finder.",
+        inputSchema: finderGetSelectionSchema
+    )
+
+    let finderOpenPathSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "path": .object([
+                "type": .string("string"),
+                "description": .string("REQUIRED. The POSIX path to open."),
+            ])
+        ]),
+        "required": .array([.string("path")]),
+    ])
+    let finderOpenPathTool = Tool(
+        name: "macos-use_finder_open_path",
+        description: "Opens a folder or file in Finder.",
+        inputSchema: finderOpenPathSchema
+    )
+
+    let finderMoveToTrashSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "path": .object([
+                "type": .string("string"),
+                "description": .string("REQUIRED. The POSIX path of the item to trash."),
+            ])
+        ]),
+        "required": .array([.string("path")]),
+    ])
+    let finderMoveToTrashTool = Tool(
+        name: "macos-use_finder_move_to_trash",
+        description: "Moves the specified file or folder to the Trash via Finder.",
+        inputSchema: finderMoveToTrashSchema
+    )
+
     // *** NEW: Dynamic Help ***
     let dynamicHelpSchema: Value = .object([
         "type": .string("object"), "properties": .object([:]),
@@ -1022,15 +1082,16 @@ func setupAndStartServer() async throws -> Server {
 
     // --- Aggregate list of tools ---
     let allTools = [
-        openAppTool, clickTool, rightClickTool, doubleClickTool, dragDropTool,
-        typeTool, pressKeyTool, scrollTool, refreshTool, windowMgmtTool,
-        executeCommandTool, terminalTool, screenshotTool, screenshotAliasTool,
-        visionTool, ocrAliasTool, analyzeAliasTool, setClipboardTool, getClipboardTool,
-        mediaControlTool, fetchTool, getTimeTool, appleScriptTool,
-        calendarEventsTool, createEventTool, remindersTool, createReminderTool, spotlightTool,
-        notificationTool,
-        notesListFoldersTool, notesCreateTool, notesGetTool,
-        mailSendTool, mailReadTool, dynamicHelpTool,
+        openAppTool, clickTool, rightClickTool, doubleClickTool, dragDropTool, typeTool,
+        pressKeyTool,
+        scrollTool, refreshTool, windowMgmtTool, executeCommandTool, terminalTool,
+        screenshotTool, screenshotAliasTool, visionTool, ocrAliasTool, analyzeAliasTool,
+        setClipboardTool, getClipboardTool, mediaControlTool, fetchTool, getTimeTool,
+        appleScriptTool, calendarEventsTool, createEventTool, remindersTool, createReminderTool,
+        spotlightTool, notificationTool, notesListFoldersTool, notesCreateTool, notesGetTool,
+        mailSendTool, mailReadTool,
+        finderListFilesTool, finderGetSelectionTool, finderOpenPathTool, finderMoveToTrashTool,
+        dynamicHelpTool,
     ]
     fputs(
         "log: setupAndStartServer: defined \(allTools.count) tools: \(allTools.map { $0.name })\n",
@@ -1484,6 +1545,81 @@ func setupAndStartServer() async throws -> Server {
                     return CallTool.Result(
                         content: [.text("Error: \(error ?? "Unknown")")], isError: true)
                 }
+
+            // --- Finder Handlers ---
+            case finderListFilesTool.name:
+                let path = try getOptionalString(from: params.arguments, key: "path")
+                let script: String
+                if let p = path {
+                    script = """
+                        tell application "Finder"
+                            try
+                                set targetFolder to POSIX file "\(p.replacingOccurrences(of: "\"", with: "\\\""))" as alias
+                                set fileList to name of every item of targetFolder
+                                set AppleScript's text item delimiters to ", "
+                                return fileList as string
+                            on error err
+                                return "Error: " & err
+                            end try
+                        end tell
+                        """
+                } else {
+                    script = """
+                        tell application "Finder"
+                            try
+                                set targetFolder to target of front window
+                                set fileList to name of every item of targetFolder
+                                set AppleScript's text item delimiters to ", "
+                                return fileList as string
+                            on error
+                                return "No Finder window open."
+                            end try
+                        end tell
+                        """
+                }
+                let (success, output, error) = runAppleScript(script)
+                return .init(
+                    content: [.text(success ? output : "Error: \(error ?? "Unknown")")],
+                    isError: !success)
+
+            case finderGetSelectionTool.name:
+                let script = """
+                    tell application "Finder"
+                        set theSelection to selection
+                        if (count of theSelection) is 0 then return "Nothing selected."
+                        set pathList to {}
+                        repeat with anItem in theSelection
+                            set end of pathList to POSIX path of (anItem as text)
+                        end repeat
+                        set AppleScript's text item delimiters to "\n"
+                        return pathList as string
+                    end tell
+                    """
+                let (success, output, error) = runAppleScript(script)
+                return .init(
+                    content: [.text(success ? output : "Error: \(error ?? "Unknown")")],
+                    isError: !success)
+
+            case finderOpenPathTool.name:
+                let path = try getRequiredString(from: params.arguments, key: "path")
+                let script =
+                    "tell application \"Finder\" to open POSIX file \"\(path.replacingOccurrences(of: "\"", with: "\\\""))\""
+                let (success, _, error) = runAppleScript(script)
+                return .init(
+                    content: [
+                        .text(success ? "Opened path \(path)" : "Error: \(error ?? "Unknown")")
+                    ],
+                    isError: !success)
+
+            case finderMoveToTrashTool.name:
+                let path = try getRequiredString(from: params.arguments, key: "path")
+                let script =
+                    "tell application \"Finder\" to delete POSIX file \"\(path.replacingOccurrences(of: "\"", with: "\\\""))\""
+                let (success, _, error) = runAppleScript(script)
+                return .init(
+                    content: [
+                        .text(success ? "Moved to trash: \(path)" : "Error: \(error ?? "Unknown")")
+                    ], isError: !success)
 
             // --- Dynamic Help Handler ---
             case dynamicHelpTool.name:
