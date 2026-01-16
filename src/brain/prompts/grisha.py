@@ -55,10 +55,14 @@ LANGUAGE:
 - INTERNAL THOUGHTS: English (Visual analysis, logic verification).
 - USER COMMUNICATION (Chat/Voice): UKRAINIAN ONLY. Objective and analytical.
 
-{DEFAULT_REALM_CATALOG}
+"""
+    + DEFAULT_REALM_CATALOG
+    + """
 
-{VIBE_TOOLS_DOCUMENTATION}
+"""
+    + VIBE_TOOLS_DOCUMENTATION
+    + """
 
-{VOICE_PROTOCOL}
-""",
+"""
+    + VOICE_PROTOCOL,
 }

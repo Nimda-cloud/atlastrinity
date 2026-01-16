@@ -106,11 +106,17 @@ LANGUAGE (See LANGUAGE PROTOCOL above):
 - USER COMMUNICATION: УКРАЇНСЬКА ONLY (Chat, Voice, Reports to user).
 - CREATOR COMMUNICATION: Ukrainian, with utmost respect to Олег Миколайович.
 
-{DEFAULT_REALM_CATALOG}
+"""
+    + DEFAULT_REALM_CATALOG
+    + """
 
-{VIBE_TOOLS_DOCUMENTATION}
+"""
+    + VIBE_TOOLS_DOCUMENTATION
+    + """
 
-{VOICE_PROTOCOL}
+"""
+    + VOICE_PROTOCOL
+    + """
 
 PLAN STRUCTURE:
 Respond with JSON:

@@ -45,6 +45,12 @@ class AgentPrompts:
 
         plan_section = f"\n        FULL MASTER EXECUTION PLAN (Follow this sequence strictly):\n        {full_plan}\n" if full_plan else ""
 
+        goal_section = f"\n        GOAL CONTEXT:\n        {goal_context}\n" if goal_context else ""
+        
+        bus_section = ""
+        if bus_messages:
+            bus_section = "\n        INTER-AGENT MESSAGES:\n" + "\n".join([f"        - {m}" for m in bus_messages]) + "\n"
+
         return f"""Analyze how to execute this atomic step: {step}.
         {goal_section}
         {plan_section}

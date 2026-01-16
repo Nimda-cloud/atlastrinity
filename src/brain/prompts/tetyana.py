@@ -88,10 +88,14 @@ LANGUAGE:
 - INTERNAL THOUGHTS: English (Technical reasoning, tool mapping, error analysis).
 - USER COMMUNICATION (Chat/Voice): UKRAINIAN ONLY. Be precise and report results.
 
-{DEFAULT_REALM_CATALOG}
+"""
+    + DEFAULT_REALM_CATALOG
+    + """
 
-{VIBE_TOOLS_DOCUMENTATION}
+"""
+    + VIBE_TOOLS_DOCUMENTATION
+    + """
 
-{VOICE_PROTOCOL}
-""",
+"""
+    + VOICE_PROTOCOL,
 }

@@ -606,11 +606,90 @@ class MCPManager:
         if callback in self._log_callbacks:
             self._log_callbacks.remove(callback)
 
-    async def get_mcp_catalog(self) -> str:
+    # ═══════════════════════════════════════════════════════════════════════════
+    #                     LAZY INITIALIZATION METHODS
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def get_server_catalog_without_connection(self) -> str:
+        """
+        Returns full server catalog from registry WITHOUT connecting to any servers.
+        LLM uses this to decide which servers to initialize.
+        
+        This is FAST: no network calls, pure static data from mcp_registry.
+        """
+        from .mcp_registry import get_server_catalog_for_prompt
+        return get_server_catalog_for_prompt(include_key_tools=True)
+
+    async def ensure_servers_connected(self, server_names: List[str]) -> Dict[str, bool]:
+        """
+        Lazily initialize only the specified servers.
+        
+        Args:
+            server_names: List of server names to connect
+            
+        Returns:
+            Dict mapping server_name -> success (True/False)
+        """
+        results = {}
+        for name in server_names:
+            if name in self.sessions:
+                # Already connected
+                results[name] = True
+                logger.debug(f"[MCP] Server {name} already connected")
+            else:
+                try:
+                    session = await self.get_session(name)
+                    results[name] = session is not None
+                    if session:
+                        logger.info(f"[MCP] Lazily initialized: {name}")
+                    else:
+                        logger.warning(f"[MCP] Failed to initialize: {name}")
+                except Exception as e:
+                    logger.error(f"[MCP] Error initializing {name}: {e}")
+                    results[name] = False
+        return results
+
+    def get_available_servers(self) -> List[str]:
+        """Get list of all configured (available) server names."""
+        return [
+            name for name in self.config.get("mcpServers", {}).keys()
+            if not name.startswith("_")
+        ]
+
+    def get_connected_servers(self) -> List[str]:
+        """Get list of currently connected server names."""
+        return list(self.sessions.keys())
+
+    async def get_mcp_catalog(self, connected_only: bool = False) -> str:
         """
         Generates a concise catalog of all configured MCP servers and their roles.
-        Includes a list of available tool names for each server to assist Atlas in planning.
+        
+        Args:
+            connected_only: If True, only shows already connected servers (fast).
+                           If False, tries to connect to all servers (slower).
+        
+        Returns:
+            Formatted catalog string for LLM consumption.
         """
+        # OPTIMIZATION: Use static registry for fast catalog generation
+        if connected_only:
+            from .mcp_registry import SERVER_CATALOG
+            
+            catalog = "MCP SERVER CATALOG (Connected Servers):\n"
+            connected = self.get_connected_servers()
+            
+            for name in connected:
+                info = SERVER_CATALOG.get(name, {})
+                desc = info.get("description", "Native capability")
+                catalog += f"[CONNECTED] {name}: {desc}\n"
+            
+            if not connected:
+                catalog += "(No servers currently connected)\n"
+            
+            catalog += "\nUse get_server_catalog_without_connection() to see all available servers."
+            return catalog
+        
+        # Original behavior: try to fetch tools from all servers
         catalog = "MCP SERVER CATALOG (Available Realms):\n"
         configured_servers = self.config.get("mcpServers", {})
 
