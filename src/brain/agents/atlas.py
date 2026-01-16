@@ -256,12 +256,97 @@ class Atlas:
         # Add current user message
         messages.append(HumanMessage(content=user_request))
 
-        logger.info("[ATLAS] Generating chat response with full memory context...")
-        response = await self.llm.ainvoke(messages)
-
-        if hasattr(response, "content"):
-            return response.content
-        return str(response)
+        # 3. Autonomous Tool-Loop for Informational Queries
+        MAX_CHAT_TURNS = 3
+        current_turn = 0
+        
+        # Define "Safe" Informational Tools for Chat Mode
+        # These tools help Atlas get info without changing system state
+        tools = [
+            {
+                "name": "duckduckgo_search",
+                "description": "Search the web for real-time information (weather, news, facts)."
+            },
+            {
+                "name": "macos-use_fetch_url",
+                "description": "Fetch content from a specific URL (documentation, articles)."
+            },
+            {
+                "name": "memory_search_nodes",
+                "description": "Search the Knowledge Graph for entities and relationships."
+            },
+            {
+                "name": "sequentialthinking_tools",
+                "description": "Use deep thinking for complex reasoning or analysis."
+            },
+            {
+                "name": "filesystem_read_file",
+                "description": "Read content of a local file to explain its logic."
+            }
+        ]
+        
+        # Bind tools to the LLM session
+        self.llm.bind_tools(tools)
+        
+        logger.info(f"[ATLAS] Starting capable chat for: {user_request[:50]}...")
+        
+        while current_turn < MAX_CHAT_TURNS:
+            response = await self.llm.ainvoke(messages)
+            
+            # If model provided a direct answer without tools, we are done
+            if not response.tool_calls:
+                return response.content
+            
+            # Process Tool Calls
+            for tool_call in response.tool_calls:
+                tool_name = tool_call.get("name")
+                args = tool_call.get("args", {})
+                
+                # Map logical names to actual MCP server/tool pairs
+                mcp_server = ""
+                mcp_tool = tool_name
+                
+                if "duckduckgo" in tool_name:
+                    mcp_server = "duckduckgo-search"
+                elif "macos-use" in tool_name:
+                    mcp_server = "macos-use"
+                elif "memory" in tool_name:
+                    mcp_server = "memory"
+                elif "sequential" in tool_name:
+                    mcp_server = "sequential-thinking"
+                    mcp_tool = "sequentialthinking_tools"
+                elif "filesystem" in tool_name:
+                    mcp_server = "filesystem"
+                
+                if mcp_server:
+                    logger.info(f"[ATLAS CHAT] Calling tool: {mcp_server}:{mcp_tool}")
+                    try:
+                        result = await mcp_manager.call_tool(mcp_server, mcp_tool, args)
+                        # Format result for context
+                        from langchain_core.messages import ToolMessage
+                        res_str = str(result)
+                        if len(res_str) > 2000:
+                            res_str = res_str[:2000] + "...(truncated)"
+                            
+                        messages.append(response) # Add assistant choice
+                        messages.append(ToolMessage(
+                            content=res_str,
+                            tool_call_id=tool_call.get("id", "chat_call")
+                        ))
+                    except Exception as e:
+                        logger.warning(f"[ATLAS CHAT] Tool execution failed: {e}")
+                        messages.append(response)
+                        messages.append(ToolMessage(
+                            content=f"Error: {e}",
+                            tool_call_id=tool_call.get("id", "chat_call")
+                        ))
+                else:
+                    logger.warning(f"[ATLAS CHAT] Unknown tool mapping: {tool_name}")
+            
+            current_turn += 1
+            
+        # Fallback to content if we exceed turns
+        return response.content
 
     async def create_plan(self, enriched_request: Dict[str, Any]) -> TaskPlan:
         """

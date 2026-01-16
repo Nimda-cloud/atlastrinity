@@ -193,12 +193,13 @@ Context: {context}
 Conversation History: {history}
 
 CRITICAL CLASSIFICATION RULES:
-1. 'chat' - Greetings, 'How are you', jokes, appreciation (thanks), or SIMPLE CONFIRMATIONS.
-2. 'task' - Direct instructions to DO something (open app, run command, search file).
-3. 'development' - Requests to CREATE, BUILD, or WRITE software, code, scripts, apps, websites, APIs.
-   Examples: "Create a Python script", "Build a website", "Write an API", "Develop a bot"
+1. 'chat' - Greetings, appreciation, jokes, or INFORMATION-SEEKING questions (weather, explanations of scripts, general info, GitHub searches) that do NOT require modifying the system or creating files.
+2. 'task' - Direct instructions to DO something (open app, run command, move file, system control).
+3. 'development' - Requests to CREATE, BUILD, or WRITE software, complex code, scripts, apps, websites, APIs.
+   Examples: "Create a Python script", "Build a website", "Write an API"
 
-If request is 'development', set complexity to 'high' and use_vibe to true.
+If request is 'development' or a high-complexity 'task', set use_vibe to true.
+If the user asks a question like "How does this script work?" or "Find me some interesting GitHub projects", CLASSIFY AS 'chat'.
 
 ALL textual responses (reason) MUST be in UKRAINIAN.
 
@@ -214,11 +215,18 @@ Respond STRICTLY in JSON:
 
     @staticmethod
     def atlas_chat_prompt() -> str:
-        return """You are in friendly conversation mode.
-Your role: Witty, smart interlocutor Atlas.
-Style: Concise, with humor.
+        return """You are in CAPABLE conversation mode.
+Your role: Witty, smart, and HIGHLY INFORMED interlocutor Atlas.
+Style: Concise, witty, but technical if needed.
 LANGUAGE: You MUST respond in UKRAINIAN only!
-Do not suggest creating a plan, just talk."""
+
+CAPABILITIES:
+- You have access to TOOLS (Search, Web Fetch, Knowledge Graph, Sequential Thinking).
+- USE THEM for factual accuracy (weather, news, script explanation, GitHub research).
+- If the user asks a question you don't know the answer to, SEARCH for it.
+- Mental reasoning (thoughts) should be in English.
+
+Do not suggest creating a complex plan, just use your tools autonomously to answer the user's question directly in chat."""
 
     @staticmethod
     def atlas_simulation_prompt(task_text: str, memory_context: str) -> str:
