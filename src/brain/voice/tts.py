@@ -300,37 +300,67 @@ class VoiceManager:
             # Generate (CPU intensive, run in thread to avoid blocking loop)
             import asyncio
 
-            def _generate():
-                with open(output_file, mode="wb") as f:
-                    self.engine.tts(text, voice_enum, Stress.Dictionary.value, f)
+            async def _gen_f(c_text, c_idx):
+                c_id = f"{agent_id}_{c_idx}_{hash(c_text) % 10000}"
+                c_file = os.path.join(tempfile.gettempdir(), f"tts_{c_id}.wav")
+                def _do_gen():
+                    with open(c_file, mode="wb") as f:
+                        self.engine.tts(c_text, voice_enum, Stress.Dictionary.value, f)
+                await asyncio.to_thread(_do_gen)
+                return c_file
 
-            await asyncio.to_thread(_generate)
+            # 1. Split text into sentences/chunks
+            import re
+            chunks = re.split(r'([.!?]+(?:\s+|$))', text)
+            processed_chunks = []
+            for i in range(0, len(chunks)-1, 2):
+                processed_chunks.append(chunks[i] + chunks[i+1])
+            if len(chunks) % 2 == 1 and chunks[-1]:
+                 processed_chunks.append(chunks[-1])
+            
+            final_chunks = [c.strip() for c in processed_chunks if c.strip()]
+            if not final_chunks:
+                final_chunks = [text]
+            
+            print(f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks...")
+            
+            # 2. Pipelined Generation & Playback
+            # Generate the first chunk immediately
+            current_file = await _gen_f(final_chunks[0], 0)
+            
+            for idx in range(len(final_chunks)):
+                # Start generating the NEXT chunk in the background if it exists
+                next_gen_task = None
+                if idx + 1 < len(final_chunks):
+                    next_gen_task = asyncio.create_task(_gen_f(final_chunks[idx+1], idx+1))
+                    print(f"[TTS] [{config.name}] ⏩ Background generating chunk {idx+2}...")
 
-            print(f"[TTS] [{config.name}]: {text}")
-            self.last_text = text.strip().lower()
+                # Play current chunk
+                print(f"[TTS] [{config.name}] 🔊 Speaking chunk {idx+1}/{len(final_chunks)}: {final_chunks[idx][:50]}...")
+                self.last_text = final_chunks[idx].strip().lower()
+                
+                self.is_speaking = True
+                try:
+                    proc = await asyncio.create_subprocess_exec(
+                        "afplay", current_file,
+                        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                    )
+                    await proc.communicate()
+                    # Cleanup current file after playback
+                    if os.path.exists(current_file):
+                        os.remove(current_file)
+                finally:
+                    self.is_speaking = False
+                
+                # Prepare for next iteration: wait for the background generation to finish
+                if next_gen_task:
+                    current_file = await next_gen_task
 
-            # Play sequentially (await completion)
-            self.is_speaking = True
-            try:
-                proc = await asyncio.create_subprocess_exec(
-                    "afplay",
-                    output_file,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-                _, stderr = await proc.communicate()
-                if proc.returncode != 0:
-                    print(f"[TTS] Playback error (afplay): {stderr.decode().strip()}")
-
-                # Add a small grace period to prevent STT from catching the "tail" of echo
-                await asyncio.sleep(0.5)
-            finally:
-                self.is_speaking = False
-                import time
-
-                self.last_speak_time = time.time()
-
-            return output_file
+            # Final grace period
+            await asyncio.sleep(0.3)
+            import time
+            self.last_speak_time = time.time()
+            return "pipelined_playback_completed"
 
         except Exception as e:
             print(f"[TTS] Error: {e}")
