@@ -79,7 +79,7 @@
     },
     "vibe": {
       "command": "python3",
-      "connect_timeout": 600,
+      "connect_timeout": 900,
       "args": [
         "-m",
         "src.mcp_server.vibe_server"
