@@ -263,26 +263,25 @@ class Atlas:
         # Define "Safe" Informational Tools for Chat Mode
         # These tools help Atlas get info without changing system state
         tools = [
-            {
-                "name": "duckduckgo_search",
-                "description": "Search the web for real-time information (weather, news, facts)."
-            },
-            {
-                "name": "macos-use_fetch_url",
-                "description": "Fetch content from a specific URL (documentation, articles)."
-            },
-            {
-                "name": "memory_search_nodes",
-                "description": "Search the Knowledge Graph for entities and relationships."
-            },
-            {
-                "name": "sequentialthinking_tools",
-                "description": "Use deep thinking for complex reasoning or analysis."
-            },
-            {
-                "name": "filesystem_read_file",
-                "description": "Read content of a local file to explain its logic."
-            }
+            # Web & News
+            {"name": "duckduckgo_search", "description": "Search the web for real-time information (weather, news, facts)."},
+            {"name": "macos-use_fetch_url", "description": "Fetch content from a specific URL (documentation, articles)."},
+            
+            # System & Context
+            {"name": "macos-use_list_files", "description": "List files in a specific directory for system info."},
+            {"name": "macos-use_get_reminders", "description": "Retrieve the list of reminders from Apple Reminders."},
+            {"name": "macos-use_get_calendar_events", "description": "Retrieve calendar events from Apple Calendar."},
+            {"name": "macos-use_read_note", "description": "Read content of a specific note from Apple Notes."},
+            {"name": "macos-use_read_mail", "description": "Read emails from Apple Mail for information."},
+            
+            # Databases & Memory 
+            {"name": "memory_search_nodes", "description": "Search the Knowledge Graph for entities and relationships."},
+            {"name": "postgres_list_tables", "description": "List available tables in the PostgreSQL database."},
+            {"name": "postgres_query", "description": "Execute a SELECT query to get information from the database (READ ONLY)."},
+            
+            # Reasoning & Local Data
+            {"name": "sequentialthinking_tools", "description": "Use deep thinking for complex reasoning or analysis."},
+            {"name": "filesystem_read_file", "description": "Read content of a local file to explain its logic."}
         ]
         
         # Bind tools to the LLM session
@@ -312,6 +311,8 @@ class Atlas:
                     mcp_server = "macos-use"
                 elif "memory" in tool_name:
                     mcp_server = "memory"
+                elif "postgres" in tool_name:
+                    mcp_server = "postgres"
                 elif "sequential" in tool_name:
                     mcp_server = "sequential-thinking"
                     mcp_tool = "sequentialthinking_tools"
