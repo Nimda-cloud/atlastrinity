@@ -262,41 +262,58 @@ class Atlas:
         # Add current user message
         messages.append(HumanMessage(content=user_request))
 
-        # 3. Autonomous Tool-Loop for Informational Queries
+        # 3. Dynamic Tool Discovery for Informational Queries
+        from ..mcp_manager import mcp_manager
+        
         MAX_CHAT_TURNS = 5
         current_turn = 0
         
-        # Define "Safe" Informational Tools for Chat Mode
-        # These tools help Atlas get info without changing system state
-        tools = [
-            # Web & News
-            {"name": "duckduckgo_search", "description": "Search the web for real-time information (weather, news, facts)."},
-            {"name": "macos-use_fetch_url", "description": "Fetch content from a specific URL (documentation, articles)."},
+        # Discover informational tools from ALL configured MCP servers
+        available_tools_info = []
+        try:
+            mcp_config = mcp_manager.config.get("mcpServers", {})
+            all_server_names = [name for name in mcp_config.keys() if name != "_defaults"]
             
-            # System & Context
-            {"name": "macos-use_spotlight_search", "description": "Search for files and apps on the Mac using Spotlight (Fast)."},
-            {"name": "macos-use_list_files", "description": "List files in a specific directory for system info."},
-            {"name": "macos-use_get_reminders", "description": "Retrieve the list of reminders from Apple Reminders."},
-            {"name": "macos-use_get_calendar_events", "description": "Retrieve calendar events from Apple Calendar."},
-            {"name": "macos-use_read_note", "description": "Read content of a specific note from Apple Notes."},
-            {"name": "macos-use_read_mail", "description": "Read emails from Apple Mail for information."},
-            
-            # Databases & Memory 
-            {"name": "memory_search_nodes", "description": "Search the Knowledge Graph for entities and relationships."},
-            {"name": "postgres_list_tables", "description": "List available tables in the PostgreSQL database."},
-            {"name": "postgres_query", "description": "Execute a SELECT query to get information from the database (READ ONLY)."},
-            
-            # Reasoning & Local Data
-            {"name": "sequentialthinking_tools", "description": "Use deep thinking for complex reasoning or analysis."},
-            {"name": "filesystem_list_directory", "description": "List contents of a local directory to see the project structure."},
-            {"name": "filesystem_search_files", "description": "Search for specific files by name or pattern in a directory (recursive)."},
-            {"name": "filesystem_read_file", "description": "Read content of a local file (code, logs, config)."}
-        ]
+            for server_name in all_server_names:
+                # We want to list tools from ALL servers to find informational ones
+                tools_list = await mcp_manager.list_tools(server_name)
+                for tool in tools_list:
+                    tool_name = tool.name
+                    desc = tool.description.lower()
+                    
+                    # Pattern for "informational" tools (READ-ONLY)
+                    # We are much more aggressive here to catch all discovery tools
+                    is_safe = any(p in tool_name.lower() or p in desc for p in [
+                        "get", "list", "read", "search", "stats", "status", "fetch", 
+                        "explain", "check", "verify", "whois", "lookup", "analyze",
+                        "info", "describe", "find", "show", "view", "count", "query"
+                    ])
+                    
+                    # Exclude clearly destructive/mutative tools
+                    # We must be very strict here to avoid accidental state changes in chat
+                    is_mutative = any(p in tool_name.lower() or p in desc for p in [
+                        "create", "delete", "write", "update", "move", "remove", "kill", "stop", "start", 
+                        "exec", "run", "install", "uninstall", "post", "put", "patch", "git_commit", "git_push",
+                        "set", "change", "modify", "rename", "trash", "clear"
+                    ])
+                    
+                    if is_safe and not is_mutative:
+                        # Map back to a name that includes the server for routing
+                        logical_name = f"{server_name}_{tool_name}"
+                        available_tools_info.append({
+                            "name": logical_name,
+                            "description": tool.description,
+                            "input_schema": tool.inputSchema
+                        })
+        except Exception as e:
+            logger.warning(f"[ATLAS] Dynamic tool discovery failed: {e}")
         
-        # Bind tools to a specialized LLM instance for this chat session
-        llm_with_tools = self.llm.bind_tools(tools)
+        # Bind discovered tools
+        llm_with_tools = self.llm.bind_tools(available_tools_info)
         
-        logger.info(f"[ATLAS] Starting capable chat for: {user_request[:50]}...")
+        logger.info(f"[ATLAS] Starting capable chat with {len(available_tools_info)} dynamic tools for: {user_request[:50]}...")
+        
+        responses_with_calls = [] # To keep track of assistant messages that had tool calls
         
         while current_turn < MAX_CHAT_TURNS:
             response = await llm_with_tools.ainvoke(messages)
@@ -307,34 +324,21 @@ class Atlas:
             
             # Process Tool Calls
             for tool_call in response.tool_calls:
-                tool_name = tool_call.get("name")
+                logical_tool_name = tool_call.get("name")
                 args = tool_call.get("args", {})
                 
-                # Map logical names to actual MCP server/tool pairs
-                mcp_server = ""
-                mcp_tool = tool_name
-                
-                if "duckduckgo" in tool_name:
-                    mcp_server = "duckduckgo-search"
-                    mcp_tool = tool_name.replace("duckduckgo_", "").replace("duckduckgo-search_", "")
-                elif "macos-use" in tool_name:
-                    mcp_server = "macos-use"
-                    mcp_tool = tool_name.replace("macos-use_", "")
-                elif "memory" in tool_name:
-                    mcp_server = "memory"
-                    mcp_tool = tool_name.replace("memory_", "")
-                elif "postgres" in tool_name:
-                    mcp_server = "postgres"
-                    mcp_tool = tool_name.replace("postgres_", "")
-                elif "sequential" in tool_name:
-                    mcp_server = "sequential-thinking"
-                    mcp_tool = "sequentialthinking_tools"
-                elif "filesystem" in tool_name:
-                    mcp_server = "filesystem"
-                    mcp_tool = tool_name.replace("filesystem_", "")
+                # Parse logical name: {server_name}_{actual_tool_name}
+                if "_" in logical_tool_name:
+                    parts = logical_tool_name.split("_", 1)
+                    mcp_server = parts[0]
+                    mcp_tool = parts[1]
+                else:
+                    # Fallback if name was not properly mapped
+                    mcp_server = ""
+                    mcp_tool = logical_tool_name
                 
                 if mcp_server:
-                    logger.info(f"[ATLAS CHAT] Calling tool: {mcp_server}:{mcp_tool}")
+                    logger.info(f"[ATLAS CHAT] Calling dynamic tool: {mcp_server}:{mcp_tool}")
                     try:
                         # Add assistant choice to history
                         messages.append(response)
@@ -344,8 +348,8 @@ class Atlas:
                         # Format result for context
                         from langchain_core.messages import ToolMessage
                         res_str = str(result)
-                        if len(res_str) > 2500:
-                            res_str = res_str[:2500] + "...(truncated)"
+                        if len(res_str) > 5000: # Slightly larger limit for info
+                            res_str = res_str[:5000] + "...(truncated)"
                             
                         messages.append(ToolMessage(
                             content=res_str,
@@ -358,7 +362,7 @@ class Atlas:
                             tool_call_id=tool_call.get("id", "chat_call")
                         ))
                 else:
-                    logger.warning(f"[ATLAS CHAT] Unknown tool mapping: {tool_name}")
+                    logger.warning(f"[ATLAS CHAT] Unknown tool mapping: {logical_tool_name}")
             
             current_turn += 1
             

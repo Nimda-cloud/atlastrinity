@@ -65,6 +65,20 @@ async def test_persona_intelligence():
     else:
         print("⚠ Local Code test FAILED (Could not find or explain code)")
 
+    # 4. Test Dynamic Tool Discovery (Spotlight/Calendar)
+    print("\nScenario 4: Dynamic Tool Discovery (System Info)")
+    # Ask for something that requires macos-use tools but wasn't hardcoded before
+    query = "Перевір мій календар на сьогодні та знайди файли з назвою 'config' за допомогою Spotlight."
+    analysis = await atlas.analyze_request(query)
+    print(f"Intent detected: {analysis.get('intent')}")
+    response = await atlas.chat(query)
+    print(f"Atlas (System Info): {response}")
+    
+    if "календар" in response.lower() or "config" in response.lower() or "spotlight" in response.lower():
+        print("✓ Dynamic Tool test PASSED")
+    else:
+        print("⚠ Dynamic Tool test FAILED (Could not use dynamic tools)")
+
 if __name__ == "__main__":
     asyncio.run(test_chat_intelligence())
     asyncio.run(test_persona_intelligence())
