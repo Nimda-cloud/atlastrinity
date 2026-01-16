@@ -131,10 +131,9 @@ class Grisha:
             step_action, expected_result, context, overall_goal=overall_goal
         )
 
-        # Decide which verification stack to prefer based on environment and step
-        decision = self._decide_verification_stack(step_action, expected_result, context)
-        decision_context = f"prefer_vision_first={decision['prefer_vision_first']}; use_mcp={decision['use_mcp']}; preferred_servers={decision['preferred_servers']}; rationale={decision['rationale']}"
-        system_msg = AgentPrompts.grisha_strategist_system_prompt(decision_context)
+        # Get available capabilities to inform the strategist
+        capabilities = self._get_environment_capabilities()
+        system_msg = AgentPrompts.grisha_strategist_system_prompt(capabilities)
         messages = [
             SystemMessage(content=system_msg),
             HumanMessage(content=prompt),
@@ -158,101 +157,37 @@ class Grisha:
                 return True
         return False
 
-    def _decide_verification_stack(
-        self, step_action: str, expected_result: str, context: dict
-    ) -> dict:
+    def _get_environment_capabilities(self) -> str:
         """
-        Decide whether to prefer Vision or MCP tools based on:
-        - whether the step is visual (ui/screenshot/window)
-        - whether the step needs authoritative system/data checks (files, install, permissions)
-        - availability of powerful Vision model
-        - presence of local Swift-based MCP servers (prefer for low-latency authoritative checks)
-
-        Returns a dict: {prefer_vision_first, use_mcp, preferred_servers, rationale}
+        Collects raw facts about the environment to inform the strategist.
+        No heuristics here—just data for the LLM to reason about.
         """
-        visual_keywords = (
-            "visual",
-            "screenshot",
-            "ui",
-            "interface",
-            "window",
-            "dialog",
-            "button",
-            "icon",
-        )
-        system_keywords = (
-            "file",
-            "install",
-            "chmod",
-            "chown",
-            "git",
-            "permission",
-            "plist",
-            "service",
-            "daemon",
-            "launchctl",
-            "package",
-            "brew",
-            "pip",
-            "npm",
-            "run",
-            "execute",
-            "terminal",
-        )
-
-        visual_needed = any(
-            kw in expected_result.lower() or kw in step_action.lower() for kw in visual_keywords
-        )
-        system_needed = any(
-            kw in expected_result.lower() or kw in step_action.lower() for kw in system_keywords
-        )
-
         try:
-            from ..mcp_manager import mcp_manager  # noqa: E402
-
+            from ..mcp_manager import mcp_manager
             servers_cfg = getattr(mcp_manager, "config", {}).get("mcpServers", {})
-            servers = list(servers_cfg.keys())
+            active_servers = [s for s, cfg in servers_cfg.items() if not (cfg or {}).get("disabled")]
+            
             swift_servers = []
-            for s, cfg in servers_cfg.items():
-                if (
-                    "swift" in s.lower()
-                    or "macos" in s.lower()
-                    or "mcp-server-macos-use" in s.lower()
-                ):
+            for s in active_servers:
+                cfg = servers_cfg.get(s, {})
+                cmd = (cfg or {}).get("command", "") or ""
+                if "swift" in s.lower() or "macos" in s.lower() or (isinstance(cmd, str) and "swift" in cmd.lower()):
                     swift_servers.append(s)
-                else:
-                    cmd = (cfg or {}).get("command", "") or ""
-                    if isinstance(cmd, str) and "swift" in cmd.lower():
-                        swift_servers.append(s)
         except Exception:
-            servers = []
+            active_servers = []
             swift_servers = []
 
-        vision_model_name = (getattr(self.llm, "model_name", "") or "").lower()
-        vision_powerful = any(x in vision_model_name for x in ("gpt-4o", "vision"))
+        vision_model = (getattr(self.llm, "model_name", "") or "unknown").lower()
+        is_powerful = any(x in vision_model for x in ("gpt-4o", "vision", "claude-3-5"))
 
-        # Heuristic decision rules
-        prefer_vision_first = bool(visual_needed or (vision_powerful and not system_needed))
-        use_mcp = bool(system_needed or swift_servers)
-
-        preferred_servers = []
-        if use_mcp:
-            # ALWAYS prioritize macos-use for UI-related verification
-            if "macos-use" in servers:
-                preferred_servers = ["macos-use"] + [s for s in swift_servers if s != "macos-use"]
-            else:
-                preferred_servers = swift_servers if swift_servers else servers
-
-        rationale = (
-            f"visual_needed={visual_needed}, system_needed={system_needed}, "
-            f"vision_powerful={vision_powerful}, swift_servers={swift_servers}"
-        )
-        return {
-            "prefer_vision_first": prefer_vision_first,
-            "use_mcp": use_mcp,
-            "preferred_servers": preferred_servers,
-            "rationale": rationale,
-        }
+        info = [
+            f"Active MCP Realms: {', '.join(active_servers)}",
+            f"Native Swift Servers: {', '.join(swift_servers)} (Preferred for OS control)",
+            f"Vision Model: {vision_model} ({'High-Performance' if is_powerful else 'Standard'})",
+            f"Timezone: {datetime.now().astimezone().tzname()}",
+            "Capabilities: Full UI Traversal, OCR, Terminal, Filesystem, Apple Productivity Apps integration."
+        ]
+        return "\n".join(info)
 
     @retry(
         wait=wait_exponential(multiplier=0.5, min=1, max=10),
@@ -513,18 +448,50 @@ class Grisha:
                         f"[GRISHA] Fixed hallucinated server: {data.get('server')} -> {server}"
                     )
 
-                if server in ["terminal", "macos-use", "computer"]:
-                    if tool in ["terminal", "run", "execute", "shell", "exec"]:
+                if server in ["terminal", "macos-use", "computer", "system", "local", "sh", "bash"]:
+                    if any(t in tool.lower() for t in ["terminal", "run", "execute", "shell", "exec", "command"]):
                         server = "macos-use"
                         tool = "execute_command"
-                    elif tool in ["screenshot", "take_screenshot", "capture"]:
+                    elif any(t in tool.lower() for t in ["screenshot", "take_screenshot", "capture"]):
                         server = "macos-use"
                         tool = "macos-use_take_screenshot"
-                    elif tool in ["vision", "analyze", "ocr", "scan"]:
+                    elif any(t in tool.lower() for t in ["vision", "analyze", "ocr", "scan"]):
                         server = "macos-use"
                         tool = "macos-use_analyze_screen"
-                    elif tool in ["ls", "list", "dir"] and server == "macos-use":
-                        # If it tries to ls via macos-use, it's fine
+                    elif any(t in tool.lower() for t in ["time", "clock", "date"]):
+                        server = "macos-use"
+                        tool = "macos-use_get_time"
+                    elif any(t in tool.lower() for t in ["fetch", "url", "scrape", "wget", "curl"]):
+                        server = "macos-use"
+                        tool = "macos-use_fetch_url"
+                    elif any(t in tool.lower() for t in ["calendar", "event"]):
+                        server = "macos-use"
+                        tool = "macos-use_calendar_events"
+                    elif any(t in tool.lower() for t in ["reminder"]):
+                        server = "macos-use"
+                        tool = "macos-use_reminders"
+                    elif any(t in tool.lower() for t in ["note"]):
+                        server = "macos-use"
+                        tool = "macos-use_notes_list_folders"
+                    elif any(t in tool.lower() for t in ["mail", "email"]):
+                        server = "macos-use"
+                        tool = "macos-use_mail_read_inbox"
+                    elif any(t in tool.lower() for t in ["applescript", "script"]):
+                        server = "macos-use"
+                        tool = "macos-use_run_applescript"
+                    elif any(t in tool.lower() for t in ["finder", "file_list", "ls", "dir", "path"]):
+                        server = "macos-use"
+                        tool = "macos-use_finder_list_files"
+                    elif any(t in tool.lower() for t in ["spotlight", "mdfind", "search"]):
+                        server = "macos-use"
+                        tool = "macos-use_spotlight_search"
+                    elif any(t in tool.lower() for t in ["notify", "notification", "alert"]):
+                        server = "macos-use"
+                        tool = "macos-use_send_notification"
+                    elif tool.startswith("macos-use_"):
+                        server = "macos-use"
+                    
+                    if tool in ["ls", "list", "dir"] and server == "macos-use" and "path" not in args:
                         tool = "execute_command"
                         args = {"command": f"ls -la {args.get('path', '.')}"}
                 if server == "filesystem":

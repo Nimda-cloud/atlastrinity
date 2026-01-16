@@ -103,19 +103,16 @@ class AgentPrompts:
     def grisha_strategy_prompt(
         step_action: str, expected_result: str, context: dict, overall_goal: str = ""
     ) -> str:
-        return f"""You are the Verification Strategist.
-
+        return f"""You are the Verification Strategist. 
+        Your task is to create a robust verification plan for the following step:
+        
         OVERALL GOAL: {overall_goal}
         Step: {step_action}
         Expected Result: {expected_result}
 
-        Create a verification strategy:
-        1. VISION: Use 'macos-use_take_screenshot' for UI layout.
-        2. OCR/TEXT: Use 'macos-use_analyze_screen' for text on screen.
-        3. UI TREE: Use 'macos-use_refresh_traversal' for structured accessibility verification.
-        4. SYSTEM: Use MCP tools (filesystem, terminal) for system data.
-        
-        Prefer native 'macos-use' tools for macOS interface checks.
+        Design a strategy using the available environment resources. 
+        Choose whether to use Vision (screenshots/OCR) or MCP Tools (system data/files) or BOTH.
+        Prefer high-precision native tools for data and Vision for visual state.
 
         Strategy:
         """
@@ -344,7 +341,18 @@ Do not suggest creating a plan, just talk."""
         """
 
     @staticmethod
-    def grisha_strategist_system_prompt(decision_context: str) -> str:
-        return f"""You are a Verification Strategist. Consider the environment and choose the best verification stack.
-        ENVIRONMENT_DECISION: {decision_context}
-        When visual evidence is conclusive, prioritize Vision verification. When authoritative system/data checks are needed, prefer MCP servers (favor local Swift-based MCP servers when available). Output internal strategies in English."""
+    def grisha_strategist_system_prompt(env_info: str) -> str:
+        return f"""You are a Verification Strategist. 
+Your goal is to decide the best way to verify a step outcome: Vision Framework vs MCP Tools.
+
+AVAILABLE ENVIRONMENT INFO:
+{env_info}
+
+GUIDELINES:
+- If the result is visual (UI layout, widget state, visual artifacts), prioritize 'macos-use_take_screenshot' and Vision analyze.
+- If the result is system-level (files, processes, database, git), prioritize MCP tools (filesystem, terminal, etc.).
+- Favor 'macos-use' for everything related to macOS interface and system control.
+- You can combine tools if needed for multi-layer verification.
+- Be precise and efficient. Do not request screenshots if a simple 'ls' or 'pgrep' provides the proof.
+
+Output your internal verification strategy in English. Do NOT use markdown formatting for the strategy itself, just plain text."""
