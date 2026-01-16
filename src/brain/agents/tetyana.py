@@ -928,8 +928,13 @@ Please type your response below and press Enter:
                 logger.info("[TETYANA] Inferred tool: filesystem")
             elif action_raw:
                 # If we have an action but no tool, try to use the action as the tool name
-                tool_name = action_raw
-                logger.info(f"[TETYANA] Using action as tool: {tool_name}")
+                # SAFETY: If the action is too long or has spaces, it's a hallucination
+                if len(action_raw) < 50 and " " not in action_raw.strip():
+                    tool_name = action_raw
+                    logger.info(f"[TETYANA] Using action as tool: {tool_name}")
+                else:
+                    logger.warning(f"[TETYANA] Action too complex to be a tool name. falling back to terminal.")
+                    tool_name = "terminal"
 
         # --- INTERNAL SYSTEM TOOLS ---
         if tool_name in ["restart_mcp_server", "restart_server", "reboot_mcp"]:
@@ -1154,159 +1159,47 @@ Please type your response below and press Enter:
 
         # --- DYNAMIC MCP DISPATCHER ---
         from ..mcp_manager import mcp_manager  # noqa: E402
-
         explicit_server = tool_call.get("server")
-        # Normalize common aliases
-        if explicit_server == "browser":
-            explicit_server = "macos-use"
-            tool_call["server"] = explicit_server
 
         if explicit_server:
-            # Handle realm-as-tool name in explicit dispatch
-            if tool_name == explicit_server:
-                default_map = {
-                    "fetch": "fetch",
-                    "duckduckgo-search": "duckduckgo_search",
-                    "terminal": "execute_command",
-                    "macos-use": "execute_command",
-                    "time": "get_current_time",
-                    "sequential-thinking": "sequentialthinking",
-                    "filesystem": "read_file",
-                    "vibe": "vibe_prompt",
-                }
-                if explicit_server in default_map:
-                    tool_name = default_map[explicit_server]
+             # Realm-to-Tool Mapping (if LLM just gave us server name)
+             if tool_name == explicit_server:
+                 default_map = {
+                     "terminal": "execute_command",
+                     "macos-use": "execute_command",
+                     "filesystem": "read_file",
+                     "vibe": "vibe_prompt",
+                 }
+                 if explicit_server in default_map:
+                     tool_name = default_map[explicit_server]
+             logger.info(f"[TETYANA] Explicit server dispatch identified: {explicit_server}.{tool_name}")
 
-            logger.info(f"[TETYANA] Explicit server dispatch: {explicit_server}.{tool_name}")
-            # Execute the direct MCP call first
-            res = await self._call_mcp_direct(explicit_server, tool_name, args)
+        # --- UNIVERSAL TOOL SYNONYMS & INTENT ---
+        terminal_synonyms = [
+            "terminal", "bash", "zsh", "sh", "python", "python3", "pip", "pip3", 
+            "cmd", "run", "execute", "execute_command", "terminal_execute", 
+            "execute_terminal", "terminal.execute", "osascript", "applescript", 
+            "curl", "wget", "jq", "grep", "git", "npm", "npx", "brew"
+        ]
+        fs_synonyms = ["filesystem", "fs", "file", "files"]
 
-            # If this was a puppeteer/browser call that navigated or clicked, try to collect
-            # verification artifacts (title, HTML, screenshot) so Grisha can verify the step.
-            try:
-                if explicit_server in ("macos-use", "browser"):
-                    # Check if action was a browser-like navigation
-                    if (
-                        tool_name in ("macos-use_open_application_and_traverse")
-                        or tool_name.endswith("navigate")
-                    ):
-                        # small delay to allow rendering
-                        await asyncio.sleep(1.5)
-                        from ..logger import logger  # noqa: E402
-                        logger.info(
-                            f"[TETYANA] (explicit dispatch) Collecting artifacts for step {args.get('step_id')}"
-                        )
-                        # We use native screenshot for verification instead of puppeteer
-                        shot_path = await self._take_screenshot_for_vision()
-                        if shot_path:
-                            logger.info(f"[TETYANA] Saved screenshot artifact via macos-use: {shot_path}")
+        # Intent-based routing & Argument Standardization
+        if any(tool_name == syn for syn in terminal_synonyms):
+            original_tool = tool_name
+            tool_name = "execute_command"
+            cmd = (args.get("command") or args.get("cmd") or args.get("code") or 
+                   args.get("script") or args.get("args") or args.get("action"))
+            if cmd:
+                args["command"] = str(cmd)
+            logger.info(f"[TETYANA] Unified terminal tool: {original_tool} -> {tool_name}")
 
-                        # Save artifacts (inline to avoid refactor)
-                        try:
-                            import base64  # noqa: E402
+        elif any(tool_name == syn for syn in fs_synonyms):
+            tool_name = "filesystem"
 
-                            from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR  # noqa: E402
-                            from ..mcp_manager import mcp_manager  # noqa: E402
-
-                            ts = __import__("time").strftime("%Y%m%d_%H%M%S")
-                            artifacts = []
-
-                            if html_text:
-                                html_file = (
-                                    WORKSPACE_DIR / f"grisha_step_{args.get('step_id')}_{ts}.html"
-                                )
-                                html_file.parent.mkdir(parents=True, exist_ok=True)
-                                html_file.write_text(html_text, encoding="utf-8")
-                                artifacts.append(str(html_file))
-                                logger.info(f"[TETYANA] Saved HTML artifact: {html_file}")
-
-                            if screenshot_b64:
-                                SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
-                                img_file = (
-                                    SCREENSHOTS_DIR / f"grisha_step_{args.get('step_id')}_{ts}.png"
-                                )
-                                with open(img_file, "wb") as f:
-                                    f.write(base64.b64decode(screenshot_b64))
-                                artifacts.append(str(img_file))
-                                logger.info(f"[TETYANA] Saved screenshot artifact: {img_file}")
-
-                            # Prepare note content
-                            note_title = f"Grisha Artifact - Step {args.get('step_id')} @ {ts}"
-                            snippet = ""
-                            if title_text:
-                                snippet += f"Title: {title_text}\n\n"
-                            if html_text:
-                                snippet += f"HTML Snippet:\n{(html_text[:1000] + '...') if len(html_text) > 1000 else html_text}\n\n"
-
-                            detected = []
-                            if html_text:
-                                keywords = ["phone", "sms", "verification", "код", "телефон"]
-                                low = html_text.lower()
-                                for kw in keywords:
-                                    if kw in low:
-                                        detected.append(kw)
-
-                            note_content = (
-                                f"Artifacts for step {args.get('step_id')} saved at {ts}.\n\nFiles:\n"
-                                + (
-                                    "\n".join(artifacts)
-                                    if artifacts
-                                    else "(no binary files captured)"
-                                )
-                                + "\n\n"
-                                + snippet
-                            )
-                            if detected:
-                                note_content += (
-                                    f"Detected keywords in HTML: {', '.join(detected)}\n"
-                                )
-
-                            try:
-                                await mcp_manager.call_tool(
-                                    "notes",
-                                    "create_note",
-                                    {
-                                        "title": note_title,
-                                        "content": note_content,
-                                        "category": "verification_artifact",
-                                        "tags": ["grisha", f"step_{args.get('step_id')}"],
-                                    },
-                                )
-                                logger.info(
-                                    f"[TETYANA] Created verification artifact note for step {args.get('step_id')}"
-                                )
-                            except Exception as e:
-                                logger.warning(f"[TETYANA] Failed to create artifact note: {e}")
-
-                            try:
-                                await mcp_manager.call_tool(
-                                    "memory",
-                                    "create_entities",
-                                    {
-                                        "entities": [
-                                            {
-                                                "name": f"grisha_artifact_step_{args.get('step_id')}",
-                                                "entityType": "artifact",
-                                                "observations": artifacts,
-                                            }
-                                        ]
-                                    },
-                                )
-                                logger.info(
-                                    f"[TETYANA] Created memory artifact for step {args.get('step_id')}"
-                                )
-                            except Exception as e:
-                                logger.warning(f"[TETYANA] Failed to create memory artifact: {e}")
-                        except Exception as e:
-                            logger.warning(
-                                f"[TETYANA] explicit dispatch _save_artifacts exception: {e}"
-                            )
-            except Exception as e:
-                from ..logger import logger  # noqa: E402
-
-                logger.warning(f"[TETYANA] Explicit dispatch artifact collection failed: {e}")
-
-            return res
+        # Final Dispatch
+        if explicit_server:
+             logger.info(f"[TETYANA] Final dispatch via server '{explicit_server}': {tool_name}")
+             return await self._call_mcp_direct(explicit_server, tool_name, args)
 
         servers = mcp_manager.config.get("mcpServers", {})
         if tool_name in servers and not tool_name.startswith("_"):
@@ -2355,6 +2248,8 @@ Please type your response below and press Enter:
             "filesystem": "файлову систему",
             "directory": "папку",
             "directories": "папки",
+            "folder": "папку",
+            "folders": "папки",
             "file": "файл",
             "files": "файли",
             "desktop": "робочий стіл",
@@ -2386,7 +2281,30 @@ Please type your response below and press Enter:
             "task": "завдання",
             "plan": "план",
             "steps": "кроки",
-            "step": "крок"
+            "step": "крок",
+            "all": "усі",
+            "including": "включаючи",
+            "hidden": "приховані",
+            "items": "елементи",
+            "item": "елемент",
+            "total": "загальну",
+            "number": "кількість",
+            "count": "підрахувати",
+            "and": "та",
+            "with": "з",
+            "for": "для",
+            "in": "в",
+            "on": "на",
+            "to": "до",
+            "of": " ",
+            "the": " ",
+            "a": " ",
+            "an": " ",
+            "list": "список",
+            "listed": "перелічені",
+            "reading": "читаю",
+            "writing": "записую",
+            "user": "користувача"
         }
 
         words = essence.split()
@@ -2394,7 +2312,9 @@ Please type your response below and press Enter:
         for word in words:
             clean_word = word.strip(".,()[]{}'\"$").lower()
             if clean_word in vocabulary:
-                translated_words.append(vocabulary[clean_word])
+                val = vocabulary[clean_word]
+                if val.strip():
+                    translated_words.append(val)
             elif clean_word in ["$home", "home"]:
                 translated_words.append("домашню папку")
             elif len(clean_word) > 1 and all(c in "0123456789abcdefABCDEF-/" for c in clean_word):

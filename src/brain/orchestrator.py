@@ -1071,8 +1071,9 @@ class Trinity:
         # Check verification
         if step.get("requires_verification"):
             self.state["system_state"] = SystemState.VERIFYING.value
-            await self._speak("tetyana", self.tetyana.get_voice_message("asking_verification"))
-
+            # Removed redundant speak call here. 
+            # Tetyana's execute_step already provides result.voice_message if successful.
+            
             try:
                 # OPTIMIZATION: Reduced delay from 2.5s to 0.5s
                 await self._log("Preparing verification...", "system")

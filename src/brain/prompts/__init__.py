@@ -67,13 +67,16 @@ class AgentPrompts:
         3. If there is feedback from Grisha or other agents above, ADAPT your strategy to address their concerns.
         4. If you are unsure or need clarification from Atlas to proceed, use the "question_to_atlas" field.
 
-        Respond in JSON:
+        Respond STRICTLY in JSON. No preamble.
         {{
             "thought": "Internal technical analysis in ENGLISH (Which tool? Which args? Why based on schema?)",
-            "proposed_action": {{ "tool": "name", "args": {{...}} }},
+            "proposed_action": {{ "tool": "server.tool_name", "args": {{...}} }},
             "question_to_atlas": "Optional technical question if you are stuck or need guidance",
             "voice_message": "Ukrainian message for the user describing the action"
         }}
+        
+        If you need to run a shell command, use tool: "macos-use.execute_command" or "terminal.execute_command".
+        If you need to create folders, use "macos-use.execute_command" with "mkdir -p".
         """
 
     @staticmethod
@@ -161,6 +164,11 @@ class AgentPrompts:
 
     Shared Context (for correct paths and global situation): {context_info}
 
+    DATABASE AUDIT (Authority):
+    If Tetyana's report is ambiguous or if this step is critical, you MUST use 'query_db' tool to see exactly what happened in the background.
+    - Check 'tool_executions' for the exact command, arguments, and full untruncated result of Tetyana's tool calls.
+    - Example: SELECT * FROM tool_executions WHERE step_id = '{step_id}' ORDER BY created_at DESC;
+
     Verification History (Tool actions taken during this verification): {history}
 
     PRIORITY ORDER FOR VERIFICATION:
@@ -175,6 +183,7 @@ class AgentPrompts:
     CRITICAL VERIFICATION RULE:
     - You are verifying STEP {step_id}: "{step_action}".
     - If the "Actual Output" or Tool Results prove that THIS step's "Expected Result" is met, then VERIFIED=TRUE.
+    - RECURSIVE VERIFICATION: If the step involves creating folders inside other folders (e.g., 'Images/2025-07'), you MUST use 'ls -R' or 'find' to verify the deep structure, not just a simple 'ls'.
     - Do NOT reject the result because the overall task/goal is not yet finished. You are only auditor for this atomic step.
 
     TRUST THE TOOLS:
@@ -387,6 +396,7 @@ GUIDELINES:
 - If the result is system-level (files, processes, database, git), prioritize MCP tools (filesystem, terminal, etc.).
 - Favor 'macos-use' for everything related to macOS interface and system control.
 - You can combine tools if needed for multi-layer verification.
+- DATABASE AUDIT: You have full read access to the 'tool_executions' table. Use 'query_db' to see exactly what Tetyana did if it's not clear from the report.
 - Be precise and efficient. Do not request screenshots if a simple 'ls' or 'pgrep' provides the proof.
 
 Output your internal verification strategy in English. Do NOT use markdown formatting for the strategy itself, just plain text."""
