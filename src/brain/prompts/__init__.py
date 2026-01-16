@@ -204,7 +204,7 @@ CRITICAL CLASSIFICATION RULES:
 
 If request is 'development', set complexity to 'high' and use_vibe to true.
 
-ALL textual responses (reason, initial_response) MUST be in UKRAINIAN.
+ALL textual responses (reason) MUST be in UKRAINIAN.
 
 Respond STRICTLY in JSON:
 {{
@@ -212,8 +212,7 @@ Respond STRICTLY in JSON:
     "reason": "Explain your choice in Ukrainian",
     "enriched_request": "Detailed description of the request (English)",
     "complexity": "low/medium/high",
-    "use_vibe": true/false (true for development tasks),
-    "initial_response": "Short reply to user ONLY if intent is 'chat' (Ukrainian), else null"
+    "use_vibe": true/false (true for development tasks)
 }}
 """
 

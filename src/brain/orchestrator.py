@@ -458,12 +458,6 @@ class Trinity:
             # Pass history to Atlas for context (Last 10 messages to avoid context pollution)
             history = self.state.get("messages", [])[-10:-1]
 
-            # Fetch dynamic MCP Catalog (concise servers list)
-            mcp_catalog = await mcp_manager.get_mcp_catalog()
-
-            # Inject catalog into shared context
-            shared_context.available_mcp_catalog = mcp_catalog
-
             analysis = await self.atlas.analyze_request(user_request, history=history)
 
             if analysis.get("intent") == "chat":
@@ -479,6 +473,12 @@ class Trinity:
                     state_manager.save_session(session_id, self.state)
 
                 return {"status": "completed", "result": response, "type": "chat"}
+
+            # Fetch dynamic MCP Catalog (concise servers list) ONLY if it's a task or dev
+            mcp_catalog = await mcp_manager.get_mcp_catalog()
+
+            # Inject catalog into shared context
+            shared_context.available_mcp_catalog = mcp_catalog
 
             await self._speak("atlas", analysis.get("reason", "Аналізую..."))
 

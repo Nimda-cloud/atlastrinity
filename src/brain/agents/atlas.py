@@ -131,97 +131,9 @@ class Atlas:
 
         req_lower = user_request.lower().strip()
 
-        # Comprehensive layout-agnostic and conversational heuristic
-        # logger.info(f"Chat keywords: {chat_keywords}") # Removed to fix F841
-
-        # Optimized conversational detection - stricter rules to avoid false positives with tasks
-        import re  # noqa: E402
-
-        # Regex for word boundaries to avoid substring matches (e.g., "hi" in "history")
-        def has_word(text, word):
-            return re.search(r"\b" + re.escape(word) + r"\b", text) is not None
-
-        # Greetings
-        greeting_words = ["привіт", "здоров", "вітаю", "ghbdsn", "ghbdtn"]
-        is_greeting = (
-            any(w in req_lower for w in greeting_words)
-            or has_word(req_lower, "hi")
-            or has_word(req_lower, "hello")
-        )
-
-        # How are you (Strict phrases only)
-        # Avoid checking single particles like "ся" or "ти" which appear in normal text
-        how_are_you_phrases = [
-            "як справи",
-            "як ти",
-            "як ви",
-            "як воно",
-            "як ся маєш",
-            "що нового",
-            "rfr ltkf",
-        ]
-        is_how_are_you = any(phrase in req_lower for phrase in how_are_you_phrases)
-
-        # Confirmations (Simple positive responses)
-        confirm_words = ["так", "звісно", "ага", "ок", "добре", "зрозумів", "fu", "lf"]
-        is_confirm = any(req_lower == w for w in confirm_words)
-
-        # Thanks
-        thanks_words = ["дякую", "спасибі", "дкю", "dfre.", "cgfcb,"]
-        is_thanks = any(w in req_lower for w in thanks_words) or has_word(req_lower, "thanks")
-
-        # Check for simple greetings or casual match
-        if is_greeting or is_how_are_you or is_thanks or is_confirm or len(req_lower) < 2:
-            response_type = "greeting"
-            if is_how_are_you:
-                response_type = "how_are_you"
-
-            initial_response = "Привіт! Я на зв'язку."
-            if response_type == "how_are_you":
-                initial_response = "Привіт! У мене все чудово. Чим можу допомогти?"
-            elif req_lower in ["так", "звісно", "ага", "ок", "добре"]:
-                initial_response = "Чудово! Продовжуємо."
-
-            return {
-                "intent": "chat",
-                "reason": "Розпізнано розмовний характер, привітання або просте підтвердження.",
-                "enriched_request": user_request,
-                "complexity": "low",
-                "initial_response": initial_response,
-            }
-
-        # Check for software development keywords
-        dev_keywords_ua = [
-            "напиши код",
-            "створи програму",
-            "розроби",
-            "напрограмуй",
-            "скрипт",
-            "веб-сайт",
-            "апі",
-            "бекенд",
-            "фронтенд",
-            "додаток",
-        ]
-        dev_keywords_en = [
-            "create app",
-            "build",
-            "develop",
-            "code",
-            "implement",
-            "write script",
-            "api",
-            "website",
-            "frontend",
-            "backend",
-            "program",
-            "software",
-        ]
-
-        is_development = any(kw in req_lower for kw in dev_keywords_ua) or any(
-            kw in req_lower for kw in dev_keywords_en
-        )
-
+        # No more hardcoded heuristics. The system relies on its 'brain' (LLM) to classify intent.
+        # This prevents robotic, predictable responses to keywords like 'привіт'.
+        
         prompt = AgentPrompts.atlas_intent_classification_prompt(
             user_request, str(context or "None"), str(history or "None")
         )
@@ -232,22 +144,23 @@ class Atlas:
 
         try:
             response = await self.llm.ainvoke(messages)
-            return self._parse_response(response.content)
+            analysis = self._parse_response(response.content)
+            
+            # Ensure we have a valid intent even if the AI is vague
+            if not analysis.get("intent"):
+                analysis["intent"] = "chat"
+            if not analysis.get("enriched_request"):
+                analysis["enriched_request"] = user_request
+                
+            return analysis
         except Exception as e:
-            # If LLM fails (e.g. 400 error), default to chat for safety unless it looks very much like a command
             logger.error(f"Intent detection LLM failed: {e}")
-            is_likely_task = any(
-                cmd in req_lower
-                for cmd in ["відкрий", "запусти", "terminal", "python", "file", "код"]
-            )
             return {
-                "intent": "task" if is_likely_task else "chat",
-                "reason": f"Помилка API ({e}). Автоматичне визначення.",
+                "intent": "chat",
+                "reason": f"System fallback due to technical issue: {e}",
                 "enriched_request": user_request,
                 "complexity": "low",
-                "initial_response": (
-                    "Я трохи підвисаю, але готовий спілкуватися." if not is_likely_task else None
-                ),
+                "initial_response": None # Force falling back to atlas.chat() for dynamic response
             }
 
     async def chat(self, user_request: str, history: List[Any] = None) -> str:

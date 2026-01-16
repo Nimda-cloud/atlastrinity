@@ -17,9 +17,9 @@ def _import_mcp_sdk():
         from mcp.client.session import ClientSession as _ClientSession  # noqa: E402
         from mcp.client.stdio import StdioServerParameters as _StdioServerParameters  # noqa: E402
         from mcp.client.stdio import stdio_client as _stdio_client  # noqa: E402
-        from mcp.types import LogMessageNotification as _LogMessageNotification  # noqa: E402
+        from mcp.types import LoggingMessageNotification as _LoggingMessageNotification  # noqa: E402
 
-        return _ClientSession, _StdioServerParameters, _stdio_client, _LogMessageNotification
+        return _ClientSession, _StdioServerParameters, _stdio_client, _LoggingMessageNotification
     finally:
         sys.path = original_sys_path
 
@@ -34,12 +34,12 @@ except Exception:
 
 
 try:
-    ClientSession, StdioServerParameters, stdio_client, LogMessageNotification = _import_mcp_sdk()
+    ClientSession, StdioServerParameters, stdio_client, LoggingMessageNotification = _import_mcp_sdk()
 except ImportError:  # pragma: no cover
     ClientSession = None  # type: ignore
     StdioServerParameters = None  # type: ignore
     stdio_client = None  # type: ignore
-    LogMessageNotification = None  # type: ignore
+    LoggingMessageNotification = None  # type: ignore
 from .config import MCP_DIR  # noqa: E402
 from .config_loader import config  # noqa: E402
 from .logger import logger  # noqa: E402
@@ -302,24 +302,21 @@ class MCPManager:
                 logger.info(f"Connecting to MCP server: {server_name}...")
                 logger.debug(f"[MCP] Command: {command}, Args: {args}")
                 async with stdio_client(server_params) as (read, write):
-                    async with ClientSession(read, write) as session:
+                    # Define logging callback for this server
+                    async def handle_log(params: Any):
+                        msg = f"[{server_name}] {params.data}"
+                        for cb in self._log_callbacks:
+                            try:
+                                if asyncio.iscoroutinefunction(cb):
+                                    await cb(msg, server_name)
+                                else:
+                                    cb(msg, server_name)
+                            except Exception as e:
+                                logger.error(f"[MCP] Log callback error: {e}")
+
+                    async with ClientSession(read, write, logging_callback=handle_log) as session:
                         await session.initialize()
                         
-                        # Handle log notifications from server
-                        if LogMessageNotification:
-                            async def handle_log(notification: Any):
-                                msg = f"[{server_name}] {notification.params.data}"
-                                for cb in self._log_callbacks:
-                                    try:
-                                        if asyncio.iscoroutinefunction(cb):
-                                            await cb(msg, server_name)
-                                        else:
-                                            cb(msg, server_name)
-                                    except Exception as e:
-                                        logger.error(f"[MCP] Log callback error: {e}")
-                            
-                            session.on_notification(LogMessageNotification, handle_log)
-
                         # store session usable by other tasks
                         self.sessions[server_name] = session
                         if not session_future.done():
