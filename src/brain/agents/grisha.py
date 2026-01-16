@@ -113,7 +113,7 @@ class Grisha:
         step_action: str,
         expected_result: str,
         context: dict,
-        overall_goal: str = "",
+        goal_context: str = "",
     ) -> str:
         """
         Uses Raptor-Mini (MSP Reasoning) to create a robust verification strategy.
@@ -128,7 +128,7 @@ class Grisha:
             return self._strategy_cache[cache_key]
 
         prompt = AgentPrompts.grisha_strategy_prompt(
-            step_action, expected_result, context, overall_goal=overall_goal
+            step_action, expected_result, context, goal_context=goal_context
         )
 
         # Get available capabilities to inform the strategist
@@ -265,7 +265,7 @@ class Grisha:
         step: Dict[str, Any],
         result: Any,
         screenshot_path: Optional[str] = None,
-        overall_goal: str = "",
+        goal_context: str = "",
         task_id: Optional[str] = None,
     ) -> VerificationResult:
         """
@@ -355,7 +355,10 @@ class Grisha:
 
         # 1. PLAN STRATEGY with Raptor-Mini
         strategy_context = await self._plan_verification_strategy(
-            step.get("action", ""), expected, context_info, overall_goal=overall_goal
+            step.get("action", ""),
+            expected,
+            context_info,
+            goal_context=goal_context or shared_context.get_goal_context(),
         )
 
         verification_history = []
@@ -373,8 +376,10 @@ class Grisha:
                 actual,
                 context_info,
                 verification_history,
-                overall_goal=overall_goal,
-                tetyana_thought=getattr(result, "thought", "") if not isinstance(result, dict) else result.get("thought", ""),
+                goal_context=goal_context or shared_context.get_goal_context(),
+                tetyana_thought=getattr(result, "thought", "")
+                if not isinstance(result, dict)
+                else result.get("thought", ""),
             )
             content.append({"type": "text", "text": prompt_text})
 

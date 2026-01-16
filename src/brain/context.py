@@ -231,16 +231,25 @@ class SharedContext:
             return ""
 
         lines = []
-        lines.append(f"🎯 Current Goal: {self.current_goal}")
         
-        if self.parent_goal:
-            lines.append(f"📎 Parent Goal: {self.parent_goal}")
-        
+        # Build Hierarchy Path
+        hierarchy = []
         if self.goal_stack:
-            lines.append(f"📊 Goal Depth: {len(self.goal_stack) + 1} (max: {self.max_recursive_depth})")
+            hierarchy = self.goal_stack + [self.current_goal]
+        else:
+            hierarchy = [self.current_goal]
+            
+        lines.append("🎯 GOAL HIERARCHY:")
+        for idx, g in enumerate(hierarchy):
+            indent = "  " * idx
+            prefix = "└─" if idx > 0 else "●"
+            lines.append(f"{indent}{prefix} {g}")
         
         if self.total_steps > 0:
-            lines.append(f"📝 Progress: Step {self.current_step_id}/{self.total_steps}")
+            lines.append(f"\n📝 PROGRESS: Step {self.current_step_id or 0}/{self.total_steps}")
+            
+        if self.recursive_depth > 0:
+            lines.append(f"🔄 RECURSION DEPTH: {self.recursive_depth} (max: {self.max_recursive_depth})")
 
         return "\n".join(lines)
 

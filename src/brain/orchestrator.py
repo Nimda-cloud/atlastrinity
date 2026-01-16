@@ -449,6 +449,9 @@ class Trinity:
             )
 
         await self._log(f"New Request: {user_request}", "system")
+        
+        # 1. Push Global Goal to Shared Context
+        shared_context.push_goal(user_request)
 
         # 2. Atlas Planning
         try:
@@ -652,6 +655,10 @@ class Trinity:
             asyncio.create_task(consolidation_module.run_consolidation())
 
         self.state["system_state"] = SystemState.COMPLETED.value
+        
+        # Pop Global Goal
+        shared_context.pop_goal()
+        
         if state_manager.available:
             state_manager.clear_session(session_id)
 
@@ -738,6 +745,10 @@ class Trinity:
             step["id"] = step_id
 
             notifications.show_progress(i + 1, len(steps), f"[{step_id}] {step.get('action')}")
+            
+            # Push step goal to context
+            shared_context.push_goal(step.get("action", "Working..."), total_steps=len(steps))
+            shared_context.current_step_id = i + 1
 
             # Retry loop with Dynamic Temperature
             max_step_retries = 3
@@ -861,9 +872,13 @@ class Trinity:
                         raise Exception(f"No alternative steps provided for {step_id}")
 
                 except Exception as rec_err:
+                    shared_context.pop_goal() # Pop failed step goal
                     error_msg = f"Recovery failed for {step_id}: {rec_err}"
                     await self._log(error_msg, "error")
                     raise Exception(error_msg)
+            
+            # Success: Pop step goal
+            shared_context.pop_goal()
 
         return True
 
@@ -1041,11 +1056,7 @@ class Trinity:
                     step=step,
                     result=result,
                     screenshot_path=screenshot,
-                    overall_goal=(
-                        self.state["current_plan"].goal
-                        if self.state.get("current_plan")
-                        else "Task"
-                    ),
+                    goal_context=shared_context.get_goal_context(),
                     task_id=self.state.get("db_task_id"),
                 )
                 if not verify_result.verified:

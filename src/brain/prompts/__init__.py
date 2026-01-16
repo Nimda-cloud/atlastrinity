@@ -21,8 +21,7 @@ class AgentPrompts:
         tools_summary: str = "",
         feedback: str = "",
         previous_results: list = None,
-        global_goal: str = "",
-        parent_action: str = "",
+        goal_context: str = "",
     ) -> str:
         feedback_section = (
             f"\n        PREVIOUS REJECTION FEEDBACK (from Grisha):\n        {feedback}\n"
@@ -42,12 +41,10 @@ class AgentPrompts:
                 formatted_results.append(res_str)
             results_section = f"\n        RESULTS OF PREVIOUS STEPS (Use this data to fill arguments):\n        {formatted_results}\n"
 
-        goal_section = f"\n        GLOBAL GOAL: {global_goal}\n" if global_goal else ""
-        parent_section = f"\n        INTERMEDIATE GOAL (Context of parent step): {parent_action}\n" if parent_action else ""
+        goal_section = f"\n        {goal_context}\n" if goal_context else ""
 
         return f"""Analyze how to execute this atomic step: {step}.
         {goal_section}
-        {parent_section}
         CONTEXT: {context}
         {results_section}
         {feedback_section}
@@ -101,12 +98,12 @@ class AgentPrompts:
 
     @staticmethod
     def grisha_strategy_prompt(
-        step_action: str, expected_result: str, context: dict, overall_goal: str = ""
+        step_action: str, expected_result: str, context: dict, goal_context: str = ""
     ) -> str:
         return f"""You are the Verification Strategist. 
         Your task is to create a robust verification plan for the following step:
         
-        OVERALL GOAL: {overall_goal}
+        {goal_context}
         Step: {step_action}
         Expected Result: {expected_result}
 
@@ -126,12 +123,14 @@ class AgentPrompts:
         actual: str,
         context_info: dict,
         history: list,
-        overall_goal: str = "",
+        goal_context: str = "",
         tetyana_thought: str = "",
     ) -> str:
         return f"""Verify the result of the following step using MCP tools FIRST, screenshots only when necessary.
 
-    OVERALL GOAL: {overall_goal}
+    OVERALL CONTEXT:
+    {goal_context}
+    
     STRATEGIC GUIDANCE (Follow this!):
     {strategy_context}
 
