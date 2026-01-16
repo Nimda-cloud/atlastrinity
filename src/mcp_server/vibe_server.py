@@ -129,13 +129,21 @@ async def _run_vibe(
                 if not line:
                     break
                 text = line.decode().rstrip()
+                if not text:
+                    continue
                 chunks.append(text + "\n")
-                # Log in real-time for UI visibility
-                if "error" in prefix.lower() or "stderr" in prefix.lower():
-                    logger.warning(f"[{prefix}] {text}")
+                
+                # ENHANCED: Real-time logging with LIVE prefix for UI visibility
+                # Detect special actions like file creation
+                if "creating" in text.lower() or "writing" in text.lower() or "file:" in text.lower():
+                    logger.info(f"🚀 [VIBE-LIVE] 📄 {text}")
+                elif "thought" in text.lower() or "thinking" in text.lower():
+                    logger.info(f"🧠 [VIBE-LIVE] {text}")
+                elif prefix == "VIBE-ERR":
+                    logger.warning(f"⚠️ [VIBE-ERR] {text}")
                 else:
-                    # Filter out some common vibe noise if needed, or just show all
-                    logger.info(f"[{prefix}] {text}")
+                    # Generic output stream
+                    logger.info(f"📺 [VIBE-LIVE] {text}")
 
         # Run reading tasks concurrently with a timeout
         try:
