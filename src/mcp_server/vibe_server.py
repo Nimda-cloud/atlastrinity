@@ -164,53 +164,81 @@ async def _run_vibe(
                     # Last element might be incomplete line, keep it
                     buffer = lines.pop()
                     
-                    for raw_text in lines:
-                        if not raw_text.strip():
-                            continue
-                        
-                        # Check for JSON streaming tokens (vibe --output streaming)
-                        if raw_text.startswith("{") and raw_text.endswith("}"):
-                            try:
-                                data_json = json.loads(raw_text)
-                                thoughts = data_json.get("reasoning_content") or ""
-                                content = data_json.get("content") or ""
-                                tool_calls = data_json.get("tool_calls")
+                for raw_text in lines:
+                    if not raw_text.strip():
+                        continue
+                    
+                    # Robust JSON detection
+                    stripped = raw_text.strip()
+                    is_json = False
+                    
+                    if stripped.startswith("{") and stripped.endswith("}"):
+                        try:
+                            # Try to parse as JSON first (vibe --output streaming / json)
+                            data_json = json.loads(stripped)
+                            is_json = True
+                            
+                            thoughts = data_json.get("reasoning_content") or data_json.get("thought") or ""
+                            content = data_json.get("content") or ""
+                            tool_calls = data_json.get("tool_calls")
+                            role = data_json.get("role")
+                            
+                            if thoughts:
+                                # Truncate very long reasoning
+                                snippet = thoughts[:500] + ("..." if len(thoughts) > 500 else "")
+                                msg = f"🧠 [VIBE-THOUGHT] {snippet}"
+                                logger.info(msg)
+                                if ctx: asyncio.create_task(ctx.info(msg))
+                            
+                            elif tool_calls:
+                                # Vibe often emits multiple tool calls in streaming
+                                for tc in tool_calls:
+                                    func = tc.get("function", {})
+                                    f_name = func.get("name", "unknown_tool")
+                                    f_args = func.get("arguments", "{}")
+                                    # Show a bit of the arguments for context
+                                    args_snippet = f_args[:100] + ("..." if len(f_args) > 100 else "")
+                                    msg = f"🛠️ [VIBE-ACTION] Using tool: {f_name} | Args: {args_snippet}"
+                                    logger.info(msg)
+                                    if ctx: asyncio.create_task(ctx.info(msg))
+                            
+                            elif content:
+                                # The actual AI response snippets
+                                snippet = content.strip().replace("\n", " ")[:300]
+                                if snippet:
+                                    msg = f"📝 [VIBE-GEN] {snippet}..."
+                                    logger.info(msg)
+                                    if ctx: asyncio.create_task(ctx.info(msg))
+                            
+                            elif role == "user":
+                                msg = f"👤 [VIBE-USER] {data_json.get('content', '')[:200]}..."
+                                logger.info(msg)
                                 
-                                if thoughts:
-                                    msg = f"🧠 [VIBE-LIVE] {thoughts}"
-                                    logger.info(msg)
-                                    if ctx: asyncio.create_task(ctx.info(msg))
-                                elif tool_calls:
-                                    for tc in tool_calls:
-                                        f_name = tc.get("function", {}).get("name", "tool")
-                                        msg = f"🛠️ [VIBE-LIVE] Calling tool: {f_name}"
-                                        logger.info(msg)
-                                        if ctx: asyncio.create_task(ctx.info(msg))
-                                elif content:
-                                    msg = f"📺 [VIBE-LIVE] {content}"
-                                    logger.info(msg)
-                                    if ctx: asyncio.create_task(ctx.info(msg))
-                                continue
-                            except:
-                                pass
-                        
-                        # LOG RAW text if not JSON or parsing failed
-                        if "creating" in raw_text.lower() or "writing" in raw_text.lower() or "file:" in raw_text.lower():
-                            msg = f"🚀 [VIBE-LIVE] 📄 {raw_text}"
+                        except Exception:
+                            is_json = False # Fall back to raw text logging
+
+                    # Raw text logging (for non-JSON parts or parsing failures)
+                    if not is_json:
+                        # Extract "milestones" from raw CLI output
+                        lower_text = stripped.lower()
+                        if any(kw in lower_text for kw in ["creating", "writing", "saved", "modified", "editing"]):
+                            msg = f"📂 [VIBE-FILES] {stripped}"
                             logger.info(msg)
                             if ctx: asyncio.create_task(ctx.info(msg))
-                        elif prefix == "VIBE-ERR":
-                            msg = f"⚠️ [VIBE-ERR] {raw_text}"
+                        elif "step" in lower_text and ":" in lower_text:
+                            msg = f"📍 [VIBE-STEP] {stripped}"
+                            logger.info(msg)
+                            if ctx: asyncio.create_task(ctx.info(msg))
+                        elif "error" in lower_text or "fail" in lower_text:
+                            msg = f"⚠️ [VIBE-ALERT] {stripped}"
                             logger.warning(msg)
                             if ctx: asyncio.create_task(ctx.error(msg))
                         else:
-                            # Avoid logging huge JSON blocks as plain text if we already parsed them
-                            if not raw_text.startswith('{"role"'):
-                                msg = f"📺 [VIBE-LIVE] {raw_text}"
-                                logger.info(msg)
-                                # Only stream non-boring stuff to UI
-                                if ctx and len(raw_text) < 1000:
-                                     asyncio.create_task(ctx.info(msg))
+                            # General output - log to file, but only small snippets to UI to avoid spam
+                            msg = f"📺 [VIBE-LIVE] {stripped[:200]}{'...' if len(stripped) > 200 else ''}"
+                            logger.info(msg)
+                            if ctx and len(stripped) < 500:
+                                asyncio.create_task(ctx.info(msg))
 
         # Run reading tasks concurrently with a timeout
         # Heartbeat task for deep reasoning phase

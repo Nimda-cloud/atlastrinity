@@ -441,6 +441,8 @@ IMPORTANT:
             or "request user consent" in step_action_lower
             or "await user approval" in step_action_lower
             or "get user confirmation" in step_action_lower
+            or "confirm" in step_action_lower
+            or "preferences" in step_action_lower
             or step.get("requires_consent", False) is True
         )
 

@@ -979,7 +979,15 @@ class Trinity:
                     await self._log(f"Tetyana requested proactive help: {result.result}", "orchestrator")
                     # Atlas help logic
                     help_resp = await self.atlas.help_tetyana(step_copy, result.result)
-                    await self._speak("atlas", help_resp)
+                    
+                    # Extract voice message or reason from Atlas response
+                    voice_msg = ""
+                    if isinstance(help_resp, dict):
+                        voice_msg = help_resp.get("voice_message") or help_resp.get("reason") or str(help_resp)
+                    else:
+                        voice_msg = str(help_resp)
+                        
+                    await self._speak("atlas", voice_msg)
                     # Re-run the step with Atlas's guidance as bus feedback
 
                     await message_bus.send(AgentMsg(
