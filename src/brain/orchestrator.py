@@ -465,7 +465,9 @@ class Trinity:
 
             if analysis.get("intent") == "chat":
                 response = analysis.get("initial_response") or await self.atlas.chat(
-                    user_request, history=history
+                    user_request, 
+                    history=history,
+                    use_deep_persona=analysis.get("use_deep_persona", False)
                 )
                 # Note: _speak already appends the message to history
                 await self._speak("atlas", response)

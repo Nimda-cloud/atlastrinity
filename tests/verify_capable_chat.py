@@ -33,24 +33,29 @@ async def test_chat_intelligence():
     analysis = await atlas.analyze_request("Створи файл test.txt на робочому столі")
     print(f"Intent detected: {analysis.get('intent')} (Reason: {analysis.get('reason')})")
 
-async def test_chat_brevity():
-    print("\n=== Testing Chat Brevity for Greetings ===")
+async def test_persona_intelligence():
+    print("\n=== Testing Adaptive Persona Intelligence ===")
     atlas = Atlas()
     
-    # Test Greeting
-    print("Sending: 'Привіт Atlas'")
-    try:
-        response = await atlas.chat("Привіт Atlas")
-        print(f"Atlas Response: {response}")
-        word_count = len(response.split())
-        print(f"Response length: {word_count} words.")
-        if word_count < 25:
-             print("✓ Brevity test PASSED (Concise response)")
-        else:
-             print("⚠ Brevity test FAILED (Response too long)")
-    except Exception as e:
-        print(f"Chat brevity test skipped or failed (likely missing live LLM/Redis context): {e}")
+    # 1. Test Brevity (Greeting)
+    print("\nScenario 1: Simple Greeting (Brevity)")
+    analysis = await atlas.analyze_request("Привіт")
+    print(f"Deep Persona Flag: {analysis.get('use_deep_persona')}")
+    response = await atlas.chat("Привіт", use_deep_persona=analysis.get('use_deep_persona', False))
+    print(f"Atlas (Brief): {response}")
+    
+    # 2. Test Deep Persona (Identity)
+    print("\nScenario 2: Identity & Mission (Deep)")
+    analysis = await atlas.analyze_request("Розкажи про свою місію та хто тебе створив?")
+    print(f"Deep Persona Flag: {analysis.get('use_deep_persona')}")
+    response = await atlas.chat("Розкажи про свою місію та хто тебе створив?", use_deep_persona=analysis.get('use_deep_persona', False))
+    print(f"Atlas (Deep): {response}")
+    
+    if analysis.get('use_deep_persona') == True and "Олег" in response:
+        print("✓ Deep Persona test PASSED")
+    else:
+        print("⚠ Deep Persona test FAILED (Flag not set or missing context)")
 
 if __name__ == "__main__":
     asyncio.run(test_chat_intelligence())
-    asyncio.run(test_chat_brevity())
+    asyncio.run(test_persona_intelligence())

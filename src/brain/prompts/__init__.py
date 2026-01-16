@@ -198,6 +198,9 @@ CRITICAL CLASSIFICATION RULES:
 3. 'development' - Requests to CREATE, BUILD, or WRITE software, complex code, scripts, apps, websites, APIs.
    Examples: "Create a Python script", "Build a website", "Write an API"
 
+DEEP PERSONA TRIGGER:
+If the user wants to talk about YOUR identity, purpose, philosophy, the program's soul, existence, our shared history, or "heart-to-heart" topics, set 'use_deep_persona' to true.
+
 If request is 'development' or a high-complexity 'task', set use_vibe to true.
 If the user asks a question like "How does this script work?" or "Find me some interesting GitHub projects", CLASSIFY AS 'chat'.
 
@@ -209,13 +212,14 @@ Respond STRICTLY in JSON:
     "reason": "Explain your choice in Ukrainian",
     "enriched_request": "Detailed description of the request (English)",
     "complexity": "low/medium/high",
-    "use_vibe": true/false (true for development tasks)
+    "use_vibe": true/false,
+    "use_deep_persona": true/false
 }}
 """
 
     @staticmethod
     def atlas_chat_prompt() -> str:
-        return """You are in CAPABLE conversation mode.
+        return f"""You are in CAPABLE conversation mode.
 Your role: Witty, smart, and HIGHLY INFORMED interlocutor Atlas.
 Style: Concise, witty, but technical if needed.
 LANGUAGE: You MUST respond in UKRAINIAN only!
