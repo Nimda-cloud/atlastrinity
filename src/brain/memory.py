@@ -25,8 +25,8 @@ except ImportError:
 from .config import CONFIG_ROOT, MEMORY_DIR
 from .logger import logger
 
-# ChromaDB storage path - use subfolder of legacy MEMORY_DIR or CONFIG_ROOT
-CHROMA_DIR = os.path.join(CONFIG_ROOT, "chromadb")
+# ChromaDB storage path - use subfolder of MEMORY_DIR from config
+CHROMA_DIR = str(MEMORY_DIR / "chroma")
 
 
 class LongTermMemory:

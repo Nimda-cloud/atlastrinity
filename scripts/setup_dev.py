@@ -123,11 +123,12 @@ def check_system_tools():
                 print_success(f"{tool} знайдено")
         else:
             if tool == "vibe":
-                print_warning("Vibe CLI не знайдено! (Потрібен для coding tasks)")
+                print_warning("Vibe CLI не знайдено! (Буде встановлено нижче)")
             else:
                 print_warning(f"{tool} НЕ знайдено")
             missing.append(tool)
 
+    # Auto-install Bun if missing
     if "bun" in missing:
         print_info("Bun не знайдено. Встановлення Bun...")
         try:
@@ -136,10 +137,21 @@ def check_system_tools():
             bun_bin = Path.home() / ".bun" / "bin"
             os.environ["PATH"] += os.pathsep + str(bun_bin)
             print_success("Bun встановлено")
-            # Remove from missing list if successful
-            missing.remove("bun")
+            if "bun" in missing: missing.remove("bun")
         except Exception as e:
             print_error(f"Не вдалося встановити Bun: {e}")
+
+    # Auto-install Vibe if missing
+    if "vibe" in missing:
+        print_info("Vibe CLI не знайдено. Встановлення Vibe...")
+        try:
+            # Official vibe installation script
+            subprocess.run("curl -fsSL https://get.vibe.sh | sh", shell=True, check=True)
+            print_success("Vibe CLI встановлено")
+            if "vibe" in missing: missing.remove("vibe")
+        except Exception as e:
+            print_error(f"Не вдалося встановити Vibe: {e}")
+
     if "swift" in missing:
         print_error("Swift необхідний для компіляції macos-use MCP серверу!")
 
@@ -371,9 +383,10 @@ def build_swift_mcp():
         print_warning("Папка vendor/mcp-server-macos-use не знайдена. Пропускаємо.")
         return True
 
-    if not shutil.which("swift"):
-        print_error("Swift не знайдено, неможливо скомпілювати!")
-        return False
+    binary_path = mcp_path / ".build" / "release" / "mcp-server-macos-use"
+    if binary_path.exists() and "--rebuild" not in sys.argv:
+        print_success("macos-use вже скомпільовано ✓ (пропускаємо)")
+        return True
 
     try:
         print_info("Запуск 'swift build -c release' (це може зайняти час)...")
@@ -477,21 +490,18 @@ def install_deps():
 
     # 2. NPM & MCP
     if shutil.which("npm"):
-        print_info("NPM install & MCP packages...")
+        print_info("NPM install (from package.json)...")
         subprocess.run(["npm", "install"], cwd=PROJECT_ROOT, capture_output=True, check=True)
 
+        # Critical MCP servers - ensure they are explicitly installed/updated
+        # These are usually in package.json but we force-check them here
         mcp_packages = [
-            "@modelcontextprotocol/server-slack",
-            "@modelcontextprotocol/server-postgres",
             "@modelcontextprotocol/server-sequential-thinking",
             "@modelcontextprotocol/server-memory",
-            "@mcpcentral/mcp-time",
-            "@buggyhunter/context7-mcp",
             "chrome-devtools-mcp",
             "@modelcontextprotocol/server-filesystem",
-            "apple-mcp",
-            "@thelord/mcp-server-docker-npx",
         ]
+        print_info("Updating critical MCP packages...")
         subprocess.run(
             ["npm", "install"] + mcp_packages,
             cwd=PROJECT_ROOT,
@@ -689,6 +699,22 @@ def main():
     ensure_database()  # Now dependencies are ready
 
     build_swift_mcp()
+    
+    # Ensure all binaries are executable
+    print_step("Налаштування прав доступу для бінарних файлів...")
+    bin_dirs = [PROJECT_ROOT / "bin", PROJECT_ROOT / "vendor"]
+    for bdir in bin_dirs:
+        if bdir.exists():
+            for root, _, files in os.walk(bdir):
+                for f in files:
+                    fpath = Path(root) / f
+                    # If it looks like an executable (macos-use, terminal, etc)
+                    if "macos-use" in f or "vibe" in f or fpath.suffix == "":
+                         try:
+                             os.chmod(fpath, 0o755)
+                         except Exception:
+                             pass
+
     sync_configs()
     download_models()
     check_services()

@@ -512,7 +512,12 @@ class FirstRunInstaller:
         code, _, stderr = _run_command(["swift", "build", "-c", "release"], timeout=600)
         
         if code == 0 and binary_path.exists():
-            self._report(SetupStep.INSTALL_MACOS_USE, 1.0, "macos-use скомпільовано ✓")
+            # Set executable permissions
+            try:
+                os.chmod(binary_path, 0o755)
+            except Exception:
+                pass
+            self._report(SetupStep.INSTALL_MACOS_USE, 1.0, "macos-use скомпільовано та налаштовано ✓")
             return True
         else:
             self._report(SetupStep.INSTALL_MACOS_USE, 1.0, "Помилка компіляції", success=False, error=stderr[:100])

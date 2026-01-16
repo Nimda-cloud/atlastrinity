@@ -138,7 +138,7 @@ class SystemConfig:
             "logging": {"level": "INFO", "max_log_size": 10485760, "backup_count": 5},
         }
 
-        template_yaml = PROJECT_ROOT / "config" / "config.yaml"
+        template_yaml = PROJECT_ROOT / "config" / "config.yaml.template"
         if template_yaml.exists():
             try:
                 with open(template_yaml, "r", encoding="utf-8") as f:
