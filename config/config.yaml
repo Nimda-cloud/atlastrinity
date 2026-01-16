@@ -63,7 +63,7 @@ mcp:
     max_output_chars: 200000
     enabled: true
     disallow_interactive: true
-    timeout_s: 300
+    timeout_s: 600
     binary: vibe
   memory:
     enabled: true
@@ -78,7 +78,7 @@ logging:
   level: INFO
 orchestrator:
   max_recursion_depth: 5
-  task_timeout: 300
+  task_timeout: 600
   subtask_timeout: 120
 voice:
   stt:

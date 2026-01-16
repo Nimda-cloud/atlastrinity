@@ -1742,6 +1742,13 @@ Please type your response below and press Enter:
 
                 logger.info(f"[TETYANA] Vibe-map: final tool={tool}, args={list(args.keys())}")
 
+                # ENFORCE DYNAMIC TIMEOUT (User request: Don't let it loop at 300s)
+                # If agent provides a timeout smaller than config, override it.
+                config_timeout = config.get("vibe", "timeout_s", 600)
+                if args.get("timeout_s", 0) < config_timeout:
+                    logger.info(f"[TETYANA] Auto-extending timeout_s from {args.get('timeout_s')} to {config_timeout} (based on global config)")
+                    args["timeout_s"] = config_timeout
+
                 try:
                     args = self._validate_macos_use_args(tool, args)
                     logger.info(f"[TETYANA] Validated macos-use args: {args}")
