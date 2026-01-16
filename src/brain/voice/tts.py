@@ -344,10 +344,14 @@ class VoiceManager:
             final_chunks = refined_chunks or [text]
             
             print(f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks...")
+            import time
+            start_time = time.time()
             
             # 2. Pipelined Generation & Playback
             # Generate the first chunk immediately
             current_file = await _gen_f(final_chunks[0], 0)
+            first_chunk_time = time.time() - start_time
+            print(f"[TTS] [{config.name}] First chunk ready in {first_chunk_time:.2f}s")
             
             for idx in range(len(final_chunks)):
                 # Start generating the NEXT chunk in the background if it exists
@@ -357,6 +361,10 @@ class VoiceManager:
                     print(f"[TTS] [{config.name}] ⏩ Background generating chunk {idx+2}...")
 
                 # Play current chunk
+                if not os.path.exists(current_file):
+                    print(f"[TTS] [{config.name}] ⚠ Error: File not found for playback: {current_file}")
+                    continue
+
                 print(f"[TTS] [{config.name}] 🔊 Speaking chunk {idx+1}/{len(final_chunks)}: {final_chunks[idx][:50]}...")
                 self.last_text = final_chunks[idx].strip().lower()
                 
@@ -366,13 +374,18 @@ class VoiceManager:
                         "afplay", current_file,
                         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                     )
-                    await proc.communicate()
-                    # Cleanup current file after playback
-                    if os.path.exists(current_file):
-                        os.remove(current_file)
+                    stdout, stderr = await proc.communicate()
+                    if proc.returncode != 0:
+                        print(f"[TTS] [{config.name}] ⚠ afplay failed with code {proc.returncode}. Error: {stderr.decode()}")
+                except Exception as e:
+                    print(f"[TTS] [{config.name}] ⚠ Execution error (afplay): {e}")
                 finally:
                     self.is_speaking = False
                 
+                # Cleanup current file after playback
+                if os.path.exists(current_file):
+                    os.remove(current_file)
+
                 # Prepare for next iteration: wait for the background generation to finish
                 if next_gen_task:
                     current_file = await next_gen_task

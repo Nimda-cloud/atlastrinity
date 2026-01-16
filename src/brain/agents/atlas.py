@@ -74,6 +74,11 @@ class Atlas:
             final_model = agent_config.get("model") or os.getenv("COPILOT_MODEL", "raptor-mini")
 
         self.llm = CopilotLLM(model_name=final_model)
+        
+        # Optimization: Tool Cache
+        self._cached_info_tools = []
+        self._last_tool_refresh = 0
+        self._refresh_interval = 1800 # 30 minutes
         self.temperature = agent_config.get("temperature", 0.7)
         self.current_plan: Optional[TaskPlan] = None
         self.history: List[Dict[str, Any]] = []
@@ -169,80 +174,91 @@ class Atlas:
         Omni-Knowledge Chat Mode.
         Integrates Graph Memory, Vector Memory, and System Context for deep awareness.
         """
-        from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
+        import time
+        from langchain_core.messages import HumanMessage, SystemMessage
+        from ..mcp_manager import mcp_manager
 
-        from ..mcp_manager import mcp_manager  # noqa: E402
-
-        # 1. Gather Context from Memory Arsenal
+        # 1. Fast-Path: Simple Greeting Detection
+        # If it's a short greeting, skip expensive lookups and tool discovery
+        is_simple_chat = len(user_request.split()) < 4 and any(g in user_request.lower() for g in ["привіт", "хай", "hello", "hi", "атлас", "atlas", "як справи", "що ти"])
+        
         graph_context = ""
         vector_context = ""
         system_status = ""
-        
-        # A. Graph Memory (MCP Search)
+        available_tools_info = []
+
+        if not is_simple_chat:
+            # A. Graph Memory (MCP Search) - ONLY FOR COMPLEX QUERIES
+            try:
+                # Use faster text-only lookup for chat context
+                graph_res = await mcp_manager.call_tool("memory", "search_nodes", {"query": user_request})
+                if isinstance(graph_res, dict) and "entities" in graph_res:
+                    entities = graph_res.get("entities", [])
+                    if entities:
+                        graph_chunks = [f"Entity: {e.get('name')} | Info: {'; '.join(e.get('observations', [])[:2])}" for e in entities[:2]]
+                        graph_context = "\n".join(graph_chunks)
+            except Exception:
+                pass
+
+            # B. Vector Memory (ChromaDB)
+            try:
+                if long_term_memory.available:
+                    similar_tasks = long_term_memory.recall_similar_tasks(user_request, n_results=1)
+                    if similar_tasks:
+                        vector_context += "\nRelated: " + similar_tasks[0]['document'][:150]
+            except Exception:
+                pass
+
+            # C. Dynamic Tool Discovery (With Caching & Safe Spawn)
+            now = time.time()
+            if not self._cached_info_tools or (now - self._last_tool_refresh > self._refresh_interval):
+                logger.info("[ATLAS] Refreshing informational tool cache...")
+                new_tools = []
+                try:
+                    mcp_config = mcp_manager.config.get("mcpServers", {})
+                    # Only fetch tools from servers that are already CONNECTED or ACTIVE
+                    # to avoid massive posix_spawn bursts for cold servers
+                    status = mcp_manager.get_status()
+                    active_servers = set(status.get("connected_servers", [])) | {"macos-use", "filesystem", "duckduckgo-search", "memory"}
+                    
+                    for server_name in active_servers:
+                        if server_name not in mcp_config: continue
+                        try:
+                            tools_list = await mcp_manager.list_tools(server_name)
+                            for tool in tools_list:
+                                t_lower = tool.name.lower()
+                                d_lower = tool.description.lower()
+                                
+                                is_safe = any(p in t_lower or p in d_lower for p in ["get", "list", "read", "search", "stats", "status", "fetch", "explain", "check", "verify", "info", "find", "show", "view", "query"])
+                                is_mutative = any(p in t_lower or p in d_lower for p in ["create", "delete", "write", "update", "move", "remove", "kill", "stop", "start", "exec", "run", "set", "change", "modify", "clear"])
+                                
+                                if is_safe and not is_mutative:
+                                    new_tools.append({
+                                        "name": f"{server_name}_{tool.name}",
+                                        "description": tool.description,
+                                        "input_schema": tool.inputSchema
+                                    })
+                        except Exception:
+                            continue # Skip servers that fail to list tools to avoid blocking
+                            
+                    self._cached_info_tools = new_tools
+                    self._last_tool_refresh = now
+                    logger.info(f"[ATLAS] Cached {len(new_tools)} informational tools.")
+                except Exception as e:
+                    logger.warning(f"[ATLAS] Tool discovery throttled: {e}")
+            
+            available_tools_info = self._cached_info_tools
+
+        # D. System Context (Always fast)
         try:
-            # Search for relevant entities in the Knowledge Graph
-            graph_res = await mcp_manager.call_tool(
-                "memory", "search_nodes", {"query": user_request}
-            )
-
-            # Format graph result
-            if isinstance(graph_res, dict) and "entities" in graph_res:
-                entities = graph_res.get("entities", [])
-                if entities:
-                    graph_chunks = []
-                    for e in entities[:3]:  # Top 3 entities
-                        name = e.get("name", "Unknown")
-                        obs = "; ".join(e.get("observations", [])[:2])
-                        graph_chunks.append(f"Entity: {name} | Info: {obs}")
-                    graph_context = "\n".join(graph_chunks)
-            elif hasattr(graph_res, "content"):
-                # Handle FastMCP text content
-                content_list = getattr(graph_res, "content", [])
-                text_content = [getattr(c, "text", "") for c in content_list if hasattr(c, "text")]
-                graph_context = "\n".join(text_content)[:800]
-
-        except Exception as e:
-            logger.warning(f"[ATLAS] Chat Memory lookup failed: {e}")
-
-        # B. Vector Memory (ChromaDB)
-        try:
-            if long_term_memory.available:
-                # Look for similar past successful tasks/conversations
-                similar_tasks = long_term_memory.recall_similar_tasks(user_request, n_results=2)
-                if similar_tasks:
-                    vector_context += "\nRelated Tasks:\n" + "\n".join(
-                        [f"- {s['document'][:200]}..." for s in similar_tasks]
-                    )
-
-                # Look for lessons learned (errors) relevant to this topic
-                similar_errors = long_term_memory.recall_similar_errors(user_request, n_results=1)
-                if similar_errors:
-                    vector_context += "\nRelated Lessons:\n" + "\n".join(
-                        [f"- {s['document'][:200]}..." for s in similar_errors]
-                    )
-        except Exception as e:
-            logger.warning(f"[ATLAS] Vector Memory lookup failed: {e}")
-
-        # C. System Status
-        try:
-            # Snapshot of shared context
             ctx_snapshot = shared_context.to_dict()
-            system_status = f"Current Project: {ctx_snapshot.get('project_root', 'Unknown')}\n"
-            system_status += f"Variables: {ctx_snapshot.get('variables', {})}"
+            system_status = f"Project: {ctx_snapshot.get('project_root', 'Unknown')}\nVars: {ctx_snapshot.get('variables', {})}"
         except Exception:
-            system_status = "System running."
-
-        # D. Agent Capabilities info
-        agent_capabilities = """
-        - You can perform web search using `duckduckgo_search`.
-        - You can read files and fetch URLs using `macos-use_fetch_url`.
-        - You can search memory (KG) using `memory_search_nodes`.
-        - You can check system info (calendar, notes, mail) using `macos-use` tools.
-        - You can EXPLORE AND DISCOVER local code/files using `macos-use_spotlight_search`, `filesystem_list_directory`, and `filesystem_search_files`.
-        - You can READ AND ANALYZE code using `filesystem_read_file`.
-        """
+            system_status = "Active."
 
         # 2. Generate Super Prompt
+        agent_capabilities = "- Web search, File read, Spotlight, System info, GitHub/Docker info (Read-only)." if available_tools_info else "- Conversational assistant."
+        
         system_prompt_text = generate_atlas_chat_prompt(
             user_query=user_request,
             graph_context=graph_context,
@@ -252,122 +268,49 @@ class Atlas:
             use_deep_persona=use_deep_persona,
         )
 
-        # 3. Invoke LLM
         messages = [SystemMessage(content=system_prompt_text)]
-
-        # Add historical context (last 10 messages)
-        if history:
-            messages.extend(history[-10:])
-
-        # Add current user message
+        if history: messages.extend(history[-10:])
         messages.append(HumanMessage(content=user_request))
 
-        # 3. Dynamic Tool Discovery for Informational Queries
-        from ..mcp_manager import mcp_manager
+        # 3. Tool Binding (Only if tools available)
+        llm_instance = self.llm.bind_tools(available_tools_info) if available_tools_info else self.llm
         
         MAX_CHAT_TURNS = 5
         current_turn = 0
         
-        # Discover informational tools from ALL configured MCP servers
-        available_tools_info = []
-        try:
-            mcp_config = mcp_manager.config.get("mcpServers", {})
-            all_server_names = [name for name in mcp_config.keys() if name != "_defaults"]
-            
-            for server_name in all_server_names:
-                # We want to list tools from ALL servers to find informational ones
-                tools_list = await mcp_manager.list_tools(server_name)
-                for tool in tools_list:
-                    tool_name = tool.name
-                    desc = tool.description.lower()
-                    
-                    # Pattern for "informational" tools (READ-ONLY)
-                    # We are much more aggressive here to catch all discovery tools
-                    is_safe = any(p in tool_name.lower() or p in desc for p in [
-                        "get", "list", "read", "search", "stats", "status", "fetch", 
-                        "explain", "check", "verify", "whois", "lookup", "analyze",
-                        "info", "describe", "find", "show", "view", "count", "query"
-                    ])
-                    
-                    # Exclude clearly destructive/mutative tools
-                    # We must be very strict here to avoid accidental state changes in chat
-                    is_mutative = any(p in tool_name.lower() or p in desc for p in [
-                        "create", "delete", "write", "update", "move", "remove", "kill", "stop", "start", 
-                        "exec", "run", "install", "uninstall", "post", "put", "patch", "git_commit", "git_push",
-                        "set", "change", "modify", "rename", "trash", "clear"
-                    ])
-                    
-                    if is_safe and not is_mutative:
-                        # Map back to a name that includes the server for routing
-                        logical_name = f"{server_name}_{tool_name}"
-                        available_tools_info.append({
-                            "name": logical_name,
-                            "description": tool.description,
-                            "input_schema": tool.inputSchema
-                        })
-        except Exception as e:
-            logger.warning(f"[ATLAS] Dynamic tool discovery failed: {e}")
-        
-        # Bind discovered tools
-        llm_with_tools = self.llm.bind_tools(available_tools_info)
-        
-        logger.info(f"[ATLAS] Starting capable chat with {len(available_tools_info)} dynamic tools for: {user_request[:50]}...")
-        
-        responses_with_calls = [] # To keep track of assistant messages that had tool calls
-        
         while current_turn < MAX_CHAT_TURNS:
-            response = await llm_with_tools.ainvoke(messages)
+            response = await llm_instance.ainvoke(messages)
             
-            # If model provided a direct answer without tools, we are done
-            if not response.tool_calls:
+            if not getattr(response, "tool_calls", None):
                 return response.content
             
-            # Process Tool Calls
+            # Process Tool Calls (Same logic as before but using cached info)
             for tool_call in response.tool_calls:
                 logical_tool_name = tool_call.get("name")
                 args = tool_call.get("args", {})
                 
-                # Parse logical name: {server_name}_{actual_tool_name}
                 if "_" in logical_tool_name:
                     parts = logical_tool_name.split("_", 1)
-                    mcp_server = parts[0]
-                    mcp_tool = parts[1]
+                    mcp_server, mcp_tool = parts[0], parts[1]
                 else:
-                    # Fallback if name was not properly mapped
-                    mcp_server = ""
-                    mcp_tool = logical_tool_name
+                    mcp_server, mcp_tool = "", logical_tool_name
                 
                 if mcp_server:
-                    logger.info(f"[ATLAS CHAT] Calling dynamic tool: {mcp_server}:{mcp_tool}")
-                    try:
-                        # Add assistant choice to history
-                        messages.append(response)
-                        
-                        result = await mcp_manager.call_tool(mcp_server, mcp_tool, args)
-                        
-                        # Format result for context
-                        from langchain_core.messages import ToolMessage
-                        res_str = str(result)
-                        if len(res_str) > 5000: # Slightly larger limit for info
-                            res_str = res_str[:5000] + "...(truncated)"
-                            
-                        messages.append(ToolMessage(
-                            content=res_str,
-                            tool_call_id=tool_call.get("id", "chat_call")
-                        ))
-                    except Exception as e:
-                        logger.warning(f"[ATLAS CHAT] Tool execution failed: {e}")
-                        messages.append(ToolMessage(
-                            content=f"Error executing {mcp_server}:{mcp_tool}: {e}",
-                            tool_call_id=tool_call.get("id", "chat_call")
-                        ))
+                    logger.info(f"[ATLAS CHAT] Executing: {mcp_server}:{mcp_tool}")
+                    messages.append(response)
+                    result = await mcp_manager.call_tool(mcp_server, mcp_tool, args)
+                    
+                    from langchain_core.messages import ToolMessage
+                    messages.append(ToolMessage(
+                        content=str(result)[:5000],
+                        tool_call_id=tool_call.get("id", "chat_call")
+                    ))
                 else:
-                    logger.warning(f"[ATLAS CHAT] Unknown tool mapping: {logical_tool_name}")
+                    return response.content
             
             current_turn += 1
-            
-        # Fallback to content if we exceed turns
-        return response.content
+
+        return "Я виконав кілька кроків пошуку, але мені потрібно більше часу для повного аналізу. Що саме вас цікавить найбільше?"
 
     async def create_plan(self, enriched_request: Dict[str, Any]) -> TaskPlan:
         """
