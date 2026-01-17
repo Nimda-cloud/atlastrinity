@@ -319,12 +319,19 @@ async def _run_vibe(
         async def heartbeat_worker():
             reasoning_ticks = 0
             while process.returncode is None:
-                await asyncio.sleep(45)
+                await asyncio.sleep(5)  # Faster heartbeat for UI visibility (5s)
                 if process.returncode is None:
                     reasoning_ticks += 1
                     msg = f"🧠 [VIBE-LIVE] Vibe is deep-reasoning... (Tick {reasoning_ticks}, API response pending)"
                     logger.info(msg)
                     asyncio.create_task(safe_notify(msg))
+                    
+                    # Warn if hanging too long (e.g. > 120s without output)
+                    # Note: We rely on the fact that read_stream updates 'stdout_chunks' or prints debugs.
+                    # Since we can't easily check 'last_activity' here without shared state, 
+                    # we just provide the hearbeat.
+                    if reasoning_ticks % 12 == 0: # Every 60s
+                        logger.info(f"⏳ [VIBE-STATUS] Optimization still in progress... ({reasoning_ticks * 5}s elapsed)")
         
         hb_task = asyncio.create_task(heartbeat_worker())
         try:

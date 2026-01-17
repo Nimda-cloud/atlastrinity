@@ -16,7 +16,17 @@ async def test_stream():
     
     # We call vibe_prompt directly (it uses _run_vibe inside)
     # This will log to our standard brain logger which prints to console
+    # Mock context
+    class MockContext:
+        async def info(self, msg):
+            print(f"[CTX] INFO: {msg}")
+        async def error(self, msg):
+            print(f"[CTX] ERROR: {msg}")
+            
+    ctx = MockContext()
+
     result = await vibe_prompt(
+        ctx=ctx,
         prompt=prompt,
         cwd=os.getcwd(),
         timeout_s=30

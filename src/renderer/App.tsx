@@ -113,7 +113,7 @@ const App: React.FC = () => {
     };
 
     pollState();
-    const interval = setInterval(pollState, 2000);
+    const interval = setInterval(pollState, 1000);
     return () => clearInterval(interval);
   }, []);
 
