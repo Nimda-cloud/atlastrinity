@@ -158,7 +158,7 @@ async def _run_vibe(
                 chunks.append(text_chunk)
                 buffer += text_chunk
                 
-                # Split by newline for processing, but keep the remainder in buffer
+                lines = []
                 if "\n" in buffer:
                     lines = buffer.split("\n")
                     # Last element might be incomplete line, keep it

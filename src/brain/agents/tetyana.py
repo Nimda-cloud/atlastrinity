@@ -1457,6 +1457,29 @@ Please type your response below and press Enter:
                 if tool in tool_map:
                     logger.info(f"[TETYANA] Auto-mapping tool '{tool}' -> '{tool_map[tool]}'")
                     tool = tool_map[tool]
+                elif tool == "macos-use": # If realm itself is called as tool
+                    # Smart inference based on arguments
+                    if "identifier" in args:
+                        tool = "macos-use_open_application_and_traverse"
+                    elif "x" in args and "y" in args:
+                        tool = "macos-use_click_and_traverse"
+                    elif "text" in args:
+                        tool = "macos-use_type_and_traverse"
+                    else:
+                        tool = "execute_command"
+                    logger.info(f"[TETYANA] Inferred tool '{tool}' from macos-use realm based on args")
+
+                # Normalize arguments for macos-use tools
+                if tool == "execute_command" or tool == "terminal":
+                    if "action" in args and "command" not in args:
+                        args["command"] = args.pop("action")
+                    if "cmd" in args and "command" not in args:
+                        args["command"] = args.pop("cmd")
+                    
+                    # If we STILL have no command but have identifier, try to open it
+                    if "identifier" in args and ("command" not in args or not args["command"]):
+                        args["command"] = f"open -a '{args['identifier']}'"
+                        logger.info(f"[TETYANA] Fallback: identifier '{args['identifier']}' -> command '{args['command']}'")
 
             # Server Name Fixes
             if server == "sequentialthinking":
@@ -1562,11 +1585,13 @@ Please type your response below and press Enter:
                 if server == "vibe":
                     Path(args["cwd"]).mkdir(parents=True, exist_ok=True)
 
-                try:
+            # --- COMMON VALIDATION & DISPATCH ---
+            try:
+                if server == "macos-use":
                     args = self._validate_macos_use_args(tool, args)
                     logger.info(f"[TETYANA] Validated macos-use args: {args}")
-                except ValueError as ve:
-                    return {"success": False, "error": f"Argument validation failed: {ve}"}
+            except ValueError as ve:
+                return {"success": False, "error": f"Argument validation failed: {ve}"}
 
             # ENFORCE BUFFER: Tetyana waits slightly longer than the tool's internal timeout
             # This ensures we get the tool's error if possible, but don't hang forever
