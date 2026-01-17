@@ -61,6 +61,7 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
         ],
         "when_to_use": "ANY computer interaction, macOS GUI automation, terminal commands, Apple productivity apps",
         "priority_note": "ALWAYS prefer macos-use for GUI, terminal, fetch, time over other servers",
+        "protocol_note": "DISCOVERY FIRST POLICY: Always call 'macos-use_list_tools_dynamic' (discovery) before starting a complex task to get the latest 39+ tool schemas and instructions directly from the server. This ensures 100% precision.",
     },
     "filesystem": {
         "name": "filesystem",

@@ -71,7 +71,8 @@ class AgentPrompts:
         2. ADHERE STRICTLY to the plan sequence above. Do not skip or reorder steps.
         3. If there is feedback from Grisha or other agents above, ADAPT your strategy to address their concerns.
         4. If you are unsure or need clarification from Atlas to proceed, use the "question_to_atlas" field.
-        5. DISCOVERY: If you suspect a tool is missing or want to see ALL 39+ available macOS capabilities, use "macos-use.discovery".
+        5. DISCOVERY FIRST: If your plan involves 'macos-use', your FIRST step should always be "macos-use.discovery" to synchronize your knowledge with the server's 39+ real-time tool definitions.
+        6. Precise Arguments: Use the exact data from Discovery to fill tool arguments.
 
         Respond STRICTLY in JSON. No preamble.
         {{
@@ -321,6 +322,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         - 'voice_summary' MUST be in UKRAINIAN (for the user).
         - **META-PLANNING AUTHORIZED**: If the task is complex, you MAY include reasoning steps (using `sequential-thinking`) to discover the path forward. Do not just say "no steps found". Goal achievement is mandatory.
 
+        - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1. This ensures Tetyana has the latest technical schemas before execution.
         Steps should be atomic and logical.
         """
 

@@ -78,6 +78,9 @@ class ToolDispatcher:
         "terminal": "execute_command",
         "execute_command": "execute_command",
         "shell": "execute_command",
+        "bash": "execute_command",
+        "zsh": "execute_command",
+        "sh": "execute_command",
         # Discovery
         "list_tools": "macos-use_list_tools_dynamic",
         "discovery": "macos-use_list_tools_dynamic",
@@ -89,7 +92,7 @@ class ToolDispatcher:
         "time", "clock", "date", "fetch", "url", "scrape",
         "volume", "brightness", "mute", "play", "pause",
         "calendar", "event", "reminder", "note", "mail", "email",
-        "finder", "trash", "spotlight", "search",
+        "finder", "trash", "spotlight",
         "applescript", "osascript",
     }
 
@@ -456,6 +459,8 @@ class ToolDispatcher:
         clean_name = tool_name
         if tool_name.startswith("macos-use_"): clean_name = tool_name[10:]
         elif tool_name.startswith("macos_use_"): clean_name = tool_name[10:]
+        elif tool_name.startswith("git_"):
+            return self._handle_legacy_git(tool_name, args)
         elif tool_name == "macos-use": 
             # Infer tool from arguments
             if "identifier" in args: clean_name = "open"
