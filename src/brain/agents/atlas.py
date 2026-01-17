@@ -427,11 +427,9 @@ class Atlas:
         """
         
         try:
-            # We call it twice - once for the thought, once for the analysis.
-            # But the primary evidence is the thought sequence itself.
-            res = await mcp_manager.call_tool(
+            # Using unified dispatch_tool
+            res = await mcp_manager.dispatch_tool(
                 "sequential-thinking",
-                "sequentialthinking",
                 {
                     "thought": f"Initial analysis of goal: {task}",
                     "thoughtNumber": 1,
@@ -441,9 +439,8 @@ class Atlas:
             )
             
             # Follow up with more details
-            res2 = await mcp_manager.call_tool(
+            res2 = await mcp_manager.dispatch_tool(
                 "sequential-thinking",
-                "sequentialthinking",
                 {
                     "thought": f"Exploring technical barriers and alternatives for {task}...",
                     "thoughtNumber": 2,

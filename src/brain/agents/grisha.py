@@ -189,17 +189,6 @@ class Grisha:
         ]
         return "\n".join(info)
 
-    @retry(
-        wait=wait_exponential(multiplier=0.5, min=1, max=10),
-        stop=stop_after_attempt(3),
-        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
-    )
-    async def _call_tool_with_retry(self, mcp_manager, server: str, tool: str, args: dict):
-        """
-        Call MCP tool with exponential backoff retry.
-        Handles transient connection issues gracefully.
-        """
-        return await mcp_manager.call_tool(server, tool, args)
 
     def _summarize_ui_data(self, raw_data: str) -> str:
         """
@@ -552,7 +541,7 @@ class Grisha:
                 logger.info(f"[GRISHA] Internal Verification Tool: {server}.{tool}({args})")
 
                 try:
-                    tool_output = await self._call_tool_with_retry(mcp_manager, server, tool, args)
+                    tool_output = await mcp_manager.dispatch_tool(f"{server}.{tool}", args)
                     if "path" in args and tool_output:
                         shared_context.update_path(args["path"], "verify")
                     logger.info(f"[GRISHA] Tool Output: {str(tool_output)[:500]}...")
@@ -755,9 +744,8 @@ Timestamp: {timestamp}
 
             # Save to memory server (for graph/relations)
             try:
-                await mcp_manager.call_tool(
-                    "memory",
-                    "create_entities",
+                await mcp_manager.dispatch_tool(
+                    "memory.create_entities",
                     {
                         "entities": [
                             {
@@ -771,12 +759,11 @@ Timestamp: {timestamp}
                 logger.info(f"[GRISHA] Rejection report saved to memory for step {step_id}")
             except Exception as e:
                 logger.warning(f"[GRISHA] Failed to save to memory: {e}")
-
+ 
             # Save to notes server (for easy text retrieval)
             try:
-                await mcp_manager.call_tool(
-                    "notes",
-                    "create_note",
+                await mcp_manager.dispatch_tool(
+                    "notes.create_note",
                     {
                         "title": f"Grisha Rejection - Step {step_id}",
                         "content": report_text,

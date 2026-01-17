@@ -1,0 +1,262 @@
+import json
+import logging
+from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+
+from .logger import logger
+from .config_loader import config
+from .mcp_registry import TOOL_SCHEMAS, get_tool_schema, get_server_for_tool
+
+class ToolDispatcher:
+    """
+    Centralized dispatcher for MCP tools.
+    Unifies tool name resolution, synonym mapping, and argument normalization.
+    """
+
+    # --- SYNONYMS & INTENT MAPPINGS ---
+    TERMINAL_SYNONYMS = [
+        "terminal", "bash", "zsh", "sh", "python", "python3", "pip", "pip3",
+        "cmd", "run", "execute", "execute_command", "terminal_execute",
+        "execute_terminal", "terminal.execute", "osascript", "applescript",
+        "curl", "wget", "jq", "grep", "git", "npm", "npx", "brew", "mkdir",
+        "ls", "cat", "rm", "mv", "cp", "touch", "sudo"
+    ]
+    
+    FILESYSTEM_SYNONYMS = ["filesystem", "fs", "file", "files", "editor"]
+    
+    SEARCH_SYNONYMS = ["duckduckgo-search", "duckduckgo", "search", "google", "bing", "ddg", "duckduckgo_search"]
+    
+    VIBE_SYNONYMS = ["vibe", "vibe_prompt", "vibe_ask", "vibe_analyze_error", "vibe_smart_plan", "vibe_code_review"]
+    
+    MACOS_MAP = {
+        "click": "macos-use_click_and_traverse",
+        "type": "macos-use_type_and_traverse",
+        "write": "macos-use_type_and_traverse",
+        "press": "macos-use_press_key_and_traverse",
+        "hotkey": "macos-use_press_key_and_traverse",
+        "refresh": "macos-use_refresh_traversal",
+        "screenshot": "macos-use_take_screenshot",
+        "vision": "macos-use_analyze_screen",
+        "ocr": "macos-use_analyze_screen",
+        "open": "macos-use_open_application_and_traverse",
+        "launch": "macos-use_open_application_and_traverse",
+        "scroll": "macos-use_scroll_and_traverse",
+        "fetch": "macos-use_fetch_url",
+        "time": "macos-use_get_time",
+        "notification": "macos-use_send_notification",
+    }
+
+    def __init__(self, mcp_manager):
+        self.mcp_manager = mcp_manager
+        self._current_pid: Optional[int] = None
+
+    def set_pid(self, pid: Optional[int]):
+        """Update the currently tracked PID for macOS automation."""
+        self._current_pid = pid
+
+    async def resolve_and_dispatch(
+        self, 
+        tool_name: Optional[str], 
+        args: Dict[str, Any], 
+        explicit_server: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        The main entry point for dispatching a tool call.
+        Resolves the tool name, normalizes arguments, and executes the call via MCPManager.
+        """
+        try:
+            # 1. Basic cleaning and normalization
+            tool_name = (tool_name or "").strip().lower()
+            if not isinstance(args, dict):
+                args = {}
+            
+            # 2. Heuristic inference if tool_name is missing
+            if not tool_name:
+                tool_name = self._infer_tool_from_args(args)
+            
+            # 3. Handle Dot Notation (server.tool)
+            if "." in tool_name:
+                parts = tool_name.split(".", 1)
+                explicit_server = parts[0]
+                tool_name = parts[1]
+            
+            # 4. Synonym Mapping & Routing
+            server, resolved_tool, normalized_args = self._resolve_tool_and_args(tool_name, args, explicit_server)
+            
+            if not server:
+                return {"success": False, "error": f"Could not resolve server for tool: {tool_name}"}
+
+            # 5. Final Dispatch via MCPManager
+            logger.info(f"[DISPATCHER] Calling {server}.{resolved_tool} with {list(normalized_args.keys())}")
+            return await self.mcp_manager.call_tool(server, resolved_tool, normalized_args)
+
+        except Exception as e:
+            logger.error(f"[DISPATCHER] Dispatch failed: {e}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def _infer_tool_from_args(self, args: Dict[str, Any]) -> str:
+        """Infers tool name from common argument patterns when missing."""
+        action = str(args.get("action", "")).lower()
+        command = str(args.get("command", args.get("cmd", ""))).lower()
+        
+        if "vibe" in action or "vibe" in command:
+            return "vibe"
+        if any(kw in action for kw in ["click", "type", "press", "screenshot", "scroll"]):
+            return "macos-use"
+        if any(kw in action for kw in ["read", "write", "list", "save", "delete"]):
+            return "filesystem"
+        if command:
+            return "terminal"
+        
+        return action or "terminal"
+
+    def _resolve_tool_and_args(
+        self, 
+        tool_name: str, 
+        args: Dict[str, Any], 
+        explicit_server: Optional[str] = None
+    ) -> Tuple[Optional[str], str, Dict[str, Any]]:
+        """Resolves tool name to canonical form and normalizes arguments."""
+        
+        # --- TERMINAL ROUTING ---
+        if tool_name in self.TERMINAL_SYNONYMS or explicit_server == "terminal":
+            return self._handle_terminal(tool_name, args)
+
+        # --- FILESYSTEM ROUTING ---
+        if tool_name in self.FILESYSTEM_SYNONYMS or explicit_server == "filesystem":
+            return self._handle_filesystem(tool_name, args)
+
+        # --- SEARCH ROUTING ---
+        if tool_name in self.SEARCH_SYNONYMS or explicit_server == "duckduckgo-search":
+            return "duckduckgo-search", "search", args
+
+        # --- VIBE ROUTING ---
+        if tool_name in self.VIBE_SYNONYMS or explicit_server == "vibe":
+            return self._handle_vibe(tool_name, args)
+
+        # --- MACOS-USE ROUTING ---
+        if (tool_name.startswith("macos-use") or 
+            tool_name.startswith("macos_use_") or 
+            tool_name in self.MACOS_MAP or
+            explicit_server == "macos-use"):
+            return self._handle_macos_use(tool_name, args)
+
+        # --- SEQUENTIAL THINKING ---
+        if tool_name in ["sequential-thinking", "sequentialthinking", "think"]:
+            return "sequential-thinking", "sequentialthinking", args
+
+        # --- FALLBACK: USE REGISTRY ---
+        server = explicit_server or get_server_for_tool(tool_name)
+        if not server:
+            # Try registry-based name mapping (e.g. 'read_file' -> 'filesystem' server)
+            schema = get_tool_schema(tool_name)
+            if schema:
+                server = schema.get("server")
+        
+        return server, tool_name, args
+
+    def _handle_terminal(self, tool_name: str, args: Dict[str, Any]) -> Tuple[str, str, Dict[str, Any]]:
+        """Standardizes terminal command execution via macos-use."""
+        cmd = (args.get("command") or args.get("cmd") or args.get("code") or 
+               args.get("script") or args.get("args") or args.get("action"))
+        
+        # Handle cases where tool_name IS the command (mkfs, ls, etc)
+        if tool_name in ["mkdir", "ls", "cat", "rm", "mv", "cp", "touch", "sudo", "git", "npm", "npx", "brew"]:
+            if isinstance(cmd, str):
+                cmd = f"{tool_name} {cmd}".strip()
+            else:
+                cmd = tool_name
+
+        args["command"] = str(cmd) if cmd else ""
+        return "macos-use", "execute_command", args
+
+    def _handle_filesystem(self, tool_name: str, args: Dict[str, Any]) -> Tuple[str, str, Dict[str, Any]]:
+        """Maps filesystem synonyms to canonical tools."""
+        action = args.get("action") or tool_name
+        
+        # Action mappings
+        mapping = {
+            "list_dir": "list_directory",
+            "ls": "list_directory",
+            "mkdir": "create_directory",
+            "write": "write_file",
+            "save": "write_file",
+            "read": "read_file",
+            "cat": "read_file",
+            "exists": "get_file_info",
+        }
+        resolved_tool = mapping.get(action, action)
+        
+        # If the tool name itself was the action
+        if resolved_tool == "filesystem":
+            resolved_tool = "read_file" # Default
+            
+        return "filesystem", resolved_tool, args
+
+    def _handle_vibe(self, tool_name: str, args: Dict[str, Any]) -> Tuple[str, str, Dict[str, Any]]:
+        """Normalizes Vibe AI tool calls and arguments."""
+        # Tool name normalization
+        vibe_map = {
+            "vibe": "vibe_prompt",
+            "prompt": "vibe_prompt",
+            "ask": "vibe_ask",
+            "question": "vibe_ask",
+            "plan": "vibe_smart_plan",
+            "debug": "vibe_analyze_error",
+            "fix": "vibe_analyze_error",
+            "review": "vibe_code_review",
+        }
+        resolved_tool = vibe_map.get(tool_name, tool_name)
+        if not resolved_tool.startswith("vibe_"):
+            resolved_tool = f"vibe_{resolved_tool}"
+
+        # Argument normalization
+        if "prompt" not in args:
+            if "objective" in args: args["prompt"] = args["objective"]
+            elif "question" in args: args["prompt"] = args["question"]
+            elif "error_message" in args: args["prompt"] = args["error_message"]
+
+        # Enforce defaults/timeouts
+        if "timeout_s" not in args:
+             vibe_cfg = config.get("vibe", {})
+             args["timeout_s"] = vibe_cfg.get("timeout_s", 1200)
+             
+        # Enforce absolute CWD or workspace
+        if not args.get("cwd"):
+            system_config = config.get("system", {})
+            workspace = Path(system_config.get("workspace_path", "~/AtlasProjects")).expanduser().absolute()
+            args["cwd"] = str(workspace)
+            workspace.mkdir(parents=True, exist_ok=True)
+
+        return "vibe", resolved_tool, args
+
+    def _handle_macos_use(self, tool_name: str, args: Dict[str, Any]) -> Tuple[str, str, Dict[str, Any]]:
+        """Standardizes macos-use GUI and productivity tool calls."""
+        # Clean prefix if it exists
+        clean_name = tool_name
+        if tool_name.startswith("macos-use_"): clean_name = tool_name[10:]
+        elif tool_name.startswith("macos_use_"): clean_name = tool_name[10:]
+        elif tool_name == "macos-use": 
+            # Infer tool from arguments
+            if "identifier" in args: clean_name = "open"
+            elif "x" in args: clean_name = "click"
+            elif "text" in args: clean_name = "type"
+            else: clean_name = "screenshot"
+
+        resolved_tool = self.MACOS_MAP.get(clean_name, tool_name)
+        if resolved_tool == "macos-use_fetch_url":
+            if "urls" in args and "url" not in args:
+                urls = args.get("urls")
+                if isinstance(urls, list) and len(urls) > 0:
+                    args["url"] = urls[0]
+                    logger.info(f"[DISPATCHER] Patched fetch: urls[0] -> url ({args['url']})")
+
+        # Inject PID if missing
+        if self._current_pid and "pid" not in args:
+            args["pid"] = self._current_pid
+            
+        # Standardize 'identifier' for app opening
+        if resolved_tool == "macos-use_open_application_and_traverse" and "identifier" not in args:
+            args["identifier"] = args.get("app_name") or args.get("name") or args.get("app") or ""
+
+        return "macos-use", resolved_tool, args

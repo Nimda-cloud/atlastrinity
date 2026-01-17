@@ -69,6 +69,11 @@ class MCPManager:
         self.config = self._load_config()
         self._lock = asyncio.Lock()
         self._log_callbacks = []
+        
+        # Unified tool dispatching
+        from .tool_dispatcher import ToolDispatcher
+        self.dispatcher = ToolDispatcher(self)
+        
         # Controls for restart concurrency and retry/backoff
         # Limit number of concurrent restarts to avoid forking storms
         self._restart_semaphore = asyncio.Semaphore(4)
@@ -418,6 +423,15 @@ class MCPManager:
                         return {"error": f"Retry failed: {str(retry_e)}"}
 
             return {"error": str(e)}
+
+    async def dispatch_tool(
+        self, 
+        tool_name: Optional[str], 
+        arguments: Dict[str, Any] = None,
+        explicit_server: Optional[str] = None
+    ) -> Any:
+        """New unified entry point for tool calls with resolution and normalization."""
+        return await self.dispatcher.resolve_and_dispatch(tool_name, arguments or {}, explicit_server)
 
     async def list_tools(self, server_name: str) -> List[Any]:
         """List available tools for a server"""

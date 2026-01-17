@@ -862,7 +862,17 @@ Please type your response below and press Enter:
         return res
 
     async def _execute_tool(self, tool_call: Dict[str, Any]) -> Dict[str, Any]:
-        """Executes the tool call with robust mapping and synonym support"""
+        """Executes the tool call via unified Dispatcher"""
+        from ..mcp_manager import mcp_manager
+        
+        # Ensure dispatcher knows about current PID
+        mcp_manager.dispatcher.set_pid(self._current_pid)
+        
+        tool_name = tool_call.get("name")
+        args = tool_call.get("args") or tool_call.get("arguments") or {}
+        explicit_server = tool_call.get("server")
+        
+        return await mcp_manager.dispatch_tool(tool_name, args, explicit_server)
         from ..logger import logger  # noqa: E402
         logger.info(f"[TETYANA] Dispatching tool: {tool_call.get('name', 'None')} with args: {str(tool_call.get('args', {}))[:200]}")
 
@@ -1345,273 +1355,16 @@ Please type your response below and press Enter:
 
             return {"success": False, "error": error_msg}
 
-    def _validate_macos_use_args(self, tool_name: str, args: Dict) -> Dict:
-        """Validate and normalize arguments for macos-use Swift binary tools"""
-        from ..logger import logger  # noqa: E402
-
-        if tool_name not in self.MACOS_USE_SCHEMAS:
-            return args
-
-        schema = self.MACOS_USE_SCHEMAS[tool_name]
-        validated = {}
-
-        # Check required args
-        for arg_name in schema.get("required", []):
-            if arg_name not in args:
-                logger.warning(f"[TETYANA] Missing required argument '{arg_name}' for {tool_name}")
-                # Try common aliases
-                aliases = {
-                    "identifier": ["app", "app_name", "application", "name"],
-                    "pid": ["process_id", "processId", "PID"],
-                    "text": ["content", "value", "string"],
-                    "keyName": ["key", "keyname", "key_name"],
-                    "x": ["X", "xCoord", "x_coord"],
-                    "y": ["Y", "yCoord", "y_coord"],
-                }
-                for alias in aliases.get(arg_name, []):
-                    if alias in args:
-                        validated[arg_name] = args[alias]
-                        logger.info(f"[TETYANA] Alias found: {alias} -> {arg_name}")
-                        break
-                else:
-                    raise ValueError(f"Missing required argument '{arg_name}' for {tool_name}")
-            else:
-                validated[arg_name] = args[arg_name]
-
-        # Copy optional args
-        for arg_name in schema.get("optional", []):
-            if arg_name in args:
-                validated[arg_name] = args[arg_name]
-
-        # Type coercion for pid (must be int)
-        if "pid" in validated and not isinstance(validated["pid"], int):
-            try:
-                validated["pid"] = int(validated["pid"])
-                logger.info(f"[TETYANA] Type coercion: pid -> int ({validated['pid']})")
-            except (ValueError, TypeError) as e:
-                raise ValueError(f"Invalid pid value: {validated['pid']}") from e
-
-        # Type coercion for coordinates (must be float)
-        for coord in ["x", "y", "animationDuration"]:
-            if coord in validated:
-                try:
-                    validated[coord] = float(validated[coord])
-                    logger.info(f"[TETYANA] Type coercion: {coord} -> float ({validated[coord]})")
-                except (ValueError, TypeError) as e:
-                    raise ValueError(f"Invalid {coord} value: {validated[coord]}") from e
-
-        # Type coercion for showAnimation (must be bool)
-        if "showAnimation" in validated:
-            if isinstance(validated["showAnimation"], str):
-                validated["showAnimation"] = validated["showAnimation"].lower() == "true"
-            else:
-                validated["showAnimation"] = bool(validated["showAnimation"])
-
-        # Ensure modifierFlags is a list of strings
-        if "modifierFlags" in validated:
-            flags = validated["modifierFlags"]
-            if isinstance(flags, str):
-                validated["modifierFlags"] = [flags]
-            elif not isinstance(flags, list):
-                validated["modifierFlags"] = []
-
         return validated
 
+
     async def _call_mcp_direct(self, server: str, tool: str, args: Dict) -> Dict[str, Any]:
-        from ..logger import logger  # noqa: E402
-        from ..mcp_manager import mcp_manager  # noqa: E402
-
+        from ..mcp_manager import mcp_manager
         try:
-            # MACOS-USE VALIDATION & MAPPING
-            if server == "macos-use":
-                # Map legacy/hallucinated tool names to official ones
-                tool_map = {
-                    "terminal": "execute_command",
-                    "run_command": "execute_command",
-                    "exec": "execute_command",
-                    "command": "execute_command",
-                    "screenshot": "macos-use_take_screenshot",
-                    "take_screenshot": "macos-use_take_screenshot",
-                    "capture": "macos-use_take_screenshot",
-                    "vision": "macos-use_analyze_screen",
-                    "analyze": "macos-use_analyze_screen",
-                    "analyze_screen": "macos-use_analyze_screen",
-                    "ocr": "macos-use_analyze_screen",
-                    "scan": "macos-use_analyze_screen",
-                    "scroll": "macos-use_scroll_and_traverse",
-                    "right_click": "macos-use_right_click_and_traverse",
-                    "double_click": "macos-use_double_click_and_traverse",
-                    "drag_drop": "macos-use_drag_and_drop_and_traverse",
-                    "window_mgmt": "macos-use_window_management",
-                    "minimize": "macos-use_window_management",
-                    "maximize": "macos-use_window_management",
-                    "resize": "macos-use_window_management",
-                    "move": "macos-use_window_management",
-                    "set_clipboard": "macos-use_set_clipboard",
-                    "get_clipboard": "macos-use_get_clipboard",
-                    "clipboard": "macos-use_get_clipboard",
-                    "system_control": "macos-use_system_control",
-                    "media": "macos-use_system_control",
-                    "volume": "macos-use_system_control",
-                }
-                if tool in tool_map:
-                    logger.info(f"[TETYANA] Auto-mapping tool '{tool}' -> '{tool_map[tool]}'")
-                    tool = tool_map[tool]
-                elif tool == "macos-use": # If realm itself is called as tool
-                    # Smart inference based on arguments
-                    if "identifier" in args:
-                        tool = "macos-use_open_application_and_traverse"
-                    elif "x" in args and "y" in args:
-                        tool = "macos-use_click_and_traverse"
-                    elif "text" in args:
-                        tool = "macos-use_type_and_traverse"
-                    else:
-                        tool = "execute_command"
-                    logger.info(f"[TETYANA] Inferred tool '{tool}' from macos-use realm based on args")
-
-                # Normalize arguments for macos-use tools
-                if tool == "execute_command" or tool == "terminal":
-                    if "action" in args and "command" not in args:
-                        args["command"] = args.pop("action")
-                    if "cmd" in args and "command" not in args:
-                        args["command"] = args.pop("cmd")
-                    
-                    # If we STILL have no command but have identifier, try to open it
-                    if "identifier" in args and ("command" not in args or not args["command"]):
-                        args["command"] = f"open -a '{args['identifier']}'"
-                        logger.info(f"[TETYANA] Fallback: identifier '{args['identifier']}' -> command '{args['command']}'")
-
-            # Server Name Fixes
-            if server == "sequentialthinking":
-                server = "sequential-thinking"
-            
-            if server == "sequential-thinking":
-                 # Ensure tool name matches what the server expects
-                 if tool == "sequential-thinking":
-                     tool = "sequentialthinking"
-
-            # VIBE VALIDATION & MAPPING
-            if server == "vibe":
-                # If tool is generic 'vibe' or missing, try to infer from args
-                if tool == "vibe":
-                    if "objective" in args or "plan" in args:
-                        tool = "vibe_smart_plan"
-                    elif "question" in args:
-                        tool = "vibe_ask"
-                    elif "error_message" in args:
-                        tool = "vibe_analyze_error"
-                    else:
-                        tool = "vibe_prompt"
-
-                # Map common aliases/hallucinations for tool names
-                vibe_tools = {
-                    "vibe": "vibe_prompt",
-                    "prompt": "vibe_prompt",
-                    "chat": "vibe_prompt",
-                    "ask_vibe": "vibe_prompt",
-                    "smart_plan": "vibe_smart_plan",
-                    "design": "vibe_smart_plan",
-                    "plan": "vibe_smart_plan",
-                    "analyze_error": "vibe_analyze_error",
-                    "debug": "vibe_analyze_error",
-                    "self-healing": "vibe_analyze_error",
-                    "fix": "vibe_analyze_error",
-                    "code_review": "vibe_code_review",
-                    "review": "vibe_code_review",
-                    "ask": "vibe_ask",
-                    "question": "vibe_ask",
-                    "list_sessions": "vibe_list_sessions",
-                    "history": "vibe_list_sessions",
-                    "session_details": "vibe_session_details",
-                    "session_info": "vibe_session_details",
-                    "resume": "vibe_prompt"
-                }
-                if tool in vibe_tools:
-                    tool = vibe_tools[tool]
-
-                # Normalize arguments based on tool name
-                if tool == "vibe_prompt":
-                    if "objective" in args and "prompt" not in args:
-                        args["prompt"] = args.pop("objective")
-                    if "question" in args and "prompt" not in args:
-                        args["prompt"] = args.pop("question")
-                elif tool == "vibe_smart_plan":
-                    if "prompt" in args and "objective" not in args:
-                        args["objective"] = args.pop("prompt")
-                    if "question" in args and "objective" not in args:
-                        args["objective"] = args.pop("question")
-                elif tool == "vibe_ask":
-                    if "prompt" in args and "question" not in args:
-                        args["question"] = args.pop("prompt")
-                    if "objective" in args and "question" not in args:
-                        args["question"] = args.pop("objective")
-                elif tool == "vibe_analyze_error":
-                    if "prompt" in args and "error_message" not in args:
-                        args["error_message"] = args.pop("prompt")
-
-                logger.info(f"[TETYANA] Vibe-map: final tool={tool}, args={list(args.keys())}")
-
-                # ENFORCE DYNAMIC TIMEOUT (User request: Don't let it loop at 300s)
-                # If agent provides a timeout smaller than config, override it.
-                vibe_config = config.get("vibe", {})
-                config_timeout = vibe_config.get("timeout_s", 1200) if isinstance(vibe_config, dict) else 1200
-                
-                if args.get("timeout_s", 0) < config_timeout:
-                    logger.info(f"[TETYANA] Auto-extending timeout_s from {args.get('timeout_s')} to {config_timeout} (based on global config)")
-                    args["timeout_s"] = config_timeout
-
-                # ENFORCE ABSOLUTE CWD & WORKSPACE
-                system_config = config.get("system", {})
-                workspace_path = system_config.get("workspace_path", "~/AtlasProjects")
-                abs_workspace = Path(workspace_path).expanduser().absolute()
-
-                if args.get("cwd"):
-                    current_cwd = Path(args["cwd"]).absolute()
-                    # If vibe is trying to work inside Atlas repo root, move it to workspace
-                    if server == "vibe" and current_cwd == Path.cwd().absolute():
-                        args["cwd"] = str(abs_workspace)
-                        logger.info(f"[TETYANA] Re-routing Vibe from repo root to workspace: {args['cwd']}")
-                    else:
-                        args["cwd"] = str(current_cwd)
-                else:
-                    # Default for Vibe is always workspace, others is current dir
-                    if server == "vibe":
-                        args["cwd"] = str(abs_workspace)
-                        logger.info(f"[TETYANA] Defaulting Vibe to workspace: {args['cwd']}")
-                    else:
-                        args["cwd"] = str(Path.cwd().absolute())
-                
-                # Ensure the workspace directory exists
-                if server == "vibe":
-                    Path(args["cwd"]).mkdir(parents=True, exist_ok=True)
-
-            # --- COMMON VALIDATION & DISPATCH ---
-            try:
-                if server == "macos-use":
-                    args = self._validate_macos_use_args(tool, args)
-                    logger.info(f"[TETYANA] Validated macos-use args: {args}")
-            except ValueError as ve:
-                return {"success": False, "error": f"Argument validation failed: {ve}"}
-
-            # ENFORCE BUFFER: Tetyana waits slightly longer than the tool's internal timeout
-            # This ensures we get the tool's error if possible, but don't hang forever
-            vibe_timeout = float(args.get("timeout_s", 1200.0))
-            try:
-                if server == "vibe":
-                    res = await asyncio.wait_for(
-                        mcp_manager.call_tool(server, tool, args),
-                        timeout=vibe_timeout + 30.0
-                    )
-                else:
-                    res = await mcp_manager.call_tool(server, tool, args)
-                return self._format_mcp_result(res)
-            except asyncio.TimeoutError:
-                return {"success": False, "error": f"Vibe tool call timed out at dispatch level (>{vibe_timeout+30}s)"}
-            except Exception as e:
-                return {"success": False, "error": f"Tetyana tool execution error: {str(e)}"}
+            return await mcp_manager.dispatch_tool(tool, args, server)
         except Exception as e:
-             logger.error(f"[TETYANA] Fatal error in _call_mcp_direct: {e}")
-             return {"success": False, "error": f"Fatal dispatch error: {str(e)}"}
+            logger.error(f"[TETYANA] Unified call failed for {server}.{tool}: {e}")
+            return {"success": False, "error": str(e)}
 
     async def _run_terminal_command(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Executes a bash command using Terminal MCP"""

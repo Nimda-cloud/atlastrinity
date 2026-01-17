@@ -12,13 +12,14 @@ async def test_fetch_urls_patch(monkeypatch):
 
     captured = {}
 
-    async def fake_call(server, tool, args):
-        captured["server"] = server
-        captured["tool"] = tool
-        captured["args"] = dict(args)  # copy to inspect
+    async def fake_call(server_name, tool_name, arguments):
+        captured["server"] = server_name
+        captured["tool"] = tool_name
+        captured["args"] = dict(arguments)  # copy to inspect
         return {"success": True, "output": "ok"}
 
-    monkeypatch.setattr(tet, "_call_mcp_direct", fake_call)
+    from brain.mcp_manager import mcp_manager
+    monkeypatch.setattr(mcp_manager, "call_tool", fake_call)
 
     tool_call = {"name": "fetch", "args": {"urls": ["http://example.com"]}}
     result = await tet._execute_tool(tool_call)
