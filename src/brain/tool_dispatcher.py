@@ -339,6 +339,9 @@ class ToolDispatcher:
             if "identifier" in args: clean_name = "open"
             elif "x" in args: clean_name = "click"
             elif "text" in args: clean_name = "type"
+            elif "path" in args: clean_name = "finder_list"
+            elif "url" in args: clean_name = "fetch"
+            elif "command" in args: clean_name = "terminal"
             else: clean_name = "screenshot"
 
         resolved_tool = self.MACOS_MAP.get(clean_name, tool_name)
