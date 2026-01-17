@@ -120,7 +120,7 @@ class AgentPrompts:
     Current context results: {context_results}
     Respond ONLY with JSON:
     {{
-        "analysis": "Ukrainian explanation",
+        "analysis": "Technical execution details in English",
         "tool_call": {{ "name": "...", "args": {{...}} }},
         "voice_message": "Ukrainian message for user"
     }}
@@ -254,14 +254,12 @@ If the user wants to talk about YOUR identity, purpose, philosophy, the program'
 
 If request is 'development' (coding/debugging), set 'use_vibe' to true.
 If request is 'task' (even high complexity), set 'use_vibe' to FALSE. Use native tools instead.
-If the user asks a question like "How does this script work?" or "Find me some interesting GitHub projects", CLASSIFY AS 'chat'.
-
-ALL textual responses (reason) MUST be in UKRAINIAN.
+ALL textual reasoning (reason) MUST be in ENGLISH for maximum logic precision.
 
 Respond STRICTLY in JSON:
 {{
     "intent": "chat" or "task" or "development",
-    "reason": "Explain your choice in Ukrainian",
+    "reason": "Explain your choice in English",
     "enriched_request": "Detailed description of the request (English)",
     "complexity": "low/medium/high",
     "use_vibe": true/false,
@@ -374,7 +372,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         {{
             "quality_score": 0.0 to 1.0 (float),
             "achieved": true/false,
-            "analysis": "Critique in UKRAINIAN",
+            "analysis": "Technical critique in ENGLISH",
             "compressed_strategy": [
                 "Step 1 intent",
                 "Step 2 intent",

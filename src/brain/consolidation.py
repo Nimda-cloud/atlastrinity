@@ -155,7 +155,7 @@ class ConsolidationModule:
         {{
             "error": "The core technical reason for failure (English)",
             "rule": "Generalized rule or best practice to avoid this next time (English)",
-            "analysis": "Brief analysis in UKRAINIAN"
+            "analysis": "Technical analysis in English"
         }}
         """
 

@@ -27,6 +27,7 @@ for r in [root_dev, root_prod]:
         sys.path.insert(0, abs_r)
 
 from providers.copilot import CopilotLLM  # noqa: E402
+from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
 
 from ..config_loader import config  # noqa: E402
 from ..context import shared_context  # noqa: E402
@@ -133,7 +134,6 @@ class Atlas(BaseAgent):
         history: List[Any] = None,
     ) -> Dict[str, Any]:
         """Analyzes user request: determines intent (chat vs task)"""
-        from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
 
         req_lower = user_request.lower().strip()
 
@@ -605,7 +605,7 @@ class Atlas(BaseAgent):
             conv_text += f"{role}: {content[:500]}\n"
 
         prompt = f"""Analyze the following conversation and provide:
-        1. A professional, detailed summary in UKRAINIAN (max 500 chars).
+        1. A professional, detailed technical summary in ENGLISH (max 500 chars).
         2. A list of key entities, names, or concepts mentioned (max 10).
 
         CONVERSATION:
