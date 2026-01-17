@@ -108,7 +108,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
               <span
                 className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${
                   log.message.includes('[VIBE-THOUGHT]')
-                    ? 'text-purple-400'
+                    ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
                     : log.message.includes('[VIBE-ACTION]')
                       ? 'text-yellow-400'
                       : log.message.includes('[VIBE-GEN]')
@@ -119,7 +119,9 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
                 }`}
                 style={{ fontFamily: 'JetBrains Mono' }}
               >
-                {typeof log.message === 'object' ? JSON.stringify(log.message) : log.message}
+                {typeof log.message === 'object' 
+                  ? JSON.stringify(log.message) 
+                  : log.message.replace('🧠 [VIBE-THOUGHT]', '').trim()}
               </span>
             </div>
           </div>

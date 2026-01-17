@@ -259,7 +259,7 @@ async def _run_vibe(
                             
                             if thoughts:
                                 # Truncate very long reasoning
-                                snippet = thoughts[:500] + ("..." if len(thoughts) > 500 else "")
+                                snippet = thoughts[:800] + ("..." if len(thoughts) > 800 else "")
                                 msg = f"🧠 [VIBE-THOUGHT] {snippet}"
                                 logger.info(msg)
                                 asyncio.create_task(safe_notify(msg))
