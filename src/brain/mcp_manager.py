@@ -428,10 +428,58 @@ class MCPManager:
         self, 
         tool_name: Optional[str], 
         arguments: Dict[str, Any] = None,
-        explicit_server: Optional[str] = None
+        explicit_server: Optional[str] = None,
+        allow_fallback: bool = True
     ) -> Any:
-        """New unified entry point for tool calls with resolution and normalization."""
-        return await self.dispatcher.resolve_and_dispatch(tool_name, arguments or {}, explicit_server)
+        """
+        Unified entry point for tool calls with resolution, normalization, and intelligent fallback.
+        
+        Args:
+            tool_name: Tool name (can include server as dot notation)
+            arguments: Tool arguments
+            explicit_server: Explicitly specified server
+            allow_fallback: If True, attempt macOS-use fallback on failure
+        """
+        result = await self.dispatcher.resolve_and_dispatch(tool_name, arguments or {}, explicit_server)
+        
+        # Intelligent fallback: If failed and allow_fallback, try macOS-use equivalent
+        if allow_fallback and isinstance(result, dict) and result.get("error"):
+            # Check if this wasn't already a macOS-use call
+            if explicit_server != "macos-use" and not (tool_name or "").startswith("macos-use"):
+                # Try to find macOS-use equivalent
+                fallback_tool = self._get_macos_equivalent(tool_name or "")
+                if fallback_tool:
+                    logger.warning(
+                        f"[MCP] Primary tool failed: {tool_name}. "
+                        f"Attempting fallback to macos-use.{fallback_tool}"
+                    )
+                    try:
+                        result = await self.call_tool("macos-use", fallback_tool, arguments or {})
+                        logger.info(f"[MCP] Fallback successful: macos-use.{fallback_tool}")
+                    except Exception as e:
+                        logger.error(f"[MCP] Fallback also failed: {e}")
+        
+        return result
+    
+    def _get_macos_equivalent(self, tool_name: str) -> Optional[str]:
+        """Find macOS-use equivalent for a given tool."""
+        tool_lower = tool_name.lower()
+        
+        # Mapping of common tools to macOS-use equivalents
+        equivalents = {
+            "fetch": "macos-use_fetch_url",
+            "fetch_url": "macos-use_fetch_url",
+            "get_time": "macos-use_get_time",
+            "time": "macos-use_get_time",
+            "screenshot": "macos-use_take_screenshot",
+            "terminal": "execute_command",
+            "execute": "execute_command",
+            "run_command": "execute_command",
+            "search": "macos-use_spotlight_search",
+            "spotlight": "macos-use_spotlight_search",
+        }
+        
+        return equivalents.get(tool_lower)
 
     async def list_tools(self, server_name: str) -> List[Any]:
         """List available tools for a server"""
@@ -603,12 +651,21 @@ class MCPManager:
         return self._health_task
 
     def get_status(self) -> Dict[str, Any]:
-        """Get status of all servers."""
-        return {
+        """Get status of all servers including coverage statistics."""
+        status = {
             "connected_servers": list(self.sessions.keys()),
             "configured_servers": list(self.config.get("mcpServers", {}).keys()),
             "session_count": len(self.sessions),
         }
+        
+        # Add coverage statistics
+        try:
+            coverage = self.dispatcher.get_coverage_stats()
+            status["coverage"] = coverage
+        except Exception as e:
+            logger.warning(f"[MCP] Could not get coverage stats: {e}")
+        
+        return status
 
     def register_log_callback(self, callback):
         """Register a callback to receive log notifications from servers."""

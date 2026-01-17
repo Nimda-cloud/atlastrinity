@@ -45,10 +45,22 @@ class ToolDispatcher:
         "time": "macos-use_get_time",
         "notification": "macos-use_send_notification",
     }
+    
+    MACOS_USE_PRIORITY = {
+        "bash", "zsh", "sh", "execute", "run", "cmd", "command",
+        "git", "npm", "npx", "pip", "brew", "curl", "wget",
+        "time", "clock", "date", "fetch", "url", "scrape",
+        "volume", "brightness", "mute", "play", "pause",
+        "calendar", "event", "reminder", "note", "mail", "email",
+        "finder", "trash", "spotlight", "search",
+        "applescript", "osascript",
+    }
 
     def __init__(self, mcp_manager):
         self.mcp_manager = mcp_manager
         self._current_pid: Optional[int] = None
+        self._total_calls = 0
+        self._macos_use_calls = 0
 
     def set_pid(self, pid: Optional[int]):
         """Update the currently tracked PID for macOS automation."""
@@ -80,13 +92,20 @@ class ToolDispatcher:
                 explicit_server = parts[0]
                 tool_name = parts[1]
             
-            # 4. Synonym Mapping & Routing
-            server, resolved_tool, normalized_args = self._resolve_tool_and_args(tool_name, args, explicit_server)
+            # 4. Intelligent Routing with macOS-use Priority
+            server, resolved_tool, normalized_args = self._intelligent_routing(
+                tool_name, args, explicit_server
+            )
             
             if not server:
                 return {"success": False, "error": f"Could not resolve server for tool: {tool_name}"}
 
-            # 5. Final Dispatch via MCPManager
+            # 5. Track metrics
+            self._total_calls += 1
+            if server == "macos-use":
+                self._macos_use_calls += 1
+
+            # 6. Final Dispatch via MCPManager
             logger.info(f"[DISPATCHER] Calling {server}.{resolved_tool} with {list(normalized_args.keys())}")
             return await self.mcp_manager.call_tool(server, resolved_tool, normalized_args)
 
@@ -109,6 +128,59 @@ class ToolDispatcher:
             return "terminal"
         
         return action or "terminal"
+    
+    def _can_macos_use_handle(self, tool_name: str) -> bool:
+        """Check if macOS-use can handle this tool based on priority set."""
+        tool_lower = tool_name.lower()
+        
+        # Direct check in priority set
+        if any(priority in tool_lower for priority in self.MACOS_USE_PRIORITY):
+            return True
+        
+        # Check if it's already a macos-use tool
+        if tool_lower.startswith("macos-use") or tool_lower.startswith("macos_use_"):
+            return True
+        
+        # Check MACOS_MAP
+        if tool_lower in self.MACOS_MAP:
+            return True
+        
+        return False
+    
+    def _intelligent_routing(
+        self, 
+        tool_name: str, 
+        args: Dict[str, Any], 
+        explicit_server: Optional[str] = None
+    ) -> Tuple[Optional[str], str, Dict[str, Any]]:
+        """
+        Intelligent tier-based routing with macOS-use priority.
+        Prioritizes macOS-use for 90% coverage target.
+        """
+        # If explicit server specified and NOT asking for macOS-use check, use it
+        if explicit_server and not self._can_macos_use_handle(tool_name):
+            return self._resolve_tool_and_args(tool_name, args, explicit_server)
+        
+        # Priority 1: Check if macOS-use can handle this
+        if self._can_macos_use_handle(tool_name) or explicit_server == "macos-use":
+            # Route to macOS-use
+            server, resolved_tool, normalized_args = self._handle_macos_use(tool_name, args)
+            if server:
+                logger.debug(f"[DISPATCHER] Priority routing: {tool_name} → macos-use.{resolved_tool}")
+                return server, resolved_tool, normalized_args
+        
+        # Priority 2: Standard resolution
+        return self._resolve_tool_and_args(tool_name, args, explicit_server)
+    
+    def get_coverage_stats(self) -> Dict[str, Any]:
+        """Get macOS-use coverage statistics."""
+        coverage_pct = (self._macos_use_calls / self._total_calls * 100) if self._total_calls > 0 else 0
+        return {
+            "total_calls": self._total_calls,
+            "macos_use_calls": self._macos_use_calls,
+            "coverage_percentage": round(coverage_pct, 2),
+            "target": 90.0
+        }
 
     def _resolve_tool_and_args(
         self, 
