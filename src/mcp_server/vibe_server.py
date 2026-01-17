@@ -215,6 +215,9 @@ async def _run_vibe(
 
         stdout_chunks = []
         stderr_chunks = []
+с
+        # Shared state for heartbeat
+        last_activity = [asyncio.get_event_loop().time()]
 
         async def read_stream(stream, chunks, prefix):
             buffer = ""
@@ -224,22 +227,23 @@ async def _run_vibe(
                 if not data:
                     break
                 
+                # Update activity timestamp
+                last_activity[0] = asyncio.get_event_loop().time()
+
                 text_chunk = data.decode(errors='replace')
-                print(f"[VIBE_DEBUG] Read chunk: {len(text_chunk)} bytes", file=sys.stderr)
+                # print(f"[VIBE_DEBUG] Read chunk: {len(text_chunk)} bytes", file=sys.stderr)
                 chunks.append(text_chunk)
                 buffer += text_chunk
                 
                 lines = []
                 if "\n" in buffer:
                     lines = buffer.split("\n")
-                    # Last element might be incomplete line, keep it
                     buffer = lines.pop()
                     
                 for raw_text in lines:
                     if not raw_text.strip():
                         continue
                     
-                    # Robust JSON detection
                     stripped = raw_text.strip()
                     is_json = False
                     
@@ -252,7 +256,6 @@ async def _run_vibe(
                             thoughts = data_json.get("reasoning_content") or data_json.get("thought") or ""
                             content = data_json.get("content") or ""
                             tool_calls = data_json.get("tool_calls")
-                            role = data_json.get("role")
                             
                             if thoughts:
                                 # Truncate very long reasoning
@@ -262,76 +265,50 @@ async def _run_vibe(
                                 asyncio.create_task(safe_notify(msg))
                             
                             elif tool_calls:
-                                # Vibe often emits multiple tool calls in streaming
                                 for tc in tool_calls:
                                     func = tc.get("function", {})
                                     f_name = func.get("name", "unknown_tool")
-                                    f_args = func.get("arguments", "{}")
-                                    # Show a bit of the arguments for context
-                                    args_snippet = f_args[:100] + ("..." if len(f_args) > 100 else "")
-                                    msg = f"🛠️ [VIBE-ACTION] Using tool: {f_name} | Args: {args_snippet}"
+                                    msg = f"🛠️ [VIBE-ACTION] Using tool: {f_name}"
                                     logger.info(msg)
                                     asyncio.create_task(safe_notify(msg))
                             
                             elif content:
-                                # The actual AI response snippets
                                 snippet = content.strip().replace("\n", " ")[:300]
                                 if snippet:
                                     msg = f"📝 [VIBE-GEN] {snippet}..."
                                     logger.info(msg)
                                     asyncio.create_task(safe_notify(msg))
-                            
-                            elif role == "user":
-                                msg = f"👤 [VIBE-USER] {data_json.get('content', '')[:200]}..."
-                                logger.info(msg)
-                                
+                                    
                         except Exception:
-                            is_json = False # Fall back to raw text logging
+                            is_json = False 
 
-                    # Raw text logging (for non-JSON parts or parsing failures)
                     if not is_json:
-                        # Extract "milestones" from raw CLI output
-                        lower_text = stripped.lower()
-                        if any(kw in lower_text for kw in ["creating", "writing", "saved", "modified", "editing"]):
-                            msg = f"📂 [VIBE-FILES] {stripped}"
-                            logger.info(msg)
-                            asyncio.create_task(safe_notify(msg))
-                        elif "step" in lower_text and ":" in lower_text:
-                            msg = f"📍 [VIBE-STEP] {stripped}"
-                            logger.info(msg)
-                            asyncio.create_task(safe_notify(msg))
-                        elif "error" in lower_text or "fail" in lower_text:
-                            msg = f"⚠️ [VIBE-ALERT] {stripped}"
-                            logger.warning(msg)
-                            if ctx:
-                                try:
-                                    asyncio.create_task(ctx.error(msg))
-                                except Exception: pass
-                        else:
-                            # General output - log to file, but only small snippets to UI to avoid spam
-                            msg = f"📺 [VIBE-LIVE] {stripped[:200]}{'...' if len(stripped) > 200 else ''}"
-                            logger.info(msg)
-                            if len(stripped) < 500:
-                                asyncio.create_task(safe_notify(msg))
+                        # Raw text support
+                        if len(stripped) < 1000:
+                             # Heuristic for status vs content
+                             if any(x in stripped.lower() for x in ["downloading", "fetching", "waiting", "connect"]):
+                                 msg = f"⚡ [VIBE-LIVE] {stripped}"
+                                 asyncio.create_task(safe_notify(msg))
 
-        # Run reading tasks concurrently with a timeout
-        # Heartbeat task for deep reasoning phase
+        # Heartbeat task
         async def heartbeat_worker():
-            reasoning_ticks = 0
+            ticks = 0
             while process.returncode is None:
-                await asyncio.sleep(5)  # Faster heartbeat for UI visibility (5s)
+                await asyncio.sleep(5)
                 if process.returncode is None:
-                    reasoning_ticks += 1
-                    msg = f"🧠 [VIBE-LIVE] Vibe is deep-reasoning... (Tick {reasoning_ticks}, API response pending)"
-                    logger.info(msg)
-                    asyncio.create_task(safe_notify(msg))
+                    ticks += 1
+                    now = asyncio.get_event_loop().time()
+                    silence_duration = now - last_activity[0]
                     
-                    # Warn if hanging too long (e.g. > 120s without output)
-                    # Note: We rely on the fact that read_stream updates 'stdout_chunks' or prints debugs.
-                    # Since we can't easily check 'last_activity' here without shared state, 
-                    # we just provide the hearbeat.
-                    if reasoning_ticks % 12 == 0: # Every 60s
-                        logger.info(f"⏳ [VIBE-STATUS] Optimization still in progress... ({reasoning_ticks * 5}s elapsed)")
+                    # Only log if silent for > 5 seconds
+                    if silence_duration > 5:
+                        msg = f"⏳ [VIBE-LIVE] Vibe is processing... ({int(silence_duration)}s silence)"
+                        logger.info(msg)
+                        asyncio.create_task(safe_notify(msg))
+                    
+                    # Warning after long silence
+                    if silence_duration > 120 and ticks % 6 == 0:
+                        logger.warning(f"⚠️ [VIBE-ALERT] No output from Vibe for {int(silence_duration)}s. Task may be complex or model is hanging.")
         
         hb_task = asyncio.create_task(heartbeat_worker())
         try:
