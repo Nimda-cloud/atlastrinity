@@ -21,6 +21,8 @@ import logging
 import os
 import shutil
 import subprocess
+import uuid
+import re
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from datetime import datetime
@@ -116,6 +118,16 @@ def _resolve_vibe_binary() -> Optional[str]:
     if os.path.isabs(VIBE_BINARY) and os.path.exists(VIBE_BINARY):
         return VIBE_BINARY
     return shutil.which(VIBE_BINARY)
+
+
+def _parse_stack_trace(error_msg: str) -> Optional[Dict[str, str]]:
+    """Extract file path and line number from python stack trace."""
+    # Simple regex for: File "path/to/file.py", line 123
+    match = re.search(r'File "([^"]+)", line (\d+)', error_msg)
+    if match:
+        return {"file": match.group(1), "line": match.group(2)}
+    return None
+
 
 
 async def _run_vibe(
@@ -336,8 +348,34 @@ async def _run_vibe_programmatic(
     if not vibe_path:
         return {"error": f"Vibe CLI not found on PATH (binary='{VIBE_BINARY}')"}
 
+    # Handle long prompts by writing to file mechanism to avoid ARG_MAX issues
+    final_prompt = prompt
+    # Shell limits are often around 130kb but some are lower, 2000 is safe strict limit for flags
+    if len(prompt) > 2000:
+        try:
+             # Ensure workspace
+             eff_cwd = cwd or VIBE_WORKSPACE
+             if not os.path.exists(eff_cwd):
+                 os.makedirs(eff_cwd, exist_ok=True)
+                 
+             prompt_file = f"vibe_instructions_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:6]}.md"
+             prompt_path = os.path.join(eff_cwd, prompt_file)
+             
+             with open(prompt_path, "w", encoding="utf-8") as f:
+                f.write("# INSTRUCTIONS FOR VIBE AGENT\n\n")
+                f.write(prompt)
+             
+             # The new prompt directs Vibe to the file
+             final_prompt = f"Please read and execute the instructions detailed in the file: {prompt_file}"
+             logger.info(f"[VIBE] Large prompt ({len(prompt)} chars) offloaded to {prompt_path}")
+        except Exception as e:
+            logger.warning(f"[VIBE] Failed to write prompt file: {e}")
+            # Fallback not to clip immediately, let it try or clip if HUGE
+            if len(prompt) > 10000:
+                final_prompt = prompt[:10000] + "\n...[TRUNCATED]"
+
     # Build command with programmatic flags
-    argv: List[str] = [vibe_path, "-p", prompt]
+    argv: List[str] = [vibe_path, "-p", final_prompt]
 
     # Output format for structured responses - use 'streaming' for real-time visibility
     # even if the final result is parsed as JSON
@@ -547,6 +585,25 @@ async def vibe_analyze_error(
 
     if file_path:
         prompt_parts.append(f"\nFILE PATH: {file_path}")
+    else:
+        # Try to parse from error message if not provided
+        trace_info = _parse_stack_trace(error_message)
+        if trace_info:
+            file_path = trace_info["file"]
+            prompt_parts.append(f"\nDETECTED FILE FROM TRACE: {file_path} (Line {trace_info['line']})")
+
+    # Enhance with file content if available
+    if file_path and os.path.exists(file_path):
+        try:
+             with open(file_path, "r", encoding="utf-8") as f:
+                 content = f.read()
+                 # Context limit for clarity
+                 if len(content) > 12000:
+                     content = content[:12000] + "\n... [TRUNCATED FILE CONTENT] ..."
+                 prompt_parts.append(f"\nTARGET FILE CONTENT ({file_path}):\n```python\n{content}\n```")
+        except Exception as e:
+             prompt_parts.append(f"\n(Could not read file {file_path}: {e})")
+
 
     if auto_fix:
         prompt_parts.extend(
