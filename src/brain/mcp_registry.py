@@ -134,6 +134,19 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
         "when_to_use": "ONLY for: 1) Writing code/scripts (software dev), 2) Fixing hard errors (self-healing). DO NOT use for general planning or simple file tasks.",
     },
 
+    "system": {
+        "name": "system",
+        "tier": 1,
+        "category": "core",
+        "description": "Internal Trinity System tools",
+        "capabilities": [
+            "Restarting MCP servers",
+            "System status management"
+        ],
+        "key_tools": ["restart_mcp_server"],
+        "when_to_use": "Use when an MCP server is unresponsive, returns 'Connection closed', or needs a fresh start.",
+    },
+
     # ─────────────────────────────────────────────────────────────────────────
     # TIER 3-4 - OPTIONAL SERVERS
     # ─────────────────────────────────────────────────────────────────────────

@@ -36,17 +36,18 @@ logger.setLevel(logging.INFO)
 try:
     _log_dir = Path.home() / ".config" / "atlastrinity" / "logs"
     _log_dir.mkdir(parents=True, exist_ok=True)
-    # Use simple FileHandler for brain.log visibility
-    fh = logging.FileHandler(_log_dir / "brain.log", encoding="utf-8")
-    fh.setFormatter(logging.Formatter("%(asctime)s - vibe_mcp - %(levelname)s - %(message)s"))
+    
+    # Emergency debug log
+    fh = logging.FileHandler(_log_dir / "vibe_server_debug.log", mode='a', encoding='utf-8')
+    fh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logger.addHandler(fh)
-    # Also keep stderr for internal mcp console visibility
+    
     import sys
     sh = logging.StreamHandler(sys.stderr)
     sh.setFormatter(logging.Formatter("[VIBE_MCP] %(message)s"))
     logger.addHandler(sh)
 except Exception:
-    pass # Fallback to default if log dir unreachable
+    pass
 
 try:
     from .config_loader import get_config_value
@@ -60,7 +61,7 @@ try:
     # Resolve global vibe_workspace
     VIBE_WORKSPACE = get_config_value("vibe", "workspace", str(Path.home() / ".config" / "atlastrinity" / "vibe_workspace"))
 except Exception:
-    VIBE_BINARY = "vibe"
+    VIBE_BINARY = os.path.expanduser("~/.local/bin/vibe") if os.path.exists(os.path.expanduser("~/.local/bin/vibe")) else "vibe"
     DEFAULT_TIMEOUT_S = 1200.0
     MAX_OUTPUT_CHARS = 500000  # 500KB for large logs
     DISALLOW_INTERACTIVE = True
@@ -113,11 +114,23 @@ def _truncate(text: str) -> str:
     return text[:MAX_OUTPUT_CHARS] + "\n... [TRUNCATED - Output exceeded 500KB] ..."
 
 
-def _resolve_vibe_binary() -> Optional[str]:
+def _resolve_vibe_binary() -> str:
     """Resolve the path to the Vibe CLI binary."""
+    # Try expanded user path first (common for .local/bin)
+    expanded = os.path.expanduser("~/.local/bin/vibe")
+    if os.path.exists(expanded):
+        return expanded
+        
+    # Check config
     if os.path.isabs(VIBE_BINARY) and os.path.exists(VIBE_BINARY):
         return VIBE_BINARY
-    return shutil.which(VIBE_BINARY)
+        
+    # Check PATH
+    path_res = shutil.which(VIBE_BINARY)
+    if path_res:
+        return path_res
+        
+    return VIBE_BINARY
 
 
 def _parse_stack_trace(error_msg: str) -> Optional[Dict[str, str]]:
@@ -173,9 +186,23 @@ async def _run_vibe(
     if extra_env:
         env.update({k: str(v) for k, v in extra_env.items()})
 
+    async def safe_notify(msg: str, is_error: bool = False):
+        if not ctx: 
+            print(f"[VIBE_DEBUG] No ctx for: {msg}", file=sys.stderr)
+            return
+        try:
+            print(f"[VIBE_DEBUG] Notifying: {msg}", file=sys.stderr)
+            if is_error:
+                await ctx.error(msg)
+            else:
+                await ctx.info(msg)
+        except Exception as e:
+            print(f"[VIBE_DEBUG] safe_notify failed: {e}", file=sys.stderr)
+            pass
+
     msg_start = f"⚡ [VIBE-LIVE] Initializing... (Timeout: {timeout_s}s)"
     logger.info(msg_start)
-    if ctx: asyncio.create_task(ctx.info(msg_start))
+    asyncio.create_task(safe_notify(msg_start))
 
     try:
         process = await asyncio.create_subprocess_exec(
@@ -198,6 +225,7 @@ async def _run_vibe(
                     break
                 
                 text_chunk = data.decode(errors='replace')
+                print(f"[VIBE_DEBUG] Read chunk: {len(text_chunk)} bytes", file=sys.stderr)
                 chunks.append(text_chunk)
                 buffer += text_chunk
                 
@@ -231,7 +259,7 @@ async def _run_vibe(
                                 snippet = thoughts[:500] + ("..." if len(thoughts) > 500 else "")
                                 msg = f"🧠 [VIBE-THOUGHT] {snippet}"
                                 logger.info(msg)
-                                if ctx: asyncio.create_task(ctx.info(msg))
+                                asyncio.create_task(safe_notify(msg))
                             
                             elif tool_calls:
                                 # Vibe often emits multiple tool calls in streaming
@@ -243,7 +271,7 @@ async def _run_vibe(
                                     args_snippet = f_args[:100] + ("..." if len(f_args) > 100 else "")
                                     msg = f"🛠️ [VIBE-ACTION] Using tool: {f_name} | Args: {args_snippet}"
                                     logger.info(msg)
-                                    if ctx: asyncio.create_task(ctx.info(msg))
+                                    asyncio.create_task(safe_notify(msg))
                             
                             elif content:
                                 # The actual AI response snippets
@@ -251,7 +279,7 @@ async def _run_vibe(
                                 if snippet:
                                     msg = f"📝 [VIBE-GEN] {snippet}..."
                                     logger.info(msg)
-                                    if ctx: asyncio.create_task(ctx.info(msg))
+                                    asyncio.create_task(safe_notify(msg))
                             
                             elif role == "user":
                                 msg = f"👤 [VIBE-USER] {data_json.get('content', '')[:200]}..."
@@ -267,21 +295,24 @@ async def _run_vibe(
                         if any(kw in lower_text for kw in ["creating", "writing", "saved", "modified", "editing"]):
                             msg = f"📂 [VIBE-FILES] {stripped}"
                             logger.info(msg)
-                            if ctx: asyncio.create_task(ctx.info(msg))
+                            asyncio.create_task(safe_notify(msg))
                         elif "step" in lower_text and ":" in lower_text:
                             msg = f"📍 [VIBE-STEP] {stripped}"
                             logger.info(msg)
-                            if ctx: asyncio.create_task(ctx.info(msg))
+                            asyncio.create_task(safe_notify(msg))
                         elif "error" in lower_text or "fail" in lower_text:
                             msg = f"⚠️ [VIBE-ALERT] {stripped}"
                             logger.warning(msg)
-                            if ctx: asyncio.create_task(ctx.error(msg))
+                            if ctx:
+                                try:
+                                    asyncio.create_task(ctx.error(msg))
+                                except Exception: pass
                         else:
                             # General output - log to file, but only small snippets to UI to avoid spam
                             msg = f"📺 [VIBE-LIVE] {stripped[:200]}{'...' if len(stripped) > 200 else ''}"
                             logger.info(msg)
-                            if ctx and len(stripped) < 500:
-                                asyncio.create_task(ctx.info(msg))
+                            if len(stripped) < 500:
+                                asyncio.create_task(safe_notify(msg))
 
         # Run reading tasks concurrently with a timeout
         # Heartbeat task for deep reasoning phase
@@ -293,7 +324,7 @@ async def _run_vibe(
                     reasoning_ticks += 1
                     msg = f"🧠 [VIBE-LIVE] Vibe is deep-reasoning... (Tick {reasoning_ticks}, API response pending)"
                     logger.info(msg)
-                    if ctx: asyncio.create_task(ctx.info(msg))
+                    asyncio.create_task(safe_notify(msg))
         
         hb_task = asyncio.create_task(heartbeat_worker())
         try:

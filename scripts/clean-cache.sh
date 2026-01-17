@@ -27,4 +27,16 @@ rm -rf ~/Library/Caches/atlastrinity* 2>/dev/null
 echo "  • Очищення тимчасових файлів..."
 rm -rf ~/.config/atlastrinity/screenshots/*.png 2>/dev/null
 
+# Вбивство завислих процесів
+echo "  • Вбивство завислих процесів (port 8000, MCP servers)..."
+# Вбиваємо все на порту 8000 (brain.server)
+lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+# Вбиваємо основні MCP сервери за маскою
+pkill -9 -f vibe_server 2>/dev/null || true
+pkill -9 -f memory_server 2>/dev/null || true
+pkill -9 -f graph_server 2>/dev/null || true
+pkill -9 -f mcp-server 2>/dev/null || true
+pkill -9 -f macos-use 2>/dev/null || true
+pkill -9 -f brain.server 2>/dev/null || true
+
 echo "✅ Кеші очищені!"

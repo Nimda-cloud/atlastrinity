@@ -128,6 +128,10 @@ class ToolDispatcher:
                 tool_name, args, explicit_server
             )
             
+            # Special case: System tools handled internally
+            if server == "_trinity_native" or server == "system":
+                return await self._handle_system(resolved_tool, normalized_args)
+            
             if not server:
                 return {"success": False, "error": f"Could not resolve server for tool: {tool_name}"}
 
@@ -366,6 +370,26 @@ class ToolDispatcher:
             workspace.mkdir(parents=True, exist_ok=True)
 
         return "vibe", resolved_tool, args
+
+    async def _handle_system(self, tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Handles internal Trinity system tools."""
+        if tool_name == "restart_mcp_server":
+            server_to_restart = args.get("server_name")
+            if not server_to_restart:
+                return {"success": False, "error": "Missing 'server_name' argument."}
+            
+            logger.info(f"[SYSTEM] Restarting MCP server: {server_to_restart}")
+            success = await self.mcp_manager.restart_server(server_to_restart)
+            return {
+                "success": success,
+                "result": f"Server '{server_to_restart}' restart {'successful' if success else 'failed'}."
+            }
+        
+        elif tool_name == "query_db":
+            # For now, we don't expose raw SQL to agents for safety, but we could implement specific queries
+            return {"success": False, "error": "Direct DB queries via LLM are currently restricted for safety."}
+            
+        return {"success": False, "error": f"Unknown system tool: {tool_name}"}
 
     def _handle_macos_use(self, tool_name: str, args: Dict[str, Any]) -> Tuple[str, str, Dict[str, Any]]:
         """Standardizes macos-use GUI and productivity tool calls."""

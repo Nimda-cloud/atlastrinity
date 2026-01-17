@@ -88,8 +88,8 @@ class Trinity:
         mcp_manager.start_health_monitoring(interval=60)
         
         # Capture MCP server log notifications for UI visibility
-        async def mcp_log_forwarder(message, source):
-            await self._log(message, source=source)
+        async def mcp_log_forwarder(message, source, level="info"):
+            await self._log(message, source=source, type=level)
             
         mcp_manager.register_log_callback(mcp_log_forwarder)
         # Initialize DB
@@ -215,6 +215,13 @@ class Trinity:
             if "logs" not in self.state:
                 self.state["logs"] = []
             self.state["logs"].append(entry)
+            
+            # 3. Publish to Redis for real-time UI updates
+            if state_manager.available:
+                try:
+                    state_manager.publish_event("logs", entry)
+                except Exception as e:
+                    logger.warning(f"Failed to publish log to Redis: {e}")
 
     async def _update_knowledge_graph(self, step_id: str, result: StepResult):
         """Update KG with entities found in the step results"""
@@ -365,7 +372,7 @@ class Trinity:
             "current_task": task_summary,
             "active_agent": active_agent,
             "messages": messages,
-            "logs": self.state.get("logs", [])[-50:],
+            "logs": self.state.get("logs", [])[-200:],
             "step_results": self.state.get("step_results", []),
             "metrics": metrics_collector.get_metrics(),
         }

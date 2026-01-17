@@ -204,6 +204,30 @@ class MCPManager:
 
         return processed
 
+    def _kill_orphans(self, server_name: str, command: str):
+        """Kills any lingering processes that match the server command-args signature."""
+        try:
+            import subprocess
+            # We look for processes running the same command/module
+            search_str = ""
+            if "src.mcp_server" in command:
+                search_str = command.split(".")[-1]
+            elif "mcp-server-" in command:
+                search_str = command.split("/")[-1]
+            else:
+                search_str = server_name
+
+            if not search_str: return
+
+            logger.info(f"[MCP] Cleaning up orphan processes for {server_name} (search: {search_str})")
+            subprocess.run(["pkill", "-9", "-f", search_str], capture_output=True)
+            # Give OS a moment to release ports/files
+            import time
+            time.sleep(0.5)
+        except Exception as e:
+            logger.debug(f"Orphan cleanup failed for {server_name}: {e}")
+
+
     async def get_session(self, server_name: str) -> Optional[ClientSession]:
         """Get or create a persistent session for the server"""
         if ClientSession is None or StdioServerParameters is None or stdio_client is None:
@@ -245,6 +269,15 @@ class MCPManager:
         args = config.get("args", [])
         env = os.environ.copy()
         env.update(config.get("env", {}))
+        
+        # Ensure PYTHONPATH includes project root so that 'src.mcp_server' can be resolved
+        from .config import PROJECT_ROOT
+        root_path = str(PROJECT_ROOT)
+        current_pp = env.get("PYTHONPATH", "")
+        if root_path not in current_pp:
+            env["PYTHONPATH"] = f"{root_path}{os.pathsep}{current_pp}" if current_pp else root_path
+        
+        logger.debug(f"[MCP] PYTHONPATH for {server_name}: {env.get('PYTHONPATH')}")
 
         # Resolve command path
         if command == "python3" or command == "python":
@@ -311,6 +344,12 @@ class MCPManager:
 
         async def connection_runner():
             try:
+                # Clean up previous instances before starting
+                # (Added to address user feedback about too many servers)
+                # self._kill_orphans(server_name, command)
+                # Wait, better not to kill during connect_server if it's already managed.
+                # Only do it in restart_server.
+                
                 logger.info(f"Connecting to MCP server: {server_name}...")
                 logger.debug(f"[MCP] Command: {command}, Args: {args}")
                 async with stdio_client(server_params) as (read, write):
@@ -321,27 +360,34 @@ class MCPManager:
                         data = getattr(params, "data", "")
                         
                         # Format message
-                        msg = f"[{server_name}] {data}"
+                        msg = data
                         
-                        # Log to main brain logger
-                        if level_str in ["debug", "trace"]:
-                            logger.debug(msg)
-                        elif level_str in ["warning", "warn"]:
-                            logger.warning(msg)
-                        elif level_str in ["error", "critical", "fatal"]:
-                            logger.error(msg)
-                        else:
-                            logger.info(msg)
+                        # Log to main brain logger - DISABLED to avoid duplication with Orchestrator callback
+                        # if level_str in ["debug", "trace"]:
+                        #     logger.debug(msg)
+                        # elif level_str in ["warning", "warn"]:
+                        #     logger.warning(msg)
+                        # elif level_str in ["error", "critical", "fatal"]:
+                        #     logger.error(msg)
+                        # else:
+                        #     logger.info(msg)
 
                         # Notify callbacks (e.g. for WebSocket limits)
                         for cb in self._log_callbacks:
                             try:
                                 if asyncio.iscoroutinefunction(cb):
-                                    await cb(msg, server_name)
+                                    # We use a wrapper for the task to catch internal callback errors
+                                    async def safe_cb_wrapper():
+                                        try:
+                                            await cb(msg, server_name, level_str)
+                                        except Exception as e:
+                                            logger.error(f"[MCP] Log callback internal error ({server_name}): {e}")
+                                    
+                                    asyncio.create_task(safe_cb_wrapper())
                                 else:
-                                    cb(msg, server_name)
+                                    cb(msg, server_name, level_str)
                             except Exception as e:
-                                logger.error(f"[MCP] Log callback error: {e}")
+                                logger.error(f"[MCP] Log callback dispatch error ({server_name}): {e}")
 
                     async with ClientSession(read, write, logging_callback=handle_log) as session:
                         await session.initialize()
@@ -409,28 +455,33 @@ class MCPManager:
 
             return result
         except Exception as e:
-            logger.error(f"Error calling tool {server_name}.{tool_name}: {e}")
+            # Enhanced error formatting for ExceptionGroup
+            error_msg = str(e)
+            if hasattr(e, "exceptions") and e.exceptions: # ExceptionGroup
+                error_msg = f"{type(e).__name__}: {', '.join([str(x) for x in e.exceptions])}"
+
+            logger.error(f"Error calling tool {server_name}.{tool_name}: {error_msg}")
 
             # Special handling for vibe server - try to auto-enable on errors
             if server_name == "vibe":
                 try:
-                    from .config_loader import config  # noqa: E402
-
-                    if not config.get("mcp.vibe.enabled", False):
-                        logger.warning("[MCP] Vibe tool failed but server disabled - auto-enabling")
-                        # For now, just log. In future, could dynamically enable
-                        logger.info(
-                            "[MCP] Consider enabling vibe in config.yaml to prevent auto-enable issues"
-                        )
+                    # Check if actually disabled
+                    vibe_cfg = self.config.get("mcpServers", {}).get("vibe", {})
+                    if vibe_cfg.get("disabled"):
+                        logger.warning("[MCP] Vibe tool failed and server is disabled in config")
                 except Exception as config_err:
                     logger.error(f"[MCP] Failed to check vibe config: {config_err}")
 
             # If connection died, try to reconnect once
-            if "Connection closed" in str(e) or "Broken pipe" in str(e):
+            if any(kw in error_msg for kw in ["Connection closed", "Broken pipe", "ClosedResourceError", "unhandled errors in a TaskGroup"]):
                 logger.warning(f"Connection lost to {server_name}, attempting reconnection...")
                 async with self._lock:
                     if server_name in self.sessions:
                         del self.sessions[server_name]
+                    if server_name in self._connection_tasks:
+                        # Cancel existing task to allow fresh start
+                        task = self._connection_tasks.pop(server_name)
+                        task.cancel()
 
                 session = await self.get_session(server_name)
                 if session:
@@ -439,7 +490,7 @@ class MCPManager:
                     except Exception as retry_e:
                         return {"error": f"Retry failed: {str(retry_e)}"}
 
-            return {"error": str(e)}
+            return {"error": error_msg}
 
     async def dispatch_tool(
         self, 
@@ -568,6 +619,7 @@ class MCPManager:
         logger.warning(f"[MCP] Restarting server: {server_name}")
 
         async with self._restart_semaphore:
+            server_config = self.config.get("mcpServers", {}).get(server_name)
             async with self._lock:
                 # Signal old connection to close
                 if server_name in self._close_events:
@@ -585,8 +637,11 @@ class MCPManager:
                 # Remove any remaining session reference
                 if server_name in self.sessions:
                     del self.sessions[server_name]
+                
+                # Proactive cleanup of lingering child processes
+                cmd = server_config.get("command", "") if server_config else ""
+                self._kill_orphans(server_name, cmd)
 
-            server_config = self.config.get("mcpServers", {}).get(server_name)
             # Treat an empty dict as a valid server configuration. Only fail if the entry is missing entirely.
             if server_config is None:
                 logger.error(f"No configuration for server {server_name}")
