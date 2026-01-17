@@ -143,8 +143,9 @@ class Atlas(BaseAgent):
         prompt = AgentPrompts.atlas_intent_classification_prompt(
             user_request, str(context or "None"), str(history or "None")
         )
+        system_prompt = self.SYSTEM_PROMPT.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
         messages = [
-            SystemMessage(content=self.SYSTEM_PROMPT),
+            SystemMessage(content=system_prompt),
             HumanMessage(content=prompt),
         ]
 
@@ -369,22 +370,15 @@ class Atlas(BaseAgent):
             simulation_result = "Standard execution strategy."
 
         # 2. PLAN FORMULATION
-        use_vibe = (
-            enriched_request.get("use_vibe", False)
-            or enriched_request.get("intent") == "development"
-        )
-        vibe_directive = ""
-
-        if use_vibe:
-            vibe_directive = """
-            CRITICAL DEVELOPMENT OVERRIDE:
-            This is a SOFTWARE DEVELOPMENT task. You MUST delegate to 'vibe' server (Mistral AI) for:
-            1. Planning architecture (vibe_smart_plan)
-            2. Writing code (vibe_prompt)
-            3. Debugging (vibe_analyze_error)
+        intent = enriched_request.get("intent", "task")
+        
+        # Inject context-specific doctrine
+        if intent == "development":
+            doctrine = AgentPrompts.SDLC_PROTOCOL
+        else:
+            doctrine = AgentPrompts.TASK_PROTOCOL
             
-            Do NOT attempt to write complex code yourself via filesystem. Delegate to Vibe.
-            """
+        dynamic_system_prompt = self.SYSTEM_PROMPT.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", doctrine)
 
         prompt = AgentPrompts.atlas_plan_creation_prompt(
             task_text,
@@ -394,12 +388,12 @@ class Atlas(BaseAgent):
                 if hasattr(shared_context, "available_mcp_catalog")
                 else ""
             ),
-            vibe_directive,
+            "",  # vibe_directive handled via SDLC_PROTOCOL inside doctrine
             str(shared_context.to_dict()),
         )
 
         messages = [
-            SystemMessage(content=self.SYSTEM_PROMPT),
+            SystemMessage(content=dynamic_system_prompt),
             HumanMessage(content=prompt),
         ]
 
@@ -414,7 +408,7 @@ class Atlas(BaseAgent):
                 # Re-try planning with reasoning context
                 prompt += f"\n\nRESEARCH FINDINGS:\n{str(reasoning.get('analysis'))}"
                 messages = [
-                    SystemMessage(content=self.SYSTEM_PROMPT),
+                    SystemMessage(content=dynamic_system_prompt),
                     HumanMessage(content=prompt),
                 ]
                 response = await self.llm.ainvoke(messages)

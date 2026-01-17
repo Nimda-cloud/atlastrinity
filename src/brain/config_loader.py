@@ -135,6 +135,10 @@ class SystemConfig:
                     "language": "uk",
                 },
             },
+            "system": {
+                "workspace_path": "~/Developer/Trinity",
+                "repository_path": str(PROJECT_ROOT),  # Path to Trinity source code for self-healing
+            },
             "logging": {"level": "INFO", "max_log_size": 10485760, "backup_count": 5},
         }
 

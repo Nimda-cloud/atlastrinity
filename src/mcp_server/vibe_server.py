@@ -23,7 +23,7 @@ import shutil
 import subprocess
 import uuid
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from datetime import datetime
 from mcp.server.fastmcp import FastMCP, Context
@@ -67,8 +67,24 @@ except Exception:
     DISALLOW_INTERACTIVE = True
     VIBE_WORKSPACE = str(Path.home() / ".config" / "atlastrinity" / "vibe_workspace")
 
-from pathlib import Path
+
 PROJECT_ROOT = str(Path(__file__).parent.parent.parent)
+
+# Repository root for self-healing (where the source code to be fixed lives)
+# Default is PROJECT_ROOT, but in production it should point to the clone
+try:
+    from .config_loader import load_mcp_config # This is src/mcp_server/config_loader.py
+    _full_config_path = Path.home() / ".config" / "atlastrinity" / "config.yaml"
+    if _full_config_path.exists():
+        import yaml
+        with open(_full_config_path, "r", encoding="utf-8") as f:
+            _full_cfg = yaml.safe_load(f) or {}
+            REPOSITORY_ROOT = _full_cfg.get("system", {}).get("repository_path", PROJECT_ROOT)
+    else:
+        REPOSITORY_ROOT = PROJECT_ROOT
+except Exception:
+    REPOSITORY_ROOT = PROJECT_ROOT
+
 LOG_DIR = str(Path.home() / ".config" / "atlastrinity" / "logs")
 
 
@@ -169,7 +185,7 @@ def _prepare_prompt_arg(prompt: str, cwd: Optional[str] = None) -> Tuple[str, Op
         logger.warning(f"[VIBE] Failed to write prompt file: {e}")
         # Fallback
         if len(prompt) > 10000:
-             return prompt[:10000] + "\n...[TRUNCATED]", None
+            return prompt[:10000] + "\n...[TRUNCATED]", None
         return prompt, None
 
 
@@ -215,7 +231,7 @@ async def _run_vibe(
 
         stdout_chunks = []
         stderr_chunks = []
-с
+
         # Shared state for heartbeat
         last_activity = [asyncio.get_event_loop().time()]
 
@@ -231,7 +247,9 @@ async def _run_vibe(
                 last_activity[0] = asyncio.get_event_loop().time()
 
                 text_chunk = data.decode(errors='replace')
-                # print(f"[VIBE_DEBUG] Read chunk: {len(text_chunk)} bytes", file=sys.stderr)
+                # Debug: log raw chunk reception
+                if text_chunk.strip():
+                    print(f"[VIBE_DEBUG] [{prefix}] Chunk: {len(text_chunk)} bytes", file=sys.stderr)
                 chunks.append(text_chunk)
                 buffer += text_chunk
                 
@@ -247,15 +265,21 @@ async def _run_vibe(
                     stripped = raw_text.strip()
                     is_json = False
                     
-                    if stripped.startswith("{") and stripped.endswith("}"):
+                    if stripped.startswith("{"):
                         try:
                             # Try to parse as JSON first (vibe --output streaming / json)
                             data_json = json.loads(stripped)
                             is_json = True
                             
+                            role = data_json.get("role", "")
                             thoughts = data_json.get("reasoning_content") or data_json.get("thought") or ""
                             content = data_json.get("content") or ""
                             tool_calls = data_json.get("tool_calls")
+                            
+                            # Log role-based message
+                            if role:
+                                role_msg = f"📨 [VIBE-MSG] Role: {role}"
+                                logger.info(role_msg)
                             
                             if thoughts:
                                 # Truncate very long reasoning
@@ -264,7 +288,7 @@ async def _run_vibe(
                                 logger.info(msg)
                                 asyncio.create_task(safe_notify(msg))
                             
-                            elif tool_calls:
+                            if tool_calls:
                                 for tc in tool_calls:
                                     func = tc.get("function", {})
                                     f_name = func.get("name", "unknown_tool")
@@ -272,27 +296,38 @@ async def _run_vibe(
                                     logger.info(msg)
                                     asyncio.create_task(safe_notify(msg))
                             
-                            elif content:
-                                snippet = content.strip().replace("\n", " ")[:300]
+                            if content:
+                                snippet = content.strip().replace("\n", " ")[:500]
                                 if snippet:
-                                    msg = f"📝 [VIBE-GEN] {snippet}..."
+                                    msg = f"📝 [VIBE-GEN] {snippet}"
                                     logger.info(msg)
                                     asyncio.create_task(safe_notify(msg))
                                     
-                        except Exception:
+                        except json.JSONDecodeError:
                             is_json = False 
 
                     if not is_json:
-                        # Raw text support
+                        # Raw text support (stderr often has status messages)
                         if len(stripped) < 1000:
-                             # Heuristic for status vs content
-                             if any(x in stripped.lower() for x in ["downloading", "fetching", "waiting", "connect"]):
-                                 msg = f"⚡ [VIBE-LIVE] {stripped}"
-                                 asyncio.create_task(safe_notify(msg))
+                            # Log all stderr raw text as potential status
+                            if prefix == "VIBE-ERR" or any(x in stripped.lower() for x in ["downloading", "fetching", "waiting", "connect", "thinking", "processing", "loading", "running"]):
+                                msg = f"⚡ [VIBE-STATUS] {stripped}"
+                                logger.info(msg)
+                                asyncio.create_task(safe_notify(msg))
 
-        # Heartbeat task
+        # Heartbeat task with informative progress messages
         async def heartbeat_worker():
             ticks = 0
+            phases = [
+                "🔍 Analyzing request...",
+                "🧠 Deep thinking in progress...",
+                "💭 Reasoning through the problem...",
+                "📝 Formulating response...",
+                "🔧 Planning tool usage...",
+                "⚙️ Processing complex logic...",
+                "🎯 Refining approach...",
+                "✨ Almost there...",
+            ]
             while process.returncode is None:
                 await asyncio.sleep(5)
                 if process.returncode is None:
@@ -302,13 +337,30 @@ async def _run_vibe(
                     
                     # Only log if silent for > 5 seconds
                     if silence_duration > 5:
-                        msg = f"⏳ [VIBE-LIVE] Vibe is processing... ({int(silence_duration)}s silence)"
+                        # Rotate through phases for variety
+                        phase_idx = min(ticks - 1, len(phases) - 1)
+                        phase_msg = phases[phase_idx % len(phases)]
+                        
+                        # Calculate estimated time remaining (rough heuristic)
+                        elapsed_mins = int(silence_duration // 60)
+                        elapsed_secs = int(silence_duration % 60)
+                        time_str = f"{elapsed_mins}m {elapsed_secs}s" if elapsed_mins > 0 else f"{elapsed_secs}s"
+                        
+                        msg = f"⏳ [VIBE-LIVE] {phase_msg} (Elapsed: {time_str})"
                         logger.info(msg)
                         asyncio.create_task(safe_notify(msg))
+                        
+                        # Add context message every 30 seconds
+                        if ticks % 6 == 0:
+                            context_msg = "💡 [VIBE-INFO] Vibe CLI buffers responses - results will appear after processing completes."
+                            logger.info(context_msg)
+                            asyncio.create_task(safe_notify(context_msg))
                     
-                    # Warning after long silence
-                    if silence_duration > 120 and ticks % 6 == 0:
-                        logger.warning(f"⚠️ [VIBE-ALERT] No output from Vibe for {int(silence_duration)}s. Task may be complex or model is hanging.")
+                    # Warning after long silence (2+ minutes)
+                    if silence_duration > 120 and ticks % 12 == 0:
+                        warn_msg = f"⚠️ [VIBE-ALERT] Long processing time ({int(silence_duration)}s). Complex tasks may take several minutes."
+                        logger.warning(warn_msg)
+                        asyncio.create_task(safe_notify(warn_msg))
         
         hb_task = asyncio.create_task(heartbeat_worker())
         try:
@@ -605,7 +657,8 @@ async def vibe_analyze_error(
         "ROLE: Analyze and repair the Trinity runtime and its MCP servers.",
         "",
         f"CONTEXT:",
-        f"- Project Root: {PROJECT_ROOT}",
+        f"- Project Root (Runtime): {PROJECT_ROOT}",
+        f"- Repository Root (Source Code): {REPOSITORY_ROOT}",
         f"- Logs Directory: {LOG_DIR}",
         "- OS: macOS",
         "- Internal DB: PostgreSQL (Schema: sessions, tasks, task_steps, tool_executions, logs)",
@@ -629,14 +682,14 @@ async def vibe_analyze_error(
     # Enhance with file content if available
     if file_path and os.path.exists(file_path):
         try:
-             with open(file_path, "r", encoding="utf-8") as f:
-                 content = f.read()
-                 # Context limit for clarity
-                 if len(content) > 12000:
-                     content = content[:12000] + "\n... [TRUNCATED FILE CONTENT] ..."
-                 prompt_parts.append(f"\nTARGET FILE CONTENT ({file_path}):\n```python\n{content}\n```")
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                # Context limit for clarity
+                if len(content) > 12000:
+                    content = content[:12000] + "\n... [TRUNCATED FILE CONTENT] ..."
+                prompt_parts.append(f"\nTARGET FILE CONTENT ({file_path}):\n```python\n{content}\n```")
         except Exception as e:
-             prompt_parts.append(f"\n(Could not read file {file_path}: {e})")
+            prompt_parts.append(f"\n(Could not read file {file_path}: {e})")
 
 
     if auto_fix:
@@ -899,7 +952,7 @@ async def vibe_ask(
 
         return result
     finally:
-         # Cleanup temporary prompt file
+        # Cleanup temporary prompt file
         if prompt_path_to_clean and os.path.exists(prompt_path_to_clean):
             try:
                 os.remove(prompt_path_to_clean)

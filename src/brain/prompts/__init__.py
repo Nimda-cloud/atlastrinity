@@ -3,8 +3,10 @@ from .atlas import ATLAS
 from .common import DEFAULT_REALM_CATALOG  # re-export default catalog
 from .grisha import GRISHA
 from .tetyana import TETYANA
+from .atlas_sdlc import SDLC_PROTOCOL
+from .atlas_tasks import TASK_PROTOCOL
 
-__all__ = ["DEFAULT_REALM_CATALOG", "ATLAS", "TETYANA", "GRISHA", "AgentPrompts"]
+__all__ = ["DEFAULT_REALM_CATALOG", "ATLAS", "TETYANA", "GRISHA", "AgentPrompts", "SDLC_PROTOCOL", "TASK_PROTOCOL"]
 
 
 class AgentPrompts:
@@ -13,6 +15,9 @@ class AgentPrompts:
     ATLAS = ATLAS
     TETYANA = TETYANA
     GRISHA = GRISHA
+    
+    SDLC_PROTOCOL = SDLC_PROTOCOL
+    TASK_PROTOCOL = TASK_PROTOCOL
 
     @staticmethod
     def tetyana_reasoning_prompt(

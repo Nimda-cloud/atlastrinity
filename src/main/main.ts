@@ -289,6 +289,23 @@ app.on('before-quit', () => {
     pythonProcess.kill('SIGTERM');
     pythonProcess = null;
   }
+  
+  // Force clean up any stray processes in dev mode
+  if (isDev) {
+    console.log('[DEV] Cleaning up stray processes...');
+    const { execSync } = require('child_process');
+    try {
+      // Use semicolons to run all commands independently
+      // Kill all MCP servers and brain processes
+      execSync('pkill -9 -f "vibe_server" || true; pkill -9 -f "brain.server" || true; pkill -9 -f "mcp-server" || true; pkill -9 -f "memory_server" || true; pkill -9 -f "graph_server" || true; pkill -9 -f "macos-use" || true', {
+        stdio: 'ignore',
+        timeout: 5000
+      });
+      console.log('[DEV] Cleanup completed.');
+    } catch (e) {
+      console.log('[DEV] Cleanup finished (some processes may not have existed).');
+    }
+  }
 });
 
 app.on('will-quit', () => {

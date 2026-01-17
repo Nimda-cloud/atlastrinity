@@ -644,6 +644,15 @@ class FirstRunInstaller:
         # 8. Models (can be downloaded later)
         self.download_tts_models()
         self.download_stt_models()
+        
+        # 9. Project Workspace
+        try:
+            from .config_loader import config as sys_config
+            project_ws = Path(sys_config.get("system.workspace_path", "~/Developer/Trinity")).expanduser().absolute()
+            project_ws.mkdir(parents=True, exist_ok=True)
+            self._report(SetupStep.SETUP_COMPLETE, 0.9, f"Робоча папка {project_ws.name} готова ✓")
+        except Exception:
+            pass
 
         # Mark setup as complete
         setup_marker = CONFIG_ROOT / "setup_complete"

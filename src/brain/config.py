@@ -11,8 +11,13 @@ except ImportError:  # pragma: no cover
         return False
 
 
-# Project root (only for import resolution, NOT for configs)
+# Project root (where the running code is)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Repository root (where the source code for self-healing lives)
+# In development, it's the same as PROJECT_ROOT.
+# In production, it should be configured or found via environment/config.
+REPOSITORY_ROOT = Path(os.getenv("REPOSITORY_ROOT", PROJECT_ROOT))
 
 # Platform check
 IS_MACOS = platform.system() == "Darwin"
@@ -72,14 +77,23 @@ def ensure_dirs():
         d.mkdir(parents=True, exist_ok=True)
 
     # Special handling for Workspaces: Create and set 777 permissions
-    for ws in [WORKSPACE_DIR, VIBE_WORKSPACE]:
+    # We now also ensure the project development workspace exists
+    try:
+        from .config_loader import config as sys_config
+        project_ws = Path(sys_config.get("system.workspace_path", "~/Developer/Trinity")).expanduser().absolute()
+    except Exception:
+        project_ws = Path("~/Developer/Trinity").expanduser().absolute()
+
+    for ws in [WORKSPACE_DIR, VIBE_WORKSPACE, project_ws]:
         if not ws.exists():
             ws.mkdir(parents=True, exist_ok=True)
         try:
             # Set 777 permissions (rwxrwxrwx) to allow full access for all users/agents
             os.chmod(ws, 0o777)
         except Exception as e:
-            print(f"Warning: Failed to set 777 permissions on {ws.name}: {e}")
+            # Don't print warning for user folders like Developer/Trinity if chmod fails
+            if ws != project_ws:
+                print(f"Warning: Failed to set 777 permissions on {ws.name}: {e}")
 
 
 # Initialize directories on import to ensure they exist for logger/agents

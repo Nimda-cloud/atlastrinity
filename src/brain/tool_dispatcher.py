@@ -357,17 +357,28 @@ class ToolDispatcher:
             elif "question" in args: args["prompt"] = args["question"]
             elif "error_message" in args: args["prompt"] = args["error_message"]
 
-        # Enforce defaults/timeouts
+        # Enforce defaults/timeouts - Vibe tasks can be long-running
         if "timeout_s" not in args:
-             vibe_cfg = config.get("mcp.vibe", {})
-             args["timeout_s"] = vibe_cfg.get("timeout_s", 3600)
+             # Try mcpServers.vibe config first, then default to 1 hour (3600s)
+             vibe_cfg = config.get("mcpServers", {}).get("vibe", {})
+             args["timeout_s"] = float(vibe_cfg.get("timeout_s", 3600))
              
-        # Enforce absolute CWD or workspace
+        # Enforce absolute CWD or workspace from config
         if not args.get("cwd"):
             system_config = config.get("system", {})
-            workspace = Path(system_config.get("workspace_path", "~/AtlasProjects")).expanduser().absolute()
+            # Recommended default is ~/Developer/Trinity if not in config
+            workspace_str = system_config.get("workspace_path", "~/Developer/Trinity")
+            workspace = Path(workspace_str).expanduser().absolute()
             args["cwd"] = str(workspace)
             workspace.mkdir(parents=True, exist_ok=True)
+            
+        # Verify repository path for self-healing
+        system_config = config.get("system", {})
+        repo_path = Path(system_config.get("repository_path", PROJECT_ROOT)).expanduser().absolute()
+        if (repo_path / ".git").exists():
+            logger.info(f"[DISPATCHER] Repository root verified for self-healing: {repo_path}")
+        else:
+            logger.warning(f"[DISPATCHER] Repository root at {repo_path} is NOT a git repo. Self-healing might be limited.")
 
         return "vibe", resolved_tool, args
 
