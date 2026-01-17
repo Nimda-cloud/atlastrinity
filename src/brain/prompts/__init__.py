@@ -149,6 +149,9 @@ class AgentPrompts:
         actual: str,
         context_info: dict,
         history: list,
+        context_info: dict,
+        history: list,
+        technical_trace: str = "",
         goal_context: str = "",
         tetyana_thought: str = "",
     ) -> str:

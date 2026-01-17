@@ -249,6 +249,40 @@ class Grisha:
             logger.debug(f"[GRISHA] UI summarization failed (falling back to truncation): {e}")
             return raw_data[:3000]
 
+    async def _fetch_execution_trace(self, step_id: str) -> str:
+        """
+        Fetches the raw tool execution logs from the database for a given step.
+        This serves as the 'single source of truth' for verification.
+        """
+        try:
+            from ..mcp_manager import mcp_manager
+            
+            # Query db for tool executions related to this step
+            # We assume sequence_number maps to step_id which is stored as string in DB
+            sql = "SELECT tool_name, arguments, result, created_at FROM tool_executions WHERE step_id IN (SELECT id FROM task_steps WHERE sequence_number = :seq) ORDER BY created_at DESC LIMIT 5;"
+            
+            rows = await mcp_manager.query_db(sql, {"seq": str(step_id)})
+            
+            if not rows:
+                return "No DB records found for this step. (Command might not have been logged yet or step ID mismatch)."
+
+            trace = "\n--- TECHNICAL EXECUTION TRACE (FROM DB) ---\n"
+            for row in rows:
+                tool = row.get("tool_name", "unknown")
+                args = row.get("arguments", {})
+                res = str(row.get("result", ""))
+                # Truncate result for token saving
+                if len(res) > 2000:
+                    res = res[:2000] + "...(truncated)"
+                
+                trace += f"Tool: {tool}\nArgs: {args}\nResult: {res}\n-----------------------------------\n"
+            
+            return trace
+
+        except Exception as e:
+            logger.warning(f"[GRISHA] Failed to fetch execution trace: {e}")
+            return f"Error fetching trace: {e}"
+
     async def verify_step(
         self,
         step: Dict[str, Any],
@@ -338,6 +372,16 @@ class Grisha:
         # NEW: Intelligent local summarization instead of simple truncation
         actual = self._summarize_ui_data(actual_raw)
         
+        # Inject tool execution details to prove execution to the LLM
+        tool_proof = ""
+        if hasattr(result, "tool_call") and result.tool_call:
+             tool_proof = f"\n\n[PROOF OF EXECUTION]\nTool: {result.tool_call.get('name')}\nArgs: {result.tool_call.get('args')}\n"
+        elif isinstance(result, dict) and result.get("tool_call"):
+             tc = result["tool_call"]
+             tool_proof = f"\n\n[PROOF OF EXECUTION]\nTool: {tc.get('name')}\nArgs: {tc.get('args')}\n"
+        
+        actual += tool_proof
+
         # Double safety truncation for the final string sent to LLM
         if len(actual) > 8000:
             actual = actual[:8000] + "...(truncated for brevity)"
@@ -350,6 +394,9 @@ class Grisha:
             goal_context=goal_context or shared_context.get_goal_context(),
         )
 
+        # 2. FETCH TECHNICAL TRACE FROM DB (The "Truth")
+        technical_trace = await self._fetch_execution_trace(str(step_id))
+        
         verification_history = []
         max_attempts = 3  # OPTIMIZATION: Reduced from 5 for faster verification
         attach_screenshot_next = False
@@ -365,6 +412,7 @@ class Grisha:
                 actual,
                 context_info,
                 verification_history,
+                technical_trace=technical_trace,  # Pass the trace
                 goal_context=goal_context or shared_context.get_goal_context(),
                 tetyana_thought=getattr(result, "thought", "")
                 if not isinstance(result, dict)
