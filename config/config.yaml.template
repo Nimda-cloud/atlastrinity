@@ -63,12 +63,14 @@ mcp:
     timeout_s: 1200
     max_output_chars: 500000
     disallow_interactive: true
+  chrome_devtools:
+    enabled: true
   memory:
     enabled: true
-  
-  brave_search:
-    enabled: true
 
+  graph:
+    enabled: true
+  
 orchestrator:
   task_timeout: 300
   max_recursion_depth: 5

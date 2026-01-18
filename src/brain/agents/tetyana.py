@@ -1435,19 +1435,8 @@ Please type your response below and press Enter:
         else:
             return {
                 "success": False,
-                "error": f"Unknown FS action: {action}. Valid: read_file, write_file, create_directory, list_directory",
+                "error": f"Unknown FS action: {action}. Valid: read_file, write_file, list_directory",
             }
-
-    async def _search_action(self, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Web search via Brave MCP"""
-        from ..mcp_manager import mcp_manager  # noqa: E402
-
-        query = args.get("query", "")
-        # Tool name usually 'duckduckgo_search' or just 'search'
-        res = await mcp_manager.call_tool(
-            "duckduckgo-search", "duckduckgo_search", {"query": query}
-        )
-        return self._format_mcp_result(res)
 
     async def _github_action(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """GitHub actions"""

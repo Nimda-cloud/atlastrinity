@@ -344,19 +344,22 @@ def install_brew_deps():
                 capture_output=True,
                 text=True,
             )
-            if result.returncode != 0:
-                # If info failed, try to start anyway
-                print_info(f"Запуск {service}...")
-                subprocess.run(["brew", "services", "start", service], check=True)
-                print_success(f"{service} запущено")
-                continue
-
-            if '"running":true' in result.stdout or '"running": true' in result.stdout:
+            
+            is_running = False
+            if result.returncode == 0:
+                if '"running":true' in result.stdout.replace(" ", ""):
+                    is_running = True
+            
+            if is_running:
                 print_success(f"{service} вже запущено")
             else:
                 print_info(f"Запуск {service}...")
-                subprocess.run(["brew", "services", "start", service], check=True)
-                print_success(f"{service} запущено")
+                # Use check=False and check output for 'already started'
+                res = subprocess.run(["brew", "services", "start", service], capture_output=True, text=True)
+                if res.returncode == 0 or "already started" in res.stderr.lower():
+                    print_success(f"{service} запущено")
+                else:
+                    print_warning(f"Не вдалося запустити {service}: {res.stderr.strip()}")
         except Exception as e:
             print_warning(f"Не вдалося запустити {service}: {e}")
 
@@ -509,43 +512,40 @@ def sync_configs():
     print_step("Setting up global configurations...")
 
     try:
-        # Initial setup: copy templates if global configs don't exist
+        # Force overwrite: copy templates to global configs
         config_yaml_src = PROJECT_ROOT / "config" / "config.yaml.template"
         config_yaml_dst = CONFIG_ROOT / "config.yaml"
         
         mcp_json_src = PROJECT_ROOT / "src" / "mcp_server" / "config.json.template"
         mcp_json_dst = CONFIG_ROOT / "mcp" / "config.json"
 
-        # Copy config.yaml template if not exists
-        if not config_yaml_dst.exists():
-            if config_yaml_src.exists():
-                shutil.copy2(config_yaml_src, config_yaml_dst)
-                print_success(f"Created config.yaml from template")
-            else:
-                # Fallback: create minimal config
-                import yaml
-                defaults = {
-                    "agents": {
-                        "atlas": {"model": "gpt-5-mini", "temperature": 0.7},
-                        "tetyana": {"model": "gpt-4.1", "temperature": 0.5},
-                        "grisha": {"vision_model": "gpt-4o", "temperature": 0.3},
-                    },
-                    "mcp": {},
-                    "logging": {"level": "INFO"},
-                }
-                with open(config_yaml_dst, "w", encoding="utf-8") as f:
-                    yaml.dump(defaults, f, allow_unicode=True)
-                print_success(f"Created default config.yaml")
+        # Copy config.yaml template (Overwrite)
+        if config_yaml_src.exists():
+            shutil.copy2(config_yaml_src, config_yaml_dst)
+            print_success(f"Overwrote config.yaml from template")
         else:
-            print_success("config.yaml already exists in global folder")
+            # Fallback: create minimal config
+            import yaml
+            defaults = {
+                "agents": {
+                    "atlas": {"model": "gpt-5-mini", "temperature": 0.7},
+                    "tetyana": {"model": "gpt-4.1", "temperature": 0.5},
+                    "grisha": {"vision_model": "gpt-4o", "temperature": 0.3},
+                },
+                "mcp": {},
+                "logging": {"level": "INFO"},
+            }
+            with open(config_yaml_dst, "w", encoding="utf-8") as f:
+                yaml.dump(defaults, f, allow_unicode=True)
+            print_success(f"Created default config.yaml (Template missing)")
 
-        # Copy MCP config.json if not exists
+        # Copy MCP config.json (Overwrite)
         DIRS["mcp"].mkdir(parents=True, exist_ok=True)
-        if not mcp_json_dst.exists() and mcp_json_src.exists():
+        if mcp_json_src.exists():
             shutil.copy2(mcp_json_src, mcp_json_dst)
-            print_success(f"Created mcp/config.json from template")
+            print_success(f"Overwrote mcp/config.json from template")
         else:
-            print_success("mcp/config.json already exists")
+            print_warning("mcp/config.json.template missing, skipped overwrite")
 
         # Copy .env if not exists
         env_src = PROJECT_ROOT / ".env"
@@ -577,10 +577,13 @@ def download_models():
             f"WhisperModel('large-v3-turbo', device='cpu', compute_type='int8', download_root='{DIRS['stt_models']}'); "
             "print('STT OK')",
         ]
-        subprocess.run(cmd, capture_output=True, timeout=600)
-        print_success("STT модель готова")
-    except Exception:
-        print_warning("Помилка завантаження STT (буде завантажено при старті)")
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if res.returncode == 0:
+            print_success("STT модель готова")
+        else:
+            print_warning(f"Помилка завантаження STT: {res.stderr}")
+    except Exception as e:
+        print_warning(f"Помилка завантаження STT: {e}")
 
     # TTS
     try:
@@ -592,10 +595,13 @@ def download_models():
             f"TTS(cache_folder='{DIRS['tts_models']}', device='cpu'); "
             "print('TTS OK')",
         ]
-        subprocess.run(cmd, capture_output=True, timeout=300)
-        print_success("TTS моделі готові")
-    except Exception:
-        print_warning("Помилка завантаження TTS")
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        if res.returncode == 0:
+            print_success("TTS моделі готові")
+        else:
+            print_warning(f"Помилка завантаження TTS: {res.stderr}")
+    except Exception as e:
+        print_warning(f"Помилка завантаження TTS: {e}")
 
 
 def check_services():

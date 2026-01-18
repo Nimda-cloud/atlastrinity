@@ -6,11 +6,5 @@ AtlasTrinity Brain Package
 # не імпортуємо важкі модулі на рівні пакета. Імпорт виконується пізніше при необхідності.
 __all__ = []
 
-try:
-    from .agents import Atlas, Grisha, Tetyana
-    from .orchestrator import Trinity
-
-    __all__ = ["Trinity", "Atlas", "Tetyana", "Grisha"]
-except Exception:
-    # Залишаємо пакет мінімальним під час установки
-    pass
+# Пакет залишається мінімальним для уникнення важких імпортів на старті
+__all__ = []

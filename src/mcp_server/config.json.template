@@ -20,11 +20,11 @@
     "filesystem": {
       "command": "npx",
       "args": [
-        "@modelcontextprotocol/server-filesystem@2025.12.18",
+        "@modelcontextprotocol/server-filesystem@2026.1.14",
         "${HOME}",
         "/tmp"
       ],
-      "description": "Official filesystem operations (pinned to @modelcontextprotocol/server-filesystem@2025.12.18 for reproducibility)",
+      "description": "Official filesystem operations (pinned to @modelcontextprotocol/server-filesystem for reproducibility)",
       "disabled": false,
       "tier": 1,
       "agents": [
@@ -102,17 +102,18 @@
         "-m",
         "src.mcp_server.graph_server"
       ],
-      "description": "Knowledge Graph visualization and export",
+      "description": "Knowledge Graph visualization and export. Use 'generate_mermaid' to visualize task dependencies and system state.",
       "disabled": false,
-      "tier": 4,
+      "tier": 2,
       "agents": [
-        "atlas"
+        "atlas",
+        "grisha"
       ]
     },
     "puppeteer": {
       "command": "npx",
       "args": [
-        "@anthropic-ai/mcp-server-puppeteer@latest"
+        "@modelcontextprotocol/server-puppeteer@latest"
       ],
       "connect_timeout": 60,
       "description": "High-speed Headless Browser (Puppeteer) for web searching, navigation, screenshots, element interaction, and JavaScript execution",

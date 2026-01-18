@@ -3,35 +3,39 @@
 ## What Was Done
 
 ### 1. **Removed All Mock Infrastructure** ✅
-   - Deleted `mock_mcp` session-scoped fixture from `tests/conftest.py`
-   - Removed `MockSession` and `MockTool` classes
-   - Tests now connect to real MCPManager (which gracefully handles missing servers)
+
+- Deleted `mock_mcp` session-scoped fixture from `tests/conftest.py`
+- Removed `MockSession` and `MockTool` classes
+- Tests now connect to real MCPManager (which gracefully handles missing servers)
 
 ### 2. **Added Graceful Timeout & Skip Logic** ✅
-   - Modified `test_all_mcp_servers.py` with proper timeout handling
-   - `run_server_test()` now returns status codes: `connected`, `not_configured`, `timeout`, `error`
-   - `test_mcp_server()` pytest wrapper gracefully skips with `pytest.skip()` instead of failing
+
+- Modified `test_all_mcp_servers.py` with proper timeout handling
+- `run_server_test()` now returns status codes: `connected`, `not_configured`, `timeout`, `error`
+- `test_mcp_server()` pytest wrapper gracefully skips with `pytest.skip()` instead of failing
 
 ### 3. **Updated Documentation** ✅
-   - **README.md**: Added comprehensive "🧪 Тестування" section with:
-     - Current test status (44 passed, 1 skipped, 2 xfailed)
-     - Quick start commands
-     - MCP credentials setup table
-     - Performance notes
-   
-   - **.env.example**: Added MCP credentials section:
-     - `MCP_GITHUB_TOKEN` (GitHub API)
-     - `MCP_POSTGRES_URL` (PostgreSQL connection)
-     - `MCP_BRAVE_API_KEY` (Brave Search)
+
+- **README.md**: Added comprehensive "🧪 Тестування" section with:
+  - Current test status (44 passed, 1 skipped, 2 xfailed)
+  - Quick start commands
+  - MCP credentials setup table
+  - Performance notes
+
+- **.env.example**: Added MCP credentials section:
+  - `MCP_GITHUB_TOKEN` (GitHub API)
+  - `MCP_POSTGRES_URL` (PostgreSQL connection)
 
 ### 4. **Enhanced conftest.py** ✅
-   - Added `mcp_credentials_available()` fixture to track which credentials are present
-   - Kept all parametrized fixtures (`server_name`, `name`, `test_cases`, `device_name`)
-   - Removed mock autouse fixture
+
+- Added `mcp_credentials_available()` fixture to track which credentials are present
+- Kept all parametrized fixtures (`server_name`, `name`, `test_cases`, `device_name`)
+- Removed mock autouse fixture
 
 ## Test Results
 
 **Current Status:**
+
 ```
 44 passed ✅
 1 skipped ⏭️ (filesystem server not configured)
@@ -40,6 +44,7 @@
 ```
 
 **Test Breakdown:**
+
 - `test_all_mcp_servers.py`: 13 ✅ + 1 ⏭️ (graceful skip)
 - `test_mcp_audit.py`: 14 ✅
 - `test_mcp_expansion.py`: 7 ✅ + 2 ⚠️ (xfail)
@@ -51,6 +56,7 @@
 ## Architecture
 
 ### Test Execution Flow
+
 ```
 pytest runs test_mcp_server()
     ↓
@@ -64,13 +70,16 @@ MCPManager.list_tools(server_name)
 ```
 
 ### Behavior Without Credentials
+
 - ✅ Tests **don't fail** — they gracefully skip
 - ✅ Tests are **marked as SKIPPED** in reports
 - ✅ System remains **stable** for CI/CD
 - ✅ No false positives from mocks
 
 ### Behavior With Credentials
+
 When `.env` is properly configured with `MCP_GITHUB_TOKEN`, `MCP_POSTGRES_URL`, etc.:
+
 1. MCPManager loads config from `~/.config/atlastrinity/mcp/config.json`
 2. Environment variables are substituted into config
 3. Tests attempt real connections to actual MCP servers
@@ -100,16 +109,18 @@ When `.env` is properly configured with `MCP_GITHUB_TOKEN`, `MCP_POSTGRES_URL`, 
 ## How to Use
 
 ### Run All Tests (No Setup Required)
+
 ```bash
 ./.venv/bin/pytest -q
 # Result: Tests gracefully skip if MCP servers unavailable
 ```
 
 ### Run MCP Tests with Real Servers
+
 ```bash
 # 1. Copy and configure credentials
 cp .env.example .env
-# Fill in MCP_GITHUB_TOKEN, MCP_POSTGRES_URL, MCP_BRAVE_API_KEY
+# Fill in MCP_GITHUB_TOKEN, MCP_POSTGRES_URL
 
 # 2. Run tests
 ./.venv/bin/pytest tests/test_all_mcp_servers.py -v
@@ -117,6 +128,7 @@ cp .env.example .env
 ```
 
 ### Run with Timeout (Fast CI)
+
 ```bash
 timeout 120 ./.venv/bin/pytest tests/ -q
 # All MCP servers have 15s timeout → fails fast if unavailable
@@ -124,14 +136,14 @@ timeout 120 ./.venv/bin/pytest tests/ -q
 
 ## Key Improvements
 
-| Aspect | Before (Mocks) | After (Real) |
-|--------|---|---|
-| **Authenticity** | ❌ Fake responses | ✅ Real MCP behavior |
-| **Failure Detection** | ❌ Hidden by mocks | ✅ Visible with timeouts |
-| **CI/CD Stability** | ✅ Always green | ✅ Graceful skip (no failure) |
-| **Test Speed** | ✅ Fast | ⚠️ Slower (realistic) |
-| **Credential Support** | ❌ No | ✅ Fallback if missing |
-| **Maintenance** | ❌ Mock = duplicate code | ✅ No mock code to maintain |
+| Aspect                 | Before (Mocks)           | After (Real)                  |
+| ---------------------- | ------------------------ | ----------------------------- |
+| **Authenticity**       | ❌ Fake responses        | ✅ Real MCP behavior          |
+| **Failure Detection**  | ❌ Hidden by mocks       | ✅ Visible with timeouts      |
+| **CI/CD Stability**    | ✅ Always green          | ✅ Graceful skip (no failure) |
+| **Test Speed**         | ✅ Fast                  | ⚠️ Slower (realistic)         |
+| **Credential Support** | ❌ No                    | ✅ Fallback if missing        |
+| **Maintenance**        | ❌ Mock = duplicate code | ✅ No mock code to maintain   |
 
 ## Next Steps (Optional)
 
@@ -145,7 +157,7 @@ timeout 120 ./.venv/bin/pytest tests/ -q
 ✅ **Authenticity over Speed**: Real MCP servers tested instead of mocks  
 ✅ **Graceful Degradation**: Tests skip (not fail) when credentials missing  
 ✅ **Full Transparency**: Real failures visible, not hidden by mocks  
-✅ **Production-Ready**: Tests reflect actual production behavior  
+✅ **Production-Ready**: Tests reflect actual production behavior
 
 ---
 

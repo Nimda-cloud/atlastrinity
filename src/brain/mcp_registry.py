@@ -929,7 +929,7 @@ def get_server_catalog_for_prompt(include_key_tools: bool = True) -> str:
     lines.append("- apple-mcp → macos-use Calendar/Reminders/Notes/Mail tools")
     lines.append("- git → macos-use execute_command('git ...')")
     lines.append("- notes → filesystem or macos-use (Apple Notes)")
-    lines.append("- search → macos-use chrome/brave or fetch_url")
+    lines.append("- search → macos-use chrome or fetch_url")
     lines.append("- docker, postgres, slack → Disabled/Removed")
     lines.append("")
     lines.append("CRITICAL: Do NOT invent high-level tools. Use only the real TOOLS found inside these Realms.")

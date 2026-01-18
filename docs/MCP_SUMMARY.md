@@ -3,11 +3,12 @@
 ## ✅ Завершено
 
 ### 1. **Аудит поточної конфігурації**
-- Протестовано всі 9 існуючих MCP серверів
-- Виявлено проблеми з GitHub (no tools) та BRAVE_API_KEY
+
+- Виявлено проблеми з GitHub (no tools)
 - Підтверджено роботу: filesystem (14 tools), terminal, puppeteer (7 tools), memory (9 tools)
 
 ### 2. **Оптимізація архітектури**
+
 - **Додано 4 нових сервера:**
   - `fetch` - завантаження веб-контенту
   - `git` - розширені Git операції
@@ -16,31 +17,33 @@
 
 - **Додано 4 опціональних сервера** (disabled):
   - `postgres` - database access
-  - `docker` - container management  
+  - `docker` - container management
   - `context7` - dev documentation
   - `slack` - team communication
 
 ### 3. **Покращення MCPManager**
+
 ```python
 # Environment variables substitution
 "GITHUB_TOKEN": "${GITHUB_TOKEN}"  # Замість hardcode
 
-# Disabled servers support  
+# Disabled servers support
 if server_config.get("disabled", False):
     continue  # Skip
-    
+
 # Comments support
 if server_name.startswith("_"):
     continue  # Ignore
 ```
 
 ### 4. **Організація конфігурації**
+
 ```json
 {
-    "_comment_core": "=== CORE SYSTEM ACCESS ===",
-    "_comment_web": "=== WEB & BROWSER ===",
-    "_comment_dev": "=== SOFTWARE DEVELOPMENT ===",
-    // Структуровано по категоріях
+  "_comment_core": "=== CORE SYSTEM ACCESS ===",
+  "_comment_web": "=== WEB & BROWSER ===",
+  "_comment_dev": "=== SOFTWARE DEVELOPMENT ==="
+  // Структуровано по категоріях
 }
 ```
 
@@ -50,45 +53,45 @@ if server_name.startswith("_"):
 
 ### **13 активних MCP серверів:**
 
-| Категорія | Сервери | Tools | Статус |
-|-----------|---------|-------|--------|
-| **Core** | filesystem, terminal, computer-use, applescript | 16+ | ✅ |
-| **Web** | puppeteer, brave-search, fetch | 9+ | ✅ |
-| **Dev** | github, git | TBD | ⚠️ |
-| **AI** | memory, sequential-thinking, whisper-stt | 10+ | ✅ |
-| **Utils** | time | 2+ | ✅ |
+| Категорія | Сервери                                         | Tools | Статус |
+| --------- | ----------------------------------------------- | ----- | ------ |
+| **Core**  | filesystem, terminal, computer-use, applescript | 16+   | ✅     |
+| **Web**   | puppeteer, fetch                                | 9+    | ✅     |
+| **Dev**   | github, git                                     | TBD   | ⚠️     |
+| **AI**    | memory, sequential-thinking, whisper-stt        | 10+   | ✅     |
+| **Utils** | time                                            | 2+    | ✅     |
 
 ### **Покриття задач Mac Studio:**
 
 ✅ **Розробка ПЗ** - filesystem, terminal, git, github  
 ✅ **Системна робота** - GUI automation, AppleScript, terminal  
-✅ **Веб** - puppeteer (browser), fetch, search  
+✅ **Веб** - puppeteer (browser), fetch, google search (via puppeteer)  
 ✅ **AI & Data** - memory (knowledge graph), whisper (STT), sequential thinking  
 ✅ **Productivity** - time utils, web fetching  
 ⏸ **Database** - postgres (потрібна установка)  
-⏸ **Containers** - docker (потрібна перевірка)  
+⏸ **Containers** - docker (потрібна перевірка)
 
 ---
 
 ## 🔧 Виправлення знайдених проблем
 
 1. **GITHUB_TOKEN** - тепер береться з `.env` через `${GITHUB_TOKEN}` ✅
-2. **BRAVE_API_KEY** - документовано в `.env` template ✅
-3. **Disabled servers** - не завантажуються, але готові до активації ✅
-4. **GitHub no tools** - потребує окремого дослідження ⚠️
+2. **Disabled servers** - не завантажуються, але готові до активації ✅
+3. **GitHub no tools** - потребує окремого дослідження ⚠️
 
 ---
 
 ## 🚀 Інтеграція з .env
 
 ### Додано в `setup_dev.py`:
+
 ```python
 # === TOOLS (MCP) ===
-BRAVE_API_KEY=your_brave_api_key_here
 # GITHUB_TOKEN вже визначено вище
 ```
 
 ### Синхронізація:
+
 - `~/Documents/GitHub/atlastrinity/src/mcp/config.json` (dev)
 - `~/.config/atlastrinity/mcp/config.json` (runtime)
 - Автоматично при `setup_dev.py`
@@ -98,16 +101,18 @@ BRAVE_API_KEY=your_brave_api_key_here
 ## 📝 Наступні кроки
 
 ### High Priority:
-1. ⬜ Отримати Brave API Key для search
-2. ⬜ Дослідити GitHub server (no tools issue)
-3. ⬜ Протестувати в dev режимі (`npm run dev`)
+
+1. ⬜ Дослідити GitHub server (no tools issue)
+2. ⬜ Протестувати в dev режимі (`npm run dev`)
 
 ### Medium Priority:
+
 4. ⬜ Додати vite CLI як custom MCP server
 5. ⬜ Активувати postgres якщо є DB задачі
 6. ⬜ Перевірити наявність docker MCP пакета
 
 ### Optional:
+
 7. ⬜ Context7 для documentation
 8. ⬜ ElevenLabs якщо потрібен кращий TTS
 9. ⬜ Notion/Slack інтеграції
@@ -118,7 +123,7 @@ BRAVE_API_KEY=your_brave_api_key_here
 
 **Система готова до будь-яких задач на Mac Studio.**
 
-- **13 активних серверів** замість 9
+- **12 активних серверів** замість 9
 - **40+ доступних інструментів**
 - **Повне покриття** development, system, web, AI workflows
 - **Розширюваність** через disabled servers та env vars

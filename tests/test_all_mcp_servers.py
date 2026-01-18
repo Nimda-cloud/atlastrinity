@@ -189,13 +189,6 @@ async def main():
                 "description": "Get README.md from repo",
             }
         ],
-        "brave-search": [
-            {
-                "tool": "brave_web_search",
-                "args": {"query": "AtlasTrinity AI"},
-                "description": "Search web for AtlasTrinity",
-            }
-        ],
         "memory": [
             {
                 "tool": "create_entities",

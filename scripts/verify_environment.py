@@ -269,6 +269,23 @@ def check_mcp_servers():
             print_fail(f"Python MCP source MISSING: {name} ({filename})")
             STATUS_REPORT["failed"] += 1
 
+    # 4. Check Config Consistency (Graph should be enabled)
+    mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
+    if mcp_config_path.exists():
+        try:
+            import json
+            with open(mcp_config_path, 'r') as f:
+                cfg = json.load(f)
+                graph_cfg = cfg.get("mcpServers", {}).get("graph", {})
+                if graph_cfg and not graph_cfg.get("disabled", False):
+                     print_pass("Graph Server is ENABLED in config")
+                     STATUS_REPORT["passed"] += 1
+                else:
+                     print_warn("Graph Server is DISABLED or missing in config (Recommended: Enabled for Atlas)")
+                     STATUS_REPORT["warnings"] += 1
+        except Exception:
+            pass
+
 def main():
     print_header("ATLAS TRINITY ENVIRONMENT VERIFICATION")
     print_info(f"Project Root: {PROJECT_ROOT}")

@@ -81,7 +81,7 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
             # Direct version lookup is faster if we know the exact version string
             url = f"https://registry.npmjs.org/{encoded}/{ver}"
             req = urllib.request.Request(
-                url, headers={"Accept": "application/vnd.npm.install-v1+json"}
+                url, headers={"Accept": "application/json"}
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 return getattr(resp, "status", 200) == 200
