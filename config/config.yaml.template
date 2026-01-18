@@ -93,3 +93,6 @@ system:
 api:
   timeout: 60
   retry_count: 3
+
+database:
+  url: postgresql+asyncpg://dev:postgres@localhost/atlastrinity_db

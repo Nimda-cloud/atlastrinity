@@ -35,29 +35,50 @@ def _substitute_placeholders(value: Any) -> Any:
     return re.sub(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}", replace_match, value)
 
 
-def load_mcp_config() -> Dict[str, Any]:
-    """Load MCP configuration from config.yaml"""
+def load_config() -> Dict[str, Any]:
+    """Load full configuration from config.yaml and .env"""
     config_path = CONFIG_ROOT / "config.yaml"
+    env_path = CONFIG_ROOT / ".env"
 
+    # 1. Load .env into os.environ for placeholder substitution
+    if env_path.exists():
+        try:
+            from dotenv import dotenv_values
+            env_vars = dotenv_values(env_path)
+            for key, value in (env_vars or {}).items():
+                if value is not None and key not in os.environ:
+                    os.environ[key] = value
+        except ImportError:
+            pass
+
+    # 2. Load YAML
     if config_path.exists():
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f) or {}
-            return config.get("mcp", {})
+                return yaml.safe_load(f) or {}
         except Exception as e:
             print(f"⚠️  Error loading {config_path}: {e}")
 
     return {}
 
 
-def get_server_config(server_name: str) -> Dict[str, Any]:
-    """Get configuration for a specific MCP server"""
-    mcp_config = load_mcp_config()
-    return mcp_config.get(server_name, {})
-
-
-def get_config_value(server_name: str, key: str, default: Any = None) -> Any:
-    """Get a specific config value for a server with placeholder resolution"""
-    config = get_server_config(server_name)
-    value = config.get(key, default)
+def get_config_value(section: str, key: str, default: Any = None) -> Any:
+    """Get a config value from any section with placeholder resolution"""
+    full_config = load_config()
+    section_data = full_config.get(section, {})
+    
+    # Handle nested sections if needed (e.g. system.workspace_path)
+    if "." in section:
+        parts = section.split(".")
+        curr = full_config
+        for p in parts:
+            curr = curr.get(p, {})
+        section_data = curr
+        
+    value = section_data.get(key, default) if isinstance(section_data, dict) else default
     return _substitute_placeholders(value)
+
+
+def load_mcp_config() -> Dict[str, Any]:
+    """Deprecated: use load_config().get('mcp', {}) instead"""
+    return load_config().get("mcp", {})

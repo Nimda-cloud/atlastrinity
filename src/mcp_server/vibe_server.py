@@ -52,14 +52,14 @@ except Exception:
 try:
     from .config_loader import get_config_value, CONFIG_ROOT, PROJECT_ROOT
 
-    VIBE_BINARY = get_config_value("vibe", "binary", "vibe")
-    DEFAULT_TIMEOUT_S = float(get_config_value("vibe", "timeout_s", 3600))
+    VIBE_BINARY = get_config_value("mcp.vibe", "binary", "vibe")
+    DEFAULT_TIMEOUT_S = float(get_config_value("mcp.vibe", "timeout_s", 3600))
     # Increased for large log analysis
-    MAX_OUTPUT_CHARS = int(get_config_value("vibe", "max_output_chars", 500000))
-    DISALLOW_INTERACTIVE = bool(get_config_value("vibe", "disallow_interactive", True))
+    MAX_OUTPUT_CHARS = int(get_config_value("mcp.vibe", "max_output_chars", 500000))
+    DISALLOW_INTERACTIVE = bool(get_config_value("mcp.vibe", "disallow_interactive", True))
     
     # Resolve global vibe_workspace (handled by get_config_value resolution)
-    VIBE_WORKSPACE = get_config_value("vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
+    VIBE_WORKSPACE = get_config_value("mcp.vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
 except Exception:
     VIBE_BINARY = "vibe"
     DEFAULT_TIMEOUT_S = 3600.0
@@ -137,6 +137,9 @@ ALLOWED_SUBCOMMANDS = {
     "eternal-engine",
     "screenshots",
 }
+
+# DB Configuration (Shared with AtlasTrinity brain)
+DATABASE_URL = get_config_value("database", "url", os.getenv("DATABASE_URL", "postgresql+asyncpg://dev:postgres@localhost/atlastrinity_db"))
 
 # Subcommands that are BLOCKED (interactive TUI)
 BLOCKED_SUBCOMMANDS = {
@@ -698,13 +701,22 @@ async def vibe_analyze_error(
         "SYSTEM: You are the Senior Self-Healing Engineer for AtlasTrinity.",
         "ROLE: Analyze and repair the Trinity runtime and its MCP servers.",
         "",
+        "DATABASE SCHEMA VISIBILITY:",
+        "- 'sessions': id, started_at, ended_at, metadata_blob",
+        "- 'tasks': id, session_id, goal, status, created_at, completed_at",
+        "- 'task_steps': id, task_id, sequence_number, action, tool, status, error_message, duration_ms",
+        "- 'tool_executions': id, step_id, task_id, server_name, tool_name, arguments, result",
+        "- 'logs': timestamp, level, source, message",
+        "- 'recovery_attempts': step_id, success, vibe_text, error_before",
+        "",
         f"CONTEXT:",
         f"- System Root (AtlasTrinity): {SYSTEM_ROOT}",
         f"- Target Directory (Task): {cwd or VIBE_WORKSPACE}",
         f"- Logs Directory: {LOG_DIR}",
         "- OS: macOS",
         "- Internal DB: PostgreSQL (Schema: sessions, tasks, task_steps, tool_executions, logs)",
-        "  - 'tool_executions' table contains RAW results of all agent actions.",
+        "  - Use 'vibe_get_system_context' to find current IDs.",
+        "  - Use 'vibe_check_db' to query execution history and past failures.",
         "",
         f"ERROR MESSAGE:\n{error_message}",
     ]
@@ -1171,9 +1183,82 @@ async def vibe_session_details(session_id_or_file: str) -> Dict[str, Any]:
         
     try:
         with open(target_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception as e:
         return {"error": f"Failed to read session details: {str(e)}"}
+
+
+@server.tool()
+async def vibe_check_db(query: str) -> Dict[str, Any]:
+    """
+    Execute a read-only SQL query against the AtlasTrinity PostgreSQL database.
+    Use this to inspect task execution history, tool results, and system state.
+    
+    SCHEMA SUMMARY:
+    - sessions: (id, started_at)
+    - tasks: (id, session_id, goal, status)
+    - task_steps: (id, task_id, sequence_number, action, tool, status, error_message)
+    - tool_executions: (id, step_id, task_id, server_name, tool_name, arguments, result)
+    - logs: (timestamp, level, source, message)
+    - recovery_attempts: (step_id, success, vibe_text, error_before)
+    
+    Args:
+        query: SQL SELECT query (e.g. "SELECT * FROM logs ORDER BY timestamp DESC LIMIT 10")
+    """
+    import asyncpg
+    
+    # Check for mutative keywords to prevent accidental damage
+    forbidden = ["DROP", "DELETE", "UPDATE", "INSERT", "TRUNCATE", "ALTER", "GRANT", "REVOKE"]
+    if any(f in query.upper() for f in forbidden):
+        return {"error": "Only SELECT queries are allowed for safety reasons."}
+    
+    try:
+        conn = await asyncpg.connect(DATABASE_URL)
+        try:
+            rows = await conn.fetch(query)
+            # Convert Records to list of dicts for JSON serialization
+            result = [dict(r) for r in rows]
+            return {"success": True, "count": len(result), "data": result}
+        finally:
+            await conn.close()
+    except Exception as e:
+        logger.error(f"[VIBE_DB] Query failed: {e}")
+        return {"error": f"Database query failed: {str(e)}", "query": query}
+
+
+@server.tool()
+async def vibe_get_system_context() -> Dict[str, Any]:
+    """
+    Retrieve the current operational context from the DB (Current Session, Latest Tasks, Last 5 Errors).
+    Helps Vibe focus on the 'current picture' before performing deep analysis.
+    """
+    import asyncpg
+    try:
+        conn = await asyncpg.connect(DATABASE_URL)
+        try:
+            # 1. Get latest session
+            session_row = await conn.fetchrow("SELECT id, started_at FROM sessions ORDER BY started_at DESC LIMIT 1")
+            session_id = str(session_row['id']) if session_row else "None"
+            
+            # 2. Get latest tasks for this session
+            tasks = await conn.fetch(
+                "SELECT id, goal, status, created_at FROM tasks WHERE session_id = $1 ORDER BY created_at DESC LIMIT 3", 
+                session_row['id'] if session_row else None
+            )
+            
+            # 3. Get last 5 system errors
+            errors = await conn.fetch("SELECT timestamp, source, message FROM logs WHERE level IN ('ERROR', 'WARNING') ORDER BY timestamp DESC LIMIT 5")
+            
+            return {
+                "success": True,
+                "current_session_id": session_id,
+                "last_tasks": [dict(t) for t in tasks],
+                "recent_errors": [dict(e) for e in errors],
+                "system_root": SYSTEM_ROOT,
+                "project_root": VIBE_WORKSPACE
+            }
+        finally:
+            await conn.close()
+    except Exception as e:
+        return {"error": f"Failed to get system context: {e}"}
 
 
 if __name__ == "__main__":

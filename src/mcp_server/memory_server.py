@@ -1,30 +1,27 @@
-import json
-from pathlib import Path
+import os
+import sys
 from typing import Any, Dict, List, Optional
 
 from mcp.server import FastMCP
 
+# Setup paths for internal imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root = os.path.join(current_dir, "..", "..")
+sys.path.insert(0, os.path.abspath(root))
+
+from src.brain.db.manager import db_manager  # noqa: E402
+from src.brain.knowledge_graph import knowledge_graph  # noqa: E402
+from src.brain.memory import long_term_memory  # noqa: E402
+
 server = FastMCP("memory")
 
 
-def _store_path() -> Path:
-    return Path.home() / ".config" / "atlastrinity" / "memory_store.json"
-
-
-def _load_store() -> Dict[str, Any]:
-    p = _store_path()
-    if not p.exists():
-        return {"entities": {}}
-    try:
-        return json.loads(p.read_text(encoding="utf-8")) or {"entities": {}}
-    except Exception:
-        return {"entities": {}}
-
-
-def _save_store(store: Dict[str, Any]) -> None:
-    p = _store_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(store, ensure_ascii=False, indent=2), encoding="utf-8")
+def _get_id(name: str) -> str:
+    """Standardize entity ID format"""
+    name = str(name).strip()
+    if name.startswith("entity:"):
+        return name
+    return f"entity:{name}"
 
 
 def _normalize_entity(ent: Dict[str, Any]) -> Dict[str, Any]:
@@ -38,19 +35,18 @@ def _normalize_entity(ent: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @server.tool()
-def create_entities(entities: List[Dict[str, Any]]) -> Dict[str, Any]:
+async def create_entities(entities: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Create or update multiple entities in the knowledge graph.
+    Create or update multiple entities in the knowledge graph (PostgreSQL + ChromaDB).
 
     Args:
         entities: List of entity dictionaries. Each must have a 'name' field.
-                 Optional fields: 'entityType' (default: 'concept'), 'observations' (list of strings).
+                 Optional fields: 'entityType' (default: 'ENTITY'), 'observations' (list of strings).
     """
     if not isinstance(entities, list) or not entities:
         return {"error": "entities must be a non-empty list"}
 
-    store = _load_store()
-    db = store.setdefault("entities", {})
+    await db_manager.initialize()
 
     created: List[str] = []
     updated: List[str] = []
@@ -61,29 +57,31 @@ def create_entities(entities: List[Dict[str, Any]]) -> Dict[str, Any]:
         if not name:
             continue
 
-        if name in db:
-            # merge observations
-            cur = db[name]
-            cur_obs = cur.get("observations") or []
-            if not isinstance(cur_obs, list):
-                cur_obs = []
-            merged = list(dict.fromkeys([*cur_obs, *n["observations"]]))
-            cur["entityType"] = cur.get("entityType") or n["entityType"]
-            cur["observations"] = merged
-            updated.append(name)
-        else:
-            db[name] = {
-                "entityType": n["entityType"],
-                "observations": n["observations"],
-            }
-            created.append(name)
+        node_id = _get_id(name)
+        
+        # Attributes for Postgres
+        attributes = {
+            "entity_type": n["entityType"],
+            "observations": n["observations"],
+            "description": f"Entity of type {n['entityType']} with {len(n['observations'])} observations.",
+            "content": "\n".join(n["observations"])
+        }
 
-    _save_store(store)
-    return {"success": True, "created": created, "updated": updated}
+        success = await knowledge_graph.add_node(
+            node_type="ENTITY",
+            node_id=node_id,
+            attributes=attributes,
+            sync_to_vector=True
+        )
+        
+        if success:
+            created.append(name) # Simplification: Postgres upsert doesn't differentiate easily here
+        
+    return {"success": True, "created": created, "backend": "postgresql+chromadb"}
 
 
 @server.tool()
-def add_observations(name: str, observations: List[str]) -> Dict[str, Any]:
+async def add_observations(name: str, observations: List[str]) -> Dict[str, Any]:
     """
     Add new observations to an existing entity.
 
@@ -94,60 +92,90 @@ def add_observations(name: str, observations: List[str]) -> Dict[str, Any]:
     name = str(name or "").strip()
     if not name:
         return {"error": "name is required"}
-    if not isinstance(observations, list) or not observations:
-        return {"error": "observations must be a non-empty list"}
+    
+    await db_manager.initialize()
+    node_id = _get_id(name)
+    
+    # Get existing
+    from sqlalchemy import select
+    from src.brain.db.schema import KGNode
+    
+    async with await db_manager.get_session() as session:
+        stmt = select(KGNode).where(KGNode.id == node_id)
+        res = await session.execute(stmt)
+        node = res.scalar()
+        
+        if not node:
+            return {"error": f"Entity '{name}' not found. Use create_entities first."}
+        
+        attr = node.attributes or {}
+        cur_obs = attr.get("observations", [])
+        new_obs = [str(o) for o in observations if str(o).strip()]
+        merged = list(dict.fromkeys([*cur_obs, *new_obs]))
+        
+        attr["observations"] = merged
+        attr["content"] = "\n".join(merged) # Sync for vector embedding
+        
+        await knowledge_graph.add_node(
+            node_type="ENTITY",
+            node_id=node_id,
+            attributes=attr,
+            sync_to_vector=True
+        )
 
-    store = _load_store()
-    db = store.setdefault("entities", {})
-
-    ent = db.get(name) or {"entityType": "concept", "observations": []}
-    cur_obs = ent.get("observations") or []
-    if not isinstance(cur_obs, list):
-        cur_obs = []
-
-    new_obs = [str(o) for o in observations if str(o).strip()]
-    ent["observations"] = list(dict.fromkeys([*cur_obs, *new_obs]))
-    db[name] = ent
-
-    _save_store(store)
-    return {"success": True, "name": name, "observations": ent["observations"]}
+    return {"success": True, "name": name, "observations_count": len(merged)}
 
 
 @server.tool()
-def get_entity(name: str) -> Dict[str, Any]:
+async def get_entity(name: str) -> Dict[str, Any]:
     """
     Retrieve full details of a specific entity.
-
-    Args:
-        name: The name of the entity to retrieve
     """
-    name = str(name or "").strip()
-    if not name:
-        return {"error": "name is required"}
-
-    store = _load_store()
-    db = store.get("entities", {}) or {}
-    ent = db.get(name)
-    if not ent:
-        return {"error": "not found"}
-    return {"success": True, "name": name, **ent}
+    await db_manager.initialize()
+    node_id = _get_id(name)
+    
+    from sqlalchemy import select
+    from src.brain.db.schema import KGNode
+    
+    async with await db_manager.get_session() as session:
+        stmt = select(KGNode).where(KGNode.id == node_id)
+        res = await session.execute(stmt)
+        node = res.scalar()
+        
+        if not node:
+            return {"error": "not found"}
+            
+        return {
+            "success": True,
+            "name": name,
+            "entityType": node.attributes.get("entity_type", "ENTITY"),
+            "observations": node.attributes.get("observations", []),
+            "last_updated": node.last_updated.isoformat() if node.last_updated else None
+        }
 
 
 @server.tool()
-def list_entities() -> Dict[str, Any]:
+async def list_entities() -> Dict[str, Any]:
     """
     List all entity names in the knowledge graph.
     """
-    store = _load_store()
-    db = store.get("entities", {}) or {}
-    names = sorted(db.keys())
-    return {"success": True, "names": names, "count": len(names)}
+    await db_manager.initialize()
+    
+    from sqlalchemy import select
+    from src.brain.db.schema import KGNode
+    
+    async with await db_manager.get_session() as session:
+        stmt = select(KGNode.id).where(KGNode.type == "ENTITY")
+        res = await session.execute(stmt)
+        names = [str(row[0]).replace("entity:", "") for row in res.all()]
+        
+    return {"success": True, "names": sorted(names), "count": len(names)}
 
 
 @server.tool()
-def search(query: str, limit: int = 10) -> Dict[str, Any]:
+async def search(query: str, limit: int = 10) -> Dict[str, Any]:
     """
-    Search for entities matching a query string.
+    Semantic search for entities matching a query string (via ChromaDB embeddings).
 
     Args:
         query: Text to search for within entity names, types, and observations
@@ -158,30 +186,30 @@ def search(query: str, limit: int = 10) -> Dict[str, Any]:
         return {"error": "query is required"}
 
     lim = max(1, min(int(limit), 50))
-    store = _load_store()
-    db = store.get("entities", {}) or {}
-
-    matches: List[Dict[str, Any]] = []
-    for name, ent in db.items():
-        text = " ".join(
-            [
-                name,
-                ent.get("entityType", ""),
-                *[str(o) for o in (ent.get("observations") or [])],
-            ]
+    
+    # 1. Semantic search via ChromaDB (Fastest and smartest)
+    if long_term_memory.available:
+        results = long_term_memory.knowledge.query(
+            query_texts=[q],
+            n_results=lim,
+            include=["documents", "metadatas"]
         )
-        if q in text.lower():
-            matches.append(
-                {
-                    "name": name,
-                    "entityType": ent.get("entityType"),
-                    "observations": ent.get("observations") or [],
-                }
-            )
-            if len(matches) >= lim:
-                break
+        
+        formatted = []
+        if results and results["documents"]:
+            for i, doc in enumerate(results["documents"][0]):
+                meta = results["metadatas"][0][i]
+                if meta.get("type") == "ENTITY":
+                    formatted.append({
+                        "name": str(results["ids"][0][i]).replace("entity:", ""),
+                        "entityType": meta.get("entity_type", "ENTITY"),
+                        "observations": meta.get("observations", []),
+                        "score": results.get("distances", [[0.5]])[0][i] if "distances" in results else 0.5
+                    })
+        
+        return {"success": True, "results": formatted, "count": len(formatted), "method": "semantic"}
 
-    return {"success": True, "results": matches, "count": len(matches)}
+    return {"error": "Semantic search unavailable (ChromaDB not initialized)"}
 
 
 @server.tool()
@@ -191,25 +219,33 @@ def search_nodes(query: str, limit: int = 10) -> Dict[str, Any]:
 
 
 @server.tool()
-def delete_entity(name: str) -> Dict[str, Any]:
+async def delete_entity(name: str) -> Dict[str, Any]:
     """
-    Delete an entity from the knowledge graph.
-
-    Args:
-        name: The name of the entity to delete
+    Delete an entity from the knowledge graph (PostgreSQL + ChromaDB).
     """
     name = str(name or "").strip()
     if not name:
         return {"error": "name is required"}
 
-    store = _load_store()
-    db = store.get("entities", {}) or {}
-    if name not in db:
-        return {"success": True, "deleted": False}
+    await db_manager.initialize()
+    node_id = _get_id(name)
 
-    del db[name]
-    store["entities"] = db
-    _save_store(store)
+    from src.brain.db.schema import KGNode
+    from sqlalchemy import delete
+    
+    async with await db_manager.get_session() as session:
+        # Delete from Postgres
+        stmt = delete(KGNode).where(KGNode.id == node_id)
+        await session.execute(stmt)
+        await session.commit()
+    
+    # Delete from ChromaDB
+    if long_term_memory.available:
+        try:
+            long_term_memory.knowledge.delete(ids=[node_id])
+        except Exception:
+            pass
+
     return {"success": True, "deleted": True}
 
 

@@ -9,10 +9,10 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from .schema import Base
+from ..config_loader import config
 
-# Default connection string (can be overridden by Env)
-# Using 'postgresql+asyncpg' driver
-DB_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://dev:postgres@localhost/atlastrinity_db")
+# Primary connection string from config, fallback to env
+DB_URL = config.get("database.url", os.getenv("DATABASE_URL", "postgresql+asyncpg://dev:postgres@localhost/atlastrinity_db"))
 
 
 class DatabaseManager:

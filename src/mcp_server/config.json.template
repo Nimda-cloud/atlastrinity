@@ -20,7 +20,7 @@
     "filesystem": {
       "command": "npx",
       "args": [
-        "@modelcontextprotocol/server-filesystem@2026.1.14",
+        "@modelcontextprotocol/server-filesystem",
         "${HOME}",
         "/tmp"
       ],
@@ -54,7 +54,7 @@
     "chrome-devtools": {
       "command": "bunx",
       "args": [
-        "chrome-devtools-mcp@latest"
+        "chrome-devtools-mcp"
       ],
       "description": "Chrome DevTools Protocol for browser automation",
       "disabled": false,
@@ -113,7 +113,7 @@
     "puppeteer": {
       "command": "npx",
       "args": [
-        "@modelcontextprotocol/server-puppeteer@latest"
+        "@modelcontextprotocol/server-puppeteer"
       ],
       "connect_timeout": 60,
       "description": "High-speed Headless Browser (Puppeteer) for web searching, navigation, screenshots, element interaction, and JavaScript execution",

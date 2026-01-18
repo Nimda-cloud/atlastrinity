@@ -701,7 +701,10 @@ def main():
     if not install_deps():
         sys.exit(1)
 
-    ensure_database()  # Now dependencies are ready
+    # Sync configs BEFORE DB and tests to ensure latest templates are applied
+    sync_configs()
+
+    ensure_database()  # Now dependencies are ready and config is synced
 
     build_swift_mcp()
     
@@ -720,7 +723,6 @@ def main():
                          except Exception:
                              pass
 
-    sync_configs()
     download_models()
     check_services()
 

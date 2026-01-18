@@ -14,6 +14,9 @@ except ImportError:  # pragma: no cover
         return {}
 
 
+import re
+
+
 from .config import CONFIG_ROOT, MCP_DIR, PROJECT_ROOT, deep_merge
 
 
@@ -136,8 +139,11 @@ class SystemConfig:
                 },
             },
             "system": {
-                "workspace_path": "~/Developer/Trinity",
+                "workspace_path": "${HOME}/Developer/Trinity",
                 "repository_path": str(PROJECT_ROOT),  # Path to Trinity source code for self-healing
+            },
+            "database": {
+                "url": os.getenv("DATABASE_URL", "postgresql+asyncpg://dev:postgres@localhost/atlastrinity_db")
             },
             "logging": {"level": "INFO", "max_log_size": 10485760, "backup_count": 5},
         }
@@ -153,6 +159,30 @@ class SystemConfig:
 
         return base_defaults
 
+    def _substitute_placeholders(self, value: Any) -> Any:
+        """Substitute ${VAR} placeholders recursively in strings, lists, or dicts."""
+        if isinstance(value, str):
+            def replace_match(match):
+                var_name = match.group(1)
+                if var_name == "PROJECT_ROOT":
+                    return str(PROJECT_ROOT)
+                if var_name == "CONFIG_ROOT":
+                    return str(CONFIG_ROOT)
+                if var_name == "HOME":
+                    return str(Path.home())
+                # Fallback to environment variables
+                return os.getenv(var_name, match.group(0))
+            
+            return re.sub(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}", replace_match, value)
+        
+        if isinstance(value, list):
+            return [self._substitute_placeholders(item) for item in value]
+        
+        if isinstance(value, dict):
+            return {k: self._substitute_placeholders(v) for k, v in value.items()}
+            
+        return value
+
     def get(self, key_path: str, default: Any = None) -> Any:
         keys = key_path.split(".")
         value = self._config
@@ -161,7 +191,8 @@ class SystemConfig:
                 value = value[key]
             else:
                 return default
-        return value
+        
+        return self._substitute_placeholders(value)
 
     def get_api_key(self, key_name: str) -> str:
         env_map = {
