@@ -224,7 +224,7 @@ def check_models():
          STATUS_REPORT["failed"] += 1
 
 def check_mcp_servers():
-    print_header("Checking MCP Server Binaries")
+    print_header("Checking MCP Server Binaries & Source")
     
     # 1. macos-use (Swift)
     swift_bin = PROJECT_ROOT / "vendor" / "mcp-server-macos-use" / ".build" / "release" / "mcp-server-macos-use"
@@ -238,9 +238,9 @@ def check_mcp_servers():
     # 2. Node MCPs (check node_modules)
     node_mcps = [
         "@modelcontextprotocol/server-filesystem",
-        "@modelcontextprotocol/server-memory", 
         "@modelcontextprotocol/server-puppeteer",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "@modelcontextprotocol/server-sequential-thinking",
+        "chrome-devtools-mcp"
     ]
     
     for mcp in node_mcps:
@@ -250,6 +250,23 @@ def check_mcp_servers():
             STATUS_REPORT["passed"] += 1
         else:
             print_fail(f"Node MCP MISSING in node_modules: {mcp}")
+            STATUS_REPORT["failed"] += 1
+
+    # 3. Python MCPs (check src files)
+    python_mcps = {
+        "vibe": "vibe_server.py",
+        "memory": "memory_server.py",
+        "graph": "graph_server.py"
+    }
+    
+    mcp_src_dir = PROJECT_ROOT / "src" / "mcp_server"
+    for name, filename in python_mcps.items():
+        path = mcp_src_dir / filename
+        if path.exists():
+            print_pass(f"Python MCP source found: {name} ({filename})")
+            STATUS_REPORT["passed"] += 1
+        else:
+            print_fail(f"Python MCP source MISSING: {name} ({filename})")
             STATUS_REPORT["failed"] += 1
 
 def main():
