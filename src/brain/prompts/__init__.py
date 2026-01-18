@@ -85,7 +85,7 @@ class AgentPrompts:
         TOOL SELECTION GUIDE:
         - Shell commands: "macos-use.execute_command" with {{"command": "..."}}.
         - Create folders: "macos-use.execute_command" with {{"command": "mkdir -p /path"}}.
-        - Open Finder at a path: "macos-use.macos-use_finder_open_path" with {{"path": "/Users/.../Desktop"}}.
+        - Open Finder at a path: "macos-use.macos-use_finder_open_path" with {{"path": "~/Desktop"}}.
         - List files in Finder: "macos-use.macos-use_finder_list_files".
         - Move to trash: "macos-use.macos-use_finder_move_to_trash" with {{"path": "..."}}.
         - Screenshot is ONLY for visual verification, NOT for file operations!

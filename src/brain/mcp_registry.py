@@ -1232,7 +1232,7 @@ Even if the internal reasoning is English, the voice content MUST BE 100% Ukrain
 
 RULES FOR VOICE CONTEXT:
 1. **Be Concise & Specific**: defined "essence" of the action.
-   - BAD: "Running ls command in /Users/oleg/Downloads"
+   - BAD: "Running ls command in ~/Downloads"
    - GOOD: "Перевіряю список файлів у папці завантажень."
    - GOOD: "Помилка доступу. Пробую права адміністратора."
 

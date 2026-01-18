@@ -115,16 +115,20 @@ class MCPManager:
                 return value
 
             def replace_match(match):
-                env_name = match.group(1)
-                if env_name == "PROJECT_ROOT":
+                var_name = match.group(1)
+                if var_name == "PROJECT_ROOT":
                     from .config import PROJECT_ROOT  # noqa: E402
-
                     return str(PROJECT_ROOT)
-
-                # Check for special binary placeholder or handled relative paths
-                env_val = os.getenv(env_name)
+                if var_name == "CONFIG_ROOT":
+                    from .config import CONFIG_ROOT  # noqa: E402
+                    return str(CONFIG_ROOT)
+                if var_name == "HOME":
+                    return str(Path.home())
+                
+                # Fallback to environment variables
+                env_val = os.getenv(var_name)
                 if env_val is None:
-                    missing.append(env_name)
+                    missing.append(var_name)
                     return match.group(0)
                 return env_val
 
