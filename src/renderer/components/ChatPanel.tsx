@@ -50,8 +50,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
 
   return (
     <div className="h-full flex flex-col p-4 font-mono">
-      {/* Minimal Header */}
-      <div className="flex items-center gap-1.5 px-0 mb-6 opacity-30 shrink-0 uppercase tracking-[0.4em] text-[6px] font-bold">
+      {/* Absolute Positioned Header to align with top line */}
+      <div className="absolute top-[-22px] right-0 flex items-center gap-1.5 opacity-30 shrink-0 uppercase tracking-[0.4em] text-[6px] font-bold select-none">
         <div className="w-[5px] h-[5px] rounded-full border border-white/20"></div>
         <span>communication::hud</span>
       </div>

@@ -45,14 +45,8 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden font-mono">
-      {/* Window Header - Decorative Controls */}
-      <div className="flex items-center gap-1.5 px-1 py-4 opacity-30 shrink-0">
-        <div className="flex gap-1.5">
-          <div className="w-[5px] h-[5px] rounded-full bg-[#FF5F56]/40"></div>
-          <div className="w-[5px] h-[5px] rounded-full bg-[#FFBD2E]/40"></div>
-          <div className="w-[5px] h-[5px] rounded-full bg-[#27C93F]/40"></div>
-        </div>
-        <div className="w-[1px] h-2 bg-white/10 mx-2"></div>
+      {/* Window Header - Absolute Positioned to align with traffic lights */}
+      <div className="absolute top-[-22px] left-[65px] flex items-center gap-1.5 opacity-30 shrink-0 select-none">
         <span className="text-[6px] tracking-[0.4em] uppercase font-bold text-white/50">
           core::log_stream
         </span>
@@ -106,21 +100,20 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
             <div className="flex-1 flex flex-col pl-0.5">
               {/* Message */}
               <span
-                className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${
-                  log.message.includes('[VIBE-THOUGHT]')
+                className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${log.message.includes('[VIBE-THOUGHT]')
                     ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
                     : log.message.includes('[VIBE-ACTION]')
                       ? 'text-yellow-400'
                       : log.message.includes('[VIBE-GEN]')
                         ? 'text-green-400'
-                        : log.message.includes('[VIBE-LIVE]') 
+                        : log.message.includes('[VIBE-LIVE]')
                           ? 'text-blue-300'
                           : 'text-white/50 group-hover:text-white/85'
-                }`}
+                  }`}
                 style={{ fontFamily: 'JetBrains Mono' }}
               >
-                {typeof log.message === 'object' 
-                  ? JSON.stringify(log.message) 
+                {typeof log.message === 'object'
+                  ? JSON.stringify(log.message)
                   : log.message.replace('🧠 [VIBE-THOUGHT]', '').trim()}
               </span>
             </div>
