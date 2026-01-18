@@ -1277,4 +1277,14 @@ async def vibe_get_system_context() -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    server.run()
+    import sys
+    try:
+        server.run()
+    except (BrokenPipeError, KeyboardInterrupt):
+        # Graceful exit when parent process closes the pipe or user interrupts
+        sys.exit(0)
+    except Exception as e:
+        # Catch ExceptionGroup if it contains BrokenPipeError (Python 3.11+)
+        if "BrokenPipeError" in str(e) or "Broken pipe" in str(e):
+            sys.exit(0)
+        raise
