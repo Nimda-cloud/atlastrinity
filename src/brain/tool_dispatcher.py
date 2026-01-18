@@ -79,6 +79,8 @@ class ToolDispatcher:
         "list_notes": "macos-use_notes_list_folders",
         "notes_list": "macos-use_notes_list_folders",
         "get_note": "macos-use_notes_get_content",
+        "read_note": "macos-use_notes_get_content",
+        "search_notes": "macos-use_notes_get_content",
         "notes_get": "macos-use_notes_get_content",
         # Finder tools
         "finder_open": "macos-use_finder_open_path",
@@ -318,6 +320,10 @@ class ToolDispatcher:
         # --- VIBE ROUTING ---
         if tool_name in self.VIBE_SYNONYMS or explicit_server == "vibe":
             return self._handle_vibe(tool_name, args)
+
+        # --- NOTES ROUTING (Redirect to macos-use) ---
+        if explicit_server == "notes" or any(tool_name.startswith(p) for p in ["notes_", "note_"]):
+            return self._handle_macos_use(tool_name, args)
 
         # --- MACOS-USE ROUTING ---
         if (tool_name.startswith("macos-use") or 
