@@ -50,27 +50,30 @@ def _patch_tts_config(cache_dir: Path):
 
     try:
         content = config_path.read_text()
-        # Find stats_file line and check if it matches current path
         import re
 
-        pattern = r"(\s*stats_file:\s*)(.*)"
-        matches = re.findall(pattern, content)
+        # Regex to find 'stats_file: some_file.npz' anywhere in the file
+        # We look for 'stats_file:' followed by a filename, potentially with whitespace
+        pattern = r"(\s*stats_file:\s*)([^\s\n]+)"
         
         abs_stats_path = str(cache_dir / "feats_stats.npz")
         
-        changed = False
-        if matches:
-            for prefix, current_val in matches:
-                # If it's a relative path just 'feats_stats.npz' or it mentions a different HOME
-                if current_val.strip() != abs_stats_path:
-                    # We need to be careful with substitution if there are multiple matches (unlikely)
-                    # For simplicity, we replace all occurrences if they don't match
-                    content = re.sub(pattern, rf"\1{abs_stats_path}", content)
-                    changed = True
+        def replace_path(match):
+            prefix = match.group(1)
+            current_val = match.group(2)
+            if current_val != abs_stats_path:
+                print(f"[TTS] Updating stats_file from '{current_val}' to '{abs_stats_path}'")
+                return f"{prefix}{abs_stats_path}"
+            return match.group(0)
+
+        new_content, count = re.subn(pattern, replace_path, content)
         
-        if changed:
-            config_path.write_text(content)
-            print(f"[TTS] Patched {config_path.name} with absolute stats_file path: {abs_stats_path}")
+        if count > 0 and new_content != content:
+            config_path.write_text(new_content)
+            print(f"[TTS] Patched {config_path.name}: {count} occurrences updated.")
+        else:
+            print(f"[TTS] {config_path.name} is already up to date or no stats_file found.")
+            
     except Exception as e:
         print(f"[TTS] Warning: Failed to patch config.yaml: {e}")
 
