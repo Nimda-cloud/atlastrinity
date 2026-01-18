@@ -14,7 +14,7 @@ async def test_tool_call():
     manager = MCPManager()
     server_name = "filesystem"
     tool_name = "list_directory"
-    args = {"path": "/Users/olegkizyma/Documents/GitHub/atlastrinity"}
+    args = {"path": str(Path.home() / "Documents/GitHub/atlastrinity")}
     
     print(f"--- Testing tool call: {server_name}.{tool_name} ---")
     

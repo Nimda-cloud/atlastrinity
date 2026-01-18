@@ -139,7 +139,7 @@ class SystemConfig:
                 },
             },
             "system": {
-                "workspace_path": "${HOME}/Developer/Trinity",
+                "workspace_path": "${CONFIG_ROOT}/workspace",
                 "repository_path": str(PROJECT_ROOT),  # Path to Trinity source code for self-healing
             },
             "database": {

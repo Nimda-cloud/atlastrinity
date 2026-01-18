@@ -90,7 +90,7 @@ security:
   require_confirmation: true
 
 system:
-  workspace_path: ${HOME}/Developer/Trinity
+  workspace_path: ${CONFIG_ROOT}/workspace
   repository_path: ${PROJECT_ROOT}
 api:
   timeout: 60

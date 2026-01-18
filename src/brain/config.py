@@ -80,9 +80,9 @@ def ensure_dirs():
     # We now also ensure the project development workspace exists
     try:
         from .config_loader import config as sys_config
-        project_ws = Path(sys_config.get("system.workspace_path", "~/Developer/Trinity")).expanduser().absolute()
+        project_ws = Path(sys_config.get("system.workspace_path", WORKSPACE_DIR)).expanduser().absolute()
     except Exception:
-        project_ws = Path("~/Developer/Trinity").expanduser().absolute()
+        project_ws = WORKSPACE_DIR.expanduser().absolute()
 
     for ws in [WORKSPACE_DIR, VIBE_WORKSPACE, project_ws]:
         if not ws.exists():

@@ -492,8 +492,8 @@ class ToolDispatcher:
         # Enforce absolute CWD or workspace from config
         if not args.get("cwd"):
             system_config = config.get("system", {})
-            # Recommended default is ~/Developer/Trinity if not in config
-            workspace_str = system_config.get("workspace_path", "~/Developer/Trinity")
+            # Recommended default is CONFIG_ROOT / "workspace" if not in config
+            workspace_str = system_config.get("workspace_path", str(CONFIG_ROOT / "workspace"))
             workspace = Path(workspace_str).expanduser().absolute()
             args["cwd"] = str(workspace)
             workspace.mkdir(parents=True, exist_ok=True)

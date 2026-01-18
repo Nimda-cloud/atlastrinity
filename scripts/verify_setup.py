@@ -12,16 +12,18 @@ def test_setup():
     
     # 1. Test config defaults
     from src.brain.config_loader import config
+    from src.brain.config import CONFIG_ROOT
     workspace = config.get("system.workspace_path")
     repo_path = config.get("system.repository_path")
     
     print(f"Default Workspace: {workspace}")
     print(f"Default Repo Path: {repo_path}")
     
-    if workspace != "~/Developer/Trinity":
+    expected_ws = str(CONFIG_ROOT / "workspace")
+    if workspace != expected_ws:
         print(f"❌ Error: Unexpected default workspace: {workspace}")
     else:
-        print("✅ Default workspace correct.")
+        print(f"✅ Default workspace correct: {workspace}")
         
     # 2. Test directory creation
     from src.brain.config import ensure_dirs
