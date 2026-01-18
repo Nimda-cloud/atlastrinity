@@ -226,46 +226,42 @@ class VoiceManager:
     """
 
     def __init__(self, device: str = "cpu"):
+        from collections import deque
         voice_config = config.get("voice.tts", {})
-        self.enabled = voice_config.get("enabled", True)  # Check enabled flag
+        self.enabled = voice_config.get("enabled", True)
         self.device = device
         self._tts = None
-        self.is_speaking = False  # Flag to prevent self-listening
-        self.last_text = ""  # Last spoken text for echo filtering
-        self.last_speak_time = 0.0  # End time of the last agent phrase
-        self._lock = None  # To be initialized in the loop
+        self.is_speaking = False
+        self.last_text = ""
+        self.history = deque(maxlen=5) # History of last spoken phrases
+        self.last_speak_time = 0.0
+        self._lock = None
+        self._stop_event = None  # Event to signal interruption
+        self._current_process = None # Track current subprocess
 
     async def get_engine(self):
-        """Async version to get engine with lazy initialization"""
         if not self.enabled:
             print("[TTS] TTS is disabled in config")
             return None
-
         await self._initialize_if_needed_async()
         return self._tts
 
     @property
     def engine(self):
-        """Legacy sync engine access (will block if not already initialized)"""
         if not self.enabled:
             return None
         self._initialize_if_needed()
         return self._tts
 
     def _initialize_if_needed(self):
-        """Synchronous initialization (not recommended for main thread)"""
         if self._tts is None and _check_tts_available():
-            import asyncio
             try:
-                # If we are in a loop, try to use the async version? 
-                # No, property must be sync.
                 self._load_engine_sync()
             except Exception as e:
                 print(f"[TTS] Sync initialization error: {e}")
 
     async def _initialize_if_needed_async(self):
         if self._tts is None:
-            # Check availability in a thread because it involves a heavy import
             available = await asyncio.to_thread(_check_tts_available)
             if available:
                 print(f"[TTS] Initializing engine on {self.device} (Async)...")
@@ -276,7 +272,7 @@ class VoiceManager:
     def _load_engine_sync(self):
         if self._tts is not None:
             return
-            
+        
         cache_dir = MODELS_DIR
         cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -303,15 +299,36 @@ class VoiceManager:
             print(f"[TTS] Failed to initialize engine: {e}")
             self._tts = None
 
+    def stop(self):
+        """Immediately stop current speech"""
+        if self._stop_event:
+            self._stop_event.set()
+        
+        # Kill current process if exists
+        if self._current_process:
+            try:
+                self._current_process.terminate()
+                print("[TTS] 🛑 Playback interrupted.")
+            except Exception:
+                pass
+            self._current_process = None
+        
+        self.is_speaking = False
+
     async def speak(self, agent_id: str, text: str) -> Optional[str]:
-        """
-        Generate and play speech for specific agent
-        """
         if self._lock is None:
             import asyncio
             self._lock = asyncio.Lock()
+            self._stop_event = asyncio.Event()
+
+        # Reset stop event for new phrase
+        self._stop_event.clear()
 
         async with self._lock:
+            # Check interruption immediately
+            if self._stop_event.is_set():
+                return None
+
             if not _check_tts_available() or not text:
                 print(f"[TTS] [{agent_id.upper()}] (Text-only): {text}")
                 return None
@@ -321,32 +338,36 @@ class VoiceManager:
                 print(f"[TTS] Unknown agent: {agent_id}")
                 return None
 
-        # Import Voices and Stress here
         from ukrainian_tts.tts import Stress, Voices
 
         config = AGENT_VOICES[agent_id]
         voice_enum = getattr(Voices, config.voice_id).value
 
-        # Generate to temp file
         output_file = os.path.join(
             tempfile.gettempdir(), f"tts_{agent_id}_{hash(text) % 10000}.wav"
         )
 
         try:
-            # Generate (CPU intensive, run in thread to avoid blocking loop)
             import asyncio
+            import re
+            import time
 
+            # async generator function
             async def _gen_f(c_text, c_idx):
+                # Check cancellation before heavy work
+                if self._stop_event.is_set(): return None
+
                 c_id = f"{agent_id}_{c_idx}_{hash(c_text) % 10000}"
                 c_file = os.path.join(tempfile.gettempdir(), f"tts_{c_id}.wav")
+                
                 def _do_gen():
                     with open(c_file, mode="wb") as f:
                         self.engine.tts(c_text, voice_enum, Stress.Dictionary.value, f)
+                
                 await asyncio.to_thread(_do_gen)
                 return c_file
 
-            # 1. Split text into sentences/chunks
-            import re
+            # 1. Split text
             chunks = re.split(r'([.!?]+(?:\s+|$))', text)
             processed_chunks = []
             for i in range(0, len(chunks)-1, 2):
@@ -356,17 +377,15 @@ class VoiceManager:
             
             final_chunks = [c.strip() for c in processed_chunks if c.strip()]
             
-            # 2. Refine chunks: Merge very short sentences (< 40 chars)
+            # Merge short chunks
             min_len = 40
             refined_chunks = []
             temp_chunk = ""
-            
             for chunk in final_chunks:
                 if temp_chunk:
                     temp_chunk += " " + chunk
                 else:
                     temp_chunk = chunk
-                
                 if len(temp_chunk) >= min_len:
                     refined_chunks.append(temp_chunk)
                     temp_chunk = ""
@@ -380,55 +399,59 @@ class VoiceManager:
             final_chunks = refined_chunks or [text]
             
             print(f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks...")
-            import time
             start_time = time.time()
             
-            # 2. Pipelined Generation & Playback
-            # Generate the first chunk immediately
+            # Check interruption
+            if self._stop_event.is_set(): return None
+
+            # Generate first chunk
             current_file = await _gen_f(final_chunks[0], 0)
+            if not current_file: return None # Interrupted
+            
             first_chunk_time = time.time() - start_time
             print(f"[TTS] [{config.name}] First chunk ready in {first_chunk_time:.2f}s")
             
             for idx in range(len(final_chunks)):
-                # Start generating the NEXT chunk in the background if it exists
+                # Return if interrupted
+                if self._stop_event.is_set():
+                    print(f"[TTS] [{config.name}] 🛑 Sequence cancelled.")
+                    return "cancelled"
+
+                # Start generating next
                 next_gen_task = None
                 if idx + 1 < len(final_chunks):
                     next_gen_task = asyncio.create_task(_gen_f(final_chunks[idx+1], idx+1))
-                    print(f"[TTS] [{config.name}] ⏩ Background generating chunk {idx+2}...")
 
-                # Play current chunk
                 if not os.path.exists(current_file):
-                    print(f"[TTS] [{config.name}] ⚠ Error: File not found for playback: {current_file}")
                     continue
 
                 print(f"[TTS] [{config.name}] 🔊 Speaking chunk {idx+1}/{len(final_chunks)}: {final_chunks[idx][:50]}...")
                 self.last_text = final_chunks[idx].strip().lower()
-                
+                self.history.append(self.last_text)
                 self.is_speaking = True
+                
                 try:
-                    proc = await asyncio.create_subprocess_exec(
+                    self._current_process = await asyncio.create_subprocess_exec(
                         "afplay", current_file,
                         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                     )
-                    stdout, stderr = await proc.communicate()
-                    if proc.returncode != 0:
-                        print(f"[TTS] [{config.name}] ⚠ afplay failed with code {proc.returncode}. Error: {stderr.decode()}")
+                    await self._current_process.communicate()
                 except Exception as e:
-                    print(f"[TTS] [{config.name}] ⚠ Execution error (afplay): {e}")
+                     print(f"[TTS] [{config.name}] ⚠ Playback error: {e}")
                 finally:
                     self.is_speaking = False
+                    self._current_process = None
                 
-                # Cleanup current file after playback
                 if os.path.exists(current_file):
                     os.remove(current_file)
 
-                # Prepare for next iteration: wait for the background generation to finish
+                # Wait for next chunk
                 if next_gen_task:
                     current_file = await next_gen_task
+                    if not current_file: # Interrupted during generation
+                        return "cancelled"
 
-            # Final grace period
             await asyncio.sleep(0.3)
-            import time
             self.last_speak_time = time.time()
             return "pipelined_playback_completed"
 

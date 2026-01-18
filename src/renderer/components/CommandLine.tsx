@@ -79,7 +79,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     }
   };
 
-  // Планування автоматичної відправки після 3 секунд мовчання
+  // Планування автоматичної відправки після мовчання
   // ВАЖЛИВО: ця функція повинна бути визначена ПЕРЕД handleSTTResponse
   const scheduleSend = useCallback(() => {
     // Скидаємо попередній таймер
@@ -89,49 +89,56 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
     silenceTimeoutRef.current = setTimeout(() => {
       const textToSend = pendingTextRef.current.trim();
-      // console.log('⏱️ Silence timeout, sending:', textToSend);
-
+      
       if (textToSend) {
-        // console.log('🚀 Auto-sending:', textToSend);
+        setSttStatus('🚀 Відправка...');
         onCommand(textToSend);
         setInput('');
         pendingTextRef.current = '';
-        setSttStatus('📤 Відправлено');
-
-        // 5 секунд пауза після відправки перед відновленням прослуховування
-        setTimeout(() => {
-          if (isListeningRef.current) {
-            setSttStatus('🎙️ Слухаю...');
-            // console.log('🔄 Resuming listening after 5s pause');
-          } else {
-            setSttStatus('');
-          }
-        }, 5000);
-
+        
+        // Миттєве відновлення статусу "Слухаю", оскільки Full Duplex працює
+        if (isListeningRef.current) {
+           setSttStatus('🎙️ Слухаю...');
+        } else {
+           setSttStatus('');
+        }
+        
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
       }
-    }, 3000); // 3 секунди мовчання
+    }, 2000); // ОПТИМІЗАЦІЯ: 2 секунди замість 3 (швидша реакція)
   }, [onCommand]);
 
   // Обробка відповіді від Smart STT
-  // ВАЖЛИВО: ця функція повинна бути визначена ПЕРЕД processAudioChunk
   const handleSTTResponse = useCallback(
     (data: SmartSTTResponse) => {
-      const { speech_type, combined_text, text } = data;
+      const { speech_type, combined_text, text, should_send } = data;
 
-      // console.log(`📊 Speech type: ${speech_type}, Should send: ${should_send}, Text: "${text}"`);
+      // Якщо сервер явно каже відправити (наприклад, довга пауза на сервері)
+      if (should_send && combined_text.trim()) {
+         pendingTextRef.current = combined_text;
+         scheduleSend(); // Виклик негайно (через існуючий механізм таймера з 0 затримкою або просто викликати логіку submit)
+         // Насправді краще просто форсувати таймер
+         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+         const textToSend = combined_text.trim();
+         setSttStatus('🚀 Відправка (Server Trigger)...');
+         onCommand(textToSend);
+         setInput('');
+         pendingTextRef.current = '';
+         setSttStatus('🎙️ Слухаю...');
+         return;
+      }
 
       switch (speech_type) {
         case 'silence':
-          setSttStatus('🔇 Тиша...');
-          // При тиші відправляємо накопичений текст після таймауту
+          setSttStatus('Mw... (Тиша)');
+          // При тиші відправляємо накопичений текст
           if (pendingTextRef.current.trim()) {
             scheduleSend();
           }
           break;
 
         case 'noise':
-          setSttStatus('🔊 Фоновий шум');
+          // setSttStatus('🔊 ...'); // Менш нав'язливий статус для шуму
           break;
 
         case 'other_voice':
@@ -139,7 +146,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
           break;
 
         case 'off_topic':
-          setSttStatus('💬 Стороння розмова');
+          setSttStatus('💬 ...');
           break;
 
         case 'same_user':
@@ -148,19 +155,18 @@ const CommandLine: React.FC<CommandLineProps> = ({
           if (text && text.trim()) {
             pendingTextRef.current = combined_text;
             setInput(combined_text);
-            setSttStatus(`✅ ${text.slice(0, 20)}...`);
-            // console.log('📝 Updated text:', combined_text);
+            setSttStatus(`✅ ${text.slice(0, 30)}...`);
 
             // Перезапускаємо таймер для відправки
             scheduleSend();
           } else {
-            setSttStatus('✅ Розпізнано');
+            setSttStatus('✅ ...');
           }
           break;
 
         default:
-          console.warn('Unknown speech type:', speech_type);
-          setSttStatus('❓ Невідомий тип');
+          // console.warn('Unknown speech type:', speech_type);
+          break;
       }
     },
     [scheduleSend]

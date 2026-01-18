@@ -269,24 +269,12 @@ async def smart_speech_to_text(
     audio: UploadFile = File(...), previous_text: str = Form(default="")
 ):
     """
-    Smart STT with speech type analysis.
-
-    Analyzes:
-    - If it's the same user speaking
-    - If it's background noise
-    - If it's another voice/conversation
-    - If it's a continuation of the previous phrase
-
-    Returns:
-        - text: recognized text
-        - speech_type: type of speech (same_user, new_phrase, noise, other_voice, silence, off_topic)
-        - combined_text: aggregated text with previous context
-        - should_send: boolean, trigger for processing the request
-        - is_continuation: boolean, if this chunk continues previous context
+    Smart STT with Full Duplex support (Barge-in).
     """
     try:
         import subprocess
         import tempfile
+        import time
 
         # Determine extension based on content_type
         content_type = audio.content_type or "audio/wav"
@@ -299,28 +287,17 @@ async def smart_speech_to_text(
         else:
             suffix = ".wav"
 
-        # CHECK: Is the agent currently speaking?
-        if trinity.voice.is_speaking:
-            logger.info("[STT] Agent is speaking, ignoring audio (SMART).")
-            return {
-                "text": "",
-                "speech_type": "noise",
-                "confidence": 0,
-                "combined_text": previous_text,
-                "should_send": False,
-                "is_continuation": False,
-                "ignored": True,
-            }
-
-        logger.info(f"[STT] Received audio: content_type={content_type}, using suffix={suffix}")
+        # --- FULL DUPLEX CHANGE: REMOVED BLOCKING CHECK ---
+        # We process audio even if agent is speaking to allow interruption.
+        
+        # logger.info(f"[STT] Received audio: content_type={content_type}")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             content = await audio.read()
             temp_file.write(content)
             temp_file_path = temp_file.name
-            logger.info(f"[STT] Saved to: {temp_file_path}, size: {len(content)} bytes")
 
-        # Конвертуємо webm/ogg/mp3 → wav для кращої роботи Whisper
+        # Convert to WAV
         wav_path = temp_file_path
         if suffix != ".wav":
             wav_path = temp_file_path.replace(suffix, ".wav")
@@ -340,53 +317,73 @@ async def smart_speech_to_text(
                         "1",
                         "-f",
                         "wav",
+                        "-loglevel", "error", # Less verbose
                         wav_path,
                     ],
                     capture_output=True,
                     text=True,
-                    timeout=10,
+                    timeout=5,
                 )
 
                 if result.returncode == 0:
-                    logger.info(f"[STT] Converted to WAV: {wav_path}")
                     os.unlink(temp_file_path)  # Delete original
                 else:
-                    logger.warning(f"[STT] FFmpeg failed: {result.stderr}, using original file")
+                    logger.warning(f"[STT] FFmpeg failed, using original")
                     wav_path = temp_file_path
-            except FileNotFoundError:
-                logger.warning("[STT] FFmpeg not found, using original file")
-                wav_path = temp_file_path
-            except subprocess.TimeoutExpired:
-                logger.warning("[STT] FFmpeg timeout, using original file")
+            except Exception:
                 wav_path = temp_file_path
 
         # Smart analysis with context (async)
         result = await stt.transcribe_with_analysis(wav_path, previous_text=previous_text)
-
-        # Echo Cancellation (Smart/Time-gated)
-        import time
+        
+        # --- ECHO CANCELLATION & INTERRUPTION LOGIC ---
+        
+        from difflib import SequenceMatcher
 
         now = time.time()
+        agent_was_speaking = trinity.voice.is_speaking
+        
+        clean_text = result.text.strip().lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
+        
+        # Get history + current last text
+        phrase_history = list(trinity.voice.history)
+        if trinity.voice.last_text:
+             phrase_history.append(trinity.voice.last_text)
+        
+        # Calculate overlap similarity against HISTORY
+        is_echo = False
+        
+        # 1. Check against history (robust against delays)
+        if clean_text:
+            for past_phrase in phrase_history:
+                past_clean = past_phrase.strip().lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
+                if not past_clean: continue
+                
+                ratio = SequenceMatcher(None, clean_text, past_clean).ratio()
+                
+                # Check substring match
+                if past_clean and clean_text in past_clean:
+                        ratio = 1.0
+                
+                # Strict threshold for history matching
+                if ratio > 0.75:
+                    is_echo = True
+                    logger.info(f"[STT] Echo detected (History Match): '{clean_text}' ~= '{past_clean}' (Ratio: {ratio:.2f})")
+                    break
 
-        clean_text = result.text.strip().lower().replace(".", "").replace(",", "")
-        last_spoken = trinity.voice.last_text.replace(".", "").replace(",", "")
-        time_since_last_speak = now - trinity.voice.last_speak_time
+        # 2. Time-based Heuristics for short noises (only if currently speaking or just finished)
+        if not is_echo and (agent_was_speaking or (now - trinity.voice.last_speak_time < 3.0)):
+             if result.confidence < 0.6:
+                 is_echo = True
+                 logger.info(f"[STT] Noise detected (Low Conf): '{result.text}'")
 
-        # Filter echo only if agent spoke recently (< 7 seconds ago)
-        is_recent_echo = time_since_last_speak < 7.0
+             # Special check for very short "interjections"
+             if len(clean_text) < 5 and result.confidence < 0.8:
+                 is_echo = True
+                 logger.info(f"[STT] Short noise ignored: '{result.text}'")
 
-        if (
-            is_recent_echo
-            and clean_text
-            and (
-                clean_text == last_spoken
-                or clean_text in last_spoken
-                or (len(clean_text) > 4 and last_spoken in clean_text)
-            )
-        ):
-            logger.info(
-                f"[STT] Echo detected (SMART): '{result.text}' ({time_since_last_speak:.1f}s ago), ignoring."
-            )
+        if is_echo:
+            logger.info(f"[STT] Echo/Noise detected: '{result.text}' -> IGNORED")
             return {
                 "text": "",
                 "speech_type": "noise",
@@ -397,20 +394,29 @@ async def smart_speech_to_text(
                 "ignored": True,
             }
 
+        # --- BARGE-IN TRIGGER ---
+        # If we detected valid NEW speech (not echo) AND agent is speaking -> INTERRUPT!
+        if (
+            result.speech_type == SpeechType.NEW_PHRASE 
+            and result.text 
+            and agent_was_speaking
+            and not is_echo
+            and result.confidence > 0.65 # Bumped slightly to 0.65
+        ):
+            logger.info(f"[STT] 🛑 BARGE-IN DETECTED: '{result.text}' -> Stopping TTS.")
+            trinity.voice.stop() # Stop current speech immediately
+
+        # Standard logging
         if result.text:
-            logger.info(
-                f"[STT] Result: text='{result.text}', type={result.speech_type}, conf={result.confidence:.2f}, no_speech={result.no_speech_prob:.2f}"
-            )
-        else:
-            logger.info(
-                f"[STT] Result: (empty), type={result.speech_type}, no_speech={result.no_speech_prob:.2f}"
+             logger.info(
+                f"[STT] Result: '{result.text}' (Type: {result.speech_type.value}, Conf: {result.confidence:.2f})"
             )
 
-        # Clean up temp file(s)
+        # Clean up
         if os.path.exists(wav_path):
             os.unlink(wav_path)
         if wav_path != temp_file_path and os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+             os.unlink(temp_file_path)
 
         return {
             "text": result.text,
@@ -423,8 +429,17 @@ async def smart_speech_to_text(
         }
 
     except Exception as e:
-        logger.exception(f"Smart STT error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Smart STT error: {str(e)}")
+        # Don't crash client loop, return empty result
+        return {
+                "text": "",
+                "speech_type": "noise",
+                "confidence": 0,
+                "combined_text": previous_text,
+                "should_send": False,
+                "is_continuation": False,
+                "ignored": True,
+            }
 
 
 @app.post("/api/voice/transcribe")
