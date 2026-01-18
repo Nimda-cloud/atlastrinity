@@ -26,15 +26,14 @@ python3 scripts/setup_dev.py
 **Що робить setup:**
 - ✅ Створює Python venv (.venv)
 - ✅ Встановлює PostgreSQL, Redis через Homebrew
-- ✅ Компілює Swift MCP сервер (macos-use)
-- ✅ Встановлює Python залежності (requirements.txt) — includes `mcp` (Python MCP support). Note: **external fastmcp** package has been removed; the project uses `mcp.server.FastMCP` for local Python MCP servers.
-- ✅ Встановлює NPM пакети та MCP сервери
+- ✅ **FORCED Build**: Завжди перекомпілює Swift MCP сервер (macos-use) для чистоти бінарника
+- ✅ Встановлює Python залежності (requirements.txt)
+- ✅ Встановлює NPM пакети та 8 основних MCP серверів
 - ✅ Завантажує AI моделі (Faster-Whisper, Ukrainian TTS)
-- ✅ Створює глобальні конфігурації в ~/.config/atlastrinity/
-- ✅ Ініціалізує базу даних PostgreSQL
+- ✅ **FORCED Sync**: Перезаписує глобальні конфігурації в ~/.config/atlastrinity/ актуальними темплейтами
+- ✅ Ініціалізує базу даних PostgreSQL (таблиця `recovery_attempts`)
 - ✅ Запускає Redis, PostgreSQL сервіси
-- ✅ Додає **notes** MCP сервер для звітів Гріші
-- ✅ Додає **Grisha** до memory MCP сервера
+- ✅ Налаштовує тайм-аути на **3600s** для стабільної роботи
 
 ### 3. Налаштування API Ключів
 
@@ -78,16 +77,16 @@ cat ~/.config/atlastrinity/mcp/config.json | jq '.mcpServers | keys'
 ## Доступні MCP Сервери
 
 ### Tier 1 (Критичні - Завжди Ввімкнені)
-- **macos-use** - Нативний контроль macOS (Swift)
+- **macos-use** - Нативний контроль macOS (Swift, **52 інструменти**)
 - **filesystem** - Файлові операції
-- **terminal** - Shell команди з CWD persistence
-- **sequential-thinking** - Глибоке мислення для Гріші
+- **sequential-thinking** - Динамічне планування
 
 ### Tier 2 (Високий Пріоритет - Ввімкнені)
-- **memory** - Граф знань (Atlas, **Grisha**, Tetyana)
-- **notes** - 🆕 Текстові нотатки та звіти (Atlas, Grisha, Tetyana)
-- **git** - Git операції
-- **chrome-devtools** - Browser automation
+- **vibe** - AI Coding & Self-healing (**10 інструментів**)
+- **memory** - Граф знань (Atlas, Tetyana, Grisha)
+- **graph** - Візуалізація зв'язків
+- **puppeteer** - Браузерна автоматизація
+- **chrome-devtools** - Debugging
 
 ### Tier 3-4 (Опціональні - Вимкнені за замовчуванням)
 - apple-mcp, github, duckduckgo-search, context7, whisper-stt, docker, postgres, slack, time, graph

@@ -33,7 +33,7 @@
 
 ## 💾 Технологічний стек
 - **Core**: Python 3.12 (Asyncio)
-- **Database**: PostgreSQL 16 (SQLAlchemy 2.0) + Redis 7
+- **Database**: PostgreSQL 17 (SQLAlchemy 2.0) + Redis 7
 - **Vector Store**: ChromaDB (Semantic Memory)
 - **Models**: GPT-4o, GPT-4o-mini, Raptor-Mini
 - **Integration**: MCP Servers, AppleScript, Quartz API
@@ -70,9 +70,9 @@
 
 | Агент | Інструменти (Tools) | Основні функції |
 | :--- | :--- | :--- |
-| **Atlas** | `sequential-thinking`, `mem-search` | Створення планів, допомога при помилках, оцінка якості. |
-| **Tetyana** | `terminal`, `filesystem`, `browser`, `docker` | Кодування, деплой, запуск команд, маніпуляція файлами. |
-| **Grisha** | `screenshot`, `security-check`, `file-verify` | Візуальна перевірка, аудит логів, безпека системи. |
+| **Atlas** | `sequential-thinking`, `memory-search` | Створення планів, допомога при помилках, оцінка якості. |
+| **Tetyana** | `macos-use`, `vibe`, `filesystem`, `puppeteer` | Кодування, деплой, запуск команд, маніпуляція файлами. |
+| **Grisha** | `macos-use_take_screenshot`, `macos-use_analyze_screen` | Візуальна перевірка, аудит логів, безпека системи. |
 
 ---
 
