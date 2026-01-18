@@ -46,7 +46,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden font-mono">
       {/* Window Header - Absolute Positioned to align with traffic lights */}
-      <div className="absolute top-[-22px] left-[65px] flex items-center gap-1.5 opacity-30 shrink-0 select-none">
+      <div className="absolute top-[-30px] left-[85px] flex items-center gap-1.5 opacity-30 shrink-0 select-none">
         <span className="text-[6px] tracking-[0.4em] uppercase font-bold text-white/50">
           core::log_stream
         </span>
@@ -101,14 +101,14 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
               {/* Message */}
               <span
                 className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${log.message.includes('[VIBE-THOUGHT]')
-                    ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
-                    : log.message.includes('[VIBE-ACTION]')
-                      ? 'text-yellow-400'
-                      : log.message.includes('[VIBE-GEN]')
-                        ? 'text-green-400'
-                        : log.message.includes('[VIBE-LIVE]')
-                          ? 'text-blue-300'
-                          : 'text-white/50 group-hover:text-white/85'
+                  ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
+                  : log.message.includes('[VIBE-ACTION]')
+                    ? 'text-yellow-400'
+                    : log.message.includes('[VIBE-GEN]')
+                      ? 'text-green-400'
+                      : log.message.includes('[VIBE-LIVE]')
+                        ? 'text-blue-300'
+                        : 'text-white/50 group-hover:text-white/85'
                   }`}
                 style={{ fontFamily: 'JetBrains Mono' }}
               >
