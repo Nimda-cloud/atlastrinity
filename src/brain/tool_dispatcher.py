@@ -237,6 +237,10 @@ class ToolDispatcher:
         Intelligent tier-based routing with macOS-use priority.
         Prioritizes macOS-use for 90% coverage target.
         """
+        # Fix for generic 'memory' tool call (LLM hallucination) - intercept generic calls even if server is explicit
+        if tool_name.lower() == "memory" and "query" in args:
+             return "memory", "search", args
+
         # If explicit server specified and NOT asking for macOS-use check, use it
         if explicit_server and not self._can_macos_use_handle(tool_name):
             return self._resolve_tool_and_args(tool_name, args, explicit_server)
@@ -263,7 +267,7 @@ class ToolDispatcher:
              server = "memory"
              resolved_tool = tool_lower if tool_lower in ["create_entities", "add_observations", "get_entity", "list_entities", "create_relation"] else tool_name
              return server, resolved_tool, args
-
+             
         # Priority 3: Standard resolution (Registry-based)
         server, resolved_tool, normalized_args = self._resolve_tool_and_args(tool_name, args, explicit_server)
         
