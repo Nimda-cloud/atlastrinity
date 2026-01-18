@@ -844,9 +844,6 @@ class MCPManager:
 
         logger.info("[MCP] Shutdown complete.")
 
-
-mcp_manager = MCPManager()
-
     def get_connected_servers(self) -> List[str]:
         """Get list of currently connected server names."""
         return list(self.sessions.keys())
