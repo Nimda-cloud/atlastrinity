@@ -965,6 +965,49 @@ class Trinity:
                         except Exception as trace_err:
                             logger.warning(f"Failed to fetch context history: {trace_err}")
 
+                    # NEW: Logical Rejection Handling (Missing confirmation/input)
+                    # If Grisha rejected because of missing user input, Atlas should try to decide first
+                    err_str = str(last_error).lower()
+                    is_logical_rejection = "grisha rejected" in err_str and any(
+                        k in err_str for k in ["підтвердження", "confirmation", "дозволу", "permission", "user input", "чекаємо", "не отримано"]
+                    )
+                    
+                    if is_logical_rejection and depth < 2 and not step.get("_atlas_decided"): # Only for early recovery and once per step
+                        step["_atlas_decided"] = True
+                        await self._log(f"Detected logical rejection (missing input) for step {step_id}. Atlas will attempt a strategic decision.", "orchestrator")
+                        await self._speak("atlas", "Бачу, що не вистачає вашого підтвердження. Оскільки ви мовчите, я проаналізую контекст і прийму рішення самостійно.")
+                        
+                        goal_msg = self.state.get("messages", [HumanMessage(content="Unknown")])[0]
+                        def _get_msg_content(m):
+                            if hasattr(m, "content"): return m.content
+                            if isinstance(m, dict): return m.get("content", str(m))
+                            return str(m)
+
+                        autonomous_decision = await self.atlas.decide_for_user(
+                            str(last_error),
+                            {
+                                "goal": _get_msg_content(goal_msg),
+                                "current_step": step.get("action"),
+                                "history": [_get_msg_content(m) for m in self.state.get("messages", [])[-5:]]
+                            }
+                        )
+                        
+                        await self._log(f"Atlas Autonomous Recovery Decision: {autonomous_decision}", "atlas")
+                        await self._speak("atlas", f"Моє рішення для продовження: {autonomous_decision}")
+                        
+                        # Inject decision as user feedback to Tetyana in the next retry
+                        await message_bus.send(AgentMsg(
+                            from_agent="atlas",
+                            to_agent="tetyana",
+                            message_type=MessageType.FEEDBACK,
+                            payload={"user_response": f"(Autonomous decision after silence/rejection): {autonomous_decision}"},
+                            step_id=step_id
+                        ))
+                        
+                        # We skip Vibe and proceed directly to next attempt loop
+                        await self._log("Skipping Vibe self-healing for logical rejection.", "system")
+                        continue
+
                     await self._log(
                         f"Engaging Vibe Self-Healing for Step {step_id} (Timeout: {config.get('orchestrator', {}).get('task_timeout', 1200)}s)...",
                         "orchestrator",
