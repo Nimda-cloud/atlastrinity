@@ -390,8 +390,8 @@ body {
   grid-template-columns: 350px 1fr 350px;
   grid-template-rows: 1fr auto;
   height: 100vh;
-  padding: 12px 20px;
-  /* Safe zones from edges */
+  padding: 32px 20px 12px 20px;
+  /* Space for titlebar and traffic lights */
   gap: 0;
   /* Remove gap to merge panels seamlessly */
   color: var(--atlas-blue);

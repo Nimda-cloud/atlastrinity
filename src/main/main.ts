@@ -74,11 +74,10 @@ async function createWindow(): Promise<void> {
     height: 900,
     minWidth: 1200,
     minHeight: 700,
-    frame: false,
     transparent: true,
     vibrancy: 'under-window',
     visualEffectState: 'active',
-    titleBarStyle: 'hidden',
+    titleBarStyle: 'hiddenInset',
     backgroundColor: '#00000000',
     webPreferences: {
       nodeIntegration: true,
@@ -86,11 +85,6 @@ async function createWindow(): Promise<void> {
       webSecurity: false, // Allow local connections from file://
     },
   });
-
-  // Hide native macOS window buttons if on Darwin
-  if (process.platform === 'darwin') {
-    mainWindow.setWindowButtonVisibility(false);
-  }
 
   // Load the app
   if (isDev) {
