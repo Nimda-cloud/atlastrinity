@@ -46,7 +46,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden font-mono">
       {/* Window Header - Absolute Positioned to align with traffic lights */}
-      <div className="absolute top-[-30px] left-[85px] flex items-center gap-1.5 opacity-30 shrink-0 select-none">
+      <div className="absolute top-[-38px] left-[110px] flex items-center gap-1.5 opacity-30 shrink-0 select-none">
         <span className="text-[6px] tracking-[0.4em] uppercase font-bold text-white/50">
           core::log_stream
         </span>
