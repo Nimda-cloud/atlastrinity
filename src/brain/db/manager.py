@@ -90,17 +90,42 @@ class DatabaseManager:
                             except Exception as e:
                                 print(f"[DB] FAILED to add column '{column.name}': {e}")
                     else:
-                        # TYPE CHECK (Simplified)
-                        # We compare the upper-case string representation of types
-                        existing_type = str(existing_col_map[column.name]['type']).upper()
-                        expected_type = str(column.type).upper()
+                        # TYPE CHECK (Improved)
+                        # We compare the compiled string representation of types and handle common aliases.
+                        raw_existing_type = str(existing_col_map[column.name]['type']).upper()
                         
-                        # Handle Postgres specific mapping differences (e.g. JSONB vs JSON)
-                        if "JSONB" in expected_type and "JSON" in existing_type:
-                            continue # Postgres often reports JSONB as JSON in some inspectors, but usually it's fine
+                        # Compile our expected type to the current dialect
+                        try:
+                            expected_type = column.type.compile(connection.dialect).upper()
+                        except Exception:
+                            expected_type = str(column.type).upper()
+
+                        # Normalize types (handle variants like TIMESTAMP vs TIMESTAMP WITHOUT TIME ZONE)
+                        def normalize(t):
+                            t = t.replace("WITHOUT TIME ZONE", "").strip()
+                            t = t.replace("WITH TIME ZONE", "").strip()
+                            # Common mappings
+                            mapping = {
+                                "DATETIME": "TIMESTAMP",
+                                "VARCHAR": "CHARACTER VARYING",
+                                "JSONB": "JSONB",
+                                "UUID": "UUID",
+                                "BOOLEAN": "BOOLEAN",
+                                "INTEGER": "INTEGER"
+                            }
+                            for k, v in mapping.items():
+                                if k in t: return v
+                            return t
+
+                        norm_existing = normalize(raw_existing_type)
+                        norm_expected = normalize(expected_type)
                         
-                        if expected_type != existing_type and not (expected_type in existing_type or existing_type in expected_type):
-                             print(f"[DB] Type Warning: Column '{column.name}' in '{table_name}' type mismatch. Found: {existing_type}, Expected: {expected_type}")
+                        # Special case for JSONB/JSON
+                        if "JSON" in norm_expected and "JSON" in norm_existing:
+                            continue
+
+                        if norm_expected != norm_existing and not (norm_expected in norm_existing or norm_existing in norm_expected):
+                             print(f"[DB] Type Warning: Column '{column.name}' in '{table_name}' type mismatch. Found: {raw_existing_type} (norm: {norm_existing}), Expected: {expected_type} (norm: {norm_expected})")
                              if fix:
                                  try:
                                      col_type = column.type.compile(connection.dialect)
