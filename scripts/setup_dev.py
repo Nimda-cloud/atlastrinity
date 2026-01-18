@@ -463,28 +463,26 @@ def install_deps():
     print_step("Встановлення залежностей...")
 
     # 1. Python
+    venv_python = str(VENV_PATH / "/bin/python") if (VENV_PATH / "bin" / "python").exists() else str(VENV_PATH / "bin" / "python")
+    # Actually VENV_PATH / "bin" / "python" is more standard, but I'll use what was there or improved.
     venv_python = str(VENV_PATH / "bin" / "python")
+    
+    # Update PIP first
+    subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip"], capture_output=True)
+
+    # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
-        subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip"], capture_output=True)
         subprocess.run([venv_python, "-m", "pip", "install", "-r", str(req_file)], check=True)
-        # STT deps
-        subprocess.run(
-            [
-                venv_python,
-                "-m",
-                "pip",
-                "install",
-                "faster-whisper",
-                "sounddevice",
-                "soundfile",
-            ],
-            capture_output=True,
-        )
-        # Try to install optional MCP python servers (best-effort). If not available, warn but do not fail setup.
 
-        print_success("Python залежності встановлено")
+    # Install dev requirements if they exist (it's a dev setup)
+    req_dev_file = PROJECT_ROOT / "requirements-dev.txt"
+    if req_dev_file.exists():
+        print_info("PIP install -r requirements-dev.txt...")
+        subprocess.run([venv_python, "-m", "pip", "install", "-r", str(req_dev_file)], check=True)
+
+    print_success("Python залежності встановлено")
 
     # 2. NPM & MCP
     if shutil.which("npm"):
@@ -495,9 +493,9 @@ def install_deps():
         # These are usually in package.json but we force-check them here
         mcp_packages = [
             "@modelcontextprotocol/server-sequential-thinking",
-            "@modelcontextprotocol/server-memory",
             "chrome-devtools-mcp",
             "@modelcontextprotocol/server-filesystem",
+            "@modelcontextprotocol/server-puppeteer",
         ]
         print_info("Updating critical MCP packages...")
         subprocess.run(

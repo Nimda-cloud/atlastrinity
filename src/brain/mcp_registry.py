@@ -25,10 +25,10 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "macos-use",
         "tier": 1,
         "category": "core",
-        "description": "Universal macOS Commander (Swift binary - 39+ tools)",
+        "description": "Universal macOS Commander (Swift binary - 52 tools)",
         "capabilities": [
             "GUI automation (click, type, scroll, drag, window management)",
-            "Terminal/shell command execution",
+            "Terminal/shell command execution (execute_command)",
             "Screenshots and Vision OCR (Apple Vision Framework)",
             "Calendar events management",
             "Reminders management",
@@ -61,7 +61,7 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
         ],
         "when_to_use": "ANY computer interaction, macOS GUI automation, terminal commands, Apple productivity apps",
         "priority_note": "ALWAYS prefer macos-use for GUI, terminal, fetch, time over other servers",
-        "protocol_note": "DISCOVERY FIRST POLICY: Always call 'macos-use_list_tools_dynamic' (discovery) before starting a complex task to get the latest 39+ tool schemas and instructions directly from the server. This ensures 100% precision.",
+        "protocol_note": "DISCOVERY FIRST POLICY: Always call 'macos-use_list_tools_dynamic' before starting a complex task to get the latest 52 tool schemas and instructions directly from the server.",
     },
     "filesystem": {
         "name": "filesystem",
@@ -81,8 +81,7 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
             "list_directory",
             "search_files",
         ],
-        "when_to_use": "File operations within home directory. For paths outside ~, use macos-use.execute_command",
-        "restrictions": "Limited to home directory only",
+        "when_to_use": "File operations within allowed paths (~ and /tmp). For other paths, use macos-use.execute_command",
     },
     "sequential-thinking": {
         "name": "sequential-thinking",
@@ -96,35 +95,32 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
             "Consequence simulation",
         ],
         "key_tools": ["sequentialthinking"],
-        "when_to_use": "Complex decisions, dangerous operations (rm -rf), multi-step logic, hypothesis testing",
+        "when_to_use": "Complex decisions, dangerous operations, multi-step logic, hypothesis testing",
     },
+    "system": {
+        "name": "system",
+        "tier": 1,
+        "category": "core",
+        "description": "Internal Trinity System tools",
+        "capabilities": [
+            "Restarting MCP servers",
+            "System status management"
+        ],
+        "key_tools": ["restart_mcp_server"],
+        "when_to_use": "Use when an MCP server is unresponsive or needs a restart.",
+    },
+
     # ─────────────────────────────────────────────────────────────────────────
     # TIER 2 - HIGH PRIORITY SERVERS
     # ─────────────────────────────────────────────────────────────────────────
-
-    "memory": {
-        "name": "memory",
-        "tier": 2,
-        "category": "knowledge",
-        "description": "Knowledge graph for persistent entity storage",
-        "capabilities": [
-            "Create entities",
-            "Create relations between entities",
-            "Search nodes",
-            "Retrieve entity observations",
-        ],
-        "key_tools": ["create_entities", "create_relations", "search_nodes"],
-        "when_to_use": "Storing/retrieving long-term knowledge, entity relationships",
-    },
-
     "vibe": {
         "name": "vibe",
         "tier": 2,
         "category": "ai",
-        "description": "AI-powered CODING and DEBUGGING engine (Mistral CLI)",
+        "description": "Mistral AI-powered CODING and DEBUGGING engine (10 tools)",
         "capabilities": [
             "Deep error analysis with auto-fix",
-            "Code review",
+            "Code review and architectural advice",
             "Writing complex software/scripts",
             "Self-healing when tools fail",
             "Long-running task planning",
@@ -137,37 +133,13 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
             "vibe_smart_plan",
             "vibe_ask",
         ],
-        "when_to_use": "ONLY for: 1) Writing code/scripts (software dev), 2) Fixing hard errors (self-healing). DO NOT use for general planning or simple file tasks.",
-    },
-    "macos-use": {
-        "name": "macos-use",
-        "tier": 2,
-        "category": "productivity",
-        "description": "Universal macOS control and productivity suite (39+ tools)",
-        "capabilities": [
-            "GUI Automation (click, type, drag)",
-            "System Control (media, volume, brightness)",
-            "App Integration (Mail, Notes, Calendar, Reminders)",
-            "File Management (Finder, Trash, Spotlight)",
-            "Web Scraping & OCR (fetch, analyze_screen)",
-            "Shell access (execute_command)",
-        ],
-        "key_tools": [
-            "macos-use_click_and_traverse",
-            "macos-use_type_and_traverse",
-            "macos-use_open_application_and_traverse",
-            "macos-use_take_screenshot",
-            "execute_command",
-            "macos-use_fetch_url",
-            "macos-use_list_tools_dynamic",
-        ],
-        "when_to_use": "For all macOS system interactions, local file searching, GUI automation, and productivity app controls.",
+        "when_to_use": "ONLY for software development, writing code/scripts, and fixing hard errors (self-healing).",
     },
     "memory": {
         "name": "memory",
         "tier": 2,
         "category": "knowledge",
-        "description": "Knowledge Graph-based long-term memory",
+        "description": "Knowledge Graph-based long-term memory (Atlas, Grisha, Tetyana)",
         "capabilities": [
             "Entity and relationship tracking",
             "Observation management",
@@ -179,7 +151,7 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
             "search",
             "get_entity",
         ],
-        "when_to_use": "When the agent needs to store or recall facts, entities, and historical observations about the user or the codebase.",
+        "when_to_use": "Storing or recalling facts, entities, and historical observations about the user or codebase.",
     },
     "graph": {
         "name": "graph",
@@ -194,47 +166,31 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
             "get_graph_json",
             "generate_mermaid",
         ],
-        "when_to_use": "When the agent or user wants to visualize the current state of the knowledge graph.",
+        "when_to_use": "Visualizing the current state of the knowledge graph memory.",
     },
-
-    "system": {
-        "name": "system",
-        "tier": 1,
-        "category": "core",
-        "description": "Internal Trinity System tools",
-        "capabilities": [
-            "Restarting MCP servers",
-            "System status management"
-        ],
-        "key_tools": ["restart_mcp_server"],
-        "when_to_use": "Use when an MCP server is unresponsive, returns 'Connection closed', or needs a fresh start.",
-    },
-
     "puppeteer": {
         "name": "puppeteer",
         "tier": 2,
         "category": "browser",
-        "description": "High-speed Headless Browser (Puppeteer)",
+        "description": "Headless Browser (Puppeteer) for web automation",
         "capabilities": [
-            "Web searching (Google/Bing) without API keys",
-            "Navigating complex URLs and SPA applications",
+            "Web searching (Google/Bing)",
+            "Navigating complex URLs and SPAs",
             "Interacting with elements (click, type, fill)",
-            "Capturing full-page screenshots",
-            "Executing JavaScript on pages",
+            "Capturing page screenshots",
         ],
         "key_tools": ["puppeteer_navigate", "puppeteer_screenshot", "puppeteer_click"],
-        "when_to_use": "ANY web task: searching for info, checking weather, scraping data, or interacting with websites.",
+        "when_to_use": "Web searching, checking weather, scraping data, website interaction.",
     },
     "chrome-devtools": {
         "name": "chrome-devtools",
         "tier": 2,
         "category": "browser",
-        "description": "Chrome DevTools Protocol for browser automation",
+        "description": "Chrome DevTools Protocol for advanced browser automation",
         "capabilities": [
             "Low-level browser control",
             "Network monitoring",
             "Console log access",
-            "DOM inspection",
         ],
         "key_tools": ["captureScreenshot", "console_logs", "network_requests"],
         "when_to_use": "Advanced browser debugging or when puppeteer is insufficient.",
