@@ -1216,7 +1216,8 @@ class Trinity:
                 
                 # Handle need_user_input signal (New Autonomous Timeout Logic)
                 if result.error == "need_user_input":
-                    await self._log(f"User input needed for step {step_id}. Waiting 10 seconds...", "orchestrator")
+                    timeout_val = float(config.get("orchestrator.user_input_timeout", 20.0))
+                    await self._log(f"User input needed for step {step_id}. Waiting {timeout_val} seconds...", "orchestrator")
                     
                     # Display the question to the user in the logs/UI
                     await self._log(f"[REQUEST] {result.result}", "system", type="warning")
@@ -1228,7 +1229,7 @@ class Trinity:
                         # We use a 10 second timeout as requested
                         # Note: message_bus needs to support waiting or we poll briefly
                         start_wait = asyncio.get_event_loop().time()
-                        while asyncio.get_event_loop().time() - start_wait < 10.0:
+                        while asyncio.get_event_loop().time() - start_wait < timeout_val:
                             bus_msgs = await message_bus.receive("orchestrator", mark_read=True)
                             for m in bus_msgs:
                                 if m.message_type == MessageType.CHAT and m.from_agent == "USER":
