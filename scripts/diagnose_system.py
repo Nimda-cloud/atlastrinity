@@ -1,15 +1,16 @@
-
 import asyncio
 import sys
 import os
 from pathlib import Path
 
-# Fix path to include src/
-sys.path.append(str(Path(__file__).parent / "src"))
+# Add project root to sys.path
+PROJECT_ROOT = str(Path(__file__).parent.parent)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-from brain.db.manager import db_manager
-from brain.db.schema import Session, Task, TaskStep, ToolExecution, AgentMessage
-from brain.memory import long_term_memory
+from src.brain.db.manager import db_manager
+from src.brain.db.schema import Session, Task, TaskStep, ToolExecution, AgentMessage
+from src.brain.memory import long_term_memory
 from sqlalchemy import select, func
 
 async def diagnose_db():
@@ -63,9 +64,8 @@ async def diagnose_memory():
 async def diagnose_browser():
     print("\n === 3. BROWSER/MCP DIAGNOSTICS ===")
     # Check if puppeteer is in MCP config and reachable
-    from brain.mcp_manager import MCPManager
-    mcp = MCPManager()
-    catalog = await mcp.get_mcp_catalog()
+    from src.brain.mcp_manager import mcp_manager
+    catalog = await mcp_manager.get_mcp_catalog()
     
     # Check if puppeteer is in catalog
     if "puppeteer" in catalog:

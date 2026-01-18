@@ -1,6 +1,14 @@
 import asyncio
 import os
+import sys
+from pathlib import Path
 from sqlalchemy import select, desc
+
+# Add project root to sys.path
+PROJECT_ROOT = str(Path(__file__).parent.parent)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from src.brain.db.manager import db_manager
 from src.brain.db.schema import ToolExecution, TaskStep, Task
 

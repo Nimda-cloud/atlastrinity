@@ -2,14 +2,16 @@ import os
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.append(os.path.abspath("src"))
+# Add project root to sys.path
+PROJECT_ROOT = str(Path(__file__).parent.parent)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 def test_setup():
     print("--- 🔍 Testing Setup Logic ---")
     
     # 1. Test config defaults
-    from brain.config_loader import config
+    from src.brain.config_loader import config
     workspace = config.get("system.workspace_path")
     repo_path = config.get("system.repository_path")
     
@@ -22,7 +24,7 @@ def test_setup():
         print("✅ Default workspace correct.")
         
     # 2. Test directory creation
-    from brain.config import ensure_dirs
+    from src.brain.config import ensure_dirs
     # ensure_dirs() is called on import usually, but let's call it again
     ensure_dirs()
     
@@ -33,7 +35,7 @@ def test_setup():
         print(f"❌ Error: Directory {ws_path} DOES NOT exist.")
         
     # 3. Test vibe_server path resolution
-    from mcp_server.vibe_server import PROJECT_ROOT, REPOSITORY_ROOT
+    from src.mcp_server.vibe_server import PROJECT_ROOT, REPOSITORY_ROOT
     print(f"Vibe PROJECT_ROOT: {PROJECT_ROOT}")
     print(f"Vibe REPOSITORY_ROOT: {REPOSITORY_ROOT}")
     
