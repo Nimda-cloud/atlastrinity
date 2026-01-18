@@ -270,24 +270,22 @@ async def _run_vibe(
             print(f"[VIBE_DEBUG] safe_notify failed: {e}", file=sys.stderr)
             pass
     
-    # Wrapper implementation: Use vibe_runner.py to handle PTY isolation
-    runner_script = os.path.join(os.path.dirname(__file__), "vibe_runner.py")
-    
-    # Prepend python and runner script to argv
-    # argv was [vibe_path, args...] (e.g. /home/user/.local/bin/vibe -p ...)
-    # wrapper takes [vibe_binary, args...] as arguments.
-    wrapper_argv = [sys.executable, runner_script] + argv
+    # Run Vibe directly, bypassing wrapper. 
+    # Enable PYTHONUNBUFFERED to ensure real-time streaming of JSON.
+    env["PYTHONUNBUFFERED"] = "1"
+    env["TERM"] = "dumb"
+    env["NO_COLOR"] = "1"
     
     msg_start = f"⚡ [VIBE-LIVE] Initializing... (Timeout: {timeout_s}s)"
     logger.info(msg_start)
     asyncio.create_task(safe_notify(msg_start))
 
     try:
-        print(f"[VIBE_DEBUG] Executing (Wrapper): {wrapper_argv}", file=sys.stderr)
+        print(f"[VIBE_DEBUG] Executing: {argv}", file=sys.stderr)
         
-        # Run the wrapper as a standard subprocess (wrapper handles PTY)
+        # Run the Vibe CLI directly
         process = await asyncio.create_subprocess_exec(
-            *wrapper_argv,
+            *argv,
             cwd=cwd,
             env=env,
             stdout=asyncio.subprocess.PIPE,
@@ -297,6 +295,11 @@ async def _run_vibe(
 
         stdout_chunks = []
         stderr_chunks = []
+        
+        # ANSI escape code regex
+        ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        def strip_ansi(text: str) -> str:
+            return ANSI_ESCAPE.sub('', text)
 
         # Shared state for heartbeat
         last_activity = [asyncio.get_event_loop().time()]
@@ -325,12 +328,14 @@ async def _run_vibe(
                     lines = buffer.split("\n")
                     buffer = lines.pop()
                     
-                for raw_text in lines:
-                    if not raw_text.strip():
+                for raw_text_line in lines:
+                    # Strip ANSI from every line before processing
+                    raw_text = strip_ansi(raw_text_line).strip()
+                    
+                    if not raw_text:
                         continue
                     
                     # LOGGING LOGIC
-                    # Wrapper ensures mostly clean JSON, but we verify
                     try:
                         data_json = json.loads(raw_text)
                         
@@ -365,8 +370,18 @@ async def _run_vibe(
                                 logger.info(msg)
                                 asyncio.create_task(safe_notify(msg))
                                 
+                                
                     except json.JSONDecodeError:
-                        # Non-JSON content (wrapper passed it through?)
+                        # Non-JSON content (Spam filtering)
+                        spam_triggers = [
+                            "Welcome to Mistral", 
+                            "Press Enter",
+                            "│", "─", "╭", "╮", "╰", "╯"
+                        ]
+                        
+                        if any(trigger in raw_text for trigger in spam_triggers):
+                            continue
+
                         if len(raw_text) < 1000:
                              msg = f"⚡ [VIBE-STATUS] {raw_text}"
                              logger.info(msg)
@@ -424,6 +439,7 @@ async def _run_vibe(
             await asyncio.wait_for(
                 asyncio.gather(
                     read_stream(process.stdout, stdout_chunks, "VIBE-OUT"),
+                    read_stream(process.stderr, stderr_chunks, "VIBE-ERR"),
                     process.wait()
                 ),
                 timeout=float(timeout_s)
