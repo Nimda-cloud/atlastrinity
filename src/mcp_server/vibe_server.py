@@ -270,22 +270,22 @@ async def _run_vibe(
             print(f"[VIBE_DEBUG] safe_notify failed: {e}", file=sys.stderr)
             pass
     
-    # Run Vibe directly, bypassing wrapper. 
-    # Enable PYTHONUNBUFFERED to ensure real-time streaming of JSON.
-    env["PYTHONUNBUFFERED"] = "1"
-    env["TERM"] = "dumb"
-    env["NO_COLOR"] = "1"
+    # Wrapper implementation: Use vibe_runner.py to handle PTY isolation
+    runner_script = os.path.join(os.path.dirname(__file__), "vibe_runner.py")
+    
+    # Prepend python and runner script to argv
+    wrapper_argv = [sys.executable, runner_script] + argv
     
     msg_start = f"⚡ [VIBE-LIVE] Initializing... (Timeout: {timeout_s}s)"
     logger.info(msg_start)
     asyncio.create_task(safe_notify(msg_start))
 
     try:
-        print(f"[VIBE_DEBUG] Executing: {argv}", file=sys.stderr)
+        print(f"[VIBE_DEBUG] Executing (Wrapper): {wrapper_argv}", file=sys.stderr)
         
-        # Run the Vibe CLI directly
+        # Run the wrapper which handles PTY
         process = await asyncio.create_subprocess_exec(
-            *argv,
+            *wrapper_argv,
             cwd=cwd,
             env=env,
             stdout=asyncio.subprocess.PIPE,

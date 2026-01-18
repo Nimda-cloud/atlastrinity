@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .logger import logger
 from .config_loader import config
-from .config import PROJECT_ROOT, REPOSITORY_ROOT
+from .config import PROJECT_ROOT, REPOSITORY_ROOT, CONFIG_ROOT
 from .mcp_registry import TOOL_SCHEMAS, get_tool_schema, get_server_for_tool
 
 class ToolDispatcher:
@@ -529,6 +529,13 @@ class ToolDispatcher:
         elif tool_name == "query_db":
             # For now, we don't expose raw SQL to agents for safety, but we could implement specific queries
             return {"success": False, "error": "Direct DB queries via LLM are currently restricted for safety."}
+            
+        elif tool_name == "system" or tool_name == "status":
+            # Generic status/meta tool for informational steps
+            return {
+                "success": True, 
+                "result": args.get("message") or args.get("action") or "Operation noted by system."
+            }
             
         return {"success": False, "error": f"Unknown system tool: {tool_name}"}
 

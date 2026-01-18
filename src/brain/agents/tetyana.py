@@ -146,17 +146,22 @@ class Tetyana(BaseAgent):
         from ..logger import logger  # noqa: E402
         from ..mcp_manager import mcp_manager  # noqa: E402
 
-        # Try notes first (faster)
+        # Try notes first (faster) if configured
         try:
-            result = await mcp_manager.call_tool(
-                "notes",
-                "search_notes",
-                {
-                    "category": "verification_report",
-                    "tags": [f"step_{step_id}"],
-                    "limit": 1,
-                },
-            )
+            # Check if notes server is configured in mcp_manager
+            if "notes" in mcp_manager.config.get("mcpServers", {}):
+                result = await mcp_manager.call_tool(
+                    "notes",
+                    "search_notes",
+                    {
+                        "category": "verification_report",
+                        "tags": [f"step_{step_id}"],
+                        "limit": 1,
+                    },
+                )
+            else:
+                logger.debug(f"[TETYANA] Notes server not configured, skipping search for step {step_id}")
+                result = None
 
             # Normalize notes search result to a plain dict when possible
             notes_result = None
@@ -1232,17 +1237,20 @@ IMPORTANT:
                     note_content += f"Detected keywords in HTML: {', '.join(detected)}\n"
 
                 try:
-                    await mcp_manager.call_tool(
-                        "notes",
-                        "create_note",
-                        {
-                            "title": note_title,
-                            "content": note_content,
-                            "category": "verification_artifact",
-                            "tags": ["grisha", f"step_{step_id}"],
-                        },
-                    )
-                    logger.info(f"[TETYANA] Created verification artifact note for step {step_id}")
+                    if "notes" in mcp_manager.config.get("mcpServers", {}):
+                        await mcp_manager.call_tool(
+                            "notes",
+                            "create_note",
+                            {
+                                "title": note_title,
+                                "content": note_content,
+                                "category": "verification_artifact",
+                                "tags": ["grisha", f"step_{step_id}"],
+                            },
+                        )
+                        logger.info(f"[TETYANA] Created verification artifact note for step {step_id}")
+                    else:
+                        logger.debug(f"[TETYANA] Notes server not configured, skipping artifact note for step {step_id}")
                 except Exception as e:
                     logger.warning(f"[TETYANA] Failed to create artifact note: {e}")
 
