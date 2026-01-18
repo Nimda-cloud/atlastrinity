@@ -28,9 +28,12 @@ async def get_graph_json() -> Dict[str, Any]:
 
 
 @server.tool()
-async def generate_mermaid() -> str:
+async def generate_mermaid(node_type: Optional[str] = None) -> str:
     """
     Generates a Mermaid.js flowchart representation of the current Knowledge Graph.
+
+    Args:
+        node_type: Optional filter to only show nodes of a certain type (FILE, TASK, TOOL, ENTITY)
     """
     await db_manager.initialize()
     data = await knowledge_graph.get_graph_data()
@@ -41,8 +44,14 @@ async def generate_mermaid() -> str:
     nodes = data.get("nodes", [])
     edges = data.get("edges", [])
 
+    if node_type:
+        node_type = node_type.upper()
+        nodes = [n for n in nodes if n["type"] == node_type]
+        valid_ids = {n["id"] for n in nodes}
+        edges = [e for e in edges if e["source"] in valid_ids or e["target"] in valid_ids]
+
     if not nodes:
-        return "graph TD\n  Empty[Graph is empty]"
+        return f"graph TD\n  Empty[No {node_type or 'nodes'} found in graph]"
 
     mermaid = "graph TD\n"
 
@@ -63,6 +72,7 @@ async def generate_mermaid() -> str:
             "TOOL": "🛠️",
             "USER": "👤",
             "CONCEPT": "💡",
+            "ENTITY": "🧠",
         }.get(n["type"], "⚪")
 
         mermaid += f'  {alias}["{type_icon} {label}"]\n'
@@ -76,7 +86,51 @@ async def generate_mermaid() -> str:
         if source_id in node_map and target_id in node_map:
             mermaid += f'  {node_map[source_id]} -- "{relation}" --> {node_map[target_id]}\n'
 
-    return mermaid
+@server.tool()
+async def get_node_details(node_id: str) -> Dict[str, Any]:
+    """Retrieve all attributes of a specific node."""
+    from sqlalchemy import select
+    from src.brain.db.schema import KGNode
+    
+    await db_manager.initialize()
+    async with await db_manager.get_session() as session:
+        stmt = select(KGNode).where(KGNode.id == node_id)
+        res = await session.execute(stmt)
+        node = res.scalar()
+        if not node:
+            return {"error": "Node not found"}
+        return {
+            "id": node.id,
+            "type": node.type,
+            "attributes": node.attributes,
+            "last_updated": node.last_updated.isoformat() if node.last_updated else None
+        }
+
+
+@server.tool()
+async def get_related_nodes(node_id: str) -> Dict[str, Any]:
+    """Find all nodes directly connected to the specified node."""
+    from sqlalchemy import select, or_
+    from src.brain.db.schema import KGEdge
+    
+    await db_manager.initialize()
+    async with await db_manager.get_session() as session:
+        stmt = select(KGEdge).where(
+            or_(KGEdge.source_id == node_id, KGEdge.target_id == node_id)
+        )
+        res = await session.execute(stmt)
+        edges = res.scalars().all()
+        
+        return {
+            "node_id": node_id,
+            "relations": [
+                {
+                    "source": e.source_id,
+                    "target": e.target_id,
+                    "relation": e.relation
+                } for e in edges
+            ]
+        }
 
 
 if __name__ == "__main__":

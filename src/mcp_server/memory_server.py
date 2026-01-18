@@ -192,24 +192,74 @@ async def search(query: str, limit: int = 10) -> Dict[str, Any]:
         results = long_term_memory.knowledge.query(
             query_texts=[q],
             n_results=lim,
-            include=["documents", "metadatas"]
+            include=["documents", "metadatas", "distances"]
         )
         
         formatted = []
         if results and results["documents"]:
             for i, doc in enumerate(results["documents"][0]):
                 meta = results["metadatas"][0][i]
+                # Filter to only show ENTITY types in this tool
                 if meta.get("type") == "ENTITY":
                     formatted.append({
                         "name": str(results["ids"][0][i]).replace("entity:", ""),
                         "entityType": meta.get("entity_type", "ENTITY"),
                         "observations": meta.get("observations", []),
-                        "score": results.get("distances", [[0.5]])[0][i] if "distances" in results else 0.5
+                        "score": 1.0 - (results["distances"][0][i] if "distances" in results else 0.5)
                     })
         
         return {"success": True, "results": formatted, "count": len(formatted), "method": "semantic"}
 
-    return {"error": "Semantic search unavailable (ChromaDB not initialized)"}
+    # 2. Fallback to SQL ILIKE search if Chroma is down
+    from sqlalchemy import select, or_
+    from src.brain.db.schema import KGNode
+    
+    await db_manager.initialize()
+    async with await db_manager.get_session() as session:
+        stmt = select(KGNode).where(
+            or_(
+                KGNode.id.ilike(f"%{q}%"),
+                KGNode.attributes["content"].astext.ilike(f"%{q}%")
+            )
+        ).limit(lim)
+        res = await session.execute(stmt)
+        nodes = res.scalars().all()
+        
+        results = []
+        for n in nodes:
+            results.append({
+                "name": n.id.replace("entity:", ""),
+                "entityType": n.attributes.get("entity_type", "ENTITY"),
+                "observations": n.attributes.get("observations", [])
+            })
+            
+    return {"success": True, "results": results, "count": len(results), "method": "sql_fallback"}
+
+
+@server.tool()
+async def create_relation(source: str, target: str, relation: str) -> Dict[str, Any]:
+    """
+    Create a relationship between two entities in the knowledge graph.
+
+    Args:
+        source: Name of the source entity
+        target: Name of the target entity
+        relation: Type of relationship (e.g. 'part_of', 'depends_on', 'works_with')
+    """
+    await db_manager.initialize()
+    source_id = _get_id(source)
+    target_id = _get_id(target)
+    
+    success = await knowledge_graph.add_edge(
+        source_id=source_id,
+        target_id=target_id,
+        relation=relation
+    )
+    
+    if not success:
+        return {"error": "Failed to create relation. Ensure both entities exist first."}
+        
+    return {"success": True, "source": source, "target": target, "relation": relation}
 
 
 @server.tool()

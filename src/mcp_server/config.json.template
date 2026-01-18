@@ -70,7 +70,7 @@
         "-m",
         "src.mcp_server.vibe_server"
       ],
-      "description": "Mistral AI-powered CLI for self-healing, debugging, code review, and deep coding. Tools: vibe_prompt, vibe_analyze_error, vibe_implement_feature, vibe_code_review, vibe_smart_plan, vibe_ask, vibe_execute_subcommand, vibe_which, vibe_list_sessions, vibe_session_details (10 tools).",
+      "description": "Mistral AI-powered CLI for self-healing, debugging, code review, and deep coding. Tools: vibe_prompt, vibe_analyze_error, vibe_implement_feature, vibe_check_db, vibe_get_system_context, vibe_code_review, vibe_smart_plan, vibe_ask, vibe_execute_subcommand, vibe_which, vibe_list_sessions, vibe_session_details (12 tools).",
       "disabled": false,
       "tier": 2,
       "agents": [
@@ -87,12 +87,13 @@
         "-m",
         "src.mcp_server.memory_server"
       ],
-      "description": "Knowledge graph for persistent memory",
+      "description": "Knowledge graph for persistent memory (PostgreSQL + ChromaDB). Tools: create_entities, add_observations, create_relation, search, get_entity, list_entities.",
       "disabled": false,
       "tier": 2,
       "agents": [
         "atlas",
-        "tetyana"
+        "tetyana",
+        "grisha"
       ]
     },
     "graph": {
@@ -102,11 +103,12 @@
         "-m",
         "src.mcp_server.graph_server"
       ],
-      "description": "Knowledge Graph visualization and export. Use 'generate_mermaid' to visualize task dependencies and system state.",
+      "description": "Knowledge Graph visualization and interactive exploration. Tools: generate_mermaid, get_node_details, get_related_nodes, get_graph_json.",
       "disabled": false,
       "tier": 2,
       "agents": [
         "atlas",
+        "tetyana",
         "grisha"
       ]
     },

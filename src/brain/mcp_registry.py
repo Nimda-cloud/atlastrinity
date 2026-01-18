@@ -143,34 +143,40 @@ SERVER_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "memory",
         "tier": 2,
         "category": "knowledge",
-        "description": "Knowledge Graph-based long-term memory (Atlas, Grisha, Tetyana)",
+        "description": "Knowledge Graph-based long-term memory (PostgreSQL + ChromaDB)",
         "capabilities": [
-            "Entity and relationship tracking",
-            "Observation management",
-            "Semantic search across memories",
+            "Entity and relationship tracking (PostgreSQL)",
+            "Observation and fact management",
+            "Semantic search across memories (ChromaDB)",
+            "Persistent graph-based recall for all agents",
         ],
         "key_tools": [
             "create_entities",
             "add_observations",
+            "create_relation",
             "search",
             "get_entity",
+            "list_entities",
         ],
-        "when_to_use": "Storing or recalling facts, entities, and historical observations about the user or codebase.",
+        "when_to_use": "Storing or recalling facts, entities, and historical observations about the user, system, or codebase.",
     },
     "graph": {
         "name": "graph",
         "tier": 2,
         "category": "visualization",
-        "description": "Knowledge Graph visualization and export",
+        "description": "Knowledge Graph visualization and interactive exploration",
         "capabilities": [
-            "JSON data export of memory graph",
-            "Mermaid.js flowchart generation",
+            "JSON data export of memory graph (D3.js compatible)",
+            "Mermaid.js flowchart generation with filtering",
+            "Deep node inspection and relationship traversal",
         ],
         "key_tools": [
-            "get_graph_json",
             "generate_mermaid",
+            "get_node_details",
+            "get_related_nodes",
+            "get_graph_json",
         ],
-        "when_to_use": "Visualizing the current state of the knowledge graph memory.",
+        "when_to_use": "Visualizing or traversing the knowledge graph state to understand complex system or data relationships.",
     },
     "puppeteer": {
         "name": "puppeteer",
@@ -708,7 +714,14 @@ TOOL_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "required": ["query"],
         "optional": ["limit"],
         "types": {"query": str, "limit": int},
-        "description": "Search knowledge graph entities",
+        "description": "Semantic search in knowledge graph (returns closest entities)",
+    },
+    "create_relation": {
+        "server": "memory",
+        "required": ["source", "target", "relation"],
+        "optional": [],
+        "types": {"source": str, "target": str, "relation": str},
+        "description": "Link two entities in the knowledge graph with a specific relationship",
     },
     "delete_entity": {
         "server": "memory",
@@ -726,8 +739,23 @@ TOOL_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "generate_mermaid": {
         "server": "graph",
         "required": [],
+        "optional": ["node_type"],
+        "types": {"node_type": str},
+        "description": "Generate a Mermaid.js flowchart of the graph (optional filter by node type)",
+    },
+    "get_node_details": {
+        "server": "graph",
+        "required": ["node_id"],
         "optional": [],
-        "description": "Generate Mermaid flowchart",
+        "types": {"node_id": str},
+        "description": "Retrieve full attributes and metadata for a specific graph node",
+    },
+    "get_related_nodes": {
+        "server": "graph",
+        "required": ["node_id"],
+        "optional": [],
+        "types": {"node_id": str},
+        "description": "Find all nodes connected to a specific ID in the graph",
     },
     "macos-use_notes_create_note": {
         "server": "macos-use",
@@ -1339,6 +1367,10 @@ def get_servers_for_task(task_type: str) -> List[str]:
         return ["macos-use"]
     if any(x in task_lower for x in ["fetch", "url", "http", "download"]):
         return ["macos-use"]
+    if any(x in task_lower for x in ["memory", "recall", "remember", "fact", "knowledge", "observation"]):
+        return ["memory"]
+    if any(x in task_lower for x in ["graph", "visualize", "diagram", "mermaid", "map", "relationship"]):
+        return ["graph", "memory"]
 
     # Default: return core servers
     return ["macos-use", "filesystem"]

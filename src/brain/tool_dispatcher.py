@@ -34,7 +34,17 @@ class ToolDispatcher:
         "debug", "fix", "implement", "feature", "review", "plan", "ask", "question"
     ]
     
-    BROWSER_SYNONYMS = ["browser", "puppeteer", "navigate", "google", "search", "bing", "web"]
+    BROWSER_SYNONYMS = ["browser", "puppeteer", "navigate", "google", "bing", "web"]
+    
+    KNOWLEDGE_SYNONYMS = [
+        "memory", "knowledge", "entity", "entities", "observation", "observations", 
+        "fact", "recall", "remember", "store_fact", "add_memory", "relationship", "relation"
+    ]
+    
+    GRAPH_SYNONYMS = [
+        "graph", "visualization", "diagram", "mermaid", "flowchart", "nodes", "edges",
+        "node_details", "related_nodes", "traverse"
+    ]
 
     
     MACOS_MAP = {
@@ -239,13 +249,33 @@ class ToolDispatcher:
                 logger.debug(f"[DISPATCHER] Priority routing: {tool_name} → macos-use.{resolved_tool}")
                 return server, resolved_tool, normalized_args
         
-        # Priority 2: Standard resolution
+        # Priority 2: Knowledge Graph & Memory Routing
+        tool_lower = tool_name.lower()
+        
+        # Explicit Graph Tools
+        if any(kw in tool_lower for kw in ["mermaid", "graph_json", "node_details", "related_nodes"]):
+             server = "graph"
+             resolved_tool = tool_lower if tool_lower in ["get_graph_json", "generate_mermaid", "get_node_details", "get_related_nodes"] else tool_name
+             return server, resolved_tool, args
+
+        # Explicit Memory Tools
+        if any(kw in tool_lower for kw in ["entities", "observations", "relation", "recall"]):
+             server = "memory"
+             resolved_tool = tool_lower if tool_lower in ["create_entities", "add_observations", "get_entity", "list_entities", "create_relation"] else tool_name
+             return server, resolved_tool, args
+
+        # Priority 3: Standard resolution (Registry-based)
         server, resolved_tool, normalized_args = self._resolve_tool_and_args(tool_name, args, explicit_server)
         
-        # Override for 'search' if it's not explicitly browser search
-        if tool_name == "search" and server == "puppeteer" and not any(kw in str(args).lower() for kw in ["web", "google", "bing", "url", "navigate"]):
-             server = "memory"
-             resolved_tool = "search"
+        # Override for 'search' ambiguity
+        if tool_name == "search":
+             # Use Puppeteer ONLY if explicit web keywords are present
+             if any(kw in str(args).lower() for kw in ["web", "google", "bing", "url", "navigate", "site"]):
+                 server = "puppeteer"
+             else:
+                 # Default search is now Semantic Memory
+                 server = "memory"
+                 resolved_tool = "search"
              
         return server, resolved_tool, normalized_args
     
