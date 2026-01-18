@@ -70,7 +70,7 @@
         "-m",
         "src.mcp_server.vibe_server"
       ],
-      "description": "Mistral AI-powered CLI for self-healing, debugging, code review, and smart planning. Tools: vibe_prompt, vibe_analyze_error, vibe_code_review, vibe_smart_plan, vibe_ask. All output visible in logs.",
+      "description": "Mistral AI-powered CLI for self-healing, debugging, code review, and deep coding. Tools: vibe_prompt, vibe_analyze_error, vibe_implement_feature, vibe_code_review, vibe_smart_plan. All output visible in logs.",
       "disabled": false,
       "tier": 2,
       "agents": [

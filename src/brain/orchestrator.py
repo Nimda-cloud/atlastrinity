@@ -917,17 +917,19 @@ class Trinity:
                     # NEW: Fetch technical execution details and RECOVERY HISTORY from DB for the failed step
                     technical_trace = ""
                     recovery_history = ""
-                    if db_manager.available:
+                    if db_manager.available and self.state.get("db_task_id"):
                         try:
+                            task_id_db = self.state["db_task_id"]
                             # 1. Technical Trace (Actions)
-                            sql_trace = "SELECT tool_name, arguments, result FROM tool_executions WHERE step_id IN (SELECT id FROM task_steps WHERE sequence_number = :seq) ORDER BY created_at DESC LIMIT 3;"
-                            db_rows = await mcp_manager.query_db(sql_trace, {"seq": str(step_id)})
+                            sql_trace = "SELECT tool_name, arguments, result FROM tool_executions WHERE step_id IN (SELECT id FROM task_steps WHERE sequence_number = :seq AND task_id = :task_id) ORDER BY created_at DESC LIMIT 3;"
+                            db_rows = await mcp_manager.query_db(sql_trace, {"seq": str(step_id), "task_id": task_id_db})
                             if db_rows:
                                 technical_trace = "\nTECHNICAL EXECUTION TRACE:\n" + json.dumps(db_rows, indent=2, default=str)
                             
                             # 2. Recovery History (Attempts)
-                            sql_rec = "SELECT success, duration_ms, vibe_text FROM recovery_attempts WHERE step_id = (SELECT id FROM task_steps WHERE sequence_number = :seq) ORDER BY created_at DESC LIMIT 2;"
-                            rec_rows = await mcp_manager.query_db(sql_rec, {"seq": str(step_id)})
+                            # Use IN for subquery to handle potential duplicates safely
+                            sql_rec = "SELECT success, duration_ms, vibe_text FROM recovery_attempts WHERE step_id IN (SELECT id FROM task_steps WHERE sequence_number = :seq AND task_id = :task_id) ORDER BY created_at DESC LIMIT 2;"
+                            rec_rows = await mcp_manager.query_db(sql_rec, {"seq": str(step_id), "task_id": task_id_db})
                             if rec_rows:
                                 recovery_history = "\nPAST RECOVERY ATTEMPTS:\n"
                                 for r in rec_rows:
@@ -988,7 +990,8 @@ class Trinity:
                                     .where(RecoveryAttempt.id == recovery_id)
                                     .values(
                                         success=is_success,
-                                        duration_ms=heal_duration
+                                        duration_ms=heal_duration,
+                                        vibe_text=vibe_text
                                     )
                                 )
                                 await db_sess.commit()

@@ -56,7 +56,7 @@ class TaskStep(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tasks.id"))
 
-    sequence_number: Mapped[str] = mapped_column(String(50))
+    sequence_number: Mapped[int] = mapped_column(Integer)
     action: Mapped[str] = mapped_column(Text)
     tool: Mapped[str] = mapped_column(String(100))
 
@@ -153,6 +153,7 @@ class RecoveryAttempt(Base):
     recovery_method: Mapped[str] = mapped_column(String(50))  # vibe, atlas_help, retry
     success: Mapped[bool] = mapped_column(Boolean)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    vibe_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     error_before: Mapped[str] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
