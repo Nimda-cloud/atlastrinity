@@ -1152,6 +1152,74 @@ class Trinity:
 
                 result = await self.tetyana.execute_step(step_copy, attempt=attempt)
                 
+                # Handle need_user_input signal (New Autonomous Timeout Logic)
+                if result.error == "need_user_input":
+                    await self._log(f"User input needed for step {step_id}. Waiting 10 seconds...", "orchestrator")
+                    
+                    # Display the question to the user in the logs/UI
+                    await self._log(f"[REQUEST] {result.result}", "system", type="warning")
+                    
+                    # Wait for user message on the bus or timeout
+                    user_response = None
+                    try:
+                        # Wait for a 'user_response' message type specifically for this step
+                        # We use a 10 second timeout as requested
+                        # Note: message_bus needs to support waiting or we poll briefly
+                        start_wait = asyncio.get_event_loop().time()
+                        while asyncio.get_event_loop().time() - start_wait < 10.0:
+                            bus_msgs = await message_bus.receive("orchestrator", mark_read=True)
+                            for m in bus_msgs:
+                                if m.message_type == MessageType.CHAT and m.from_agent == "USER":
+                                    user_response = m.payload.get("text")
+                                    break
+                            if user_response: break
+                            await asyncio.sleep(0.5)
+                        
+                    except Exception as wait_err:
+                        logger.warning(f"Error during user wait: {wait_err}")
+
+                    if user_response:
+                        await self._log(f"User responded: {user_response}", "system")
+                        # Add user response to history for context
+                        self.state["messages"].append(HumanMessage(content=user_response))
+                        # Retry the step with the user response as feedback
+                        await message_bus.send(AgentMsg(
+                            from_agent="USER",
+                            to_agent="tetyana",
+                            message_type=MessageType.FEEDBACK,
+                            payload={"user_response": user_response},
+                            step_id=step.get("id")
+                        ))
+                        result.success = False
+                        result.error = "user_input_received"
+                    else:
+                        # TIMEOUT: Atlas takes the burden
+                        await self._log("User silent for 10s. Atlas taking the burden...", "orchestrator", type="warning")
+                        await self._speak("atlas", "Ви мовчите, тому я прийму рішення самостійно, щоб не зупиняти процес.")
+                        
+                        autonomous_decision = await self.atlas.decide_for_user(
+                            result.result, # The question text
+                            {
+                                "goal": self.state.get("messages", [HumanMessage(content="Unknown")])[0].content,
+                                "current_step": step.get("action"),
+                                "history": [m.content for m in self.state.get("messages", [])[-5:]]
+                            }
+                        )
+                        
+                        await self._log(f"Atlas Autonomous Decision: {autonomous_decision}", "atlas")
+                        await self._speak("atlas", f"Моє рішення: {autonomous_decision}")
+                        
+                        # Inject decision as user feedback
+                        await message_bus.send(AgentMsg(
+                            from_agent="atlas",
+                            to_agent="tetyana",
+                            message_type=MessageType.FEEDBACK,
+                            payload={"user_response": f"(Autonomous Decision by Atlas): {autonomous_decision}"},
+                            step_id=step.get("id")
+                        ))
+                        result.success = False
+                        result.error = "autonomous_decision_made"
+
                 # Log tool execution to DB for Grisha's audit
                 if db_manager.available and db_step_id and result.tool_call:
                     try:

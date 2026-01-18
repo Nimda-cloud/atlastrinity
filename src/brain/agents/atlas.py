@@ -7,9 +7,7 @@ Model: GPT-4.1 / GPT-5 mini
 """
 
 import os
-
-# Import provider
-# Robust path handling for both Dev and Production (Packaged)
+import json
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -718,6 +716,50 @@ If the user asked to 'count', you MUST state the exact number found.
         except Exception as e:
             logger.error(f"[ATLAS] Evaluation failed: {e}")
             return {"quality_score": 0, "achieved": False, "should_remember": False}
+
+    async def decide_for_user(self, question: str, context: Dict[str, Any]) -> str:
+        """
+        Atlas takes the 'burden' and decides for the user after a timeout.
+        Analyzes the context of the task and provides the most logical answer.
+        """
+        from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
+        
+        logger.info(f"[ATLAS] Deciding on behalf of silent user for question: {question[:100]}...")
+        
+        prompt = f"""КОНТЕКСТ ЗАВДАННЯ:
+{json.dumps(context, indent=2, ensure_ascii=False)}
+
+ПИТАННЯ ДО КОРИСТУВАЧА:
+{question}
+
+Користувач не відповів вчасно. Тобі потрібно прийняти рішення за нього, щоб продовжити виконання завдання.
+Твоє завдання: 
+1. Проаналізувати ціль завдання.
+2. Вибрати найбільш безпечний, логічний та ефективний варіант відповіді.
+3. Якщо це запит на видалення або ризиковану дію, вибирай найбільш безпечний шлях (наприклад, архівування замість видалення) АБО підтверджуй, якщо це явно необхідно для цілі.
+
+Відповідай у форматі ТЕКСТОВОЇ ВІДПОВІДІ (яку ми підставимо замість відповіді користувача).
+Пиши УКРАЇНСЬКОЮ мовою. Будь конкретним та професійним.
+
+ПРИКЛАД: "Продовжуй, я згоден з цим кроком" або "Використовуй значення за замовчуванням".
+"""
+        
+        messages = [
+            SystemMessage(content="You are Atlas Autonomous Core. You take clinical, logical decisions when the operator is busy. Respond ONLY with the decision text in Ukrainian."),
+            HumanMessage(content=prompt),
+        ]
+        
+        try:
+            response = await self.llm.ainvoke(messages)
+            decision = response.content.strip()
+            # Remove quotes if AI added them
+            if decision.startswith('"') and decision.endswith('"'):
+                decision = decision[1:-1]
+            logger.info(f"[ATLAS] Autonomous decision: {decision}")
+            return decision
+        except Exception as e:
+            logger.error(f"[ATLAS] Failed to decide for user: {e}")
+            return "Продовжуй виконання завдання згідно з планом."
 
     def get_voice_message(self, action: str, **kwargs) -> str:
         """

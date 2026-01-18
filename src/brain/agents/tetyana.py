@@ -435,6 +435,16 @@ IMPORTANT:
         # we can't automate it fully. Open Terminal and inform the user.
         step_action_lower = str(step.get("action", "")).lower()
         
+        # NEW: Check if we already have a response from the message bus (User or Atlas)
+        provided_response = None
+        if "bus_messages" in step:
+            for bm in step["bus_messages"]:
+                payload = bm.get("payload", {})
+                if "user_response" in payload:
+                    provided_response = payload["user_response"]
+                    logger.info(f"[TETYANA] Found provided response in bus_messages: {provided_response}")
+                    break
+
         # FIX: Even stricter consent logic. 
         # Must MUST mention a human/user to trigger a terminal popup.
         user_keywords = ["user", "human", "oleg", "me", "operator", "owner", "користувач", "людин", "олег", "мені"]
@@ -451,46 +461,32 @@ IMPORTANT:
             has_user_ref = any(u in remaining_action for u in user_keywords)
         
         is_consent_request = (
-            ("ask" in step_action_lower and has_user_ref)
-            or ("request" in step_action_lower and "consent" in step_action_lower)
-            or ("await" in step_action_lower and "approval" in step_action_lower)
-            or ("get" in step_action_lower and "confirmation" in step_action_lower and has_user_ref)
-            or ("confirm" in step_action_lower and has_user_ref)
-            or ("approval" in step_action_lower and has_user_ref)
-            or "preferences" in step_action_lower
-            or step.get("requires_consent", False) is True
+            (not provided_response) and (
+                ("ask" in step_action_lower and has_user_ref)
+                or ("request" in step_action_lower and "consent" in step_action_lower)
+                or ("await" in step_action_lower and "approval" in step_action_lower)
+                or ("get" in step_action_lower and "confirmation" in step_action_lower and has_user_ref)
+                or ("confirm" in step_action_lower and has_user_ref)
+                or ("approval" in step_action_lower and has_user_ref)
+                or "preferences" in step_action_lower
+                or step.get("requires_consent", False) is True
+            )
         )
 
         if is_consent_request:
             logger.info(
-                "[TETYANA] Detected consent/approval request step. Opening Terminal for user input."
+                "[TETYANA] Detected consent/approval request step. Signalling Orchestrator for user input."
             )
-            # Open Terminal so user can see/respond
-            import subprocess  # noqa: E402
-
-            subprocess.run(["open", "-a", "Terminal"], check=False)
-
             # Create a simple message for the user
-            consent_msg = """\nATLAS TRINITY SYSTEM REQUEST:
+            consent_msg = f"Потрібна ваша згода або відповідь для кроку: {step.get('action')}\nОчікуваний результат: {step.get('expected_result', 'Підтвердження користувача')}\n\nБудь ласка, напишіть вашу відповідь у чаті. Якщо ви не відповісте протягом 10 секунд, Атлас прийме рішення самостійно."
 
-Action: {step.get('action')}
-Expected: {step.get('expected_result', 'User confirmation')}
-
-Please type your response below and press Enter:
-(Type 'APPROVED' to proceed, 'REJECTED' to cancel)
-
-> """
-
-            # Since we can't wait for user input synchronously here,
-            # we'll just mark this as successful and let the system continue.
-            # The orchestrator will handle the actual consent logic.
             return StepResult(
                 step_id=step.get("id", self.current_step),
-                success=True,
-                result="Terminal opened for user consent. Awaiting user response.",
-                voice_message="Відкриваю термінал для запиту згоди. Будь ласка, підтвердіть.",
-                error=None,
-                tool_call={"name": "open_terminal", "args": {"message": consent_msg}},
+                success=False,
+                result=consent_msg,
+                voice_message="Мені потрібна ваша згода або додаткова інформація. Будь ласка, подивіться у чат.",
+                error="need_user_input",
+                thought=f"I detected a need for user consent or preferences in step: {step.get('action')}. Reporting as blocked on user input.",
             )
 
         # --- OPTIMIZATION: SMART REASONING GATE ---

@@ -19,6 +19,7 @@ class MessageType(Enum):
     """Types of messages that can be sent between agents"""
     REJECTION = "rejection"  # Grisha -> Tetyana: step verification failed
     HELP_REQUEST = "help_request"  # Tetyana -> Atlas: need assistance
+    CHAT = "chat"  # User <-> Agents: conversational messages
     FEEDBACK = "feedback"  # Any agent: general feedback
     RECOVERY_COMPLETE = "recovery_complete"  # Vibe/Atlas: fix applied
     STEP_COMPLETE = "step_complete"  # Tetyana -> Grisha: ready for verification
@@ -66,6 +67,7 @@ class MessageBus:
             "atlas": [],
             "tetyana": [],
             "grisha": [],
+            "orchestrator": [],
             "all": [],
         }
         self._db_available = False
