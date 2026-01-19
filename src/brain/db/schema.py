@@ -16,7 +16,8 @@ import uuid
 
 class GUID(TypeDecorator):
     """Platform-independent GUID type.
-    Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as string without hyphens.
+    Uses CHAR(36) for SQLite (default), or PostgreSQL's native UUID type.
+    Stores UUIDs as canonical strings with hyphens.
     """
     impl = CHAR
     cache_ok = True
