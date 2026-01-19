@@ -209,7 +209,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Input Area - Docked at Bottom */}
-          <div className="mt-auto pt-2 border-t border-white/5 bg-black/20 px-2 pb-2">
+          <div className="command-dock mt-auto pt-2 border-t border-white/5 bg-black/20 px-2 pb-2">
             <CommandLine
               onCommand={handleCommand}
               isVoiceEnabled={isVoiceEnabled}
