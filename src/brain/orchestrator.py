@@ -1332,6 +1332,32 @@ class Trinity:
                                 context={"step_id": step.get("id")},
                                 decision_factors=evaluation.get("decision_factors", {})
                             )
+                        
+                        # --- GRAPH KNOWLEDGE: Link Lesson to Structure ---
+                        try:
+                            lesson_id = f"lesson:{int(datetime.now().timestamp())}"
+                            await knowledge_graph.add_node(
+                                node_type="LESSON",
+                                node_id=lesson_id,
+                                attributes={
+                                    "name": f"Deviation in {step.get('action', 'Step')}",
+                                    "intent": step.get("action"),
+                                    "deviation": str(result.result),
+                                    "reason": evaluation.get("reason"),
+                                    "factors": evaluation.get("decision_factors", {}),
+                                    "original_step_id": step.get("id")
+                                },
+                                sync_to_vector=False # Handled by specialized memory
+                            )
+                            # Link to current task if available
+                            if self.state.get("db_task_id"):
+                                await knowledge_graph.add_edge(
+                                    source_id=f"task:{self.state.get('db_task_id')}",
+                                    target_id=lesson_id,
+                                    relation="learned_lesson"
+                                )
+                        except Exception as graph_err:
+                            logger.warning(f"[ORCHESTRATOR] Failed to log lesson to graph: {graph_err}")
                     else:
                         logger.info(f"[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
                         step["grisha_feedback"] = f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."
