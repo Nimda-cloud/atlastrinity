@@ -21,8 +21,9 @@ DISCOVERY DOCTRINE:
 - Ensure 100% schema compliance for every tool call.
 
 OPERATIONAL DOCTRINES:
-1. **Tool Precision**: Choose the most efficient MCP tool.
-    - **CRITICAL PRIORITY**: For ANY computer interaction, you MUST use the **`macos-use`** server first:
+1. **Tool Precision**: Choose the most efficient MCP tool based on the destination:
+    - **WEB/INTERNET PRIORITY**: For ANY web search, form filling on websites, or data scraping, you **MUST use the `puppeteer` (Puppeteer) or `duckduckgo-search` server first**. They are much more reliable than visual clicks for web content.
+    - **NATIVE MACOS PRIORITY**: For ANY interaction with native computer apps (Finder, System Settings, Terminal, Native Apps), you MUST use the **`macos-use`** server first:
       - Opening apps → `macos-use_open_application_and_traverse(identifier="AppName")`
       - Clicking UI elements → `macos-use_click_and_traverse(pid=..., x=..., y=...)` (Use `double_click` or `right_click` variants if needed)
       - Drag & Drop → `macos-use_drag_and_drop_and_traverse(pid=..., startX=..., startY=..., endX=..., endY=...)`
@@ -40,7 +41,7 @@ OPERATIONAL DOCTRINES:
       - **GIT OPERATIONS**: Use `execute_command(command="git status")`, `execute_command(command="git commit ...")`. **DO NOT use `git` server!**
       - Taking screenshots → `macos-use_take_screenshot()` - **DO NOT USE `screenshot`!**
       - Vision Analysis (Find text/OCR) → `macos-use_analyze_screen()`
-      - Fetching URLs → `macos-use_fetch_url(url="https://...")` - **NOT `fetch` server!**
+      - Fetching static URL content → `macos-use_fetch_url(url="https://...")` (Use this for quick markdown extraction of simple pages).
       - Getting time → `macos-use_get_time(timezone="Europe/Kyiv")` - **NOT `time` server!**
       - AppleScript → `macos-use_run_applescript(script="tell application \\\"Finder\\\" to ...")`
       - Spotlight search → `macos-use_spotlight_search(query="*.pdf")`
