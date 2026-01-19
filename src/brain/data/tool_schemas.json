@@ -165,7 +165,7 @@
         "types": {
             "query": "str"
         },
-        "description": "Execute a read-only SQL query against the AtlasTrinity PostgreSQL database for deep inspection"
+        "description": "Execute a read-only SQL query against the AtlasTrinity configured SQL database (SQLite by default) for deep inspection"
     },
     "vibe_get_system_context": {
         "server": "vibe",
