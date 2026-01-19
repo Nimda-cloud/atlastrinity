@@ -1423,14 +1423,16 @@ class Trinity:
                 result = await self.tetyana.execute_step(step_copy, attempt=attempt)
 
                 # --- DYNAMIC AGENCY: Check for Strategy Deviation ---
-                if result.error == "strategy_deviation":
+                # --- DYNAMIC AGENCY: Check for Strategy Deviation ---
+                if getattr(result, "is_deviation", False) or result.error == "strategy_deviation":
                     try:
-                        logger.warning(f"[ORCHESTRATOR] Tetyana proposed a deviation: {result.result}")
+                        proposal_text = result.deviation_info.get("analysis") if getattr(result, "deviation_info", None) else result.result
+                        logger.warning(f"[ORCHESTRATOR] Tetyana proposed a deviation: {proposal_text[:200]}...")
                         
                         # Consult Atlas
                         evaluation = await self.atlas.evaluate_deviation(
                             step, 
-                            str(result.result), 
+                            str(proposal_text), 
                             getattr(self.state.get("current_plan"), "steps", [])
                         )
                         
@@ -1447,6 +1449,20 @@ class Trinity:
                             # Mark for behavioral learning after successful verification
                             result.is_deviation = True
                             result.deviation_info = evaluation
+                            
+                            # PERSISTENCE: Remember this approved deviation immediately
+                            try:
+                                from ..memory import long_term_memory
+                                if long_term_memory.available:
+                                    long_term_memory.remember_behavioral_change(
+                                        original_instruction=step.get("action", ""),
+                                        behavioral_change=f"DEVIATION APPROVED: {evaluation.get('reason')}. Context: {proposal_text[:300]}",
+                                        decision_factors={"original_step": step, "analysis": proposal_text}
+                                    )
+                                    logger.info("[ORCHESTRATOR] Learned and memorized new behavioral deviation strategy.")
+                            except Exception as mem_err:
+                                logger.warning(f"Failed to memorize deviation: {mem_err}")
+
                         else:
                             logger.info(f"[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
                             step["grisha_feedback"] = f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."

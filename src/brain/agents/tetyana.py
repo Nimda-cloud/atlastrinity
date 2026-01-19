@@ -764,6 +764,28 @@ IMPORTANT:
                 f"[TETYANA] Step failed. Reflexion Attempt {fix_count}/{max_self_fixes}. Error: {error_msg}"
             )
 
+            # DEEP REASONING: Before trying blind Vibe fixes or giving up, let's THINK deeply.
+            if fix_count >= 2: 
+                 logger.info("[TETYANA] Recurring failures. Engaging Deep Sequential Reasoning...")
+                 reasoning = await self.use_sequential_thinking(
+                     f"I consistently fail to execute '{step.get('action')}' with args '{step.get('args')}'. Recent error: {error_msg}. Analyze root cause and propose a STRUCTURAL DEVIATION if possible.",
+                     total_thoughts=3
+                 )
+                 
+                 # Heuristic check for deviation proposal
+                 analysis_text = reasoning.get("analysis", "").lower()
+                 if "deviation" in analysis_text or "alternative approach" in analysis_text or "skip this step" in analysis_text:
+                      logger.info("[TETYANA] Deep Reasoning suggests a DEVIATION. Escalating...")
+                      # Return a special result that Orchestrator can interpret as a request to deviate
+                      return StepResult(
+                          step_id=step.get("id", self.current_step),
+                          success=False, # Technically failed the original step
+                          result=f"DEVIATION PROPOSED: {reasoning.get('analysis')}",
+                          is_deviation=True,
+                          deviation_info={"analysis": reasoning.get("analysis"), "proposal": analysis_text[:500]}
+                      )
+
+
             # ULTIMATE FIX: Invoke VIBE for deep healing on final attempts
             if fix_count == max_self_fixes:
                  logger.info("[TETYANA] Reflexion limit reached. Invoking VIBE for ultimate self-healing...")
