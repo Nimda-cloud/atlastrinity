@@ -84,7 +84,7 @@ class Atlas(BaseAgent):
         self.history: List[Dict[str, Any]] = []
 
     async def use_sequential_thinking(
-        self, problem: str, available_tools: list = None
+        self, problem: str, available_tools: Optional[list] = None
     ) -> Dict[str, Any]:
         """
         Use sequential-thinking MCP for deep reasoning on complex problems.
@@ -128,8 +128,8 @@ class Atlas(BaseAgent):
     async def analyze_request(
         self,
         user_request: str,
-        context: Dict[str, Any] = None,
-        history: List[Any] = None,
+        context: Optional[Dict[str, Any]] = None,
+        history: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
         """Analyzes user request: determines intent (chat vs task)"""
 
@@ -178,7 +178,7 @@ class Atlas(BaseAgent):
         prompt = AgentPrompts.atlas_deviation_evaluation_prompt(
             str(current_step),
             proposed_deviation,
-            context=shared_context.to_dict(),
+            context=json.dumps(shared_context.to_dict()),
             full_plan=str(full_plan)
         )
         
@@ -199,7 +199,7 @@ class Atlas(BaseAgent):
             logger.error(f"[ATLAS] Evaluation failed: {e}")
             return {"approved": False, "reason": "Evaluation failed", "voice_message": "Помилка оцінки."}
     
-    async def chat(self, user_request: str, history: List[Any] = None, use_deep_persona: bool = False) -> str:
+    async def chat(self, user_request: str, history: Optional[List[Any]] = None, use_deep_persona: bool = False) -> str:
         """
         Omni-Knowledge Chat Mode.
         Integrates Graph Memory, Vector Memory, and System Context for deep awareness.
@@ -283,7 +283,7 @@ class Atlas(BaseAgent):
                             continue # Skip servers that fail to list tools to avoid blocking
                             
                     self._cached_info_tools = new_tools
-                    self._last_tool_refresh = now
+                    self._last_tool_refresh = int(now)
                     logger.info(f"[ATLAS] Cached {len(new_tools)} informational tools.")
                 except Exception as e:
                     logger.warning(f"[ATLAS] Tool discovery throttled: {e}")
@@ -309,7 +309,8 @@ class Atlas(BaseAgent):
             use_deep_persona=use_deep_persona,
         )
 
-        messages = [SystemMessage(content=system_prompt_text)]
+        from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+        messages: List[BaseMessage] = [SystemMessage(content=system_prompt_text)]
         if history: messages.extend(history[-10:])
         messages.append(HumanMessage(content=user_request))
 
@@ -475,7 +476,7 @@ class Atlas(BaseAgent):
 
         self.current_plan = TaskPlan(
             id=str(uuid.uuid4())[:8],
-            goal=plan_data.get("goal", enriched_request.get("enriched_request", "")),
+            goal=str(plan_data.get("goal", enriched_request.get("enriched_request", ""))),
             steps=steps,
             context={**enriched_request, "simulation": simulation_result},
         )
@@ -636,7 +637,7 @@ class Atlas(BaseAgent):
             grisha_feedback = f"\n\nGRISHA'S DETAILED FEEDBACK:\n{grisha_report}\n"
 
         prompt = AgentPrompts.atlas_help_tetyana_prompt(
-            step_id,
+            int(step_id) if isinstance(step_id, str) and step_id.isdigit() else (int(step_id) if isinstance(step_id, (int, float)) else 0),
             error,
             grisha_feedback,
             context_info,
@@ -656,7 +657,7 @@ class Atlas(BaseAgent):
         error: str,
         vibe_report: str,
         grisha_audit: dict,
-        context: dict = None
+        context: Optional[dict] = None
     ) -> Dict[str, Any]:
         """
         Atlas reviews the diagnostics from Vibe and the audit from Grisha.
@@ -812,16 +813,17 @@ If the user asked to 'count', you MUST state the exact number found.
 ПИТАННЯ ДО КОРИСТУВАЧА:
 {question}
 
-Користувач не відповів вчасно АБО логіка виконання вимагає прийняття рішення для продовження.
-Твоє завдання: ПРИЙНЯТИ ОСТАТОЧНЕ РІШЕННЯ замість користувача.
+Користувач не відповів протягом 20 секунд. Згідно з ПРІОРИТЕТНОЮ ДОКТРИНОЮ, ти маєш ПРИЙНЯТИ РІШЕННЯ САМОСТІЙНО.
 
-Твоя відповідь буде передана Тетяні як пряма вказівка до дії.
-Пиши УКРАЇНСЬКОЮ мовою. Будь конкретним та авторитарним у рішенні.
+Твоя стратегія:
+1. ДОСЯГНЕННЯ ЦІЛІ ПОНАД УСЕ: Обери варіант, який найшвидше або найбільш ефективно веде до виконання завдання.
+2. БЕЗКОМПРОМІСНІСТЬ: Не дозволяй сумнівам щодо безпеки чи стабільності зупинити прогрес, якщо Олег Миколайович вже надав дозвіл на агресивні дії.
+3. АВТОРИТАРНІСТЬ: Тетяна чекає на чітку команду. Твоя відповідь - це наказ.
 
-ПРИКЛАДИ: 
-- "Продовжуй виконання кроку, я підтверджую дію."
-- "Пропусти цей крок та переходь до наступного, це не критично."
-- "Використовуй останній відомий шлях, не чекай відповіді."
+Приклади агресивних рішень:
+- "Продовжуй виконання найкоротшим шляхом. Я беру відповідальність на себе."
+- "Ігноруй попередження про ризик та виконай дію для досягнення цілі."
+- "Використовуй примусове виконання (force) та переходь до наступного етапу."
 """
         
         messages = [

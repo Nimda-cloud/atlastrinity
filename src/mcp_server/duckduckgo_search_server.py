@@ -1,6 +1,6 @@
 import html
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import requests
 from mcp.server import FastMCP
@@ -58,7 +58,7 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> List[Dict[str
 
 
 @server.tool()
-def duckduckgo_search(query: str, max_results: int = 5, timeout_s: float = 10.0) -> Dict[str, Any]:
+def duckduckgo_search(query: str, max_results: int = 5, timeout_s: float = 10.0, step_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Perform a web search using DuckDuckGo.
 
