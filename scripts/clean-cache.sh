@@ -23,9 +23,13 @@ rm -rf .vite 2>/dev/null
 echo "  • Очищення Electron кешу..."
 rm -rf ~/Library/Caches/atlastrinity* 2>/dev/null
 
+# Очищення білдів
+echo "  • Очищення дистрибутивів та білд-інфо..."
+rm -rf dist 2>/dev/null
+rm -rf release 2>/dev/null
+rm -f *.tsbuildinfo 2>/dev/null
+
 # Очищення зображень STT/TTT
-echo "  • Очищення тимчасових файлів..."
-rm -rf ~/.config/atlastrinity/screenshots/*.png 2>/dev/null
 
 # Вбивство завислих процесів
 echo "  • Вбивство завислих процесів (port 8000, MCP servers)..."
