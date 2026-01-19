@@ -113,6 +113,10 @@ class SystemConfig:
             "orchestrator": {
                 "max_recursion_depth": 5,
                 "task_timeout": 300,
+                # Who should announce and lead recovery when a step fails: 'atlas' or 'grisha'
+                "recovery_voice_agent": "grisha",
+                # If true, call Grisha to validate failed steps even when requires_verification is not set
+                "validate_failed_steps_with_grisha": True,
                 "subtask_timeout": 120,
             },
             "mcp": {

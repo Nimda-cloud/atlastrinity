@@ -867,7 +867,8 @@ If the user asked to 'count', you MUST state the exact number found.
             return "Тетяно, передаю керування тобі."
 
         elif action == "recovery_started":
-            return f"Крок {kwargs.get('step_id', '?')} зупинився. Шукаю рішення."
+            # Atlas should not claim the step 'stopped' (validation is Grisha's duty).
+            return f"Розпочинаю допомогу у відновленні кроку {kwargs.get('step_id', '?')} — консультація та аналіз." 
 
         elif action == "vibe_engaged":
             return (

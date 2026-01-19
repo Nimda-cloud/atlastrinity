@@ -969,12 +969,59 @@ class Trinity:
                     )
 
                 # RECOVERY LOGIC
+                # First, optionally ask Grisha to validate the failed step before broad recovery actions.
+                validate_with_grisha = bool(config.get("orchestrator", {}).get("validate_failed_steps_with_grisha", False))
+                recovery_agent = config.get("orchestrator", {}).get("recovery_voice_agent", "atlas")
+
+                if validate_with_grisha:
+                    try:
+                        await self._log(f"Requesting Grisha validation for failed step {step_id}...", "orchestrator")
+                        screenshot = None
+                        expected = step.get("expected_result", "").lower()
+                        visual_verification_needed = (
+                            "visual" in expected
+                            or "screenshot" in expected
+                            or "ui" in expected
+                            or "interface" in expected
+                            or "window" in expected
+                        )
+                        if visual_verification_needed:
+                            screenshot = await self.grisha.take_screenshot()
+
+                        verify_result = await self.grisha.verify_step(
+                            step=step,
+                            result=step_result,
+                            screenshot_path=screenshot,
+                            goal_context=shared_context.get_goal_context(),
+                            task_id=self.state.get("db_task_id"),
+                        )
+
+                        if verify_result.verified:
+                            await self._log(f"Grisha verified step {step_id} despite Tetyana reporting failure. Marking success.", "orchestrator")
+                            step_success = True
+                            break
+                        else:
+                            # Let Grisha announce the rejection if configured
+                            if recovery_agent == "grisha":
+                                await self._speak("grisha", verify_result.voice_message or "Я, Гріша, відхиляю результат і прошу відновлення.")
+                            else:
+                                # Fallback to configured agent message
+                                await self._speak(recovery_agent, verify_result.voice_message or "Крок потребує відновлення.")
+
+                    except Exception as e:
+                        logger.warning(f"Grisha validation failed: {e}")
+
+                # If Grisha validation did not short-circuit to success, continue with standard recovery notifications
                 notifications.send_stuck_alert(step_id, last_error, max_step_retries)
 
-                await self._log(f"Atlas Recovery for Step {step_id}...", "orchestrator")
-                await self._speak(
-                    "atlas", self.atlas.get_voice_message("recovery_started", step_id=step_id)
-                )
+                await self._log(f"Recovery for Step {step_id} (announced by {recovery_agent})...", "orchestrator")
+                # Speak the recovery message using the configured agent (default 'atlas')
+                if recovery_agent == "atlas":
+                    await self._speak("atlas", self.atlas.get_voice_message("recovery_started", step_id=step_id))
+                elif recovery_agent == "grisha":
+                    await self._speak("grisha", "Верифікатор виявив проблему; розпочинаю відновлення кроку.")
+                else:
+                    await self._speak(recovery_agent, "Крок зупинився — починаю процедуру відновлення.")
 
                 # DB: Track Recovery Attempt
                 recovery_id = None
