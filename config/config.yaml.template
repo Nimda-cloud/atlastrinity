@@ -78,13 +78,13 @@ mcp:
     enabled: true
     headless: true
 
-  duckduckgo-search:
+  duckduckgo_search:
     enabled: true
 
   github:
     enabled: true
 
-  whisper-stt:
+  whisper_stt:
     enabled: true
     model: large-v3-turbo
     language: uk

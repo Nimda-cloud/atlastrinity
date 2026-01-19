@@ -162,7 +162,7 @@ def get_servers_for_task(task_type: str) -> List[str]:
     if any(x in task_lower for x in ["file", "read", "write", "directory"]):
         return ["filesystem", "macos-use"]
     if any(x in task_lower for x in ["search", "web", "internet", "google", "find", "browser", "navigate", "automation", "scrape"]):
-        return ["puppeteer", "macos-use"]
+        return ["duckduckgo-search", "puppeteer", "macos-use"]
     if any(x in task_lower for x in ["calendar", "event", "meeting"]):
         return ["macos-use"]
     if any(x in task_lower for x in ["reminder", "todo", "task"]):
@@ -174,7 +174,9 @@ def get_servers_for_task(task_type: str) -> List[str]:
     if any(x in task_lower for x in ["git", "commit", "push", "pull", "branch"]):
         return ["macos-use"]  # Route git to macos-use (legacy override)
     if any(x in task_lower for x in ["github", "repository", "issue", "pr"]):
-        return ["macos-use"]  # Route github to macos-use (browser/cli)
+        return ["github", "macos-use"]  # Use github server or browser
+    if any(x in task_lower for x in ["voice", "audio", "transcribe", "stt", "speech"]):
+        return ["whisper-stt"]
     if any(x in task_lower for x in ["debug", "error", "fix", "analyze"]):
         return ["vibe", "sequential-thinking"]
     if any(x in task_lower for x in ["code", "review", "refactor"]):
