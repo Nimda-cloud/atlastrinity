@@ -232,6 +232,7 @@ async def run_vibe_subprocess(
     timeout_s: float,
     env: Optional[Dict[str, str]] = None,
     ctx: Optional[Context] = None,
+    prompt_preview: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Execute Vibe CLI subprocess with streaming output.
@@ -263,7 +264,8 @@ async def run_vibe_subprocess(
             logger.debug(f"[VIBE] Failed to send log to client: {e}")
     
     # Повідомлення про початок
-    await emit_log("info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt[:80]}...")
+    if prompt_preview:
+        await emit_log("info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
     
     try:
         # Launch subprocess. 
@@ -546,6 +548,7 @@ async def vibe_prompt(
             cwd=eff_cwd,
             timeout_s=eff_timeout,
             ctx=ctx,
+            prompt_preview=prompt,
         )
         
         # Try to parse JSON response
@@ -883,6 +886,7 @@ async def vibe_ask(
             cwd=cwd or VIBE_WORKSPACE,
             timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
             ctx=ctx,
+            prompt_preview=question,
         )
         
         # Try to parse response
@@ -957,12 +961,16 @@ async def vibe_execute_subcommand(
     if args:
         argv.extend([str(a) for a in args])
     
+    # Create preview from subcommand and args
+    preview = f"{sub} {' '.join(str(a) for a in (args or []))[:50]}"
+    
     return await run_vibe_subprocess(
         argv=argv,
         cwd=cwd,
         timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
         env=env,
         ctx=ctx,
+        prompt_preview=preview,
     )
 
 

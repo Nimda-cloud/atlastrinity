@@ -201,15 +201,15 @@ const App: React.FC = () => {
 
       {/* Right Panel - Chat + Input */}
       <div className="panel right-panel glass-panel">
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col relative">
           {/* Chat Area - Flexible Height */}
 
-          <div className="flex-1 min-h-0 overflow-hidden relative">
+          <div className="chat-panel-container flex-1 min-h-0 overflow-hidden relative">
             <ChatPanel messages={chatMessages} />
           </div>
 
           {/* Input Area - Docked at Bottom */}
-          <div className="command-dock mt-auto pt-2 border-t border-white/5 bg-black/20 px-2 pb-2">
+          <div className="command-dock pt-2 border-t border-white/5 bg-black/20 px-2 pb-2">
             <CommandLine
               onCommand={handleCommand}
               isVoiceEnabled={isVoiceEnabled}
