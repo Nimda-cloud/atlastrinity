@@ -467,89 +467,12 @@ class Grisha(BaseAgent):
                 tool = data.get("tool")
                 args = data.get("arguments", {})
 
-                if "." in tool:
-                    parts = tool.split(".")
-                    tool = parts[-1]
-                    logger.warning(
-                        f"[GRISHA] Stripped prefix from tool: {data.get('tool')} -> {tool}"
-                    )
-
-                if server in ["local", "server", "default"]:
-                    if tool in ["execute_command", "terminal", "run", "shell"]:
-                        server = "terminal"
-                        tool = "execute_command"
-                    else:
-                        server = "filesystem"
-                    logger.warning(
-                        f"[GRISHA] Fixed hallucinated server: {data.get('server')} -> {server}"
-                    )
-
-                if server in ["terminal", "macos-use", "computer", "system", "local", "sh", "bash"]:
-                    if any(t in tool.lower() for t in ["terminal", "run", "execute", "shell", "exec", "command"]):
-                        server = "macos-use"
-                        tool = "execute_command"
-                    elif any(t in tool.lower() for t in ["screenshot", "take_screenshot", "capture"]):
-                        server = "macos-use"
-                        tool = "macos-use_take_screenshot"
-                    elif any(t in tool.lower() for t in ["vision", "analyze", "ocr", "scan"]):
-                        server = "macos-use"
-                        tool = "macos-use_analyze_screen"
-                    elif any(t in tool.lower() for t in ["time", "clock", "date"]):
-                        server = "macos-use"
-                        tool = "macos-use_get_time"
-                    elif any(t in tool.lower() for t in ["fetch", "url", "scrape", "wget", "curl"]):
-                        server = "macos-use"
-                        tool = "macos-use_fetch_url"
-                    elif any(t in tool.lower() for t in ["calendar", "event"]):
-                        server = "macos-use"
-                        tool = "macos-use_calendar_events"
-                    elif any(t in tool.lower() for t in ["reminder"]):
-                        server = "macos-use"
-                        tool = "macos-use_reminders"
-                    elif any(t in tool.lower() for t in ["note"]):
-                        server = "macos-use"
-                        tool = "macos-use_notes_list_folders"
-                    elif any(t in tool.lower() for t in ["mail", "email"]):
-                        server = "macos-use"
-                        tool = "macos-use_mail_read_inbox"
-                    elif any(t in tool.lower() for t in ["applescript", "script"]):
-                        server = "macos-use"
-                        tool = "macos-use_run_applescript"
-                    elif any(t in tool.lower() for t in ["finder", "file_list", "ls", "dir", "path"]):
-                        server = "macos-use"
-                        tool = "macos-use_finder_list_files"
-                    elif any(t in tool.lower() for t in ["spotlight", "mdfind", "search"]):
-                        server = "macos-use"
-                        tool = "macos-use_spotlight_search"
-                    elif any(t in tool.lower() for t in ["notify", "notification", "alert"]):
-                        server = "macos-use"
-                        tool = "macos-use_send_notification"
-                    elif tool.startswith("macos-use_"):
-                        server = "macos-use"
-                    
-                    if tool in ["ls", "list", "dir"] and server == "macos-use" and "path" not in args:
-                        tool = "execute_command"
-                        args = {"command": f"ls -la {args.get('path', '.')}"}
-                if server == "filesystem":
-                    if tool in ["list", "ls", "dir"]:
-                        tool = "list_directory"
-                    if tool in ["read", "cat", "get"]:
-                        tool = "read_file"
-                    if tool in ["exists", "check", "file_exists"]:
-                        tool = "get_file_info"
-
-                if server == "sequential-thinking" or server == "reasoning":
-                    server = "sequential-thinking"
-                    if tool != "sequentialthinking":
-                        tool = "sequentialthinking"
-
-                # SPECIAL TOOL: Handle explicit screenshot requests
-                if (server == "macos-use" and tool == "screenshot") or (
-                    server == "computer" and tool == "screenshot"
-                ):
-                    logger.info(
-                        "[GRISHA] Internal Decision: Capturing Screenshot for Visual Verification"
-                    )
+                # Use unified dispatch via MCP Manager
+                # This handles server resolution, macos-use fallbacks, and argument validation automatically.
+                
+                # Special handling: if tool name implies screenshot, try to satisfy it internally first
+                if "screenshot" in tool.lower() or "capture" in tool.lower():
+                    logger.info("[GRISHA] Internal Decision: Capturing Screenshot for Visual Verification")
                     try:
                         screenshot_path = await self.take_screenshot()
                         attach_screenshot_next = True
@@ -571,6 +494,13 @@ class Grisha(BaseAgent):
                         )
                         continue
 
+                # For all other tools, dispatch via MCP Manager logic
+                logger.info(f"[GRISHA] Internal Verification Tool: {server}.{tool}({args})")
+                
+                # Construct full tool name if possible to help dispatcher, otherwise let it infer
+                full_tool_name = f"{server}.{tool}" if server and server not in ["local", "default", "server"] else tool
+
+
                 if "path" in args:
                     original_path = args["path"]
                     resolved_path = shared_context.resolve_path(original_path)
@@ -580,10 +510,8 @@ class Grisha(BaseAgent):
                         )
                     args["path"] = resolved_path
 
-                logger.info(f"[GRISHA] Internal Verification Tool: {server}.{tool}({args})")
-
                 try:
-                    tool_output = await mcp_manager.dispatch_tool(f"{server}.{tool}", args)
+                    tool_output = await mcp_manager.dispatch_tool(full_tool_name, args)
                     if "path" in args and tool_output:
                         shared_context.update_path(args["path"], "verify")
                     logger.info(f"[GRISHA] Tool Output: {str(tool_output)[:500]}...")
