@@ -26,9 +26,18 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   );
 
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+      if (isAtBottom) {
+        logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -52,7 +61,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-1 scrollbar-thin">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-1 scrollbar-thin">
         {filteredLogs.map((log) => (
           <div
             key={log.id}
