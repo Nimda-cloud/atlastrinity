@@ -34,7 +34,7 @@ class ToolDispatcher:
         "debug", "fix", "implement", "feature", "review", "plan", "ask", "question"
     ]
     
-    BROWSER_SYNONYMS = ["browser", "puppeteer", "navigate", "google", "bing", "web"]
+    BROWSER_SYNONYMS = ["browser", "puppeteer", "navigate", "google", "bing", "web", "web_search", "internet_search", "online_search"]
     
     KNOWLEDGE_SYNONYMS = [
         "memory", "knowledge", "entity", "entities", "observation", "observations", 
@@ -306,15 +306,12 @@ class ToolDispatcher:
         # Priority 4: Standard resolution (Registry-based)
         server, resolved_tool, normalized_args = self._resolve_tool_and_args(tool_name, args, explicit_server)
         
-        # Override for 'search' ambiguity
+        # Override for 'search' ambiguity - simplified routing
         if tool_name == "search":
-             # Use Puppeteer ONLY if explicit web keywords are present
-             if any(kw in str(args).lower() for kw in ["web", "google", "bing", "url", "navigate", "site"]):
-                 server = "puppeteer"
-             else:
-                 # Default search is now Semantic Memory
-                 server = "memory"
-                 resolved_tool = "search"
+            # Default to memory server as defined in tool schemas
+            # Only route to puppeteer if explicitly requested via tool name
+            server = "memory"
+            resolved_tool = "search"
              
         return server, resolved_tool, normalized_args
     
@@ -345,7 +342,8 @@ class ToolDispatcher:
             return self._handle_filesystem(tool_name, args)
 
         # --- BROWSER ROUTING ---
-        if tool_name in self.BROWSER_SYNONYMS or any(tool_name.startswith(x) for x in ["puppeteer_", "browser_"]) or explicit_server == "puppeteer":
+        # Exclude 'search' from browser routing to ensure it goes to memory server as per tool schemas
+        if (tool_name in self.BROWSER_SYNONYMS and tool_name != "search") or any(tool_name.startswith(x) for x in ["puppeteer_", "browser_"]) or explicit_server == "puppeteer":
             return self._handle_browser(tool_name, args)
 
 
@@ -456,15 +454,30 @@ class ToolDispatcher:
         return "filesystem", resolved_tool, args
 
     def _handle_browser(self, tool_name: str, args: Dict[str, Any]) -> Tuple[str, str, Dict[str, Any]]:
-        """Maps browser synonyms to Puppeteer tools."""
+        """Maps browser synonyms to Puppeteer tools.
+        
+        IMPORTANT: 'search' must NEVER be routed through this method.
+        Search functionality is handled exclusively by the memory server.
+        This ensures search results are properly stored and accessible for knowledge graph operations.
+        """
         action = args.get("action") or tool_name
         
+        # Critical safeguard: prevent 'search' from being routed to puppeteer
+        if tool_name == "search" or action == "search":
+            raise ValueError(
+                f"Search routing error: 'search' tool must be handled by memory server, not puppeteer. "
+                f"Tool name: '{tool_name}', action: '{action}'. "
+                f"This ensures search results are stored in the knowledge graph for later processing."
+            )
+        
         mapping = {
-            "search": "puppeteer_navigate",
             "google": "puppeteer_navigate",
             "bing": "puppeteer_navigate",
             "navigate": "puppeteer_navigate",
             "browse": "puppeteer_navigate",
+            "web_search": "puppeteer_navigate",
+            "internet_search": "puppeteer_navigate",
+            "online_search": "puppeteer_navigate",
             "screenshot": "puppeteer_screenshot",
             "click": "puppeteer_click",
             "type": "puppeteer_fill",
