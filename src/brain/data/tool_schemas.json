@@ -942,5 +942,99 @@
             "server_name": "str"
         },
         "description": "Internal tool to restart an MCP server"
+    },
+    "search_nodes": {
+        "server": "memory",
+        "alias_for": "search"
+    },
+    "terminal": {
+        "server": "macos-use",
+        "alias_for": "execute_command"
+    },
+    "screenshot": {
+        "server": "macos-use",
+        "alias_for": "macos-use_take_screenshot"
+    },
+    "ocr": {
+        "server": "macos-use",
+        "alias_for": "macos-use_analyze_screen"
+    },
+    "analyze": {
+        "server": "macos-use",
+        "alias_for": "macos-use_analyze_screen"
+    },
+    "duckduckgo_search": {
+        "server": "duckduckgo-search",
+        "required": [
+            "query"
+        ],
+        "optional": [
+            "max_results",
+            "timeout_s"
+        ],
+        "types": {
+            "query": "str",
+            "max_results": "int",
+            "timeout_s": "float"
+        },
+        "description": "Perform a web search using DuckDuckGo HTML interface"
+    },
+    "github_whoami": {
+        "server": "github",
+        "required": [],
+        "optional": [
+            "timeout_s"
+        ],
+        "types": {
+            "timeout_s": "float"
+        },
+        "description": "Returns the authenticated GitHub user (requires GITHUB_TOKEN)"
+    },
+    "get_file_contents": {
+        "server": "github",
+        "required": [
+            "owner",
+            "repo",
+            "path"
+        ],
+        "optional": [
+            "ref",
+            "timeout_s"
+        ],
+        "types": {
+            "owner": "str",
+            "repo": "str",
+            "path": "str",
+            "ref": "str",
+            "timeout_s": "float"
+        },
+        "description": "Fetch file contents from GitHub and return decoded text"
+    },
+    "transcribe_audio": {
+        "server": "whisper-stt",
+        "required": [
+            "audio_path"
+        ],
+        "optional": [
+            "language"
+        ],
+        "types": {
+            "audio_path": "str",
+            "language": "str"
+        },
+        "description": "Transcribe an audio file to text. Uses Brain server if available to save VRAM."
+    },
+    "record_and_transcribe": {
+        "server": "whisper-stt",
+        "required": [],
+        "optional": [
+            "duration",
+            "language"
+        ],
+        "types": {
+            "duration": "float",
+            "language": "str"
+        },
+        "description": "Record audio from microphone and transcribe it."
     }
 }
