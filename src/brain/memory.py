@@ -23,10 +23,18 @@ except ImportError:
     CHROMADB_AVAILABLE = False
 
 from .config import CONFIG_ROOT, MEMORY_DIR
+from .config_loader import config
 from .logger import logger
 
-# ChromaDB storage path - use subfolder of MEMORY_DIR from config
-CHROMA_DIR = str(MEMORY_DIR / "chroma")
+# ChromaDB storage path - use config if available, else default
+CHROMA_DIR = config.get("mcp.memory.chroma_path")
+if not CHROMA_DIR:
+    # Handle dynamic variable if it was just loaded raw (rare, usually resolved by loader)
+    CHROMA_DIR = str(MEMORY_DIR / "chroma")
+else:
+    # Ensure variables are expanded if config loader didn't (loader usually does)
+    CHROMA_DIR = os.path.expandvars(CHROMA_DIR)
+
 
 
 class LongTermMemory:

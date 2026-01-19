@@ -67,9 +67,40 @@ fi
 
 echo ""
 echo "📦 Крок 6/8: Видалення глобальної конфігурації..."
+echo ""
+echo "📦 Крок 6/8: Видалення глобальної конфігурації..."
+
+DELETE_MODELS="n"
+if [ -d "$HOME/.config/atlastrinity/models" ]; then
+    echo ""
+    echo "❓ Бажаєте видалити AI моделі (TTS/STT)? (Заощадить ~3GB трафіку якщо залишити)"
+    read -t 5 -p "   Видалити моделі? (y/N) [default: N]: " choice || choice="n"
+    echo ""
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
+        DELETE_MODELS="y"
+        echo "   -> Моделі буде видалено."
+    else
+        echo "   -> Моделі буде збережено."
+    fi
+fi
+
 if [ -d "$HOME/.config/atlastrinity" ]; then
-    rm -rf "$HOME/.config/atlastrinity"
-    echo "✅ ~/.config/atlastrinity видалено"
+    if [ "$DELETE_MODELS" == "n" ] && [ -d "$HOME/.config/atlastrinity/models" ]; then
+        # Preserve models
+        TEMP_MODELS="/tmp/atlastrinity_models_backup"
+        rm -rf "$TEMP_MODELS"
+        mv "$HOME/.config/atlastrinity/models" "$TEMP_MODELS"
+        
+        rm -rf "$HOME/.config/atlastrinity"
+        
+        # Recreate and restore
+        mkdir -p "$HOME/.config/atlastrinity"
+        mv "$TEMP_MODELS" "$HOME/.config/atlastrinity/models"
+        echo "✅ ~/.config/atlastrinity видалено (Models збережено)"
+    else
+        rm -rf "$HOME/.config/atlastrinity"
+        echo "✅ ~/.config/atlastrinity видалено (Models теж видалено)"
+    fi
 else
     echo "ℹ️  ~/.config/atlastrinity не існує"
 fi

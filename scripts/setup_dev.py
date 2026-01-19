@@ -10,6 +10,7 @@ AtlasTrinity Full Stack Development Setup Script
 - Перевірка системних сервісів (Docker, Redis, Postgres)
 """
 
+import asyncio
 import os
 import platform
 import shutil
@@ -176,7 +177,11 @@ def ensure_database():
         init_cmd = [
             venv_python,
             "-c",
-            "import asyncio; from src.brain.db.manager import db_manager; asyncio.run(db_manager.initialize())",
+            "import asyncio; from src.brain.db.manager import db_manager; "
+            "async def run_init():\n"
+            "    await db_manager.initialize()\n"
+            "    await db_manager.close()\n"
+            "asyncio.run(run_init())",
         ]
         # Встановлюємо PYTHONPATH щоб знайти src
         env = os.environ.copy()
@@ -227,7 +232,6 @@ def install_brew_deps():
 
     # Casks (GUI apps)
     casks = {
-        "docker": "Docker",  # Docker Desktop
         "google-chrome": "Google Chrome",  # Chrome для Puppeteer
     }
 
@@ -328,16 +332,7 @@ def install_brew_deps():
         except Exception as e:
             print_warning(f"Не вдалося запустити {service}: {e}")
 
-    # === Перевірка Docker ===
-    if shutil.which("docker"):
-        try:
-            result = subprocess.run(["docker", "info"], capture_output=True, timeout=5)
-            if result.returncode == 0:
-                print_success("Docker Desktop запущено")
-            else:
-                print_warning("Docker Desktop встановлено, але не запущено. Запустіть вручну.")
-        except Exception:
-            print_warning("Docker Desktop не відповідає. Переконайтесь що він запущений.")
+
 
     return True
 
@@ -686,14 +681,7 @@ def check_services():
         except Exception as e:
             print_warning(f"Не вдалося перевірити {label}: {e}")
 
-    # Docker
-    try:
-        if subprocess.run(["docker", "info"], capture_output=True).returncode == 0:
-            print_success("Docker запущено")
-        else:
-            print_warning("Docker Desktop НЕ запущено (Запустіть додаток Docker)")
-    except Exception:
-        print_warning("Docker не знайдено")
+
 
 
 def main():
