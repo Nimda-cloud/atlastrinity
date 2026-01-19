@@ -34,7 +34,7 @@ agents:
     reflexion_model: gpt-4o
 mcp:
   # === TIER 1: MUST-HAVE (Ядро системи) ===
-  macos-use:
+  macos_use:
     enabled: true
     permissions:
       accessibility: true
@@ -50,7 +50,7 @@ mcp:
     enabled: true
     deny_write_repo: true
 
-  sequential-thinking:
+  sequential_thinking:
     enabled: true
     max_history_size: 1000
 
@@ -63,7 +63,7 @@ mcp:
     max_output_chars: 500000
     disallow_interactive: true
   
-  chrome-devtools:
+  chrome_devtools:
     enabled: true
   
   memory:
@@ -114,8 +114,3 @@ api:
 database:
   url: sqlite+aiosqlite:///${CONFIG_ROOT}/atlastrinity.db
 
-memory:
-  chroma:
-    persist_directory: ${CONFIG_ROOT}/memory/chroma
-    collection_name: atlastrinity_memory
-  vector_store_type: chroma

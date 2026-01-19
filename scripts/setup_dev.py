@@ -7,7 +7,7 @@ AtlasTrinity Full Stack Development Setup Script
 - Компіляція нативних MCP серверів (Swift)
 - Встановлення Python та NPM залежностей
 - Завантаження AI моделей (STT/TTS)
-- Перевірка системних сервісів (Docker, Redis, Postgres)
+- Перевірка системних сервісів (Docker, Redis)
 """
 
 import asyncio
