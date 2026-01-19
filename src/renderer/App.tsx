@@ -83,7 +83,7 @@ const App: React.FC = () => {
           if (data.metrics) setMetrics(data.metrics);
 
           if (data.logs && data.logs.length > 0) {
-            const newLogs = data.logs.map(
+            const newLogs = data.logs.slice(-100).map(
               (l: {
                 agent: AgentName;
                 message: string;

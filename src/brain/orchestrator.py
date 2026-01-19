@@ -382,8 +382,8 @@ class Trinity:
             "system_state": sys_state,
             "current_task": task_summary,
             "active_agent": active_agent,
-            "messages": messages,
-            "logs": self.state.get("logs", [])[-200:],
+            "messages": messages[-50:],
+            "logs": self.state.get("logs", [])[-100:],
             "step_results": self.state.get("step_results", []),
             "metrics": metrics_collector.get_metrics(),
         }

@@ -23,9 +23,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
   const filteredMessages = messages.filter((m) => m.agent !== 'SYSTEM');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+      if (isAtBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -57,7 +66,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
       </div>
 
       {/* Main Chat Stream */}
-      <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
         {filteredMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center opacity-10 italic text-[9px] tracking-[0.5em] uppercase">
             Waiting for neural link...
