@@ -25,11 +25,11 @@ async def test_tool_selection():
     
     print("\n--- Starting Tool Selection Tests ---")
     
-    # Test Case 1: Search Routing (Puppeteer)
-    print("\n1. Testing 'search' (Puppeteer) routing...")
+    # Test Case 1: Search Routing (Memory Server)
+    print("\n1. Testing 'search' (Memory Server) routing...")
     await dispatcher.resolve_and_dispatch("search", {"query": "weather in Kyiv"})
-    mock_mcp.call_tool.assert_awaited_with("puppeteer", "puppeteer_navigate", {"query": "weather in Kyiv"})
-    print("Success: 'search' routed to puppeteer_navigate")
+    mock_mcp.call_tool.assert_awaited_with("memory", "search", {"query": "weather in Kyiv"})
+    print("Success: 'search' routed to memory.search")
     
     # Test Case 2: Terminal Routing (macos-use)
     print("\n2. Testing 'bash' (macos-use) routing...")
@@ -58,6 +58,21 @@ async def test_tool_selection():
     await dispatcher.resolve_and_dispatch("fetch", {"url": "https://google.com"})
     mock_mcp.call_tool.assert_awaited_with("macos-use", "macos-use_fetch_url", {"url": "https://google.com"})
     print("Success: 'fetch' routed to macos-use.macos-use_fetch_url")
+
+    # Test Case 6: Verify search never goes to puppeteer (critical safeguard)
+    print("\n6. Testing search routing safeguard...")
+    try:
+        # This should raise an exception, not route to puppeteer
+        from src.brain.tool_dispatcher import ToolDispatcher
+        server, tool, args = dispatcher._handle_browser("search", {"query": "test"})
+        print("ERROR: Search was incorrectly routed to browser tools!")
+        assert False, "Search should never be handled by _handle_browser"
+    except ValueError as e:
+        if "search" in str(e) and "memory server" in str(e):
+            print("Success: Search routing safeguard working correctly")
+        else:
+            print(f"ERROR: Unexpected error message: {e}")
+            assert False, "Wrong error message for search routing"
 
     print("\n--- All Dispatcher Tests Passed Successfully! ---")
 
