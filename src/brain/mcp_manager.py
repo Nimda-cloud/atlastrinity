@@ -549,6 +549,11 @@ class MCPManager:
             "run_command": "execute_command",
             "search": "macos-use_spotlight_search",
             "spotlight": "macos-use_spotlight_search",
+            "mdfind": "macos-use_spotlight_search",
+            "notification": "macos-use_send_notification",
+            "mail_send": "macos-use_mail_send",
+            "notes_create": "macos-use_notes_create_note",
+            "finder_list": "macos-use_finder_list_files",
         }
         
         return equivalents.get(tool_lower)

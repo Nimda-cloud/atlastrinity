@@ -3,7 +3,7 @@
         "name": "macos-use",
         "tier": 1,
         "category": "core",
-        "description": "Universal macOS Commander (Swift binary - 35+ tools)",
+        "description": "Universal macOS Commander (Swift binary - 39 tools)",
         "capabilities": [
             "GUI automation (click, type, scroll, drag, window management)",
             "Terminal/shell command execution (execute_command)",
