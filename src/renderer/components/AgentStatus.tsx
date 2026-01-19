@@ -57,7 +57,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
       */}
       <div className="flex items-center h-full">
         {/* PHASE SLOT (Total width: 110px) */}
-        <div className="flex items-center px-4 h-full gap-2 overflow-hidden w-[120px] shrink-0">
+        <div className="flex items-center px-3 h-full gap-2 overflow-hidden w-[120px] shrink-0 border-r border-white/5">
           <span className="opacity-20 font-light text-[7px] w-[35px] shrink-0">PHASE</span>
           <div className="flex-1">
             <span
@@ -69,7 +69,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         </div>
 
         {/* AGENT SLOT (Total width: 115px) */}
-        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[130px] shrink-0">
+        <div className="flex items-center px-3 h-full gap-2 border-r border-white/5 overflow-hidden w-[120px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[35px] shrink-0">AGENT</span>
           <div className="flex-1 flex items-center gap-1 overflow-hidden">
             <span style={{ color: agent.color }} className="font-bold truncate grayscale-[0.2]">
@@ -80,7 +80,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         </div>
 
         {/* CPU SLOT (Total width: 75px) */}
-        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[85px] shrink-0">
+        <div className="flex items-center px-3 h-full gap-2 border-r border-white/5 overflow-hidden w-[80px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[22px] shrink-0">CPU</span>
           <div className="flex-1 text-right">
             <span className="text-blue-400 font-bold tabular-nums">{metrics?.cpu || '0%'}</span>
@@ -88,7 +88,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         </div>
 
         {/* MEM SLOT (Total width: 85px) */}
-        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[105px] shrink-0">
+        <div className="flex items-center px-3 h-full gap-2 border-r border-white/5 overflow-hidden w-[100px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[22px] shrink-0">MEM</span>
           <div className="flex-1 text-right">
             <span className="text-blue-400 font-bold tabular-nums">
@@ -98,15 +98,15 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         </div>
 
         {/* NET SLOTS (Total width: ~160px) */}
-        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[185px] shrink-0">
+        <div className="flex items-center px-3 h-full gap-2 border-r border-white/5 overflow-hidden w-[210px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[22px] shrink-0">NET</span>
 
           {/* UP SLOT */}
-          <div className="flex items-center gap-0.5 w-[65px] justify-end flex-none">
+          <div className="flex items-center gap-0.5 w-[75px] justify-end flex-none">
             <span className="text-blue-400 font-bold tabular-nums">
               {metrics?.net_up_val || '0.0'}
             </span>
-            <span className="opacity-20 text-[6px] font-light w-[18px]">
+            <span className="opacity-20 text-[6px] font-light w-[20px] text-left ml-1">
               {(metrics?.net_up_unit?.[0] || 'K').toUpperCase()}U
             </span>
           </div>
@@ -114,27 +114,27 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
           <div className="w-[1px] h-2 bg-white/5 shrink-0" />
 
           {/* DOWN SLOT */}
-          <div className="flex items-center gap-0.5 w-[65px] justify-end flex-none">
+          <div className="flex items-center gap-0.5 w-[75px] justify-end flex-none">
             <span className="text-blue-400 font-bold tabular-nums">
               {metrics?.net_down_val || '0.0'}
             </span>
-            <span className="opacity-20 text-[6px] font-light w-[18px]">
+            <span className="opacity-20 text-[6px] font-light w-[20px] text-left ml-1">
               {(metrics?.net_down_unit?.[0] || 'K').toUpperCase()}D
             </span>
           </div>
         </div>
 
-        {/* MODE & LINK (Fixed width to handle STANDARD/LIVE) */}
-        <div className="flex items-center border-l border-white/5 h-full">
-          <div className="flex items-center gap-2 px-3">
+        {/* MODE & LINK (Fixed width) */}
+        <div className="flex items-center h-full shrink-0">
+          <div className="flex items-center gap-2 px-3 w-[90px] shrink-0 border-r border-white/5 h-full">
             <span className="opacity-20 font-light text-[7px] w-[30px] shrink-0">MODE</span>
-            <div className="w-[50px] flex-none">
-              <span className="text-white/40 truncate">{activeMode || 'STD'}</span>
+            <div className="flex-1 overflow-hidden">
+              <span className="text-white/40 truncate block">{activeMode || 'STD'}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 border-l border-white/5 h-full">
+          <div className="flex items-center gap-2 px-3 w-[80px] shrink-0 border-r border-white/5 h-full">
             <span className="opacity-20 font-light text-[7px] w-[25px] shrink-0">LINK</span>
-            <div className="w-[30px] flex-none">
+            <div className="flex-1">
               <span className="text-green-400/40 font-bold">LIVE</span>
             </div>
           </div>

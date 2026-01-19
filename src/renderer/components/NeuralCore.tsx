@@ -14,19 +14,29 @@ interface NeuralCoreProps {
 }
 
 const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
-  // --- STATE COLORS ---
+  // --- DYNAMIC CORE COLOR ---
   const getStateColor = (): string => {
+    // If we have an active agent and we are not idle, prioritize agent color
+    if (state !== 'IDLE' && state !== 'ERROR') {
+      switch (activeAgent) {
+        case 'ATLAS': return 'var(--atlas-blue)';
+        case 'TETYANA': return 'var(--tetyana-green)';
+        case 'GRISHA': return 'var(--grisha-orange)';
+        default: break;
+      }
+    }
+
     switch (state) {
       case 'IDLE':
-        return 'var(--state-idle)';
+        return '#00A3FF'; // Pure Blue for standby
       case 'PROCESSING':
-        return 'var(--state-processing)';
+        return 'var(--atlas-blue)';
       case 'EXECUTING':
-        return 'var(--state-executing)';
+        return 'var(--tetyana-green)';
       case 'VERIFYING':
-        return 'var(--state-processing)';
+        return 'var(--grisha-orange)';
       case 'ERROR':
-        return 'var(--state-error)';
+        return 'var(--state-error, #FF4D4D)';
       default:
         return 'var(--atlas-blue)';
     }
