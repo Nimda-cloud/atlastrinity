@@ -234,7 +234,25 @@ if v_res.get("success"):
     ...
 ```
 
-### 3. Вивід стріму в UI
+### 3. `UnboundLocalError: cannot access local variable 'step_id'`
+**Файл:** `src/brain/agents/tetyana.py`
+
+**Проблема:** Змінна `step_id` використовувалась в логуванні до визначення.
+
+**Виправлення:**
+```python
+# Визначення step_id на початку функції
+self.attempt_count = attempt
+
+# Get step_id early for logging
+step_id = step.get("id", self.current_step)
+
+# Тепер step_id доступний для всіх перевірок
+if is_consent_request:
+    logger.info(f"[TETYANA] Step '{step_id}' requires consent...")
+```
+
+### 4. Вивід стріму в UI
 **Файл:** `src/mcp_server/vibe_server.py`
 
 **Зміни:**
@@ -242,3 +260,12 @@ if v_res.get("success"):
 - ✅ Форматування за ролями (assistant, tool, user)
 - ✅ Завершальне повідомлення: `✅ [VIBE-LIVE] Vibe завершив роботу успішно`
 - ✅ Фільтрація TUI артефактів `[2K`, `[1A`
+
+## Після виправлень
+
+**Потрібен перезапуск Brain:**
+```bash
+./scripts/restart_brain.sh
+```
+
+Або просто перезапустіть `npm run dev` в терміналі.
