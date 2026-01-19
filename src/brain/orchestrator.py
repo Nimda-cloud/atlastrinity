@@ -127,8 +127,17 @@ class Trinity:
             project_root = Path(__file__).parent.parent.parent
             if str(project_root) not in sys.path:
                 sys.path.insert(0, str(project_root))
-            from scripts.setup_dev import backup_databases
-            await asyncio.to_thread(backup_databases)
+            try:
+                import scripts.setup_dev as setup_dev
+                await asyncio.to_thread(setup_dev.backup_databases)
+            except ImportError:
+                # Handle non-package scripts folder
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("setup_dev", str(project_root / "scripts" / "setup_dev.py"))
+                if spec and spec.loader:
+                    setup_dev = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(setup_dev)
+                    await asyncio.to_thread(setup_dev.backup_databases)
             await self._log("📦 Backup попередньої сесії...", "system")
         except Exception as e:
             logger.warning(f"[BACKUP] Не вдалося створити backup: {e}")
@@ -1302,8 +1311,10 @@ class Trinity:
                     raise Exception(error_msg)
             
             # Success: Pop step goal
-            if shared_context:
+            try:
                 shared_context.pop_goal()
+            except (AttributeError, NameError):
+                pass
 
         return True
 
@@ -1531,7 +1542,7 @@ class Trinity:
                         result.error = "autonomous_decision_made"
 
                 # Log tool execution to DB for Grisha's audit
-                if db_manager.available and db_step_id and result.tool_call:
+                if getattr(db_manager, 'available', False) and db_step_id and result.tool_call:
                     try:
                         async with await db_manager.get_session() as db_sess:
                             tool_exec = DBToolExecution(
