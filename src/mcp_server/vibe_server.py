@@ -253,6 +253,17 @@ async def run_vibe_subprocess(
     process_env["PYTHONUNBUFFERED"] = "1"
     
     logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
+
+    async def emit_log(level: str, message: str) -> None:
+        if not ctx:
+            return
+        try:
+            await ctx.log(level, message, logger_name="vibe_mcp")
+        except Exception as e:
+            logger.debug(f"[VIBE] Failed to send log to client: {e}")
+    
+    # Повідомлення про початок
+    await emit_log("info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt[:80]}...")
     
     try:
         # Launch subprocess. 
@@ -278,9 +289,58 @@ async def run_vibe_subprocess(
         async def read_stream_with_logging(stream, chunks, stream_name: str):
             """Read from stream, log important lines, collect output."""
             buffer = b""
+
+            async def handle_line(line: str) -> None:
+                if not line:
+                    return
+
+                # Filter out terminal control characters and TUI artifacts
+                if any(c < '\x20' for c in line if c not in '\t\n\r'):
+                    line = "".join(c for c in line if c >= '\x20' or c in '\t\n\r')
+
+                if not line:
+                    return
+
+                # Try to parse as JSON for structured logging
+                try:
+                    obj = json.loads(line)
+                    if isinstance(obj, dict) and obj.get("role") and obj.get("content"):
+                        preview = str(obj["content"])[:200]
+                        # Форматування для UI
+                        if obj["role"] == "assistant":
+                            message = f"🧠 [VIBE-THOUGHT] {preview}"
+                        elif obj["role"] == "tool":
+                            message = f"🔧 [VIBE-ACTION] {preview}"
+                        else:
+                            message = f"💬 [VIBE-GEN] {preview}"
+                        
+                        logger.info(message)
+                        await emit_log("info", message)
+                        return
+                except json.JSONDecodeError:
+                    pass
+
+                # Regular log line - filter out TUI spam
+                spam_triggers = ["Welcome to", "│", "╭", "╮", "╰", "─", "──", "[2K", "[1A"]
+                if any(t in line for t in spam_triggers):
+                    return
+
+                # Живий стрім для UI
+                if len(line) < 1000:
+                    # Форматуємо для ExecutionLog компонента
+                    if "Thinking" in line or "Planning" in line:
+                        formatted = f"🧠 [VIBE-THOUGHT] {line}"
+                    elif "Running" in line or "Executing" in line:
+                        formatted = f"🔧 [VIBE-ACTION] {line}"
+                    else:
+                        formatted = f"⚡ [VIBE-LIVE] {line}"
+                    
+                    logger.debug(f"[VIBE_{stream_name}] {line}")
+                    level = "warning" if stream_name == "ERR" else "info"
+                    await emit_log(level, formatted)
             try:
                 while True:
-                    data = await asyncio.wait_for(stream.read(8192), timeout=timeout_s)
+                    data = await stream.read(8192)
                     if not data:
                         break
                     
@@ -291,30 +351,11 @@ async def run_vibe_subprocess(
                     while b'\n' in buffer:
                         line_bytes, buffer = buffer.split(b'\n', 1)
                         line = strip_ansi(line_bytes.decode(errors='replace')).strip()
-                        
-                        if not line:
-                            continue
-                        
-                        # Filter out terminal control characters and TUI artifacts
-                        # Often seen when using PTY or certain CLI tools
-                        if any(c < '\x20' for c in line if c not in '\t\n\r'):
-                            line = "".join(c for c in line if c >= '\x20' or c in '\t\n\r')
-                        
-                        if not line:
-                            continue
+                        await handle_line(line)
 
-                        # Try to parse as JSON for structured logging
-                        try:
-                            obj = json.loads(line)
-                            if isinstance(obj, dict) and obj.get("role") and obj.get("content"):
-                                logger.info(f"[VIBE] {obj['role']}: {obj['content'][:200]}")
-                        except json.JSONDecodeError:
-                            # Regular log line - filter out TUI spam
-                            spam_triggers = ["Welcome to", "│", "╭", "╮", "╰", "─", "──"]
-                            if any(t in line for t in spam_triggers):
-                                continue  # Skip TUI menu spam
-                            if len(line) < 1000:  # Avoid massive log lines
-                                logger.debug(f"[VIBE_{stream_name}] {line}")
+                if buffer:
+                    line = strip_ansi(buffer.decode(errors='replace')).strip()
+                    await handle_line(line)
             
             except asyncio.TimeoutError:
                 logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
