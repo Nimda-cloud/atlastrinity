@@ -4,7 +4,7 @@ AtlasTrinity First Run Installer
 
 Features:
 - Встановлення Homebrew (якщо немає)
-- Встановлення Docker, Redis, PostgreSQL
+- Встановлення Docker, Redis (SQLite використовується як локальна БД)
 - Запуск сервісів
 - Створення бази даних та таблиць
 - Завантаження TTS/STT моделей
