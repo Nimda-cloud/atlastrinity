@@ -69,6 +69,7 @@ mcp:
   
   memory:
     enabled: true
+    chroma_path: ${CONFIG_ROOT}/memory/chroma
 
   graph:
     enabled: true
