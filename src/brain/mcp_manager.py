@@ -166,7 +166,7 @@ class MCPManager:
             return result
 
         name_overrides = {
-            "whisper-stt": "whisper",
+            "whisper-stt": "whisper_stt",
         }
 
         servers = raw_config.get("mcpServers", {})
