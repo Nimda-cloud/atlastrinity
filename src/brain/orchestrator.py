@@ -1322,46 +1322,17 @@ class Trinity:
                         result.result = f"Strategy Deviated: {evaluation.get('reason')}"
                         result.error = None
                         
-                        # --- BEHAVIORAL LEARNING: Save successful deviation logic ---
-                        if long_term_memory.available:
-                            await long_term_memory.remember_behavioral_change(
-                                original_intent=step.get("action", "Unknown"),
-                                deviation=str(result.result),
-                                reason=evaluation.get("reason", "Unknown"),
-                                result="Approved and Executed",
-                                context={"step_id": step.get("id")},
-                                decision_factors=evaluation.get("decision_factors", {})
-                            )
-                        
-                        # --- GRAPH KNOWLEDGE: Link Lesson to Structure ---
-                        try:
-                            lesson_id = f"lesson:{int(datetime.now().timestamp())}"
-                            await knowledge_graph.add_node(
-                                node_type="LESSON",
-                                node_id=lesson_id,
-                                attributes={
-                                    "name": f"Deviation in {step.get('action', 'Step')}",
-                                    "intent": step.get("action"),
-                                    "deviation": str(result.result),
-                                    "reason": evaluation.get("reason"),
-                                    "factors": evaluation.get("decision_factors", {}),
-                                    "original_step_id": step.get("id")
-                                },
-                                sync_to_vector=False # Handled by specialized memory
-                            )
-                            # Link to current task if available
-                            if self.state.get("db_task_id"):
-                                await knowledge_graph.add_edge(
-                                    source_id=f"task:{self.state.get('db_task_id')}",
-                                    target_id=lesson_id,
-                                    relation="learned_lesson"
-                                )
-                        except Exception as graph_err:
-                            logger.warning(f"[ORCHESTRATOR] Failed to log lesson to graph: {graph_err}")
+                        # Mark for behavioral learning after successful verification
+                        result.is_deviation = True
+                        result.deviation_info = evaluation
                     else:
                         logger.info(f"[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
                         step["grisha_feedback"] = f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."
                         result.success = False
+                except Exception as eval_err:
+                    logger.error(f"[ORCHESTRATOR] Deviation evaluation failed: {eval_err}")
+                    result.success = False
+                    result.error = "evaluation_error"
                 
                 # Handle need_user_input signal (New Autonomous Timeout Logic)
                 if result.error == "need_user_input":
@@ -1582,6 +1553,53 @@ class Trinity:
                         "grisha",
                         verify_result.voice_message or "Підтверджую виконання.",
                     )
+                    
+                    # --- BEHAVIORAL LEARNING: Commit successful deviations ---
+                    if result.is_deviation and result.success and result.deviation_info:
+                        evaluation = result.deviation_info
+                        factors = evaluation.get("decision_factors", {})
+                        
+                        # 1. Vector Memory
+                        if long_term_memory.available:
+                            await long_term_memory.remember_behavioral_change(
+                                original_intent=step.get("action", "Unknown"),
+                                deviation=str(result.result),
+                                reason=evaluation.get("reason", "Unknown"),
+                                result="Verified Success",
+                                context={"step_id": step.get("id")},
+                                decision_factors=factors
+                            )
+                        
+                        # 2. Knowledge Graph (Structured Factors)
+                        if knowledge_graph:
+                            try:
+                                lesson_id = f"lesson:{int(datetime.now().timestamp())}"
+                                await knowledge_graph.add_node(
+                                    node_type="LESSON",
+                                    node_id=lesson_id,
+                                    attributes={
+                                        "name": f"Successful Deviation: {evaluation.get('reason')[:50]}",
+                                        "intent": step.get("action"),
+                                        "outcome": "Verified Success",
+                                        "reason": evaluation.get("reason")
+                                    }
+                                )
+                                # Link to task
+                                if self.state.get("db_task_id"):
+                                    await knowledge_graph.add_edge(f"task:{self.state.get('db_task_id')}", lesson_id, "learned_lesson")
+                                
+                                # Structured Factor Nodes
+                                for f_name, f_val in factors.items():
+                                    factor_node_id = f"factor:{f_name}:{str(f_val).lower().replace(' ', '_')}"
+                                    await knowledge_graph.add_node(
+                                        "FACTOR", 
+                                        factor_node_id, 
+                                        {"name": f_name, "value": f_val, "type": "environmental_factor"}
+                                    )
+                                    await knowledge_graph.add_edge(lesson_id, factor_node_id, "CONTINGENT_ON")
+                                    
+                            except Exception as g_err:
+                                logger.error(f"[ORCHESTRATOR] Error linking factors in graph: {g_err}")
             except Exception as e:
                 print(f"[ERROR] Verification failed: {e}")
                 await self._log(f"Verification crashed: {e}", "error")

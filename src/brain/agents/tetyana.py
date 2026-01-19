@@ -50,6 +50,8 @@ class StepResult:
     tool_call: Optional[Dict[str, Any]] = None
     timestamp: datetime = None
     thought: Optional[str] = None
+    is_deviation: bool = False
+    deviation_info: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.timestamp is None:
