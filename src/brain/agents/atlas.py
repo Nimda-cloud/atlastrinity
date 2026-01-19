@@ -331,17 +331,12 @@ class Atlas(BaseAgent):
                 logical_tool_name = tool_call.get("name")
                 args = tool_call.get("args", {})
                 
-                if "_" in logical_tool_name:
-                    parts = logical_tool_name.split("_", 1)
-                    mcp_server, mcp_tool = parts[0], parts[1]
-                else:
-                    mcp_server, mcp_tool = "", logical_tool_name
-                
-                if mcp_server:
-                    logger.info(f"[ATLAS CHAT] Executing: {mcp_server}:{mcp_tool}")
+                if logical_tool_name:
+                    logger.info(f"[ATLAS CHAT] Executing: {logical_tool_name}")
                     messages.append(response)
                     try:
-                        result = await mcp_manager.call_tool(mcp_server, mcp_tool, args)
+                        # Use intelligent dispatch (handles server resolution & args)
+                        result = await mcp_manager.dispatch_tool(logical_tool_name, args)
                         logger.info(f"[ATLAS CHAT] Tool result: {str(result)[:200]}...")
                     except Exception as tool_err:
                         logger.error(f"[ATLAS CHAT] Tool call failed: {tool_err}")
@@ -500,7 +495,7 @@ class Atlas(BaseAgent):
         try:
             # Using unified dispatch_tool
             res = await mcp_manager.dispatch_tool(
-                "sequential-thinking",
+                "sequential-thinking.sequentialthinking",
                 {
                     "thought": f"Initial analysis of goal: {task}",
                     "thoughtNumber": 1,
@@ -511,7 +506,7 @@ class Atlas(BaseAgent):
             
             # Follow up with more details
             res2 = await mcp_manager.dispatch_tool(
-                "sequential-thinking",
+                "sequential-thinking.sequentialthinking",
                 {
                     "thought": f"Exploring technical barriers and alternatives for {task}...",
                     "thoughtNumber": 2,
@@ -521,9 +516,8 @@ class Atlas(BaseAgent):
             )
             
             # Final synthesis
-            res3 = await mcp_manager.call_tool(
-                "sequential-thinking",
-                "sequentialthinking",
+            res3 = await mcp_manager.dispatch_tool(
+                "sequential-thinking.sequentialthinking",
                 {
                     "thought": f"Final strategy formulated for {task}.",
                     "thoughtNumber": 3,
