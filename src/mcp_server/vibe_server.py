@@ -255,9 +255,16 @@ async def run_vibe_subprocess(
     logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
     
     try:
-        # Launch subprocess
+        # Launch subprocess. 
+        # On macOS, we use 'script' to provide a TTY, but we need to be careful with its output.
+        script_path = shutil.which("script")
+        
+        # Use simple subprocess for now to avoid the complexity of 'script' output
+        # during integration, but keep the improved stream handling.
+        full_argv = argv
+        
         process = await asyncio.create_subprocess_exec(
-            *argv,
+            *full_argv,
             cwd=cwd or VIBE_WORKSPACE,
             env=process_env,
             stdout=asyncio.subprocess.PIPE,
@@ -270,40 +277,43 @@ async def run_vibe_subprocess(
         
         async def read_stream_with_logging(stream, chunks, stream_name: str):
             """Read from stream, log important lines, collect output."""
-            buffer = ""
+            buffer = b""
             try:
                 while True:
-                    data = await asyncio.wait_for(stream.read(1024), timeout=timeout_s)
+                    data = await asyncio.wait_for(stream.read(8192), timeout=timeout_s)
                     if not data:
                         break
                     
-                    try:
-                        text = data.decode(errors='replace')
-                    except Exception:
-                        text = str(data)
-                    
-                    chunks.append(text)
-                    buffer += text
+                    chunks.append(data)
+                    buffer += data
                     
                     # Process complete lines
-                    while '\n' in buffer:
-                        line, buffer = buffer.split('\n', 1)
-                        line = strip_ansi(line).strip()
+                    while b'\n' in buffer:
+                        line_bytes, buffer = buffer.split(b'\n', 1)
+                        line = strip_ansi(line_bytes.decode(errors='replace')).strip()
                         
                         if not line:
                             continue
                         
+                        # Filter out terminal control characters and TUI artifacts
+                        # Often seen when using PTY or certain CLI tools
+                        if any(c < '\x20' for c in line if c not in '\t\n\r'):
+                            line = "".join(c for c in line if c >= '\x20' or c in '\t\n\r')
+                        
+                        if not line:
+                            continue
+
                         # Try to parse as JSON for structured logging
                         try:
                             obj = json.loads(line)
-                            if obj.get("role") and obj.get("content"):
-                                logger.info(f"[VIBE] {obj['role']}: {obj['content'][:100]}")
+                            if isinstance(obj, dict) and obj.get("role") and obj.get("content"):
+                                logger.info(f"[VIBE] {obj['role']}: {obj['content'][:200]}")
                         except json.JSONDecodeError:
                             # Regular log line - filter out TUI spam
-                            spam_triggers = ["Welcome to", "│", "╭", "╮", "╰", "─"]
+                            spam_triggers = ["Welcome to", "│", "╭", "╮", "╰", "─", "──"]
                             if any(t in line for t in spam_triggers):
                                 continue  # Skip TUI menu spam
-                            if len(line) < 500:  # Avoid spam
+                            if len(line) < 1000:  # Avoid massive log lines
                                 logger.debug(f"[VIBE_{stream_name}] {line}")
             
             except asyncio.TimeoutError:
@@ -319,7 +329,7 @@ async def run_vibe_subprocess(
                     read_stream_with_logging(process.stderr, stderr_chunks, "ERR"),
                     process.wait(),
                 ),
-                timeout=timeout_s + 10,  # Add buffer for graceful shutdown
+                timeout=timeout_s + 20,  # Add buffer for graceful shutdown
             )
         except asyncio.TimeoutError:
             logger.warning(f"[VIBE] Process timeout ({timeout_s}s), terminating")
@@ -330,17 +340,28 @@ async def run_vibe_subprocess(
                 process.kill()
                 await process.wait()
             
+            stdout_str = strip_ansi(b"".join(stdout_chunks).decode(errors='replace'))
+            stderr_str = strip_ansi(b"".join(stderr_chunks).decode(errors='replace'))
+            
+            # Final cleanup of the strings
+            stdout_str = "".join(c for c in stdout_str if c >= '\x20' or c in '\t\n\r')
+            stderr_str = "".join(c for c in stderr_str if c >= '\x20' or c in '\t\n\r')
+            
             return {
                 "success": False,
                 "error": f"Vibe execution timed out after {timeout_s}s",
                 "returncode": -1,
-                "stdout": strip_ansi("".join(stdout_chunks)),
-                "stderr": strip_ansi("".join(stderr_chunks)),
+                "stdout": truncate_output(stdout_str),
+                "stderr": truncate_output(stderr_str),
                 "command": argv,
             }
         
-        stdout = strip_ansi("".join(stdout_chunks))
-        stderr = strip_ansi("".join(stderr_chunks))
+        stdout = strip_ansi(b"".join(stdout_chunks).decode(errors='replace'))
+        stderr = strip_ansi(b"".join(stderr_chunks).decode(errors='replace'))
+        
+        # Final cleanup of the strings
+        stdout = "".join(c for c in stdout if c >= '\x20' or c in '\t\n\r')
+        stderr = "".join(c for c in stderr if c >= '\x20' or c in '\t\n\r')
         
         logger.info(f"[VIBE] Process completed with exit code: {process.returncode}")
         
@@ -421,6 +442,7 @@ async def vibe_prompt(
     auto_approve: bool = True,
     max_turns: Optional[int] = 10,
     max_price: Optional[float] = None,
+    args: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Send a prompt to Vibe AI agent in programmatic mode.
@@ -435,6 +457,7 @@ async def vibe_prompt(
         auto_approve: Auto-approve tool calls without confirmation (default: True)
         max_turns: Maximum conversation turns (default: 10)
         max_price: Maximum cost limit in dollars (optional)
+        args: Optional raw CLI arguments to pass to Vibe
     
     Returns:
         Dict with 'success', 'stdout', 'stderr', 'returncode', 'parsed_response'
@@ -468,6 +491,9 @@ async def vibe_prompt(
         
         if max_price:
             argv.extend(["--max-price", str(max_price)])
+            
+        if args:
+            argv.extend(args)
         
         logger.info(f"[VIBE] Executing prompt: {prompt[:50]}... (timeout={eff_timeout}s)")
         

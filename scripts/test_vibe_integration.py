@@ -14,23 +14,28 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.mcp_server.vibe_server import (
     vibe_which,
     vibe_prompt,
-    _prepare_prompt_arg,
+    handle_long_prompt,
     VIBE_WORKSPACE,
     INSTRUCTIONS_DIR,
 )
 
 class MockContext:
     """Mock context for testing."""
+    def __init__(self):
+        self.output = []
     async def info(self, msg):
         print(f"[INFO] {msg}")
+        self.output.append(msg)
     async def error(self, msg):
         print(f"[ERROR] {msg}")
+        self.output.append(msg)
 
 
 async def test_vibe_which():
     """Test that vibe_which locates the binary."""
     print("\n=== TEST: vibe_which ===")
-    result = await vibe_which()
+    ctx = MockContext()
+    result = await vibe_which(ctx)
     print(f"Result: {result}")
     
     if result.get("success"):
@@ -44,9 +49,9 @@ async def test_vibe_which():
 
 async def test_prepare_prompt_small():
     """Test that small prompts don't create files."""
-    print("\n=== TEST: _prepare_prompt_arg (small) ===")
+    print("\n=== TEST: handle_long_prompt (small) ===")
     small_prompt = "Create a hello world Python script."
-    result, file_path = _prepare_prompt_arg(small_prompt)
+    result, file_path = handle_long_prompt(small_prompt)
     
     if file_path is None:
         print(f"✅ Small prompt returned directly (no file created)")
@@ -59,9 +64,9 @@ async def test_prepare_prompt_small():
 
 async def test_prepare_prompt_large():
     """Test that large prompts create files in INSTRUCTIONS_DIR."""
-    print("\n=== TEST: _prepare_prompt_arg (large) ===")
+    print("\n=== TEST: handle_long_prompt (large) ===")
     large_prompt = "A" * 3000
-    result, file_path = _prepare_prompt_arg(large_prompt, cwd="/some/random/path")
+    result, file_path = handle_long_prompt(large_prompt)
     
     if file_path is not None and INSTRUCTIONS_DIR in file_path:
         print(f"✅ Large prompt offloaded to INSTRUCTIONS_DIR")
@@ -82,40 +87,37 @@ async def test_vibe_prompt_small_task():
     
     ctx = MockContext()
     
-    # Use short prompt that fits in CLI args
-    prompt = "Create a file called '/tmp/hello_vibe_test.py' with a simple hello world script that prints 'Hello from Vibe MCP!'."
+    # Use short prompt
+    prompt = "Create a file called 'hello_vibe_test.py' with a simple hello world script."
     
     print(f"Sending prompt to Vibe CLI...")
-    print(f"Prompt: {prompt}")
-    print(f"VIBE_WORKSPACE: {VIBE_WORKSPACE}")
-    print(f"INSTRUCTIONS_DIR: {INSTRUCTIONS_DIR}")
     
     result = await vibe_prompt(
         ctx=ctx,
         prompt=prompt,
-        timeout_s=600,
+        timeout_s=300,
         max_turns=5,
     )
     
     print(f"\n--- Result ---")
     print(f"Success: {result.get('success')}")
-    print(f"Return code: {result.get('returncode')}")
     
-    if result.get('stderr'):
-        print(f"Stderr (first 500 chars): {result.get('stderr', '')[:500]}")
-    
-    if result.get('success'):
-        # Check if file was created
-        test_file = Path("/tmp/hello_vibe_test.py")
-        if test_file.exists():
-            print(f"\n✅ File created successfully!")
-            print(f"   Content: {test_file.read_text()[:200]}")
-            return True
-        else:
-            print(f"⚠️ Vibe ran but file not found at expected location")
-            return False
-    else:
+    if not result.get('success'):
         print(f"❌ Vibe failed: {result.get('error')}")
+        if result.get('stderr'):
+            print(f"Stderr: {result.get('stderr')[:500]}")
+        return False
+
+    # Check if file was created in workspace
+    test_file = Path(VIBE_WORKSPACE) / "hello_vibe_test.py"
+    if test_file.exists():
+        print(f"\n✅ File created successfully in workspace!")
+        print(f"   Content: {test_file.read_text()[:200]}")
+        # Cleanup
+        test_file.unlink()
+        return True
+    else:
+        print(f"⚠️ Vibe ran but file not found at {test_file}")
         return False
 
 
