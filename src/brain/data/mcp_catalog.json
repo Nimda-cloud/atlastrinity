@@ -3,7 +3,7 @@
         "name": "macos-use",
         "tier": 1,
         "category": "core",
-        "description": "Universal macOS Commander (Swift binary - 52 tools)",
+        "description": "Universal macOS Commander (Swift binary - 35+ tools)",
         "capabilities": [
             "GUI automation (click, type, scroll, drag, window management)",
             "Terminal/shell command execution (execute_command)",
@@ -39,7 +39,7 @@
         ],
         "when_to_use": "ANY computer interaction, macOS GUI automation, terminal commands, Apple productivity apps",
         "priority_note": "ALWAYS prefer macos-use for GUI, terminal, fetch, time over other servers",
-        "protocol_note": "DISCOVERY FIRST POLICY: Always call 'macos-use_list_tools_dynamic' before starting a complex task to get the latest 52 tool schemas and instructions directly from the server."
+        "protocol_note": "DISCOVERY FIRST POLICY: Always call 'macos-use_list_tools_dynamic' before starting a complex task to get the latest schemas and instructions directly from the server."
     },
     "filesystem": {
         "name": "filesystem",
@@ -138,7 +138,8 @@
             "create_relation",
             "search",
             "get_entity",
-            "list_entities"
+            "list_entities",
+            "delete_entity"
         ],
         "when_to_use": "Storing or recalling facts, entities, and historical observations about the user, system, or codebase."
     },
@@ -162,7 +163,7 @@
     },
     "puppeteer": {
         "name": "puppeteer",
-        "tier": 2,
+        "tier": 3,
         "category": "browser",
         "description": "Headless Browser (Puppeteer) for web automation",
         "capabilities": [
@@ -180,7 +181,7 @@
     },
     "chrome-devtools": {
         "name": "chrome-devtools",
-        "tier": 2,
+        "tier": 4,
         "category": "browser",
         "description": "Chrome DevTools Protocol for advanced browser automation",
         "capabilities": [
@@ -194,5 +195,52 @@
             "network_requests"
         ],
         "when_to_use": "Advanced browser debugging or when puppeteer is insufficient."
+    },
+    "duckduckgo-search": {
+        "name": "duckduckgo-search",
+        "tier": 2,
+        "category": "search",
+        "description": "Direct web search via DuckDuckGo HTML",
+        "capabilities": [
+            "Fast web searching",
+            "No API key required",
+            "Structured results (title, url)"
+        ],
+        "key_tools": [
+            "duckduckgo_search"
+        ],
+        "when_to_use": "Quick web searches when puppeteer is overkill."
+    },
+    "github": {
+        "name": "github",
+        "tier": 3,
+        "category": "integration",
+        "description": "GitHub API interactions",
+        "capabilities": [
+            "Fetch file contents",
+            "User profile information",
+            "Repository management (via API)"
+        ],
+        "key_tools": [
+            "github_whoami",
+            "get_file_contents"
+        ],
+        "when_to_use": "Accessing external code repositories, checking user status on GitHub."
+    },
+    "whisper-stt": {
+        "name": "whisper-stt",
+        "tier": 2,
+        "category": "audio",
+        "description": "Voice Recognition / Speech-to-Text (Local or Cloud)",
+        "capabilities": [
+            "Transcribe audio files",
+            "Record and transcribe from microphone",
+            "Multi-language support (default: uk)"
+        ],
+        "key_tools": [
+            "transcribe_audio",
+            "record_and_transcribe"
+        ],
+        "when_to_use": "Processing voice commands, transcribing recordings."
     }
 }

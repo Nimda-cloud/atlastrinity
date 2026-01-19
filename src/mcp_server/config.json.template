@@ -4,7 +4,7 @@
     "macos-use": {
       "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use",
       "connect_timeout": 3600,
-      "description": "UNIVERSAL macOS control (52 tools): GUI automation, Vision/OCR, Terminal, Fetch URL, Time, AppleScript, Calendar, Reminders, Notes, Mail, Finder, Spotlight, Notifications. PRIMARY server for ALL macOS interactions.",
+      "description": "UNIVERSAL macOS control (35+ tools): GUI automation, Vision/OCR, Terminal, Fetch URL, Time, AppleScript, Calendar, Reminders, Notes, Mail, Finder, Spotlight, Notifications. PRIMARY server for ALL macOS interactions.",
       "permissions": {
         "accessibility": true,
         "screen_recording": true
@@ -87,7 +87,7 @@
         "-m",
         "src.mcp_server.memory_server"
       ],
-      "description": "Knowledge graph for persistent memory (PostgreSQL + ChromaDB). Tools: create_entities, add_observations, create_relation, search, get_entity, list_entities.",
+      "description": "Knowledge graph for persistent memory (PostgreSQL + ChromaDB). Tools: create_entities, add_observations, create_relation, search, get_entity, list_entities, delete_entity.",
       "disabled": false,
       "tier": 2,
       "agents": [
@@ -120,20 +120,64 @@
       "connect_timeout": 60,
       "description": "High-speed Headless Browser (Puppeteer) for web searching, navigation, screenshots, element interaction, and JavaScript execution",
       "disabled": false,
-      "tier": 2,
+      "tier": 3,
       "agents": [
         "tetyana",
         "grisha"
       ],
       "note": "For web tasks: searching info, checking weather, scraping data, interacting with websites"
+    },
+    "duckduckgo-search": {
+      "command": "python3",
+      "connect_timeout": 60,
+      "args": [
+        "-m",
+        "src.mcp_server.duckduckgo_search_server"
+      ],
+      "description": "Fast web search via DuckDuckGo HTML screen scraping. No API key required.",
+      "disabled": false,
+      "tier": 2,
+      "agents": [
+        "tetyana",
+        "grisha"
+      ]
+    },
+    "whisper-stt": {
+      "command": "python3",
+      "connect_timeout": 60,
+      "args": [
+        "-m",
+        "src.mcp_server.whisper_server"
+      ],
+      "description": "Speech-to-Text via Whisper (Local or Brain API). Used for voice recording and transcription.",
+      "disabled": false,
+      "tier": 2,
+      "agents": [
+        "tetyana"
+      ]
+    },
+    "github": {
+      "command": "python3",
+      "connect_timeout": 60,
+      "args": [
+        "-m",
+        "src.mcp_server.github_server"
+      ],
+      "description": "GitHub API access for file content and user info (requires GITHUB_TOKEN).",
+      "disabled": false,
+      "tier": 3,
+      "agents": [
+        "tetyana",
+        "grisha"
+      ]
     }
   },
   "_metadata": {
-    "version": "4.2",
-    "last_updated": "2026-01-18",
-    "description": "Synced MCP configuration for AtlasTrinity - matches mcp_registry.py",
-    "active_servers": 8,
-    "total_servers": 8,
+    "version": "4.3",
+    "last_updated": "2026-01-19",
+    "description": "Synced MCP configuration for AtlasTrinity - matches mcp_registry.py and data/ JSONs",
+    "active_servers": 11,
+    "total_servers": 11,
     "notes": [
       "Servers with 'disabled': true are not loaded by default",
       "Tier 1-2 servers load at startup, Tier 3-4 on-demand"
