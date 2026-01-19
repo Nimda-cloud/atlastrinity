@@ -36,6 +36,8 @@ class ToolDispatcher:
     
     BROWSER_SYNONYMS = ["browser", "puppeteer", "navigate", "google", "bing", "web", "web_search", "internet_search", "online_search"]
     
+    DUCKDUCKGO_SYNONYMS = ["duckduckgo", "ddg", "duckduckgo-search", "duckduckgo_search", "search_web", "web_search"]
+    
     KNOWLEDGE_SYNONYMS = [
         "memory", "knowledge", "entity", "entities", "observation", "observations", 
         "fact", "recall", "remember", "store_fact", "add_memory", "relationship", "relation"
@@ -293,7 +295,15 @@ class ToolDispatcher:
              resolved_tool = tool_lower if tool_lower in ["create_entities", "add_observations", "get_entity", "list_entities", "create_relation"] else tool_name
              return server, resolved_tool, args
 
-        # Priority 3: GitHub Routing
+        # Priority 3: Web Search Routing
+        if tool_name in ["duckduckgo-search", "duckduckgo_search", "web_search", "search_web", "ddg"]:
+            return "duckduckgo-search", "duckduckgo_search", args
+             
+        # Priority 4: Knowledge Graph semantic search
+        if tool_name == "search":
+            return "memory", "search", args
+             
+        # Priority 5: GitHub Routing
         if tool_name in self.GITHUB_SYNONYMS or explicit_server == "github" or any(kw in tool_lower for kw in ["pull_request", "pr", "issue", "repo_"]):
              server = "github"
              # Canonicalize common hallucinated tools
@@ -303,16 +313,9 @@ class ToolDispatcher:
                   resolved_tool = tool_name
              return server, resolved_tool, args
              
-        # Priority 4: Standard resolution (Registry-based)
+        # Priority 6: Standard resolution (Registry-based)
         server, resolved_tool, normalized_args = self._resolve_tool_and_args(tool_name, args, explicit_server)
         
-        # Override for 'search' ambiguity - simplified routing
-        if tool_name == "search":
-            # Default to memory server as defined in tool schemas
-            # Only route to puppeteer if explicitly requested via tool name
-            server = "memory"
-            resolved_tool = "search"
-             
         return server, resolved_tool, normalized_args
     
     def get_coverage_stats(self) -> Dict[str, Any]:
@@ -372,6 +375,12 @@ class ToolDispatcher:
             return self._handle_legacy_git(tool_name, args)
 
         # --- FALLBACK: USE REGISTRY ---
+        # Normalize hyphenated tool names to underscores for Python-based servers
+        if tool_name == "duckduckgo-search":
+             tool_name = "duckduckgo_search"
+        if tool_name == "whisper-stt":
+             tool_name = "transcribe_audio"
+
         server = explicit_server or get_server_for_tool(tool_name)
         if not server:
             # Try registry-based name mapping (e.g. 'read_file' -> 'filesystem' server)
@@ -462,13 +471,11 @@ class ToolDispatcher:
         """
         action = args.get("action") or tool_name
         
-        # Critical safeguard: prevent 'search' from being routed to puppeteer
+        # Critical safeguard: prevent 'search' from being routed to puppeteer directly
+        # Instead of crashing, we route to duckduckgo for actual web search
         if tool_name == "search" or action == "search":
-            raise ValueError(
-                f"Search routing error: 'search' tool must be handled by memory server, not puppeteer. "
-                f"Tool name: '{tool_name}', action: '{action}'. "
-                f"This ensures search results are stored in the knowledge graph for later processing."
-            )
+            logger.info(f"[DISPATCHER] Redirecting browser search to duckduckgo-search")
+            return "duckduckgo-search", "duckduckgo_search", args
         
         mapping = {
             "google": "puppeteer_navigate",
