@@ -37,8 +37,8 @@
             "macos-use_get_time",
             "macos-use_list_tools_dynamic"
         ],
-        "when_to_use": "ANY computer interaction, macOS GUI automation, terminal commands, Apple productivity apps",
-        "priority_note": "ALWAYS prefer macos-use for GUI, terminal, fetch, time over other servers",
+        "when_to_use": "Native macOS apps (Finder, Settings), GUI automation, terminal commands, Apple productivity apps.",
+        "priority_note": "Prefer macos-use for NATIVE computer interaction. For WEB tasks (searching, scraping), ALWAYS prefer 'puppeteer' or 'duckduckgo-search'.",
         "protocol_note": "DISCOVERY FIRST POLICY: Always call 'macos-use_list_tools_dynamic' before starting a complex task to get the latest schemas and instructions directly from the server."
     },
     "filesystem": {
