@@ -608,7 +608,7 @@ class FirstRunInstaller:
         # 4. Install services (important but can continue)
         self.install_docker()
         self.install_redis()
-        self.install_postgres()
+        # self.install_postgres() # Перейшли на SQLite, установка PostgreSQL більше не є обов'язковою
 
         # 5. Start services
         self.start_services()
