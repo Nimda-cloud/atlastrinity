@@ -26,7 +26,7 @@ import subprocess
 import uuid
 import re
 import pty
-from typing import Any, Dict, List, Optional, Tuple, Pattern
+from typing import Any, Dict, List, Optional, Tuple, Pattern, Literal
 from pathlib import Path
 from datetime import datetime
 
@@ -72,7 +72,9 @@ try:
     VIBE_WORKSPACE = get_config_value("mcp.vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
     
 except Exception as e:
-    logger.warning(f"Failed to load config_loader: {e}. Using defaults.")
+    def get_config_value(section: str, key: str, default: Any) -> Any:
+        return default
+    
     VIBE_BINARY = "vibe"
     DEFAULT_TIMEOUT_S = 600.0
     MAX_OUTPUT_CHARS = 500000
@@ -251,7 +253,7 @@ async def run_vibe_subprocess(
     
     logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
 
-    async def emit_log(level: str, message: str) -> None:
+    async def emit_log(level: Literal["debug", "error", "info", "warning"], message: str) -> None:
         if not ctx:
             return
         try:
@@ -1111,7 +1113,7 @@ async def vibe_check_db(ctx: Context, query: str) -> Dict[str, Any]:
         Query results as list of dictionaries
     """
     from sqlalchemy import text
-    from src.brain.db.manager import db_manager
+    from brain.db.manager import db_manager
 
     # Prevent destructive operations
     forbidden = ["DROP", "DELETE", "UPDATE", "INSERT", "TRUNCATE", "ALTER"]
@@ -1147,50 +1149,43 @@ async def vibe_get_system_context(ctx: Context) -> Dict[str, Any]:
     Returns:
         Current session, recent tasks, and errors
     """
-    import asyncpg
-    
+    from sqlalchemy import text
+    from brain.db.manager import db_manager
+
     try:
-        conn = await asyncpg.connect(DATABASE_URL)
-        try:
+        await db_manager.initialize()
+        if not db_manager.available:
+            return {"success": False, "error": "Database not initialized"}
+
+        async with await db_manager.get_session() as session:
             # Latest session
-            session = await conn.fetchrow(
-                "SELECT id, started_at FROM sessions ORDER BY started_at DESC LIMIT 1"
-            )
-            session_id = str(session['id']) if session else None
-            
-            from sqlalchemy import text
-            from src.brain.db.manager import db_manager
+            res = await session.execute(text("SELECT id, started_at FROM sessions ORDER BY started_at DESC LIMIT 1"))
+            session_row = res.mappings().first()
+            session_id = str(session_row['id']) if session_row else None
 
-            try:
-                await db_manager.initialize()
-                if not db_manager.available:
-                    return {"success": False, "error": "Database not initialized"}
+            # Latest tasks
+            tasks = []
+            if session_id:
+                tasks_res = await session.execute(text("SELECT id, goal, status, created_at FROM tasks WHERE session_id = :sid ORDER BY created_at DESC LIMIT 5"), {"sid": session_id})
+                tasks = [dict(r) for r in tasks_res.mappings().all()]
 
-                async with await db_manager.get_session() as session:
-                    # Latest session
-                    res = await session.execute(text("SELECT id, started_at FROM sessions ORDER BY started_at DESC LIMIT 1"))
-                    session_row = res.mappings().first()
-                    session_id = str(session_row['id']) if session_row else None
+            # Recent errors
+            errors_res = await session.execute(text("SELECT timestamp, source, message FROM logs WHERE level IN ('ERROR', 'WARNING') ORDER BY timestamp DESC LIMIT 5"))
+            errors = [dict(r) for r in errors_res.mappings().all()]
 
-                    # Latest tasks
-                    tasks_res = await session.execute(text("SELECT id, goal, status, created_at FROM tasks WHERE session_id = :sid ORDER BY created_at DESC LIMIT 5"), {"sid": session_id})
-                    tasks = [dict(r) for r in tasks_res.mappings().all()]
+            return {
+                "success": True,
+                "current_session_id": session_id,
+                "recent_tasks": tasks,
+                "recent_errors": errors,
+                "system_root": SYSTEM_ROOT,
+                "project_root": VIBE_WORKSPACE,
+            }
+    except Exception as e:
+        logger.error(f"Database query error in vibe_get_system_context: {e}")
+        return {"success": False, "error": str(e)}
 
-                    # Recent errors
-                    errors_res = await session.execute(text("SELECT timestamp, source, message FROM logs WHERE level IN ('ERROR', 'WARNING') ORDER BY timestamp DESC LIMIT 5"))
-                    errors = [dict(r) for r in errors_res.mappings().all()]
-
-                    return {
-                        "success": True,
-                        "current_session_id": session_id,
-                        "recent_tasks": tasks,
-                        "recent_errors": errors,
-                        "system_root": SYSTEM_ROOT,
-                        "project_root": VIBE_WORKSPACE,
-                    }
-            except Exception as e:
-                logger.error(f"Database query error: {e}")
-                return {"success": False, "error": str(e)}
+if __name__ == "__main__":
     logger.info("[VIBE] MCP Server starting...")
     prepare_workspace_and_instructions()
     cleanup_old_instructions()
@@ -1208,12 +1203,6 @@ async def vibe_get_system_context(ctx: Context) -> Dict[str, Any]:
             if hasattr(exc, "exceptions"):
                 return any(is_broken_pipe(e) for e in exc.exceptions)
             return False
-        
-        if is_broken_pipe(e):
-            sys.exit(0)
-        
-        logger.error(f"[VIBE] Unexpected error: {e}")
-        raise
         
         if is_broken_pipe(e):
             sys.exit(0)
