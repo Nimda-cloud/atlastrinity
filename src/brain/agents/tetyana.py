@@ -421,6 +421,9 @@ IMPORTANT:
         from ..state_manager import state_manager  # noqa: E402
 
         self.attempt_count = attempt
+        
+        # Get step_id early for logging
+        step_id = step.get("id", self.current_step)
 
         # --- SPECIAL CASE: Consent/Approval Steps ---
         # Robust check for provided response in message bus or previous context
@@ -765,10 +768,13 @@ IMPORTANT:
             # ULTIMATE FIX: Invoke VIBE for deep healing on final attempts
             if fix_count == max_self_fixes:
                  logger.info("[TETYANA] Reflexion limit reached. Invoking VIBE for ultimate self-healing...")
-                 v_res = await self._call_mcp_direct("vibe", "vibe_analyze_error", {
+                 v_res_raw = await self._call_mcp_direct("vibe", "vibe_analyze_error", {
                      "error_message": error_msg,
                      "auto_fix": True
                  })
+                 # Convert CallToolResult to dict using existing formatter
+                 v_res = self._format_mcp_result(v_res_raw) if v_res_raw else {}
+                 
                  # Check if vibe fixed it
                  if v_res.get("success"):
                       logger.info("[TETYANA] VIBE self-healing reported SUCCESS. Retrying original tool...")

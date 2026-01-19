@@ -966,6 +966,7 @@ class Trinity:
                             logger.warning(f"Failed to fetch context history: {trace_err}")
 
                     # 1. Check for missing user input or logical rejection
+                    err_str = str(last_error).lower()
                     is_logical_rejection = "grisha rejected" in err_str and any(
                         k in err_str for k in ["підтвердження", "confirmation", "дозволу", "permission", "user input", "чекаємо", "не отримано"]
                     )
