@@ -174,19 +174,8 @@ def ensure_database():
         # 2. Initialize tables via SQLAlchemy
         print_info("Ініціалізація таблиць (SQLAlchemy)...")
         venv_python = str(VENV_PATH / "bin" / "python")
-        init_cmd = [
-            venv_python,
-            "-c",
-            "import asyncio; from src.brain.db.manager import db_manager; "
-            "async def run_init():\n"
-            "    await db_manager.initialize()\n"
-            "    await db_manager.close()\n"
-            "asyncio.run(run_init())",
-        ]
-        # Встановлюємо PYTHONPATH щоб знайти src
-        env = os.environ.copy()
-        env["PYTHONPATH"] = str(PROJECT_ROOT)
-        subprocess.run(init_cmd, cwd=PROJECT_ROOT, env=env, check=True)
+        init_cmd = [venv_python, str(PROJECT_ROOT / "scripts" / "init_db.py")]
+        subprocess.run(init_cmd, cwd=PROJECT_ROOT, check=True)
         print_success("Схему бази даних ініціалізовано (таблиці створено)")
 
     except Exception as e:
