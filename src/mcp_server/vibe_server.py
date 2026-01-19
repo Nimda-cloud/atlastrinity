@@ -372,8 +372,11 @@ async def run_vibe_subprocess(
                 ),
                 timeout=timeout_s + 20,  # Add buffer for graceful shutdown
             )
+            # Повідомлення про успіх
+            await emit_log("info", "✅ [VIBE-LIVE] Vibe завершив роботу успішно")
         except asyncio.TimeoutError:
             logger.warning(f"[VIBE] Process timeout ({timeout_s}s), terminating")
+            await emit_log("warning", f"⏱️ [VIBE-LIVE] Перевищено timeout ({timeout_s}s)")
             try:
                 process.terminate()
                 await asyncio.wait_for(process.wait(), timeout=5)
