@@ -57,9 +57,9 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
       */}
       <div className="flex items-center h-full">
         {/* PHASE SLOT (Total width: 110px) */}
-        <div className="flex items-center px-3 h-full gap-2 overflow-hidden">
+        <div className="flex items-center px-4 h-full gap-2 overflow-hidden w-[120px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[35px] shrink-0">PHASE</span>
-          <div className="w-[65px] flex-none">
+          <div className="flex-1">
             <span
               className={`${systemState === 'ERROR' ? 'text-red-500 animate-pulse' : 'text-blue-400'} font-bold block truncate`}
             >
@@ -69,9 +69,9 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         </div>
 
         {/* AGENT SLOT (Total width: 115px) */}
-        <div className="flex items-center px-3 h-full gap-2 border-l border-white/5 overflow-hidden">
+        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[130px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[35px] shrink-0">AGENT</span>
-          <div className="w-[65px] flex-none flex items-center gap-1">
+          <div className="flex-1 flex items-center gap-1 overflow-hidden">
             <span style={{ color: agent.color }} className="font-bold truncate grayscale-[0.2]">
               {agent.ukrainianName}
             </span>
@@ -80,46 +80,46 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         </div>
 
         {/* CPU SLOT (Total width: 75px) */}
-        <div className="flex items-center px-3 h-full gap-2 border-l border-white/5 overflow-hidden">
+        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[85px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[22px] shrink-0">CPU</span>
-          <div className="w-[30px] flex-none text-right">
-            <span className="text-white/90 font-medium tabular-nums">{metrics?.cpu || '0%'}</span>
+          <div className="flex-1 text-right">
+            <span className="text-blue-400 font-bold tabular-nums">{metrics?.cpu || '0%'}</span>
           </div>
         </div>
 
         {/* MEM SLOT (Total width: 85px) */}
-        <div className="flex items-center px-3 h-full gap-2 border-l border-white/5 overflow-hidden">
+        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[105px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[22px] shrink-0">MEM</span>
-          <div className="w-[48px] flex-none text-right">
-            <span className="text-white/90 font-medium tabular-nums">
+          <div className="flex-1 text-right">
+            <span className="text-blue-400 font-bold tabular-nums">
               {metrics?.memory || '0.0GB'}
             </span>
           </div>
         </div>
 
         {/* NET SLOTS (Total width: ~160px) */}
-        <div className="flex items-center px-3 h-full gap-2 border-l border-white/5 overflow-hidden">
+        <div className="flex items-center px-4 h-full gap-2 border-l border-white/5 overflow-hidden w-[185px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[22px] shrink-0">NET</span>
 
           {/* UP SLOT */}
-          <div className="flex items-center gap-0.5 w-[50px] justify-end flex-none">
+          <div className="flex items-center gap-0.5 w-[65px] justify-end flex-none">
             <span className="text-blue-400 font-bold tabular-nums">
               {metrics?.net_up_val || '0.0'}
             </span>
-            <span className="opacity-20 text-[6.5px] font-light w-[15px]">
-              {metrics?.net_up_unit?.[0] || 'K'}U
+            <span className="opacity-20 text-[6px] font-light w-[18px]">
+              {(metrics?.net_up_unit?.[0] || 'K').toUpperCase()}U
             </span>
           </div>
 
           <div className="w-[1px] h-2 bg-white/5 shrink-0" />
 
           {/* DOWN SLOT */}
-          <div className="flex items-center gap-0.5 w-[50px] justify-end flex-none">
+          <div className="flex items-center gap-0.5 w-[65px] justify-end flex-none">
             <span className="text-blue-400 font-bold tabular-nums">
               {metrics?.net_down_val || '0.0'}
             </span>
-            <span className="opacity-20 text-[6.5px] font-light w-[15px]">
-              {metrics?.net_down_unit?.[0] || 'K'}D
+            <span className="opacity-20 text-[6px] font-light w-[18px]">
+              {(metrics?.net_down_unit?.[0] || 'K').toUpperCase()}D
             </span>
           </div>
         </div>
