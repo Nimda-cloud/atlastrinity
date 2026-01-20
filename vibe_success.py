@@ -4,8 +4,8 @@
 
 def main():
     """Main function that prints success message."""
-    print('Vibe is working perfectly!')
+    print("Vibe is working perfectly!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -9,7 +9,7 @@ load_dotenv()
 # Add src path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
-from brain.agents.grisha import Grisha  # noqa: E402
+from brain.agents.grisha import Grisha
 
 
 async def test_grisha_real():
@@ -59,7 +59,7 @@ async def test_grisha_real():
         print(f"Issues: {verification.issues}")
 
     except Exception as e:
-        import traceback  # noqa: E402
+        import traceback
 
         print(f"ERROR during verification: {e}")
         traceback.print_exc()

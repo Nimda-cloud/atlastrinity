@@ -2,11 +2,11 @@
 """
 Generate changelog from git commits since last tag.
 """
+
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Any
 
 
 def get_last_tag() -> str:
@@ -24,7 +24,7 @@ def get_last_tag() -> str:
         return ""
 
 
-def get_commits_since_tag(tag: str) -> List[Dict[str, str]]:
+def get_commits_since_tag(tag: str) -> list[dict[str, str]]:
     """Get all commits since the given tag."""
     if tag:
         git_range = f"{tag}..HEAD"
@@ -67,8 +67,8 @@ def get_commits_since_tag(tag: str) -> List[Dict[str, str]]:
 
 
 def categorize_commits(
-    commits: List[Dict[str, str]],
-) -> Dict[str, List[Dict[str, str]]]:
+    commits: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
     """Categorize commits by type."""
     categories = {
         "features": [],
@@ -101,7 +101,7 @@ def categorize_commits(
     return categories
 
 
-def generate_changelog(version: Optional[str] = None) -> str:
+def generate_changelog(version: str | None = None) -> str:
     """Generate a markdown changelog."""
     last_tag = get_last_tag()
     commits = get_commits_since_tag(last_tag)

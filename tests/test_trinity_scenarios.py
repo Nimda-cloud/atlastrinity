@@ -119,8 +119,8 @@ sys.modules.setdefault("src.brain.mcp_manager", brain_mcp_manager_mod)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-from src.brain.agents.tetyana import StepResult  # noqa: E402
-from src.brain.orchestrator import Trinity  # noqa: E402
+from src.brain.agents.tetyana import StepResult
+from src.brain.orchestrator import Trinity
 
 
 class DummyVoice:
@@ -159,7 +159,7 @@ def _plan(steps):
 
 @pytest.fixture
 def fast_sleep(monkeypatch):
-    import src.brain.orchestrator as orch  # noqa: E402
+    import src.brain.orchestrator as orch
 
     async def _no_sleep(_):
         return None
@@ -169,7 +169,7 @@ def fast_sleep(monkeypatch):
 
 @pytest.fixture
 def isolated_globals(monkeypatch):
-    import src.brain.orchestrator as orch  # noqa: E402
+    import src.brain.orchestrator as orch
 
     # Avoid Redis / memory / consolidation side-effects during unit tests
     monkeypatch.setattr(orch.state_manager, "available", False, raising=False)
@@ -181,7 +181,7 @@ def isolated_globals(monkeypatch):
 
 @pytest.fixture
 def stub_notifications(monkeypatch):
-    import src.brain.orchestrator as orch  # noqa: E402
+    import src.brain.orchestrator as orch
 
     stub = StubNotifications()
     monkeypatch.setattr(orch, "notifications", stub, raising=True)

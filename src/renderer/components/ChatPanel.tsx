@@ -33,7 +33,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       // If we are within 100px of the bottom or it's the first render with messages, auto-scroll
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-      
+
       if (isNearBottom || filteredMessages.length <= 1) {
         container.scrollTop = container.scrollHeight;
       }
@@ -55,15 +55,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
   };
 
   const getMessageTextColor = (agent: string) => {
-    return agent.toUpperCase().trim() === 'USER' 
-      ? 'var(--user-turquoise, #00E5FF)' 
+    return agent.toUpperCase().trim() === 'USER'
+      ? 'var(--user-turquoise, #00E5FF)'
       : 'var(--atlas-blue, #00A3FF)';
   };
 
   return (
     <div className="flex-1 flex flex-col p-4 font-mono h-full overflow-hidden relative min-h-0">
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
-
       {/* Main Chat Stream */}
       <div
         ref={scrollContainerRef}
@@ -100,10 +99,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
 
                 <div
                   className="text-[10px] font-[300] leading-relaxed break-words pl-0.5 py-0.5 message-text transition-colors"
-                  style={{ 
-                    fontFamily: 'Outfit', 
+                  style={{
+                    fontFamily: 'Outfit',
                     letterSpacing: '0.01em',
-                    color: getMessageTextColor(msg.agent)
+                    color: getMessageTextColor(msg.agent),
                   }}
                 >
                   {msg.text}

@@ -1,6 +1,9 @@
+import email.message
+import importlib.util
 import json
 import subprocess
-
+import urllib.error
+import urllib.request
 
 from src.brain.mcp_preflight import (
     _parse_package_arg,
@@ -42,8 +45,6 @@ def test_npm_package_exists_not_found(monkeypatch):
 
 
 def test_check_package_arg_for_tool_npx(monkeypatch):
-    import urllib
-
     # Simulate registry returning version object for pkg@1.0.0 and 404 for pkg@0.0.1
     def fake_registry(req, timeout):
         url = req.get_full_url() if hasattr(req, "get_full_url") else str(req)
@@ -62,7 +63,7 @@ def test_check_package_arg_for_tool_npx(monkeypatch):
 
         if "pkg/1.0.0" in url:
             return R()
-        raise urllib.error.HTTPError(url, 404, "Not found", hdrs=None, fp=None)
+        raise urllib.error.HTTPError(url, 404, "Not found", hdrs=email.message.Message(), fp=None)
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry)
     assert check_package_arg_for_tool("pkg@1.0.0", tool_cmd="npx")
@@ -71,7 +72,6 @@ def test_check_package_arg_for_tool_npx(monkeypatch):
 
 def test_bunx_package_exists_registry(monkeypatch):
     # simulate registry returning 200 for bun package version endpoint
-    import urllib
 
     def fake_registry(url, timeout):
         class R:
@@ -93,18 +93,14 @@ def test_bunx_package_exists_registry(monkeypatch):
 
 
 def test_bunx_package_not_exists(monkeypatch):
-    import urllib
-
     def fake_registry(url, timeout):
-        raise urllib.error.HTTPError(url, 404, "Not found", hdrs=None, fp=None)
+        raise urllib.error.HTTPError(url, 404, "Not found", hdrs=email.message.Message(), fp=None)
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry)
     assert not bunx_package_exists("otherpkg", "0.0.1")
 
 
 def test_npm_registry_latest(monkeypatch):
-    import urllib
-
     # Prepare fake package metadata with dist-tags.latest
     def fake_registry_meta(url, timeout):
         class R:
@@ -126,8 +122,6 @@ def test_npm_registry_latest(monkeypatch):
 
 
 def test_check_package_arg_for_tool_latest(monkeypatch):
-    import urllib
-
     def fake_registry_meta(url, timeout):
         class R:
             status = 200
@@ -177,7 +171,9 @@ def test_scan_mcp_config_for_package_issues(tmp_path, monkeypatch):
     def fake_registry(req, timeout):
         url = req.get_full_url() if hasattr(req, "get_full_url") else str(req)
         if "otherpkg" in url:
-            raise urllib.error.HTTPError(url, 404, "Not found", hdrs=None, fp=None)
+            raise urllib.error.HTTPError(
+                url, 404, "Not found", hdrs=email.message.Message(), fp=None
+            )
 
         class R:
             status = 200
@@ -192,8 +188,6 @@ def test_scan_mcp_config_for_package_issues(tmp_path, monkeypatch):
                 return False
 
         return R()
-
-    import urllib
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry)
 
@@ -215,7 +209,6 @@ def test_scan_mcp_config_for_python_missing(tmp_path, monkeypatch):
     p.write_text(json.dumps(cfg))
 
     # Simulate module not importable via importlib and subprocess
-    import importlib
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
     monkeypatch.setattr(
@@ -238,8 +231,6 @@ def test_scan_mcp_config_for_python_present(tmp_path, monkeypatch):
     }
     p = tmp_path / "mcp.json"
     p.write_text(json.dumps(cfg))
-
-    import importlib
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: object())
     monkeypatch.setattr("src.brain.mcp_preflight._run_cmd", lambda cmd, timeout=5: (0, "", ""))

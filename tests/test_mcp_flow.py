@@ -7,13 +7,13 @@ import sys
 # We will run from root.
 sys.path.append(os.path.abspath(os.getcwd()))
 
-from src.brain.mcp_manager import mcp_manager  # noqa: E402
+from src.brain.mcp_manager import mcp_manager
 
 
 async def test_flow():
     print("--- 1. Testing Initialization ---")
     # Initialize basic logging
-    import logging  # noqa: E402
+    import logging
 
     logging.basicConfig(level=logging.INFO)
 
@@ -31,7 +31,7 @@ async def test_flow():
             print("❌ FAILURE: Tool names NOT found in catalog.")
     except Exception as e:
         print(f"❌ CRITICAL FAILURE during catalog generation: {e}")
-        import traceback  # noqa: E402
+        import traceback
 
         traceback.print_exc()
 
@@ -56,7 +56,7 @@ async def test_flow():
 
     except Exception as e:
         print(f"❌ FAILURE: Execution failed: {e}")
-        import traceback  # noqa: E402
+        import traceback
 
         traceback.print_exc()
 

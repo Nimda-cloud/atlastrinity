@@ -289,12 +289,16 @@ app.on('before-quit', () => {
   try {
     // Targeted pkill for core components to avoid "orphans"
     // brain.server handles its own children, but this is a final fail-safe
-    const targets = "vibe_server vibe brain.server mcp-server memory_server graph_server macos-use";
-    const command = targets.split(' ').map(t => `pkill -9 -f "${t}"`).join('; ') + '; true';
+    const targets = 'vibe_server vibe brain.server mcp-server memory_server graph_server macos-use';
+    const command =
+      targets
+        .split(' ')
+        .map((t) => `pkill -9 -f "${t}"`)
+        .join('; ') + '; true';
 
     execSync(command, {
       stdio: 'ignore',
-      timeout: 5000
+      timeout: 5000,
     });
     console.log('Cleanup completed.');
   } catch (e) {

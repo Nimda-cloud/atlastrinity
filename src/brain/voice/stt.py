@@ -10,7 +10,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from ..config import CONFIG_ROOT
 from ..config_loader import config
@@ -20,13 +20,15 @@ from ..logger import logger
 WHISPER_AVAILABLE = None
 WhisperModel = None
 
+
 def _check_whisper_available():
     global WHISPER_AVAILABLE, WhisperModel
     if WHISPER_AVAILABLE is not None:
         return WHISPER_AVAILABLE
-        
+
     try:
         from faster_whisper import WhisperModel as _WhisperModel
+
         WhisperModel = _WhisperModel
         WHISPER_AVAILABLE = True
     except ImportError:
@@ -34,19 +36,22 @@ def _check_whisper_available():
         print("[STT] Warning: faster-whisper not installed. Run: pip install faster-whisper")
     return WHISPER_AVAILABLE
 
+
 # Lazy import for audio recording
 AUDIO_AVAILABLE = None
 sd = None
 sf = None
 
+
 def _check_audio_available():
     global AUDIO_AVAILABLE, sd, sf
     if AUDIO_AVAILABLE is not None:
         return AUDIO_AVAILABLE
-        
+
     try:
         import sounddevice as _sd
         import soundfile as _sf
+
         sd = _sd
         sf = _sf
         AUDIO_AVAILABLE = True
@@ -97,7 +102,7 @@ class WhisperSTT:
     Speech-to-Text using Faster Whisper (CTranslate2)
     """
 
-    def __init__(self, model_name: Optional[str] = None, device: Optional[str] = None):
+    def __init__(self, model_name: str | None = None, device: str | None = None):
         # Get STT config from config.yaml
         stt_config = config.get("voice.stt", {})
 
@@ -165,7 +170,9 @@ class WhisperSTT:
             print(f"[STT] Model loaded successfully from {self.download_root}")
         return self._model
 
-    async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> TranscriptionResult:
+    async def transcribe_file(
+        self, audio_path: str, language: str | None = None
+    ) -> TranscriptionResult:
         language = language or self.language
 
         if not _check_whisper_available():
@@ -214,7 +221,7 @@ class WhisperSTT:
             return TranscriptionResult(text="", language=language, confidence=0, segments=[])
 
     async def transcribe_with_analysis(
-        self, audio_path: str, previous_text: str = "", language: Optional[str] = None
+        self, audio_path: str, previous_text: str = "", language: str | None = None
     ) -> SmartSTTResult:
         import time
 
@@ -399,7 +406,7 @@ class WhisperSTT:
         ]
 
     async def record_and_transcribe(
-        self, duration: float = 5.0, language: Optional[str] = None
+        self, duration: float = 5.0, language: str | None = None
     ) -> TranscriptionResult:
         """Record audio and transcribe it"""
         if not _check_audio_available():
@@ -412,7 +419,9 @@ class WhisperSTT:
 
         fs = 16000
         print(f"[STT] Recording for {duration} seconds...")
-        recording = await asyncio.to_thread(cast(Any, sd).rec, int(duration * fs), samplerate=fs, channels=1)
+        recording = await asyncio.to_thread(
+            cast(Any, sd).rec, int(duration * fs), samplerate=fs, channels=1
+        )
         await asyncio.to_thread(cast(Any, sd).wait)
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
@@ -432,11 +441,11 @@ class WhisperMCPServer:
     def __init__(self):
         self.stt = WhisperSTT()
 
-    async def transcribe_audio(self, audio_path: str, language: Optional[str] = "uk"):
+    async def transcribe_audio(self, audio_path: str, language: str | None = "uk"):
         result = await self.stt.transcribe_file(audio_path, language)
         return {"text": result.text, "confidence": result.confidence}
 
-    async def record_and_transcribe(self, duration: float = 5.0, language: Optional[str] = None):
+    async def record_and_transcribe(self, duration: float = 5.0, language: str | None = None):
         result = await self.stt.record_and_transcribe(duration, language)
         return {"text": result.text, "confidence": result.confidence}
 

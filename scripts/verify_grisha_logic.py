@@ -5,7 +5,7 @@ import sys
 # Add src to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.brain.agents.grisha import Grisha  # noqa: E402
+from src.brain.agents.grisha import Grisha
 
 
 async def test_strategy_planning():

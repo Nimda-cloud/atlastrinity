@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from typing import List, Optional, Set
 
 import pytest
 
@@ -22,15 +21,15 @@ def _mcp_package_available() -> bool:
         return False
 
 
-def _selected_servers() -> Optional[Set[str]]:
+def _selected_servers() -> set[str] | None:
     raw = os.getenv("TRINITY_MCP_SERVERS", "").strip()
     if not raw:
         return None
     return {s.strip() for s in raw.split(",") if s.strip()}
 
 
-def _missing_required_env_vars(server_cfg: dict) -> List[str]:
-    missing: List[str] = []
+def _missing_required_env_vars(server_cfg: dict) -> list[str]:
+    missing: list[str] = []
     env = server_cfg.get("env") or {}
     for _, v in env.items():
         if isinstance(v, str) and v.startswith("${") and v.endswith("}"):
@@ -96,9 +95,9 @@ def test_mcp_servers_connect_and_list_tools():
                     pytest.fail(f"Could not connect to MCP server: {name}")
 
                 tools = await asyncio.wait_for(mgr.list_tools(name), timeout=timeout + 10.0)
-                assert isinstance(
-                    tools, list
-                ), f"Expected list of tools from {name}, got {type(tools).__name__}"
+                assert isinstance(tools, list), (
+                    f"Expected list of tools from {name}, got {type(tools).__name__}"
+                )
                 assert len(tools) > 0, f"No tools returned by {name}"
                 print(f"<-- OK: {name} connected, {len(tools)} tools found.")
             finally:

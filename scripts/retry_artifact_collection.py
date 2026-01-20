@@ -4,9 +4,9 @@ import re
 import sys
 
 sys.path.insert(0, "src")
-from brain.agents.grisha import Grisha  # noqa: E402
-from brain.agents.tetyana import Tetyana  # noqa: E402
-from brain.mcp_manager import mcp_manager  # noqa: E402
+from brain.agents.grisha import Grisha
+from brain.agents.tetyana import Tetyana
+from brain.mcp_manager import mcp_manager
 
 
 async def run():
@@ -51,7 +51,7 @@ async def run():
         elif (
             hasattr(note, "content") and len(note.content) > 0 and hasattr(note.content[0], "text")
         ):
-            import json  # noqa: E402
+            import json
 
             try:
                 content = json.loads(note.content[0].text).get("content", "")

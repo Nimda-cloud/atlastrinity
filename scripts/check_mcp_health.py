@@ -67,9 +67,7 @@ async def check_mcp(output_json: bool = False):
             start = time.time()
 
             # list_tools will automatically call get_session and connect if needed
-            tools = await asyncio.wait_for(
-                mcp_manager.list_tools(server_name), timeout=30.0
-            )
+            tools = await asyncio.wait_for(mcp_manager.list_tools(server_name), timeout=30.0)
 
             elapsed = (time.time() - start) * 1000  # ms
 
@@ -88,40 +86,39 @@ async def check_mcp(output_json: bool = False):
                         f"{len(tools):^6} "
                         f"{elapsed:>6.0f}ms"
                     )
+            # check if it's connected
+            elif server_name in mcp_manager.sessions:
+                results[server_name] = {
+                    "status": "degraded",
+                    "tier": tier,
+                    "tools_count": 0,
+                    "response_time_ms": round(elapsed, 1),
+                    "note": "Connected but no tools",
+                }
+                if not output_json:
+                    print(
+                        f"  {Colors.YELLOW}⚠{Colors.ENDC} {server_name:<22} "
+                        f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
+                        f"{Colors.YELLOW}DEGRADED{Colors.ENDC}    "
+                        f"{0:^6} "
+                        f"{elapsed:>6.0f}ms"
+                    )
             else:
-                # check if it's connected
-                if server_name in mcp_manager.sessions:
-                    results[server_name] = {
-                        "status": "degraded",
-                        "tier": tier,
-                        "tools_count": 0,
-                        "response_time_ms": round(elapsed, 1),
-                        "note": "Connected but no tools",
-                    }
-                    if not output_json:
-                        print(
-                            f"  {Colors.YELLOW}⚠{Colors.ENDC} {server_name:<22} "
-                            f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
-                            f"{Colors.YELLOW}DEGRADED{Colors.ENDC}    "
-                            f"{0:^6} "
-                            f"{elapsed:>6.0f}ms"
-                        )
-                else:
-                    results[server_name] = {
-                        "status": "offline",
-                        "tier": tier,
-                        "error": "Failed to get session",
-                    }
-                    if not output_json:
-                        print(
-                            f"  {Colors.RED}✗{Colors.ENDC} {server_name:<22} "
-                            f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
-                            f"{Colors.RED}OFFLINE{Colors.ENDC}     "
-                            f"{'—':^6} "
-                            f"{'—':^10}"
-                        )
+                results[server_name] = {
+                    "status": "offline",
+                    "tier": tier,
+                    "error": "Failed to get session",
+                }
+                if not output_json:
+                    print(
+                        f"  {Colors.RED}✗{Colors.ENDC} {server_name:<22} "
+                        f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
+                        f"{Colors.RED}OFFLINE{Colors.ENDC}     "
+                        f"{'—':^6} "
+                        f"{'—':^10}"
+                    )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             results[server_name] = {
                 "status": "offline",
                 "tier": tier,
@@ -202,9 +199,7 @@ async def check_mcp(output_json: bool = False):
 
 def main():
     parser = argparse.ArgumentParser(description="Check MCP server health")
-    parser.add_argument(
-        "--json", action="store_true", help="Output in JSON format for automation"
-    )
+    parser.add_argument("--json", action="store_true", help="Output in JSON format for automation")
     args = parser.parse_args()
 
     asyncio.run(check_mcp(output_json=args.json))

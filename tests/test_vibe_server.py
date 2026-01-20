@@ -10,11 +10,12 @@ Tests:
 """
 
 import os
-import pytest
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 # Need to patch before importing
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -26,7 +27,7 @@ class TestVibeConfig:
     def test_default_config_loads(self):
         """Default configuration should load without errors."""
         from src.mcp_server.vibe_config import VibeConfig
-        
+
         config = VibeConfig()
         assert config.active_model == "devstral-2"
         assert config.max_turns == 10
@@ -35,77 +36,66 @@ class TestVibeConfig:
     def test_tool_pattern_glob(self):
         """Glob patterns should match tool names correctly."""
         from src.mcp_server.vibe_config import VibeConfig
-        
-        config = VibeConfig(
-            enabled_tools=["serena_*", "read_file"],
-            disabled_tools=["mcp_*"]
-        )
-        
+
+        config = VibeConfig(enabled_tools=["serena_*", "read_file"], disabled_tools=["mcp_*"])
+
         # Enabled by glob
         assert config.is_tool_enabled("serena_list")
         assert config.is_tool_enabled("serena_query")
-        
+
         # Enabled by exact match
         assert config.is_tool_enabled("read_file")
-        
+
         # Disabled by glob (takes precedence)
         assert not config.is_tool_enabled("mcp_fetch")
         assert not config.is_tool_enabled("mcp_server_tool")
-        
+
         # Not in enabled list
         assert not config.is_tool_enabled("bash")
 
     def test_tool_pattern_regex(self):
         """Regex patterns (re: prefix) should match correctly."""
         from src.mcp_server.vibe_config import VibeConfig
-        
-        config = VibeConfig(
-            enabled_tools=["re:^db_.*$"],
-            disabled_tools=["re:^dangerous_.*"]
-        )
-        
+
+        config = VibeConfig(enabled_tools=["re:^db_.*$"], disabled_tools=["re:^dangerous_.*"])
+
         # Enabled by regex
         assert config.is_tool_enabled("db_query")
         assert config.is_tool_enabled("db_insert")
-        
+
         # Disabled by regex
         assert not config.is_tool_enabled("dangerous_delete")
-        
+
         # Not matching
         assert not config.is_tool_enabled("other_tool")
 
     def test_tool_pattern_empty_enabled_means_all(self):
         """Empty enabled_tools means all tools are enabled by default."""
         from src.mcp_server.vibe_config import VibeConfig
-        
-        config = VibeConfig(
-            enabled_tools=[],
-            disabled_tools=["bash"]
-        )
-        
+
+        config = VibeConfig(enabled_tools=[], disabled_tools=["bash"])
+
         # All enabled except disabled
         assert config.is_tool_enabled("read_file")
         assert config.is_tool_enabled("write_file")
         assert config.is_tool_enabled("any_random_tool")
-        
+
         # But bash is disabled
         assert not config.is_tool_enabled("bash")
 
     def test_cli_args_building(self):
         """CLI arguments should be built correctly from config."""
         from src.mcp_server.vibe_config import AgentMode, VibeConfig
-        
+
         config = VibeConfig(
-            active_model="devstral-2",
-            default_mode=AgentMode.AUTO_APPROVE,
-            max_turns=10
+            active_model="devstral-2", default_mode=AgentMode.AUTO_APPROVE, max_turns=10
         )
-        
+
         args = config.to_cli_args(
             prompt="Test prompt",
             mode=AgentMode.AUTO_APPROVE,
         )
-        
+
         assert "-p" in args
         assert "Test prompt" in args
         assert "--output" in args
@@ -115,14 +105,14 @@ class TestVibeConfig:
     def test_cli_args_model_override(self):
         """Model override should be included in CLI args."""
         from src.mcp_server.vibe_config import VibeConfig
-        
+
         config = VibeConfig()
-        
+
         args = config.to_cli_args(
             prompt="Test",
             model="gpt-4o",
         )
-        
+
         assert "--model" in args
         idx = args.index("--model")
         assert args[idx + 1] == "gpt-4o"
@@ -130,14 +120,14 @@ class TestVibeConfig:
     def test_cli_args_session_resume(self):
         """Session ID should be included for resume."""
         from src.mcp_server.vibe_config import VibeConfig
-        
+
         config = VibeConfig()
-        
+
         args = config.to_cli_args(
             prompt="Continue",
             session_id="abc123",
         )
-        
+
         assert "--session" in args
         idx = args.index("--session")
         assert args[idx + 1] == "abc123"
@@ -145,18 +135,18 @@ class TestVibeConfig:
     def test_provider_api_key_check(self):
         """Provider availability should check for API key."""
         from src.mcp_server.vibe_config import ApiStyle, Backend, ProviderConfig
-        
+
         provider = ProviderConfig(
             name="test",
             api_base="https://test.ai/v1",
             api_key_env_var="TEST_API_KEY",
             api_style=ApiStyle.OPENAI,
-            backend=Backend.GENERIC
+            backend=Backend.GENERIC,
         )
-        
+
         # Without env var set, should be unavailable
         assert not provider.is_available()
-        
+
         # With env var set
         with patch.dict(os.environ, {"TEST_API_KEY": "secret"}):
             assert provider.is_available()
@@ -164,22 +154,17 @@ class TestVibeConfig:
     def test_model_lookup_by_alias(self):
         """Model lookup by alias should work."""
         from src.mcp_server.vibe_config import ModelConfig, VibeConfig
-        
+
         config = VibeConfig(
             models=[
-                ModelConfig(
-                    name="gpt-4o",
-                    provider="openrouter",
-                    alias="gpt4",
-                    temperature=0.3
-                )
+                ModelConfig(name="gpt-4o", provider="openrouter", alias="gpt4", temperature=0.3)
             ]
         )
-        
+
         model = config.get_model_by_alias("gpt4")
         assert model is not None
         assert model.name == "gpt-4o"
-        
+
         # Non-existent
         assert config.get_model_by_alias("nonexistent") is None
 
@@ -215,7 +200,7 @@ class TestPreparePromptArg:
             large_prompt = "B" * 2500
 
             # Pass a different cwd - should be ignored
-            result, file_path = handle_long_prompt(large_prompt, cwd="/some/random/path")
+            _result, file_path = handle_long_prompt(large_prompt, cwd="/some/random/path")
 
             # File should be in global instructions dir
             assert file_path is not None
@@ -224,7 +209,7 @@ class TestPreparePromptArg:
             assert os.path.exists(file_path)
 
             # Check content
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 content = f.read()
                 assert "# VIBE INSTRUCTIONS" in content
                 assert large_prompt in content
@@ -238,7 +223,10 @@ class TestPreparePromptArg:
             result, file_path = handle_long_prompt(large_prompt)
 
             # Result should reference the file path
-            assert file_path in result or mock_instructions_dir in result
+            if file_path:
+                assert file_path in result or mock_instructions_dir in result
+            else:
+                pytest.fail("file_path should not be None for large prompt")
 
 
 class TestCleanupOldInstructions:
@@ -294,7 +282,7 @@ class TestAgentMode:
     def test_agent_modes_exist(self):
         """All expected agent modes should exist."""
         from src.mcp_server.vibe_config import AgentMode
-        
+
         assert AgentMode.DEFAULT.value == "default"
         assert AgentMode.PLAN.value == "plan"
         assert AgentMode.ACCEPT_EDITS.value == "accept-edits"
@@ -303,7 +291,7 @@ class TestAgentMode:
     def test_mode_from_string(self):
         """Mode should be creatable from string."""
         from src.mcp_server.vibe_config import AgentMode
-        
+
         assert AgentMode("auto-approve") == AgentMode.AUTO_APPROVE
         assert AgentMode("plan") == AgentMode.PLAN
 
@@ -314,10 +302,10 @@ class TestEnvironmentConfig:
     def test_get_environment_basic(self):
         """Environment should include basic CLI settings."""
         from src.mcp_server.vibe_config import VibeConfig
-        
+
         config = VibeConfig()
         env = config.get_environment()
-        
+
         assert env["TERM"] == "dumb"
         assert env["NO_COLOR"] == "1"
         assert env["PYTHONUNBUFFERED"] == "1"
@@ -325,10 +313,10 @@ class TestEnvironmentConfig:
     def test_get_environment_custom_vibe_home(self):
         """Custom VIBE_HOME should be included in environment."""
         from src.mcp_server.vibe_config import VibeConfig
-        
+
         config = VibeConfig(vibe_home="/custom/vibe/home")
         env = config.get_environment()
-        
+
         assert env["VIBE_HOME"] == "/custom/vibe/home"
 
 
@@ -338,7 +326,7 @@ class TestToolPermissions:
     def test_tool_permission_levels(self):
         """All permission levels should be available."""
         from src.mcp_server.vibe_config import ToolPermission
-        
+
         assert ToolPermission.ALWAYS.value == "always"
         assert ToolPermission.ASK.value == "ask"
         assert ToolPermission.NEVER.value == "never"
@@ -346,14 +334,14 @@ class TestToolPermissions:
     def test_get_tool_permission(self):
         """Tool permissions should be retrievable from config."""
         from src.mcp_server.vibe_config import ToolConfig, ToolPermission, VibeConfig
-        
+
         config = VibeConfig(
             tools={
                 "bash": ToolConfig(permission=ToolPermission.NEVER),
                 "read_file": ToolConfig(permission=ToolPermission.ALWAYS),
             }
         )
-        
+
         assert config.get_tool_permission("bash") == ToolPermission.NEVER
         assert config.get_tool_permission("read_file") == ToolPermission.ALWAYS
         # Default for unknown tools

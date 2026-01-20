@@ -86,7 +86,9 @@ const App: React.FC = () => {
         const delay = Math.pow(2, retryCount) * 1000;
         // Only warn after some retries or it gets annoying
         if (retryCount > 2) {
-          console.warn(`[BRAIN] Session fetch still failing, retrying in ${delay}ms... (Attempt ${retryCount + 1}/5)`);
+          console.warn(
+            `[BRAIN] Session fetch still failing, retrying in ${delay}ms... (Attempt ${retryCount + 1}/5)`
+          );
         }
         setTimeout(() => fetchSessions(retryCount + 1), delay);
       }
@@ -114,7 +116,12 @@ const App: React.FC = () => {
           if (data.messages) {
             setChatHistory(
               data.messages.map(
-                (m: { agent: AgentName; text: string; timestamp: number; type: 'text' | 'voice' }) => ({
+                (m: {
+                  agent: AgentName;
+                  text: string;
+                  timestamp: number;
+                  type: 'text' | 'voice';
+                }) => ({
                   ...m,
                   timestamp: new Date(m.timestamp * 1000),
                 })
@@ -271,7 +278,16 @@ const App: React.FC = () => {
           className={`titlebar-btn group ${isHistoryOpen ? 'active' : ''}`}
           title="Session History"
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="12 8 12 12 14 14"></polyline>
             <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
           </svg>
@@ -284,7 +300,16 @@ const App: React.FC = () => {
           className="titlebar-btn group"
           title="New Session"
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
@@ -293,16 +318,16 @@ const App: React.FC = () => {
 
       {/* Left Panel - Execution Log */}
       <aside className="panel glass-panel left-panel relative">
-        <ExecutionLog
-          logs={logs}
-        />
+        <ExecutionLog logs={logs} />
 
         {/* Session History Sidebar Overlay */}
         {isHistoryOpen && (
           <div className="absolute inset-0 z-50 bg-[#020202]/95 backdrop-blur-xl border-r border-white/5 animate-slide-in">
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold text-white/40">Session History</h2>
+                <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold text-white/40">
+                  Session History
+                </h2>
                 <button
                   onClick={() => setIsHistoryOpen(false)}
                   className="text-white/30 hover:text-white transition-colors text-xs"
@@ -322,10 +347,11 @@ const App: React.FC = () => {
                       <button
                         key={s.id}
                         onClick={() => handleRestoreSession(s.id)}
-                        className={`group p-3 border text-left transition-all duration-300 ${currentSessionId === s.id
-                          ? 'bg-white/10 border-white/30'
-                          : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
-                          }`}
+                        className={`group p-3 border text-left transition-all duration-300 ${
+                          currentSessionId === s.id
+                            ? 'bg-white/10 border-white/30'
+                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
                       >
                         <div className="text-[9px] text-white/80 font-medium mb-1 truncate group-hover:text-white transition-colors">
                           {s.theme}
@@ -357,9 +383,7 @@ const App: React.FC = () => {
 
       {/* Right Panel: Chat Panel */}
       <aside className="panel glass-panel right-panel">
-        <ChatPanel
-          messages={chatMessages}
-        />
+        <ChatPanel messages={chatMessages} />
       </aside>
 
       {/* Floating Input Dock */}
