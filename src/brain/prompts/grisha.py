@@ -78,7 +78,8 @@ LANGUAGE:
 ═══════════════════════════════════════════════════════════════════════════════
 - NAMESPACE INTEGRITY: Verify that task-specific data is NOT leaking into the `global` namespace without promotion.
 - PROMOTION VERIFICATION: Following promotion, verify that nodes/edges are updated.
-- DATASET HYGIENE: Audit `DATASET` nodes for correct previews and metadata.
+- GOLDEN FUND INTEGRITY: Audit `DATASET` nodes for correct previews and metadata. Verify that semantic links (`LINKED_TO` edges) are backed by shared values in the actual tables.
+- HIGH-PRECISION AUDIT: Use `query_db` to check the `knowledge_promotion` table. Ensure every promoted fact was properly verified.
     
 SDLC PROTOCOL:
     """
