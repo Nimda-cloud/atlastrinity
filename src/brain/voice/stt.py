@@ -136,7 +136,9 @@ class WhisperSTT:
 
         self._model = None
         self._load_lock = asyncio.Lock()
-        self._transcribe_lock = asyncio.Lock()  # Prevent concurrent transcriptions from overloading CPU
+        self._transcribe_lock = (
+            asyncio.Lock()
+        )  # Prevent concurrent transcriptions from overloading CPU
         self.download_root = CONFIG_ROOT / "models" / "faster-whisper"
 
         # Compute type selection based on device
@@ -147,7 +149,9 @@ class WhisperSTT:
 
         # Stateful tracking for Smart STT
         self.last_speech_time = 0.0
-        self.silence_threshold = 6.5  # Seconds of silence before sending phrase (slightly more than UI 6s)
+        self.silence_threshold = (
+            6.5  # Seconds of silence before sending phrase (slightly more than UI 6s)
+        )
 
     def _filter_text(self, text: str) -> str:
         """Filter out common hallucinations and noise patterns"""
@@ -187,8 +191,9 @@ class WhisperSTT:
 
         # Clean up repeated punctuation or weird chars
         import re
-        t = re.sub(r'([.!?])\1+', r'\1', t)
-        
+
+        t = re.sub(r"([.!?])\1+", r"\1", t)
+
         return t
 
     async def get_model(self):
@@ -365,9 +370,18 @@ class WhisperSTT:
         if len(words) == 1:
             if result.confidence < 0.80:
                 return SpeechType.BACKGROUND_NOISE
-            
+
             # Common interjections
-            common_interjections = ["так", "ні", "ок", "дякую", "привіт", "зрозумів", "отже", "тобто"]
+            common_interjections = [
+                "так",
+                "ні",
+                "ок",
+                "дякую",
+                "привіт",
+                "зрозумів",
+                "отже",
+                "тобто",
+            ]
             if text in common_interjections and result.confidence < 0.92:
                 if not previous_text:
                     return SpeechType.BACKGROUND_NOISE
