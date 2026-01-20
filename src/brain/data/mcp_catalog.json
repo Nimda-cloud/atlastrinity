@@ -97,7 +97,7 @@
         "name": "vibe",
         "tier": 2,
         "category": "ai",
-        "description": "Mistral AI-powered CODING and DEBUGGING engine (17 tools)",
+        "description": "Mistral AI-powered CODING and DEBUGGING engine (18 tools)",
         "capabilities": [
             "Deep error analysis with auto-fix",
             "Code review and architectural advice",
@@ -127,7 +127,8 @@
             "vibe_configure_model",
             "vibe_set_mode",
             "vibe_configure_provider",
-            "vibe_session_resume"
+            "vibe_session_resume",
+            "vibe_reload_config"
         ],
         "when_to_use": "ONLY for software development, writing code/scripts, fixing hard errors (self-healing), and deep system state inspection via DB."
     },
