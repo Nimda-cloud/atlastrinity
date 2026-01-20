@@ -23,6 +23,7 @@ SEARCH_PROTOCOL_PATH = os.path.join(DATA_DIR, "search_protocol.txt")
 STORAGE_PROTOCOL_PATH = os.path.join(DATA_DIR, "storage_protocol.txt")
 SDLC_PROTOCOL_PATH = os.path.join(DATA_DIR, "sdlc_protocol.txt")
 TASK_PROTOCOL_PATH = os.path.join(DATA_DIR, "task_protocol.txt")
+DATA_PROTOCOL_PATH = os.path.join(DATA_DIR, "data_protocol.txt")
 
 # Global variables to store loaded data
 SERVER_CATALOG: Dict[str, Dict[str, Any]] = {}
@@ -33,10 +34,11 @@ SEARCH_PROTOCOL: str = ""
 STORAGE_PROTOCOL: str = ""
 SDLC_PROTOCOL: str = ""
 TASK_PROTOCOL: str = ""
+DATA_PROTOCOL: str = ""
 
 def load_registry():
     """Load registry data from JSON and text files."""
-    global SERVER_CATALOG, TOOL_SCHEMAS, VIBE_DOCUMENTATION, VOICE_PROTOCOL, SEARCH_PROTOCOL, STORAGE_PROTOCOL, SDLC_PROTOCOL, TASK_PROTOCOL
+    global SERVER_CATALOG, TOOL_SCHEMAS, VIBE_DOCUMENTATION, VOICE_PROTOCOL, SEARCH_PROTOCOL, STORAGE_PROTOCOL, SDLC_PROTOCOL, TASK_PROTOCOL, DATA_PROTOCOL
     
     try:
         # Load Catalog
@@ -92,6 +94,13 @@ def load_registry():
                 TASK_PROTOCOL = f.read()
         else:
             TASK_PROTOCOL = "Task protocol not found."
+
+        # Load Data Protocol
+        if os.path.exists(DATA_PROTOCOL_PATH):
+            with open(DATA_PROTOCOL_PATH, "r", encoding="utf-8") as f:
+                DATA_PROTOCOL = f.read()
+        else:
+            DATA_PROTOCOL = "Data protocol not found."
             
     except Exception as e:
         print(f"[Here be Dragons] Error loading MCP registry: {e}")

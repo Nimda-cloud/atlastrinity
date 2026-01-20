@@ -1,5 +1,5 @@
 from .atlas_chat import generate_atlas_chat_prompt
-from .common import DEFAULT_REALM_CATALOG, VIBE_TOOLS_DOCUMENTATION, VOICE_PROTOCOL, SEARCH_PROTOCOL, STORAGE_PROTOCOL, SDLC_PROTOCOL, TASK_PROTOCOL
+from .common import DEFAULT_REALM_CATALOG, VIBE_TOOLS_DOCUMENTATION, VOICE_PROTOCOL, SEARCH_PROTOCOL, STORAGE_PROTOCOL, SDLC_PROTOCOL, TASK_PROTOCOL, DATA_PROTOCOL
 
 ATLAS = {
     "NAME": "ATLAS",
@@ -98,6 +98,14 @@ Respond with JSON as defined in your protocol.
     
     """
     + SDLC_PROTOCOL
+    + """
+    
+    """
+    + STORAGE_PROTOCOL
+    + """
+    
+    """
+    + DATA_PROTOCOL
     + """
 
 PLAN STRUCTURE:
