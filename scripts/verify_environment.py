@@ -96,7 +96,7 @@ def check_dev_tools():
             venv_path = VENV_PATH / "bin" / tool
             if venv_path.exists():
                 path = str(venv_path)
-        
+
         if path:
             print_pass(f"Dev tool found: {tool} ({path})")
             STATUS_REPORT["passed"] += 1

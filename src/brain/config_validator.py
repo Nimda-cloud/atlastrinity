@@ -127,7 +127,7 @@ class ConfigValidator:
 
     def _check_range(self, value: Any, range_tuple: tuple) -> bool:
         """Check if numeric value is within range."""
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, int | float):
             return True  # Skip non-numeric
         min_val, max_val = range_tuple
         return min_val <= value <= max_val

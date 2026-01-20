@@ -30,8 +30,8 @@
     "lint:unused": "knip",
     "format:check": "prettier --check 'src/**/*.{ts,tsx,json}'",
     "format:write": "prettier --write 'src/**/*.{ts,tsx,json}' && .venv/bin/ruff format .",
-    "mcp:status": "python scripts/check_mcp_health.py",
-    "mcp:status:json": "python scripts/check_mcp_health.py --json",
+    "mcp:status": "export PYTHONPATH=$PYTHONPATH:. && python scripts/check_mcp_health.py",
+    "mcp:status:json": "export PYTHONPATH=$PYTHONPATH:. && python scripts/check_mcp_health.py --json",
     "mcp:validate": "python -c \"from src.brain.config_validator import config_validator; results = config_validator.validate_all(); config_validator.log_results(results)\"",
     "verify": "python3 scripts/verify_environment.py"
   },
@@ -45,8 +45,6 @@
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "ajv": "^8.17.1",
-    "commander": "^14.0.2",
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
@@ -57,10 +55,8 @@
     "oxlint": "^1.41.0",
     "prettier": "^3.1.1",
     "tailwindcss": "^4.1.18",
-    "ts-morph": "^27.0.2",
     "typescript": "^5.3.3",
-    "vite": "^5.0.10",
-    "zod": "^4.3.5"
+    "vite": "^5.0.10"
   },
   "dependencies": {
     "@modelcontextprotocol/server-filesystem": "^2025.12.18",
@@ -70,7 +66,6 @@
     "@modelcontextprotocol/server-sequential-thinking": "^2025.12.18",
     "chrome-devtools-mcp": "^0.12.1",
     "cloudinary": "^2.8.0",
-    "mcp-sequentialthinking-tools": "^0.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "stripe": "^20.1.1"
