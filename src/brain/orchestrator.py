@@ -659,15 +659,17 @@ class Trinity:
         else:
             # 2. Atlas Planning
             try:
-                from src.brain.state_manager import state_manager
+                try:
+                    from src.brain.state_manager import state_manager
 
-                if state_manager and getattr(state_manager, "available", False):
-                    await state_manager.publish_event(
-                        "tasks", {"type": "planning_started", "request": user_request}
-                    )
-            except (ImportError, NameError):
-                pass
-                # Pass history to Atlas for context
+                    if state_manager and getattr(state_manager, "available", False):
+                        await state_manager.publish_event(
+                            "tasks", {"type": "planning_started", "request": user_request}
+                        )
+                except (ImportError, NameError):
+                    pass
+
+                # 1.6 Pass history to Atlas for context
                 messages_raw = self.state.get("messages")
                 history = []
                 if isinstance(messages_raw, list):
@@ -691,106 +693,112 @@ class Trinity:
                         pass
                     return {"status": "completed", "result": response, "type": "chat"}
 
-                self.state["system_state"] = SystemState.PLANNING.value
+                    self.state["system_state"] = SystemState.PLANNING.value
 
-                # Fetch dynamic MCP Catalog
-                mcp_catalog = await mcp_manager.get_mcp_catalog()
-                shared_context.available_mcp_catalog = mcp_catalog
+                    # Fetch dynamic MCP Catalog
+                    mcp_catalog = await mcp_manager.get_mcp_catalog()
+                    shared_context.available_mcp_catalog = mcp_catalog
 
-                spoken_text = analysis.get("voice_response") or "Аналізую ваш запит..."
-                await self._speak("atlas", spoken_text)
+                    spoken_text = analysis.get("voice_response") or "Аналізую ваш запит..."
+                    await self._speak("atlas", spoken_text)
 
-                _keep_alive_last_log = [0.0]
+                    _keep_alive_last_log = [0.0]
 
-                async def keep_alive_logging():
-                    import time
+                    async def keep_alive_logging():
+                        import time
 
-                    while True:
-                        await asyncio.sleep(15)
-                        current_time = time.time()
-                        if current_time - _keep_alive_last_log[0] >= 10:
-                            _keep_alive_last_log[0] = current_time
-                            await self._log("Atlas is thinking... (Planning logic flow)", "system")
+                        while True:
+                            await asyncio.sleep(15)
+                            current_time = time.time()
+                            if current_time - _keep_alive_last_log[0] >= 10:
+                                _keep_alive_last_log[0] = current_time
+                                await self._log("Atlas is thinking... (Planning logic flow)", "system")
 
-                planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
-                logger_task = asyncio.create_task(keep_alive_logging())
-                try:
-                    plan = await asyncio.wait_for(
-                        planning_task,
-                        timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
-                    )
-                finally:
-                    logger_task.cancel()
+                    planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
+                    logger_task = asyncio.create_task(keep_alive_logging())
                     try:
-                        await logger_task
-                    except asyncio.CancelledError:
+                        plan = await asyncio.wait_for(
+                            planning_task,
+                            timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
+                        )
+                    finally:
+                        logger_task.cancel()
+                        try:
+                            await logger_task
+                        except asyncio.CancelledError:
+                            pass
+
+                    if not plan or not plan.steps:
+                        msg = self.atlas.get_voice_message("no_steps")
+                        await self._speak("atlas", msg)
+
+                        # Trigger fallback response if Atlas thought it was a task but produced no steps
+                        fallback_chat = await self.atlas.chat(
+                            user_request, history=history, use_deep_persona=True
+                        )
+                        await self._speak("atlas", fallback_chat)
+                        return {"status": "completed", "result": fallback_chat, "type": "chat"}
+
+                    self.state["current_plan"] = plan
+
+                    # DB Task Creation
+                    try:
+                        from src.brain.db.manager import db_manager
+
+                        if (
+                            db_manager
+                            and getattr(db_manager, "available", False)
+                            and self.state.get("db_session_id")
+                        ):
+                            async with await db_manager.get_session() as db_sess:
+                                new_task = DBTask(
+                                    session_id=self.state["db_session_id"],
+                                    goal=user_request,
+                                    status="PENDING",
+                                )
+                                db_sess.add(new_task)
+                                await db_sess.commit()
+                                self.state["db_task_id"] = str(new_task.id)
+
+                                await knowledge_graph.add_node(
+                                    node_type="TASK",
+                                    node_id=f"task:{new_task.id}",
+                                    attributes={
+                                        "goal": user_request,
+                                        "timestamp": datetime.now(UTC).isoformat(),
+                                        "steps_count": len(plan.steps),
+                                    },
+                                )
+                    except Exception as e:
+                        logger.error(f"DB Task creation failed: {e}")
+
+                    try:
+                        from src.brain.state_manager import state_manager
+
+                        if state_manager and getattr(state_manager, "available", False):
+                            await state_manager.save_session(session_id, self.state)
+                    except (ImportError, NameError):
                         pass
 
-                if not plan or not plan.steps:
-                    msg = self.atlas.get_voice_message("no_steps")
-                    await self._speak("atlas", msg)
-                    return {"status": "completed", "result": msg, "type": "chat"}
+                    try:
+                        from src.brain.state_manager import state_manager
 
-                self.state["current_plan"] = plan
-
-                # DB Task Creation
-                try:
-                    from src.brain.db.manager import db_manager
-
-                    if (
-                        db_manager
-                        and getattr(db_manager, "available", False)
-                        and self.state.get("db_session_id")
-                    ):
-                        async with await db_manager.get_session() as db_sess:
-                            new_task = DBTask(
-                                session_id=self.state["db_session_id"],
-                                goal=user_request,
-                                status="PENDING",
-                            )
-                            db_sess.add(new_task)
-                            await db_sess.commit()
-                            self.state["db_task_id"] = str(new_task.id)
-
-                            await knowledge_graph.add_node(
-                                node_type="TASK",
-                                node_id=f"task:{new_task.id}",
-                                attributes={
-                                    "goal": user_request,
-                                    "timestamp": datetime.now(UTC).isoformat(),
+                        if state_manager and getattr(state_manager, "available", False):
+                            await state_manager.publish_event(
+                                "tasks",
+                                {
+                                    "type": "planning_finished",
+                                    "session_id": session_id,
                                     "steps_count": len(plan.steps),
                                 },
                             )
-                except Exception as e:
-                    logger.error(f"DB Task creation failed: {e}")
+                    except (ImportError, NameError):
+                        pass
 
-                try:
-                    from src.brain.state_manager import state_manager
-
-                    if state_manager and getattr(state_manager, "available", False):
-                        await state_manager.save_session(session_id, self.state)
-                except (ImportError, NameError):
-                    pass
-
-                try:
-                    from src.brain.state_manager import state_manager
-
-                    if state_manager and getattr(state_manager, "available", False):
-                        await state_manager.publish_event(
-                            "tasks",
-                            {
-                                "type": "planning_finished",
-                                "session_id": session_id,
-                                "steps_count": len(plan.steps),
-                            },
-                        )
-                except (ImportError, NameError):
-                    pass
-
-                await self._speak(
-                    "atlas",
-                    self.atlas.get_voice_message("plan_created", steps=len(plan.steps)),
-                )
+                    await self._speak(
+                        "atlas",
+                        self.atlas.get_voice_message("plan_created", steps=len(plan.steps)),
+                    )
 
             except Exception as e:
                 import traceback
@@ -1212,7 +1220,7 @@ class Trinity:
                     if "." in str(step_id)
                     else (
                         int(step_id)
-                        if isinstance(step_id, (int, str)) and str(step_id).isdigit()
+                        if isinstance(step_id, int | str) and str(step_id).isdigit()
                         else 0
                     ),
                     str(last_error or "Unknown error"),
