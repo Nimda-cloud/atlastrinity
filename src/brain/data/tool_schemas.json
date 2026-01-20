@@ -723,6 +723,42 @@
         },
         "description": "Delete entity from graph"
     },
+    "ingest_verified_dataset": {
+        "server": "memory",
+        "required": [
+            "file_path",
+            "dataset_name"
+        ],
+        "optional": [
+            "namespace",
+            "task_id"
+        ],
+        "types": {
+            "file_path": "str",
+            "dataset_name": "str",
+            "namespace": "str",
+            "task_id": "str"
+        },
+        "description": "HIGH-PRECISION INGESTION: Validates, creates structured table, indexes in KG, and discovers semantic links."
+    },
+    "trace_data_chain": {
+        "server": "memory",
+        "required": [
+            "start_value",
+            "start_dataset_id"
+        ],
+        "optional": [
+            "namespace",
+            "max_depth"
+        ],
+        "types": {
+            "start_value": "any",
+            "start_dataset_id": "str",
+            "namespace": "str",
+            "max_depth": "int"
+        },
+        "description": "RECURSIVE SEMANTIC CHAINING: Follows LINKED_TO edges to reconstruct a unified record across datasets."
+    },
     "get_graph_json": {
         "server": "graph",
         "required": [],
