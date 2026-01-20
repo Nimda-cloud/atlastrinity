@@ -47,11 +47,11 @@ AtlasTrinity використовує архітектуру **Global First** д
 
 ## 🛠 Можливості (8 Основних MCP Серверів)
 
-Система використовує **8 високооптимізованих** серверів для повного контролю над macOS:
+Система використовує **13 високооптимізованих** серверів для повного контролю над macOS:
 
-- **Core**: `macos-use` (**52 інструменти**: GUI, Vision/OCR, Terminal, Apps), `filesystem`, `sequential-thinking`.
-- **AI & Data**: `vibe` (**10 інструментів**: AI Coding, Self-Healing, Debugging), `memory` (Graph Memory), `graph` (Visualization).
-- **Web & Utilities**: `puppeteer` (Headless Browser), `chrome-devtools`.
+- **Core**: `macos-use` (**39 інструментів**: GUI, Vision/OCR, Terminal, Apps), `filesystem`, `sequential-thinking`, `system`.
+- **AI & Data**: `vibe` (**12 інструментів**: AI Coding, Self-Healing, Debugging), `memory` (Golden Fund), `graph` (Visualization), `redis`.
+- **Search & Productivity**: `puppeteer` (Headless Browser), `duckduckgo-search`, `github`, `whisper-stt`, `chrome-devtools`.
 
 ## 📦 Розгортання (Production)
 
@@ -74,7 +74,7 @@ AtlasTrinity тепер володіє інтелектуальною пам'я�
 ## 🧪 Верифікація Системи
 
 ### Поточний Статус MCP Стеку
-Усі 8 серверів проходять повну перевірку:
+Усі 13 серверів проходять повну перевірку:
 
 ```bash
 # Перевірка з'єднання та доступності інструментів
