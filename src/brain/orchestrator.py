@@ -574,23 +574,6 @@ class Trinity:
                 saved_state = state_manager.restore_session(session_id)
                 if saved_state:
                     self.state = saved_state
-                    # Normalize messages back into LangChain objects
-                    normalized_messages: List[BaseMessage] = []
-                    for m in self.state.get("messages", []):
-                        if isinstance(m, dict):
-                            m_type = m.get("type")
-                            m_content = m.get("content", "")
-                            if m_type == "human":
-                                normalized_messages.append(HumanMessage(content=m_content))
-                            else:
-                                normalized_messages.append(
-                                    AIMessage(content=m_content, name=m.get("name", "ATLAS"))
-                                )
-                        elif isinstance(m, str):
-                            normalized_messages.append(HumanMessage(content=m))
-                        else:
-                            normalized_messages.append(m)
-                    self.state["messages"] = normalized_messages
                     logger.info("[STATE] Successfully restored last active session")
 
             # Update session ID if we were using the alias
@@ -676,7 +659,7 @@ class Trinity:
                     response = analysis.get("initial_response") or await self.atlas.chat(
                         user_request, history=history, use_deep_persona=analysis.get("use_deep_persona", False)
                     )
-                    self.state["messages"].append(AIMessage(content=response))
+                    await self._speak("atlas", response)
                     if state_manager.available:
                         state_manager.save_session(session_id, self.state)
                     return {"status": "completed", "result": response, "type": "chat"}
