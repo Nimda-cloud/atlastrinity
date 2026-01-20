@@ -128,13 +128,18 @@ const CommandLine: React.FC<CommandLineProps> = ({
         onCommand(textToSend);
         setInput('');
         pendingTextRef.current = '';
-        setSttStatus('🎙️ Слухаю...');
+        if (textareaRef.current) textareaRef.current.style.height = 'auto';
+        if (isListeningRef.current) {
+            setSttStatus('🎙️ Слухаю...');
+        }
         return;
       }
 
       switch (speech_type) {
         case 'silence':
-          setSttStatus('Mw... (Тиша)');
+          if (isListeningRef.current) {
+            setSttStatus('Mw... (Тиша)');
+          }
           // При тиші відправляємо накопичений текст
           if (pendingTextRef.current.trim()) {
             scheduleSend();
@@ -220,6 +225,11 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
   // Початок запису
   const startListening = async () => {
+    // КРИТИЧНО: оновлюємо ref СИНХРОННО на самому початку
+    isListeningRef.current = true;
+    setIsListening(true);
+    setSttStatus('⌛ Ініціалізація...');
+
     try {
       // console.log('🎙️ Starting to listen...');
 
@@ -279,9 +289,6 @@ const CommandLine: React.FC<CommandLineProps> = ({
         // console.log('♻️ Reusing existing stream');
       }
 
-      // КРИТИЧНО: оновлюємо ref СИНХРОННО перед викликом startRecordingCycle
-      isListeningRef.current = true;
-      setIsListening(true);
       setSttStatus('🎙️ Слухаю...');
       // console.log('🎙️ Started listening, isListeningRef:', isListeningRef.current);
 
@@ -339,7 +346,9 @@ const CommandLine: React.FC<CommandLineProps> = ({
       // Простий VAD: якщо було дуже тихо (тиша/шум), не відправляємо
       if (maxVolumeRef.current < 12) {
         // console.log('🔇 Chunk too quiet, skipping STT');
-        setSttStatus('🔇 Тиша...');
+        if (isListeningRef.current) {
+            setSttStatus('🔇 Тиша...');
+        }
         // Save as context for next chunk if needed
         if (audioChunksRef.current.length > 0) {
            lastSkippedChunkRef.current = new Blob(audioChunksRef.current, { type: mimeType });
