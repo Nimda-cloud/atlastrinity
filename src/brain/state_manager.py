@@ -85,15 +85,32 @@ class StateManager:
         return json.dumps(serialized, default=str)
 
     def _deserialize_state(self, data: str) -> Dict[str, Any]:
-        """Deserialize state, reconstructing LangChain messages."""
+        """Deserialize state, reconstructing LangChain messages defensively."""
         from langchain_core.messages import messages_from_dict
         
-        state = json.loads(data)
-        if "messages" in state:
-            # messages_from_dict expects a list of dicts with 'type' and 'data'
-            state["messages"] = messages_from_dict(state["messages"])
-        
-        return state
+        try:
+            state = json.loads(data)
+            if "messages" in state:
+                msgs = state["messages"]
+                # DEFENSIVE: Only attempt to restore if we have a list of dicts
+                if isinstance(msgs, list):
+                    valid_dicts = [m for m in msgs if isinstance(m, dict) and "type" in m]
+                    
+                    if valid_dicts:
+                        # Reconstruct objects
+                        state["messages"] = messages_from_dict(valid_dicts)
+                    else:
+                        # Legacy data or empty - start fresh for messages
+                        logger.warning(f"[STATE] No valid dict messages found. Found {len(msgs)} legacy/string items. Start fresh history.")
+                        state["messages"] = []
+                else:
+                    state["messages"] = []
+            
+            return state
+        except Exception as e:
+            logger.error(f"[STATE] Deserialization failed: {e}")
+            # Return a minimal valid state so orchestrator doesn't crash
+            return {"messages": [], "system_state": "IDLE"}
 
     def save_session(self, session_id: str, state: Dict[str, Any]) -> bool:
         """
