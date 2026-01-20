@@ -141,7 +141,9 @@
             "search",
             "get_entity",
             "list_entities",
-            "delete_entity"
+            "delete_entity",
+            "ingest_verified_dataset",
+            "trace_data_chain"
         ],
         "when_to_use": "Storing or recalling facts, entities, and historical observations about the user, system, or codebase."
     },
