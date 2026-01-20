@@ -4,7 +4,7 @@ Uses SQLAlchemy 2.0+ (Async)
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
@@ -58,7 +58,7 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     metadata_blob: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
 
@@ -79,7 +79,7 @@ class Task(Base):
     )  # PENDING, RUNNING, COMPLETED, FAILED
     golden_path: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     session: Mapped["Session"] = relationship(back_populates="tasks")
@@ -102,7 +102,7 @@ class TaskStep(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     task: Mapped["Task"] = relationship(back_populates="steps")
     tool_executions: Mapped[List["ToolExecution"]] = relationship(back_populates="step")
@@ -122,7 +122,7 @@ class ToolExecution(Base):
     arguments: Mapped[Dict[str, Any]] = mapped_column(JSON)
     result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     step: Mapped["TaskStep"] = relationship(back_populates="tool_executions")
 
@@ -131,7 +131,7 @@ class LogEntry(Base):
     __tablename__ = "logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     level: Mapped[str] = mapped_column(String(20))
     source: Mapped[str] = mapped_column(String(50))
     message: Mapped[str] = mapped_column(Text)
@@ -148,7 +148,7 @@ class KGNode(Base):
     task_id: Mapped[Optional[uuid.UUID]] = mapped_column(GUID(), ForeignKey("tasks.id"), nullable=True)
     attributes: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
 
-    last_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_updated: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # Knowledge Graph Edges (Relationships)
@@ -162,7 +162,7 @@ class KGEdge(Base):
     namespace: Mapped[str] = mapped_column(String(100), default="global", index=True)
     attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default={}, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # Agent Message Bus - Typed inter-agent communication
@@ -179,7 +179,7 @@ class AgentMessage(Base):
     step_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     payload: Mapped[Dict[str, Any]] = mapped_column(JSON)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
@@ -198,7 +198,7 @@ class RecoveryAttempt(Base):
     vibe_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     error_before: Mapped[str] = mapped_column(Text)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ConversationSummary(Base):
@@ -211,7 +211,7 @@ class ConversationSummary(Base):
     summary: Mapped[str] = mapped_column(Text)
     key_entities: Mapped[List[str]] = mapped_column(JSON, default=[]) # List of names/concepts
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     metadata_blob: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
 
 class BehavioralDeviation(Base):
@@ -231,7 +231,7 @@ class BehavioralDeviation(Base):
     result: Mapped[str] = mapped_column(Text)
     decision_factors: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class KnowledgePromotion(Base):
     """
@@ -249,4 +249,4 @@ class KnowledgePromotion(Base):
     promoted_by: Mapped[str] = mapped_column(String(50)) # Agent name
     reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))

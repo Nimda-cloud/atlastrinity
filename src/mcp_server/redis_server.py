@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 import redis.asyncio as redis
 
 from mcp.server import FastMCP
@@ -152,7 +152,7 @@ async def redis_hgetall(key: str) -> Dict[str, Any]:
     """
     try:
         r = get_redis_client()
-        val = await r.hgetall(key)
+        val = await cast(Any, r.hgetall(key))
         return {"success": True, "hash": val}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -167,7 +167,7 @@ async def redis_hset(key: str, mapping: Dict[str, Any]) -> Dict[str, Any]:
     """
     try:
         r = get_redis_client()
-        await r.hset(key, mapping=mapping)
+        await cast(Any, r.hset(key, mapping=mapping))
         return {"success": True, "key": key}
     except Exception as e:
         return {"success": False, "error": str(e)}

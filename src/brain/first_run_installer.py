@@ -426,7 +426,8 @@ class FirstRunInstaller:
         """Create structured database and tables (supports SQLite or PostgreSQL)"""
         self._report(SetupStep.CREATE_DATABASE, 0.0, "Створення бази даних...")
 
-        from .config_loader import get_config_value
+        from .config_loader import config
+        # Use config.get
         db_url = get_config_value("database", "url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
 
         if db_url.startswith("sqlite"):

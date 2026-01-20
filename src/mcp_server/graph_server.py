@@ -30,7 +30,7 @@ async def get_graph_json(namespace: Optional[str] = None) -> Dict[str, Any]:
 
 
 @server.tool()
-async def generate_mermaid(node_type: Optional[str] = None) -> str:
+async def generate_mermaid(node_type: Optional[str] = None, namespace: Optional[str] = None) -> str:
     """
     Generates a Mermaid.js flowchart representation of the current Knowledge Graph.
 

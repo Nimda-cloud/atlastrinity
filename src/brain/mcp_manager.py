@@ -5,7 +5,7 @@ import shutil
 import sys
 from contextlib import AsyncExitStack
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 
 def _import_mcp_sdk():
@@ -327,7 +327,7 @@ class MCPManager:
                         command = fb
                         break
 
-        server_params = StdioServerParameters(command=command, args=args, env=env)
+        server_params = cast(Any, StdioServerParameters)(command=command, args=args, env=env)
 
         # If a connection task already exists, wait for its session future
         if server_name in self._connection_tasks:
@@ -356,7 +356,7 @@ class MCPManager:
                 
                 logger.info(f"Connecting to MCP server: {server_name}...")
                 logger.debug(f"[MCP] Command: {command}, Args: {args}")
-                async with stdio_client(server_params) as (read, write):
+                async with cast(Any, stdio_client)(server_params) as (read, write):
                     # Define logging callback for this server
                     async def handle_log(params: Any):
                         # Extract level and data
@@ -393,7 +393,7 @@ class MCPManager:
                             except Exception as e:
                                 logger.error(f"[MCP] Log callback dispatch error ({server_name}): {e}")
 
-                    async with ClientSession(read, write, logging_callback=handle_log) as session:
+                    async with cast(Any, ClientSession)(read, write, logging_callback=handle_log) as session:
                         await session.initialize()
                         
                         # store session usable by other tasks
@@ -439,7 +439,7 @@ class MCPManager:
             raise
 
     async def call_tool(
-        self, server_name: str, tool_name: str, arguments: Dict[str, Any] = None
+        self, server_name: str, tool_name: str, arguments: Optional[Dict[str, Any]] = None
     ) -> Any:
         """Call a tool on a specific server"""
         session = await self.get_session(server_name)
@@ -452,9 +452,10 @@ class MCPManager:
             # Safety: Truncate large outputs to prevent OOM/Context overflow
             if hasattr(result, "content") and isinstance(result.content, list):
                 for item in result.content:
-                    if hasattr(item, "text") and isinstance(item.text, str):
-                        if len(item.text) > 100 * 1024 * 1024:  # 100MB limit
-                            item.text = item.text[: 100 * 1024 * 1024] + "\n... [TRUNCATED DUE TO SIZE] ..."
+                    if hasattr(item, "text"):
+                        item_raw = cast(Any, item)
+                        if isinstance(item_raw.text, str) and len(item_raw.text) > 100 * 1024 * 1024:  # 100MB limit
+                            item_raw.text = item_raw.text[: 100 * 1024 * 1024] + "\n... [TRUNCATED DUE TO SIZE] ..."
                             logger.warning(f"Truncated large output from {server_name}.{tool_name}")
 
             return result
@@ -499,7 +500,7 @@ class MCPManager:
     async def dispatch_tool(
         self, 
         tool_name: Optional[str], 
-        arguments: Dict[str, Any] = None,
+        arguments: Optional[Dict[str, Any]] = None,
         explicit_server: Optional[str] = None,
         allow_fallback: bool = True
     ) -> Any:
@@ -733,7 +734,7 @@ class MCPManager:
 
     def get_status(self) -> Dict[str, Any]:
         """Get status of all servers including coverage statistics."""
-        status = {
+        status: Dict[str, Any] = {
             "connected_servers": list(self.sessions.keys()),
             "configured_servers": list(self.config.get("mcpServers", {}).keys()),
             "session_count": len(self.sessions),
@@ -903,7 +904,7 @@ class MCPManager:
         try:
             # 2-second timeout for catalog generation is sufficient; if it's slower, we skip tool details
             all_tools_results = await asyncio.wait_for(
-                asyncio.gather(*tasks, return_exceptions=True), timeout=2.0
+                cast(Any, asyncio.gather(*tasks, return_exceptions=True)), timeout=2.0
             )
         except Exception:
             all_tools_results = [[] for _ in tasks]  # Fallback to empty lists on overall timeout

@@ -30,6 +30,7 @@ from src.brain.db.schema import Session as DBSession
 from src.brain.db.schema import Task as DBTask
 from src.brain.db.schema import TaskStep as DBStep
 from src.brain.db.schema import ToolExecution as DBToolExecution
+from src.brain.db.schema import RecoveryAttempt, ConversationSummary as DBConvSummary
 from src.brain.knowledge_graph import knowledge_graph
 from src.brain.logger import logger
 from src.brain.mcp_manager import mcp_manager
@@ -888,7 +889,6 @@ class Trinity:
             # B. Store in Structured DB (SQLite)
             if db_manager.available:
                 async with await db_manager.get_session() as db_sess:
-                    from src.brain.db.schema import ConversationSummary as DBConvSummary
                     
                     new_summary = DBConvSummary(
                         session_id=session_id,
@@ -1112,7 +1112,6 @@ class Trinity:
                 if db_manager.available and db_step_id:
                     try:
                         async with await db_manager.get_session() as db_sess:
-                            from src.brain.db.schema import RecoveryAttempt
                             rec_attempt = RecoveryAttempt(
                                 step_id=db_step_id,
                                 depth=depth,
@@ -1309,7 +1308,6 @@ class Trinity:
                         try:
                             async with await db_manager.get_session() as db_sess:
                                 from sqlalchemy import update
-                                from src.brain.db.schema import RecoveryAttempt
                                 
                                 is_success = bool(vibe_text and len(vibe_text) > 50)
                                 
@@ -1528,7 +1526,6 @@ class Trinity:
                             
                             # PERSISTENCE: Remember this approved deviation immediately
                             try:
-                                from src.brain.memory import long_term_memory
                                 if long_term_memory.available:
                                     reason_text = str(evaluation.get('reason', 'Unknown'))
                                     long_term_memory.remember_behavioral_change(

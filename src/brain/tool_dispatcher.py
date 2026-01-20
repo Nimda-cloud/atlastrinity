@@ -1,7 +1,11 @@
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+import asyncio
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, cast
 from pathlib import Path
+
+from .state_manager import state_manager
 
 from .logger import logger
 from .config_loader import config
@@ -744,13 +748,13 @@ class ToolDispatcher:
             
             async def delayed_restart():
                 # Set restart_pending flag in Redis for resumption logic
-                if self.state_manager.available:
+                if state_manager and state_manager.available:
                     restart_metadata = {
                         "reason": reason,
                         "timestamp": datetime.now().isoformat(),
                         "session_id": "current" # Or a specific active session ID if known
                     }
-                    self.state_manager.redis.set(self.state_manager._key("restart_pending"), json.dumps(restart_metadata))
+                    cast(Any, state_manager).redis.set(cast(Any, state_manager)._key("restart_pending"), json.dumps(restart_metadata))
                     logger.info("[SYSTEM] restart_pending flag set in Redis.")
 
                 await asyncio.sleep(2.0)
