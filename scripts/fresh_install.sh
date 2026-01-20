@@ -12,11 +12,27 @@ echo "=========================================="
 echo ""
 
 # Confirm
-read -p "⚠️  Продовжити? Це видалить .venv, node_modules, ~/.config/atlastrinity (y/N): " -n 1 -r
+read -p "⚠️  This will DELETE ALL local configuration and environments. Continue? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Скасовано"
+    echo "❌ Cancelled"
     exit 1
+fi
+# 0. Backup Prompt
+echo "🛡️  Backup Check"
+read -p "❓ Create database backup before wiping? (Y/n): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ || -z $REPLY ]]; then
+    echo "📦 Backing up databases..."
+    python3 scripts/setup_dev.py --backup
+    if [ $? -eq 0 ]; then
+        echo "✅ Backup completed successfully."
+    else
+        echo "❌ Backup failed! Aborting to prevent data loss."
+        exit 1
+    fi
+else
+    echo "⚠️  Skipping backup. Hope you know what you are doing!"
 fi
 
 echo ""
