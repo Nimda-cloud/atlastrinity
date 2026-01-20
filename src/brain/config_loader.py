@@ -123,6 +123,10 @@ class SystemConfig:
                 "terminal": {"enabled": True},
                 "filesystem": {"enabled": True},
                 "macos_use": {"enabled": True},
+                "sequential_thinking": {
+                    "enabled": True,
+                    "model": os.getenv("SEQUENTIAL_THINKING_MODEL", "raptor-mini"),
+                },
                 "vibe": {
                     "enabled": True,
                     "workspace": str(CONFIG_ROOT / "vibe_workspace")
