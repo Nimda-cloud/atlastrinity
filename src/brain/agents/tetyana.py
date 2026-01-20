@@ -16,9 +16,10 @@ import time
 from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
-from ..mcp_manager import mcp_manager
+from src.brain.mcp_manager import mcp_manager
+from src.brain.logger import logger
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dev = os.path.join(current_dir, "..", "..", "..")
@@ -31,10 +32,10 @@ for r in [root_dev, root_prod]:
 
 from providers.copilot import CopilotLLM  # noqa: E402
 
-from ..config_loader import config  # noqa: E402
-from ..context import shared_context  # noqa: E402
-from ..prompts import AgentPrompts  # noqa: E402
-from .base_agent import BaseAgent  # noqa: E402
+from src.brain.config_loader import config  # noqa: E402
+from src.brain.context import shared_context  # noqa: E402
+from src.brain.prompts import AgentPrompts  # noqa: E402
+from src.brain.agents.base_agent import BaseAgent  # noqa: E402
 
 
 @dataclass
@@ -48,7 +49,7 @@ class StepResult:
     voice_message: Optional[str] = None
     error: Optional[str] = None
     tool_call: Optional[Dict[str, Any]] = None
-    timestamp: datetime = None
+    timestamp: Optional[datetime] = None
     thought: Optional[str] = None
     is_deviation: bool = False
     deviation_info: Optional[Dict[str, Any]] = None
@@ -232,7 +233,7 @@ class Tetyana(BaseAgent):
 
         return None
 
-    async def _take_screenshot_for_vision(self, pid: int = None) -> Optional[str]:
+    async def _take_screenshot_for_vision(self, pid: Optional[int] = None) -> Optional[str]:
         """Take screenshot for Vision analysis, optionally focusing on specific app."""
         from ..logger import logger  # noqa: E402
         import subprocess  # noqa: E402
@@ -304,7 +305,7 @@ class Tetyana(BaseAgent):
             logger.error(f"[TETYANA] Screenshot error: {e}")
             return None
 
-    async def analyze_screen(self, query: str, pid: int = None) -> Dict[str, Any]:
+    async def analyze_screen(self, query: str, pid: Optional[int] = None) -> Dict[str, Any]:
         """
         Take screenshot and analyze with Vision to find UI elements.
         Used for complex GUI tasks where Accessibility Tree is insufficient.
@@ -368,19 +369,19 @@ IMPORTANT:
 - If the target element is not visible, set "found": false and explain in "current_state"
 """
         
-        content = [
+        content_list: List[Dict[str, Any]] = [
             {"type": "text", "text": vision_prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}}
         ]
         
         messages = [
             SystemMessage(content="You are a Vision assistant for macOS GUI automation. Analyze screenshots precisely and provide accurate element coordinates."),
-            HumanMessage(content=content),
+            HumanMessage(content=cast(Any, content_list)),
         ]
         
         try:
             response = await self.vision_llm.ainvoke(messages)
-            result = self._parse_response(response.content)
+            result = self._parse_response(cast(str, response.content))
             
             if result.get("found"):
                 logger.info(f"[TETYANA] Vision found elements: {len(result.get('elements', []))}")
@@ -556,7 +557,7 @@ IMPORTANT:
         grisha_feedback = step.get("grisha_feedback", "")
         if not grisha_feedback and attempt > 1:
             logger.info(f"[TETYANA] Attempt {attempt} - fetching Grisha's rejection feedback from memory...")
-            grisha_feedback = await self.get_grisha_feedback(step.get("id")) or ""
+            grisha_feedback = await self.get_grisha_feedback(cast(int, step.get("id"))) or ""
         
         if grisha_feedback:
              logger.info(f"[TETYANA] Improving execution with Grisha's feedback: {grisha_feedback[:100]}...")
@@ -592,7 +593,7 @@ IMPORTANT:
         else:
             # Full reasoning path for complex/ambiguous steps
             configured_servers = mcp_manager.config.get("mcpServers", {})
-            if target_server in configured_servers and not target_server.startswith("_"):
+            if target_server and isinstance(target_server, str) and target_server in configured_servers and not target_server.startswith("_"):
                 logger.info(f"[TETYANA] Dynamically inspecting server: {target_server}")
                 tools = await mcp_manager.list_tools(target_server)
                 import json  # noqa: E402
@@ -620,9 +621,9 @@ IMPORTANT:
                 context_data,
                 tools_summary=tools_summary,
                 feedback=grisha_feedback,
-                previous_results=previous_results,
+                previous_results=cast(List[Any], previous_results),
                 goal_context=shared_context.get_goal_context(),
-                bus_messages=step.get("bus_messages"),
+                bus_messages=cast(List[Any], step.get("bus_messages")),
                 full_plan=step.get("full_plan", ""),
             )
 
@@ -635,7 +636,7 @@ IMPORTANT:
                         HumanMessage(content=reasoning_prompt),
                     ]
                 )
-                monologue = self._parse_response(reasoning_resp.content)
+                monologue = self._parse_response(cast(str, reasoning_resp.content))
                 logger.info(
                     f"[TETYANA] Thought (English): {monologue.get('thought', 'No thought')[:200]}..."
                 )
@@ -753,8 +754,11 @@ IMPORTANT:
         if tool_name_lower.startswith("macos-use") or tool_server == "macos-use":
             args = tool_call.get("args", {})
             if isinstance(args, dict) and not args.get("pid") and self._current_pid:
-                tool_call.setdefault("args", {})["pid"] = self._current_pid
-                logger.info(f"[TETYANA] Auto-filled pid from tracked state: {self._current_pid}")
+                if isinstance(tool_call, dict):
+                    tool_args = tool_call.setdefault("args", {})
+                    if isinstance(tool_args, dict):
+                        tool_args["pid"] = self._current_pid
+                        logger.info(f"[TETYANA] Auto-filled pid from tracked state: {self._current_pid}")
 
         # --- PHASE 2: TOOL EXECUTION ---
         tool_result = await self._execute_tool(tool_call)
@@ -850,7 +854,7 @@ IMPORTANT:
                     ]
                 )
 
-                reflexion = self._parse_response(reflexion_resp.content)
+                reflexion = self._parse_response(cast(str, reflexion_resp.content))
 
                 if reflexion.get("requires_atlas"):
                     logger.info("[TETYANA] Reflexion determined Atlas intervention is required.")
@@ -903,7 +907,10 @@ IMPORTANT:
             self.current_step += 1
 
         if state_manager.available:
-            state_manager.checkpoint("current", res.step_id, res.to_dict())
+            try:
+                state_manager.checkpoint("current", int(str(res.step_id)), res.to_dict())
+            except Exception:
+                pass
 
         return res
 
@@ -1224,7 +1231,7 @@ IMPORTANT:
 
         # Helper: save artifact files and register in notes/memory
         async def _save_artifacts(
-            html_text: str = None, title_text: str = None, screenshot_b64: str = None
+            html_text: Optional[str] = None, title_text: Optional[str] = None, screenshot_b64: Optional[str] = None
         ):
             try:
                 # from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR  # noqa: E402
@@ -1413,17 +1420,6 @@ IMPORTANT:
                     "puppeteer",
                     "puppeteer_fill",
                     {"selector": args.get("selector", ""), "value": args.get("value", "")},
-                )
-            )
-
-            return self._format_mcp_result(
-                await mcp_manager.call_tool(
-                    "puppeteer",
-                    "puppeteer_fill",
-                    {
-                        "selector": args.get("selector", ""),
-                        "value": args.get("text", ""),
-                    },
                 )
             )
         elif action == "screenshot":

@@ -11,7 +11,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # Check root (Dev: src/brain/agents -> root)
@@ -27,13 +27,14 @@ for r in [root_dev, root_prod]:
 from providers.copilot import CopilotLLM  # noqa: E402
 from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
 
-from ..config_loader import config  # noqa: E402
-from ..context import shared_context  # noqa: E402
-from ..logger import logger  # noqa: E402
-from ..memory import long_term_memory  # noqa: E402
-from ..prompts import AgentPrompts  # noqa: E402
-from ..prompts.atlas_chat import generate_atlas_chat_prompt  # noqa: E402
-from .base_agent import BaseAgent  # noqa: E402
+from src.brain.mcp_manager import mcp_manager # noqa: E402
+from src.brain.config_loader import config  # noqa: E402
+from src.brain.context import shared_context  # noqa: E402
+from src.brain.logger import logger  # noqa: E402
+from src.brain.memory import long_term_memory  # noqa: E402
+from src.brain.prompts import AgentPrompts  # noqa: E402
+from src.brain.prompts.atlas_chat import generate_atlas_chat_prompt  # noqa: E402
+from src.brain.agents.base_agent import BaseAgent  # noqa: E402
 
 
 @dataclass
@@ -83,48 +84,6 @@ class Atlas(BaseAgent):
         self.current_plan: Optional[TaskPlan] = None
         self.history: List[Dict[str, Any]] = []
 
-    async def use_sequential_thinking(
-        self, problem: str, available_tools: Optional[list] = None
-    ) -> Dict[str, Any]:
-        """
-        Use sequential-thinking MCP for deep reasoning on complex problems.
-        Returns structured analysis with step-by-step recommendations.
-        """
-        from ..logger import logger  # noqa: E402
-        from ..mcp_manager import mcp_manager  # noqa: E402
-
-        if available_tools is None:
-            available_tools = [
-                "terminal",
-                "filesystem",
-                "browser",
-                "gui",
-                "applescript",
-            ]
-
-        try:
-            result = await mcp_manager.call_tool(
-                "sequential-thinking",
-                "sequentialthinking_tools",
-                {
-                    "available_mcp_tools": available_tools,
-                    "thought": f"Analyzing task: {problem}",
-                    "thought_number": 1,
-                    "total_thoughts": 5,
-                    "next_thought_needed": True,
-                    "current_step": {
-                        "step_description": "Initial analysis",
-                        "expected_outcome": "Clear understanding of the problem",
-                        "recommended_tools": [],
-                    },
-                },
-            )
-            logger.info(f"[ATLAS] Sequential thinking result: {str(result)[:300]}")
-            return {"success": True, "analysis": result}
-        except Exception as e:
-            logger.warning(f"[ATLAS] Sequential thinking unavailable: {e}")
-            return {"success": False, "error": str(e)}
-
     async def analyze_request(
         self,
         user_request: str,
@@ -149,7 +108,7 @@ class Atlas(BaseAgent):
 
         try:
             response = await self.llm.ainvoke(messages)
-            analysis = self._parse_response(response.content)
+            analysis = self._parse_response(cast(str, response.content))
             
             # Ensure we have a valid intent even if the AI is vague
             if not analysis.get("intent"):
@@ -192,7 +151,7 @@ class Atlas(BaseAgent):
         
         try:
             response = await self.llm.ainvoke(messages)
-            evaluation = self._parse_response(response.content)
+            evaluation = self._parse_response(cast(str, response.content))
             logger.info(f"[ATLAS] Deviation Evaluation: {evaluation.get('approved')}")
             return evaluation
         except Exception as e:
@@ -324,8 +283,8 @@ class Atlas(BaseAgent):
             response = await llm_instance.ainvoke(messages)
             
             if not getattr(response, "tool_calls", None):
-                await self._memorize_chat_interaction(user_request, response.content)
-                return response.content
+                await self._memorize_chat_interaction(user_request, cast(str, response.content))
+                return cast(str, response.content)
             
             # Process Tool Calls (Same logic as before but using cached info)
             for tool_call in response.tool_calls:
@@ -349,7 +308,7 @@ class Atlas(BaseAgent):
                         tool_call_id=tool_call.get("id", "chat_call")
                     ))
                 else:
-                    return response.content
+                    return cast(str, response.content)
             
             current_turn += 1
 
@@ -417,7 +376,7 @@ class Atlas(BaseAgent):
                     HumanMessage(content=simulation_prompt),
                 ]
             )
-            simulation_result = sim_resp.content if hasattr(sim_resp, "content") else str(sim_resp)
+            simulation_result = cast(str, sim_resp.content if hasattr(sim_resp, "content") else str(sim_resp))
         except Exception as e:
             logger.warning(f"[ATLAS] Deep Thinking failed: {e}")
             simulation_result = "Standard execution strategy."
@@ -451,7 +410,7 @@ class Atlas(BaseAgent):
         ]
 
         response = await self.llm.ainvoke(messages)
-        plan_data = self._parse_response(response.content)
+        plan_data = self._parse_response(cast(str, response.content))
 
         # ENSURE VOICE_ACTION INTEGRITY: Post-process steps to guarantee Ukrainian descriptions
         steps = plan_data.get("steps", [])
@@ -483,7 +442,7 @@ class Atlas(BaseAgent):
                     HumanMessage(content=prompt),
                 ]
                 response = await self.llm.ainvoke(messages)
-                plan_data = self._parse_response(response.content)
+                plan_data = self._parse_response(cast(str, response.content))
                 steps = plan_data.get("steps", [])
                 # Re-check voice_action for new steps
                 for step in steps:
@@ -665,7 +624,7 @@ class Atlas(BaseAgent):
         ]
         logger.info(f"[ATLAS] Helping Tetyana with context: {context_info}")
         response = await self.llm.ainvoke(messages)
-        return self._parse_response(response.content)
+        return self._parse_response(cast(str, response.content))
 
     async def evaluate_healing_strategy(
         self,
@@ -697,7 +656,7 @@ class Atlas(BaseAgent):
         try:
             logger.info(f"[ATLAS] Reviewing self-healing strategy and setting tempo...")
             response = await self.llm.ainvoke(messages)
-            decision = self._parse_response(response.content)
+            decision = self._parse_response(cast(str, response.content))
             
             logger.info(f"[ATLAS] Healing Decision: {decision.get('decision', 'PIVOT')}")
             return decision
@@ -740,7 +699,7 @@ class Atlas(BaseAgent):
                 SystemMessage(content="You are a Professional Archivist."),
                 HumanMessage(content=prompt)
             ])
-            content = response.content if hasattr(response, "content") else str(response)
+            content = cast(str, response.content if hasattr(response, "content") else str(response))
             
             # JSON extraction
             import json
@@ -800,7 +759,7 @@ If the user asked to 'count', you MUST state the exact number found.
                 SystemMessage(content=self.SYSTEM_PROMPT),
                 HumanMessage(content=prompt),
             ])
-            evaluation = self._parse_response(response.content)
+            evaluation = self._parse_response(cast(str, response.content))
             
             # Placeholder safeguard
             if "[вкажіть" in str(evaluation.get("final_report")):
@@ -848,7 +807,7 @@ If the user asked to 'count', you MUST state the exact number found.
         
         try:
             response = await self.llm.ainvoke(messages)
-            decision = response.content.strip()
+            decision = cast(str, response.content).strip()
             # Remove quotes if AI added them
             if decision.startswith('"') and decision.endswith('"'):
                 decision = decision[1:-1]

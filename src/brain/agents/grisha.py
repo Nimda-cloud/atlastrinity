@@ -13,7 +13,8 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, cast
+import json
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -28,11 +29,11 @@ for r in [root_dev, root_prod]:
 
 from providers.copilot import CopilotLLM  # noqa: E402
 
-from ..config_loader import config  # noqa: E402
-from ..context import shared_context  # noqa: E402
-from ..logger import logger  # noqa: E402
-from ..prompts import AgentPrompts  # noqa: E402
-from .base_agent import BaseAgent  # noqa: E402
+from src.brain.config_loader import config  # noqa: E402
+from src.brain.context import shared_context  # noqa: E402
+from src.brain.logger import logger  # noqa: E402
+from src.brain.prompts import AgentPrompts  # noqa: E402
+from src.brain.agents.base_agent import BaseAgent  # noqa: E402
 
 
 @dataclass
@@ -45,7 +46,7 @@ class VerificationResult:
     description: str
     issues: list
     voice_message: str = ""
-    timestamp: datetime = None
+    timestamp: Optional[datetime] = None
     screenshot_analyzed: bool = False
 
     def __post_init__(self):
@@ -433,7 +434,13 @@ class Grisha(BaseAgent):
                             img = img.convert("RGB")
                         
                         # Limit max dimensions to 1024px for faster/cheaper vision
-                        img.thumbnail((1024, 1024), Image.LANCZOS)
+                        try:
+                            from PIL import Image as PILImage
+                            resampling = getattr(PILImage, "Resampling", PILImage)
+                            resample_filter = getattr(resampling, "LANCZOS", 1) # 1 is LANCZOS in old PIL
+                            img.thumbnail((1024, 1024), cast(Any, resample_filter))
+                        except Exception:
+                            img.thumbnail((1024, 1024))
                         
                         output = io.BytesIO()
                         img.save(output, format="JPEG", quality=70, optimize=True)
@@ -446,21 +453,21 @@ class Grisha(BaseAgent):
 
                 mime = "image/jpeg" # We force JPEG after compression
                 content.append(
-                    {
+                    cast(Dict[str, Any], {
                         "type": "image_url",
                         "image_url": {"url": f"data:{mime};base64,{image_data}"},
-                    }
+                    })
                 )
                 attach_screenshot_next = False
 
             messages = [
                 SystemMessage(content=self.SYSTEM_PROMPT),
-                HumanMessage(content=content),
+                HumanMessage(content=cast(Any, content)),
             ]
 
             response = await self.llm.ainvoke(messages)
             logger.info(f"[GRISHA] Raw LLM Response: {response.content}")
-            data = self._parse_response(response.content)
+            data = self._parse_response(cast(str, response.content))
 
             if data.get("action") == "call_tool":
                 server = data.get("server")
@@ -471,7 +478,8 @@ class Grisha(BaseAgent):
                 # This handles server resolution, macos-use fallbacks, and argument validation automatically.
                 
                 # Special handling: if tool name implies screenshot, try to satisfy it internally first
-                if "screenshot" in tool.lower() or "capture" in tool.lower():
+                tool_name_lower = str(tool).lower()
+                if "screenshot" in tool_name_lower or "capture" in tool_name_lower:
                     logger.info("[GRISHA] Internal Decision: Capturing Screenshot for Visual Verification")
                     try:
                         screenshot_path = await self.take_screenshot()
@@ -637,7 +645,7 @@ class Grisha(BaseAgent):
             ),
         )
 
-    async def analyze_failure(self, step: Dict[str, Any], error: str, context: dict = None) -> Dict[str, Any]:
+    async def analyze_failure(self, step: Dict[str, Any], error: str, context: Optional[dict] = None) -> Dict[str, Any]:
         """
         Analyzes a failure reported by Tetyana or Orchestrator using Deep Sequential Thinking.
         Returns constructive feedback for a retry.
@@ -819,7 +827,7 @@ Timestamp: {timestamp}
         ]
 
         response = await self.llm.ainvoke(messages)
-        return self._parse_response(response.content)
+        return self._parse_response(cast(str, response.content))
 
     async def take_screenshot(self) -> str:
         """
@@ -888,14 +896,23 @@ Timestamp: {timestamp}
 
             if quartz_available and Quartz is not None:
                 max_displays = 16
-                list_result = Quartz.CGGetActiveDisplayList(max_displays, None, None)
+                # Robustly call Quartz functions to satisfy linter and runtime
+                CGGetActiveDisplayList = getattr(Quartz, "CGGetActiveDisplayList", None)
+                if CGGetActiveDisplayList:
+                    list_result = CGGetActiveDisplayList(max_displays, None, None)
+                else:
+                    list_result = None
                 if not list_result or list_result[0] != 0:
                     raise RuntimeError("Quartz display list error")
 
                 active_displays = list_result[1]
                 displays_info = []
                 for idx, display_id in enumerate(active_displays):
-                    bounds = Quartz.CGDisplayBounds(display_id)
+                    CGDisplayBounds = getattr(Quartz, "CGDisplayBounds", None)
+                    if CGDisplayBounds:
+                        bounds = CGDisplayBounds(display_id)
+                    else:
+                        continue
                     displays_info.append(
                         {
                             "id": display_id,
@@ -940,11 +957,19 @@ Timestamp: {timestamp}
                 logger.info("[GRISHA] Capturing active application window...")
                 active_win_path = os.path.join(tempfile.gettempdir(), "grisha_active_win.png")
                 try:
-                    window_list = Quartz.CGWindowListCopyWindowInfo(
-                        Quartz.kCGWindowListOptionOnScreenOnly
-                        | Quartz.kCGWindowListExcludeDesktopElements,
-                        Quartz.kCGNullWindowID,
-                    )
+                    CGWindowListCopyWindowInfo = getattr(Quartz, "CGWindowListCopyWindowInfo", None)
+                    kCGWindowListOptionOnScreenOnly = getattr(Quartz, "kCGWindowListOptionOnScreenOnly", 1)
+                    kCGWindowListExcludeDesktopElements = getattr(Quartz, "kCGWindowListExcludeDesktopElements", 16)
+                    kCGNullWindowID = getattr(Quartz, "kCGNullWindowID", 0)
+
+                    if CGWindowListCopyWindowInfo:
+                        window_list = CGWindowListCopyWindowInfo(
+                            kCGWindowListOptionOnScreenOnly
+                            | kCGWindowListExcludeDesktopElements,
+                            kCGNullWindowID,
+                        )
+                    else:
+                        window_list = []
                     front_win_id = None
                     for window in window_list:
                         if window.get("kCGWindowLayer") == 0:
@@ -1033,7 +1058,14 @@ Timestamp: {timestamp}
             target_w = 2048
             scale = target_w / max(1, desktop_canvas.width)
             dt_h = int(desktop_canvas.height * scale)
-            desktop_small = desktop_canvas.resize((target_w, max(1, dt_h)), Image.LANCZOS)
+            
+            try:
+                from PIL import Image as PILImage
+                resampling = getattr(PILImage, "Resampling", PILImage)
+                resample_filter = getattr(resampling, "LANCZOS", 1)
+                desktop_small = desktop_canvas.resize((target_w, max(1, dt_h)), cast(Any, resample_filter))
+            except Exception:
+                desktop_small = desktop_canvas.resize((target_w, max(1, dt_h)))
 
             final_h = desktop_small.height
             if active_win_img:
@@ -1042,8 +1074,17 @@ Timestamp: {timestamp}
                 final_h += win_h + 20
                 final_canvas = Image.new("RGB", (target_w, final_h), (30, 30, 30))
                 final_canvas.paste(desktop_small, (0, 0))
+                
+                try:
+                    from PIL import Image as PILImage
+                    resampling = getattr(PILImage, "Resampling", PILImage)
+                    resample_filter = getattr(resampling, "LANCZOS", 1)
+                    resized_win = active_win_img.resize((target_w, max(1, win_h)), cast(Any, resample_filter))
+                except Exception:
+                    resized_win = active_win_img.resize((target_w, max(1, win_h)))
+                
                 final_canvas.paste(
-                    active_win_img.resize((target_w, max(1, win_h)), Image.LANCZOS),
+                    resized_win,
                     (0, desktop_small.height + 20),
                 )
             else:
@@ -1076,8 +1117,8 @@ Timestamp: {timestamp}
         self,
         error: str,
         vibe_report: str,
-        context: dict = None,
-        task_id: str = None
+        context: Optional[dict] = None,
+        task_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Audits a proposed fix from Vibe AI before execution.
@@ -1111,7 +1152,7 @@ Timestamp: {timestamp}
         try:
             logger.info(f"[GRISHA] Auditing Vibe's proposed fix...")
             response = await self.llm.ainvoke(messages)
-            audit_result = self._parse_response(response.content)
+            audit_result = self._parse_response(cast(str, response.content))
             
             logger.info(f"[GRISHA] Audit Verdict: {audit_result.get('audit_verdict', 'REJECT')}")
             return audit_result

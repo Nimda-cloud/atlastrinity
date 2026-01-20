@@ -1,8 +1,7 @@
-# Pyrefly Configuration
-# To prevent language server crashes (stack overflow)
-
 python-version = "3.12"
-import-roots = ["."]
+search-path = ["."]
+site-package-path = [".venv/lib/python3.12/site-packages"]
+disable-search-path-heuristics = true
 project-includes = ["src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
 project-excludes = [
     "**/node_modules/**",
