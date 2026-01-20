@@ -6,7 +6,7 @@ import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import { checkPermissions, requestPermissions } from './permissions';
 
 let mainWindow: BrowserWindow | null = null;
@@ -285,7 +285,6 @@ app.on('before-quit', () => {
 
   // Clean up any stray processes (dev always aggressive, production as safety net)
   console.log('Final process cleanup...');
-  const { execSync } = require('child_process');
   try {
     // Targeted pkill for core components to avoid "orphans"
     // brain.server handles its own children, but this is a final fail-safe
@@ -301,7 +300,7 @@ app.on('before-quit', () => {
       timeout: 5000,
     });
     console.log('Cleanup completed.');
-  } catch (e) {
+  } catch (_e) {
     console.log('Cleanup finished.');
   }
 });

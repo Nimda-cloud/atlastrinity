@@ -12,7 +12,7 @@ def test_servers_use_mcp_package():
         if "server =" not in src:
             continue
         tree = ast.parse(src)
-        imports = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+        imports = [n for n in tree.body if isinstance(n, ast.Import | ast.ImportFrom)]
         found = False
         for imp in imports:
             if isinstance(imp, ast.ImportFrom):

@@ -649,7 +649,7 @@ class Atlas(BaseAgent):
         prompt = AgentPrompts.atlas_help_tetyana_prompt(
             int(step_id)
             if isinstance(step_id, str) and step_id.isdigit()
-            else (int(step_id) if isinstance(step_id, (int, float)) else 0),
+            else (int(step_id) if isinstance(step_id, int | float) else 0),
             error,
             grisha_feedback,
             context_info,

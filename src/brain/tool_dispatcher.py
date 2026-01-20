@@ -505,7 +505,7 @@ class ToolDispatcher:
                         validated[key] = str(value)
                     elif expected_type == "int" and not isinstance(value, int):
                         validated[key] = int(float(value))
-                    elif expected_type == "float" and not isinstance(value, (int, float)):
+                    elif expected_type == "float" and not isinstance(value, int | float):
                         validated[key] = float(value)
                     elif expected_type == "bool" and not isinstance(value, bool):
                         validated[key] = str(value).lower() in ("true", "1", "yes")
@@ -750,12 +750,12 @@ class ToolDispatcher:
             if tool_name in ["inspect", "inspector"]:
                 return "devtools", "devtools_launch_inspector", args
             if tool_name in ["health", "check"]:
-                 # Check 'check_code' vs 'health_check'
-                 if "mcp" in str(args): 
-                     return "devtools", "devtools_check_mcp_health", args
-                 # Default generic 'check' might be ambiguous, but let's assume health if mcp mentioned
-                 return "devtools", "devtools_check_mcp_health", args
-            
+                # Check 'check_code' vs 'health_check'
+                if "mcp" in str(args):
+                    return "devtools", "devtools_check_mcp_health", args
+                # Default generic 'check' might be ambiguous, but let's assume health if mcp mentioned
+                return "devtools", "devtools_check_mcp_health", args
+
             return "devtools", tool_name, args
 
         # --- GIT LEGACY ROUTING ---
