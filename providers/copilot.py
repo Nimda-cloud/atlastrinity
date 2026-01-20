@@ -288,7 +288,7 @@ class CopilotLLM(BaseChatModel):
             "gpt-5-mini": "gpt-4.1",
             "grok-code-fast-1": "gpt-4.1",
             "grok": "gpt-4.1",
-            "grok-mini": "gpt-4.1",
+            "grok-code-fast-1": "gpt-4.1",
             "raptor-mini": "gpt-4.1",
             "raptor": "gpt-4.1",
         }
