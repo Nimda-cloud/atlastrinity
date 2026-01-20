@@ -6,6 +6,7 @@ STORAGE & MEMORY PROTOCOL (v1.0)
 - WORKSPACE: `~/.config/atlastrinity/workspace` (Main area for all active work).
 - DOWNLOADS: `~/.config/atlastrinity/workspace/downloads` (Primary destination for files from internet/browsers).
 - DATA VAULT: `~/.config/atlastrinity/workspace/vault` (Long-term storage for secondary databases, datasets from registries).
+- VIBE PROJECTS: `~/.config/atlastrinity/vibe_workspace` (Software, codebases, and experiments created by Vibe AI).
 - MEMORY ROOT: `~/.config/atlastrinity/memory` (Internal system databases).
 
 2. MEMORY SCHEMAS (INTELLECTUAL CORE)
