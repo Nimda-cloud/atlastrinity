@@ -1,7 +1,5 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 
 
 def setup_logging(name: str = "brain"):

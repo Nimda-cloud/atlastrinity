@@ -2,9 +2,7 @@
 import asyncio
 import os
 import pty
-import sys
 import threading
-import subprocess
 
 VIBE_BINARY = os.path.expanduser("~/.local/bin/vibe")
 VIBE_WORKSPACE = os.path.expanduser("~/.config/atlastrinity/vibe_workspace")

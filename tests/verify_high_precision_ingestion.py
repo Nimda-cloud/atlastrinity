@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 import pandas as pd
 from pathlib import Path
@@ -10,8 +9,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Mock environment
 from src.brain.db.manager import db_manager
-from src.brain.knowledge_graph import knowledge_graph
-from src.brain.data_guard import data_guard
 
 async def verify_ingestion_pipeline():
     print("--- Starting High-Precision Ingestion Verification ---")
@@ -85,9 +82,8 @@ async def verify_ingestion_pipeline():
         node_id = clean_res["node_id"]
         from sqlalchemy import text
         async with await db_manager.get_session() as session:
-            from src.brain.db.schema import KGNode
             node_res = await session.execute(
-                text(f"SELECT * FROM kg_nodes WHERE id=:node_id"),
+                text("SELECT * FROM kg_nodes WHERE id=:node_id"),
                 {"node_id": node_id}
             )
             node = node_res.fetchone()

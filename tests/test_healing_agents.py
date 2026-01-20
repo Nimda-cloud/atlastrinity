@@ -7,7 +7,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from brain.agents.grisha import Grisha
 from brain.agents.atlas import Atlas
-from brain.context import shared_context
 
 async def test_grisha_audit():
     print("Testing Grisha Agent Audit...")

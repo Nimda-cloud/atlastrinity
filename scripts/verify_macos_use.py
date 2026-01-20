@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import sys
-import subprocess
 from pathlib import Path
 
 # Add project root to path
@@ -37,12 +36,16 @@ async def run_mcp_test():
     print("Server process started.")
 
     async def read_response():
+        if not process.stdout:
+            return None
         line = await process.stdout.readline()
         if not line:
             return None
         return json.loads(line.decode())
 
     async def send_request(req):
+        if not process.stdin:
+            return
         msg = json.dumps(req) + "\n"
         process.stdin.write(msg.encode())
         await process.stdin.drain()
@@ -206,7 +209,6 @@ async def run_mcp_test():
             break
             
     if app_pid:
-        import time
         await asyncio.sleep(1) # Wait for animation
         
         # B. Type Calculation "5+5="
@@ -227,7 +229,7 @@ async def run_mcp_test():
                 print("✅ Typing command sent")
                 break
         
-        asyncio.sleep(0.5)
+        await asyncio.sleep(0.5)
 
         # C. Take Screenshot Verification
         print("Step 3: Taking Screenshot for Verification...")

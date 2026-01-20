@@ -2,8 +2,7 @@
 import asyncio
 import os
 import pty
-import sys
-from typing import List
+import subprocess
 
 VIBE_BINARY = os.path.expanduser("~/.local/bin/vibe")
 VIBE_WORKSPACE = os.path.expanduser("~/.config/atlastrinity/vibe_workspace")
@@ -30,39 +29,39 @@ async def run_vibe_pty():
     
     print(f"Running via PTY: {argv}")
     
+    process = None
     try:
-        process = await asyncio.create_subprocess_exec(
-            *argv,
+        process = subprocess.Popen(
+            argv,
             cwd=cwd,
             env=env,
             stdout=slave,
-            stderr=slave, # Combine stderr to PTY
+            stderr=slave,
             stdin=slave,
-            close_fds=True # Important
+            text=True,
+            preexec_fn=os.setsid
         )
-        os.close(slave) # Check if this is safe? Yes, parent doesn't need slave.
+        os.close(slave)
         
-        # Create StreamReader for master
-        loop = asyncio.get_running_loop()
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-        await loop.connect_read_pipe(lambda: protocol, os.fdopen(master, 'rb', buffering=0))
-        
+        loop = asyncio.get_event_loop()
         chunks = []
         
         async def read_loop():
-            while True:
-                data = await reader.read(1024)
-                if not data:
-                    break
-                text = data.decode(errors='replace')
-                chunks.append(text)
-                print(f"[PTY] {text}", end="")
+            try:
+                while True:
+                    data = await loop.run_in_executor(None, os.read, master, 1024)
+                    if not data:
+                        break
+                    text = data.decode(errors='replace')
+                    chunks.append(text)
+                    print(f"[PTY] {text}", end="")
+            except Exception as e:
+                print(f"Read error: {e}")
         
         await asyncio.wait_for(
             asyncio.gather(
                 read_loop(),
-                process.wait()
+                loop.run_in_executor(None, process.wait)
             ),
             timeout=10.0
         )
@@ -71,9 +70,13 @@ async def run_vibe_pty():
         
     except Exception as e:
         print(f"\nError: {e}")
-        if 'process' in locals():
+        if process:
             try:
                 process.terminate()
+            except: pass
+    finally:
+        if 'master' in locals():
+            try: os.close(master)
             except: pass
 
 if __name__ == "__main__":

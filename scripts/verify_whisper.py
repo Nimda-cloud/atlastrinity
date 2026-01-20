@@ -4,7 +4,6 @@ Whisper STT Comprehensive Verification
 Перевіряє всі аспекти інтеграції Whisper
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -101,9 +100,8 @@ def main():
         return 1
 
     try:
-        from src.mcp.whisper_server import server, stt  # noqa: E402
-
-        print_check("MCP Whisper Server import", True, "src.mcp.whisper_server")
+        from src.mcp_server.whisper_server import server # noqa: F401
+        print_check("MCP Whisper Server import", True, "src.mcp_server.whisper_server")
     except Exception as e:
         print_check("MCP Whisper Server import", False, str(e))
 
@@ -141,7 +139,7 @@ def main():
     print_header("5. Перевірка config_loader")
 
     try:
-        mcp_config = config.get_mcp_config()
+        mcp_config = config.get("mcp", {})
         print_check("MCP config отримано", True)
 
         whisper_config = mcp_config.get("whisper", {})
@@ -207,8 +205,6 @@ def main():
     try:
         from src.brain.production_setup import (  # noqa: E402
             copy_config_if_needed,
-            get_resources_path,
-            is_production,
         )
 
         print_check("production_setup imports", True)

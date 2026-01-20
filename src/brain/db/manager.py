@@ -5,7 +5,6 @@ Database Connection Manager
 import asyncio
 import os
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -13,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from src.brain.db.schema import Base
 from src.brain.config import CONFIG_ROOT
 from src.brain.config_loader import config
-from typing import Optional, Any, cast
+from typing import Any, cast
 
 class DatabaseManager:
     def __init__(self):
@@ -251,7 +250,7 @@ class DatabaseManager:
         if not self.available:
             return False
 
-        from sqlalchemy import Table, Column, String, Integer, Float, DateTime, Boolean, MetaData, Text
+        from sqlalchemy import Table, Column, Integer, Float, DateTime, Boolean, MetaData, Text
 
         # 1. Map pandas dtypes to SQLAlchemy types
         def map_dtype(col):
@@ -282,7 +281,7 @@ class DatabaseManager:
 
         # 3. Create the table sync-style via engine.run_sync
         def sync_create(connection):
-            new_table = Table(table_name, metadata, *columns, extend_existing=True)
+            Table(table_name, metadata, *columns, extend_existing=True)
             metadata.create_all(connection)
 
         try:

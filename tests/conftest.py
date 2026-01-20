@@ -10,7 +10,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.brain.config_loader import config  # noqa: E402
 
 # Default list of MCP servers used in tests
 DEFAULT_SERVERS = [

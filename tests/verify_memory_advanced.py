@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.abspath(root))
 
 from src.brain.db.manager import db_manager
 from src.brain.knowledge_graph import knowledge_graph
-from src.brain.memory import long_term_memory
 
 async def verify_isolation():
     print("--- Starting Advanced Memory Verification ---")

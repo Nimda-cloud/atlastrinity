@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from ..config import CONFIG_ROOT, MODELS_DIR
+from ..config import MODELS_DIR
 from ..config_loader import config
 
 # Lazy import to avoid loading heavy dependencies at startup
@@ -226,7 +226,7 @@ class AgentVoice:
         try:
             with open(output_file, mode="wb") as f:
                 # Import Stress and Voices only here
-                from ukrainian_tts.tts import Stress, Voices
+                from ukrainian_tts.tts import Stress
 
                 if self.tts:
                     _, accented_text = self.tts.tts(
@@ -463,7 +463,7 @@ class VoiceManager:
                 if not current_file:
                     return None  # Interrupted
                 
-                first_chunk_time = time.time() - start_time
+                time.time() - start_time
                 # print(f"[TTS] [{config.name}] First chunk ready in {first_chunk_time:.2f}s")
                 
                 for idx in range(len(final_chunks)):

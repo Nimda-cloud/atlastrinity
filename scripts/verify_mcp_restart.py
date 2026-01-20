@@ -7,8 +7,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 
 from brain.mcp_manager import MCPManager
-from brain.config_loader import config
-from brain.logger import logger
 
 async def test_restart():
     """

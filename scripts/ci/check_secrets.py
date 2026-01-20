@@ -4,7 +4,6 @@ Check that required environment secrets are available in CI.
 """
 import os
 import sys
-from typing import Dict, List
 
 
 def check_secrets() -> bool:

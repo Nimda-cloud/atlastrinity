@@ -23,10 +23,8 @@ import logging
 import os
 import socket
 import shutil
-import subprocess
 import uuid
 import re
-import pty
 from typing import Any, Dict, List, Optional, Tuple, Pattern, Literal
 from pathlib import Path
 from datetime import datetime
@@ -72,7 +70,7 @@ try:
     MAX_OUTPUT_CHARS = int(get_config_value("mcp.vibe", "max_output_chars", 500000))
     VIBE_WORKSPACE = get_config_value("mcp.vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
     
-except Exception as e:
+except Exception:
     def get_config_value(section: str, key: str, default: Any) -> Any:
         return default
     
@@ -279,7 +277,7 @@ async def run_vibe_subprocess(
     try:
         # Launch subprocess.
         # On macOS, we use 'script' to provide a TTY, but we need to be careful with its output.
-        script_path = shutil.which("script")
+        shutil.which("script")
         
         # Use simple subprocess for now to avoid the complexity of 'script' output
         # during integration, but keep the improved stream handling.

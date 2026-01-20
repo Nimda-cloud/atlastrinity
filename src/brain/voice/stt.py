@@ -10,7 +10,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from ..config import CONFIG_ROOT
 from ..config_loader import config
@@ -139,7 +139,6 @@ class WhisperSTT:
             self.compute_type = "int8"  # Best for CPU/MPS stability and speed
 
         # Stateful tracking for Smart STT
-        import time
 
         self.last_speech_time = 0.0
         self.silence_threshold = 3.0  # Seconds of silence before sending phrase

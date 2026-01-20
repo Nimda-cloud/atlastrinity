@@ -1,5 +1,4 @@
 import asyncio
-import json
 from unittest.mock import MagicMock, AsyncMock
 import sys
 import os
@@ -11,8 +10,6 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Mock logger and config before imports
-from src.brain.logger import logger
-from src.brain.config_loader import config
 
 async def test_tool_selection():
     from src.brain.tool_dispatcher import ToolDispatcher

@@ -1,6 +1,5 @@
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 
@@ -8,8 +7,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.brain.db.manager import db_manager, DB_URL
-from src.brain.db.schema import Base
+from src.brain.db.manager import db_manager
 from sqlalchemy import text
 from src.brain.memory import long_term_memory
 
@@ -20,7 +18,7 @@ async def clear_experience():
     if not db_manager.available:
         await db_manager.initialize()
     
-    if db_manager.available:
+    if db_manager.available and db_manager._engine:
         try:
             async with db_manager._engine.begin() as conn:
                 print("Deleting from PostgreSQL tables...")

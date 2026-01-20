@@ -48,8 +48,9 @@ async def smoke_test():
             n_results=1
         )
         
-        if results and results['ids'] and node_id in results['ids'][0]:
-            print(f"✅ Node FOUND in ChromaDB vectors! (Distance: {results['distances'][0][0]:.4f})")
+        if results and results.get('ids') and results.get('distances') and results['ids'] and node_id in results['ids'][0]:
+            dist = results['distances'][0][0]
+            print(f"✅ Node FOUND in ChromaDB vectors! (Distance: {dist:.4f})")
             
             # 5. Add Edge
             target_id = "test:target_node"

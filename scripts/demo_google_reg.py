@@ -1,7 +1,6 @@
 
 import asyncio
 import sys
-import os
 from pathlib import Path
 
 # Setup paths
@@ -10,7 +9,6 @@ sys.path.append(str(project_root))
 
 from src.brain.orchestrator import Trinity as Orchestrator
 from src.brain.mcp_manager import mcp_manager
-from src.brain.logger import logger
 
 async def run_autonomous_google_reg():
     print("🚀 STARTING AUTONOMOUS GOOGLE ACCOUNT REGISTRATION DEMO")

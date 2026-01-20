@@ -1,16 +1,15 @@
 import json
-import logging
 import asyncio
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Optional, Tuple, cast
 from pathlib import Path
 
 from .state_manager import state_manager
 
 from .logger import logger
 from .config_loader import config
-from .config import PROJECT_ROOT, REPOSITORY_ROOT, CONFIG_ROOT
-from .mcp_registry import TOOL_SCHEMAS, get_tool_schema, get_server_for_tool
+from .config import PROJECT_ROOT, CONFIG_ROOT
+from .mcp_registry import get_tool_schema, get_server_for_tool
 
 class ToolDispatcher:
     """
@@ -438,12 +437,12 @@ class ToolDispatcher:
         if any(kw in tool_lower for kw in ["duckduckgo", "web_search", "search_web", "ddg"]):
              # Check for business registry intent before generic search
              if any(kw in str(args).lower() for kw in ["єдрпоу", "company", "registry", "youcontrol", "opendatabot", "бізнес", "підприємство"]):
-                  logger.info(f"[DISPATCHER] Intelligent routing: search -> business_registry_search")
+                  logger.info("[DISPATCHER] Intelligent routing: search -> business_registry_search")
                   return "duckduckgo-search", "business_registry_search", {"company_name": args.get("query", args.get("company_name", ""))}
              
              # Check for open data portal intent
              if any(kw in str(args).lower() for kw in ["dataset", "датасет", "data.gov.ua", "портал", "відкриті дані"]):
-                  logger.info(f"[DISPATCHER] Intelligent routing: search -> open_data_search")
+                  logger.info("[DISPATCHER] Intelligent routing: search -> open_data_search")
                   return "duckduckgo-search", "open_data_search", {"query": args.get("query", args.get("query", ""))}
                   
              return "duckduckgo-search", "duckduckgo_search", args
@@ -623,7 +622,7 @@ class ToolDispatcher:
         # Critical safeguard: prevent 'search' from being routed to puppeteer directly
         # Instead of crashing, we route to duckduckgo for actual web search
         if tool_name == "search" or action == "search":
-            logger.info(f"[DISPATCHER] Redirecting browser search to duckduckgo-search")
+            logger.info("[DISPATCHER] Redirecting browser search to duckduckgo-search")
             return "duckduckgo-search", "duckduckgo_search", args
         
         mapping = {

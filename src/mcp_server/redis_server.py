@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional, cast
 import redis.asyncio as redis
 
 from mcp.server import FastMCP
@@ -31,7 +31,7 @@ def get_redis_client():
             # Ping is async in redis.asyncio
             # We skip ping in initialization to avoid blocking if we don't have an event loop yet
             # FastMCP will handle the async context
-            logger.info(f"[REDIS-MCP] Connected to Redis")
+            logger.info("[REDIS-MCP] Connected to Redis")
         except Exception as e:
             logger.error(f"[REDIS-MCP] Failed to connect to Redis: {e}")
             raise RuntimeError(f"Could not connect to Redis: {e}")

@@ -10,7 +10,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from src.brain.db.manager import db_manager
-from src.brain.db.schema import ToolExecution, TaskStep, Task
+from src.brain.db.schema import ToolExecution, TaskStep
 
 # Ensure CONFIG_ROOT is set correctly
 os.environ["CONFIG_ROOT"] = os.path.expanduser("~/.config/atlastrinity")

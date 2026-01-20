@@ -16,7 +16,7 @@ async def main():
     # Path to a test wav file if exists, or just check initialization
     print("Loading model...")
     start = time.time()
-    model = await stt.get_model()
+    await stt.get_model()
     print(f"Model loaded in {time.time() - start:.2f}s")
 
     print("System is ready for STT.")

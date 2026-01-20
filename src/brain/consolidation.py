@@ -7,9 +7,8 @@ Sleep & Consolidation - Nightly learning process that:
 3. Compresses into lessons for ChromaDB
 """
 
-import asyncio
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from .logger import logger
@@ -44,7 +43,7 @@ class ConsolidationModule:
 
         try:
             # 1. Fetch recent tasks (last 24h)
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
             tasks_data = await self._fetch_tasks_from_db(cutoff)
             logger.info(f"[CONSOLIDATION] Fetched {len(tasks_data)} tasks from DB")
 
@@ -76,7 +75,7 @@ class ConsolidationModule:
             # we've already done this in orchestrator, so here we might group them)
             # For now, let's just log stats
 
-            self.last_consolidation = datetime.utcnow()
+            self.last_consolidation = datetime.now(timezone.utc)
 
             stats = {
                 "timestamp": self.last_consolidation.isoformat(),
@@ -141,7 +140,7 @@ class ConsolidationModule:
 
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        history = "\n".join(
+        "\n".join(
             [f"- {s['action']}: {s['status']} (Error: {s['error']})" for s in task_data["steps"]]
         )
 

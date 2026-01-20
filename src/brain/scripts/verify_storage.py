@@ -35,19 +35,23 @@ async def verify_chromadb():
     print("✅ ChromaDB is available.")
     print(f"Path: {long_term_memory.get_stats().get('path')}")
     
-    collections = {
-        "lessons": long_term_memory.lessons,
-        "strategies": long_term_memory.strategies,
-        "knowledge_graph_nodes": long_term_memory.knowledge
-    }
+    try:
+        collections = {
+            "lessons": long_term_memory.lessons,
+            "strategies": long_term_memory.strategies,
+            "knowledge_graph_nodes": long_term_memory.knowledge
+        }
 
-    for name, col in collections.items():
-        count = col.count()
-        print(f"   - Collection '{name}': {count} documents")
-        if count > 0:
-            # Peek at one item to confirm content
-            peek = col.peek(limit=1)
-            print(f"     Sample ID: {peek['ids'][0]}")
+        for name, col in collections.items():
+            count = col.count()
+            print(f"   - Collection '{name}': {count} documents")
+            if count > 0:
+                # Peek at one item to confirm content
+                peek = col.peek(limit=1)
+                if peek and peek['ids']:
+                    print(f"     Sample ID: {peek['ids'][0]}")
+    except Exception as e:
+        print(f"❌ ChromaDB Verification Failed: {e}")
 
 async def verify_database():
     print("\n--- 2. Structured Storage (SQLite) ---")
@@ -60,10 +64,14 @@ async def verify_database():
         async with await db_manager.get_session() as session:
             # Check connection
             res = await session.execute(text("SELECT 1"))
-                if res.scalar() == 1:
-                    print("✅ Database Connection: OK")
+            if res.scalar() == 1:
+                print("✅ Database Connection: OK")
             
             # Count rows in key tables
+            session_count_res = await session.execute(select(func.count()).select_from(Session))
+            session_count = session_count_res.scalar()
+            print(f"   - Table 'Session': {session_count} rows")
+
             tables = [
                 ("KGNode (Semantic Nodes)", KGNode),
                 ("KGEdge (Relations)", KGEdge),
@@ -83,7 +91,6 @@ async def verify_database():
                     print(f"   - Table '{name}': {count} rows")
                 except Exception as e:
                     print(f"   ❌ Table '{name}': Error/Missing - {e}")
-
     except Exception as e:
         print(f"❌ Database Verification Failed: {e}")
 
@@ -94,19 +101,23 @@ async def verify_redis():
         return
 
     try:
+        if not state_manager.redis:
+            print("❌ Redis client is NOT initialized.")
+            return
+
         # Perform a write/read test
         test_key = "verify_storage_test_key"
         test_val = "working"
         
-        state_manager.redis.set(test_key, test_val, ex=10)
-        val = state_manager.redis.get(test_key)
+        await state_manager.redis.set(test_key, test_val, ex=10)
+        val = await state_manager.redis.get(test_key)
         
-        if val and val == test_val:
+        if val and (val == test_val or (hasattr(val, 'decode') and val.decode() == test_val)):
              print("✅ Redis Connection: OK (Write/Read success)")
              
              # Check distinct active sessions if possible
              # Iterate keys safely
-             keys = state_manager.redis.keys("session:*")
+             keys = await state_manager.redis.keys("session:*")
              print(f"   - Active Session Keys in Redis: {len(keys)}")
              
         else:

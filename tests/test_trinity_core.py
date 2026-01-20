@@ -4,7 +4,6 @@ Comprehensive Trinity Core Tests
 Tests Atlas, Orchestrator, and core Trinity functionality
 """
 
-import asyncio
 import sys
 from pathlib import Path
 

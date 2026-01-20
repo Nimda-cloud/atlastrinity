@@ -12,7 +12,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -141,7 +141,7 @@ class ConfigValidator:
         data: Dict,
         schema: Dict,
         path: str = "",
-        issues: List[ValidationIssue] = None,
+        issues: Optional[List[ValidationIssue]] = None,
     ) -> List[ValidationIssue]:
         """Recursively validate data against schema."""
         if issues is None:
@@ -159,7 +159,7 @@ class ConfigValidator:
                         ValidationIssue(
                             level="error",
                             path=current_path,
-                            message=f"Required key missing",
+                            message="Required key missing",
                         )
                     )
                 continue
@@ -332,7 +332,7 @@ class ConfigValidator:
                 value = server_config[key]
                 expected_type = spec.get("_type")
 
-                if expected_type and not self._check_type(value, expected_type):
+                if expected_type and isinstance(expected_type, str) and not self._check_type(value, expected_type):
                     issues.append(
                         ValidationIssue(
                             level="error",
@@ -342,7 +342,7 @@ class ConfigValidator:
                         )
                     )
 
-                if "_range" in spec and not self._check_range(value, spec["_range"]):
+                if "_range" in spec and isinstance(spec["_range"], tuple) and not self._check_range(value, spec["_range"]):
                     issues.append(
                         ValidationIssue(
                             level="warning",

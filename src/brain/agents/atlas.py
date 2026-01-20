@@ -27,7 +27,6 @@ for r in [root_dev, root_prod]:
 from providers.copilot import CopilotLLM  # noqa: E402
 from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
 
-from src.brain.mcp_manager import mcp_manager # noqa: E402
 from src.brain.config_loader import config  # noqa: E402
 from src.brain.context import shared_context  # noqa: E402
 from src.brain.logger import logger  # noqa: E402
@@ -92,7 +91,7 @@ class Atlas(BaseAgent):
     ) -> Dict[str, Any]:
         """Analyzes user request: determines intent (chat vs task)"""
 
-        req_lower = user_request.lower().strip()
+        user_request.lower().strip()
 
         # No more hardcoded heuristics. The system relies on its 'brain' (LLM) to classify intent.
         # This prevents robotic, predictable responses to keywords like 'привіт'.
@@ -268,7 +267,7 @@ class Atlas(BaseAgent):
             use_deep_persona=use_deep_persona,
         )
 
-        from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+        from langchain_core.messages import BaseMessage
         messages: List[BaseMessage] = [SystemMessage(content=system_prompt_text)]
         if history: messages.extend(history[-10:])
         messages.append(HumanMessage(content=user_request))
@@ -586,7 +585,7 @@ class Atlas(BaseAgent):
         ]
         
         try:
-            logger.info(f"[ATLAS] Reviewing self-healing strategy and setting tempo...")
+            logger.info("[ATLAS] Reviewing self-healing strategy and setting tempo...")
             response = await self.llm.ainvoke(messages)
             decision = self._parse_response(cast(str, response.content))
             

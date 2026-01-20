@@ -58,7 +58,7 @@ async def test_prepare_prompt_small():
     result, file_path = handle_long_prompt(small_prompt)
     
     if file_path is None:
-        print(f"✅ Small prompt returned directly (no file created)")
+        print("✅ Small prompt returned directly (no file created)")
         print(f"   Prompt: {result[:50]}...")
         return True
     else:
@@ -73,7 +73,7 @@ async def test_prepare_prompt_large():
     result, file_path = handle_long_prompt(large_prompt)
     
     if file_path is not None and INSTRUCTIONS_DIR in file_path:
-        print(f"✅ Large prompt offloaded to INSTRUCTIONS_DIR")
+        print("✅ Large prompt offloaded to INSTRUCTIONS_DIR")
         print(f"   File: {file_path}")
         print(f"   Result prompt: {result[:80]}...")
         
@@ -94,7 +94,7 @@ async def test_vibe_prompt_small_task():
     # Use short prompt
     prompt = "Create a file called 'hello_vibe_test.py' with a simple hello world script."
     
-    print(f"Sending prompt to Vibe CLI...")
+    print("Sending prompt to Vibe CLI...")
     
     result = await vibe_prompt(
         ctx=ctx,
@@ -103,7 +103,7 @@ async def test_vibe_prompt_small_task():
         max_turns=5,
     )
     
-    print(f"\n--- Result ---")
+    print("\n--- Result ---")
     print(f"Success: {result.get('success')}")
     
     if not result.get('success'):
@@ -115,7 +115,7 @@ async def test_vibe_prompt_small_task():
     # Check if file was created in workspace
     test_file = Path(VIBE_WORKSPACE) / "hello_vibe_test.py"
     if test_file.exists():
-        print(f"\n✅ File created successfully in workspace!")
+        print("\n✅ File created successfully in workspace!")
         print(f"   Content: {test_file.read_text()[:200]}")
         # Cleanup
         test_file.unlink()
@@ -142,11 +142,11 @@ async def test_vibe_arg_filtering():
     # Check if command in result contains --no-tui
     command = result.get("command", [])
     if "--no-tui" not in command:
-        print(f"✅ Argument --no-tui was correctly filtered out")
+        print("✅ Argument --no-tui was correctly filtered out")
         print(f"   Command run: {' '.join(command)}")
         return True
     else:
-        print(f"❌ Failed: --no-tui was NOT filtered out")
+        print("❌ Failed: --no-tui was NOT filtered out")
         print(f"   Command run: {' '.join(command)}")
         return False
 
@@ -164,7 +164,7 @@ async def test_vibe_analyze_error():
     )
     
     if result.get("success") or result.get("returncode") is not None:
-        print(f"✅ vibe_analyze_error executed without name errors")
+        print("✅ vibe_analyze_error executed without name errors")
         return True
     else:
         print(f"❌ Failed: {result.get('error')}")

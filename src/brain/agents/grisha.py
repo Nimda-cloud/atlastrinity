@@ -13,10 +13,9 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional, cast
 import json
 
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dev = os.path.join(current_dir, "..", "..", "..")
@@ -335,7 +334,7 @@ class Grisha(BaseAgent):
         
         # RELAXATION: Don't demand legal/intent verification for technical tasks
         # unless keywords are present
-        requires_legal_check = (
+        (
              "legal" in expected.lower()
              or "intent" in expected.lower()
              or "compliance" in expected.lower()
@@ -796,7 +795,7 @@ Timestamp: {timestamp}
                     step_id=str(step_id)
                 )
                 await message_bus.send(msg)
-                logger.info(f"[GRISHA] Rejection message sent to Tetyana via Message Bus")
+                logger.info("[GRISHA] Rejection message sent to Tetyana via Message Bus")
             except Exception as e:
                 logger.warning(f"[GRISHA] Failed to send message to bus: {e}")
 
@@ -1150,7 +1149,7 @@ Timestamp: {timestamp}
         ]
         
         try:
-            logger.info(f"[GRISHA] Auditing Vibe's proposed fix...")
+            logger.info("[GRISHA] Auditing Vibe's proposed fix...")
             response = await self.llm.ainvoke(messages)
             audit_result = self._parse_response(cast(str, response.content))
             
