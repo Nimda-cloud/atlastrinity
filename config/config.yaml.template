@@ -64,9 +64,6 @@ mcp:
     max_output_chars: 500000
     disallow_interactive: true
   
-  chrome_devtools:
-    enabled: true
-  
   memory:
     enabled: true
     chroma_path: ${CONFIG_ROOT}/memory/chroma
@@ -75,9 +72,9 @@ mcp:
   graph:
     enabled: true
   
-  puppeteer:
+  redis:
     enabled: true
-    headless: true
+    url: redis://localhost:6379/0
 
   duckduckgo_search:
     enabled: true
@@ -91,6 +88,18 @@ mcp:
     enabled: true
     model: large-v3-turbo
     language: uk
+
+  # === TIER 3: ADDITIONAL (Додаткові) ===
+  puppeteer:
+    enabled: true
+    headless: true
+
+  # === TIER 4: SPECIALIZED (Спеціалізовані / Дебаг) ===
+  chrome_devtools:
+    enabled: true
+
+  context7:
+    enabled: false # External documentation server
 
 orchestrator:
   task_timeout: 3600

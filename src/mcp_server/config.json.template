@@ -43,7 +43,7 @@
       },
       "description": "Dynamic problem-solving through thought sequences (Critical for Grisha)",
       "disabled": false,
-      "tier": 2,
+      "tier": 1,
       "agents": [
         "atlas",
         "tetyana",
@@ -58,7 +58,7 @@
       ],
       "description": "Chrome DevTools Protocol for browser automation",
       "disabled": false,
-      "tier": 2,
+      "tier": 4,
       "agents": [
         "tetyana"
       ]
