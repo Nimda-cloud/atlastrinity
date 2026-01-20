@@ -135,6 +135,7 @@ class WhisperSTT:
             self.device = configured_device
 
         self._model = None
+        self._load_lock = asyncio.Lock()
         self.download_root = CONFIG_ROOT / "models" / "faster-whisper"
 
         # Compute type selection based on device
@@ -191,25 +192,26 @@ class WhisperSTT:
 
     async def get_model(self):
         """Lazy-load Faster Whisper model non-blockingly"""
-        if self._model is None:
-            if not _check_whisper_available():
-                logger.error("[STT] faster-whisper is not installed. Cannot load WhisperModel.")
-                return None
+        async with self._load_lock:
+            if self._model is None:
+                if not _check_whisper_available():
+                    logger.error("[STT] faster-whisper is not installed. Cannot load WhisperModel.")
+                    return None
 
-            print(f"[STT] Loading Faster-Whisper model: {self.model_name} on {self.device}...")
-            self.download_root.mkdir(parents=True, exist_ok=True)
+                print(f"[STT] Loading Faster-Whisper model: {self.model_name} on {self.device}...")
+                self.download_root.mkdir(parents=True, exist_ok=True)
 
-            def load():
-                return cast(Any, WhisperModel)(
-                    self.model_name,
-                    device=self.device,
-                    compute_type=self.compute_type,
-                    download_root=str(self.download_root),
-                )
+                def load():
+                    return cast(Any, WhisperModel)(
+                        self.model_name,
+                        device=self.device,
+                        compute_type=self.compute_type,
+                        download_root=str(self.download_root),
+                    )
 
-            self._model = await asyncio.to_thread(load)
-            print(f"[STT] Model loaded successfully from {self.download_root}")
-        return self._model
+                self._model = await asyncio.to_thread(load)
+                print(f"[STT] Model loaded successfully from {self.download_root}")
+            return self._model
 
     async def transcribe_file(
         self, audio_path: str, language: str | None = None
