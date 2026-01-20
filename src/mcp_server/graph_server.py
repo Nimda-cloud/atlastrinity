@@ -18,13 +18,15 @@ server = FastMCP("graph")
 
 
 @server.tool()
-async def get_graph_json() -> Dict[str, Any]:
+async def get_graph_json(namespace: Optional[str] = None) -> Dict[str, Any]:
     """
-    Returns the entire Knowledge Graph in JSON format (nodes and edges).
-    Useful for D3.js or Cytoscape.js visualizations.
+    Returns the Knowledge Graph in JSON format.
+    
+    Args:
+        namespace: Optional filter (e.g. task_id or 'global').
     """
     await db_manager.initialize()
-    return await knowledge_graph.get_graph_data()
+    return await knowledge_graph.get_graph_data(namespace=namespace)
 
 
 @server.tool()
@@ -33,10 +35,11 @@ async def generate_mermaid(node_type: Optional[str] = None) -> str:
     Generates a Mermaid.js flowchart representation of the current Knowledge Graph.
 
     Args:
-        node_type: Optional filter to only show nodes of a certain type (FILE, TASK, TOOL, ENTITY)
+        node_type: Optional filter (FILE, TASK, TOOL, ENTITY)
+        namespace: Optional filter (task_id or 'global')
     """
     await db_manager.initialize()
-    data = await knowledge_graph.get_graph_data()
+    data = await knowledge_graph.get_graph_data(namespace=namespace)
 
     if "error" in data:
         return f"Error: {data['error']}"

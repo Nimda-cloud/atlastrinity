@@ -248,27 +248,36 @@ class KnowledgeGraph:
             logger.error(f"[GRAPH] Promotion failed for {node_id}: {e}")
             return False
 
-    async def get_graph_data(self) -> Dict[str, Any]:
-        """Fetch all nodes and edges for visualization."""
+    async def get_graph_data(self, namespace: Optional[str] = None) -> Dict[str, Any]:
+        """Fetch nodes and edges for visualization, optionally filtered by namespace."""
         if not db_manager.available:
             return {"nodes": [], "edges": []}
 
         try:
             async with await db_manager.get_session() as session:
-                # Fetch all nodes
-                nodes_result = await session.execute(select(KGNode))
+                # 1. Fetch nodes
+                stmt_nodes = select(KGNode)
+                if namespace:
+                    stmt_nodes = stmt_nodes.where(KGNode.namespace == namespace)
+                
+                nodes_result = await session.execute(stmt_nodes)
                 nodes = [
-                    {"id": n.id, "type": n.type, "attributes": n.attributes}
+                    {"id": n.id, "type": n.type, "attributes": n.attributes, "namespace": n.namespace}
                     for n in nodes_result.scalars()
                 ]
 
-                # Fetch all edges
-                edges_result = await session.execute(select(KGEdge))
+                # 2. Fetch edges
+                stmt_edges = select(KGEdge)
+                if namespace:
+                    stmt_edges = stmt_edges.where(KGEdge.namespace == namespace)
+                
+                edges_result = await session.execute(stmt_edges)
                 edges = [
                     {
                         "source": e.source_id,
                         "target": e.target_id,
                         "relation": e.relation,
+                        "namespace": e.namespace
                     }
                     for e in edges_result.scalars()
                 ]

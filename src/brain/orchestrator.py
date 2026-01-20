@@ -395,8 +395,10 @@ class Trinity:
                     "TOOL",
                     tool_node_id,
                     {"description": f"MCP Tool or Wrapper: {tool_name}"},
+                    namespace=str(task_id),
+                    task_id=str(task_id)
                 )
-                await knowledge_graph.add_edge(task_node_id, tool_node_id, "USES")
+                await knowledge_graph.add_edge(task_node_id, tool_node_id, "USES", namespace=str(task_id))
 
         # 2. FILE nodes (from shared_context)
         for file_path in shared_context.recent_files:
@@ -405,9 +407,11 @@ class Trinity:
                 "FILE",
                 file_node_id,
                 {"description": "File used or created by task", "path": file_path},
+                namespace=str(task_id),
+                task_id=str(task_id)
             )
             relation = "MODIFIED" if "write" in shared_context.last_operation else "ACCESSED"
-            await knowledge_graph.add_edge(task_node_id, file_node_id, relation)
+            await knowledge_graph.add_edge(task_node_id, file_node_id, relation, namespace=str(task_id))
 
         # 3. USER node (only create once per session to avoid duplicates)
         if not getattr(self, "_user_node_created", False):
@@ -894,7 +898,9 @@ class Trinity:
                 await knowledge_graph.add_node(
                     node_type="CONCEPT",
                     node_id=f"concept:{ent_name.lower().replace(' ', '_')}",
-                    attributes={"description": f"Entity mentioned in session {session_id}", "source": "session_summary"}
+                    attributes={"description": f"Entity mentioned in session {session_id}", "source": "session_summary"},
+                    namespace="global" # Concepts from summaries are often global-worthy, or could stay in session?
+                    # For now, let's keep session concepts in global as "anchors" or maybe we decide later.
                 )
 
             logger.info(f"[ORCHESTRATOR] Persisted professional session summary for {session_id}")
