@@ -531,6 +531,7 @@ class Trinity:
         """
         Main orchestration loop with advanced persistence and memory
         """
+        self.voice.stop()  # Stop any current speech when a new request arrives
         start_time = asyncio.get_event_loop().time()
         session_id = self.current_session_id
 
