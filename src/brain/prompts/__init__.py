@@ -191,32 +191,17 @@ class AgentPrompts:
     Verification History (Tool actions taken during this verification): {history}
 
     PRIORITY ORDER FOR VERIFICATION:
-    1. **TECHNICAL EXECUTION (DB LOGS)**: If 'Step Status (from Tetyana)' is SUCCESS, THIS IS THE HIGHEST AUTHORITY.
-    2. MCP Tools: Verify results (filesystem, terminal) if DB log is ambiguous.
-    3. Visuals: ONLY use screenshots if absolutely necessary.
+    1. **TECHNICAL EVIDENCE (DB LOGS)**: query the 'tool_executions' table. Did the tool confirm success?
+    2. **INDEPENDENT CHECK**: Use 'ls', 'grep', 'ps' to verify the side-effect exists.
+    3. **VISUALS**: Screenshots as a last resort.
 
-    GOAL MOMENTUM DIRECTIVE:
-    - Your role is to SUPPORT progress, not block it.
-    - If 'Step Status (from Tetyana)' is SUCCESS, it means the OS confirmed the command finished with exit code 0.
-    - Many terminal commands (like `mv`, `cp`, `mkdir`) are silent on success. An empty 'Result' + 'SUCCESS' status = 100% VERIFIED.
-    - DO NOT ask for redundant proof (e.g., "Show me `ls`" after a successful `mkdir`). We trust the OS.
-    - **VERIFY = TRUE** if the step status is SUCCESS and there is no catastrophic error visible.
-    - **VERIFY = FALSE** ONLY if there is a blocking failure that prevents the next step.
+    VERIFICATION PROTOCOL:
+    - **TRUST NO ONE**: Do NOT accept 'Step Status: SUCCESS' as proof. Tetyana might be hallucinating.
+    - **VERIFY THE ARTIFACT**: If she created a file, check if it exists. If she ran a server, check the port.
+    - **DB TRUTH**: Only if the database log shows `return_code: 0` or `success: true` from the ACTUAL tool (not the agent's wrapper), then it is verified.
+    - **ACCEPT DEVIATIONS**: If Tetyana reported a "strategy_deviation" approved by Atlas, verify the *new* outcome.
 
-    Analyze the situation. TRUST THE TECHNICAL TRACE.
-    
-    CRITICAL VERIFICATION RULE:
-    - If 'Step Status (from Tetyana)' is SUCCESS, override any visual doubt.
-    - Do NOT reject technical success just because you didn't see it visually on a screenshot.
-    - If the TECHNICAL EXECUTION LOG shows the command fired and Tetyana reported SUCCESS, then it is DONE.
-
-    TRUST THE TOOLS:
-    - If 'Step Status (from Tetyana)' is SUCCESS, ACCEPT IT.
-    - REASONING TOOLS: If 'sequential-thinking' or 'vibe_ask' provides a thought process or analysis, TRUST IT as proof of execution for logic-based steps.
-    - **ACCEPT DEVIATIONS**: If Tetyana reports a "strategy_deviation" that was approved by Atlas, verify the *new* outcome, not the old outdated expectation. Successful deviation = VERIFIED.
-    - Do NOT reject technical success just because you didn't see it visually on a screenshot.
-    - If the goal was to kill a process and 'pgrep' returns nothing, that is SUCCESS.
-    - If the TECHNICAL EXECUTION LOG above shows SUCCESS, TRUST IT overrides any visual ambiguity.
+    Basically: "Show me the logs or the file, otherwise it didn't happen."
 
     Respond STRICTLY in JSON.
     
