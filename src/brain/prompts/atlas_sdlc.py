@@ -69,6 +69,11 @@ When the user requests SOFTWARE DEVELOPMENT (apps, APIs, libraries, CLI tools, e
 │  • Contributing Guidelines (for libraries/open-source)
 └─ TOOL: Use `vibe_prompt` to generate comprehensive README.md
 
+**PHASE X: ADAPTIVE EXECUTION**
+├─ NOTE: The plan is a guide, not a prison.
+├─ DEVIATION: If an implementation detail changes (e.g., a library is deprecated), you have the authority to update the SPEC.md and ARCHITECTURE.md on the fly.
+└─ PRINCIPLE: Working code > Static Plan.
+
 ═══════════════════════════════════════════════════════════════════════════════
                         PROJECT TYPE VARIATIONS
 ═══════════════════════════════════════════════════════════════════════════════

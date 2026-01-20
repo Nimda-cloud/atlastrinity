@@ -213,6 +213,7 @@ class AgentPrompts:
     TRUST THE TOOLS:
     - If 'Step Status (from Tetyana)' is SUCCESS, ACCEPT IT.
     - REASONING TOOLS: If 'sequential-thinking' or 'vibe_ask' provides a thought process or analysis, TRUST IT as proof of execution for logic-based steps.
+    - **ACCEPT DEVIATIONS**: If Tetyana reports a "strategy_deviation" that was approved by Atlas, verify the *new* outcome, not the old outdated expectation. Successful deviation = VERIFIED.
     - Do NOT reject technical success just because you didn't see it visually on a screenshot.
     - If the goal was to kill a process and 'pgrep' returns nothing, that is SUCCESS.
     - If the TECHNICAL EXECUTION LOG above shows SUCCESS, TRUST IT overrides any visual ambiguity.
@@ -394,6 +395,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         - **META-PLANNING AUTHORIZED**: If the task is complex, you MAY include reasoning steps (using `sequential-thinking`) to discover the path forward. Do not just say "no steps found". Goal achievement is mandatory.
 
         - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1. This ensures Tetyana has the latest technical schemas before execution.
+        - **DEVIATION AUTHORITY**: Explicitly instruct Tetyana that she is authorized to deviate from this plan if she discovers a more optimal path.
         Steps should be atomic and logical.
         """
 
