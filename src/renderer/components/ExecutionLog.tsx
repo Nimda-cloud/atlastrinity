@@ -29,15 +29,17 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Smooth auto-scroll logic
+  // Reliable auto-scroll logic
   useLayoutEffect(() => {
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const container = scrollContainerRef.current;
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container;
       // If we are within 100px of the bottom or it's the first render with messages, auto-scroll
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       
       if (isNearBottom || filteredLogs.length <= 1) {
-        logsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        // Direct manipulation is more robust than scrollIntoView for frequent updates
+        container.scrollTop = container.scrollHeight;
       }
     }
   }, [filteredLogs]);
@@ -67,12 +69,12 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden font-mono relative">
+    <div className="flex-1 flex flex-col h-full overflow-hidden font-mono relative min-h-0">
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
 
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-1 scrollbar-thin h-full"
+        className="flex-1 overflow-y-auto p-1 scrollbar-thin h-full min-h-0"
       >
         {filteredLogs.map((log) => (
           <div

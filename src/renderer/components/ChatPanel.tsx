@@ -26,15 +26,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Smooth auto-scroll logic
+  // Reliable auto-scroll logic
   useLayoutEffect(() => {
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const container = scrollContainerRef.current;
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container;
       // If we are within 100px of the bottom or it's the first render with messages, auto-scroll
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       
       if (isNearBottom || filteredMessages.length <= 1) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        container.scrollTop = container.scrollHeight;
       }
     }
   }, [filteredMessages]);
@@ -60,13 +61,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4 font-mono h-full overflow-hidden relative">
+    <div className="flex-1 flex flex-col p-4 font-mono h-full overflow-hidden relative min-h-0">
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
 
       {/* Main Chat Stream */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto pr-1 scrollbar-thin h-full"
+        className="flex-1 overflow-y-auto pr-1 scrollbar-thin h-full min-h-0"
       >
         {filteredMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center opacity-10 italic text-[9px] tracking-[0.5em] uppercase">
