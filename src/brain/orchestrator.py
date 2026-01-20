@@ -1480,7 +1480,7 @@ class Trinity:
                         await self._speak("tetyana", result.voice_message)
                         result.voice_message = None # Clear it so it won't be spoken again at the end of node
                     
-                    timeout_val = float(config.get("orchestrator.user_input_timeout", 20.0))
+                    timeout_val = float(config.get("orchestrator.user_input_timeout", 60.0))
                     await self._log(f"User input needed for step {step_id}. Waiting {timeout_val} seconds...", "orchestrator")
                     
                     # Display the question to the user in the logs/UI
