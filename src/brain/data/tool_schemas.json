@@ -1292,5 +1292,96 @@
             "reason": "str"
         },
         "description": "Restart a specific MCP server instance"
+    },
+    "redis_get": {
+        "server": "redis",
+        "required": [
+            "key"
+        ],
+        "optional": [],
+        "types": {
+            "key": "str"
+        },
+        "description": "Get the value of a key from Redis."
+    },
+    "redis_set": {
+        "server": "redis",
+        "required": [
+            "key",
+            "value"
+        ],
+        "optional": [
+            "ex_seconds"
+        ],
+        "types": {
+            "key": "str",
+            "value": "any",
+            "ex_seconds": "int"
+        },
+        "description": "Set the value of a key in Redis with optional expiry."
+    },
+    "redis_keys": {
+        "server": "redis",
+        "required": [
+            "pattern"
+        ],
+        "optional": [],
+        "types": {
+            "pattern": "str"
+        },
+        "description": "Find all keys matching the given pattern."
+    },
+    "redis_delete": {
+        "server": "redis",
+        "required": [
+            "key"
+        ],
+        "optional": [],
+        "types": {
+            "key": "str"
+        },
+        "description": "Delete a key from Redis."
+    },
+    "redis_info": {
+        "server": "redis",
+        "required": [],
+        "optional": [],
+        "types": {},
+        "description": "Get Redis server stats and memory info."
+    },
+    "redis_ttl": {
+        "server": "redis",
+        "required": [
+            "key"
+        ],
+        "optional": [],
+        "types": {
+            "key": "str"
+        },
+        "description": "Get time-to-live (TTL) for a key in seconds."
+    },
+    "redis_hgetall": {
+        "server": "redis",
+        "required": [
+            "key"
+        ],
+        "optional": [],
+        "types": {
+            "key": "str"
+        },
+        "description": "Get all fields and values in a Redis hash."
+    },
+    "redis_hset": {
+        "server": "redis",
+        "required": [
+            "key",
+            "mapping"
+        ],
+        "optional": [],
+        "types": {
+            "key": "str",
+            "mapping": "dict"
+        },
+        "description": "Set multiple fields in a Redis hash."
     }
 }

@@ -48,6 +48,8 @@ class ToolDispatcher:
         "node_details", "related_nodes", "traverse"
     ]
 
+    REDIS_SYNONYMS = ["redis", "cache", "state_inspection", "session_storage", "flags", "retry_pending", "restart_pending"]
+
     GITHUB_SYNONYMS = [
         "github", "repo", "repository", "pull_request", "pr", "issue", "issues",
         "gh", "git_hub"
@@ -205,11 +207,37 @@ class ToolDispatcher:
             if not tool_name:
                 tool_name = self._infer_tool_from_args(args)
             
-            # 4. Handle Dot Notation (server.tool)
+            # 4. Handle Dot or Underscore Notation (server.tool or server_tool)
             if "." in tool_name:
                 parts = tool_name.split(".", 1)
                 explicit_server = parts[0]
                 tool_name = parts[1]
+            else:
+                from .mcp_registry import TOOL_SCHEMAS, SERVER_CATALOG
+                
+                # If tool_name is ALREADY a canonical tool in the registry, leave it alone
+                # (e.g., 'redis_get' or 'macos-use_fetch_url')
+                if tool_name not in TOOL_SCHEMAS:
+                    # Heuristic: check if tool_name starts with a known server name
+                    # Sort by length descending to catch 'duckduckgo-search' before 'duckduckgo'
+                    sorted_servers = sorted(SERVER_CATALOG.keys(), key=len, reverse=True)
+                    for s_name in sorted_servers:
+                        # Check for server_tool or server__tool
+                        # Also handle hyphenated servers appearing as underscores (e.g. duckduckgo_search_...)
+                        prefixes = [f"{s_name}_", f"{s_name.replace('-', '_')}_"]
+                        for prefix in prefixes:
+                            if tool_name.startswith(prefix):
+                                potential_tool = tool_name[len(prefix):]
+                                if potential_tool.startswith("_"):
+                                    potential_tool = potential_tool[1:]
+                                
+                                # Only strip if the remaining part exists as a tool or is recognized
+                                explicit_server = s_name
+                                tool_name = potential_tool
+                                logger.info(f"[DISPATCHER] Normalized {prefix}{tool_name} to {explicit_server}.{tool_name}")
+                                break
+                        if explicit_server:
+                            break
             
             # 5. Intelligent Routing with macOS-use Priority
             server, resolved_tool, normalized_args = self._intelligent_routing(
