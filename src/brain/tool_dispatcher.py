@@ -163,6 +163,21 @@ class ToolDispatcher:
         "restart_pending",
     ]
 
+    DEVTOOLS_SYNONYMS = [
+        "devtools",
+        "lint",
+        "linter",
+        "check",
+        "inspect",
+        "inspector",
+        "validate",
+        "health",
+        "ruff",
+        "oxlint",
+        "knip",
+        "pyrefly",
+    ]
+
     GITHUB_SYNONYMS = [
         "github",
         "repo",
@@ -724,6 +739,24 @@ class ToolDispatcher:
         # --- SEQUENTIAL THINKING ---
         if tool_name in ["sequential-thinking", "sequentialthinking", "think"]:
             return "sequential-thinking", "sequentialthinking", args
+
+        # --- DEVTOOLS ROUTING ---
+        if tool_name in self.DEVTOOLS_SYNONYMS or explicit_server == "devtools":
+            # Map generic terms to specific tools
+            if tool_name in ["lint", "linter", "ruff"]:
+                return "devtools", "devtools_lint_python", args
+            if tool_name in ["oxlint", "js_lint"]:
+                return "devtools", "devtools_lint_js", args
+            if tool_name in ["inspect", "inspector"]:
+                return "devtools", "devtools_launch_inspector", args
+            if tool_name in ["health", "check"]:
+                 # Check 'check_code' vs 'health_check'
+                 if "mcp" in str(args): 
+                     return "devtools", "devtools_check_mcp_health", args
+                 # Default generic 'check' might be ambiguous, but let's assume health if mcp mentioned
+                 return "devtools", "devtools_check_mcp_health", args
+            
+            return "devtools", tool_name, args
 
         # --- GIT LEGACY ROUTING ---
         if tool_name.startswith("git_") or explicit_server == "git":

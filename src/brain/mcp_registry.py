@@ -277,6 +277,22 @@ def get_servers_for_task(task_type: str) -> list[str]:
         return ["graph", "memory"]
     if any(x in task_lower for x in ["state", "session", "persistence", "restart", "recovery"]):
         return ["redis"]
+    if any(
+        x in task_lower
+        for x in [
+            "lint",
+            "ruff",
+            "oxlint",
+            "check_code",
+            "integrity",
+            "health",
+            "inspect_server",
+            "validate_config",
+            "knip",
+            "dead_code",
+        ]
+    ):
+        return ["devtools"]
 
     # Default: return core servers
     return ["macos-use", "filesystem"]
