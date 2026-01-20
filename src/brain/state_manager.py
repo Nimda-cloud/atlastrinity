@@ -71,21 +71,43 @@ class StateManager:
         """Generate Redis key with prefix."""
         return f"{self.prefix}:{':'.join(parts)}"
 
+    def _serialize_state(self, state: Dict[str, Any]) -> str:
+        """Serialize state, handling LangChain messages correctly."""
+        from langchain_core.messages import message_to_dict
+        
+        serialized = state.copy()
+        if "messages" in serialized:
+            serialized["messages"] = [
+                message_to_dict(m) if not isinstance(m, dict) else m 
+                for m in serialized["messages"]
+            ]
+        
+        return json.dumps(serialized, default=str)
+
+    def _deserialize_state(self, data: str) -> Dict[str, Any]:
+        """Deserialize state, reconstructing LangChain messages."""
+        from langchain_core.messages import messages_from_dict
+        
+        state = json.loads(data)
+        if "messages" in state:
+            # messages_from_dict expects a list of dicts with 'type' and 'data'
+            state["messages"] = messages_from_dict(state["messages"])
+        
+        return state
+
     def save_session(self, session_id: str, state: Dict[str, Any]) -> bool:
         """
         Save full session state.
-
-        Args:
-            session_id: Unique session identifier
-            state: Full state dict to save
         """
         if not self.available:
             return False
 
         try:
             key = self._key("session", session_id)
-            state["_saved_at"] = datetime.now().isoformat()
-            self.redis.set(key, json.dumps(state, default=str))
+            state_to_save = state.copy()
+            state_to_save["_saved_at"] = datetime.now().isoformat()
+            
+            self.redis.set(key, self._serialize_state(state_to_save))
             self.redis.expire(key, 86400 * 7)  # 7 days TTL
             logger.info(f"[STATE] Session saved: {session_id}")
             return True
@@ -96,12 +118,6 @@ class StateManager:
     def restore_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
         Restore session state.
-
-        Args:
-            session_id: Session to restore
-
-        Returns:
-            State dict or None if not found
         """
         if not self.available:
             return None
@@ -110,7 +126,7 @@ class StateManager:
             key = self._key("session", session_id)
             data = self.redis.get(key)
             if data:
-                state = json.loads(data)
+                state = self._deserialize_state(data)
                 logger.info(f"[STATE] Session restored: {session_id}")
                 return state
         except Exception as e:

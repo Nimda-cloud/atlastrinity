@@ -252,31 +252,30 @@ class Trinity:
         return t
 
     async def _speak(self, agent_id: str, text: str):
-        """Voice wrapper"""
+        """Voice wrapper with smarter sanitization"""
+        # 1. Clean up text for TTS (don't be too aggressive)
+        # We only strip weird control chars or excessive whitespace
         import re
+        clean_text = re.sub(r'\s+', ' ', text).strip()
         
-        # ULTIMATE FAILSAFE: Strip any English characters from user-facing voice output
-        sanitized_text = re.sub(r'[a-zA-Z]', '', text)
-        sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
-        
-        # If the message becomes empty after sanitization, use a safe fallback
-        if not sanitized_text or len(sanitized_text) < 2:
-            sanitized_text = "Виконую технічну операцію."
+        # If text is empty or too short for TTS, skip
+        if not clean_text or len(clean_text) < 2:
+            return
             
-        text = sanitized_text
-        print(f"[{agent_id.upper()}] Speaking: {text}")
+        print(f"[{agent_id.upper()}] Speaking: {clean_text}")
 
-        # Synchronize with UI chat log (MESSAGES, NOT JUST LOGS)
+        # 2. Synchronize with UI chat log
         if hasattr(self, "state") and self.state is not None:
-            from langchain_core.messages import AIMessage
-
             if "messages" not in self.state:
                 self.state["messages"] = []
-            # Append to chat history
+            
+            # Avoid duplicate messages if this was already in the history (e.g. during resumption)
+            # We only append if it's the latest message (real-time generated)
             self.state["messages"].append(AIMessage(content=text, name=agent_id.upper()))
 
         await self._log(text, source=agent_id, type="voice")
         try:
+            # Pass ORIGINAL text to voice, let engine handle it
             await self.voice.speak(agent_id, text)
         except Exception as e:
             print(f"TTS Error: {e}")
