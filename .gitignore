@@ -60,5 +60,5 @@ DerivedData/
 
 # Database Backups Strategy:
 # - Local databases in ~/.config/atlastrinity/ are never committed
-# - backups/databases/ directory IS tracked in Git for sync across machines
-# - Use: python scripts/setup_dev.py to auto-restore on new machine
+# - backups/databases/ is now ignored to prevent workspace clutter.
+backups/databases/
