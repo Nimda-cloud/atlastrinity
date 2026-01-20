@@ -347,14 +347,16 @@ async def smart_speech_to_text(
                     stderr=asyncio.subprocess.PIPE,
                 )
                 stdout, stderr = await process.communicate()
-                
+
                 if process.returncode == 0:
                     try:
                         os.unlink(temp_file_path)
                     except:
                         pass
                 else:
-                    logger.warning(f"[STT] FFmpeg failed ({process.returncode}): {stderr.decode()}, using original")
+                    logger.warning(
+                        f"[STT] FFmpeg failed ({process.returncode}): {stderr.decode()}, using original"
+                    )
                     wav_path = temp_file_path
             except Exception as e:
                 logger.error(f"[STT] FFmpeg error: {e}")
@@ -410,7 +412,7 @@ async def smart_speech_to_text(
                     ratio = 1.0
 
                 # Strict threshold for history matching
-                if ratio > 0.85: # Increased from 0.75 to be less aggressive
+                if ratio > 0.85:  # Increased from 0.75 to be less aggressive
                     is_echo = True
                     logger.info(
                         f"[STT] Echo detected (History Match): '{clean_text}' ~= '{past_clean}' (Ratio: {ratio:.2f})"

@@ -580,7 +580,9 @@ def download_models():
             f"WhisperModel('{model_name}', device='cpu', compute_type='int8', download_root='{DIRS['stt_models']}'); "
             "print('STT OK')",
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=900)  # Increased timeout for large models
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=900
+        )  # Increased timeout for large models
         if res.returncode == 0:
             print_success(f"STT модель {model_name} готова")
         else:

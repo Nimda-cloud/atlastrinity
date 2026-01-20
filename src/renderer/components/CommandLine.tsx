@@ -130,7 +130,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
         pendingTextRef.current = '';
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
         if (isListeningRef.current) {
-            setSttStatus('🎙️ Слухаю...');
+          setSttStatus('🎙️ Слухаю...');
         }
         return;
       }
@@ -254,13 +254,12 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
         // SAFETY CHECK: If user stopped listening while we were waiting for permission
         if (!isListeningRef.current) {
-            stream.getTracks().forEach((track) => track.stop());
-            return;
+          stream.getTracks().forEach((track) => track.stop());
+          return;
         }
 
         streamRef.current = stream;
         // console.log('✅ Microphone access granted, stream active:', stream.active);
-
 
         // Перевіряємо гучність
         const audioContext = new AudioContext();
@@ -347,26 +346,28 @@ const CommandLine: React.FC<CommandLineProps> = ({
       if (maxVolumeRef.current < 12) {
         // console.log('🔇 Chunk too quiet, skipping STT');
         if (isListeningRef.current) {
-            setSttStatus('🔇 Тиша...');
+          setSttStatus('🔇 Тиша...');
         }
         // Save as context for next chunk if needed
         if (audioChunksRef.current.length > 0) {
-           lastSkippedChunkRef.current = new Blob(audioChunksRef.current, { type: mimeType });
+          lastSkippedChunkRef.current = new Blob(audioChunksRef.current, { type: mimeType });
         }
       } else if (audioChunksRef.current.length > 0) {
         // Speech detected!
         // Check if we have a pre-buffer context to send first
         if (lastSkippedChunkRef.current) {
-            // Send the previous slice first (fire and forget)
-            // console.log('📎 Attaching pre-buffer context');
-            processAudioChunk(lastSkippedChunkRef.current).catch(err => console.error("Error sending pre-buffer:", err));
-            lastSkippedChunkRef.current = null;
+          // Send the previous slice first (fire and forget)
+          // console.log('📎 Attaching pre-buffer context');
+          processAudioChunk(lastSkippedChunkRef.current).catch((err) =>
+            console.error('Error sending pre-buffer:', err)
+          );
+          lastSkippedChunkRef.current = null;
         }
 
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         // console.log('🎤 Created audio blob:', mimeType, audioBlob.size, 'bytes');
-        
-        // Wait for processing? No, we want gapless recording. 
+
+        // Wait for processing? No, we want gapless recording.
         // We launch processing in background.
         processAudioChunk(audioBlob).catch(console.error);
       } else {
@@ -513,7 +514,9 @@ const CommandLine: React.FC<CommandLineProps> = ({
           />
           <div className="absolute right-3 bottom-2 flex items-center gap-2">
             {(isProcessing || sttStatus) && (
-              <span className={`text-[9px] tracking-wider animate-pulse ${isProcessing ? 'text-amber-400' : 'text-cyan-400/70'}`}>
+              <span
+                className={`text-[9px] tracking-wider animate-pulse ${isProcessing ? 'text-amber-400' : 'text-cyan-400/70'}`}
+              >
                 {isProcessing ? '🤔 Думаю...' : sttStatus}
               </span>
             )}
