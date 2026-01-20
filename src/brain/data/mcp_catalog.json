@@ -255,5 +255,25 @@
             "record_and_transcribe"
         ],
         "when_to_use": "Processing voice commands, transcribing recordings."
+    },
+    "redis": {
+        "name": "redis",
+        "tier": 2,
+        "category": "database",
+        "description": "Redis Key-Value Storage and State Inspection",
+        "capabilities": [
+            "Get/Set/Delete keys",
+            "Search keys matching patterns",
+            "Inspect system state and session metadata",
+            "Redis server health and statistics"
+        ],
+        "key_tools": [
+            "redis_get",
+            "redis_keys",
+            "redis_info",
+            "redis_ttl",
+            "redis_hgetall"
+        ],
+        "when_to_use": "Inspecting session state, verifying restart_pending flags, debugging persistence issues, or managing temporary cross-agent flags."
     }
 }

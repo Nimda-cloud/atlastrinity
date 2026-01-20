@@ -33,6 +33,7 @@ class StateManager:
     """
 
     def __init__(self, host: str = "localhost", port: int = 6379, prefix: str = "atlastrinity"):
+        from .config_loader import config
 
         self.prefix = prefix
         self.available = False
@@ -41,14 +42,24 @@ class StateManager:
             logger.warning("[STATE] Redis not installed. Running without persistence.")
             return
 
+        # Priority: EnvVar > Config > Default Host/Port
+        redis_url = os.getenv("REDIS_URL") or config.get("state.redis_url")
+
         try:
-            self.redis = redis.Redis(
-                host=host, port=port, decode_responses=True, socket_connect_timeout=2
-            )
+            if redis_url:
+                self.redis = redis.Redis.from_url(
+                    redis_url, decode_responses=True, socket_connect_timeout=2
+                )
+                logger.info(f"[STATE] Redis connected via URL")
+            else:
+                self.redis = redis.Redis(
+                    host=host, port=port, decode_responses=True, socket_connect_timeout=2
+                )
+                logger.info(f"[STATE] Redis connected at {host}:{port}")
+            
             # Test connection
             self.redis.ping()
             self.available = True
-            logger.info(f"[STATE] Redis connected at {host}:{port}")
         except redis.ConnectionError:
             logger.warning("[STATE] Redis not running. State persistence disabled.")
             self.redis = None

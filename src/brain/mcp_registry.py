@@ -178,7 +178,7 @@ def get_servers_for_task(task_type: str) -> List[str]:
     if any(x in task_lower for x in ["voice", "audio", "transcribe", "stt", "speech"]):
         return ["whisper-stt"]
     if any(x in task_lower for x in ["debug", "error", "fix", "analyze"]):
-        return ["vibe", "sequential-thinking"]
+        return ["vibe", "sequential-thinking", "redis"]
     if any(x in task_lower for x in ["code", "review", "refactor"]):
         return ["vibe"]
     if any(x in task_lower for x in ["think", "reason", "complex", "decision"]):
@@ -191,6 +191,8 @@ def get_servers_for_task(task_type: str) -> List[str]:
         return ["memory"]
     if any(x in task_lower for x in ["graph", "visualize", "diagram", "mermaid", "map", "relationship"]):
         return ["graph", "memory"]
+    if any(x in task_lower for x in ["state", "session", "persistence", "restart", "recovery"]):
+        return ["redis"]
 
     # Default: return core servers
     return ["macos-use", "filesystem"]

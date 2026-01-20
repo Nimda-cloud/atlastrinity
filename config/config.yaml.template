@@ -97,6 +97,8 @@ orchestrator:
   max_recursion_depth: 5
   subtask_timeout: 120
   user_input_timeout: 20
+  validate_failed_steps_with_grisha: false # set to true to enable Auditor verification on fail
+  recovery_voice_agent: "atlas"            # which agent explains the recovery strategy
 security:
   dangerous_commands:
   - rm -rf
@@ -114,4 +116,7 @@ api:
 
 database:
   url: sqlite+aiosqlite:///${CONFIG_ROOT}/atlastrinity.db
+
+state:
+  redis_url: ${REDIS_URL} # usually redis://localhost:6379/0
 

@@ -779,6 +779,7 @@ def main():
     print("  - duckduckgo-search: Швидкий пошук без ключів (Tetyana, Grisha)")
     print("  - whisper-stt: Локальне розпізнавання мови (Tetyana)")
     print("  - graph: Візуалізація графу знань (Atlas, Grisha)")
+    print("  - self-healing: Автоматичне відновлення стану та перезапуск (System-wide)")
     print("=" * 60 + "\n")
 
 
