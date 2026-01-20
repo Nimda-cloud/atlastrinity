@@ -146,7 +146,7 @@ class WhisperSTT:
         # Stateful tracking for Smart STT
 
         self.last_speech_time = 0.0
-        self.silence_threshold = 3.0  # Seconds of silence before sending phrase
+        self.silence_threshold = 3.5  # Seconds of silence before sending phrase (slightly more than UI 3s)
 
     async def get_model(self):
         """Lazy-load Faster Whisper model non-blockingly"""
@@ -189,7 +189,7 @@ class WhisperSTT:
                     beam_size=2,
                     initial_prompt="Це розмова з розумним асистентом Atlas. Пиши грамотно, з пунктуацією.",
                     vad_filter=True,  # Enable VAD to avoid hallucinations during silence
-                    vad_parameters=dict(min_silence_duration_ms=500),
+                    vad_parameters=dict(min_silence_duration_ms=1000),
                 )
                 return list(segments), info
 

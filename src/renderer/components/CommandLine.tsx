@@ -105,7 +105,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
       }
-    }, 2000); // ОПТИМІЗАЦІЯ: 2 секунди замість 3 (швидша реакція)
+    }, 3000); // 3 секунди мовчання перед відправкою, як домовлено з користувачем
   }, [onCommand]);
 
   // Обробка відповіді від Smart STT
@@ -272,7 +272,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
       setSttStatus('🎙️ Слухаю...');
       // console.log('🎙️ Started listening, isListeningRef:', isListeningRef.current);
 
-      // Запускаємо циклічний запис (2 секунди на чанк)
+      // Запускаємо циклічний запис (2 секунди на чанк для Smart STT)
       startRecordingCycle();
     } catch (error) {
       console.error('❌ Microphone access error:', error);
@@ -345,13 +345,13 @@ const CommandLine: React.FC<CommandLineProps> = ({
     // console.log('▶️ Starting MediaRecorder...');
     mediaRecorder.start();
 
-    // Зупиняємо запис через 3 секунди для обробки (краще для Whisper ніж 2с)
+    // Зупиняємо запис через 2 секунди для обробки (оптимально для частоти оновлень)
     recordingIntervalRef.current = setTimeout(() => {
-      // console.log('⏱️ Stopping MediaRecorder after 3 seconds...');
+      // console.log('⏱️ Stopping MediaRecorder after 2 seconds...');
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
       }
-    }, 3000);
+    }, 2000);
   };
 
   // Зупинка прослуховування
