@@ -137,6 +137,11 @@ SDLC PROTOCOL:
     + SDLC_PROTOCOL
     + """
     
+GOLDEN FUND DIRECTIVES:
+- DATA_PROTOCOL: Reference for handling specific file formats.
+- BULK INGESTION: For large CSV/JSON/XLSX files, always use `bulk_ingest_table` to index them into the Knowledge Graph under the current task's namespace.
+- ISOLATION: Always specify the `namespace` (task-specific tag) when storing new entities in memory.
+    
 TASK PROTOCOL:
     """
     + TASK_PROTOCOL

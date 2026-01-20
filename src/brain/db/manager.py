@@ -103,8 +103,18 @@ class DatabaseManager:
                         if fix:
                             try:
                                 col_type = column.type.compile(connection.dialect)
-                                nullable = "NULL" if column.nullable else "NOT NULL"
-                                sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type} {nullable};'
+                                nullable = "NOT NULL" if not column.nullable else "NULL"
+                                default_val = ""
+                                if not column.nullable:
+                                    # Heuristic: find a safe default
+                                    if "VARCHAR" in str(col_type).upper() or "TEXT" in str(col_type).upper():
+                                        default_val = " DEFAULT 'global'" if column.name == "namespace" else " DEFAULT ''"
+                                    elif "INT" in str(col_type).upper():
+                                        default_val = " DEFAULT 0"
+                                    elif "BOOLEAN" in str(col_type).upper():
+                                        default_val = " DEFAULT 0"
+                                
+                                sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type} {nullable}{default_val};'
                                 connection.execute(text(sql))
                                 print(f"[DB] FIXED: Added column '{column.name}' to '{table_name}'")
                             except Exception as e:
@@ -182,6 +192,9 @@ class DatabaseManager:
                     if fk_data not in existing_fks:
                         print(f"[DB] Mismatch: Missing Foreign Key on '{table_name}' referencing '{fk_data[1]}'")
                         if fix:
+                            if connection.dialect.name == "sqlite":
+                                print(f"[DB] WARNING: Cannot add Foreign Key to '{table_name}' in SQLite via ALTER TABLE. Manual migration required if persistence is critical.")
+                                continue
                             try:
                                 # Constructing ALTER TABLE ADD CONSTRAINT manually
                                 cols = ", ".join(f'"{c}"' for c in fk_data[0])

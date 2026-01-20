@@ -196,6 +196,58 @@ class KnowledgeGraph:
             logger.error(f"[GRAPH] Batch insert failed: {e}")
             return {"success": False, "error": str(e)}
 
+    async def promote_node(self, node_id: str, target_namespace: str = "global") -> bool:
+        """
+        Elevate a node and its immediate relationships to a new namespace.
+        Part of the 'Golden Fund' architecture.
+        """
+        if not db_manager.available:
+            return False
+
+        try:
+            async with await db_manager.get_session() as session:
+                # 1. Update Node in SQL
+                existing = await session.get(KGNode, node_id)
+                if not existing:
+                    return False
+                
+                old_namespace = existing.namespace
+                existing.namespace = target_namespace
+                # Reset task_id if promoting to global
+                if target_namespace == "global":
+                    existing.task_id = None
+                
+                session.add(existing)
+                
+                # 2. Update Edges in SQL
+                from sqlalchemy import update
+                stmt_edges = update(KGEdge).where(
+                    (KGEdge.source_id == node_id) | (KGEdge.target_id == node_id)
+                ).values(namespace=target_namespace)
+                await session.execute(stmt_edges)
+                
+                await session.commit()
+                
+            # 3. Update Vector Store
+            if long_term_memory.available:
+                # ChromaDB metadata update
+                try:
+                    long_term_memory.knowledge.update(
+                        ids=[node_id],
+                        metadatas=[{
+                            "namespace": target_namespace,
+                            "task_id": "" if target_namespace == "global" else existing.task_id or ""
+                        }]
+                    )
+                except Exception as ve:
+                    logger.warning(f"[GRAPH] Vector metadata update failed during promotion: {ve}")
+
+            logger.info(f"[GRAPH] Node {node_id} promoted from {old_namespace} to {target_namespace}")
+            return True
+        except Exception as e:
+            logger.error(f"[GRAPH] Promotion failed for {node_id}: {e}")
+            return False
+
     async def get_graph_data(self) -> Dict[str, Any]:
         """Fetch all nodes and edges for visualization."""
         if not db_manager.available:
