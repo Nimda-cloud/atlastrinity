@@ -6,7 +6,15 @@
 import React from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
-type SystemState = 'IDLE' | 'PROCESSING' | 'EXECUTING' | 'VERIFYING' | 'ERROR';
+type SystemState =
+  | 'IDLE'
+  | 'PLANNING'
+  | 'EXECUTING'
+  | 'VERIFYING'
+  | 'COMPLETED'
+  | 'ERROR'
+  | 'CHAT'
+  | 'PROCESSING';
 
 interface NeuralCoreProps {
   state: SystemState;
@@ -17,7 +25,8 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
   // --- DYNAMIC CORE COLOR ---
   const getStateColor = (): string => {
     // If we have an active agent and we are not idle, prioritize agent color
-    if (state !== 'IDLE' && state !== 'ERROR') {
+    const isWorking = !['IDLE', 'COMPLETED', 'ERROR'].includes(state);
+    if (isWorking) {
       switch (activeAgent) {
         case 'ATLAS':
           return 'var(--atlas-blue)';
@@ -32,7 +41,10 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
 
     switch (state) {
       case 'IDLE':
+      case 'COMPLETED':
         return '#00A3FF'; // Pure Blue for standby
+      case 'PLANNING':
+      case 'CHAT':
       case 'PROCESSING':
         return 'var(--atlas-blue)';
       case 'EXECUTING':
@@ -50,8 +62,13 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
     switch (state) {
       case 'IDLE':
         return 'SYSTEM ONLINE';
+      case 'COMPLETED':
+        return 'TASK_FINISHED_OK';
+      case 'PLANNING':
       case 'PROCESSING':
         return 'THINKING_PROCES...';
+      case 'CHAT':
+        return 'NEURAL_DIALOGUE';
       case 'EXECUTING':
         return 'EXECUTING PROTOCOL';
       case 'VERIFYING':

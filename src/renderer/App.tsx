@@ -391,7 +391,7 @@ const App: React.FC = () => {
           onCommand={handleCommand}
           isVoiceEnabled={isVoiceEnabled}
           onToggleVoice={() => setIsVoiceEnabled(!isVoiceEnabled)}
-          isProcessing={systemState !== 'IDLE' && systemState !== 'ERROR'}
+          isProcessing={['PLANNING', 'EXECUTING', 'VERIFYING', 'CHAT'].includes(systemState)}
         />
       </div>
 
