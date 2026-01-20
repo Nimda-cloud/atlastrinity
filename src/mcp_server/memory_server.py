@@ -486,12 +486,103 @@ async def ingest_verified_dataset(
         sync_to_vector=True
     )
 
+    # 5. Automated Semantic Linking (New)
+    from src.brain.semantic_linker import semantic_linker
+    links = await semantic_linker.discover_links(df, node_id, namespace=namespace)
+    for link in links:
+        await knowledge_graph.add_edge(
+            source_id=link["source"],
+            target_id=link["target"],
+            relation=link["relation"],
+            attributes=link["attributes"],
+            namespace=namespace
+        )
+
     return {
         "success": kg_success,
         "node_id": node_id,
         "table_name": table_name,
+        "links_discovered": len(links),
         "validation_report": validation,
-        "message": f"Dataset '{dataset_name}' successfully ingested and registered in {namespace}."
+        "message": f"Dataset '{dataset_name}' ingested and semantically linked ({len(links)} links) in {namespace}."
+    }
+
+
+@server.tool()
+async def trace_data_chain(
+    start_value: Any, 
+    start_dataset_id: str, 
+    namespace: str = "global",
+    max_depth: int = 3
+) -> Dict[str, Any]:
+    """
+    Recursively follows LINKED_TO edges in the KG to reconstruct a unified record 
+    accross multiple datasets.
+    """
+    from sqlalchemy import text
+    
+    await db_manager.initialize()
+    chain = []
+    unified_record = {}
+    visited_datasets = set()
+    
+    current_targets = [(start_dataset_id, start_value)]
+    
+    for _ in range(max_depth):
+        next_targets = []
+        for dataset_id, value in current_targets:
+            if dataset_id in visited_datasets:
+                continue
+            visited_datasets.add(dataset_id)
+            
+            # A. Fetch dataset metadata
+            async with await db_manager.get_session() as session:
+                from src.brain.db.schema import KGNode
+                ds_node = await session.get(KGNode, dataset_id)
+                if not ds_node:
+                    continue
+                
+                table_name = ds_node.attributes.get("table_name")
+                if not table_name:
+                    continue
+                
+                # B. Find the record in the SQLite table
+                # We search all columns for the value (could be optimized)
+                cols = ds_node.attributes.get("columns", [])
+                for col in cols:
+                    safe_col = str(col).lower().replace(" ", "_").replace("-", "_")
+                    try:
+                        sql = f'SELECT * FROM "{table_name}" WHERE "{safe_col}" = :val'
+                        res = await session.execute(text(sql), {"val": value})
+                        row = res.fetchone()
+                        if row:
+                            # Found it! Merge into unified record
+                            row_dict = dict(row._mapping)
+                            unified_record.update(row_dict)
+                            chain.append({"dataset": dataset_id, "found_in_col": safe_col})
+                            
+                            # C. Find linked datasets to jump further
+                            graph = await knowledge_graph.get_graph_data(namespace=namespace)
+                            edges = [e for e in graph["edges"] if (e["source"] == dataset_id or e["target"] == dataset_id) and e["relation"] == "LINKED_TO"]
+                            
+                            for edge in edges:
+                                other_ds = edge["target"] if edge["source"] == dataset_id else edge["source"]
+                                shared_key = edge.get("attributes", {}).get("shared_key")
+                                if shared_key and shared_key in row_dict:
+                                    next_targets.append((other_ds, row_dict[shared_key]))
+                            break # Move to next dataset jump
+                    except Exception as e:
+                        logger.warning(f"Error searching {table_name}: {e}")
+                        
+        current_targets = next_targets
+        if not current_targets:
+            break
+            
+    return {
+        "unified_record": unified_record,
+        "chain_length": len(chain),
+        "traversed_path": chain,
+        "value_searched": start_value
     }
 
 

@@ -117,29 +117,28 @@ class KnowledgeGraph:
             logger.error(f"[GRAPH] Failed to add node {node_id}: {e}")
             return False
 
-    async def add_edge(self, source_id: str, target_id: str, relation: str, namespace: str = "global") -> bool:
+    async def add_edge(self, source_id: str, target_id: str, relation: str, attributes: Dict[str, Any] = {}, namespace: str = "global") -> bool:
         """Create a relationship between two nodes."""
         if not db_manager.available:
             return False
 
         try:
             async with await db_manager.get_session() as session:
-                # CRITICAL: Verify node existence to avoid FK violations
-                check_src = await session.execute(select(KGNode).where(KGNode.id == source_id))
-                if not check_src.scalar():
-                    logger.warning(f"[GRAPH] Source node {source_id} not found. Cannot add edge.")
-                    return False
-
-                check_tg = await session.execute(select(KGNode).where(KGNode.id == target_id))
-                if not check_tg.scalar():
-                    logger.warning(f"[GRAPH] Target node {target_id} not found. Cannot add edge.")
-                    return False
-
-                entry = KGEdge(source_id=source_id, target_id=target_id, relation=relation, namespace=namespace)
-                session.add(entry)
+                new_edge = KGEdge(
+                    source_id=source_id,
+                    target_id=target_id,
+                    relation=relation,
+                    namespace=namespace,
+                    attributes=attributes
+                )
+                session.add(new_edge)
                 await session.commit()
+            
             logger.info(f"[GRAPH] Edge: {source_id} -[{relation}]-> {target_id} (Namespace: {namespace})")
             return True
+        except IntegrityError:
+            # Maybe nodes don't exist yet, or duplicate edge
+            return False
         except Exception as e:
             logger.error(f"[GRAPH] Failed to add edge: {e}")
             return False
@@ -288,7 +287,8 @@ class KnowledgeGraph:
                         "source": e.source_id,
                         "target": e.target_id,
                         "relation": e.relation,
-                        "namespace": e.namespace
+                        "namespace": e.namespace,
+                        "attributes": e.attributes
                     }
                     for e in edges_result.scalars()
                 ]

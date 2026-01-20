@@ -160,6 +160,7 @@ class KGEdge(Base):
     target_id: Mapped[str] = mapped_column(ForeignKey("kg_nodes.id"))
     relation: Mapped[str] = mapped_column(String(50))  # CREATED, MODIFIED, READ, USED
     namespace: Mapped[str] = mapped_column(String(100), default="global", index=True)
+    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default={}, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
