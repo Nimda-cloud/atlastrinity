@@ -10,7 +10,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from ..config import CONFIG_ROOT
 from ..config_loader import config
@@ -97,7 +97,7 @@ class WhisperSTT:
     Speech-to-Text using Faster Whisper (CTranslate2)
     """
 
-    def __init__(self, model_name: str = None, device: str = None):
+    def __init__(self, model_name: Optional[str] = None, device: Optional[str] = None):
         # Get STT config from config.yaml
         stt_config = config.get("voice.stt", {})
 
@@ -155,7 +155,7 @@ class WhisperSTT:
             self.download_root.mkdir(parents=True, exist_ok=True)
 
             def load():
-                return WhisperModel(
+                return cast(Any, WhisperModel)(
                     self.model_name,
                     device=self.device,
                     compute_type=self.compute_type,
@@ -166,7 +166,7 @@ class WhisperSTT:
             print(f"[STT] Model loaded successfully from {self.download_root}")
         return self._model
 
-    async def transcribe_file(self, audio_path: str, language: str = None) -> TranscriptionResult:
+    async def transcribe_file(self, audio_path: str, language: Optional[str] = None) -> TranscriptionResult:
         language = language or self.language
 
         if not _check_whisper_available():
@@ -177,7 +177,7 @@ class WhisperSTT:
         try:
             # Faster Whisper parameters
             def transcribe():
-                segments, info = model.transcribe(
+                segments, info = cast(Any, model).transcribe(
                     audio_path,
                     language=language,
                     beam_size=2,
@@ -215,7 +215,7 @@ class WhisperSTT:
             return TranscriptionResult(text="", language=language, confidence=0, segments=[])
 
     async def transcribe_with_analysis(
-        self, audio_path: str, previous_text: str = "", language: str = None
+        self, audio_path: str, previous_text: str = "", language: Optional[str] = None
     ) -> SmartSTTResult:
         import time
 
@@ -392,7 +392,7 @@ class WhisperSTT:
     def list_audio_devices(self) -> list:
         if not _check_audio_available():
             return []
-        devices = sd.query_devices()
+        devices = cast(Any, sd).query_devices()
         return [
             {"id": i, "name": d["name"], "channels": d["max_input_channels"]}
             for i, d in enumerate(devices)
@@ -400,7 +400,7 @@ class WhisperSTT:
         ]
 
     async def record_and_transcribe(
-        self, duration: float = 5.0, language: str = None
+        self, duration: float = 5.0, language: Optional[str] = None
     ) -> TranscriptionResult:
         """Record audio and transcribe it"""
         if not _check_audio_available():
@@ -413,12 +413,12 @@ class WhisperSTT:
 
         fs = 16000
         print(f"[STT] Recording for {duration} seconds...")
-        recording = await asyncio.to_thread(sd.rec, int(duration * fs), samplerate=fs, channels=1)
-        await asyncio.to_thread(sd.wait)
+        recording = await asyncio.to_thread(cast(Any, sd).rec, int(duration * fs), samplerate=fs, channels=1)
+        await asyncio.to_thread(cast(Any, sd).wait)
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
             wav_path = tf.name
-            await asyncio.to_thread(sf.write, wav_path, recording, fs)
+            await asyncio.to_thread(cast(Any, sf).write, wav_path, recording, fs)
 
         try:
             result = await self.transcribe_file(wav_path, language)
@@ -433,11 +433,11 @@ class WhisperMCPServer:
     def __init__(self):
         self.stt = WhisperSTT()
 
-    async def transcribe_audio(self, audio_path: str, language: str = "uk"):
+    async def transcribe_audio(self, audio_path: str, language: Optional[str] = "uk"):
         result = await self.stt.transcribe_file(audio_path, language)
         return {"text": result.text, "confidence": result.confidence}
 
-    async def record_and_transcribe(self, duration: float = 5.0, language: str = None):
+    async def record_and_transcribe(self, duration: float = 5.0, language: Optional[str] = None):
         result = await self.stt.record_and_transcribe(duration, language)
         return {"text": result.text, "confidence": result.confidence}
 
