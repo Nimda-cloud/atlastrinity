@@ -52,6 +52,7 @@ mcp:
 
   sequential_thinking:
     enabled: true
+    model: raptor-mini
     max_history_size: 1000
 
   # === TIER 2: HIGH (Рекомендовані) ===

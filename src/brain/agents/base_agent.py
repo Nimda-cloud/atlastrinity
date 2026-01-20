@@ -61,57 +61,74 @@ class BaseAgent:
     async def use_sequential_thinking(self, task: str, total_thoughts: int = 3) -> Dict[str, Any]:
         """
         Universal reasoning capability for any agent.
-        Uses the 'sequential-thinking' MCP tool to break down complex problems.
+        Uses a dedicated LLM (as configured in sequential_thinking.model) to generate 
+        deep thoughts and stores them via the sequential-thinking MCP tool.
         """
-        from ..mcp_manager import mcp_manager
+        from langchain_core.messages import HumanMessage, SystemMessage
+        from providers.copilot import CopilotLLM 
+        from ..config_loader import config
         from ..logger import logger
-        
+        from ..mcp_manager import mcp_manager
+
         agent_name = self.__class__.__name__.upper()
         logger.info(f"[{agent_name}] 🤔 Thinking deeply about: {task[:60]}...")
         
+        # 1. Get model from config (defaulting to raptor-mini as requested)
+        seq_config = config.get("mcp.sequential_thinking", {})
+        model_name = seq_config.get("model", "raptor-mini")
+        
+        # 2. Initialize dedicated thinker
+        # We need to ensure providers is in path, usually it's there via agent init overrides
+        try:
+            thinker_llm = CopilotLLM(model_name=model_name)
+        except ImportError:
+            logger.error("Could not import CopilotLLM. Ensure 'providers' is in sys.path")
+            return {"success": False, "analysis": "Reflexion failed due to import error"}
+        
         full_analysis = ""
+        current_context = "" # Accumulate thoughts for LLM context
         
         try:
-            # Check availability first (optimization)
-            # We assume mcp_manager handles connection state, but quick check prevents errors
-            pass 
-
             for i in range(1, total_thoughts + 1):
                 is_last = (i == total_thoughts)
                 
-                # Step thought
-                logger.debug(f"[{agent_name}] Thought cycle {i}/{total_thoughts}")
+                # 3. Ask LLM for the next thought
+                prompt = f"""You are a deep technical reasoning engine.
+TASK: {task}
+
+PREVIOUS THOUGHTS:
+{current_context}
+
+STEP {i}/{total_thoughts}:
+Generate the next logical thought to analyze this problem. 
+- Focus on root causes, technical details, and specific actionable solutions.
+- If this is the final thought, provide a summary and recommendation.
+- Output ONLY the raw thought text. Do not wrap in JSON or Markdown blocks.
+"""
+                response = await thinker_llm.ainvoke([
+                    SystemMessage(content="You are a Sequential Thinking Engine. Output ONLY the raw thought text."),
+                    HumanMessage(content=prompt)
+                ])
+                thought_content = response.content if hasattr(response, "content") else str(response)
+                
+                # 4. Record thought via MCP tool (records history)
+                logger.debug(f"[{agent_name}] Thought cycle {i}: {thought_content[:100]}...")
+                
                 result = await mcp_manager.dispatch_tool(
                     "sequential-thinking.sequentialthinking",
                     {
-                        "thought": f"Analysis step {i}/{total_thoughts} for: {task}",
+                        "thought": thought_content,
                         "thoughtNumber": i,
                         "totalThoughts": total_thoughts,
                         "nextThoughtNeeded": not is_last
                     }
                 )
                 
-                # Robust extraction of text content
-                text_content = ""
-                if isinstance(result, dict):
-                    # Try creating human readable summary locally
-                    text_content = str(result.get("content", result.get("result", "")))
-                elif hasattr(result, "content"):
-                     content_list = getattr(result, "content", [])
-                     if isinstance(content_list, list):
-                         parts = []
-                         for c in content_list:
-                             if hasattr(c, "text"): parts.append(c.text)
-                             else: parts.append(str(c))
-                         text_content = " ".join(parts)
-                     else:
-                         text_content = str(content_list)
-                else:
-                    text_content = str(result)
-                
-                full_analysis += f"\n[Thought {i}]: {text_content[:800]}..."
+                # Update context for next iteration
+                current_context += f"Thought {i}: {thought_content}\n"
+                full_analysis += f"\n[Thought {i}]: {thought_content[:800]}..."
             
-            logger.info(f"[{agent_name}] Reasoning complete.")
+            logger.info(f"[{agent_name}] Reasoning complete using model {model_name}.")
             return {"success": True, "analysis": full_analysis}
 
         except Exception as e:
