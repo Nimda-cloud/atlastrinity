@@ -301,6 +301,9 @@ class CopilotLLM(BaseChatModel):
             "gpt-3.5-turbo": "gpt-4.1",
             "grok": "grok-code-fast-1",
             "raptor": "raptor-mini",
+            "raptor-mini": "raptor-mini",  # Re-route to same if supported, or change to gpt-4.1 if not
+            "gpt-5": "gpt-5-mini",
+            "gpt-5-mini": "gpt-5-mini",
         }
 
         # Clean up input string (lowercase, hyphenate common spaces)

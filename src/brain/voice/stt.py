@@ -283,6 +283,12 @@ class WhisperSTT:
         # 1. Aggressive blacklist for common hallucinations (even with high confidence)
         hard_blacklist = [
             "оля шор",
+            "промилки",
+            "привідах",
+            "промілки",
+            "привіти",
+            "привіток",
+            "привіток справи",
             "субтитри",
             "субтитрувальниця",
             "перегляд",
@@ -327,10 +333,25 @@ class WhisperSTT:
             "субтитры:",
         ]
 
-        # If phrase contains any blacklisted word (aggressive substring search)
         if any(p in text for p in hard_blacklist) or any(
-            p in text for p in ["дякую за перегляд", "підпишіться", "оля шор"]
+            p in text for p in [
+                "дякую за перегляд",
+                "підпишіться",
+                "оля шор",
+                "привідах",
+                "промилки",
+                "привіток",
+                "привіток справи"
+            ]
         ):
+            return SpeechType.BACKGROUND_NOISE
+
+        # 1.1 Check for short/meaningless hallucinations
+        if len(text.strip()) < 3 and text.strip().lower() in ["оля", "шор", "про", "так", "ні"]:
+            return SpeechType.BACKGROUND_NOISE
+
+        # If phrase contains any blacklisted word (aggressive substring search)
+        if any(p in text for p in hard_blacklist):
             return SpeechType.BACKGROUND_NOISE
 
         # 2. Низька впевненість

@@ -36,6 +36,19 @@ else:
     CHROMA_DIR = os.path.expandvars(CHROMA_DIR)
 
 
+def sanitize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Sanitize metadata for ChromaDB (no lists allowed)."""
+    sanitized = {}
+    for k, v in metadata.items():
+        if isinstance(v, list):
+            sanitized[k] = ", ".join(map(str, v))
+        elif v is None:
+            sanitized[k] = ""
+        else:
+            sanitized[k] = v
+    return sanitized
+
+
 class LongTermMemory:
     """
     Manages long-term vector memory using ChromaDB.
@@ -126,6 +139,7 @@ class LongTermMemory:
                 "success": context.get("success", False),
             }
 
+            metadata = sanitize_metadata(metadata)
             self.lessons.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
 
             logger.info(f"[MEMORY] Stored lesson: {doc_id}")
@@ -163,6 +177,7 @@ class LongTermMemory:
                 "steps_count": len(plan_steps),
             }
 
+            metadata = sanitize_metadata(metadata)
             self.strategies.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
 
             logger.info(f"[MEMORY] Stored strategy: {doc_id} (success={success})")
@@ -281,6 +296,7 @@ class LongTermMemory:
             return False
 
         try:
+            metadata = sanitize_metadata(metadata)
             self.knowledge.upsert(ids=[node_id], documents=[text], metadatas=[metadata])
             logger.info(f"[MEMORY] Added knowledge node: {node_id}")
             return True
@@ -298,16 +314,17 @@ class LongTermMemory:
         try:
             doc_id = f"conv_{session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
+            metadata = sanitize_metadata(
+                {
+                    "session_id": session_id,
+                    "timestamp": datetime.now().isoformat(),
+                    **(metadata or {}),
+                }
+            )
             self.conversations.upsert(
                 ids=[doc_id],
                 documents=[summary],
-                metadatas=[
-                    {
-                        "session_id": session_id,
-                        "timestamp": datetime.now().isoformat(),
-                        **(metadata or {}),
-                    }
-                ],
+                metadatas=[metadata],
             )
             logger.info(f"[MEMORY] Stored conversation summary: {doc_id}")
             return True
@@ -442,9 +459,10 @@ class LongTermMemory:
             # Flatten simple factors into metadata for filtering
             if decision_factors:
                 for k, v in decision_factors.items():
-                    if isinstance(v, (str, bool, int, float)):
+                    if isinstance(v, str | bool | int | float):
                         metadata[f"factor_{k}"] = cast(Any, v)
 
+            metadata = sanitize_metadata(metadata)
             self.behavior_deviations.upsert(
                 ids=[doc_id], documents=[document], metadatas=[metadata]
             )

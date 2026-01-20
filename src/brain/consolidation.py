@@ -176,7 +176,7 @@ class ConsolidationModule:
 
     def should_consolidate(self, last_activity: datetime | None = None) -> bool:
         """Check if consolidation should run."""
-        now = datetime.now()
+        now = datetime.now(UTC)
 
         # Never consolidated
         if not self.last_consolidation:
