@@ -258,13 +258,19 @@
       "Python linting (Ruff)",
       "JavaScript/TypeScript linting (Oxlint)",
       "Dead code analysis (Knip)",
-      "Code integrity check (Pyrefly)"
+      "Code integrity check (Pyrefly)",
+      "MCP Server Health Check (Ping/Status)",
+      "MCP Inspector Launch (Web Debugger)",
+      "MCP Config Validation"
     ],
     "key_tools": [
       "devtools_lint_python",
       "devtools_lint_js",
       "devtools_find_dead_code",
-      "devtools_check_integrity"
+      "devtools_check_integrity",
+      "devtools_check_mcp_health",
+      "devtools_launch_inspector",
+      "devtools_validate_config"
     ],
     "when_to_use": "Validating code quality, finding errors, and checking project health."
   }
