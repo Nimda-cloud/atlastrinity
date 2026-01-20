@@ -1,8 +1,5 @@
 import json
-import os
-from pathlib import Path
 
-import pytest
 
 from scripts import check_mcp_preflight as cli
 

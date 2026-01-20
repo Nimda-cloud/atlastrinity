@@ -6,7 +6,6 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.agents.grisha import Grisha  # noqa: E402
-from src.brain.logger import logger  # noqa: E402
 
 
 async def test_strategy_planning():

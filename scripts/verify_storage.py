@@ -7,12 +7,15 @@ from sqlalchemy import select, func
 # Ensure src is in path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from brain.db.manager import db_manager, DB_URL
+from brain.db.manager import db_manager
+from src.brain.config_loader import config
+# Use dynamic DB_URL
+DB_URL = config.get("db.url", "sqlite+aiosqlite:///:memory:")
 from brain.db.schema import Session, Task, TaskStep, ToolExecution, KGNode, ConversationSummary
 from brain.memory import long_term_memory
 
 async def verify_storage():
-    print(f"🔍 Verifying Storage Systems...")
+    print("🔍 Verifying Storage Systems...")
     print(f"   Database URL: {DB_URL}")
     print(f"   ChromaDB Path: {long_term_memory.get_stats().get('path', 'Unknown')}")
     print("-" * 50)
@@ -36,7 +39,7 @@ async def verify_storage():
                 node_count = await count(KGNode)
                 conv_sum_count = await count(ConversationSummary)
 
-                print(f"   ✅ Connection Established")
+                print("   ✅ Connection Established")
                 print(f"   Sessions: {session_count}")
                 print(f"   Tasks: {task_count}")
                 print(f"   Task Steps: {step_count}")
@@ -44,7 +47,7 @@ async def verify_storage():
                 print(f"   Knowledge Graph Nodes (DB): {node_count}")
                 print(f"   Conversation Summaries (DB): {conv_sum_count}")
 
-                if session_count > 0:
+                if session_count is not None and session_count > 0:
                     print("   ✅ Data is being persisted to Postgres.")
                 else:
                     print("   ⚠️ Tables appear empty (might be a fresh install or saving issue).")
@@ -61,7 +64,7 @@ async def verify_storage():
         if not stats.get("available"):
              print("   ❌ ChromaDB Unavailable!")
         else:
-             print(f"   ✅ Connection Established")
+             print("   ✅ Connection Established")
              print(f"   Lessons (Errors/Solutions): {stats.get('lessons_count')}")
              print(f"   Strategies (Plans): {stats.get('strategies_count')}")
              

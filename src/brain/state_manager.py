@@ -13,11 +13,14 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 try:
-    import redis
-
+    import redis.asyncio as redis
     REDIS_AVAILABLE = True
 except ImportError:
-    REDIS_AVAILABLE = False
+    try:
+        import redis
+        REDIS_AVAILABLE = True
+    except ImportError:
+        REDIS_AVAILABLE = False
 
 from .logger import logger
 
@@ -45,27 +48,19 @@ class StateManager:
         # Priority: EnvVar > Config > Default Host/Port
         redis_url = os.getenv("REDIS_URL") or config.get("state.redis_url")
 
-        try:
-            if redis_url:
-                self.redis = redis.Redis.from_url(
-                    redis_url, decode_responses=True, socket_connect_timeout=2
-                )
-                logger.info(f"[STATE] Redis connected via URL")
-            else:
-                self.redis = redis.Redis(
-                    host=host, port=port, decode_responses=True, socket_connect_timeout=2
-                )
-                logger.info(f"[STATE] Redis connected at {host}:{port}")
-            
-            # Test connection
-            self.redis.ping()
-            self.available = True
-        except redis.ConnectionError:
-            logger.warning("[STATE] Redis not running. State persistence disabled.")
-            self.redis = None
-        except Exception as e:
-            logger.warning(f"[STATE] Redis error: {e}. State persistence disabled.")
-            self.redis = None
+        if redis_url:
+            self.redis: Optional[Any] = redis.Redis.from_url(
+                redis_url, decode_responses=True, socket_connect_timeout=2
+            )
+            logger.info("[STATE] Redis connected via URL")
+        else:
+            self.redis: Optional[Any] = redis.Redis(
+                host=host, port=port, decode_responses=True, socket_connect_timeout=2
+            )
+            logger.info(f"[STATE] Redis connected at {host}:{port}")
+        
+        # Connection will be tested lazily or in initialize
+        self.available = True
 
     def _key(self, *parts: str) -> str:
         """Generate Redis key with prefix."""
@@ -112,11 +107,11 @@ class StateManager:
             # Return a minimal valid state so orchestrator doesn't crash
             return {"messages": [], "system_state": "IDLE"}
 
-    def save_session(self, session_id: str, state: Dict[str, Any]) -> bool:
+    async def save_session(self, session_id: str, state: Dict[str, Any]) -> bool:
         """
         Save full session state.
         """
-        if not self.available:
+        if not self.available or not self.redis:
             return False
 
         try:
@@ -124,24 +119,24 @@ class StateManager:
             state_to_save = state.copy()
             state_to_save["_saved_at"] = datetime.now().isoformat()
             
-            self.redis.set(key, self._serialize_state(state_to_save))
-            self.redis.expire(key, 86400 * 7)  # 7 days TTL
+            await self.redis.set(key, self._serialize_state(state_to_save))
+            await self.redis.expire(key, 86400 * 7)  # 7 days TTL
             logger.info(f"[STATE] Session saved: {session_id}")
             return True
         except Exception as e:
             logger.error(f"[STATE] Failed to save session: {e}")
             return False
 
-    def restore_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def restore_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
         Restore session state.
         """
-        if not self.available:
+        if not self.available or not self.redis:
             return None
 
         try:
             key = self._key("session", session_id)
-            data = self.redis.get(key)
+            data = await self.redis.get(key)
             if data:
                 state = self._deserialize_state(data)
                 logger.info(f"[STATE] Session restored: {session_id}")
@@ -151,23 +146,23 @@ class StateManager:
 
         return None
 
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Directly get session data by ID."""
-        return self.restore_session(session_id)
+        return await self.restore_session(session_id)
 
     async def list_sessions(self) -> List[Dict[str, Any]]:
         """List all available sessions with summaries from Redis and DB."""
         sessions_map = {}
 
         # 1. Fetch from Redis (Active but ephemeral)
-        if self.available:
+        if self.available and self.redis:
             try:
                 pattern = self._key("session", "*")
-                for key in self.redis.scan_iter(pattern):
-                    data = self.redis.get(key)
+                async for key in self.redis.scan_iter(pattern):
+                    data = await self.redis.get(key)
                     if data:
                         try:
-                            state = json.loads(data)
+                            state = json.loads(str(data))
                             session_id = key.split(":")[-1]
                             theme = state.get("_theme", "Untitled Session")
                             if theme == "Untitled Session":
@@ -218,7 +213,7 @@ class StateManager:
         sessions.sort(key=lambda x: x["saved_at"], reverse=True)
         return sessions
 
-    def checkpoint(self, session_id: str, step_id: int, step_result: Dict[str, Any]) -> bool:
+    async def checkpoint(self, session_id: str, step_id: int, step_result: Dict[str, Any]) -> bool:
         """
         Save checkpoint for a specific step.
 
@@ -227,7 +222,7 @@ class StateManager:
             step_id: Step number
             step_result: Result of the step
         """
-        if not self.available:
+        if not self.available or not self.redis:
             return False
 
         try:
@@ -237,22 +232,24 @@ class StateManager:
                 "result": step_result,
                 "timestamp": datetime.now().isoformat(),
             }
-            self.redis.set(key, json.dumps(checkpoint, default=str))
-            self.redis.expire(key, 86400)  # 1 day TTL
+            await self.redis.set(key, json.dumps(checkpoint, default=str))
+            await self.redis.expire(key, 86400)  # 1 day TTL
             return True
         except Exception as e:
             logger.error(f"[STATE] Failed to checkpoint: {e}")
             return False
 
-    def get_last_checkpoint(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_last_checkpoint(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get the most recent checkpoint for a session."""
-        if not self.available:
+        if not self.available or not self.redis:
             return None
 
         try:
             # Get all checkpoints for session
             pattern = self._key("checkpoint", session_id, "*")
-            keys = list(self.redis.scan_iter(pattern))
+            keys = []
+            async for key in self.redis.scan_iter(pattern):
+                keys.append(key)
 
             if not keys:
                 return None
@@ -262,9 +259,9 @@ class StateManager:
             latest_id = -1
 
             for key in keys:
-                data = self.redis.get(key)
+                data = await self.redis.get(key)
                 if data:
-                    checkpoint = json.loads(data)
+                    checkpoint = json.loads(str(data))
                     if checkpoint.get("step_id", 0) > latest_id:
                         latest = checkpoint
                         latest_id = checkpoint.get("step_id", 0)
@@ -274,9 +271,9 @@ class StateManager:
             logger.error(f"[STATE] Failed to get checkpoint: {e}")
             return None
 
-    def set_current_task(self, task_description: str, task_id: str = None) -> bool:
+    async def set_current_task(self, task_description: str, task_id: Optional[str] = None) -> bool:
         """Save the current active task."""
-        if not self.available:
+        if not self.available or not self.redis:
             return False
 
         try:
@@ -286,40 +283,40 @@ class StateManager:
                 "description": task_description,
                 "started_at": datetime.now().isoformat(),
             }
-            self.redis.set(key, json.dumps(task))
+            await self.redis.set(key, json.dumps(task))
             return True
         except Exception as e:
             logger.error(f"[STATE] Failed to set current task: {e}")
             return False
 
-    def get_current_task(self) -> Optional[Dict[str, Any]]:
+    async def get_current_task(self) -> Optional[Dict[str, Any]]:
         """Get the current active task (for recovery after restart)."""
-        if not self.available:
+        if not self.available or not self.redis:
             return None
 
         try:
             key = self._key("current_task")
-            data = self.redis.get(key)
+            data = await self.redis.get(key)
             if data:
-                return json.loads(data)
+                return json.loads(str(data))
         except Exception as e:
             logger.error(f"[STATE] Failed to get current task: {e}")
 
         return None
 
-    def clear_session(self, session_id: str) -> bool:
+    async def clear_session(self, session_id: str) -> bool:
         """Clear all data for a session."""
-        if not self.available:
+        if not self.available or not self.redis:
             return False
 
         try:
             # Delete session
-            self.redis.delete(self._key("session", session_id))
+            await self.redis.delete(self._key("session", session_id))
 
             # Delete checkpoints
             pattern = self._key("checkpoint", session_id, "*")
-            for key in self.redis.scan_iter(pattern):
-                self.redis.delete(key)
+            async for key in self.redis.scan_iter(pattern):
+                await self.redis.delete(key)
 
             logger.info(f"[STATE] Session cleared: {session_id}")
             return True
@@ -327,7 +324,7 @@ class StateManager:
             logger.error(f"[STATE] Failed to clear session: {e}")
             return False
 
-    def publish_event(self, channel: str, data: Dict[str, Any]) -> bool:
+    async def publish_event(self, channel: str, data: Dict[str, Any]) -> bool:
         """
         Broadcast an event via Redis Pub/Sub.
 
@@ -335,25 +332,25 @@ class StateManager:
             channel: The channel name (e.g., 'tasks', 'steps')
             data: Event payload
         """
-        if not self.available:
+        if not self.available or not self.redis:
             return False
 
         try:
             full_channel = self._key("events", channel)
             data["timestamp"] = datetime.now().isoformat()
-            self.redis.publish(full_channel, json.dumps(data, default=str))
+            await self.redis.publish(full_channel, json.dumps(data, default=str))
             return True
         except Exception as e:
             logger.error(f"[STATE] Failed to publish event: {e}")
             return False
 
-    def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> Dict[str, Any]:
         """Get state manager statistics."""
-        if not self.available:
+        if not self.available or not self.redis:
             return {"available": False}
 
         try:
-            info = self.redis.info("keyspace")
+            info = await self.redis.info("keyspace")
             return {"available": True, "connected": True, "keyspace": info}
         except Exception as e:
             return {"available": True, "connected": False, "error": str(e)}

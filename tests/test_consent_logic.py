@@ -1,6 +1,5 @@
 
 import sys
-import os
 
 # Mock the shared_context
 class MockSharedContext:

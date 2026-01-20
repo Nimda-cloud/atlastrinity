@@ -23,7 +23,7 @@ async def demo_visibility():
     
     # This will trigger the logger inside vibe_server.py
     # and you will see [VIBE-LIVE] in the output below.
-    result = await vibe_prompt(
+    await vibe_prompt(
         prompt=prompt,
         cwd=cwd,
         timeout_s=60

@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 import pandas as pd
 from pathlib import Path
@@ -10,7 +9,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Mock environment
 from src.brain.db.manager import db_manager
-from src.brain.knowledge_graph import knowledge_graph
 from src.mcp_server.memory_server import ingest_verified_dataset, trace_data_chain
 
 async def verify_semantic_chaining():

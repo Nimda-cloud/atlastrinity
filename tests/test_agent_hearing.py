@@ -1,8 +1,5 @@
-import asyncio
 import pytest
-from brain.agents.tetyana import Tetyana
 from brain.message_bus import message_bus, AgentMsg, MessageType
-from brain.mcp_manager import mcp_manager
 
 @pytest.mark.asyncio
 async def test_tetyana_hearing_bus_messages():

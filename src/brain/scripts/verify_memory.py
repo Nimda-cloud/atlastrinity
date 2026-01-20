@@ -26,8 +26,7 @@ async def verify():
     # 2. Check MCP Memory Server Connection
     print("\nChecking MCP 'memory' server...")
     try:
-        # We need to initialize mcp_manager first (load config)
-        await mcp_manager.initialize()
+        # MCP Manager initializes config on construction
         
         session = await mcp_manager.get_session("memory")
         if session:

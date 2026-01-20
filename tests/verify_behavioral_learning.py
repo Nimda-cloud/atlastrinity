@@ -64,7 +64,7 @@ async def test_deviation_sync():
             print("[TEST] FAILED: Could not find deviation in SQL")
             return False
             
-        print(f"[TEST] Success! Found entry in SQL table 'behavioral_deviations'")
+        print("[TEST] Success! Found entry in SQL table 'behavioral_deviations'")
         print(f"      Original Intent: {entry.original_intent}")
         print(f"      Deviation: {entry.deviation}")
         print(f"      Factors: {entry.decision_factors}")

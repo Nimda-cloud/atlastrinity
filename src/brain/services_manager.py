@@ -9,7 +9,6 @@ Handles system-level dependencies like Redis and Docker:
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
 from .config import CONFIG_ROOT
 from .logger import logger

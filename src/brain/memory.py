@@ -9,11 +9,10 @@ ChromaDB-based vector memory for storing:
 This enables the system to learn from past experience.
 """
 
-import json
 import os
 import asyncio
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 try:
     import chromadb
@@ -23,7 +22,7 @@ try:
 except ImportError:
     CHROMADB_AVAILABLE = False
 
-from .config import CONFIG_ROOT, MEMORY_DIR
+from .config import MEMORY_DIR
 from .config_loader import config
 from .logger import logger
 
@@ -241,7 +240,7 @@ class LongTermMemory:
                 query_texts=[task],
                 n_results=min(n_results, self.strategies.count()),
                 include=["documents", "metadatas", "distances"],
-                where=where_filter,
+                where=cast(Any, where_filter) if where_filter else None,
             )
 
             similar = []
@@ -283,7 +282,7 @@ class LongTermMemory:
             logger.error(f"[MEMORY] Failed to add knowledge node: {e}")
             return False
 
-    def remember_conversation(self, session_id: str, summary: str, metadata: Dict[str, Any] = None) -> bool:
+    def remember_conversation(self, session_id: str, summary: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Store a conversation summary in vector memory."""
         if not self.available:
             return False
@@ -389,7 +388,7 @@ class LongTermMemory:
         reason: str, 
         result: str, 
         context: Dict[str, Any],
-        decision_factors: Dict[str, Any] = None
+        decision_factors: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Store a successful logic deviation with decision context.
@@ -428,8 +427,8 @@ class LongTermMemory:
             # Flatten simple factors into metadata for filtering
             if decision_factors:
                 for k, v in decision_factors.items():
-                    if isinstance(v, (str, int, float, bool)):
-                        metadata[f"factor_{k}"] = v
+                    if isinstance(v, (str, bool, int, float)):
+                        metadata[f"factor_{k}"] = cast(Any, v)
             
             self.behavior_deviations.upsert(
                 ids=[doc_id],
@@ -456,7 +455,7 @@ class LongTermMemory:
                         )
                         session.add(deviation_entry)
                         await session.commit()
-                        logger.info(f"[MEMORY] Synced deviation to SQL")
+                        logger.info("[MEMORY] Synced deviation to SQL")
                 
                 # Check if we are in an event loop (likely)
                 try:

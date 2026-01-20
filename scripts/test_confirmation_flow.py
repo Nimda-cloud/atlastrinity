@@ -1,6 +1,5 @@
 
 import asyncio
-import json
 import os
 import sys
 from unittest.mock import MagicMock, AsyncMock
@@ -9,10 +8,9 @@ from unittest.mock import MagicMock, AsyncMock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.orchestrator import Trinity, SystemState
-from src.brain.agents.tetyana import Tetyana, StepResult
-from src.brain.message_bus import AgentMsg, MessageType
+from src.brain.agents.tetyana import StepResult
 
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage
 
 async def test_confirmation_flow():
     print("--- Starting Confirmation Flow Test ---")

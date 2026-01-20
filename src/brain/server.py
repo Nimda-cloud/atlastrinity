@@ -7,12 +7,10 @@ import os
 
 # Suppress espnet2 UserWarning about non-writable tensors
 import warnings
-from pathlib import Path
 
 warnings.filterwarnings("ignore", category=UserWarning, module="espnet2.torch_utils.device_funcs")
 
 # Import CONFIG_ROOT before using it
-from .config import CONFIG_ROOT  # noqa: E402
 from .config_loader import config  # noqa: E402
 from .services_manager import ServiceStatus, ensure_all_services  # noqa: E402
 
@@ -31,14 +29,14 @@ if github_token:
     print("[Server] ✓ GITHUB_TOKEN loaded from global context")
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Dict
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
 from .logger import logger  # noqa: E402
-from .orchestrator import SystemState, Trinity  # noqa: E402
+from .orchestrator import Trinity  # noqa: E402
 from .production_setup import run_production_setup  # noqa: E402
 from .voice.stt import SpeechType, WhisperSTT  # noqa: E402
 
@@ -351,7 +349,7 @@ async def smart_speech_to_text(
                 if result.returncode == 0:
                     os.unlink(temp_file_path)  # Delete original
                 else:
-                    logger.warning(f"[STT] FFmpeg failed, using original")
+                    logger.warning("[STT] FFmpeg failed, using original")
                     wav_path = temp_file_path
             except Exception:
                 wav_path = temp_file_path
@@ -364,14 +362,16 @@ async def smart_speech_to_text(
         from difflib import SequenceMatcher
 
         now = time.time()
-        agent_was_speaking = trinity.voice.is_speaking
+        trinity_instance = globals().get('trinity')
+        trinity_voice = getattr(trinity_instance, 'voice', None) if trinity_instance else None
+        agent_was_speaking = trinity_voice.is_speaking if trinity_voice else False
         
         clean_text = result.text.strip().lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
         
         # Get history + current last text
-        phrase_history = list(trinity.voice.history)
-        if trinity.voice.last_text:
-             phrase_history.append(trinity.voice.last_text)
+        phrase_history = list(trinity_voice.history) if trinity_voice else []
+        if trinity_voice and trinity_voice.last_text:
+             phrase_history.append(trinity_voice.last_text)
         
         # Calculate overlap similarity against HISTORY
         is_echo = False
@@ -395,7 +395,7 @@ async def smart_speech_to_text(
                     break
 
         # 2. Time-based Heuristics for short noises (only if currently speaking or just finished)
-        if not is_echo and (agent_was_speaking or (now - trinity.voice.last_speak_time < 3.0)):
+        if not is_echo and trinity_voice and (agent_was_speaking or (now - trinity_voice.last_speak_time < 3.0)):
              if result.confidence < 0.6:
                  is_echo = True
                  logger.info(f"[STT] Noise detected (Low Conf): '{result.text}'")
@@ -417,8 +417,6 @@ async def smart_speech_to_text(
                 "ignored": True,
             }
 
-        # --- BARGE-IN TRIGGER ---
-        # If we detected valid NEW speech (not echo) AND agent is speaking -> INTERRUPT!
         if (
             result.speech_type == SpeechType.NEW_PHRASE 
             and result.text 
@@ -427,7 +425,8 @@ async def smart_speech_to_text(
             and result.confidence > 0.65 # Bumped slightly to 0.65
         ):
             logger.info(f"[STT] 🛑 BARGE-IN DETECTED: '{result.text}' -> Stopping TTS.")
-            trinity.voice.stop() # Stop current speech immediately
+            if trinity_voice:
+                trinity_voice.stop() # Stop current speech immediately
 
         # Standard logging
         if result.text:

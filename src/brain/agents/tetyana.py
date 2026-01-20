@@ -7,13 +7,11 @@ Model: GPT-4.1
 """
 
 import asyncio
-import json
 import os
 
 # Robust path handling for both Dev and Production (Packaged)
 import sys
 import time
-from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, cast
@@ -551,7 +549,6 @@ IMPORTANT:
                         screenshot_path=vision_result.get("screenshot_path"),
                     )
 
-        vibe_guardrail_msg = ""
 
         # Fetch Grisha's feedback (Priority: Injected via self-healing loop > Saved rejection report)
         grisha_feedback = step.get("grisha_feedback", "")
@@ -908,7 +905,7 @@ IMPORTANT:
 
         if state_manager.available:
             try:
-                state_manager.checkpoint("current", int(str(res.step_id)), res.to_dict())
+                await state_manager.checkpoint("current", int(str(res.step_id)), res.to_dict())
             except Exception:
                 pass
 
@@ -997,7 +994,6 @@ IMPORTANT:
     async def _perform_gui_action(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Performs GUI interaction (click, type, hotkey, search_app) using pyautogui"""
         try:
-            import pyautogui  # noqa: E402
 
             from ..mcp_manager import mcp_manager  # noqa: E402
 

@@ -68,8 +68,6 @@ def run(config: str | None = None) -> int:
 
     print("No MCP package issues found.")
     return 0
-    print("No MCP package issues found.")
-    return 0
 
 
 def main():

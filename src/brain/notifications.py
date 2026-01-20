@@ -10,7 +10,7 @@ Human-in-the-Loop system for:
 import os
 import subprocess
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from .logger import logger
 
@@ -46,8 +46,6 @@ class NotificationManager:
         """
         try:
             # Build AppleScript
-            sound_cmd = 'sound name "Ping"' if sound else ""
-            subtitle_cmd = f'subtitle "{subtitle}"' if subtitle else ""
 
             script = """
             display notification "{message}" with title "{title}" {subtitle_cmd} {sound_cmd}
@@ -115,7 +113,7 @@ class NotificationManager:
             return True
 
         try:
-            icon = {
+            {
                 "low": "note",
                 "medium": "caution",
                 "high": "stop",

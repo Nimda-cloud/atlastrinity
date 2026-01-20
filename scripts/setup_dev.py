@@ -17,7 +17,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 
 # Кольори для консолі
@@ -468,7 +467,7 @@ def sync_configs():
         # Copy config.yaml template (Overwrite)
         if config_yaml_src.exists():
             shutil.copy2(config_yaml_src, config_yaml_dst)
-            print_success(f"Overwrote config.yaml from template")
+            print_success("Overwrote config.yaml from template")
         else:
             # Fallback: create minimal config
             import yaml
@@ -483,13 +482,13 @@ def sync_configs():
             }
             with open(config_yaml_dst, "w", encoding="utf-8") as f:
                 yaml.dump(defaults, f, allow_unicode=True)
-            print_success(f"Created default config.yaml (Template missing)")
+            print_success("Created default config.yaml (Template missing)")
 
         # Copy MCP config.json (Overwrite)
         DIRS["mcp"].mkdir(parents=True, exist_ok=True)
         if mcp_json_src.exists():
             shutil.copy2(mcp_json_src, mcp_json_dst)
-            print_success(f"FORCED SYNC: Overwrote mcp/config.json from project template")
+            print_success("FORCED SYNC: Overwrote mcp/config.json from project template")
         else:
             print_warning("mcp/config.json.template missing, skipped overwrite")
 

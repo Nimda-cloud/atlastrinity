@@ -5,7 +5,6 @@ Tests all configured MCP servers and their capabilities.
 """
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 

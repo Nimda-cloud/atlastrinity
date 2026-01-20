@@ -13,7 +13,6 @@ from langchain_core.messages import (
 )
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.language_models import BaseChatModel
-import asyncio
 import httpx
 import base64
 from io import BytesIO
@@ -193,7 +192,7 @@ class CopilotLLM(BaseChatModel):
             if not token:
                 raise RuntimeError("Copilot token response missing 'token' field.")
             return token, api_endpoint
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             # During tests we may set COPILOT_API_KEY to a dummy value; in that case
             # return a dummy token instead of raising an error to avoid network calls.
             if str(self.api_key).lower() in {"dummy", "test"} or os.getenv("COPILOT_API_KEY", "").lower() in {"dummy", "test"}:
@@ -370,7 +369,7 @@ class CopilotLLM(BaseChatModel):
                 if response.status_code == 400:
                     error_detail = response.text
                     print(f"[COPILOT] Async 400 error. Content: {error_detail[:500]}", flush=True)
-                    print(f"[COPILOT] Retrying with gpt-4.1...", flush=True)
+                    print("[COPILOT] Retrying with gpt-4.1...", flush=True)
                     
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
@@ -480,7 +479,7 @@ class CopilotLLM(BaseChatModel):
         except requests.exceptions.HTTPError as e:
             # Check for Vision error (400) and try fallback with different model
             if hasattr(e, 'response') and e.response is not None and e.response.status_code == 400:
-                print(f"[COPILOT] 400 Error intercepted. Retrying without Vision...", flush=True)
+                print("[COPILOT] 400 Error intercepted. Retrying without Vision...", flush=True)
                 # Retry without vision header AND remove image content from payload
                 try:
                     headers.pop("Copilot-Vision-Request", None)

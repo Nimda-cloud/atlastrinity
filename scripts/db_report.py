@@ -17,7 +17,7 @@ from src.brain.db.schema import LogEntry, Task, TaskStep
 async def report(limit_tasks: int = 50, limit_logs: int = 200):
     try:
         await db_manager.initialize()
-    except Exception as e:
+    except Exception:
         print("[DB] initialize() failed: {e}")
         traceback.print_exc()
         return 1
@@ -66,7 +66,7 @@ async def report(limit_tasks: int = 50, limit_logs: int = 200):
                 ts = l.timestamp.isoformat() if isinstance(l.timestamp, datetime) else l.timestamp
                 print(f"{ts} | {l.source} | {l.level} | {l.message}")
 
-    except Exception as e:
+    except Exception:
         print("[DB] Query failed: {e}")
         traceback.print_exc()
         return 3

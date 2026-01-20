@@ -12,11 +12,10 @@ Comprehensive check of the entire system state:
 
 import os
 import sys
+import json
 import shutil
 import subprocess
-import platform
 from pathlib import Path
-from typing import List, Dict, Tuple
 import yaml
 import dotenv
 
@@ -130,7 +129,6 @@ def check_configs():
             # Validate JSON syntax
             if filename.endswith(".json"):
                 try:
-                    import json
                     with open(path, 'r') as f:
                         json.load(f)
                     print_pass(f"  Valid JSON syntax: {filename}")
@@ -217,7 +215,7 @@ def check_models():
     tts_path = CONFIG_ROOT / "models" / "tts"
     if tts_path.exists(): 
          # Simple existence check for now as structure varies
-         print_pass(f"TTS Model directory exists")
+         print_pass("TTS Model directory exists")
          STATUS_REPORT["passed"] += 1
     else:
          print_fail("TTS Model directory missing")

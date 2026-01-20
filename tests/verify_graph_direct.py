@@ -5,13 +5,11 @@ Verify Graph Server Functionality
 import sys
 import os
 import asyncio
-from typing import Optional
 
 # Setup path to import from src
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from src.brain.mcp_manager import mcp_manager
 from src.brain.db.manager import db_manager
 
 async def test_graph_generation():

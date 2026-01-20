@@ -1,5 +1,5 @@
 python-version = "3.12"
-search-path = ["."]
+search-path = [".", "src"]
 site-package-path = [".venv/lib/python3.12/site-packages"]
 disable-search-path-heuristics = true
 project-includes = ["src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]

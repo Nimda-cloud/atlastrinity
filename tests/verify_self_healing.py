@@ -2,7 +2,6 @@
 import asyncio
 import os
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock
 
 # Add project root to path
@@ -15,7 +14,7 @@ class MockLLM:
     def __init__(self, *args, **kwargs):
         self.model_name = "mock"
     async def ainvoke(self, messages):
-        content = str(messages)
+        str(messages)
         # Return a mock JSON response for Grisha
         return MagicMock(content='''{
             "root_cause": "Permission denied error indicates lack of privilege.",
@@ -58,7 +57,7 @@ async def test_grisha_analysis():
 
 async def test_tetyana_feedback_usage():
     print("\n--- Testing Tetyana Feedback Usage ---")
-    tetyana = Tetyana()
+    Tetyana()
     
     # Mock step with injected feedback
     mock_step = {

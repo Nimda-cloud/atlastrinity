@@ -1,4 +1,3 @@
-import os
 import sys
 from typing import Any, Dict, List, Optional, cast
 
@@ -44,7 +43,6 @@ async def create_entities(entities: List[Dict[str, Any]], namespace: str = "glob
     await db_manager.initialize()
 
     created: List[str] = []
-    updated: List[str] = []
 
     for ent in entities:
         n = _normalize_entity(ent)

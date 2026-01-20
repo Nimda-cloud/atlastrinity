@@ -188,6 +188,10 @@ class MCPHealthDashboard:
             if isinstance(result, Exception):
                 logger.error(f"[HealthDashboard] Unexpected error: {result}")
                 continue
+            
+            # Type narrowing for Pyrefly
+            if not isinstance(result, ServerStatus):
+                continue
 
             servers[result.name] = result
 

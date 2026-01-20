@@ -114,7 +114,7 @@ Generate the next logical thought to analyze this problem.
                 # 4. Record thought via MCP tool (records history)
                 logger.debug(f"[{agent_name}] Thought cycle {i}: {thought_content[:100]}...")
                 
-                result = await mcp_manager.dispatch_tool(
+                await mcp_manager.dispatch_tool(
                     "sequential-thinking.sequentialthinking",
                     {
                         "thought": thought_content,

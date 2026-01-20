@@ -6,8 +6,6 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.agents.atlas import Atlas
-from src.brain.orchestrator import Trinity
-from langchain_core.messages import HumanMessage
 
 async def test_chat_intelligence():
     print("=== Testing Capable Chat Intelligence ===")

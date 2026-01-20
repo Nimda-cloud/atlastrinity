@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import sys
 from pathlib import Path
@@ -25,7 +24,7 @@ async def test_stream():
             
     ctx = MockContext()
 
-    result = await vibe_prompt(
+    await vibe_prompt(
         ctx=ctx,
         prompt=prompt,
         cwd=os.getcwd(),

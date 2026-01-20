@@ -16,7 +16,7 @@ async def main():
 
     print("Loading tiny model...")
     start = time.time()
-    model = await stt.get_model()
+    await stt.get_model()
     print(f"Tiny model loaded in {time.time() - start:.2f}s")
 
     print("Verification SUCCESS: Faster-Whisper engine is working.")

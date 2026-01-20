@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import os
 from pathlib import Path
 
 # Setup paths
@@ -9,7 +8,6 @@ sys.path.append(str(project_root))
 
 from src.brain.orchestrator import Trinity as Orchestrator
 from src.brain.mcp_manager import mcp_manager
-from src.brain.logger import logger
 
 async def test_google_registration_scenario():
     print("=== TEST SCENARIO: GOOGLE ACCOUNT REGISTRATION ===")
@@ -27,7 +25,6 @@ async def test_google_registration_scenario():
     # Since Orchestrator.process_request is e2e, we will run it and stop after a few steps or error out safely
     # For CI safety, we might just ask Atlas to PLAN first.
     
-    auth_context = {"user_id": "test_user", "clearance": "admin"}
     
     # 1. Run the request
     # NOTE: In a real run without user interaction, this might stall on Browser launch if not handled.

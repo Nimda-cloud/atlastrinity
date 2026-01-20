@@ -1,6 +1,5 @@
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, AsyncMock
@@ -12,16 +11,9 @@ async def test_routing():
     print("🔍 Testing Tetyana Workspace Re-routing Logic...")
     
     from src.brain.agents.tetyana import Tetyana
-    from src.brain.config_loader import SystemConfig
     
     # Mock dependencies
     tetyana = Tetyana()
-    
-    # Mock mcp_manager
-    tetyana.mcp_manager = MagicMock()
-    tetyana.mcp_manager.call_tool = AsyncMock(return_value={"content": [{"text": "success"}]})
-    
-    # 1. Test Vibe re-routing when CWD is repo root
     repo_root = str(Path.cwd().absolute())
     args = {"prompt": "hi", "cwd": repo_root}
     
@@ -32,8 +24,7 @@ async def test_routing():
     # Note: we need to handle the fact that it's a private method
     
     try:
-        # Mocking the validation to skip macos-use specific stuff
-        tetyana._validate_macos_use_args = lambda tool, args: args
+        # We want to test re-routing in _call_mcp_direct
         
         await tetyana._call_mcp_direct("vibe", "vibe_prompt", args)
         

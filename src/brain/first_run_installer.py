@@ -23,7 +23,8 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Any
+from .logger import logger
 
 # Import config paths
 try:
@@ -50,6 +51,7 @@ class SetupStep(Enum):
     INSTALL_MACOS_USE = "install_macos_use"
     DOWNLOAD_TTS = "download_tts"
     DOWNLOAD_STT = "download_stt"
+    BUILD_MACOS_USE = "build_macos_use"
     SETUP_COMPLETE = "setup_complete"
 
 
@@ -110,7 +112,7 @@ class FirstRunInstaller:
         progress: float,
         message: str,
         success: bool = True,
-        error: str = None,
+        error: Optional[str] = None,
     ):
         """Report progress to callback"""
         self.callback(
@@ -256,9 +258,10 @@ class FirstRunInstaller:
             )
 
             # Stream output
-            for line in iter(process.stdout.readline, ""):
-                if line:
-                    print(f"[Homebrew] {line.strip()}")
+            if process.stdout:
+                for line in iter(process.stdout.readline, ""):
+                    if line:
+                        print(f"[Homebrew] {line.strip()}")
 
             process.wait()
 
@@ -293,7 +296,7 @@ class FirstRunInstaller:
     # ============ SERVICES ============
 
     def _install_brew_package(
-        self, step: SetupStep, formula: str, cask: bool = False, check_cmd: str = None
+        self, step: SetupStep, formula: str, cask: bool = False, check_cmd: Optional[str] = None
     ) -> bool:
         """Generic brew install helper"""
         self._report(step, 0.0, f"Перевірка {formula}...")
@@ -344,9 +347,9 @@ class FirstRunInstaller:
 
     def install_postgres(self) -> bool:
         """Install PostgreSQL (skipped if using SQLite backend)"""
-        from .config_loader import get_config_value
+        from .config_loader import config as sys_config
 
-        db_url = get_config_value("database", "url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
+        db_url = sys_config.get("database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
         if db_url.startswith("sqlite"):
             self._report(SetupStep.INSTALL_POSTGRES, 1.0, "SQLite is configured as the DB backend; skipping PostgreSQL installation.")
             return True
@@ -360,8 +363,8 @@ class FirstRunInstaller:
         self._report(SetupStep.START_SERVICES, 0.0, "Запуск сервісів...")
 
         # Only include PostgreSQL service if backend requires it
-        from .config_loader import get_config_value
-        db_url = get_config_value("database", "url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
+        from .config_loader import config as sys_config
+        db_url = sys_config.get("database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
 
         services = ["redis"]
         if not db_url.startswith("sqlite"):
@@ -426,9 +429,9 @@ class FirstRunInstaller:
         """Create structured database and tables (supports SQLite or PostgreSQL)"""
         self._report(SetupStep.CREATE_DATABASE, 0.0, "Створення бази даних...")
 
-        from .config_loader import config
         # Use config.get
-        db_url = get_config_value("database", "url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
+        from .config_loader import config as sys_config
+        db_url = sys_config.get("database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
 
         if db_url.startswith("sqlite"):
             # For SQLite, ensure file/directory exists and return

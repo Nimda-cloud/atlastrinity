@@ -10,7 +10,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "s
 
 from brain.orchestrator import Trinity
 from brain.state_manager import state_manager
-from brain.agents.atlas import TaskPlan
 
 async def test_resumption():
     print("--- STARTING RESUMPTION VERIFICATION ---")
@@ -38,7 +37,7 @@ async def test_resumption():
     
     # Save to Redis
     if state_manager.available:
-        state_manager.save_session(session_id, orch.state)
+        await state_manager.save_session(session_id, orch.state)
         
         # Set restart flag
         restart_key = state_manager._key("restart_pending")
@@ -47,7 +46,8 @@ async def test_resumption():
             "session_id": session_id,
             "timestamp": "2026-01-19T20:00:00"
         }
-        state_manager.redis.set(restart_key, json.dumps(restart_metadata))
+        if state_manager.redis:
+            await state_manager.redis.set(restart_key, json.dumps(restart_metadata))
         print(f"Set restart_pending flag and saved session {session_id}")
     else:
         print("Redis unavailable. Test skipped.")
@@ -93,7 +93,8 @@ async def test_resumption():
         print(f"FAILED: Step skipping logic incorrect. Called: {steps_called}")
 
     # Cleanup
-    state_manager.redis.delete(restart_key)
+    if state_manager.redis:
+        await state_manager.redis.delete(restart_key)
 
 if __name__ == "__main__":
     asyncio.run(test_resumption())

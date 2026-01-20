@@ -1,7 +1,6 @@
 
 import asyncio
 import sys
-import os
 from pathlib import Path
 
 # Setup paths
@@ -10,7 +9,6 @@ sys.path.append(str(project_root))
 
 from src.brain.memory import long_term_memory
 from src.brain.orchestrator import Trinity as Orchestrator
-from src.brain.logger import logger
 
 async def test_learning_and_vibe():
     print("--- VERIFYING LEARNING SYSTEM ---")

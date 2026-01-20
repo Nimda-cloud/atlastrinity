@@ -12,7 +12,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 # Database-agnostic UUID and JSON support
 from sqlalchemy.types import TypeDecorator, CHAR
-import uuid
 
 class GUID(TypeDecorator):
     """Platform-independent GUID type.

@@ -74,7 +74,7 @@ brew services list | grep -E "redis|postgresql"
 cat ~/.config/atlastrinity/mcp/config.json | jq '.mcpServers | keys'
 
 # Перевірка цілісності коду (Strict Mode)
-.venv/bin/python -m pyrefly check src/brain src/mcp_server
+.venv/bin/python -m pyrefly check src/
 ```
 
 ## Доступні MCP Сервери

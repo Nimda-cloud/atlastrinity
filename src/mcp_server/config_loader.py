@@ -6,7 +6,7 @@ Loads MCP server configurations from config.yaml
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict
 
 import yaml
 

@@ -1,10 +1,9 @@
+from typing import Optional
 from ..config import WORKSPACE_DIR
 from .atlas import ATLAS
-from .common import DEFAULT_REALM_CATALOG  # re-export default catalog
+from .common import DEFAULT_REALM_CATALOG, SDLC_PROTOCOL, TASK_PROTOCOL  # re-export default catalog
 from .grisha import GRISHA
 from .tetyana import TETYANA
-from .atlas_sdlc import SDLC_PROTOCOL
-from .atlas_tasks import TASK_PROTOCOL
 
 __all__ = ["DEFAULT_REALM_CATALOG", "ATLAS", "TETYANA", "GRISHA", "AgentPrompts", "SDLC_PROTOCOL", "TASK_PROTOCOL"]
 
@@ -25,9 +24,9 @@ class AgentPrompts:
         context: dict,
         tools_summary: str = "",
         feedback: str = "",
-        previous_results: list = None,
+        previous_results: Optional[list] = None,
         goal_context: str = "",
-        bus_messages: list = None,
+        bus_messages: Optional[list] = None,
         full_plan: str = "",
     ) -> str:
         feedback_section = (
@@ -299,7 +298,7 @@ Respond STRICTLY in JSON:
 
     @staticmethod
     def atlas_chat_prompt() -> str:
-        return f"""You are in CAPABLE conversation mode.
+        return """You are in CAPABLE conversation mode.
 Your role: Witty, smart, and HIGHLY INFORMED interlocutor Atlas.
 Style: Concise, witty, but technical if needed.
 LANGUAGE: You MUST respond in UKRAINIAN only!

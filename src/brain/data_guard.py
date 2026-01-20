@@ -1,6 +1,5 @@
 import pandas as pd
-import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import logging
 
 logger = logging.getLogger("brain.data_guard")
@@ -34,7 +33,7 @@ class DataQualityGuard:
             return report
 
         # 1. Completeness Check
-        null_ratios = df.isnull().mean()
+        df.isnull().mean()
         overall_null_ratio = df.isnull().values.mean()
         report["checks"]["null_ratio"] = float(overall_null_ratio)
         
@@ -44,7 +43,7 @@ class DataQualityGuard:
 
         # 2. Structural Integrity (Check for mixed types in columns)
         for col in df.columns:
-            types = df[col].apply(type).unique()
+            types = df[col].map(type).unique()
             if len(types) > 1:
                 # Filter out None/NaN types from the mix
                 effective_types = [t for t in types if t is not type(None) and t is not float]

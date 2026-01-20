@@ -6,7 +6,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import List, Dict, Optional, Any
 
 
 def get_last_tag() -> str:
@@ -101,7 +101,7 @@ def categorize_commits(
     return categories
 
 
-def generate_changelog(version: str = None) -> str:
+def generate_changelog(version: Optional[str] = None) -> str:
     """Generate a markdown changelog."""
     last_tag = get_last_tag()
     commits = get_commits_since_tag(last_tag)

@@ -100,7 +100,7 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> List[Dict[str
         
         # Filter: Exclude internal DDG links and obvious junk
         if any(x in href for x in ["duckduckgo.com/", "ad_redirect", "javascript:", "#"]):
-             if not ("duckduckgo.com/l/?" in href): # Keep result redirects if needed
+             if "duckduckgo.com/l/?" not in href: # Keep result redirects if needed
                   continue
         
         title_html = match.group(2)

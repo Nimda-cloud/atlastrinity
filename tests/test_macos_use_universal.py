@@ -1,8 +1,6 @@
 import asyncio
 import json
 import os
-import subprocess
-import sys
 
 BINARY_PATH = "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
 

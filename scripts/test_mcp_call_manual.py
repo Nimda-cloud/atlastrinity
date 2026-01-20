@@ -8,7 +8,6 @@ from pathlib import Path
 sys.path.append(os.getcwd())
 
 from src.brain.mcp_manager import MCPManager
-from src.brain.logger import logger
 
 async def test_tool_call():
     manager = MCPManager()
