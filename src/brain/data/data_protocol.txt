@@ -1,0 +1,35 @@
+DATA PROCESSING PROTOCOL (v1.0)
+==============================
+
+1. DATA INGESTION STANDARDS
+---------------------------
+- TABULAR DATA (CSV, XLSX):
+    - Always attempt to parse via Python (`pandas` or `openpyxl`) first.
+    - Convert to JSON for internal logic to ensure LLM readability.
+    - If file size exceeds 500KB, use chunked processing or summary extraction.
+- SEMI-STRUCTURED (JSON, XML, YAML):
+    - Validate schema before processing.
+    - Use JSON for all inter-agent communication of datasets.
+- UNSTRUCTURED (PDF, DOCX):
+    - PRIMARY: Use native system tools or Python libraries (`PyPDF2`, `python-docx`) for text extraction.
+    - FALLBACK: Use OCR (`macos-use_analyze_screen`) if the file is an image-based PDF.
+    - Format output as Markdown for Atlas/Tetyana to analyze.
+
+2. DATA HYGIENE (CLEANING & NORMALIZATION)
+------------------------------------------
+- DEDUPLICATION: Always check for existing ЄДРПОУ or ID entries in the Knowledge Graph before creating new ones.
+- NORMALIZATION:
+    - Dates: ISO 8601 (YYYY-MM-DD).
+    - Currency: Standard numeric format with explicit currency code (e.g., "1500.00 UAH").
+    - Registry Identifiers: Trim whitespace and leading zeros only where safe (e.g., ЄДРПОУ should be exactly 8 digits).
+
+3. AGENT ROLES IN DATA PIPELINE
+-------------------------------
+- TETYANA (Ingester): Responsible for initial parsing and cleaning. Must flag "Dirty Data" or "Format Mismatch".
+- ATLAS (Architect): Defines the schema for the resulting dataset and orchestrates where it belongs in the Vault.
+- GRISHA (Auditor): Verifies the integrity of the processed data against the original source (samples).
+
+DEVIATION POLICY (ROOM TO MANEUVER)
+===================================
+- FORMAT SHIFT: If a format is unsupported by standard tools (e.g., proprietary binary), আপনি (you) ARE AUTHORIZED to use `vibe_prompt` to write a custom parser on-the-fly.
+- TEMPORARY STORAGE: You may use `/tmp` or `workspace/workspace` for intermediate CSV/JSON conversions.
