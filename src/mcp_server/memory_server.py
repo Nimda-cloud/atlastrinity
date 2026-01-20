@@ -408,6 +408,20 @@ async def delete_entity(name: str) -> Dict[str, Any]:
     return {"success": True, "deleted": True}
 
 
+@server.tool()
+async def promote_knowledge(node_id: str, target_namespace: str = "global") -> Dict[str, Any]:
+    """
+    Elevate a node (and its edges) from a task-specific namespace to the Golden Fund (global).
+    
+    Args:
+        node_id: The ID of the node to promote.
+        target_namespace: Usually 'global'.
+    """
+    await db_manager.initialize()
+    success = await knowledge_graph.promote_node(node_id, target_namespace=target_namespace)
+    return {"success": success, "node_id": node_id, "target": target_namespace}
+
+
 if __name__ == "__main__":
     import sys
     try:
