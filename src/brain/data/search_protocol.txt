@@ -24,7 +24,12 @@ SEARCH PROTOCOL (v1.1)
    - Whenever possible, PRIORITIZE official instructions, manuals, or API documentation for the systems you are searching.
    - USE these official sources to refine your search queries and data extraction logic (e.g. finding hidden API endpoints or specific URL patterns).
 
-6. MACHINE-READABLE CONFIGURATION (JSON):
+6. SEMANTIC CHAINING DIRECTIVE:
+   - Upon finding a new dataset, ALWAYS analyze column names for potential "join keys" (IDs, names, emails).
+   - USE `trace_data_chain` to recursively reconstruct a complete profile from fragmented sources if you identify a semantic anchor.
+   - If a link is found, DOCUMENT it in the Knowledge Graph for future automated discovery.
+
+7. MACHINE-READABLE CONFIGURATION (JSON):
 {
   "search_rules": {
     "business": {
