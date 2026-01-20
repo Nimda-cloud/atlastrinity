@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import os
+import socket
 import shutil
 import subprocess
 import uuid
@@ -125,6 +126,16 @@ def strip_ansi(text: str) -> str:
     if not isinstance(text, str):
         return str(text)
     return ANSI_ESCAPE.sub('', text)
+
+
+async def is_network_available(host: str = "api.mistral.ai", port: int = 443, timeout: float = 3.0) -> bool:
+    """Check if the network and specific host are reachable."""
+    try:
+        await asyncio.wait_for(asyncio.open_connection(host, port), timeout=timeout)
+        return True
+    except (asyncio.TimeoutError, socket.error, OSError) as e:
+        logger.warning(f"[VIBE] Network check failed for {host}:{port}: {e}")
+        return False
 
 
 def truncate_output(text: str, max_chars: int = MAX_OUTPUT_CHARS) -> str:
@@ -520,6 +531,14 @@ async def vibe_prompt(
     
     # Ensure workspace exists
     os.makedirs(eff_cwd, exist_ok=True)
+    
+    # Check network before proceeding if it's an AI prompt
+    if not await is_network_available():
+        return {
+            "success": False,
+            "error": "Mistral API is unreachable (DNS or Connection error). Please check your internet connection.",
+            "returncode": -2,
+        }
     
     final_prompt, prompt_file_to_clean = handle_long_prompt(prompt, eff_cwd)
     

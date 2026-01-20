@@ -1229,23 +1229,27 @@ class Trinity:
                     start_heal = asyncio.get_event_loop().time()
                     
                     # 1. VIBE DIAGNOSTICS (auto_fix=False)
-                    vibe_res = await asyncio.wait_for(
-                        mcp_manager.call_tool(
-                            "vibe",
-                            "vibe_analyze_error",
-                            {
-                                "error_message": f"{error_context}\n{last_error}\n{technical_trace}",
-                                "log_context": log_context,
-                                "recovery_history": recovery_history,
-                                "timeout_s": int(config.get("orchestrator", {}).get("task_timeout", 1200)),
-                                "auto_fix": False, # Diagnostic mode
-                            },
-                        ),
-                        timeout=int(config.get("orchestrator", {}).get("task_timeout", 1200)) + 10,
-                    )
-                    
-                    vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
-                    
+                    try:
+                        vibe_res = await asyncio.wait_for(
+                            mcp_manager.call_tool(
+                                "vibe",
+                                "vibe_analyze_error",
+                                {
+                                    "error_message": f"{error_context}\n{last_error}\n{technical_trace}",
+                                    "log_context": log_context,
+                                    "recovery_history": recovery_history,
+                                    "timeout_s": int(config.get("orchestrator", {}).get("task_timeout", 1200)),
+                                    "auto_fix": False, # Diagnostic mode
+                                },
+                            ),
+                            timeout=int(config.get("orchestrator", {}).get("task_timeout", 1200)) + 10,
+                        )
+                        vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
+                    except Exception as vibe_err:
+                        logger.warning(f"Vibe diagnostics failed: {vibe_err}. Falling back to standard recovery.")
+                        await self._log(f"Vibe unavailable or failed: {vibe_err}", "warning")
+                        vibe_text = None
+
                     if vibe_text:
                         # 2. GRISHA AUDIT
                         await self._log("[GRISHA] Auditing proposed fix...", "grisha")
@@ -1314,7 +1318,8 @@ class Trinity:
                     if vibe_text:
                         last_error = (str(last_error or "")) + "\n\nVIBE_HEALING_REPORT:\n" + vibe_text[:4000]
                 except Exception as ve:
-                    await self._log(f"Vibe self-healing loop failed: {ve}", "error")
+                    await self._log(f"Advanced self-healing loop encountered an error: {ve}", "error")
+                    logger.error(f"Self-healing error: {ve}", exc_info=True)
 
                 # RECURSION SAFEGUARD
                 if depth >= 3:
