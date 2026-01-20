@@ -37,11 +37,10 @@ def _normalize_entity(ent: Dict[str, Any]) -> Dict[str, Any]:
 @server.tool()
 async def create_entities(entities: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Create or update multiple entities in the knowledge graph (SQLite + ChromaDB).
-
     Args:
         entities: List of entity dictionaries. Each must have a 'name' field.
-                 Optional fields: 'entityType' (default: 'ENTITY'), 'observations' (list of strings).
+        namespace: Isolation bucket for these entities.
+        task_id: Optional task association.
     """
     if not isinstance(entities, list) or not entities:
         return {"error": "entities must be a non-empty list"}
@@ -71,6 +70,8 @@ async def create_entities(entities: List[Dict[str, Any]]) -> Dict[str, Any]:
             node_type="ENTITY",
             node_id=node_id,
             attributes=attributes,
+            namespace=namespace,
+            task_id=task_id,
             sync_to_vector=True
         )
         
@@ -164,11 +165,10 @@ async def bulk_ingest_table(file_path: str, table_name: str, namespace: str = "g
 @server.tool()
 async def add_observations(name: str, observations: List[str]) -> Dict[str, Any]:
     """
-    Add new observations to an existing entity.
-
     Args:
         name: The name of the entity to update
         observations: List of new observation strings to add
+        namespace: Optional namespace filter.
     """
     name = str(name or "").strip()
     if not name:
@@ -203,6 +203,7 @@ async def add_observations(name: str, observations: List[str]) -> Dict[str, Any]
             node_type="ENTITY",
             node_id=node_id,
             attributes=attr,
+            namespace=node.namespace if hasattr(node, "namespace") else "global",
             sync_to_vector=True
         )
     finally:
@@ -266,11 +267,10 @@ async def list_entities() -> Dict[str, Any]:
 @server.tool()
 async def search(query: str, limit: int = 10) -> Dict[str, Any]:
     """
-    Semantic search for entities matching a query string (via ChromaDB embeddings).
-
     Args:
         query: Text to search for within entity names, types, and observations
         limit: Maximum number of results to return (default: 10)
+        namespace: Optional filter (task_id or 'global')
     """
     q = str(query or "").strip().lower()
     if not q:
@@ -280,10 +280,12 @@ async def search(query: str, limit: int = 10) -> Dict[str, Any]:
     
     # 1. Semantic search via ChromaDB (Fastest and smartest)
     if long_term_memory.available:
+        where_filter = {"namespace": namespace} if namespace else None
         results = long_term_memory.knowledge.query(
             query_texts=[q],
             n_results=lim,
-            include=["documents", "metadatas", "distances"]
+            include=["documents", "metadatas", "distances"],
+            where=where_filter
         )
         
         formatted = []
@@ -325,7 +327,11 @@ async def search(query: str, limit: int = 10) -> Dict[str, Any]:
                 KGNode.id.ilike(f"%{q}%"),
                 KGNode.attributes["content"].astext.ilike(f"%{q}%")
             )
-        ).limit(lim)
+        )
+        if namespace:
+            stmt = stmt.where(KGNode.namespace == namespace)
+        
+        stmt = stmt.limit(lim)
         res = await session.execute(stmt)
         nodes = res.scalars().all()
         
@@ -351,6 +357,7 @@ async def create_relation(source: str, target: str, relation: str) -> Dict[str, 
         source: Name of the source entity
         target: Name of the target entity
         relation: Type of relationship (e.g. 'part_of', 'depends_on', 'works_with')
+        namespace: Optional namespace bucket.
     """
     await db_manager.initialize()
     source_id = _get_id(source)
@@ -359,7 +366,8 @@ async def create_relation(source: str, target: str, relation: str) -> Dict[str, 
     success = await knowledge_graph.add_edge(
         source_id=source_id,
         target_id=target_id,
-        relation=relation
+        relation=relation,
+        namespace=namespace
     )
     
     if not success:
