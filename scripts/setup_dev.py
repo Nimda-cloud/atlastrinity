@@ -763,12 +763,28 @@ def main():
         f"{Colors.HEADER}{Colors.BOLD}╚══════════════════════════════════════════╝{Colors.ENDC}\n"
     )
 
+    # Parse arguments
+    import argparse
+    parser = argparse.ArgumentParser(description="AtlasTrinity Setup Script")
+    parser.add_argument("--backup", action="store_true", help="Backup databases and exit")
+    parser.add_argument("--restore", action="store_true", help="Restore databases and exit")
+    args = parser.parse_args()
+
+    if args.backup:
+        backup_databases()
+        return
+
+    if args.restore:
+        restore_databases()
+        return
+
     check_python_version()
     ensure_directories()
 
     # Auto-restore databases if backups exist (from git clone)
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     if backup_dir.exists() and not (CONFIG_ROOT / "atlastrinity.db").exists():
+
         print_info("Виявлено резервні копії баз даних у репозиторії...")
         restore_databases()
 
