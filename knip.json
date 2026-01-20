@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["src/main/main.ts", "src/renderer/main.tsx"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["dist/**", "node_modules/**"],
+  "ignoreDependencies": [
+    "@modelcontextprotocol/*",
+    "chrome-devtools-mcp",
+    "cloudinary",
+    "stripe",
+    "tailwindcss"
+  ]
+}

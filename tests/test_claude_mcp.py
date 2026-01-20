@@ -3,7 +3,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.getcwd()))
-from src.brain.mcp_manager import mcp_manager  # noqa: E402
+from src.brain.mcp_manager import mcp_manager
 
 
 async def verify_official_mcp():

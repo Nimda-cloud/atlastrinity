@@ -9,16 +9,15 @@ Uses robinhad/ukrainian-tts for agent voices:
 NOTE: TTS models must be set up before first use via setup_dev.py
 """
 
+import asyncio
 import os
 import tempfile
-import asyncio
 import warnings
 
 # Suppress PyTorch weight_norm deprecation warning (triggered by espnet2/ukrainian-tts)
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from ..config import MODELS_DIR
 from ..config_loader import config
@@ -27,13 +26,15 @@ from ..config_loader import config
 TTS_AVAILABLE = None
 TTS = None
 
+
 def _check_tts_available():
     global TTS_AVAILABLE
     if TTS_AVAILABLE is not None:
         return TTS_AVAILABLE
-        
+
     try:
         import ukrainian_tts
+
         TTS_AVAILABLE = True
         print("[TTS] Ukrainian TTS available")
     except ImportError:
@@ -60,9 +61,9 @@ def _patch_tts_config(cache_dir: Path):
         # Regex to find 'stats_file: some_file.npz' anywhere in the file
         # We look for 'stats_file:' followed by a filename, potentially with whitespace
         pattern = r"(\s*stats_file:\s*)([^\s\n]+)"
-        
+
         abs_stats_path = str(cache_dir / "feats_stats.npz")
-        
+
         def replace_path(match):
             prefix = match.group(1)
             current_val = match.group(2)
@@ -72,13 +73,13 @@ def _patch_tts_config(cache_dir: Path):
             return match.group(0)
 
         new_content, count = re.subn(pattern, replace_path, content)
-        
+
         if count > 0 and new_content != content:
             config_path.write_text(new_content)
             print(f"[TTS] Patched {config_path.name}: {count} occurrences updated.")
         else:
             print(f"[TTS] {config_path.name} is already up to date or no stats_file found.")
-            
+
     except Exception as e:
         print(f"[TTS] Warning: Failed to patch config.yaml: {e}")
 
@@ -113,7 +114,7 @@ class AgentVoice:
         voice.speak("Hello, I am Atlas")
     """
 
-    def __init__(self, agent_name: str, device: Optional[str] = None):
+    def __init__(self, agent_name: str, device: str | None = None):
         """
         Initialize voice for an agent
 
@@ -199,7 +200,7 @@ class AgentVoice:
                 return None
         return self._tts
 
-    def speak(self, text: str, output_file: Optional[str] = None) -> Optional[str]:
+    def speak(self, text: str, output_file: str | None = None) -> str | None:
         """
         Generate speech from text
 
@@ -229,8 +230,11 @@ class AgentVoice:
                 from ukrainian_tts.tts import Stress
 
                 if self.tts:
-                    _, accented_text = self.tts.tts(
-                        text, self._voice, Stress.Dictionary.value, f  # Use cached value
+                    _, _accented_text = self.tts.tts(
+                        text,
+                        self._voice,
+                        Stress.Dictionary.value,
+                        f,  # Use cached value
                     )
 
             print(f"[TTS] [{self.config.name}]: {text}")
@@ -276,21 +280,23 @@ class VoiceManager:
 
     def __init__(self, device: str = "cpu"):
         from collections import deque
+
         voice_config = config.get("voice.tts", {})
         self.enabled = voice_config.get("enabled", True)
         self.device = device
         self._tts = None
         self.is_speaking = False
         self.last_text = ""
-        self.history = deque(maxlen=5) # History of last spoken phrases
+        self.history = deque(maxlen=5)  # History of last spoken phrases
         self.last_speak_time = 0.0
 
         # Concurrency control
         import asyncio
+
         self._lock = asyncio.Lock()
         self._stop_event = asyncio.Event()
-        
-        self._current_process = None # Track current subprocess
+
+        self._current_process = None  # Track current subprocess
 
     async def get_engine(self):
         if not self.enabled:
@@ -325,7 +331,7 @@ class VoiceManager:
     def _load_engine_sync(self):
         if self._tts is not None:
             return
-        
+
         cache_dir = MODELS_DIR
         cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -333,6 +339,7 @@ class VoiceManager:
             print("[TTS] Loading ukrainian-tts and Stanza resources...")
             import os
             from contextlib import contextmanager
+
             from ukrainian_tts.tts import TTS as UkrainianTTS
 
             @contextmanager
@@ -357,7 +364,7 @@ class VoiceManager:
         """Immediately stop current speech"""
         if self._stop_event:
             self._stop_event.set()
-        
+
         # Kill current process if exists
         if self._current_process:
             try:
@@ -366,7 +373,7 @@ class VoiceManager:
             except Exception:
                 pass
             self._current_process = None
-        
+
         self.is_speaking = False
 
     async def close(self):
@@ -374,7 +381,7 @@ class VoiceManager:
         self.stop()
         await asyncio.sleep(0.1)
 
-    async def speak(self, agent_id: str, text: str) -> Optional[str]:
+    async def speak(self, agent_id: str, text: str) -> str | None:
         # Reset stop event for new phrase only if we aren't already stopping?
         # Actually, if we are in a lock, previous speech is done.
         self._stop_event.clear()
@@ -411,25 +418,25 @@ class VoiceManager:
 
                     c_id = f"{agent_id}_{c_idx}_{hash(c_text) % 10000}"
                     c_file = os.path.join(tempfile.gettempdir(), f"tts_{c_id}.wav")
-                    
+
                     def _do_gen():
                         if self.engine:
                             with open(c_file, mode="wb") as f:
                                 self.engine.tts(c_text, voice_enum, Stress.Dictionary.value, f)
-                    
+
                     await asyncio.to_thread(_do_gen)
                     return c_file
 
                 # 1. Split text
-                chunks = re.split(r'([.!?]+(?:\s+|$))', text)
+                chunks = re.split(r"([.!?]+(?:\s+|$))", text)
                 processed_chunks = []
-                for i in range(0, len(chunks)-1, 2):
-                    processed_chunks.append(chunks[i] + chunks[i+1])
+                for i in range(0, len(chunks) - 1, 2):
+                    processed_chunks.append(chunks[i] + chunks[i + 1])
                 if len(chunks) % 2 == 1 and chunks[-1]:
-                     processed_chunks.append(chunks[-1])
-                
+                    processed_chunks.append(chunks[-1])
+
                 final_chunks = [c.strip() for c in processed_chunks if c.strip()]
-                
+
                 # Merge short chunks
                 min_len = 40
                 refined_chunks = []
@@ -442,18 +449,20 @@ class VoiceManager:
                     if len(temp_chunk) >= min_len:
                         refined_chunks.append(temp_chunk)
                         temp_chunk = ""
-                
+
                 if temp_chunk:
                     if refined_chunks:
                         refined_chunks[-1] += " " + temp_chunk
                     else:
                         refined_chunks.append(temp_chunk)
-                
+
                 final_chunks = refined_chunks or [text]
-                
-                print(f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks...")
+
+                print(
+                    f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks..."
+                )
                 start_time = time.time()
-                
+
                 # Check interruption
                 if self._stop_event.is_set():
                     return None
@@ -462,10 +471,10 @@ class VoiceManager:
                 current_file = await _gen_f(final_chunks[0], 0)
                 if not current_file:
                     return None  # Interrupted
-                
+
                 time.time() - start_time
                 # print(f"[TTS] [{config.name}] First chunk ready in {first_chunk_time:.2f}s")
-                
+
                 for idx in range(len(final_chunks)):
                     # Return if interrupted
                     if self._stop_event.is_set():
@@ -475,35 +484,39 @@ class VoiceManager:
                     # Start generating next
                     next_gen_task = None
                     if idx + 1 < len(final_chunks):
-                        next_gen_task = asyncio.create_task(_gen_f(final_chunks[idx+1], idx+1))
+                        next_gen_task = asyncio.create_task(_gen_f(final_chunks[idx + 1], idx + 1))
 
                     if not os.path.exists(current_file):
                         continue
 
-                    print(f"[TTS] [{config.name}] 🔊 Speaking chunk {idx+1}/{len(final_chunks)}: {final_chunks[idx][:50]}...")
+                    print(
+                        f"[TTS] [{config.name}] 🔊 Speaking chunk {idx + 1}/{len(final_chunks)}: {final_chunks[idx][:50]}..."
+                    )
                     self.last_text = final_chunks[idx].strip().lower()
                     self.history.append(self.last_text)
                     self.is_speaking = True
-                    
+
                     try:
                         self._current_process = await asyncio.create_subprocess_exec(
-                            "afplay", current_file,
-                            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                            "afplay",
+                            current_file,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE,
                         )
                         await self._current_process.communicate()
                     except Exception as e:
-                         print(f"[TTS] [{config.name}] ⚠ Playback error: {e}")
+                        print(f"[TTS] [{config.name}] ⚠ Playback error: {e}")
                     finally:
                         self.is_speaking = False
                         self._current_process = None
-                    
+
                     if os.path.exists(current_file):
                         os.remove(current_file)
 
                     # Wait for next chunk
                     if next_gen_task:
                         current_file = await next_gen_task
-                        if not current_file: # Interrupted during generation
+                        if not current_file:  # Interrupted during generation
                             return "cancelled"
 
                 await asyncio.sleep(0.3)

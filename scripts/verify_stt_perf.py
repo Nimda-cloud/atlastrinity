@@ -6,7 +6,7 @@ import time
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.brain.voice.stt import WhisperSTT  # noqa: E402
+from src.brain.voice.stt import WhisperSTT
 
 
 async def main():

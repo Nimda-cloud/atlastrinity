@@ -1,12 +1,12 @@
-
 import asyncio
-import sys
 import os
+import sys
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 
 from brain.mcp_manager import MCPManager
+
 
 async def test_restart():
     """
@@ -18,26 +18,26 @@ async def test_restart():
     manager = MCPManager()
     # Ensure server is running
     await manager.get_session(target_server)
-    
+
     print(f"Targeting server: {target_server}")
-    
+
     # 1. Check if it's running
     status = await manager.health_check(target_server)
     print(f"Initial status (healthy): {status}")
-    
+
     if target_server not in manager.sessions and target_server not in manager._connection_tasks:
-         # Note: sessions might be empty if connected but not used, but connection task should be there
-         pass
-        
+        # Note: sessions might be empty if connected but not used, but connection task should be there
+        pass
+
     # We grab the session object if possible
     original_client = await manager.get_session(target_server)
-    
+
     print(f"Original Client ID: {id(original_client)}")
-    
+
     # 2. Restart
     print("Triggering restart...")
     success = await manager.restart_server(target_server)
-    
+
     if success:
         print("Restart reported SUCCESS.")
     else:
@@ -48,14 +48,15 @@ async def test_restart():
     # 3. Check new state
     new_client = await manager.get_session(target_server)
     print(f"New Client ID: {id(new_client)}")
-    
+
     if id(new_client) != id(original_client):
         print("✅ Client object replaced. Restart confirmed.")
     else:
         print("❌ Client object ID UNCHANGED. Restart failed or mocked?")
-        
+
     # 4. Cleanup
     await manager.cleanup()
+
 
 if __name__ == "__main__":
     asyncio.run(test_restart())

@@ -1,5 +1,5 @@
-
 import datetime
+
 
 def test_grisha_metadata_logic():
     # Mocking what Grisha does
@@ -17,7 +17,7 @@ def test_grisha_metadata_logic():
         confidence=0.0,
         description="Test rejection",
         issues=["Issue 1", "Issue 2"],
-        voice_message="Test voice"
+        voice_message="Test voice",
     )
 
     # The logic we just applied in grisha.py
@@ -25,9 +25,11 @@ def test_grisha_metadata_logic():
     attributes = {
         "type": "verification_rejection",
         "step_id": "1",
-        "issues": "; ".join(verification.issues) if isinstance(verification.issues, list) else str(verification.issues),
+        "issues": "; ".join(verification.issues)
+        if isinstance(verification.issues, list)
+        else str(verification.issues),
         "description": str(verification.description),
-        "timestamp": timestamp
+        "timestamp": timestamp,
     }
 
     print("Resulting attributes for Knowledge Graph:")
@@ -37,6 +39,7 @@ def test_grisha_metadata_logic():
     # Check if 'issues' is now a string
     assert isinstance(attributes["issues"], str), "FAILED: 'issues' should be a string"
     print("\n✅ Grisha metadata logic test passed!")
+
 
 if __name__ == "__main__":
     test_grisha_metadata_logic()

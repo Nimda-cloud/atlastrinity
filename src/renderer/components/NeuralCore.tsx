@@ -19,10 +19,14 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
     // If we have an active agent and we are not idle, prioritize agent color
     if (state !== 'IDLE' && state !== 'ERROR') {
       switch (activeAgent) {
-        case 'ATLAS': return 'var(--atlas-blue)';
-        case 'TETYANA': return 'var(--tetyana-green)';
-        case 'GRISHA': return 'var(--grisha-orange)';
-        default: break;
+        case 'ATLAS':
+          return 'var(--atlas-blue)';
+        case 'TETYANA':
+          return 'var(--tetyana-green)';
+        case 'GRISHA':
+          return 'var(--grisha-orange)';
+        default:
+          break;
       }
     }
 
@@ -84,76 +88,220 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
 
         {/* --- DECORATIVE OUTER RINGS --- */}
         <circle r="380" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.05" />
-        <circle r="340" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.1" strokeDasharray="2 10" />
+        <circle
+          r="340"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          opacity="0.1"
+          strokeDasharray="2 10"
+        />
 
         {/* --- DATA FLOW RINGS --- */}
-        
+
         {/* Outer orbital (300) - Data Nodes */}
         <g className="animate-spin-slow origin-center">
-            <circle r="300" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.1" strokeDasharray="1 150" />
-            <circle cx="300" cy="0" r="3" fill="currentColor" opacity="0.4" />
-            <circle cx="-300" cy="0" r="3" fill="currentColor" opacity="0.4" />
+          <circle
+            r="300"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            opacity="0.1"
+            strokeDasharray="1 150"
+          />
+          <circle cx="300" cy="0" r="3" fill="currentColor" opacity="0.4" />
+          <circle cx="-300" cy="0" r="3" fill="currentColor" opacity="0.4" />
         </g>
 
         {/* Layer 2 (250) - Dashed Pulse */}
         <g className="animate-spin-ccw-slow origin-center">
-          <circle r="250" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="100 200" opacity="0.2" />
+          <circle
+            r="250"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeDasharray="100 200"
+            opacity="0.2"
+          />
           <circle cx="0" cy="250" r="2" fill="currentColor" />
         </g>
 
         {/* Layer 3 (200) - Middle Orbital */}
         <g className="animate-spin-medium origin-center">
-          <circle r="190" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="10 370" opacity="0.5" />
-          <circle r="185" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="50 50" opacity="0.1" />
+          <circle
+            r="190"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeDasharray="10 370"
+            opacity="0.5"
+          />
+          <circle
+            r="185"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeDasharray="50 50"
+            opacity="0.1"
+          />
         </g>
 
         {/* Inner Logic Ring (130) */}
         <g className="animate-spin-ccw-medium origin-center-130">
-           <circle r="130" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="5 5" opacity="0.3" />
+          <circle
+            r="130"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeDasharray="5 5"
+            opacity="0.3"
+          />
         </g>
 
         {/* Inner Logic Ring (100) */}
         <g className="animate-spin-fast origin-center">
-          <circle r="100" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="80 120" opacity="0.6" />
+          <circle
+            r="100"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeDasharray="80 120"
+            opacity="0.6"
+          />
         </g>
 
         {/* --- CENTRAL CORE --- */}
         <g className="core-group" filter="url(#glow-core)">
           {/* Multi-layered pulse */}
           <circle r="60" fill="url(#grad-core)" className="animate-pulse" />
-          <circle r="35" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-pulse-slow" />
+          <circle
+            r="35"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            className="animate-pulse-slow"
+          />
           <circle r="15" fill="currentColor" className="animate-pulse-fast" />
           <circle r="5" fill="#fff" opacity="0.9" />
-          
+
           {/* Core Crosshair */}
-          <line x1="-20" y1="0" x2="20" y2="0" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-          <line x1="0" y1="-20" x2="0" y2="20" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
+          <line
+            x1="-20"
+            y1="0"
+            x2="20"
+            y2="0"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            opacity="0.5"
+          />
+          <line
+            x1="0"
+            y1="-20"
+            x2="0"
+            y2="20"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            opacity="0.5"
+          />
         </g>
 
         {/* --- AGENT NODES --- */}
         {/* ATLAS */}
         <g>
-          <line x1="0" y1="-60" x2="0" y2="-170" stroke="var(--atlas-blue)" strokeWidth="0.5" opacity={activeAgent === 'ATLAS' ? 0.6 : 0.1} />
-          <circle cx="0" cy="-180" r={activeAgent === 'ATLAS' ? 10 : 4} fill="var(--atlas-blue)" className={activeAgent === 'ATLAS' ? 'animate-pulse' : ''} />
-          <text x="0" y="-205" textAnchor="middle" fill="var(--atlas-blue)" fontSize="9" fontWeight="bold" letterSpacing="3" opacity={activeAgent === 'ATLAS' ? 1 : 0.3}>ATLAS</text>
+          <line
+            x1="0"
+            y1="-60"
+            x2="0"
+            y2="-170"
+            stroke="var(--atlas-blue)"
+            strokeWidth="0.5"
+            opacity={activeAgent === 'ATLAS' ? 0.6 : 0.1}
+          />
+          <circle
+            cx="0"
+            cy="-180"
+            r={activeAgent === 'ATLAS' ? 10 : 4}
+            fill="var(--atlas-blue)"
+            className={activeAgent === 'ATLAS' ? 'animate-pulse' : ''}
+          />
+          <text
+            x="0"
+            y="-205"
+            textAnchor="middle"
+            fill="var(--atlas-blue)"
+            fontSize="9"
+            fontWeight="bold"
+            letterSpacing="3"
+            opacity={activeAgent === 'ATLAS' ? 1 : 0.3}
+          >
+            ATLAS
+          </text>
         </g>
 
         {/* GRISHA */}
         <g transform="rotate(120)">
-           <line x1="0" y1="-60" x2="0" y2="-170" stroke="var(--grisha-orange)" strokeWidth="0.5" opacity={activeAgent === 'GRISHA' ? 0.6 : 0.1} />
-           <g transform="translate(0, -180)">
-             <circle r={activeAgent === 'GRISHA' ? 10 : 4} fill="var(--grisha-orange)" transform="rotate(-120)" className={activeAgent === 'GRISHA' ? 'animate-pulse' : ''} />
-             <text y="25" transform="rotate(-120)" textAnchor="middle" fill="var(--grisha-orange)" fontSize="9" fontWeight="bold" letterSpacing="3" opacity={activeAgent === 'GRISHA' ? 1 : 0.3}>GRISHA</text>
-           </g>
+          <line
+            x1="0"
+            y1="-60"
+            x2="0"
+            y2="-170"
+            stroke="var(--grisha-orange)"
+            strokeWidth="0.5"
+            opacity={activeAgent === 'GRISHA' ? 0.6 : 0.1}
+          />
+          <g transform="translate(0, -180)">
+            <circle
+              r={activeAgent === 'GRISHA' ? 10 : 4}
+              fill="var(--grisha-orange)"
+              transform="rotate(-120)"
+              className={activeAgent === 'GRISHA' ? 'animate-pulse' : ''}
+            />
+            <text
+              y="25"
+              transform="rotate(-120)"
+              textAnchor="middle"
+              fill="var(--grisha-orange)"
+              fontSize="9"
+              fontWeight="bold"
+              letterSpacing="3"
+              opacity={activeAgent === 'GRISHA' ? 1 : 0.3}
+            >
+              GRISHA
+            </text>
+          </g>
         </g>
 
         {/* TETYANA */}
         <g transform="rotate(240)">
-           <line x1="0" y1="-60" x2="0" y2="-170" stroke="var(--tetyana-green)" strokeWidth="0.5" opacity={activeAgent === 'TETYANA' ? 0.6 : 0.1} />
-           <g transform="translate(0, -180)">
-              <circle r={activeAgent === 'TETYANA' ? 10 : 4} fill="var(--tetyana-green)" transform="rotate(-240)" className={activeAgent === 'TETYANA' ? 'animate-pulse' : ''} />
-              <text y="25" transform="rotate(-240)" textAnchor="middle" fill="var(--tetyana-green)" fontSize="9" fontWeight="bold" letterSpacing="3" opacity={activeAgent === 'TETYANA' ? 1 : 0.3}>TETYANA</text>
-           </g>
+          <line
+            x1="0"
+            y1="-60"
+            x2="0"
+            y2="-170"
+            stroke="var(--tetyana-green)"
+            strokeWidth="0.5"
+            opacity={activeAgent === 'TETYANA' ? 0.6 : 0.1}
+          />
+          <g transform="translate(0, -180)">
+            <circle
+              r={activeAgent === 'TETYANA' ? 10 : 4}
+              fill="var(--tetyana-green)"
+              transform="rotate(-240)"
+              className={activeAgent === 'TETYANA' ? 'animate-pulse' : ''}
+            />
+            <text
+              y="25"
+              transform="rotate(-240)"
+              textAnchor="middle"
+              fill="var(--tetyana-green)"
+              fontSize="9"
+              fontWeight="bold"
+              letterSpacing="3"
+              opacity={activeAgent === 'TETYANA' ? 1 : 0.3}
+            >
+              TETYANA
+            </text>
+          </g>
         </g>
       </svg>
 

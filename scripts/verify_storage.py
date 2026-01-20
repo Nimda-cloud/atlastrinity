@@ -1,18 +1,20 @@
-
 import asyncio
 import os
 import sys
-from sqlalchemy import select, func
+
+from sqlalchemy import func, select
 
 # Ensure src is in path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
 from brain.db.manager import db_manager
 from src.brain.config_loader import config
+
 # Use dynamic DB_URL
 DB_URL = config.get("db.url", "sqlite+aiosqlite:///:memory:")
-from brain.db.schema import Session, Task, TaskStep, ToolExecution, KGNode, ConversationSummary
+from brain.db.schema import ConversationSummary, KGNode, Session, Task, TaskStep, ToolExecution
 from brain.memory import long_term_memory
+
 
 async def verify_storage():
     print("🔍 Verifying Storage Systems...")
@@ -27,7 +29,8 @@ async def verify_storage():
         if not db_manager.available:
             print("   ❌ Database Connection Failed!")
         else:
-            async with (await db_manager.get_session()) as session:
+            async with await db_manager.get_session() as session:
+
                 async def count(model):
                     res = await session.execute(select(func.count(model.id)))
                     return res.scalar()
@@ -62,33 +65,34 @@ async def verify_storage():
     try:
         stats = long_term_memory.get_stats()
         if not stats.get("available"):
-             print("   ❌ ChromaDB Unavailable!")
+            print("   ❌ ChromaDB Unavailable!")
         else:
-             print("   ✅ Connection Established")
-             print(f"   Lessons (Errors/Solutions): {stats.get('lessons_count')}")
-             print(f"   Strategies (Plans): {stats.get('strategies_count')}")
-             
-             # Check Knowledge Graph Nodes in Chroma
-             kg_nodes_count = long_term_memory.knowledge.count()
-             print(f"   Knowledge Graph Nodes (Chroma): {kg_nodes_count}")
-             
-             # Check Conversations in Chroma
-             conv_count = long_term_memory.conversations.count()
-             print(f"   Conversation Summaries (Chroma): {conv_count}")
-             
-             # Try simple query to ensure embeddings work
-             print("   🧪 Testing vector query...")
-             try:
-                 results = long_term_memory.recall_similar_tasks("test task", n_results=1)
-                 print(f"   ✅ Vector query successful (Found {len(results)} matches)")
-             except Exception as e:
-                 print(f"   ❌ Vector query failed: {e}")
+            print("   ✅ Connection Established")
+            print(f"   Lessons (Errors/Solutions): {stats.get('lessons_count')}")
+            print(f"   Strategies (Plans): {stats.get('strategies_count')}")
+
+            # Check Knowledge Graph Nodes in Chroma
+            kg_nodes_count = long_term_memory.knowledge.count()
+            print(f"   Knowledge Graph Nodes (Chroma): {kg_nodes_count}")
+
+            # Check Conversations in Chroma
+            conv_count = long_term_memory.conversations.count()
+            print(f"   Conversation Summaries (Chroma): {conv_count}")
+
+            # Try simple query to ensure embeddings work
+            print("   🧪 Testing vector query...")
+            try:
+                results = long_term_memory.recall_similar_tasks("test task", n_results=1)
+                print(f"   ✅ Vector query successful (Found {len(results)} matches)")
+            except Exception as e:
+                print(f"   ❌ Vector query failed: {e}")
 
     except Exception as e:
         print(f"   ❌ Error verifying ChromaDB: {e}")
 
     print("-" * 50)
     print("🏁 Verification Complete")
+
 
 if __name__ == "__main__":
     asyncio.run(verify_storage())

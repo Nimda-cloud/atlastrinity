@@ -1,30 +1,39 @@
-
 import asyncio
-import sys
-import os
 import logging
-import json
-from sqlalchemy import select, func, text
+import os
+import sys
+
+from sqlalchemy import func, select, text
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("verify_storage")
 
 # Import system managers
 try:
-    from src.brain.memory import long_term_memory
     from src.brain.db.manager import db_manager
-    from src.brain.state_manager import state_manager
     from src.brain.db.schema import (
-        KGNode, KGEdge, Session, Task, TaskStep, ToolExecution, 
-        LogEntry, AgentMessage, RecoveryAttempt
+        AgentMessage,
+        KGEdge,
+        KGNode,
+        LogEntry,
+        RecoveryAttempt,
+        Session,
+        Task,
+        TaskStep,
+        ToolExecution,
     )
+    from src.brain.memory import long_term_memory
+    from src.brain.state_manager import state_manager
 except ImportError as e:
     logger.error(f"Import failed: {e}")
     sys.exit(1)
+
 
 async def verify_chromadb():
     print("\n--- 1. Semantic/Vector Storage (ChromaDB) ---")
@@ -34,12 +43,12 @@ async def verify_chromadb():
 
     print("✅ ChromaDB is available.")
     print(f"Path: {long_term_memory.get_stats().get('path')}")
-    
+
     try:
         collections = {
             "lessons": long_term_memory.lessons,
             "strategies": long_term_memory.strategies,
-            "knowledge_graph_nodes": long_term_memory.knowledge
+            "knowledge_graph_nodes": long_term_memory.knowledge,
         }
 
         for name, col in collections.items():
@@ -48,10 +57,11 @@ async def verify_chromadb():
             if count > 0:
                 # Peek at one item to confirm content
                 peek = col.peek(limit=1)
-                if peek and peek['ids']:
+                if peek and peek["ids"]:
                     print(f"     Sample ID: {peek['ids'][0]}")
     except Exception as e:
         print(f"❌ ChromaDB Verification Failed: {e}")
+
 
 async def verify_database():
     print("\n--- 2. Structured Storage (SQLite) ---")
@@ -66,7 +76,7 @@ async def verify_database():
             res = await session.execute(text("SELECT 1"))
             if res.scalar() == 1:
                 print("✅ Database Connection: OK")
-            
+
             # Count rows in key tables
             session_count_res = await session.execute(select(func.count()).select_from(Session))
             session_count = session_count_res.scalar()
@@ -81,7 +91,7 @@ async def verify_database():
                 ("ToolExecution", ToolExecution),
                 ("LogEntry", LogEntry),
                 ("AgentMessage", AgentMessage),
-                ("RecoveryAttempt", RecoveryAttempt)
+                ("RecoveryAttempt", RecoveryAttempt),
             ]
 
             for name, model in tables:
@@ -93,6 +103,7 @@ async def verify_database():
                     print(f"   ❌ Table '{name}': Error/Missing - {e}")
     except Exception as e:
         print(f"❌ Database Verification Failed: {e}")
+
 
 async def verify_redis():
     print("\n--- 3. State & Cache (Redis) ---")
@@ -108,28 +119,30 @@ async def verify_redis():
         # Perform a write/read test
         test_key = "verify_storage_test_key"
         test_val = "working"
-        
+
         await state_manager.redis.set(test_key, test_val, ex=10)
         val = await state_manager.redis.get(test_key)
-        
-        if val and (val == test_val or (hasattr(val, 'decode') and val.decode() == test_val)):
-             print("✅ Redis Connection: OK (Write/Read success)")
-             
-             # Check distinct active sessions if possible
-             # Iterate keys safely
-             keys = await state_manager.redis.keys("session:*")
-             print(f"   - Active Session Keys in Redis: {len(keys)}")
-             
+
+        if val and (val == test_val or (hasattr(val, "decode") and val.decode() == test_val)):
+            print("✅ Redis Connection: OK (Write/Read success)")
+
+            # Check distinct active sessions if possible
+            # Iterate keys safely
+            keys = await state_manager.redis.keys("session:*")
+            print(f"   - Active Session Keys in Redis: {len(keys)}")
+
         else:
-             print(f"❌ Redis Write/Read Mismatch. Got: {val}")
+            print(f"❌ Redis Write/Read Mismatch. Got: {val}")
 
     except Exception as e:
         print(f"❌ Redis Verification Failed: {e}")
+
 
 async def main():
     await verify_chromadb()
     await verify_database()
     await verify_redis()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

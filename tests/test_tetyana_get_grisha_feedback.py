@@ -1,4 +1,3 @@
-
 import pytest
 
 from brain.agents.tetyana import Tetyana

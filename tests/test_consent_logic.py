@@ -1,15 +1,22 @@
-
 import sys
+
 
 # Mock the shared_context
 class MockSharedContext:
-    def to_dict(self): return {}
-    @property
-    def available_tools_summary(self): return "some tools"
+    def to_dict(self):
+        return {}
 
-sys.modules['..context'] = type('module', (), {'shared_context': MockSharedContext()})
-sys.modules['..logger'] = type('module', (), {'logger': type('logger', (), {'info': print, 'error': print, 'warning': print})})
-sys.modules['..state_manager'] = type('module', (), {'state_manager': None})
+    @property
+    def available_tools_summary(self):
+        return "some tools"
+
+
+sys.modules["..context"] = type("module", (), {"shared_context": MockSharedContext()})
+sys.modules["..logger"] = type(
+    "module", (), {"logger": type("logger", (), {"info": print, "error": print, "warning": print})}
+)
+sys.modules["..state_manager"] = type("module", (), {"state_manager": None})
+
 
 def test_consent_logic():
     # Simulate the logic inside Tetyana.execute_step
@@ -29,7 +36,10 @@ def test_consent_logic():
         )
 
     test_cases = [
-        ("Call filesystem_list_allowed_directories to confirm which directories this agent may read", False),
+        (
+            "Call filesystem_list_allowed_directories to confirm which directories this agent may read",
+            False,
+        ),
         ("Confirm with user before deleting the file", True),
         ("Ask user for their name", True),
         ("Request user consent for camera access", True),
@@ -44,6 +54,7 @@ def test_consent_logic():
         assert result == expected, f"FAILED for '{action}'"
 
     print("\n✅ Consent logic test passed!")
+
 
 if __name__ == "__main__":
     test_consent_logic()

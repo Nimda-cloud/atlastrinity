@@ -11,7 +11,7 @@ load_dotenv(env_path)
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__)))
-from src.brain.agents.atlas import Atlas  # noqa: E402
+from src.brain.agents.atlas import Atlas
 
 
 async def test_copilot():
@@ -29,7 +29,7 @@ async def test_copilot():
         print("\nSUCCESS: Copilot is working.")
     except Exception as e:
         print(f"\nERROR: Failed to connect to Copilot:\n{e}")
-        import traceback  # noqa: E402
+        import traceback
 
         traceback.print_exc()
 

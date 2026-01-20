@@ -1,45 +1,47 @@
 import asyncio
 import json
-import subprocess
 import os
+import subprocess
+
 
 async def run_verification():
     binary_path = "/Users/olegkizyma/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
-    
+
     if not os.path.exists(binary_path):
         print(f"Error: Binary not found at {binary_path}")
         return
 
     print(f"Starting verification of binary at: {binary_path}")
-    
+
     process = subprocess.Popen(
         [binary_path],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        bufsize=1
+        bufsize=1,
     )
 
     request_id = 0
 
     def send_request(method, params=None, is_notification=False):
         nonlocal request_id
-        req = {
-            "jsonrpc": "2.0",
-            "method": method
-        }
+        req = {"jsonrpc": "2.0", "method": method}
         curr_id = None
         if not is_notification:
             request_id += 1
             req["id"] = request_id
             curr_id = request_id
-        
+
         if params is not None:
             req["params"] = params
-        
+
         json_str = json.dumps(req)
-        print(f"-> Sending {method} (Notification)" if is_notification else f"-> Sending {method} (ID: {curr_id})")
+        print(
+            f"-> Sending {method} (Notification)"
+            if is_notification
+            else f"-> Sending {method} (ID: {curr_id})"
+        )
         process.stdin.write(json_str + "\n")
         process.stdin.flush()
         return curr_id
@@ -62,10 +64,10 @@ async def run_verification():
             return None
         # Don't print raw line if it's huge
         if len(line) > 500:
-             print(f"DEBUG: Read from stdout: {line[:200]}... ({len(line)} chars)")
+            print(f"DEBUG: Read from stdout: {line[:200]}... ({len(line)} chars)")
         else:
-             print(f"DEBUG: Read from stdout: {line.strip()}")
-        
+            print(f"DEBUG: Read from stdout: {line.strip()}")
+
         try:
             data = json.loads(line)
             # Print truncated version for debugging
@@ -76,11 +78,14 @@ async def run_verification():
             return None
 
     # 1. Initialize
-    send_request("initialize", {
-        "protocolVersion": "2024-11-05",
-        "capabilities": {},
-        "clientInfo": {"name": "test-client", "version": "1.0.0"}
-    })
+    send_request(
+        "initialize",
+        {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {"name": "test-client", "version": "1.0.0"},
+        },
+    )
     init_resp = read_response()
     print(f"<- Init Response: {json.dumps(truncate_obj(init_resp), indent=2)}")
 
@@ -103,12 +108,17 @@ async def run_verification():
         "macos-use_click_and_traverse": {"x": 100, "y": 100},
         "macos-use_right_click_and_traverse": {"x": 100, "y": 100},
         "macos-use_double_click_and_traverse": {"x": 100, "y": 100},
-        "macos-use_drag_and_drop_and_traverse": {"startX": 100, "startY": 100, "endX": 110, "endY": 110},
-        "macos-use_type_and_traverse": {"text": "verifying", "pid": 0}, 
+        "macos-use_drag_and_drop_and_traverse": {
+            "startX": 100,
+            "startY": 100,
+            "endX": 110,
+            "endY": 110,
+        },
+        "macos-use_type_and_traverse": {"text": "verifying", "pid": 0},
         "macos-use_press_key_and_traverse": {"keyName": "Return", "modifierFlags": []},
         "macos-use_scroll_and_traverse": {"direction": "down", "amount": 1},
         "macos-use_refresh_traversal": {"pid": 0},
-        "macos-use_window_management": {"action": "make_front", "pid": 0}, 
+        "macos-use_window_management": {"action": "make_front", "pid": 0},
         "execute_command": {"command": "echo 'verified'"},
         "terminal": {"command": "echo 'verified'"},
         "macos-use_take_screenshot": {},
@@ -121,8 +131,11 @@ async def run_verification():
         "macos-use_system_control": {"action": "mute"},
         "macos-use_fetch_url": {"url": "https://example.com"},
         "macos-use_get_time": {},
-        "macos-use_run_applescript": {"script": "return \"running\""},
-        "macos-use_calendar_events": {"start": "2024-01-01T00:00:00.000Z", "end": "2024-01-02T00:00:00.000Z"},
+        "macos-use_run_applescript": {"script": 'return "running"'},
+        "macos-use_calendar_events": {
+            "start": "2024-01-01T00:00:00.000Z",
+            "end": "2024-01-02T00:00:00.000Z",
+        },
         "macos-use_create_event": {"title": "Test Event", "date": "2024-01-01T00:00:00.000Z"},
         "macos-use_reminders": {},
         "macos-use_create_reminder": {"title": "Test Reminder"},
@@ -133,7 +146,7 @@ async def run_verification():
         "macos-use_notes_get_content": {"name": "Test note from MCP"},
         "macos-use_mail_send": {"to": "test@example.com", "subject": "Test", "body": "Hello"},
         "macos-use_mail_read_inbox": {"limit": 1},
-        "macos-use_list_tools_dynamic": {}
+        "macos-use_list_tools_dynamic": {},
     }
 
     summary = []
@@ -142,16 +155,13 @@ async def run_verification():
         name = tool["name"]
         args = test_params.get(name, {})
         print(f"\n--- Testing tool: {name} ---")
-        
-        try:
-            send_request("tools/call", {
-                "name": name,
-                "arguments": args
-            })
 
-            await asyncio.sleep(0.5) 
+        try:
+            send_request("tools/call", {"name": name, "arguments": args})
+
+            await asyncio.sleep(0.5)
             resp = read_response()
-            
+
             if resp and "result" in resp and not resp.get("error"):
                 is_error = resp["result"].get("isError", False)
                 if is_error:
@@ -163,7 +173,7 @@ async def run_verification():
             else:
                 status = "FAILED (RPC/System error)"
                 detail = json.dumps(truncate_obj(resp))
-            
+
             summary.append((name, status, detail))
         except Exception as e:
             print(f"Exception during {name}: {e}")
@@ -183,6 +193,7 @@ async def run_verification():
     if stderr_output:
         print("\n=== STDERR LOGS ===")
         print(stderr_output)
+
 
 if __name__ == "__main__":
     asyncio.run(run_verification())

@@ -36,7 +36,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       // If we are within 100px of the bottom or it's the first render with messages, auto-scroll
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-      
+
       if (isNearBottom || filteredLogs.length <= 1) {
         // Direct manipulation is more robust than scrollIntoView for frequent updates
         container.scrollTop = container.scrollHeight;
@@ -71,7 +71,6 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden font-mono relative min-h-0">
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
-
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto p-1 scrollbar-thin h-full min-h-0"
@@ -116,18 +115,19 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
             <div className="flex-1 flex flex-col pl-0.5">
               {/* Message */}
               <span
-                className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${log.message.includes('[VIBE-THOUGHT]')
-                  ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
-                  : log.message.includes('[VIBE-ACTION]')
-                    ? 'text-yellow-400'
-                    : log.message.includes('[VIBE-GEN]')
-                      ? 'text-green-400'
-                      : log.message.includes('[VIBE-LIVE]')
-                        ? 'text-blue-300'
-                        : log.agent === 'USER'
-                          ? 'text-[#00E5FF]'
-                          : 'text-[#00A3FF] group-hover:text-[#33B5FF]'
-                  }`}
+                className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${
+                  log.message.includes('[VIBE-THOUGHT]')
+                    ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
+                    : log.message.includes('[VIBE-ACTION]')
+                      ? 'text-yellow-400'
+                      : log.message.includes('[VIBE-GEN]')
+                        ? 'text-green-400'
+                        : log.message.includes('[VIBE-LIVE]')
+                          ? 'text-blue-300'
+                          : log.agent === 'USER'
+                            ? 'text-[#00E5FF]'
+                            : 'text-[#00A3FF] group-hover:text-[#33B5FF]'
+                }`}
                 style={{ fontFamily: 'JetBrains Mono' }}
               >
                 {typeof log.message === 'object'

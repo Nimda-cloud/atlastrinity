@@ -1,4 +1,3 @@
-
 import pytest
 
 from brain.agents.tetyana import Tetyana
@@ -18,6 +17,7 @@ async def test_fetch_urls_patch(monkeypatch):
         return {"success": True, "output": "ok"}
 
     from brain.mcp_manager import mcp_manager
+
     monkeypatch.setattr(mcp_manager, "call_tool", fake_call)
 
     tool_call = {"name": "fetch", "args": {"urls": ["http://example.com"]}}

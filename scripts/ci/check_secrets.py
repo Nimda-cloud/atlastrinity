@@ -2,6 +2,7 @@
 """
 Check that required environment secrets are available in CI.
 """
+
 import os
 import sys
 

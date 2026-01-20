@@ -7,6 +7,7 @@ Usage:
 Defaults to global config at ~/.config/atlastrinity/mcp/config.json or falls
 back to project src/mcp_server/config.json when not found.
 """
+
 import argparse
 import os
 import sys

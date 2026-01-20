@@ -84,7 +84,7 @@ def main():
     print_header("3. Перевірка Python модулів")
 
     try:
-        from src.brain.voice.stt import WhisperSTT  # noqa: E402
+        from src.brain.voice.stt import WhisperSTT
 
         print_check("WhisperSTT import", True, "src.brain.voice.stt")
     except Exception as e:
@@ -92,7 +92,7 @@ def main():
         return 1
 
     try:
-        from src.brain.config_loader import config  # noqa: E402
+        from src.brain.config_loader import config
 
         print_check("config_loader import", True, "src.brain.config_loader")
     except Exception as e:
@@ -100,7 +100,8 @@ def main():
         return 1
 
     try:
-        from src.mcp_server.whisper_server import server # noqa: F401
+        from src.mcp_server.whisper_server import server  # noqa: F401
+
         print_check("MCP Whisper Server import", True, "src.mcp_server.whisper_server")
     except Exception as e:
         print_check("MCP Whisper Server import", False, str(e))
@@ -203,14 +204,14 @@ def main():
     print_header("7. Перевірка production_setup.py")
 
     try:
-        from src.brain.production_setup import (  # noqa: E402
+        from src.brain.production_setup import (
             copy_config_if_needed,
         )
 
         print_check("production_setup imports", True)
 
         # Перевірка що config.yaml в списку файлів для копіювання
-        import inspect  # noqa: E402
+        import inspect
 
         source = inspect.getsource(copy_config_if_needed)
         has_config_yaml = "config.yaml" in source
@@ -239,7 +240,7 @@ def main():
 
     package_json = PROJECT_ROOT / "package.json"
     if package_json.exists():
-        import json  # noqa: E402
+        import json
 
         pkg = json.loads(package_json.read_text())
 

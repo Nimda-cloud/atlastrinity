@@ -21,18 +21,18 @@ async def test_grisha_saves_rejection_report():
     await gr._save_rejection_report(999, step, verification)
 
     # Check filesystem for report
-    import os
     import glob
-    
+    import os
+
     reports_dir = os.path.expanduser("~/.config/atlastrinity/reports")
     assert os.path.exists(reports_dir)
-    
+
     # Find latest report
     files = glob.glob(os.path.join(reports_dir, "rejection_step_999_*.md"))
     assert len(files) > 0, "No rejection report found in filesystem"
-    
+
     latest_report = files[-1]
-    content = open(latest_report, "r").read()
+    content = open(latest_report).read()
     assert "Fake description" in content
     assert "issue1" in content
 

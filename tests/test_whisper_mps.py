@@ -18,8 +18,8 @@ import torch
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.brain.config_loader import config  # noqa: E402
-from src.brain.voice.stt import WhisperSTT  # noqa: E402
+from src.brain.config_loader import config
+from src.brain.voice.stt import WhisperSTT
 
 
 def check_mps_availability():
@@ -70,7 +70,7 @@ def test_whisper_device(device_name: str):
         load_start = time.time()
 
         # Trigger model loading (WhisperSTT uses async get_model)
-        import asyncio as _asyncio  # noqa: E402
+        import asyncio as _asyncio
 
         _model = _asyncio.run(stt.get_model())
 
@@ -86,12 +86,12 @@ def test_whisper_device(device_name: str):
         print("\n✅ ТЕСТ ПРОЙДЕНО!")
         print(f"   Загальний час: {total_time:.2f}s")
 
-        # Перевіряємо успіх через assert (pytest-style)
-        assert True, f"Whisper test succeeded on {device_name}"
+        # Return status for comparison
+        return {"success": True, "total_time": total_time}
 
     except Exception as e:
         print(f"\n❌ ПОМИЛКА: {e}")
-        import traceback  # noqa: E402
+        import traceback
 
         traceback.print_exc()
 
@@ -114,20 +114,20 @@ def main():
     mps_available = check_mps_availability()
 
     # 2. Тестуємо CPU (baseline)
-    cpu_result = test_whisper_device("cpu")
+    cpu_result = test_whisper_device("cpu") or {"success": False, "total_time": 0}
 
     # 3. Тестуємо MPS (якщо доступний)
     if mps_available:
-        mps_result = test_whisper_device("mps")
+        mps_result = test_whisper_device("mps") or {"success": False, "total_time": 0}
 
         # Порівняння
-        if cpu_result["success"] and mps_result["success"]:
+        if cpu_result.get("success") and mps_result.get("success"):
             print("\n" + "=" * 60)
             print("📊 ПОРІВНЯННЯ CPU vs MPS")
             print("=" * 60)
 
-            cpu_total = cpu_result["total_time"]
-            mps_total = mps_result["total_time"]
+            cpu_total = cpu_result.get("total_time") or 0.0
+            mps_total = mps_result.get("total_time") or 0.1  # avoid div by zero
             speedup = cpu_total / mps_total if mps_total > 0 else 0
 
             print(f"\nCPU:  {cpu_total:.2f}s")
@@ -139,6 +139,7 @@ def main():
             else:
                 print("\n⚠️  РЕКОМЕНДАЦІЯ: device: 'cpu' може бути кращим варіантом")
     else:
+        mps_result = {"success": False}
         print("\n⚠️  MPS недоступний - пропускаємо тест")
         print("   Використовуйте device: 'cpu' в config.yaml")
 

@@ -3,13 +3,14 @@
 Validate MCP configuration file against schema.
 Ensures all required fields are present and types are correct.
 """
+
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
-def validate_server_config(name: str, config: Dict[str, Any]) -> List[str]:
+def validate_server_config(name: str, config: dict[str, Any]) -> list[str]:
     """Validate a single server configuration."""
     errors = []
 

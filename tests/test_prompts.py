@@ -1,4 +1,3 @@
-
 from brain.prompts import AgentPrompts
 
 
@@ -13,10 +12,10 @@ def test_grisha_prompt_contains_dynamic_catalog():
     grisha = AgentPrompts.GRISHA
     assert isinstance(grisha, dict)
     sys_prompt = grisha.get("SYSTEM_PROMPT", "")
-    
+
     # Check that catalog is properly interpolated from mcp_registry
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
-    
+
     # Check MCP verification tools are mentioned
     assert "macos-use_refresh_traversal" in sys_prompt or "execute_command" in sys_prompt
 
@@ -26,7 +25,7 @@ def test_atlas_prompt_contains_dynamic_catalog():
     atlas = AgentPrompts.ATLAS
     assert isinstance(atlas, dict)
     sys_prompt = atlas.get("SYSTEM_PROMPT", "")
-    
+
     # Check that catalog is properly interpolated
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
 
@@ -36,7 +35,7 @@ def test_tetyana_prompt_contains_dynamic_catalog():
     tetyana = AgentPrompts.TETYANA
     assert isinstance(tetyana, dict)
     sys_prompt = tetyana.get("SYSTEM_PROMPT", "")
-    
+
     # Check that catalog is properly interpolated
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
 

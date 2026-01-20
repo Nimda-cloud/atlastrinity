@@ -2,7 +2,6 @@ import os
 import subprocess
 from unittest.mock import Mock
 
-
 from scripts import setup_dev as s
 
 

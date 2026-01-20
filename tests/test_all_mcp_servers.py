@@ -12,7 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.brain.mcp_manager import mcp_manager  # noqa: E402
+from src.brain.mcp_manager import mcp_manager
 
 
 # Color codes for terminal output
@@ -47,7 +47,7 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
 
         try:
             tools = await asyncio.wait_for(mcp_manager.list_tools(server_name), timeout=10.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             results["status"] = "timeout"
             results["error"] = "Tool listing timeout (>10s)"
             print(f"{Colors.WARNING}⚠ Connection timeout{Colors.ENDC}")
@@ -93,11 +93,11 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
                     output_str = str(result)[:200]
                     print(f"{Colors.OKGREEN}✓ Success: {output_str}...{Colors.ENDC}")
                     results["tests"].append({"test": description, "status": "success"})
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 print(f"{Colors.WARNING}⚠ Tool call timeout{Colors.ENDC}")
                 results["tests"].append({"test": description, "status": "timeout"})
             except Exception as e:
-                print(f"{Colors.FAIL}✗ Exception: {str(e)}{Colors.ENDC}")
+                print(f"{Colors.FAIL}✗ Exception: {e!s}{Colors.ENDC}")
                 results["tests"].append(
                     {"test": description, "status": "exception", "error": str(e)}
                 )
@@ -105,7 +105,7 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
     except Exception as e:
         results["status"] = "connection_failed"
         results["error"] = str(e)
-        print(f"{Colors.FAIL}✗ Failed to connect: {str(e)}{Colors.ENDC}")
+        print(f"{Colors.FAIL}✗ Failed to connect: {e!s}{Colors.ENDC}")
 
     return results
 
@@ -134,7 +134,7 @@ async def test_mcp_server(server_name: str, test_cases: list):
             "no_tools",
         ), f"Server {server_name} failed: {result.get('error')}"
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         pytest.skip(f"Server {server_name} connection timeout (>15s)")
     except Exception as e:
         pytest.skip(f"Server {server_name} connection error: {str(e)[:80]}")
