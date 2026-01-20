@@ -10,9 +10,9 @@ from typing import Optional
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from .schema import Base
-from ..config import CONFIG_ROOT
-from ..config_loader import config
+from src.brain.db.schema import Base
+from src.brain.config import CONFIG_ROOT
+from src.brain.config_loader import config
 from typing import Optional, Any, cast
 
 class DatabaseManager:
@@ -28,7 +28,7 @@ class DatabaseManager:
             os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db")
         )
         # Handle placeholders: ${CONFIG_ROOT}, ${HOME}, ${PROJECT_ROOT}
-        from ..config import PROJECT_ROOT
+        from src.brain.config import PROJECT_ROOT
         placeholders = {
             "${CONFIG_ROOT}": str(CONFIG_ROOT),
             "${HOME}": str(Path.home()),
@@ -222,11 +222,12 @@ class DatabaseManager:
             return
 
         from sqlalchemy import select
-        from .schema import KGNode
+        from src.brain.db.schema import KGNode
         
         async with await self.get_session() as session:
             # 1. Ensure core system node exists in Knowledge Graph
-            stmt = select(KGNode).where(KGNode.id == "entity:trinity")
+            # Use cast(Any, ...) to satisfy linter regarding SQLAlchemy operator overloading
+            stmt = select(KGNode).where(cast(Any, KGNode.id == "entity:trinity"))
             res = await session.execute(stmt)
             if not res.scalar():
                 print("[DB] Seeding core Knowledge Graph nodes...")
