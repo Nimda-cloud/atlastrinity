@@ -326,6 +326,19 @@ class Atlas(BaseAgent):
         except Exception:
             system_status = "Active."
 
+        # E. DEEP THINKING: Trigger only for complex queries in the first turn
+        analysis_context = ""
+        is_complex = len(user_request.split()) > 7 or any(
+            kw in user_request.lower()
+            for kw in ["як", "чому", "виправ", "зроби", "поясни", "how", "why", "fix", "explain"]
+        )
+
+        if not is_simple_chat and is_complex:
+            logger.info("[ATLAS] Engaging deep reasoning for chat...")
+            reasoning = await self.use_sequential_thinking(user_request, total_thoughts=2)
+            if reasoning.get("success"):
+                analysis_context = f"\nDEEP ANALYSIS:\n{reasoning.get('analysis')}\n"
+
         # 2. Generate Super Prompt
         agent_capabilities = (
             "- Web search, File read, Spotlight, System info, GitHub/Docker info (Read-only)."
@@ -341,6 +354,8 @@ class Atlas(BaseAgent):
             agent_capabilities=agent_capabilities,
             use_deep_persona=use_deep_persona,
         )
+        if analysis_context:
+            system_prompt_text += f"\n{analysis_context}"
 
         from langchain_core.messages import BaseMessage
 

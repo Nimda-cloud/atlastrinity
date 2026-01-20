@@ -386,12 +386,12 @@ const App: React.FC = () => {
         <ChatPanel messages={chatMessages} />
       </aside>
 
-      {/* Floating Input Dock */}
       <div className="command-dock command-dock-floating">
         <CommandLine
           onCommand={handleCommand}
           isVoiceEnabled={isVoiceEnabled}
           onToggleVoice={() => setIsVoiceEnabled(!isVoiceEnabled)}
+          isProcessing={systemState !== 'IDLE' && systemState !== 'ERROR'}
         />
       </div>
 

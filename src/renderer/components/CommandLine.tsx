@@ -21,6 +21,7 @@ interface CommandLineProps {
   onCommand: (command: string) => void;
   isVoiceEnabled?: boolean;
   onToggleVoice?: () => void;
+  isProcessing?: boolean;
 }
 
 declare global {
@@ -33,6 +34,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
   onCommand,
   isVoiceEnabled = true,
   onToggleVoice,
+  isProcessing,
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -467,9 +469,9 @@ const CommandLine: React.FC<CommandLineProps> = ({
             autoFocus
           />
           <div className="absolute right-3 bottom-2 flex items-center gap-2">
-            {sttStatus && (
-              <span className="text-cyan-400/70 text-[9px] tracking-wider animate-pulse">
-                {sttStatus}
+            {(isProcessing || sttStatus) && (
+              <span className={`text-[9px] tracking-wider animate-pulse ${isProcessing ? 'text-amber-400' : 'text-cyan-400/70'}`}>
+                {isProcessing ? '🤔 Думаю...' : sttStatus}
               </span>
             )}
             <span className="text-blue-500/20 text-[9px] pointer-events-none tracking-widest">

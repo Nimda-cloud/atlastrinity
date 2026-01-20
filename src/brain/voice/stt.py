@@ -144,9 +144,50 @@ class WhisperSTT:
             self.compute_type = "int8"  # Best for CPU/MPS stability and speed
 
         # Stateful tracking for Smart STT
-
         self.last_speech_time = 0.0
         self.silence_threshold = 3.5  # Seconds of silence before sending phrase (slightly more than UI 3s)
+
+    def _filter_text(self, text: str) -> str:
+        """Filter out common hallucinations and noise patterns"""
+        t = text.strip()
+        if not t:
+            return ""
+
+        # Common Whisper hallucinations
+        blacklist = [
+            "дякую за увагу",
+            "дякую за перегляд",
+            "підпишіться на канал",
+            "підписуйтесь",
+            "ставте лайки",
+            "на все добре",
+            "до зустрічі",
+            "thank you for watching",
+            "subscribe",
+            "thanks for watching",
+            "субтитри",
+            "субтитры",
+            "оля шор",
+            "а.семкин",
+            "а.егорова",
+            "о.голубкін",
+        ]
+
+        t_lower = t.lower()
+        for p in blacklist:
+            if p in t_lower:
+                # If hallucination is a significant part of the text, it's likely garbage
+                if len(p) > len(t) * 0.7:
+                    return ""
+                # Otherwise just strip it (rare case)
+                t = t.replace(p, "").strip()
+                t = t.replace(p.capitalize(), "").strip()
+
+        # Clean up repeated punctuation or weird chars
+        import re
+        t = re.sub(r'([.!?])\1+', r'\1', t)
+        
+        return t
 
     async def get_model(self):
         """Lazy-load Faster Whisper model non-blockingly"""
@@ -187,7 +228,7 @@ class WhisperSTT:
                     audio_path,
                     language=language,
                     beam_size=2,
-                    initial_prompt="Це розмова з розумним асистентом Atlas. Пиши грамотно, з пунктуацією.",
+                    initial_prompt="Це професійна розмова з AI-асистентом на ім'я Атлас. Використовуй правильну українську пунктуацію, розділові знаки, великі літери на початку речень. Не додавай тексту, якого немає в аудіо.",
                     vad_filter=True,  # Enable VAD to avoid hallucinations during silence
                     vad_parameters=dict(min_silence_duration_ms=1000),
                 )
@@ -196,6 +237,7 @@ class WhisperSTT:
             segments_list, info = await asyncio.to_thread(transcribe)
 
             full_text = " ".join([s.text for s in segments_list]).strip()
+            full_text = self._filter_text(full_text)
 
             # Calculate average confidence
             if segments_list:
@@ -280,120 +322,52 @@ class WhisperSTT:
         if not text or result.no_speech_prob > 0.7:
             return SpeechType.SILENCE
 
-        # 1. Aggressive blacklist for common hallucinations (even with high confidence)
+        # 1. Aggressive blacklist for common hallucinations
         hard_blacklist = [
             "оля шор",
-            "промилки",
-            "привідах",
-            "промілки",
-            "привіти",
-            "привіток",
-            "привіток справи",
             "субтитри",
-            "субтитрувальниця",
-            "перегляд",
+            "субтитры",
             "дякую за перегляд",
+            "підпишіться",
             "підписуйтесь",
-            "про що",
-            "про що ви знаєте",
-            "про те, що ви не знаєте",
-            "субтитрування",
-            "текст оголошення",
-            "будь ласка, підпишіться",
             "дякую за увагу",
             "на все добре",
-            "до наступного разу",
-            "всім привіт",
-            "гарного перегляду",
-            "звучить музика",
-            "музика",
-            "playing music",
-            "music starts",
-            "тихо звучить музика",
-            "фонова музика",
-            "дякую",
-            "дякую.",
-            "продовження",
-            "отже",
-            "отже.",
-            "власне",
-            "значить",
-            "тобто",
-            "ну",
-            "ось",
-            "редактор",
-            "корректор",
             "а.семкин",
             "а.егорова",
             "о.голубкін",
-            "о.голубкин",
-            "а. семкин",
-            "а. егорова",
-            "субтитри:",
-            "субтитры:",
+            "музика",
+            "playing music",
+            "про що ви знаєте",
+            "про те, що ви не знаєте",
         ]
 
-        if any(p in text for p in hard_blacklist) or any(
-            p in text for p in [
-                "дякую за перегляд",
-                "підпишіться",
-                "оля шор",
-                "привідах",
-                "промилки",
-                "привіток",
-                "привіток справи"
-            ]
-        ):
-            return SpeechType.BACKGROUND_NOISE
-
-        # 1.1 Check for short/meaningless hallucinations
-        if len(text.strip()) < 3 and text.strip().lower() in ["оля", "шор", "про", "так", "ні"]:
-            return SpeechType.BACKGROUND_NOISE
-
-        # If phrase contains any blacklisted word (aggressive substring search)
         if any(p in text for p in hard_blacklist):
             return SpeechType.BACKGROUND_NOISE
 
-        # 2. Низька впевненість
+        # 1.1 Short hallucinations
+        if len(text) < 3 and text in ["оля", "шор", "про"]:
+            return SpeechType.BACKGROUND_NOISE
+
+        # 2. Low confidence
         if result.confidence < 0.35:
-            noise_patterns = [
-                ".",
-                "..",
-                "...",
-                "м",
-                "мм",
-                "[music]",
-                "[noise]",
-                "♪",
-                "♫",
-            ]
+            # Common filler words/noise if low confidence
+            noise_patterns = [".", "..", "...", "м", "мм", "[music]", "[noise]", "♪", "♫"]
             if any(p in text for p in noise_patterns) or len(text) < 2:
                 return SpeechType.BACKGROUND_NOISE
 
-        # 3. Single word check (common hallucination in noise/echo)
+        # 3. Single word check
         words = text.split()
         if len(words) == 1:
-            # If low confidence and single word - ignore (threshold bumped from 0.65 to 0.8)
             if result.confidence < 0.80:
                 return SpeechType.BACKGROUND_NOISE
-            # If blacklisted or too short word
-            if any(
-                w == words[0]
-                for w in [
-                    "дякую",
-                    "привіт",
-                    "зрозумів",
-                    "ок",
-                    "так",
-                    "ні",
-                    "отже",
-                    "тобто",
-                ]
-            ):
-                if result.confidence < 0.9:
+            
+            # Common interjections
+            common_interjections = ["так", "ні", "ок", "дякую", "привіт", "зрозумів", "отже", "тобто"]
+            if text in common_interjections and result.confidence < 0.92:
+                if not previous_text:
                     return SpeechType.BACKGROUND_NOISE
 
-        # 4. Looping check (classic Whisper hallucination)
+        # 4. Looping check
         if len(words) > 5:
             unique_words = set(words)
             if len(unique_words) / len(words) < 0.4:
