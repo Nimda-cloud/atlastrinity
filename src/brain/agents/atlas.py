@@ -296,21 +296,32 @@ class Atlas(BaseAgent):
                 try:
                     status = mcp_manager.get_status()
                     # Subset of servers that Atlas can use independently for chat/research
+                    configured_servers = set(mcp_manager.config.get("mcpServers", {}).keys())
                     discovery_servers = {"macos-use", "filesystem", "duckduckgo-search", "memory", "github"}
-                    active_servers = (set(status.get("connected_servers", [])) | {"filesystem", "memory"}) & discovery_servers
+                    
+                    # Be proactive: try all discovery servers that are in the config, not just "connected" ones
+                    active_servers = (configured_servers | {"filesystem", "memory"}) & discovery_servers
+                    
+                    logger.info(f"[ATLAS] Proactive tool discovery on servers: {active_servers}")
                     
                     # Parallel tool listing
-                    server_tools = await asyncio.gather(*[mcp_manager.list_tools(s) for s in active_servers if s in mcp_manager.config.get("mcpServers", {})], return_exceptions=True)
+                    server_tools = await asyncio.gather(*[mcp_manager.list_tools(s) for s in active_servers], return_exceptions=True)
                     
-                    for s_name, t_list in zip([s for s in active_servers if s in mcp_manager.config.get("mcpServers", {})], server_tools):
-                        if isinstance(t_list, (Exception, BaseException)): continue
+                    for s_name, t_list in zip(list(active_servers), server_tools):
+                        if isinstance(t_list, (Exception, BaseException)): 
+                            logger.warning(f"[ATLAS] Could not list tools for {s_name}: {t_list}")
+                            continue
+                        
                         # Explicitly cast to list to satisfy type checkers
                         for tool in cast(list, t_list):
                             t_low, d_low = tool.name.lower(), tool.description.lower()
-                            is_safe = any(p in t_low or p in d_low for p in ["get", "list", "read", "search", "stats", "fetch", "check", "find", "view", "query"])
+                            # Broader 'safe' matching for solo research
+                            is_safe = any(p in t_low or p in d_low for p in ["get", "list", "read", "search", "stats", "fetch", "check", "find", "view", "query", "cat", "ls"])
                             is_mut = any(p in t_low or p in d_low for p in ["create", "delete", "write", "update", "exec", "run", "set", "modify"])
+                            
                             if is_safe and not is_mut:
                                 new_tools.append({"name": f"{s_name}_{tool.name}", "description": tool.description, "input_schema": tool.inputSchema})
+
                     
                     self._cached_info_tools = new_tools
                     self._last_tool_refresh = int(now)

@@ -683,6 +683,7 @@ class Trinity:
                 # Handle Atlas Solo Modes (Chat, Recall, Status, Solo Task)
 
                 if intent in ["chat", "recall", "status", "solo_task"]:
+                    self.state["system_state"] = SystemState.CHAT.value
                     # Deep persona or tool-based solo task
                     response = analysis.get("initial_response") or await self.atlas.chat(
                         user_request,
