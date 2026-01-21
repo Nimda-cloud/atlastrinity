@@ -446,12 +446,18 @@ async def smart_speech_to_text(
                 "ignored": True,
             }
 
+        # BARGE-IN: Only trigger on EXPLICIT stop commands, not any new phrase
+        # This prevents false positives from background noise (TV, etc.)
+        stop_commands = {"стоп", "стій", "зупинись", "зупини", "тихо", "stop", "halt", "quiet", "wait"}
+        is_stop_command = any(cmd in clean_text for cmd in stop_commands)
+        
         if (
             result.speech_type == SpeechType.NEW_PHRASE
             and result.text
             and agent_was_speaking
             and not is_echo
-            and result.confidence > 0.65  # Bumped slightly to 0.65
+            and is_stop_command
+            and result.confidence > 0.70  # Higher threshold for stop commands
         ):
             logger.info(f"[STT] 🛑 BARGE-IN DETECTED: '{result.text}' -> Stopping TTS.")
             if trinity_voice:
