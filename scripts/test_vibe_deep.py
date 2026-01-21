@@ -156,10 +156,20 @@ async def run_vibe_tool(
                                     success = True
 
                             elif tool_name == "vibe_execute_subcommand":
-                                if result.get("error"):
-                                    # Some tools return error inside result
+                                # Check structuredContent or result error
+                                struct = result.get("structuredContent", {})
+                                if result.get("error") or struct.get("error") or "Unknown subcommand" in str(struct.get("error", "")):
                                     print("✅ Correctly rejected invalid subcommand (in result)")
                                     success = True
+                                else:
+                                    # Fallback to checking text content
+                                    content = result.get("content", [])
+                                    text_res = "".join(
+                                        [c["text"] for c in content if c["type"] == "text"]
+                                    )
+                                    if "Unknown subcommand" in text_res or '"success": false' in text_res:
+                                        print("✅ Correctly rejected invalid subcommand (in text)")
+                                        success = True
 
                             elif tool_name == "vibe_which":
                                 # Check content for binary path
