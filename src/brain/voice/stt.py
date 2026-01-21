@@ -238,7 +238,8 @@ class WhisperSTT:
                     language=language,
                     beam_size=5,  # Better accuracy for large-v3
                     temperature=0.0,  # Deterministic output
-                    initial_prompt=initial_prompt or "Це професійна розмова з AI-асистентом Атласом. Пиши чистою українською мовою з правильними розділовими знаками.",
+                    initial_prompt=initial_prompt
+                    or "Це професійна розмова з AI-асистентом Атласом. Пиши чистою українською мовою з правильними розділовими знаками.",
                     vad_filter=True,
                     vad_parameters=dict(min_silence_duration_ms=1000),
                 )
@@ -279,7 +280,7 @@ class WhisperSTT:
         import time
 
         now = time.time()
-        
+
         # Use previous_text as initial_prompt to help Whisper continue the phrase
         result = await self.transcribe_file(audio_path, language, initial_prompt=previous_text)
         speech_type = self._analyze_speech_type(result, previous_text)

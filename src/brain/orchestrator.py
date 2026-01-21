@@ -701,19 +701,19 @@ class Trinity:
                         intent=intent,
                     )
                     await self._speak("atlas", response)
-                    
+
                     # Background session save to avoid blocking response
                     try:
                         from src.brain.state_manager import state_manager
+
                         if state_manager and getattr(state_manager, "available", False):
                             asyncio.create_task(state_manager.save_session(session_id, self.state))
                     except (ImportError, NameError):
                         pass
-                        
+
                     self.state["system_state"] = SystemState.IDLE.value
                     self.active_task = None
                     return {"status": "completed", "result": response, "type": intent}
-
 
                 self.state["system_state"] = SystemState.PLANNING.value
 

@@ -61,6 +61,7 @@ class TestAtlasCore:
                 return MockResponse()
 
         from typing import Any
+
         atlas.llm = MockLLM()  # type: ignore
 
         result = await atlas.analyze_request("відкрий термінал")

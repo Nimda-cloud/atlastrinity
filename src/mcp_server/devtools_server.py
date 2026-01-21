@@ -60,7 +60,7 @@ def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
     if not config_path.exists():
         # Fallback to template if active not found (unlikely in prod but helpful for dev)
         config_path = PROJECT_ROOT / "src" / "mcp_server" / "config.json.template"
-        
+
     if not config_path.exists():
         return {"error": "MCP Configuration not found"}
 
@@ -239,7 +239,7 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
             return {
                 "success": len(violations) == 0,
                 "violation_count": len(violations),
-                "violations": violations
+                "violations": violations,
             }
         except json.JSONDecodeError:
             return {"error": "Failed to parse oxlint JSON output", "raw_output": output}
@@ -304,14 +304,17 @@ def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
         # Simple heuristic to extract violation count if possible
         # Pyrefly usually prints something like "Found X errors"
         import re
+
         error_match = re.search(r"Found (\d+) error", stdout + stderr, re.IGNORECASE)
-        error_count = int(error_match.group(1)) if error_match else (0 if result.returncode == 0 else -1)
+        error_count = (
+            int(error_match.group(1)) if error_match else (0 if result.returncode == 0 else -1)
+        )
 
         return {
             "success": result.returncode == 0,
             "error_count": error_count,
             "stdout": stdout,
-            "stderr": stderr
+            "stderr": stderr,
         }
     except Exception as e:
         return {"error": str(e)}

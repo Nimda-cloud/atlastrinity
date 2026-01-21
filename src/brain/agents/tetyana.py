@@ -113,12 +113,12 @@ class Tetyana(BaseAgent):
         # Get model config (config.yaml > parameter > env variables)
         agent_config = config.get_agent_config("tetyana")
         final_model = model_name
-        
+
         config_model = agent_config.get("model")
         if config_model:
-             final_model = config_model
+            final_model = config_model
         elif model_name == "gpt-4o":
-             final_model = os.getenv("COPILOT_MODEL", "gpt-4o")
+            final_model = os.getenv("COPILOT_MODEL", "gpt-4o")
 
         self.llm = CopilotLLM(model_name=final_model)
 
@@ -174,12 +174,12 @@ class Tetyana(BaseAgent):
 
         prompt = f"""GOAL ALIGNMENT VALIDATION
 
-CURRENT STEP: {step.get('action', '')}
-EXPECTED RESULT: {step.get('expected_result', '')}
-TOOL: {step.get('tool', step.get('realm', 'not specified'))}
+CURRENT STEP: {step.get("action", "")}
+EXPECTED RESULT: {step.get("expected_result", "")}
+TOOL: {step.get("tool", step.get("realm", "not specified"))}
 
 GOAL CHAIN (from most specific to global):
-{chr(10).join([f"  {i+1}. {g}" for i, g in enumerate(goal_chain)])}
+{chr(10).join([f"  {i + 1}. {g}" for i, g in enumerate(goal_chain)])}
 
 GLOBAL GOAL: {global_goal}
 
@@ -631,7 +631,9 @@ IMPORTANT:
                 )
                 # If agent autonomously decides deviation is better, modify step
                 if alignment.get("confidence", 0) < 0.3 and alt:
-                    logger.info("[TETYANA] Autonomous deviation decision: using alternative approach")
+                    logger.info(
+                        "[TETYANA] Autonomous deviation decision: using alternative approach"
+                    )
                     step["action"] = alt
                     step["deviation_applied"] = True
                     step["original_action"] = step.get("action", "")

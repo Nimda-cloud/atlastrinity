@@ -11,9 +11,7 @@ def download():
     print(f"Starting download of {model_name} to {download_root}...")
 
     # This will trigger the download and conversion/verification
-    WhisperModel(
-        model_name, device="cpu", compute_type="int8", download_root=str(download_root)
-    )
+    WhisperModel(model_name, device="cpu", compute_type="int8", download_root=str(download_root))
 
     print("Download and initialization successful!")
 

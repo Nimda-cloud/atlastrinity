@@ -25,7 +25,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Track if user has scrolled away from bottom (to pause auto-scroll)
   const [userScrolledUp, setUserScrolledUp] = useState(false);
   const lastMessageCountRef = useRef(filteredMessages.length);

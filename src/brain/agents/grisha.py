@@ -101,9 +101,7 @@ class Grisha(BaseAgent):
 
         # Reasoner Model (Raptor-Mini) for Strategy Planning
         # Default to gpt-4o, or use from config/env
-        strategy_model = agent_config.get("strategy_model") or os.getenv(
-            "STRATEGY_MODEL", "gpt-4o"
-        )
+        strategy_model = agent_config.get("strategy_model") or os.getenv("STRATEGY_MODEL", "gpt-4o")
         self.strategist = CopilotLLM(model_name=strategy_model)
         logger.info(f"[GRISHA] Initialized with Vision={final_model}, Strategy={strategy_model}")
 
@@ -193,8 +191,8 @@ Synthesize findings into a comprehensive validation verdict.
 
         # Layer 2: Output Validation
         output_layer = {"layer": "output_validation", "passed": False, "evidence": ""}
-        result_str = (
-            str(result.get("result", "") if isinstance(result, dict) else getattr(result, "result", ""))
+        result_str = str(
+            result.get("result", "") if isinstance(result, dict) else getattr(result, "result", "")
         )
         if result_str and len(result_str) > 0 and "error" not in result_str.lower():
             output_layer["passed"] = True

@@ -529,13 +529,18 @@ class LongTermMemory:
             logger.error(f"[MEMORY] Failed to recall deviations: {e}")
             return []
 
-
     async def clear_all_memory(self) -> bool:
         """Wipe all vector collections for a total knowledge reset."""
         if not self.available:
             return False
         try:
-            for collection_name in ["lessons", "strategies", "knowledge_graph_nodes", "conversations", "behavior_deviations"]:
+            for collection_name in [
+                "lessons",
+                "strategies",
+                "knowledge_graph_nodes",
+                "conversations",
+                "behavior_deviations",
+            ]:
                 try:
                     self.client.delete_collection(name=collection_name)
                     # Recreate empty
@@ -543,14 +548,14 @@ class LongTermMemory:
                     logger.info(f"[MEMORY] Cleared collection: {collection_name}")
                 except Exception as e:
                     logger.warning(f"[MEMORY] Failed to clear {collection_name}: {e}")
-            
+
             # Re-initialize collection references
             self.lessons = self.client.get_collection(name="lessons")
             self.strategies = self.client.get_collection(name="strategies")
             self.knowledge = self.client.get_collection(name="knowledge_graph_nodes")
             self.conversations = self.client.get_collection(name="conversations")
             self.behavior_deviations = self.client.get_collection(name="behavior_deviations")
-            
+
             logger.info("[MEMORY] ALL VECTOR MEMORY CLEARED SUCCESSFULLY.")
             return True
         except Exception as e:
@@ -558,28 +563,31 @@ class LongTermMemory:
             return False
 
     async def delete_specific_memory(self, collection_name: str, query: str) -> int:
-        """Find and delete specific memories by natural language query."""
+        """Find and delete specific memories by natural language query from a collection."""
         if not self.available:
             return 0
         try:
             collection = getattr(self, collection_name, None)
-            if not collection: return 0
-            
-            # Find similar to delete
+            if not collection:
+                return 0
+
             results = collection.query(query_texts=[query], n_results=5)
             ids_to_delete = []
             if results and results["ids"]:
                 for i_list in results["ids"]:
                     ids_to_delete.extend(i_list)
-            
+
             if ids_to_delete:
                 collection.delete(ids=ids_to_delete)
-                logger.info(f"[MEMORY] Deleted {len(ids_to_delete)} entries from {collection_name} matching: {query}")
+                logger.info(
+                    f"[MEMORY] Deleted {len(ids_to_delete)} entries from {collection_name} matching: {query}"
+                )
                 return len(ids_to_delete)
             return 0
         except Exception as e:
-            logger.error(f"[MEMORY] Delete failed: {e}")
+            logger.error(f"[MEMORY] Delete failed in {collection_name}: {e}")
             return 0
+
 
 # Singleton instance
 long_term_memory = LongTermMemory()

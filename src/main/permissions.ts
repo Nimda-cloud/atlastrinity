@@ -3,10 +3,6 @@
  */
 
 import { systemPreferences, dialog, shell } from 'electron';
-// import { exec } from 'child_process';
-// import { promisify } from 'util';
-
-// const execAsync = promisify(exec);
 
 interface PermissionStatus {
   accessibility: boolean;
@@ -25,7 +21,7 @@ export async function checkPermissions(): Promise<boolean> {
 /**
  * Get detailed permission status
  */
-export async function getPermissionStatus(): Promise<PermissionStatus> {
+async function getPermissionStatus(): Promise<PermissionStatus> {
   const accessibility = systemPreferences.isTrustedAccessibilityClient(false);
   const microphone = await checkMicrophonePermission();
   const screenRecording = await checkScreenRecordingPermission();
@@ -101,19 +97,4 @@ export async function requestPermissions(): Promise<void> {
       );
     }
   }
-}
-
-/**
- * Open System Preferences to specific pane
- */
-export async function openSystemPreferences(
-  pane: 'accessibility' | 'microphone' | 'screen'
-): Promise<void> {
-  const panes: Record<string, string> = {
-    accessibility: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
-    microphone: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone',
-    screen: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
-  };
-
-  await shell.openExternal(panes[pane]);
 }

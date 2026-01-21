@@ -581,7 +581,6 @@ class ToolDispatcher:
         if explicit_server and not self._can_macos_use_handle(tool_name):
             return self._resolve_tool_and_args(tool_name, args, explicit_server)
 
-
         # 0. Schema-based Authority Check
         # If the tool is canonically defined in the schema, we adhere to its server definition
         # UNLESS the user is explicitly asking for a different provider (e.g. 'local.transcribe_audio')
@@ -697,13 +696,13 @@ class ToolDispatcher:
         if explicit_server == "github" or tool_name in self.GITHUB_SYNONYMS:
             is_github_keyword = True
         elif any(tool_lower.startswith(kw) for kw in ["repo_", "issue_", "pr_"]):
-             is_github_keyword = True
+            is_github_keyword = True
         elif any(kw in tool_lower for kw in ["pull_request", "issue", "repository"]):
-             is_github_keyword = True
-        
+            is_github_keyword = True
+
         # 'pr' check must be strict (whole word or prefix)
         if "pr" in tool_lower.split("_") or tool_lower == "pr":
-             is_github_keyword = True
+            is_github_keyword = True
 
         if is_github_keyword:
             server = "github"
