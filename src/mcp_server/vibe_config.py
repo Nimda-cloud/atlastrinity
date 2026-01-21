@@ -453,9 +453,11 @@ class VibeConfig(BaseModel):
         if agent:
             args.extend(["--agent", agent])
 
-        # Model override
-        if model:
+        # Model override - only if CLI supports it (handled via config heuristic)
+        if model and model != "default":
+            # Optimization: Some CLI versions might not support --model if using global config
             args.extend(["--model", model])
+
 
         # Mode
         effective_mode = mode or self.default_mode

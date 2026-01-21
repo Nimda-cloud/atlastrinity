@@ -578,6 +578,17 @@ IMPORTANT:
         )
 
         if is_consent_request:
+            # Exclude technical checks from human confirmation
+            technical_verification_keywords = [
+                "file", "directory", "process", "connection", "port", "schema", "table", "database",
+                "log", "script", "config", "environment", "version", "status", "health"
+            ]
+            if any(tk in step_action_lower for tk in technical_verification_keywords):
+                is_consent_request = False
+                logger.info(f"[TETYANA] Step '{step_id}' - skipping consent: identified as technical verification.")
+
+        if is_consent_request:
+
             logger.info(f"[TETYANA] Step '{step_id}' requires consent. Signal orchestrator.")
             consent_msg = f"Потрібна ваша згода або відповідь для кроку: {step.get('action')}\nОчікуваний результат: {step.get('expected_result', 'Підтвердження користувача')}"
 
@@ -731,6 +742,7 @@ IMPORTANT:
                 "args": step.get("args", {}),
                 "server": target_server,
             }
+            monologue = {"thought": f"Executing simple tool '{target_server}' via FAST PATH."}
         else:
             # Full reasoning path for complex/ambiguous steps
             configured_servers = mcp_manager.config.get("mcpServers", {})

@@ -1698,19 +1698,21 @@ class Trinity:
                         db_manager
                         and getattr(db_manager, "available", False)
                         and db_step_id
-                        and result.tool_call
                     ):
+
                         async with await db_manager.get_session() as db_sess:
+                            tool_call_data = result.tool_call or {}
                             tool_exec = DBToolExecution(
                                 step_id=db_step_id,
                                 task_id=self.state.get("db_task_id"),  # Direct link for analytics
-                                server_name=result.tool_call.get("server")
-                                or result.tool_call.get("realm")
+                                server_name=tool_call_data.get("server")
+                                or tool_call_data.get("realm")
                                 or "unknown",
-                                tool_name=result.tool_call.get("name") or "unknown",
-                                arguments=result.tool_call.get("args") or {},
+                                tool_name=tool_call_data.get("name") or "unknown",
+                                arguments=tool_call_data.get("args") or {},
                                 result=str(result.result)[:10000],  # Cap size
                             )
+
                             db_sess.add(tool_exec)
                             await db_sess.commit()
                             logger.info(
