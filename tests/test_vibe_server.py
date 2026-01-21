@@ -29,7 +29,7 @@ class TestVibeConfig:
         from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig()
-        assert config.active_model == "gpt-4.1"
+        assert config.active_model == "devstral-2"
         assert config.max_turns == 10
         assert config.timeout_s == 600.0
 
