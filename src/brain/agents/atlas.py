@@ -224,9 +224,25 @@ class Atlas(BaseAgent):
 
         # 1. Fast-Path: Simple Greeting Detection
         # If it's a short greeting, skip expensive lookups and tool discovery
-        is_simple_chat = len(user_request.split()) < 4 and any(
-            g in user_request.lower()
-            for g in ["привіт", "хай", "hello", "hi", "атлас", "atlas", "як справи", "що ти"]
+        # BUT: Informational queries (weather, news, system info) must ALWAYS have tool access
+        request_lower = user_request.lower()
+        is_info_query = any(
+            kw in request_lower
+            for kw in [
+                "погода", "weather", "прогноз", "температура",
+                "новини", "news", "ціна", "price", "курс",
+                "який час", "what time", "скільки", "системн",
+                "версія", "version", "файл", "file", "знайди", "find",
+                "пошук", "search", "покажи", "шукай", "розкажи про",
+            ]
+        )
+        is_simple_chat = (
+            len(user_request.split()) < 4
+            and any(
+                g in request_lower
+                for g in ["привіт", "хай", "hello", "hi", "атлас", "atlas", "як справи", "що ти"]
+            )
+            and not is_info_query  # Info queries ALWAYS get tools
         )
 
         graph_context = ""
