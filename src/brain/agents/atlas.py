@@ -6,6 +6,7 @@ Voice: Dmytro (male)
 Model: GPT-4.1 / GPT-5 mini
 """
 
+import asyncio
 import json
 import os
 import sys
@@ -230,8 +231,7 @@ class Atlas(BaseAgent):
 
         # 1. Fast-Path: Simple Greeting Detection
         # If it's a short greeting, skip expensive lookups and tool discovery
-        # BUT: Informational queries (weather, news, system info) must ALWAYS have tool access
-        request_lower = user_request.lower()
+        request_lower = user_request.lower().strip().rstrip(".?!")
         is_info_query = any(
             kw in request_lower
             for kw in [
@@ -239,16 +239,16 @@ class Atlas(BaseAgent):
                 "новини", "news", "ціна", "price", "курс",
                 "який час", "what time", "скільки", "системн",
                 "версія", "version", "файл", "file", "знайди", "find",
-                "пошук", "search", "покажи", "шукай", "розкажи про",
+                "пошук", "search", "покажи", "шукай", "розкажи про", "прочитай",
             ]
         )
         is_simple_chat = (
-            len(user_request.split()) < 4
+            len(user_request.split()) < 5
             and any(
                 g in request_lower
-                for g in ["привіт", "хай", "hello", "hi", "атлас", "atlas", "як справи", "що ти"]
+                for g in ["привіт", "хай", "hello", "hi", "атлас", "atlas", "як справи", "що ти", "дякую", "окей", "ок"]
             )
-            and not is_info_query  # Info queries ALWAYS get tools
+            and not is_info_query
         )
 
         graph_context = ""
@@ -256,139 +256,67 @@ class Atlas(BaseAgent):
         system_status = ""
         available_tools_info = []
 
+        # 2. Parallel Data Fetching: Graph, Vector, and Tools
         if not is_simple_chat:
-            # A. Graph Memory (MCP Search) - ONLY FOR COMPLEX QUERIES
-            try:
-                # Use faster text-only lookup for chat context
-                graph_res = await mcp_manager.call_tool(
-                    "memory", "search_nodes", {"query": user_request}
-                )
-                if isinstance(graph_res, dict) and "entities" in graph_res:
-                    entities = graph_res.get(
-                        "results", []
-                    )  # Corrected from 'entities' to 'results' based on memory_server.py
-                    if entities:
-                        graph_chunks = [
-                            f"Entity: {e.get('name')} | Info: {'; '.join(e.get('observations', [])[:2])}"
-                            for e in entities[:2]
-                        ]
-                        graph_context = "\n".join(graph_chunks)
-            except Exception:
-                pass
+            logger.info(f"[ATLAS CHAT] Fetching context in parallel for: {user_request[:30]}...")
+            
+            async def get_graph():
+                try:
+                    res = await mcp_manager.call_tool("memory", "search_nodes", {"query": user_request})
+                    if isinstance(res, dict) and "results" in res:
+                        return "\n".join([f"Entity: {e.get('name')} | Info: {'; '.join(e.get('observations', [])[:2])}" for e in res.get("results", [])[:2]])
+                except Exception: return ""
+                return ""
 
-            # B. Vector Memory (ChromaDB)
-            try:
-                if long_term_memory.available:
-                    # Search similar tasks/plans
-                    similar_tasks = long_term_memory.recall_similar_tasks(user_request, n_results=1)
-                    if similar_tasks:
-                        vector_context += "\nPast Strategy: " + similar_tasks[0]["document"][:200]
+            async def get_vector():
+                v_ctx = ""
+                try:
+                    if long_term_memory.available:
+                        # Vector recall in thread to avoid blocking event loop
+                        tasks_res = await asyncio.to_thread(long_term_memory.recall_similar_tasks, user_request, n_results=1)
+                        if tasks_res: v_ctx += "\nPast Strategy: " + tasks_res[0]["document"][:200]
+                        conv_res = await asyncio.to_thread(long_term_memory.recall_similar_conversations, user_request, n_results=2)
+                        if conv_res:
+                            c_texts = [f"Past Discussion Summary: {c['summary']}" for c in conv_res if c["distance"] < 1.0]
+                            if c_texts: v_ctx += "\n" + "\n".join(c_texts)
+                except Exception: pass
+                return v_ctx
 
-                    # Search past conversations!
-                    similar_convs = long_term_memory.recall_similar_conversations(
-                        user_request, n_results=2
-                    )
-                    if similar_convs:
-                        conv_texts = [
-                            f"Past Discussion Summary: {c['summary']}"
-                            for c in similar_convs
-                            if c["distance"] < 1.0
-                        ]
-                        if conv_texts:
-                            vector_context += "\n" + "\n".join(conv_texts)
-            except Exception:
-                pass
-
-            # Update Atlas history window from 10 to 25 (handled in Orchestrator call, but we note it here)
-            # history = history[-25:] if len(history) > 25 else history
-
-            # C. Dynamic Tool Discovery (With Caching & Safe Spawn)
-            now = time.time()
-            if not self._cached_info_tools or (
-                now - self._last_tool_refresh > self._refresh_interval
-            ):
+            async def get_tools():
+                now = time.time()
+                if self._cached_info_tools and (now - self._last_tool_refresh <= self._refresh_interval):
+                    return self._cached_info_tools
+                
                 logger.info("[ATLAS] Refreshing informational tool cache...")
                 new_tools = []
                 try:
-                    mcp_config = mcp_manager.config.get("mcpServers", {})
-                    # Only fetch tools from servers that are already CONNECTED or ACTIVE
-                    # to avoid massive posix_spawn bursts for cold servers
                     status = mcp_manager.get_status()
-                    active_servers = set(status.get("connected_servers", [])) | {
-                        "macos-use",
-                        "filesystem",
-                        "duckduckgo-search",
-                        "memory",
-                    }
-
-                    for server_name in active_servers:
-                        if server_name not in mcp_config:
-                            continue
-                        try:
-                            tools_list = await mcp_manager.list_tools(server_name)
-                            for tool in tools_list:
-                                t_lower = tool.name.lower()
-                                d_lower = tool.description.lower()
-
-                                is_safe = any(
-                                    p in t_lower or p in d_lower
-                                    for p in [
-                                        "get",
-                                        "list",
-                                        "read",
-                                        "search",
-                                        "stats",
-                                        "status",
-                                        "fetch",
-                                        "explain",
-                                        "check",
-                                        "verify",
-                                        "info",
-                                        "find",
-                                        "show",
-                                        "view",
-                                        "query",
-                                    ]
-                                )
-                                is_mutative = any(
-                                    p in t_lower or p in d_lower
-                                    for p in [
-                                        "create",
-                                        "delete",
-                                        "write",
-                                        "update",
-                                        "move",
-                                        "remove",
-                                        "kill",
-                                        "stop",
-                                        "start",
-                                        "exec",
-                                        "run",
-                                        "set",
-                                        "change",
-                                        "modify",
-                                        "clear",
-                                    ]
-                                )
-
-                                if is_safe and not is_mutative:
-                                    new_tools.append(
-                                        {
-                                            "name": f"{server_name}_{tool.name}",
-                                            "description": tool.description,
-                                            "input_schema": tool.inputSchema,
-                                        }
-                                    )
-                        except Exception:
-                            continue  # Skip servers that fail to list tools to avoid blocking
-
+                    # Subset of servers that Atlas can use independently for chat/research
+                    discovery_servers = {"macos-use", "filesystem", "duckduckgo-search", "memory", "github"}
+                    active_servers = (set(status.get("connected_servers", [])) | {"filesystem", "memory"}) & discovery_servers
+                    
+                    # Parallel tool listing
+                    server_tools = await asyncio.gather(*[mcp_manager.list_tools(s) for s in active_servers if s in mcp_manager.config.get("mcpServers", {})], return_exceptions=True)
+                    
+                    for s_name, t_list in zip([s for s in active_servers if s in mcp_manager.config.get("mcpServers", {})], server_tools):
+                        if isinstance(t_list, (Exception, BaseException)): continue
+                        # Explicitly cast to list to satisfy type checkers
+                        for tool in cast(list, t_list):
+                            t_low, d_low = tool.name.lower(), tool.description.lower()
+                            is_safe = any(p in t_low or p in d_low for p in ["get", "list", "read", "search", "stats", "fetch", "check", "find", "view", "query"])
+                            is_mut = any(p in t_low or p in d_low for p in ["create", "delete", "write", "update", "exec", "run", "set", "modify"])
+                            if is_safe and not is_mut:
+                                new_tools.append({"name": f"{s_name}_{tool.name}", "description": tool.description, "input_schema": tool.inputSchema})
+                    
                     self._cached_info_tools = new_tools
                     self._last_tool_refresh = int(now)
                     logger.info(f"[ATLAS] Cached {len(new_tools)} informational tools.")
-                except Exception as e:
-                    logger.warning(f"[ATLAS] Tool discovery throttled: {e}")
+                except Exception as e: logger.warning(f"[ATLAS] Tool discovery failed: {e}")
+                return new_tools
 
-            available_tools_info = self._cached_info_tools
+            # Gather all context in parallel
+            graph_context, vector_context, available_tools_info = await asyncio.gather(get_graph(), get_vector(), get_tools())
+
 
         # D. System Context (Always fast)
         try:
