@@ -31,15 +31,18 @@ async def test_tetyana_hearing_bus_messages():
     # 3. Simulate orchestrator's behavior: retrieve bus messages and inject into step
     bus_messages = await message_bus.receive("tetyana", mark_read=True)
     assert len(bus_messages) > 0
-    step["bus_messages"] = [m.to_dict() for m in bus_messages]
+    step["bus_messages"] = [m.to_dict() for m in bus_messages]  # type: ignore
 
     # 4. Initialize Tetyana and verify she sees it (we check if the reasoning prompt call would include it)
     # Since we can't easily mock the LLM response here without complex fixtures,
     # we verify that the prompt generation logic (which we updated) includes it.
-    from brain.prompts import AgentPrompts
+    from typing import Any
 
+    from brain.prompts import AgentPrompts
+    step_typed: Any = step
+    bus_messages_typed: Any = step["bus_messages"]
     prompt = AgentPrompts.tetyana_reasoning_prompt(
-        step=str(step), context={}, bus_messages=step["bus_messages"]
+        step=str(step_typed), context={}, bus_messages=bus_messages_typed
     )
 
     assert "Testing bus: change your strategy" in prompt

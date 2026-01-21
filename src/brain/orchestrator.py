@@ -20,6 +20,7 @@ except ImportError:
 
 import uuid
 
+from src.brain.adaptive_behavior import adaptive_behavior
 from src.brain.agents import Atlas, Grisha, Tetyana
 from src.brain.agents.tetyana import StepResult
 from src.brain.config import IS_MACOS, PLATFORM_NAME
@@ -42,7 +43,6 @@ from src.brain.metrics import metrics_collector
 from src.brain.notifications import notifications
 from src.brain.state_manager import state_manager
 from src.brain.voice.tts import VoiceManager
-from src.brain.adaptive_behavior import adaptive_behavior
 
 
 class SystemState(Enum):

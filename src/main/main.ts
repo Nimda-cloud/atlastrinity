@@ -300,7 +300,7 @@ app.on('before-quit', () => {
       timeout: 5000,
     });
     console.log('Cleanup completed.');
-  } catch (_e) {
+  } catch {
     console.log('Cleanup finished.');
   }
 });

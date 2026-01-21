@@ -49,6 +49,7 @@ async def inspect_github():
             # Read response
             while True:
                 try:
+                    assert process.stdout is not None
                     line = await asyncio.wait_for(process.stdout.readline(), timeout=10.0)
                 except TimeoutError:
                     print("❌ Timeout waiting for initialization response")

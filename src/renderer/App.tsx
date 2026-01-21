@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import NeuralCore from './components/NeuralCore';
 import ExecutionLog from './components/ExecutionLog.tsx';
 import AgentStatus from './components/AgentStatus.tsx';
@@ -48,7 +48,7 @@ const App: React.FC = () => {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [activeMode, setActiveMode] = useState<'STANDARD' | 'LIVE'>('STANDARD');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Array<{ id: string; theme: string; saved_at: string }>>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('current_session');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [metrics, setMetrics] = useState<SystemMetrics>({
@@ -74,13 +74,13 @@ const App: React.FC = () => {
 
   const [currentTask, setCurrentTask] = useState<string>('');
 
-  const fetchSessions = async (retryCount = 0) => {
+  const fetchSessions = useCallback(async (retryCount = 0) => {
     try {
       const response = await fetch(`${API_BASE}/api/sessions`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setSessions(data);
-    } catch (err) {
+    } catch {
       if (retryCount < 5) {
         // Retry with exponential backoff if server is still starting
         const delay = Math.pow(2, retryCount) * 1000;
@@ -93,7 +93,7 @@ const App: React.FC = () => {
         setTimeout(() => fetchSessions(retryCount + 1), delay);
       }
     }
-  };
+  }, []);
 
   const pollState = async () => {
     try {
@@ -156,7 +156,7 @@ const App: React.FC = () => {
       clearTimeout(startupTimeout);
       if (interval) clearInterval(interval);
     };
-  }, []);
+  }, [fetchSessions]);
 
   const handleCommand = async (cmd: string) => {
     // 1. Log user action
@@ -268,7 +268,7 @@ const App: React.FC = () => {
       {/* Global Title Bar Controls (Positioned exactly near traffic lights) */}
       <div
         className="fixed flex items-center gap-2 pointer-events-auto"
-        style={{ top: '12px', left: '78px', WebkitAppRegion: 'no-drag', zIndex: 10001 } as any}
+        style={{ top: '12px', left: '78px', WebkitAppRegion: 'no-drag', zIndex: 10001 } as React.CSSProperties}
       >
         <button
           onClick={() => {

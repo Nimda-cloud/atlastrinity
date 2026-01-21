@@ -61,6 +61,10 @@ async def run_mcp_tool(
     print(f"\n--- Testing {server_name} -> {tool_name} ---")
 
     cmd = config.get("command")
+    if cmd is None:
+        print(f"Skipping {server_name} (no command)")
+        return False
+
     args = config.get("args", [])
     env = config.get("env", {})
 
@@ -74,8 +78,9 @@ async def run_mcp_tool(
         print(f"Skipping {server_name} (disabled)")
         return True
 
-    full_cmd = [cmd] + [
-        arg.replace("${HOME}", str(Path.home()))
+    full_cmd: list[str] = [cmd] + [
+        (arg or "")
+        .replace("${HOME}", str(Path.home()))
         .replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
         .replace("${GITHUB_TOKEN}", os.environ.get("GITHUB_TOKEN", ""))
         for arg in args
@@ -92,6 +97,8 @@ async def run_mcp_tool(
             stderr=asyncio.subprocess.PIPE,
             env=run_env,
         )
+        assert process.stdin is not None
+        assert process.stdout is not None
     except Exception as e:
         print(f"❌ Failed to start process: {e}")
         return False

@@ -26,8 +26,8 @@ class _StubCopilotLLM:
         return SimpleNamespace(content="{}")
 
 
-providers_copilot_mod.CopilotLLM = _StubCopilotLLM
-providers_mod.copilot = providers_copilot_mod
+providers_copilot_mod.CopilotLLM = _StubCopilotLLM  # type: ignore
+providers_mod.copilot = providers_copilot_mod  # type: ignore
 sys.modules.setdefault("providers", providers_mod)
 sys.modules.setdefault("providers.copilot", providers_copilot_mod)
 
@@ -57,10 +57,10 @@ class _StubStateGraph:
         return SimpleNamespace()
 
 
-langgraph_graph_mod.StateGraph = _StubStateGraph
-langgraph_graph_mod.END = "__END__"
-langgraph_graph_mod.add_messages = lambda *args, **kwargs: None
-langgraph_mod.graph = langgraph_graph_mod
+langgraph_graph_mod.StateGraph = _StubStateGraph  # type: ignore
+langgraph_graph_mod.END = "__END__"  # type: ignore
+langgraph_graph_mod.add_messages = lambda *args, **kwargs: None  # type: ignore
+langgraph_mod.graph = langgraph_graph_mod  # type: ignore
 sys.modules.setdefault("langgraph", langgraph_mod)
 sys.modules.setdefault("langgraph.graph", langgraph_graph_mod)
 
@@ -87,11 +87,11 @@ class _SystemMessage(_BaseMessage):
     pass
 
 
-langchain_core_messages_mod.BaseMessage = _BaseMessage
-langchain_core_messages_mod.HumanMessage = _HumanMessage
-langchain_core_messages_mod.AIMessage = _AIMessage
-langchain_core_messages_mod.SystemMessage = _SystemMessage
-langchain_core_mod.messages = langchain_core_messages_mod
+langchain_core_messages_mod.BaseMessage = _BaseMessage  # type: ignore
+langchain_core_messages_mod.HumanMessage = _HumanMessage  # type: ignore
+langchain_core_messages_mod.AIMessage = _AIMessage  # type: ignore
+langchain_core_messages_mod.SystemMessage = _SystemMessage  # type: ignore
+langchain_core_mod.messages = langchain_core_messages_mod  # type: ignore
 
 sys.modules.setdefault("langchain_core", langchain_core_mod)
 sys.modules.setdefault("langchain_core.messages", langchain_core_messages_mod)
@@ -111,7 +111,7 @@ class _StubMCPManager:
         return None
 
 
-brain_mcp_manager_mod.mcp_manager = _StubMCPManager()
+brain_mcp_manager_mod.mcp_manager = _StubMCPManager()  # type: ignore
 sys.modules.setdefault("src.brain.mcp_manager", brain_mcp_manager_mod)
 
 
@@ -173,7 +173,7 @@ def isolated_globals(monkeypatch):
 
     # Avoid Redis / memory / consolidation side-effects during unit tests
     monkeypatch.setattr(orch.state_manager, "available", False, raising=False)
-    monkeypatch.setattr(orch.long_term_memory, "available", False, raising=False)
+    monkeypatch.setattr(orch.long_term_memory, "available", False, raising=False)  # type: ignore
     monkeypatch.setattr(
         orch.consolidation_module, "should_consolidate", lambda: False, raising=False
     )
@@ -191,7 +191,7 @@ def stub_notifications(monkeypatch):
 @pytest.fixture
 def trinity_base(isolated_globals, stub_notifications, fast_sleep):
     t = Trinity()
-    t.voice = DummyVoice()
+    t.voice = DummyVoice()  # type: ignore
     return t
 
 

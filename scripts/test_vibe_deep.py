@@ -36,12 +36,14 @@ async def run_vibe_tool(
     env = server_config.get("env", {})
 
     # Resolve
+    if cmd is None:
+        return False
     if cmd == "python3":
         cmd = sys.executable
     if "${PROJECT_ROOT}" in cmd:
         cmd = cmd.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
 
-    full_cmd = [cmd] + [
+    full_cmd: list[str] = [cmd] + [
         arg.replace("${HOME}", str(Path.home())).replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
         for arg in args
     ]
@@ -57,6 +59,9 @@ async def run_vibe_tool(
             stderr=asyncio.subprocess.PIPE,
             env=run_env,
         )
+        assert process.stdin is not None
+        assert process.stdout is not None
+        assert process.stderr is not None
     except Exception as e:
         print(f"❌ Failed to start process: {e}")
         return False

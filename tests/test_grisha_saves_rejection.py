@@ -9,7 +9,7 @@ async def test_grisha_saves_rejection_report():
     gr = Grisha()
     step = {"id": 999, "action": "Fake action", "expected_result": "Expect"}
     verification = VerificationResult(
-        step_id=999,
+        step_id="999",
         verified=False,
         confidence=0.1,
         description="Fake description",
@@ -18,7 +18,7 @@ async def test_grisha_saves_rejection_report():
     )
 
     # Call internal save method
-    await gr._save_rejection_report(999, step, verification)
+    await gr._save_rejection_report("999", step, verification)
 
     # Check filesystem for report
     import glob

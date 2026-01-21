@@ -60,7 +60,8 @@ class TestAtlasCore:
 
                 return MockResponse()
 
-        atlas.llm = MockLLM()
+        from typing import Any
+        atlas.llm = MockLLM()  # type: ignore
 
         result = await atlas.analyze_request("відкрий термінал")
         assert result["intent"] == "task"
@@ -76,7 +77,7 @@ class TestAtlasCore:
             async def ainvoke(self, *args, **kwargs):
                 raise Exception("API Error")
 
-        atlas.llm = FailingLLM()
+        atlas.llm = FailingLLM()  # type: ignore
 
         # Should fallback to heuristic detection
         result1 = await atlas.analyze_request("привіт")
