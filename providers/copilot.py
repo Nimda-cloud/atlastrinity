@@ -36,36 +36,41 @@ class CopilotLLM(BaseChatModel):
         # STRICT CONFIGURATION: No hardcoded defaults
         self.model_name = model_name or os.getenv("COPILOT_MODEL")
         if not self.model_name:
-             raise ValueError("CopilotLLM: 'model_name' must be provided via argument or COPILOT_MODEL env var.")
-             
+            raise ValueError(
+                "CopilotLLM: 'model_name' must be provided via argument or COPILOT_MODEL env var."
+            )
+
         vm = vision_model_name or os.getenv("COPILOT_VISION_MODEL")
-        self.vision_model_name = vm or self.model_name # Fallback to main model if vision not distinct
-        
+        self.vision_model_name = (
+            vm or self.model_name
+        )  # Fallback to main model if vision not distinct
+
         # Use COPILOT_API_KEY for regular models, VISION_API_KEY for vision models
         # IMPORTANT: GITHUB_TOKEN is ONLY for GitHub MCP server, NOT for agents!
         copilot_key = os.getenv("COPILOT_API_KEY")
         vision_key = os.getenv("VISION_API_KEY")
-        
+
         # Determine which key to use based on whether this is a vision model
         if api_key:
             self.api_key = api_key
             print(f"[COPILOT] Using API key from parameter: {self.api_key[:10]}...", flush=True)
         elif vision_model_name and vision_key:
             self.api_key = vision_key
-            print(f"[COPILOT] Using VISION_API_KEY for vision model: {self.api_key[:10]}...", flush=True)
+            print(
+                f"[COPILOT] Using VISION_API_KEY for vision model: {self.api_key[:10]}...",
+                flush=True,
+            )
         elif copilot_key:
             self.api_key = copilot_key
             print(f"[COPILOT] Using COPILOT_API_KEY: {self.api_key[:10]}...", flush=True)
         else:
             self.api_key = None
-        
+
         if not self.api_key:
             raise RuntimeError(
                 "COPILOT_API_KEY environment variable must be set. "
                 "Note: GITHUB_TOKEN is only for GitHub MCP server, not for agents."
             )
-
-
 
     def _has_image(self, messages: list[BaseMessage]) -> bool:
         for m in messages:

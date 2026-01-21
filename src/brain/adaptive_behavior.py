@@ -182,18 +182,14 @@ class AdaptiveBehaviorEngine:
 
         # Dynamic strategy selection
         strategies = {
-            "web_task": (
-                "puppeteer-first" if context.get("has_browser") else "macos-use-chrome"
-            ),
+            "web_task": ("puppeteer-first" if context.get("has_browser") else "macos-use-chrome"),
             "file_task": (
                 "filesystem-direct" if context.get("allowed_path") else "macos-use-finder"
             ),
             "code_task": (
                 "vibe-aggressive" if context.get("error_present") else "vibe-conservative"
             ),
-            "gui_task": (
-                "vision-assisted" if context.get("complex_ui") else "accessibility-tree"
-            ),
+            "gui_task": ("vision-assisted" if context.get("complex_ui") else "accessibility-tree"),
         }
 
         strategy = strategies.get(task_type, "standard")

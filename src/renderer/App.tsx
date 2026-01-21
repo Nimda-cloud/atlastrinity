@@ -48,7 +48,9 @@ const App: React.FC = () => {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [activeMode, setActiveMode] = useState<'STANDARD' | 'LIVE'>('STANDARD');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [sessions, setSessions] = useState<Array<{ id: string; theme: string; saved_at: string }>>([]);
+  const [sessions, setSessions] = useState<Array<{ id: string; theme: string; saved_at: string }>>(
+    []
+  );
   const [currentSessionId, setCurrentSessionId] = useState<string>('current_session');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [metrics, setMetrics] = useState<SystemMetrics>({
@@ -268,7 +270,14 @@ const App: React.FC = () => {
       {/* Global Title Bar Controls (Positioned exactly near traffic lights) */}
       <div
         className="fixed flex items-center gap-2 pointer-events-auto"
-        style={{ top: '12px', left: '78px', WebkitAppRegion: 'no-drag', zIndex: 10001 } as React.CSSProperties}
+        style={
+          {
+            top: '12px',
+            left: '78px',
+            WebkitAppRegion: 'no-drag',
+            zIndex: 10001,
+          } as React.CSSProperties
+        }
       >
         <button
           onClick={() => {

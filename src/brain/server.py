@@ -448,9 +448,19 @@ async def smart_speech_to_text(
 
         # BARGE-IN: Only trigger on EXPLICIT stop commands, not any new phrase
         # This prevents false positives from background noise (TV, etc.)
-        stop_commands = {"стоп", "стій", "зупинись", "зупини", "тихо", "stop", "halt", "quiet", "wait"}
+        stop_commands = {
+            "стоп",
+            "стій",
+            "зупинись",
+            "зупини",
+            "тихо",
+            "stop",
+            "halt",
+            "quiet",
+            "wait",
+        }
         is_stop_command = any(cmd in clean_text for cmd in stop_commands)
-        
+
         if (
             result.speech_type == SpeechType.NEW_PHRASE
             and result.text

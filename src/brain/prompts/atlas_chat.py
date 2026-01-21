@@ -167,4 +167,3 @@ CURRENT REQUEST: {user_query}
 I am Atlas. I act with the speed of thought.
 RESPOND IN UKRAINIAN.
 """
-

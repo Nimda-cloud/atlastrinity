@@ -39,6 +39,7 @@ async def test_tetyana_hearing_bus_messages():
     from typing import Any
 
     from brain.prompts import AgentPrompts
+
     step_typed: Any = step
     bus_messages_typed: Any = step["bus_messages"]
     prompt = AgentPrompts.tetyana_reasoning_prompt(

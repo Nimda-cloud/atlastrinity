@@ -32,6 +32,7 @@ async def main():
 
         import asyncio
         from typing import cast
+
         stdin = cast(asyncio.subprocess.Process, process).stdin  # type: ignore
         assert stdin is not None
         stdin.write(json.dumps(msg).encode() + b"\n")
@@ -64,7 +65,8 @@ async def main():
         # Send initialized
         if process.stdin:
             process.stdin.write(
-                json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}).encode() + b"\n"
+                json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}).encode()
+                + b"\n"
             )
             await process.stdin.drain()
 

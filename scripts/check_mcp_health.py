@@ -18,7 +18,7 @@ import sys
 # Add src to path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
-sys.path.insert(0, PROJECT_ROOT) # Ensure src.brain etc works if imported as src.brain
+sys.path.insert(0, PROJECT_ROOT)  # Ensure src.brain etc works if imported as src.brain
 
 
 class Colors:

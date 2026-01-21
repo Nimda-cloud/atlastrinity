@@ -47,6 +47,7 @@ async def run_verification():
         )
         import subprocess
         from typing import cast
+
         stdin = cast(subprocess.Popen, process).stdin
         assert stdin is not None
         stdin.write(json_str + "\n")
@@ -67,6 +68,7 @@ async def run_verification():
     def read_response():
         import subprocess
         from typing import cast
+
         stdout = cast(subprocess.Popen, process).stdout
         assert stdout is not None
         line = stdout.readline()

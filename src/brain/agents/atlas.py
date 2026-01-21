@@ -34,7 +34,10 @@ from src.brain.context import shared_context  # noqa: E402
 from src.brain.logger import logger  # noqa: E402
 from src.brain.memory import long_term_memory  # noqa: E402
 from src.brain.prompts import AgentPrompts  # noqa: E402
-from src.brain.prompts.atlas_chat import generate_atlas_chat_prompt, generate_atlas_solo_task_prompt  # noqa: E402
+from src.brain.prompts.atlas_chat import (  # noqa: E402
+    generate_atlas_chat_prompt,
+    generate_atlas_solo_task_prompt,
+)
 
 
 @dataclass
@@ -71,14 +74,14 @@ class Atlas(BaseAgent):
         # Get model config (config.yaml > parameter > env variables)
         agent_config = config.get_agent_config("atlas")
         final_model = model_name
-        
+
         # If default is passed but config has something else, prefer config
         config_model = agent_config.get("model")
         if config_model:
             final_model = config_model
-        elif model_name == "gpt-4o": # matching default arg
-             # Try env
-             final_model = os.getenv("COPILOT_MODEL", "gpt-4o")
+        elif model_name == "gpt-4o":  # matching default arg
+            # Try env
+            final_model = os.getenv("COPILOT_MODEL", "gpt-4o")
 
         self.llm = CopilotLLM(model_name=final_model)
 
@@ -239,18 +242,50 @@ class Atlas(BaseAgent):
         is_info_query = any(
             kw in request_lower
             for kw in [
-                "погода", "weather", "прогноз", "температура",
-                "новини", "news", "ціна", "price", "курс",
-                "який час", "what time", "скільки", "системн",
-                "версія", "version", "файл", "file", "знайди", "find",
-                "пошук", "search", "покажи", "шукай", "розкажи про", "прочитай",
+                "погода",
+                "weather",
+                "прогноз",
+                "температура",
+                "новини",
+                "news",
+                "ціна",
+                "price",
+                "курс",
+                "який час",
+                "what time",
+                "скільки",
+                "системн",
+                "версія",
+                "version",
+                "файл",
+                "file",
+                "знайди",
+                "find",
+                "пошук",
+                "search",
+                "покажи",
+                "шукай",
+                "розкажи про",
+                "прочитай",
             ]
         )
         is_simple_chat = (
             len(user_request.split()) < 5
             and any(
                 g in request_lower
-                for g in ["привіт", "хай", "hello", "hi", "атлас", "atlas", "як справи", "що ти", "дякую", "окей", "ок"]
+                for g in [
+                    "привіт",
+                    "хай",
+                    "hello",
+                    "hi",
+                    "атлас",
+                    "atlas",
+                    "як справи",
+                    "що ти",
+                    "дякую",
+                    "окей",
+                    "ок",
+                ]
             )
             and not is_info_query
         )
@@ -262,14 +297,24 @@ class Atlas(BaseAgent):
 
         # 2. Parallel Data Fetching: Graph, Vector, and Tools
         if not is_simple_chat or intent == "solo_task":
-            logger.info(f"[ATLAS CHAT] Fetching context in parallel for ({intent}): {user_request[:30]}...")
-            
+            logger.info(
+                f"[ATLAS CHAT] Fetching context in parallel for ({intent}): {user_request[:30]}..."
+            )
+
             async def get_graph():
                 try:
-                    res = await mcp_manager.call_tool("memory", "search_nodes", {"query": user_request})
+                    res = await mcp_manager.call_tool(
+                        "memory", "search_nodes", {"query": user_request}
+                    )
                     if isinstance(res, dict) and "results" in res:
-                        return "\n".join([f"Entity: {e.get('name')} | Info: {'; '.join(e.get('observations', [])[:2])}" for e in res.get("results", [])[:2]])
-                except Exception: return ""
+                        return "\n".join(
+                            [
+                                f"Entity: {e.get('name')} | Info: {'; '.join(e.get('observations', [])[:2])}"
+                                for e in res.get("results", [])[:2]
+                            ]
+                        )
+                except Exception:
+                    return ""
                 return ""
 
             async def get_vector():
@@ -277,61 +322,121 @@ class Atlas(BaseAgent):
                 try:
                     if long_term_memory.available:
                         # Vector recall in thread to avoid blocking event loop
-                        tasks_res = await asyncio.to_thread(long_term_memory.recall_similar_tasks, user_request, n_results=1)
-                        if tasks_res: v_ctx += "\nPast Strategy: " + tasks_res[0]["document"][:200]
-                        conv_res = await asyncio.to_thread(long_term_memory.recall_similar_conversations, user_request, n_results=2)
+                        tasks_res = await asyncio.to_thread(
+                            long_term_memory.recall_similar_tasks, user_request, n_results=1
+                        )
+                        if tasks_res:
+                            v_ctx += "\nPast Strategy: " + tasks_res[0]["document"][:200]
+                        conv_res = await asyncio.to_thread(
+                            long_term_memory.recall_similar_conversations, user_request, n_results=2
+                        )
                         if conv_res:
-                            c_texts = [f"Past Discussion Summary: {c['summary']}" for c in conv_res if c["distance"] < 1.0]
-                            if c_texts: v_ctx += "\n" + "\n".join(c_texts)
-                except Exception: pass
+                            c_texts = [
+                                f"Past Discussion Summary: {c['summary']}"
+                                for c in conv_res
+                                if c["distance"] < 1.0
+                            ]
+                            if c_texts:
+                                v_ctx += "\n" + "\n".join(c_texts)
+                except Exception:
+                    pass
                 return v_ctx
 
             async def get_tools():
                 now = time.time()
-                if self._cached_info_tools and (now - self._last_tool_refresh <= self._refresh_interval):
+                if self._cached_info_tools and (
+                    now - self._last_tool_refresh <= self._refresh_interval
+                ):
                     return self._cached_info_tools
-                
+
                 logger.info("[ATLAS] Refreshing informational tool cache...")
                 new_tools = []
                 try:
-                    status = mcp_manager.get_status()
+                    mcp_manager.get_status()
                     # Subset of servers that Atlas can use independently for chat/research
                     configured_servers = set(mcp_manager.config.get("mcpServers", {}).keys())
-                    discovery_servers = {"macos-use", "filesystem", "duckduckgo-search", "memory", "github", "weather", "search"}
-                    
+                    discovery_servers = {
+                        "macos-use",
+                        "filesystem",
+                        "duckduckgo-search",
+                        "memory",
+                        "github",
+                        "weather",
+                        "search",
+                    }
+
                     # Be proactive: try all discovery servers that are in the config, not just "connected" ones
-                    active_servers = (configured_servers | {"filesystem", "memory"}) & discovery_servers
-                    
+                    active_servers = (
+                        configured_servers | {"filesystem", "memory"}
+                    ) & discovery_servers
+
                     logger.info(f"[ATLAS] Proactive tool discovery on servers: {active_servers}")
-                    
+
                     # Parallel tool listing
-                    server_tools = await asyncio.gather(*[mcp_manager.list_tools(s) for s in active_servers], return_exceptions=True)
-                    
-                    for s_name, t_list in zip(list(active_servers), server_tools):
-                        if isinstance(t_list, (Exception, BaseException)): 
+                    server_tools = await asyncio.gather(
+                        *[mcp_manager.list_tools(s) for s in active_servers], return_exceptions=True
+                    )
+
+                    for s_name, t_list in zip(list(active_servers), server_tools, strict=True):
+                        if isinstance(t_list, (Exception, BaseException)):
                             logger.warning(f"[ATLAS] Could not list tools for {s_name}: {t_list}")
                             continue
-                        
+
                         # Explicitly cast to list to satisfy type checkers
                         for tool in cast(list, t_list):
                             t_low, d_low = tool.name.lower(), tool.description.lower()
                             # Broader 'safe' matching for solo research
-                            is_safe = any(p in t_low or p in d_low for p in ["get", "list", "read", "search", "stats", "fetch", "check", "find", "view", "query", "cat", "ls"])
-                            is_mut = any(p in t_low or p in d_low for p in ["create", "delete", "write", "update", "exec", "run", "set", "modify"])
-                            
-                            if is_safe and not is_mut:
-                                new_tools.append({"name": f"{s_name}_{tool.name}", "description": tool.description, "input_schema": tool.inputSchema})
+                            is_safe = any(
+                                p in t_low or p in d_low
+                                for p in [
+                                    "get",
+                                    "list",
+                                    "read",
+                                    "search",
+                                    "stats",
+                                    "fetch",
+                                    "check",
+                                    "find",
+                                    "view",
+                                    "query",
+                                    "cat",
+                                    "ls",
+                                ]
+                            )
+                            is_mut = any(
+                                p in t_low or p in d_low
+                                for p in [
+                                    "create",
+                                    "delete",
+                                    "write",
+                                    "update",
+                                    "exec",
+                                    "run",
+                                    "set",
+                                    "modify",
+                                ]
+                            )
 
-                    
+                            if is_safe and not is_mut:
+                                new_tools.append(
+                                    {
+                                        "name": f"{s_name}_{tool.name}",
+                                        "description": tool.description,
+                                        "input_schema": tool.inputSchema,
+                                    }
+                                )
+
                     self._cached_info_tools = new_tools
                     self._last_tool_refresh = int(now)
                     logger.info(f"[ATLAS] Cached {len(new_tools)} informational tools.")
-                except Exception as e: logger.warning(f"[ATLAS] Tool discovery failed: {e}")
+                except Exception as e:
+                    logger.warning(f"[ATLAS] Tool discovery failed: {e}")
                 return new_tools
 
             # Gather all context in parallel
-            graph_context, vector_context, available_tools_info = await asyncio.gather(get_graph(), get_vector(), get_tools())
-
+            graph_context, vector_context, available_tools_info = await asyncio.gather(
+                get_graph(), get_vector(), get_tools()
+            )
 
         # D. System Context (Always fast)
         try:
@@ -523,7 +628,7 @@ class Atlas(BaseAgent):
         active_servers = mcp_context.get("active_servers", [])
         mcp_context_str = f"""
 AVAILABLE MCP INFRASTRUCTURE (DYNAMICALLY DETERMINED):
-Active Servers: {', '.join([s['name'] for s in active_servers])}
+Active Servers: {", ".join([s["name"] for s in active_servers])}
 
 Server Details (sorted by priority):
 {chr(10).join([f"- {s['name']} (Tier {s['tier']}): {s['description']} | Connected: {s['connected']}" for s in active_servers[:8]])}
