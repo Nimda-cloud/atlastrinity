@@ -36,11 +36,32 @@ class CopilotLLM(BaseChatModel):
         self.model_name = model_name or os.getenv("COPILOT_MODEL", "gpt-4.1")
         vm = vision_model_name or os.getenv("COPILOT_VISION_MODEL", "gpt-4.1")
         self.vision_model_name = vm
-        self.api_key = api_key or os.getenv("COPILOT_API_KEY") or os.getenv("GITHUB_TOKEN")
+        
+        # Use COPILOT_API_KEY for regular models, VISION_API_KEY for vision models
+        # IMPORTANT: GITHUB_TOKEN is ONLY for GitHub MCP server, NOT for agents!
+        copilot_key = os.getenv("COPILOT_API_KEY")
+        vision_key = os.getenv("VISION_API_KEY")
+        
+        # Determine which key to use based on whether this is a vision model
+        if api_key:
+            self.api_key = api_key
+            print(f"[COPILOT] Using API key from parameter: {self.api_key[:10]}...", flush=True)
+        elif vision_model_name and vision_key:
+            self.api_key = vision_key
+            print(f"[COPILOT] Using VISION_API_KEY for vision model: {self.api_key[:10]}...", flush=True)
+        elif copilot_key:
+            self.api_key = copilot_key
+            print(f"[COPILOT] Using COPILOT_API_KEY: {self.api_key[:10]}...", flush=True)
+        else:
+            self.api_key = None
+        
         if not self.api_key:
             raise RuntimeError(
-                "COPILOT_API_KEY or GITHUB_TOKEN environment variable must be set for Copilot provider."
+                "COPILOT_API_KEY environment variable must be set. "
+                "Note: GITHUB_TOKEN is only for GitHub MCP server, not for agents."
             )
+
+
 
     def _has_image(self, messages: list[BaseMessage]) -> bool:
         for m in messages:
