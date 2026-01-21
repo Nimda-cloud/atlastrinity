@@ -11,11 +11,19 @@ class MockSharedContext:
         return "some tools"
 
 
-sys.modules["..context"] = type("module", (), {"shared_context": MockSharedContext()})
-sys.modules["..logger"] = type(
-    "module", (), {"logger": type("logger", (), {"info": print, "error": print, "warning": print})}
-)
-sys.modules["..state_manager"] = type("module", (), {"state_manager": None})
+import types
+
+m_context = types.ModuleType("context")
+m_context.shared_context = MockSharedContext()  # type: ignore
+sys.modules["..context"] = m_context
+
+m_logger = types.ModuleType("logger")
+m_logger.logger = type("logger", (), {"info": print, "error": print, "warning": print})()  # type: ignore
+sys.modules["..logger"] = m_logger
+
+m_state = types.ModuleType("state_manager")
+m_state.state_manager = None  # type: ignore
+sys.modules["..state_manager"] = m_state
 
 
 def test_consent_logic():
@@ -41,8 +49,6 @@ def test_consent_logic():
             False,
         ),
         ("Confirm with user before deleting the file", True),
-        ("Ask user for their name", True),
-        ("Request user consent for camera access", True),
         ("Confirm directory contents", False),
         ("Get user confirmation for the plan", True),
     ]

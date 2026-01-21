@@ -25,6 +25,9 @@ async def main():
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+    assert process.stdin is not None
+    assert process.stdout is not None
+    assert process.stderr is not None
 
     request_id = 0
 
@@ -35,9 +38,9 @@ async def main():
         if params:
             msg["params"] = params
 
-        print(f"-> Sending {method}...")
-        process.stdin.write(json.dumps(msg).encode() + b"\n")
-        await process.stdin.drain()
+        if process.stdin is not None:
+            process.stdin.write(json.dumps(msg).encode() + b"\n")
+            await process.stdin.drain()
         return request_id
 
     try:
@@ -51,8 +54,7 @@ async def main():
             },
         )
 
-        # Read initialize response
-        while True:
+        while process.stdout is not None:
             line = await process.stdout.readline()
             if not line:
                 break

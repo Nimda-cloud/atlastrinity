@@ -17,8 +17,13 @@ async def run_mcp_server(name: str, config: dict[str, Any]) -> bool:
     cmd = config.get("command")
     args = config.get("args", [])
     env = config.get("env", {})
+    passed = False
 
     # Resolve placeholders
+    if cmd is None:
+        print(f"❌ Missing command for {name}")
+        return False
+
     if cmd == "python3":
         cmd = sys.executable
     if "${PROJECT_ROOT}" in cmd:
@@ -29,8 +34,9 @@ async def run_mcp_server(name: str, config: dict[str, Any]) -> bool:
         print(f"Skipping {name} (disabled)")
         return True
 
-    full_cmd = [cmd] + [
-        arg.replace("${HOME}", str(Path.home()))
+    full_cmd: list[str] = [cmd] + [
+        (arg or "")
+        .replace("${HOME}", str(Path.home()))
         .replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
         .replace("${GITHUB_TOKEN}", os.environ.get("GITHUB_TOKEN", ""))
         for arg in args
@@ -76,12 +82,11 @@ async def run_mcp_server(name: str, config: dict[str, Any]) -> bool:
     json_line = json.dumps(init_request) + "\n"
 
     try:
-        if process.stdin:
+        if process.stdin and process.stdout:
             process.stdin.write(json_line.encode())
             await process.stdin.drain()
 
             # Read response
-            passed = False
             while True:
                 try:
                     line = await asyncio.wait_for(process.stdout.readline(), timeout=5.0)

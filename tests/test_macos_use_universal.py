@@ -17,6 +17,9 @@ async def main():
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+    assert process.stdin is not None
+    assert process.stdout is not None
+    assert process.stderr is not None
 
     request_id = 0
 
@@ -27,9 +30,12 @@ async def main():
         if params:
             msg["params"] = params
 
-        # print(f"-> Sending {method}...")
-        process.stdin.write(json.dumps(msg).encode() + b"\n")
-        await process.stdin.drain()
+        import asyncio
+        from typing import cast
+        stdin = cast(asyncio.subprocess.Process, process).stdin  # type: ignore
+        assert stdin is not None
+        stdin.write(json.dumps(msg).encode() + b"\n")
+        await stdin.drain()
         return request_id
 
     try:
@@ -43,8 +49,7 @@ async def main():
             },
         )
 
-        # Read initialize response
-        while True:
+        while process.stdout is not None:
             line = await process.stdout.readline()
             if not line:
                 break
@@ -57,10 +62,11 @@ async def main():
                 pass
 
         # Send initialized
-        process.stdin.write(
-            json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}).encode() + b"\n"
-        )
-        await process.stdin.drain()
+        if process.stdin:
+            process.stdin.write(
+                json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}).encode() + b"\n"
+            )
+            await process.stdin.drain()
 
         # 1. Test Dynamic Help
         print("\n[Test 1] Dynamic Help...")

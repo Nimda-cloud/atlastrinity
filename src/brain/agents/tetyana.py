@@ -166,7 +166,7 @@ class Tetyana(BaseAgent):
         from ..logger import logger
 
         parent_goals = parent_goals or []
-        goal_chain = parent_goals + [global_goal]
+        goal_chain = [*parent_goals, global_goal]
 
         prompt = f"""GOAL ALIGNMENT VALIDATION
 

@@ -62,9 +62,9 @@ async def test_handoff_crash():
 
     trinity = Trinity()
     # Inject mocks
-    trinity.atlas = MockAtlas()
-    trinity.tetyana = MockTetyana()
-    trinity.grisha = MockGrisha()
+    trinity.atlas = MockAtlas()  # type: ignore
+    trinity.tetyana = MockTetyana()  # type: ignore
+    trinity.grisha = MockGrisha()  # type: ignore
     trinity.voice = MagicMock()
 
     # Run
@@ -74,7 +74,7 @@ async def test_handoff_crash():
 
         # Check if error was logged in state
         logs = trinity.state.get("logs", [])
-        crash_log = next((l for l in logs if "Verification crashed" in l["message"]), None)
+        crash_log = next((l for l in logs if "Verification crashed" in l["message"]), None)  # type: ignore
 
         if crash_log:
             print("SUCCESS: Orchestrator caught the crash and logged it.")

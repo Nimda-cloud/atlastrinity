@@ -19,6 +19,7 @@ async def test_flow():
 
     print("--- 2. Testing Catalog Generation (with Tool Names) ---")
     # This triggers list_tools for all enabled servers
+    catalog = ""
     try:
         catalog = await mcp_manager.get_mcp_catalog()
         print("\nCatalog Output Preview:\n" + "=" * 40)

@@ -178,7 +178,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
           break;
       }
     },
-    [scheduleSend]
+    [scheduleSend, onCommand]
   );
 
   // Відправка аудіо на розумний STT

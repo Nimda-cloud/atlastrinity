@@ -21,6 +21,9 @@ async def run_verification():
         text=True,
         bufsize=1,
     )
+    assert process.stdin is not None
+    assert process.stdout is not None
+    assert process.stderr is not None
 
     request_id = 0
 
@@ -42,8 +45,12 @@ async def run_verification():
             if is_notification
             else f"-> Sending {method} (ID: {curr_id})"
         )
-        process.stdin.write(json_str + "\n")
-        process.stdin.flush()
+        import subprocess
+        from typing import cast
+        stdin = cast(subprocess.Popen, process).stdin
+        assert stdin is not None
+        stdin.write(json_str + "\n")
+        stdin.flush()
         return curr_id
 
     def truncate_obj(obj, max_len=100):
@@ -58,7 +65,11 @@ async def run_verification():
         return obj
 
     def read_response():
-        line = process.stdout.readline()
+        import subprocess
+        from typing import cast
+        stdout = cast(subprocess.Popen, process).stdout
+        assert stdout is not None
+        line = stdout.readline()
         if not line:
             print("DEBUG: Read empty line from stdout (EOF?)")
             return None
