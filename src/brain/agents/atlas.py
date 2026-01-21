@@ -34,7 +34,7 @@ from src.brain.context import shared_context  # noqa: E402
 from src.brain.logger import logger  # noqa: E402
 from src.brain.memory import long_term_memory  # noqa: E402
 from src.brain.prompts import AgentPrompts  # noqa: E402
-from src.brain.prompts.atlas_chat import generate_atlas_chat_prompt  # noqa: E402
+from src.brain.prompts.atlas_chat import generate_atlas_chat_prompt, generate_atlas_solo_task_prompt  # noqa: E402
 
 
 @dataclass
@@ -217,7 +217,11 @@ class Atlas(BaseAgent):
             }
 
     async def chat(
-        self, user_request: str, history: list[Any] | None = None, use_deep_persona: bool = False
+        self,
+        user_request: str,
+        history: list[Any] | None = None,
+        use_deep_persona: bool = False,
+        intent: str = "chat",
     ) -> str:
         """
         Omni-Knowledge Chat Mode.
@@ -257,8 +261,8 @@ class Atlas(BaseAgent):
         available_tools_info = []
 
         # 2. Parallel Data Fetching: Graph, Vector, and Tools
-        if not is_simple_chat:
-            logger.info(f"[ATLAS CHAT] Fetching context in parallel for: {user_request[:30]}...")
+        if not is_simple_chat or intent == "solo_task":
+            logger.info(f"[ATLAS CHAT] Fetching context in parallel for ({intent}): {user_request[:30]}...")
             
             async def get_graph():
                 try:
@@ -345,14 +349,24 @@ class Atlas(BaseAgent):
             else "- Conversational assistant."
         )
 
-        system_prompt_text = generate_atlas_chat_prompt(
-            user_query=user_request,
-            graph_context=graph_context,
-            vector_context=vector_context,
-            system_status=system_status,
-            agent_capabilities=agent_capabilities,
-            use_deep_persona=use_deep_persona,
-        )
+        if intent == "solo_task":
+            system_prompt_text = generate_atlas_solo_task_prompt(
+                user_query=user_request,
+                graph_context=graph_context,
+                vector_context=vector_context,
+                system_status=system_status,
+                agent_capabilities=agent_capabilities,
+                use_deep_persona=use_deep_persona,
+            )
+        else:
+            system_prompt_text = generate_atlas_chat_prompt(
+                user_query=user_request,
+                graph_context=graph_context,
+                vector_context=vector_context,
+                system_status=system_status,
+                agent_capabilities=agent_capabilities,
+                use_deep_persona=use_deep_persona,
+            )
         if analysis_context:
             system_prompt_text += f"\n{analysis_context}"
 
