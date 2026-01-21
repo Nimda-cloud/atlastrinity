@@ -288,10 +288,10 @@ Conversation History: {history}
 CRITICAL CLASSIFICATION RULES:
 1. 'chat' - Greetings, appreciation, jokes, or general conversation that does NOT require tools.
 2. 'solo_task' - Informational requests that Atlas can handle independently using tools (e.g., "Search the web for...", "Read this file...", "Explain this code snippet", "What's the weather?"). Atlas handles these without Tetyana/Grisha. Atlas MUST be sure he has the tools (search, filesystem) to handle this solo. If it involves system control or file creation, it's a 'task'.
-3. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations.
+3. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations. **IMPORTANT**: If the user asks to "repeat", "redo", or "run again" a previous task, it is NOT recall, it is 'task' or 'development'.
 4. 'status' - User asking about CURRENT STATE or STATUS of the system.
-5. 'task' - Direct instructions to DO/EXECUTE something (open app, move file, system control, complex automation, file CREATION/MODIFICATION). REQUIRES TRINITY (Tetyana/Grisha).
-6. 'development' - Requests to BUILD, or WRITE software/code. REQUIRES TRINITY/VIBE.
+5. 'task' - Direct instructions to DO/EXECUTE something (open app, move file, system control, complex automation, file CREATION/MODIFICATION). **REPEATING** a previous non-development task also falls here. REQUIRES TRINITY (Tetyana/Grisha).
+6. 'development' - Requests to BUILD, or WRITE software/code. **REPEATING** a previous development task also falls here. REQUIRES TRINITY/VIBE.
 
 DEEP PERSONA TRIGGER:
 If the user wants to talk about YOUR identity, purpose, philosophy, the program's soul, existence, our shared history, or "heart-to-heart" topics, set 'use_deep_persona' to true.

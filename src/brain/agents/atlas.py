@@ -150,13 +150,33 @@ class Atlas(BaseAgent):
     ) -> dict[str, Any]:
         """Analyzes user request: determines intent (chat vs task)"""
 
-        user_request.lower().strip()
+        request_lower = user_request.lower().strip()
+
+        # Resolve 'repeat' context if needed
+        resolved_context = context or {}
+        repeat_keywords = ["повтор", "repeat", "redo", "останнє завдання", "last task", "з самого початку"]
+        if any(kw in request_lower for kw in repeat_keywords):
+            logger.info(f"[ATLAS] Detecting 'repeat' intent in: {user_request}. Resolving context from memory...")
+            
+            # Fetch recent task context
+            recent_tasks = long_term_memory.recall_similar_tasks(user_request, n_results=1, only_successful=False)
+            if recent_tasks:
+                task_info = recent_tasks[0].get("document", "No details")
+                resolved_context["recent_task_memory"] = task_info
+                logger.info("[ATLAS] Resolved recent task from long-term memory.")
+            
+            # Fetch recent conversation context for better intent mapping
+            recent_convs = long_term_memory.recall_similar_conversations(user_request, n_results=1)
+            if recent_convs:
+                conv_info = recent_convs[0].get("summary", "No details")
+                resolved_context["recent_conversation_memory"] = conv_info
+                logger.info("[ATLAS] Resolved recent conversation context from memory.")
 
         # No more hardcoded heuristics. The system relies on its 'brain' (LLM) to classify intent.
         # This prevents robotic, predictable responses to keywords like 'привіт'.
 
         prompt = AgentPrompts.atlas_intent_classification_prompt(
-            user_request, str(context or "None"), str(history or "None")
+            user_request, str(resolved_context or "None"), str(history or "None")
         )
         system_prompt = self.SYSTEM_PROMPT.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
         messages = [
