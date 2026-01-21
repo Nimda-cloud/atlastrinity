@@ -74,15 +74,12 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
 
   // Auto-scroll logic - only scroll if user hasn't scrolled up
   useLayoutEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
     const hasNewLogs = filteredLogs.length > lastLogCountRef.current;
     lastLogCountRef.current = filteredLogs.length;
 
     // Auto-scroll if: near bottom, OR new log arrived and user hasn't scrolled up, OR first logs
     if (isNearBottom() || (hasNewLogs && !userScrolledUp) || filteredLogs.length <= 1) {
-      container.scrollTop = container.scrollHeight;
+      logsEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [filteredLogs, userScrolledUp, isNearBottom]);
 

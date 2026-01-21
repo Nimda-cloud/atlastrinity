@@ -177,6 +177,7 @@ class WhisperSTT:
             "а.семкин",
             "а.егорова",
             "о.голубкін",
+            "сподівайся, як обходить",
         ]
 
         t_lower = t.lower()
@@ -349,6 +350,7 @@ class WhisperSTT:
             "playing music",
             "про що ви знаєте",
             "про те, що ви не знаєте",
+            "сподівайся, як обходить",
         ]
 
         if any(p in text for p in hard_blacklist):
