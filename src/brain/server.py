@@ -132,6 +132,9 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
     try:
         result = await trinity.run(task.request)
         return {"status": "completed", "result": result}
+    except asyncio.CancelledError:
+        logger.info(f"Request interrupted/cancelled: {task.request}")
+        return {"status": "interrupted", "detail": "Task was cancelled by a new request"}
     except Exception as e:
         logger.exception(f"Error processing request: {task.request}")
         raise HTTPException(status_code=500, detail=str(e))

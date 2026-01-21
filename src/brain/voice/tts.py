@@ -504,6 +504,11 @@ class VoiceManager:
                             stderr=asyncio.subprocess.PIPE,
                         )
                         await self._current_process.communicate()
+                    except asyncio.CancelledError:
+                        print(f"[TTS] [{config.name}] 🛑 Playback cancelled.")
+                        if self._current_process:
+                            self._current_process.terminate()
+                        raise
                     except Exception as e:
                         print(f"[TTS] [{config.name}] ⚠ Playback error: {e}")
                     finally:

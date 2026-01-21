@@ -84,8 +84,9 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
     }
   }, [filteredLogs, userScrolledUp, isNearBottom]);
 
-  const formatTime = (ts: number) => {
-    return new Date(ts * 1000).toLocaleTimeString([], {
+  const formatTime = (ts: any) => {
+    const d = ts instanceof Date ? ts : new Date(Number(ts) * 1000);
+    return d.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -123,7 +124,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
             <div className="flex items-center mb-1">
               <div className="flex items-center gap-4 filter grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-40 transition-all duration-500">
                 <span
-                  className="text-[6.5px] font-medium tracking-[0.2em] uppercase"
+                  className="text-[8px] font-bold tracking-[0.2em] uppercase"
                   style={{
                     color:
                       log.agent === 'GRISHA'
@@ -133,19 +134,19 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
                           : log.agent === 'USER'
                             ? 'var(--user-turquoise)'
                             : 'var(--atlas-blue)',
-                    fontFamily: 'Outfit',
+                    fontFamily: 'JetBrains Mono',
                   }}
                 >
                   {log.agent}
                 </span>
 
                 <div
-                  className="flex items-center gap-3 text-[6.5px] font-mono font-medium tracking-[0.05em] uppercase"
+                  className="flex items-center gap-3 text-[8px] font-mono font-medium tracking-[0.05em] uppercase"
                   style={{
                     color: getLogColor(log.type),
                   }}
                 >
-                  <span className="tracking-tighter">{formatTime(Number(log.timestamp))}</span>
+                  <span className="tracking-tighter">{formatTime(log.timestamp)}</span>
                   <span className="font-bold">{log.type.toUpperCase()}</span>
                 </div>
               </div>
@@ -155,7 +156,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
             <div className="flex-1 flex flex-col pl-0.5">
               {/* Message */}
               <span
-                className={`text-[8.5px] font-light leading-relaxed break-words transition-colors font-mono ${
+                className={`text-[11px] font-normal leading-relaxed break-words transition-colors font-mono ${
                   log.message.includes('[VIBE-THOUGHT]')
                     ? 'text-gray-400 pl-4 italic ml-2 border-l border-gray-700/50'
                     : log.message.includes('[VIBE-ACTION]')

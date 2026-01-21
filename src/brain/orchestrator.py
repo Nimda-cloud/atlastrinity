@@ -307,6 +307,9 @@ class Trinity:
         try:
             # Pass ORIGINAL text to voice, let engine handle it
             await self.voice.speak(agent_id, text)
+        except asyncio.CancelledError:
+            # Re-raise to allow the task cancellation to proceed
+            raise
         except Exception as e:
             print(f"TTS Error: {e}")
 
