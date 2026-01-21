@@ -581,13 +581,39 @@ class ToolDispatcher:
         if explicit_server and not self._can_macos_use_handle(tool_name):
             return self._resolve_tool_and_args(tool_name, args, explicit_server)
 
+
+        # 0. Schema-based Authority Check
+        # If the tool is canonically defined in the schema, we adhere to its server definition
+        # UNLESS the user is explicitly asking for a different provider (e.g. 'local.transcribe_audio')
+        from .mcp_registry import get_tool_schema
+
+        schema = get_tool_schema(tool_name)
+        if schema:
+            schema_server = schema.get("server")
+            # If explicit_server contradicts the schema server, we should usually trust the schema
+            # unless it's a known generic tool like 'search' or 'execute_command'
+            if (
+                schema_server
+                and explicit_server
+                and explicit_server != schema_server
+                and tool_name not in ["search", "execute_command"]
+            ):
+                logger.warning(
+                    f"[DISPATCHER] correcting explicit server {explicit_server}.{tool_name} -> {schema_server}.{tool_name}"
+                )
+                explicit_server = schema_server
+
+            # If no explicit server, or we corrected it, set server from schema
+            if not explicit_server and schema_server:
+                explicit_server = schema_server
+
         # Priority 1: Check if macOS-use can handle this
         if self._can_macos_use_handle(tool_name) or explicit_server == "macos-use":
             # Route to macOS-use
             server, resolved_tool, normalized_args = self._handle_macos_use(tool_name, args)
             if server:
                 logger.debug(
-                    f"[DISPATCHER] Priority routing: {tool_name} → macos-use.{resolved_tool}"
+                    f"[DISPATCHER] Priority routing: {tool_name} -> macos-use.{resolved_tool}"
                 )
                 return server, resolved_tool, normalized_args
 
@@ -665,11 +691,21 @@ class ToolDispatcher:
             return "memory", "search", args
 
         # Priority 5: GitHub Routing
-        if (
-            tool_name in self.GITHUB_SYNONYMS
-            or explicit_server == "github"
-            or any(kw in tool_lower for kw in ["pull_request", "pr", "issue", "repo_"])
-        ):
+        # Fix: prevent 'pr' matching 'vibe_prompt'
+        # We use explicit word boundaries checks or specific prefix checks
+        is_github_keyword = False
+        if explicit_server == "github" or tool_name in self.GITHUB_SYNONYMS:
+            is_github_keyword = True
+        elif any(tool_lower.startswith(kw) for kw in ["repo_", "issue_", "pr_"]):
+             is_github_keyword = True
+        elif any(kw in tool_lower for kw in ["pull_request", "issue", "repository"]):
+             is_github_keyword = True
+        
+        # 'pr' check must be strict (whole word or prefix)
+        if "pr" in tool_lower.split("_") or tool_lower == "pr":
+             is_github_keyword = True
+
+        if is_github_keyword:
             server = "github"
             # Canonicalize common hallucinated tools
             if tool_name in ["github", "gh"]:
