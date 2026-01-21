@@ -544,8 +544,7 @@ class Trinity:
         """
         self.stop()  # Stop any current speech and task when a new request arrives
         self.active_task = asyncio.current_task()
-        try:
-            start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_event_loop().time()
         session_id = self.current_session_id
 
         # 0. Platform Insurance Check
@@ -555,8 +554,6 @@ class Trinity:
                 "system",
                 type="warning",
             )
-            # If the user strictly wants it to stop, we could raise an error here.
-            # But for development/testing, a warning is safer and more informative.
         is_subtask = (
             hasattr(self, "state")
             and self.state is not None
@@ -763,6 +760,7 @@ class Trinity:
                     )
                     await self._speak("atlas", fallback_chat)
                     self.state["system_state"] = SystemState.IDLE.value
+                    self.active_task = None
                     return {"status": "completed", "result": fallback_chat, "type": "chat"}
 
                 self.state["current_plan"] = plan
@@ -832,6 +830,7 @@ class Trinity:
                 logger.error(f"[ORCHESTRATOR] Planning error: {e}")
                 logger.error(traceback.format_exc())
                 self.state["system_state"] = SystemState.ERROR.value
+                self.active_task = None
                 return {"status": "error", "error": str(e)}
 
         # 3. Execution Loop (Tetyana) - Recursive Execution
@@ -846,6 +845,7 @@ class Trinity:
 
         except Exception as e:
             await self._log(f"Critical error: {e}", "error")
+            self.active_task = None
             return {"status": "error", "error": str(e)}
 
         # 4. Success Tasks: Memory & Cleanup
@@ -983,6 +983,7 @@ class Trinity:
         except Exception as e:
             logger.warning(f"[BACKUP] Не вдалося створити backup: {e}")
 
+        self.active_task = None
         return {"status": "completed", "result": self.state["step_results"]}
 
     async def _persist_session_summary(self, session_id: str):
