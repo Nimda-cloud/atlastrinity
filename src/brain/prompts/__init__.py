@@ -286,9 +286,11 @@ Context: {context}
 Conversation History: {history}
 
 CRITICAL CLASSIFICATION RULES:
-1. 'chat' - Greetings, appreciation, jokes, or INFORMATION-SEEKING questions (weather, explanations of scripts, general info, GitHub searches) that do NOT require modifying the system or creating files.
-2. 'task' - Direct instructions to DO something (open app, run command, move file, system control).
-3. 'development' - Requests to CREATE, BUILD, or WRITE software, complex code, scripts, apps, websites, APIs.
+1. 'chat' - Greetings, appreciation, jokes, or general conversation that does NOT require modifying the system or creating files.
+2. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations (e.g., "Нагадай останнє завдання", "Що ми робили?", "Покажи попередній план"). NO EXECUTION should happen.
+3. 'status' - User asking about CURRENT STATE or STATUS of the system (e.g., "Що зараз відбувається?", "Який статус?"). NO EXECUTION should happen.
+4. 'task' - Direct instructions to DO something (open app, run command, move file, system control).
+5. 'development' - Requests to CREATE, BUILD, or WRITE software, complex code, scripts, apps, websites, APIs.
    Examples: "Create a Python script", "Build a website", "Write an API"
 
 DEEP PERSONA TRIGGER:
@@ -300,7 +302,7 @@ ALL textual reasoning (reason) MUST be in ENGLISH for maximum logic precision.
 
 Respond STRICTLY in JSON:
 {{
-    "intent": "chat" or "task" or "development",
+    "intent": "chat" or "recall" or "status" or "task" or "development",
     "reason": "Technical explanation of the choice in English (Internal only)",
     "voice_response": "Ukrainian message for the user. ZERO English words. Be NATURAL as a companion. DO NOT explain your logic (e.g., 'Yes, I can do that' or 'I understand the task' in Ukrainian). NEVER mention server names, tool names (like 'vibe', 'mcp'), or technical intents (like 'development').",
     "enriched_request": "Detailed description of the request (English)",

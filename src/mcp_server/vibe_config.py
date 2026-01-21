@@ -426,7 +426,6 @@ class VibeConfig(BaseModel):
         self,
         prompt: str,
         mode: AgentMode | None = None,
-        model: str | None = None,
         agent: str | None = None,
         session_id: str | None = None,
         max_turns: int | None = None,
@@ -438,7 +437,6 @@ class VibeConfig(BaseModel):
         Args:
             prompt: The prompt to send
             mode: Operational mode override
-            model: Model alias override
             agent: Agent profile name
             session_id: Session to resume
             max_turns: Max conversation turns
@@ -449,11 +447,6 @@ class VibeConfig(BaseModel):
             List of CLI arguments
         """
         args = ["-p", prompt, "--output", output_format]
-
-        # Model selection
-        effective_model = model or self.active_model
-        if effective_model != "devstral-2":  # Only if non-default
-            args.extend(["--model", effective_model])
 
         # Agent profile
         if agent:
