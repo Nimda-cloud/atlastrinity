@@ -20,8 +20,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 
 class CopilotLLM(BaseChatModel):
-    model_name: str = "gpt-4.1"
-    vision_model_name: str = "gpt-4.1"
+    model_name: str = "gpt-4o"
+    vision_model_name: str = "gpt-4o"
     api_key: str | None = None
     _tools: list[Any] | None = None
 
@@ -404,7 +404,7 @@ class CopilotLLM(BaseChatModel):
                 if response.status_code == 400:
                     error_detail = response.text
                     print(f"[COPILOT] Async 400 error. Content: {error_detail[:500]}", flush=True)
-                    print("[COPILOT] Retrying with gpt-4.1...", flush=True)
+                    print("[COPILOT] Retrying with gpt-4o...", flush=True)
 
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
@@ -431,7 +431,7 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    payload_fb["model"] = "gpt-4.1"  # Using official stable model
+                    payload_fb["model"] = "gpt-4o"  # Using official stable model
 
                     retry_response = await _do_post(
                         client, f"{api_endpoint}/chat/completions", headers_fb, payload_fb
@@ -570,8 +570,8 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload["messages"] = cleaned_messages
 
-                    # Use GPT-4.1 as fallback (most stable)
-                    payload["model"] = "gpt-4.1"
+                    # Use GPT-4o as fallback (most stable)
+                    payload["model"] = "gpt-4o"
 
                     @retry(
                         stop=stop_after_attempt(2),
@@ -608,7 +608,7 @@ class CopilotLLM(BaseChatModel):
                     )
 
                 except Exception as retry_err:
-                    print(f"[COPILOT] Retry with GPT-4.1 failed: {retry_err}", flush=True)
+                    print(f"[COPILOT] Retry with GPT-4o failed: {retry_err}", flush=True)
                     return ChatResult(
                         generations=[
                             ChatGeneration(
