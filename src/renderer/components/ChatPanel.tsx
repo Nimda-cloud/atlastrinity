@@ -71,15 +71,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
 
   // Auto-scroll logic - only scroll if user hasn't scrolled up
   useLayoutEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
     const hasNewMessages = filteredMessages.length > lastMessageCountRef.current;
     lastMessageCountRef.current = filteredMessages.length;
 
     // Auto-scroll if: near bottom, OR new message arrived and user hasn't scrolled up, OR first messages
     if (isNearBottom() || (hasNewMessages && !userScrolledUp) || filteredMessages.length <= 1) {
-      container.scrollTop = container.scrollHeight;
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [filteredMessages, userScrolledUp, isNearBottom]);
 

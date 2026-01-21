@@ -287,10 +287,10 @@ Conversation History: {history}
 
 CRITICAL CLASSIFICATION RULES:
 1. 'chat' - Greetings, appreciation, jokes, or general conversation that does NOT require tools.
-2. 'solo_task' - Informational requests that Atlas can handle independently using tools (e.g., "Search the web for...", "Read this file...", "Explain this code snippet", "What's the weather?"). Atlas handles these without Tetyana/Grisha.
+2. 'solo_task' - Informational requests that Atlas can handle independently using tools (e.g., "Search the web for...", "Read this file...", "Explain this code snippet", "What's the weather?"). Atlas handles these without Tetyana/Grisha. Atlas MUST be sure he has the tools (search, filesystem) to handle this solo. If it involves system control or file creation, it's a 'task'.
 3. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations.
 4. 'status' - User asking about CURRENT STATE or STATUS of the system.
-5. 'task' - Direct instructions to DO/EXECUTE something (open app, move file, system control, complex automation). REQUIRES TRINITY (Tetyana/Grisha).
+5. 'task' - Direct instructions to DO/EXECUTE something (open app, move file, system control, complex automation, file CREATION/MODIFICATION). REQUIRES TRINITY (Tetyana/Grisha).
 6. 'development' - Requests to BUILD, or WRITE software/code. REQUIRES TRINITY/VIBE.
 
 DEEP PERSONA TRIGGER:
