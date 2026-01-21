@@ -120,13 +120,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
                 <div className="flex items-center mb-1.5">
                   <div className="flex items-center gap-4 filter grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-40 transition-all duration-500">
                     <span
-                      className="text-[6.5px] font-medium tracking-[0.1em] uppercase"
-                      style={{ color: getHeaderColor(msg.agent), fontFamily: 'Outfit' }}
+                      className="text-[8px] font-bold tracking-[0.1em] uppercase"
+                      style={{ color: getHeaderColor(msg.agent), fontFamily: 'JetBrains Mono' }}
                     >
                       {msg.agent}
                     </span>
                     <span
-                      className="text-[6.5px] font-mono tracking-tighter uppercase font-medium"
+                      className="text-[8px] font-mono tracking-tighter uppercase font-medium"
                       style={{ color: getHeaderColor(msg.agent) }}
                     >
                       {msg.timestamp.toLocaleTimeString([], {
@@ -139,9 +139,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
                 </div>
 
                 <div
-                  className="text-[10px] font-[300] leading-relaxed break-words pl-0.5 py-0.5 message-text transition-colors"
+                  className="text-[11px] font-[400] leading-relaxed break-words pl-0.5 py-0.5 transition-colors"
                   style={{
-                    fontFamily: 'Outfit',
+                    fontFamily: 'JetBrains Mono',
                     letterSpacing: '0.01em',
                     color: getMessageTextColor(msg.agent),
                   }}

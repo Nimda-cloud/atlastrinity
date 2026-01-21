@@ -112,7 +112,12 @@ const App: React.FC = () => {
           if (data.metrics) setMetrics(data.metrics);
 
           if (data.logs) {
-            setLogs(data.logs); // Keep as numbers
+            setLogs(
+              data.logs.map((l: any) => ({
+                ...l,
+                timestamp: new Date(l.timestamp * 1000),
+              }))
+            );
           }
 
           if (data.messages) {
