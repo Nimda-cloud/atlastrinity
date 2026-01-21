@@ -688,6 +688,7 @@ class Trinity:
                         user_request,
                         history=history,
                         use_deep_persona=analysis.get("use_deep_persona", False),
+                        intent=intent,
                     )
                     await self._speak("atlas", response)
                     
