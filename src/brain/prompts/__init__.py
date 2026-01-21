@@ -279,19 +279,19 @@ class AgentPrompts:
 
     @staticmethod
     def atlas_intent_classification_prompt(user_request: str, context: str, history: str) -> str:
-        return f"""Analyze the user request and decide if it's a simple conversation, a technical task, or a SOFTWARE DEVELOPMENT task.
+        return f"""Analyze the user request and decide if it's a simple conversation, an informational tool-based task (solo), a technical task, or a SOFTWARE DEVELOPMENT task.
 
 User Request: {user_request}
 Context: {context}
 Conversation History: {history}
 
 CRITICAL CLASSIFICATION RULES:
-1. 'chat' - Greetings, appreciation, jokes, or general conversation that does NOT require modifying the system or creating files.
-2. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations (e.g., "Нагадай останнє завдання", "Що ми робили?", "Покажи попередній план"). NO EXECUTION should happen.
-3. 'status' - User asking about CURRENT STATE or STATUS of the system (e.g., "Що зараз відбувається?", "Який статус?"). NO EXECUTION should happen.
-4. 'task' - Direct instructions to DO something (open app, run command, move file, system control).
-5. 'development' - Requests to CREATE, BUILD, or WRITE software, complex code, scripts, apps, websites, APIs.
-   Examples: "Create a Python script", "Build a website", "Write an API"
+1. 'chat' - Greetings, appreciation, jokes, or general conversation that does NOT require tools.
+2. 'solo_task' - Informational requests that Atlas can handle independently using tools (e.g., "Search the web for...", "Read this file...", "Explain this code snippet", "What's the weather?"). Atlas handles these without Tetyana/Grisha.
+3. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations.
+4. 'status' - User asking about CURRENT STATE or STATUS of the system.
+5. 'task' - Direct instructions to DO/EXECUTE something (open app, move file, system control, complex automation). REQUIRES TRINITY (Tetyana/Grisha).
+6. 'development' - Requests to BUILD, or WRITE software/code. REQUIRES TRINITY/VIBE.
 
 DEEP PERSONA TRIGGER:
 If the user wants to talk about YOUR identity, purpose, philosophy, the program's soul, existence, our shared history, or "heart-to-heart" topics, set 'use_deep_persona' to true.
@@ -302,7 +302,7 @@ ALL textual reasoning (reason) MUST be in ENGLISH for maximum logic precision.
 
 Respond STRICTLY in JSON:
 {{
-    "intent": "chat" or "recall" or "status" or "task" or "development",
+    "intent": "chat" or "solo_task" or "recall" or "status" or "task" or "development",
     "reason": "Technical explanation of the choice in English (Internal only)",
     "voice_response": "Ukrainian message for the user. ZERO English words. Be NATURAL as a companion. DO NOT explain your logic (e.g., 'Yes, I can do that' or 'I understand the task' in Ukrainian). NEVER mention server names, tool names (like 'vibe', 'mcp'), or technical intents (like 'development').",
     "enriched_request": "Detailed description of the request (English)",

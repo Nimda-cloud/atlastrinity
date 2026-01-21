@@ -678,42 +678,30 @@ class Trinity:
                     history = messages_raw[-25:-1] if len(messages_raw) > 1 else []
 
                 analysis = await self.atlas.analyze_request(user_request, history=history)
-
-                # Handle informational requests (recall, status) - NO EXECUTION
                 intent = analysis.get("intent")
-                if intent in ["recall", "status"]:
-                    response = analysis.get("initial_response") or await self.atlas.chat(
-                        user_request,
-                        history=history,
-                        use_deep_persona=False,
-                    )
-                    await self._speak("atlas", response)
-                    try:
-                        from src.brain.state_manager import state_manager
 
-                        if state_manager and getattr(state_manager, "available", False):
-                            await state_manager.save_session(session_id, self.state)
-                    except (ImportError, NameError):
-                        pass
-                    self.state["system_state"] = SystemState.IDLE.value
-                    return {"status": "completed", "result": response, "type": "info"}
+                # Handle Atlas Solo Modes (Chat, Recall, Status, Solo Task)
 
-                if analysis.get("intent") == "chat":
+                if intent in ["chat", "recall", "status", "solo_task"]:
+                    # Deep persona or tool-based solo task
                     response = analysis.get("initial_response") or await self.atlas.chat(
                         user_request,
                         history=history,
                         use_deep_persona=analysis.get("use_deep_persona", False),
                     )
                     await self._speak("atlas", response)
+                    
+                    # Background session save to avoid blocking response
                     try:
                         from src.brain.state_manager import state_manager
-
                         if state_manager and getattr(state_manager, "available", False):
-                            await state_manager.save_session(session_id, self.state)
+                            asyncio.create_task(state_manager.save_session(session_id, self.state))
                     except (ImportError, NameError):
                         pass
+                        
                     self.state["system_state"] = SystemState.IDLE.value
-                    return {"status": "completed", "result": response, "type": "chat"}
+                    return {"status": "completed", "result": response, "type": intent}
+
 
                 self.state["system_state"] = SystemState.PLANNING.value
 
