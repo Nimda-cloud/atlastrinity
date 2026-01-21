@@ -1,0 +1,177 @@
+{
+  "validation_timestamp": "2026-01-21T09:55:15.640425",
+  "results": [
+    {
+      "type": "config_validation",
+      "file": "/Users/dev/.config/atlastrinity/config.yaml",
+      "valid": true,
+      "errors": 0,
+      "warnings": 1,
+      "issues": [
+        {
+          "level": "warning",
+          "path": "system.repository_path",
+          "message": "Environment variable ${PROJECT_ROOT} not set"
+        }
+      ],
+      "validation_flags": {
+        "complete": true,
+        "accurate": true,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653883"
+      }
+    },
+    {
+      "type": "config_validation",
+      "file": "/Users/dev/.config/atlastrinity/mcp/config.json",
+      "valid": true,
+      "errors": 0,
+      "warnings": 3,
+      "issues": [
+        {
+          "level": "warning",
+          "path": "mcpServers.macos-use.connect_timeout",
+          "message": "Value 3600 outside range (1, 600)"
+        },
+        {
+          "level": "warning",
+          "path": "mcpServers.macos-use.command",
+          "message": "Environment variable ${PROJECT_ROOT} not set"
+        },
+        {
+          "level": "warning",
+          "path": "mcpServers.vibe.connect_timeout",
+          "message": "Value 3600 outside range (1, 600)"
+        }
+      ],
+      "validation_flags": {
+        "complete": true,
+        "accurate": true,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653916"
+      }
+    },
+    {
+      "type": "database_schema",
+      "database": "tests/mock_config/atlastrinity.db",
+      "tables_found": 14,
+      "tables_expected": 12,
+      "missing_tables": [],
+      "valid": true,
+      "issues": [],
+      "validation_flags": {
+        "complete": true,
+        "accurate": true,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653921"
+      }
+    },
+    {
+      "type": "database_schema",
+      "database": "backups/databases/atlastrinity.db",
+      "tables_found": 15,
+      "tables_expected": 12,
+      "missing_tables": [],
+      "valid": true,
+      "issues": [],
+      "validation_flags": {
+        "complete": true,
+        "accurate": true,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653924"
+      }
+    },
+    {
+      "type": "tool_schemas",
+      "file": "src/brain/data/tool_schemas.json",
+      "tool_count": 116,
+      "valid": false,
+      "issues": [
+        "Tool 'vibe_list_sessions' missing fields: ['types']",
+        "Tool 'vibe_which' missing fields: ['types']",
+        "Tool 'vibe_get_system_context' missing fields: ['types']",
+        "Tool 'macos-use_list_tools_dynamic' missing fields: ['types']",
+        "Tool 'macos-use_notes_list_folders' missing fields: ['types']",
+        "Tool 'macos-use_finder_get_selection' missing fields: ['types']",
+        "Tool 'list_entities' missing fields: ['types']",
+        "Tool 'get_graph_json' missing fields: ['types']",
+        "Tool 'console_logs' missing fields: ['types']",
+        "Tool 'network_requests' missing fields: ['types']",
+        "Tool 'create_or_update_file' missing fields: ['required', 'types']",
+        "Tool 'search_code' missing fields: ['required', 'types']",
+        "Tool 'list_issues' missing fields: ['required', 'types']",
+        "Tool 'create_issue' missing fields: ['required', 'types']",
+        "Tool 'create_pull_request' missing fields: ['required', 'types']",
+        "Tool 'search_repositories' missing fields: ['required', 'types']",
+        "Tool 'list_pull_requests' missing fields: ['required', 'types']",
+        "Tool 'merge_pull_request' missing fields: ['required', 'types']",
+        "Tool 'search_nodes' missing fields: ['required', 'types', 'description']",
+        "Tool 'terminal' missing fields: ['required', 'types', 'description']",
+        "Tool 'screenshot' missing fields: ['required', 'types', 'description']",
+        "Tool 'ocr' missing fields: ['required', 'types', 'description']",
+        "Tool 'analyze' missing fields: ['required', 'types', 'description']",
+        "Tool 'devtools_check_mcp_health' missing fields: ['types']",
+        "Tool 'devtools_validate_config' missing fields: ['types']"
+      ],
+      "validation_flags": {
+        "complete": false,
+        "accurate": false,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653928"
+      }
+    },
+    {
+      "type": "mcp_catalog",
+      "file": "src/brain/data/mcp_catalog.json",
+      "server_count": 14,
+      "valid": true,
+      "issues": [],
+      "validation_flags": {
+        "complete": true,
+        "accurate": true,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653931"
+      }
+    },
+    {
+      "type": "data_completeness",
+      "checks": [
+        {
+          "file": "src/brain/data/tool_schemas.json",
+          "exists": true
+        },
+        {
+          "file": "src/brain/data/mcp_catalog.json",
+          "exists": true
+        },
+        {
+          "file": "src/brain/db/schema.py",
+          "exists": true
+        },
+        {
+          "file": "src/brain/config_validator.py",
+          "exists": true
+        },
+        {
+          "file": "src/brain/data_guard.py",
+          "exists": true
+        }
+      ],
+      "valid": true,
+      "issues": [],
+      "validation_flags": {
+        "complete": true,
+        "accurate": true,
+        "relevant": true,
+        "validation_timestamp": "2026-01-21T09:55:15.653934"
+      }
+    }
+  ],
+  "summary": {
+    "total_checks": 7,
+    "passed_checks": 6,
+    "failed_checks": 1,
+    "warnings": 4
+  },
+  "overall_status": "FAIL"
+}

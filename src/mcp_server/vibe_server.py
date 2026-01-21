@@ -84,6 +84,7 @@ try:
     MAX_OUTPUT_CHARS = int(get_config_value("mcp.vibe", "max_output_chars", 500000))
     VIBE_WORKSPACE = get_config_value("mcp.vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
     VIBE_CONFIG_FILE = get_config_value("mcp.vibe", "config_file", None)
+    AGENT_MODEL_OVERRIDE = get_config_value("agents.tetyana", "model", "gpt-4o")
 
 except Exception:
 
@@ -787,6 +788,7 @@ async def vibe_analyze_error(
         prompt=prompt,
         cwd=cwd,
         timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
+        model=AGENT_MODEL_OVERRIDE,
         mode="auto-approve" if auto_fix else "plan",
         max_turns=15,
     )
@@ -863,6 +865,7 @@ EXECUTE NOW.
         prompt=prompt,
         cwd=cwd,
         timeout_s=timeout_s or 1200,
+        model=AGENT_MODEL_OVERRIDE,
         mode="auto-approve",
         max_turns=30,
     )
@@ -924,6 +927,7 @@ async def vibe_code_review(
         prompt="\n".join(prompt_parts),
         cwd=cwd,
         timeout_s=timeout_s or 300,
+        model=AGENT_MODEL_OVERRIDE,
         mode="plan",  # Read-only mode
         max_turns=5,
     )

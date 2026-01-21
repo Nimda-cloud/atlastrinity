@@ -116,13 +116,6 @@ backend = "generic"
 # Define available models with pricing and settings.
 # Each model needs: name (API ID), provider, alias, temperature
 
-[[models]]
-name = "devstral-2"
-provider = "mistral"
-alias = "devstral-2"
-temperature = 0.2
-input_price = 0.0   # Price per million input tokens (USD)
-output_price = 0.0  # Price per million output tokens (USD)
 
 [[models]]
 name = "mistralai/devstral-2512:free"
@@ -131,6 +124,14 @@ alias = "devstral-openrouter"
 temperature = 0.2
 input_price = 0.0
 output_price = 0.0
+
+[[models]]
+name = "devstral-2"
+provider = "mistral"
+alias = "devstral-2"
+temperature = 0.2
+input_price = 0.0   # Price per million input tokens (USD)
+output_price = 0.0  # Price per million output tokens (USD)
 
 # Copilot Models (GPT-4o, 4.1, 5-mini, Raptor, Grok)
 [[models]]
