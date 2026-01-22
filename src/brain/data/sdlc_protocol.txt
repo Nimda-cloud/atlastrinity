@@ -16,6 +16,7 @@ PHASE 2: ARCHITECTURAL DESIGN
 PHASE 3: INCREMENTAL IMPLEMENTATION
 -----------------------------------
 - RULE: ONE MODULE PER STEP. Build, then verify.
+- RESEARCH: Use `context7` to verify library APIs (Pydantic, LangChain, etc.) BEFORE writing code to avoid hallucinations.
 - PATTERN: Skeleton -> Logic -> Error Handling -> Tests -> Verify.
 
 PHASE 4: INTEGRATION & TESTING

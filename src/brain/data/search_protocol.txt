@@ -6,6 +6,7 @@ SEARCH PROTOCOL (v1.1)
    - Level 2: Business Registry Search (YouControl, Opendatabot, Clarity)
    - Level 3: Open Data Portal Search (data.gov.ua)
    - Level 4: Deep Web Extraction (Puppeteer/Navigation)
+   - Level 5: Technical Documentation & Library Search (context7)
 
 2. EXECUTION GUIDELINES:
    - START with specialized tools (Level 2/3) for technical data (ЄДРПОУ, addresses, owners).
