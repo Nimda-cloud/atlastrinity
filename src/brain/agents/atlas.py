@@ -258,60 +258,18 @@ class Atlas(BaseAgent):
 
         from ..mcp_manager import mcp_manager
 
-        # 1. Fast-Path: Simple Greeting Detection
-        # If it's a short greeting, skip expensive lookups and tool discovery
-        request_lower = user_request.lower().strip().rstrip(".?!")
-        is_info_query = any(
-            kw in request_lower
-            for kw in [
-                "погода",
-                "weather",
-                "прогноз",
-                "температура",
-                "новини",
-                "news",
-                "ціна",
-                "price",
-                "курс",
-                "який час",
-                "what time",
-                "скільки",
-                "системн",
-                "версія",
-                "version",
-                "файл",
-                "file",
-                "знайди",
-                "find",
-                "пошук",
-                "search",
-                "покажи",
-                "шукай",
-                "розкажи про",
-                "прочитай",
-            ]
-        )
-        # Improved is_simple_chat: catch variations like "як твої справи"
-        is_simple_chat = (
-            len(user_request.split()) < 6
-            and any(
-                g in request_lower
-                for g in [
-                    "привіт", "хай", "hello", "hi", "атлас", "atlas", "дякую", "окей", "ок"
-                ]
-            )
-        ) or (
-            "як" in request_lower and "справи" in request_lower and len(user_request.split()) < 7
-        )
+
+        from ..behavior_engine import behavior_engine
+
+        # Use BehaviorEngine for intent classification (replaces 50+ lines of hardcoded keywords)
+        classification = behavior_engine.classify_intent(user_request, context={})
+        is_info_query = classification['type'] == 'info_query'
+        is_simple_chat = classification['type'] == 'simple_chat'
         
         resolved_query = user_request
         if history and not is_simple_chat:
             resolved_query = await self._resolve_query_context(user_request, history)
             logger.info(f"[ATLAS CHAT] Resolved '{user_request}' -> '{resolved_query}'")
-
-        # Explicit check to NOT be a simple chat if it's an info query
-        if is_info_query:
-            is_simple_chat = False
 
         graph_context = ""
         vector_context = ""

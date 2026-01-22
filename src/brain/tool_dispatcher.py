@@ -571,154 +571,30 @@ class ToolDispatcher:
     ) -> tuple[str | None, str, dict[str, Any]]:
         """
         Intelligent tier-based routing with macOS-use priority.
-        Prioritizes macOS-use for 90% coverage target.
+        Now delegates to BehaviorEngine for config-driven routing.
         """
-        # Fix for generic 'memory' tool call (LLM hallucination) - intercept generic calls even if server is explicit
+        from .behavior_engine import behavior_engine
+
+        # Fix for generic 'memory' tool call (LLM hallucination)
         if tool_name.lower() == "memory" and "query" in args:
             return "memory", "search", args
 
-        # If explicit server specified and NOT asking for macOS-use check, use it
-        if explicit_server and not self._can_macos_use_handle(tool_name):
-            return self._resolve_tool_and_args(tool_name, args, explicit_server)
-
-        # 0. Schema-based Authority Check
-        # If the tool is canonically defined in the schema, we adhere to its server definition
-        # UNLESS the user is explicitly asking for a different provider (e.g. 'local.transcribe_audio')
-        from .mcp_registry import get_tool_schema
-
-        schema = get_tool_schema(tool_name)
-        if schema:
-            schema_server = schema.get("server")
-            # If explicit_server contradicts the schema server, we should usually trust the schema
-            # unless it's a known generic tool like 'search' or 'execute_command'
-            if (
-                schema_server
-                and explicit_server
-                and explicit_server != schema_server
-                and tool_name not in ["search", "execute_command"]
-            ):
-                logger.warning(
-                    f"[DISPATCHER] correcting explicit server {explicit_server}.{tool_name} -> {schema_server}.{tool_name}"
-                )
-                explicit_server = schema_server
-
-            # If no explicit server, or we corrected it, set server from schema
-            if not explicit_server and schema_server:
-                explicit_server = schema_server
-
-        # Priority 1: Check if macOS-use can handle this
-        if self._can_macos_use_handle(tool_name) or explicit_server == "macos-use":
-            # Route to macOS-use
-            server, resolved_tool, normalized_args = self._handle_macos_use(tool_name, args)
+        # Delegate to behavior engine for routing (replaces 150+ lines of hardcoded logic)
+        try:
+            server, resolved_tool, normalized_args = behavior_engine.route_tool(
+                tool_name, args, explicit_server
+            )
+            
             if server:
                 logger.debug(
-                    f"[DISPATCHER] Priority routing: {tool_name} -> macos-use.{resolved_tool}"
+                    f"[DISPATCHER] BehaviorEngine routing: {tool_name} -> {server}.{resolved_tool}"
                 )
                 return server, resolved_tool, normalized_args
+        except Exception as e:
+            logger.warning(f"[DISPATCHER] BehaviorEngine routing failed: {e}, falling back to registry")
 
-        # Priority 2: Knowledge Graph & Memory Routing
-        tool_lower = tool_name.lower()
-
-        # Explicit Graph Tools
-        if any(
-            kw in tool_lower for kw in ["mermaid", "graph_json", "node_details", "related_nodes"]
-        ):
-            server = "graph"
-            resolved_tool = (
-                tool_lower
-                if tool_lower
-                in ["get_graph_json", "generate_mermaid", "get_node_details", "get_related_nodes"]
-                else tool_name
-            )
-            return server, resolved_tool, args
-
-        # Explicit Memory Tools
-        if any(kw in tool_lower for kw in ["entities", "observations", "relation", "recall"]):
-            server = "memory"
-            resolved_tool = (
-                tool_lower
-                if tool_lower
-                in [
-                    "create_entities",
-                    "add_observations",
-                    "get_entity",
-                    "list_entities",
-                    "create_relation",
-                ]
-                else tool_name
-            )
-            return server, resolved_tool, args
-
-        # Priority 3: Web Search Routing
-        if any(kw in tool_lower for kw in ["duckduckgo", "web_search", "search_web", "ddg"]):
-            # Check for business registry intent before generic search
-            if any(
-                kw in str(args).lower()
-                for kw in [
-                    "єдрпоу",
-                    "company",
-                    "registry",
-                    "youcontrol",
-                    "opendatabot",
-                    "бізнес",
-                    "підприємство",
-                ]
-            ):
-                logger.info("[DISPATCHER] Intelligent routing: search -> business_registry_search")
-                return (
-                    "duckduckgo-search",
-                    "business_registry_search",
-                    {"company_name": args.get("query", args.get("company_name", ""))},
-                )
-
-            # Check for open data portal intent
-            if any(
-                kw in str(args).lower()
-                for kw in ["dataset", "датасет", "data.gov.ua", "портал", "відкриті дані"]
-            ):
-                logger.info("[DISPATCHER] Intelligent routing: search -> open_data_search")
-                return (
-                    "duckduckgo-search",
-                    "open_data_search",
-                    {"query": args.get("query", args.get("query", ""))},
-                )
-
-            return "duckduckgo-search", "duckduckgo_search", args
-
-        # Priority 4: Knowledge Graph semantic search
-        if tool_name == "search":
-            return "memory", "search", args
-
-        # Priority 5: GitHub Routing
-        # Fix: prevent 'pr' matching 'vibe_prompt'
-        # We use explicit word boundaries checks or specific prefix checks
-        is_github_keyword = False
-        if explicit_server == "github" or tool_name in self.GITHUB_SYNONYMS:
-            is_github_keyword = True
-        elif any(tool_lower.startswith(kw) for kw in ["repo_", "issue_", "pr_"]):
-            is_github_keyword = True
-        elif any(kw in tool_lower for kw in ["pull_request", "issue", "repository"]):
-            is_github_keyword = True
-
-        # 'pr' check must be strict (whole word or prefix)
-        if "pr" in tool_lower.split("_") or tool_lower == "pr":
-            is_github_keyword = True
-
-        if is_github_keyword:
-            server = "github"
-            # Canonicalize common hallucinated tools
-            if tool_name in ["github", "gh"]:
-                resolved_tool = "get_file_contents"  # Default action
-            else:
-                resolved_tool = tool_name
-            return server, resolved_tool, args
-
-        # Priority 6: Standard resolution (Registry-based)
-        server, resolved_tool, normalized_args = self._resolve_tool_and_args(
-            tool_name, args, explicit_server
-        )
-
-        return server, resolved_tool, normalized_args
+        # Fallback: Use registry-based resolution
+        return self._resolve_tool_and_args(tool_name, args, explicit_server)
 
     def get_coverage_stats(self) -> dict[str, Any]:
         """Get macOS-use coverage statistics."""

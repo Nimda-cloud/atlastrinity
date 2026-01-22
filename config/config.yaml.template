@@ -1,4 +1,10 @@
-# Синхронізовано: 2026-01-20 20:30:00 (v4.4 - DevTools Expansion)
+# Синхронізовано: 2026-01-21 23:58:00 (v4.5 - Config-Driven Architecture)
+
+# Behavior Engine (New config-driven architecture)
+behavior:
+  config_file: behavior_config.yaml
+  hot_reload_enabled: true
+  cache_ttl_seconds: 1800
 
 voice:
   stt:
