@@ -36,38 +36,19 @@ class AdaptiveBehaviorEngine:
     """
 
     def __init__(self) -> None:
+        # Legacy patterns dict kept for backward compatibility with record_deviation_outcome
         self.patterns: dict[str, BehaviorPattern] = {}
         self.deviation_history: list[dict[str, Any]] = []
         self.strategy_cache: dict[str, str] = {}
 
-        # Initialize with default patterns
-        self._register_default_patterns()
+        # Behavior engine replaces hardcoded patterns
+        from .behavior_engine import behavior_engine
+        self._engine = behavior_engine
+        
+        logger.info("[ADAPTIVE BEHAVIOR] Using config-driven behavior engine")
 
-    def _register_default_patterns(self) -> None:
-        """Registers built-in adaptive behavior patterns."""
-        # Pattern: Web task failure recovery
-        self.register_pattern(
-            name="web_task_fallback",
-            trigger_conditions={"task_type": "web", "repeated_failures": True},
-            action_override={"server": "macos-use", "tool": "macos-use_fetch_url"},
-            initial_confidence=0.6,
-        )
-
-        # Pattern: GUI automation with vision assist
-        self.register_pattern(
-            name="gui_vision_assist",
-            trigger_conditions={"task_type": "gui", "accessibility_failed": True},
-            action_override={"requires_vision": True, "use_ocr": True},
-            initial_confidence=0.7,
-        )
-
-        # Pattern: Terminal command retry with sudo
-        self.register_pattern(
-            name="permission_escalation",
-            trigger_conditions={"error_contains": "permission denied"},
-            action_override={"retry_with_sudo": True, "confirm_required": True},
-            initial_confidence=0.5,
-        )
+    # REMOVED: Patterns now defined in config/behavior_config.yaml
+    # See behavior_config.yaml: patterns.adaptive_behavior section
 
     def should_deviate(
         self,
@@ -77,20 +58,23 @@ class AdaptiveBehaviorEngine:
     ) -> tuple[bool, str]:
         """
         Determines if the agent should deviate from standard behavior.
+        Now delegates to BehaviorEngine for config-driven pattern matching.
 
         Returns:
             (should_deviate: bool, reason: str)
         """
-        # Check for pattern match
-        for pattern in self.patterns.values():
-            if self._matches_trigger(pattern.trigger_conditions, current_step, context):
-                if pattern.confidence >= confidence_threshold:
-                    return (
-                        True,
-                        f"Pattern '{pattern.name}' matched with confidence {pattern.confidence}",
-                    )
+        # Delegate to behavior engine for pattern matching
+        combined_context = {**context, 'step': current_step}
+        pattern = self._engine.match_pattern(
+            context=combined_context,
+            pattern_type='adaptive_behavior',
+            confidence_threshold=confidence_threshold
+        )
+        
+        if pattern:
+            return True, f"Pattern '{pattern.name}' matched with confidence {pattern.confidence}"
 
-        # Check for contextual deviation signals
+        # Contextual deviation signals (kept for backward compatibility)
         if context.get("repeated_failures", 0) >= 3:
             return True, "Multiple failures detected, deviation recommended"
 
@@ -169,7 +153,7 @@ class AdaptiveBehaviorEngine:
     ) -> str:
         """
         Returns a strategy recommendation based on task type and context.
-        Uses cached strategies when available.
+        Now delegates to BehaviorEngine for config-driven selection.
         """
         # Create cache key from task type and relevant context
         context_key_parts = sorted(
@@ -180,19 +164,8 @@ class AdaptiveBehaviorEngine:
         if cache_key in self.strategy_cache:
             return self.strategy_cache[cache_key]
 
-        # Dynamic strategy selection
-        strategies = {
-            "web_task": ("puppeteer-first" if context.get("has_browser") else "macos-use-chrome"),
-            "file_task": (
-                "filesystem-direct" if context.get("allowed_path") else "macos-use-finder"
-            ),
-            "code_task": (
-                "vibe-aggressive" if context.get("error_present") else "vibe-conservative"
-            ),
-            "gui_task": ("vision-assisted" if context.get("complex_ui") else "accessibility-tree"),
-        }
-
-        strategy = strategies.get(task_type, "standard")
+        # Delegate to behavior engine
+        strategy = self._engine.select_strategy(task_type, context)
         self.strategy_cache[cache_key] = strategy
         return strategy
 

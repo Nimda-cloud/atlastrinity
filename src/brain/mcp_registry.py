@@ -216,85 +216,17 @@ def get_server_for_tool(tool_name: str) -> str | None:
 def get_servers_for_task(task_type: str) -> list[str]:
     """
     Suggest servers based on task type.
-    Used for intelligent lazy initialization.
+    Now delegates to BehaviorEngine for config-driven classification.
     """
-    task_lower = task_type.lower()
-
-    # Direct mappings
-    if any(x in task_lower for x in ["gui", "click", "type", "window", "app", "screen"]):
-        return ["macos-use"]
-    if any(x in task_lower for x in ["terminal", "command", "shell", "bash"]):
-        return ["macos-use"]
-    if any(x in task_lower for x in ["file", "read", "write", "directory"]):
-        return ["filesystem", "macos-use"]
-    if any(
-        x in task_lower
-        for x in [
-            "search",
-            "web",
-            "internet",
-            "google",
-            "find",
-            "browser",
-            "navigate",
-            "automation",
-            "scrape",
-        ]
-    ):
-        return ["duckduckgo-search", "puppeteer", "macos-use"]
-    if any(x in task_lower for x in ["calendar", "event", "meeting"]):
-        return ["macos-use"]
-    if any(x in task_lower for x in ["reminder", "todo", "task"]):
-        return ["macos-use"]
-    if any(x in task_lower for x in ["note", "notes"]):
-        return ["macos-use"]  # Use Apple Notes via macos-use
-    if any(x in task_lower for x in ["mail", "email"]):
-        return ["macos-use"]
-    if any(x in task_lower for x in ["git", "commit", "push", "pull", "branch"]):
-        return ["macos-use"]  # Route git to macos-use (legacy override)
-    if any(x in task_lower for x in ["github", "repository", "issue", "pr"]):
-        return ["github", "macos-use"]  # Use github server or browser
-    if any(x in task_lower for x in ["voice", "audio", "transcribe", "stt", "speech"]):
-        return ["whisper-stt"]
-    if any(x in task_lower for x in ["debug", "error", "fix", "analyze"]):
-        return ["vibe", "sequential-thinking", "redis"]
-    if any(x in task_lower for x in ["code", "review", "refactor"]):
-        return ["vibe"]
-    if any(x in task_lower for x in ["think", "reason", "complex", "decision"]):
-        return ["sequential-thinking"]
-    if any(x in task_lower for x in ["time", "clock", "date"]):
-        return ["macos-use"]
-    if any(x in task_lower for x in ["fetch", "url", "http", "download"]):
-        return ["macos-use"]
-    if any(
-        x in task_lower
-        for x in ["memory", "recall", "remember", "fact", "knowledge", "observation"]
-    ):
-        return ["memory"]
-    if any(
-        x in task_lower for x in ["graph", "visualize", "diagram", "mermaid", "map", "relationship"]
-    ):
-        return ["graph", "memory"]
-    if any(x in task_lower for x in ["state", "session", "persistence", "restart", "recovery"]):
-        return ["redis"]
-    if any(
-        x in task_lower
-        for x in [
-            "lint",
-            "ruff",
-            "oxlint",
-            "check_code",
-            "integrity",
-            "health",
-            "inspect_server",
-            "validate_config",
-            "knip",
-            "dead_code",
-        ]
-    ):
-        return ["devtools"]
-
-    # Default: return core servers
+    from src.brain.behavior_engine import behavior_engine
+    
+    # Delegate to behavior engine (replaces 80+ lines of hardcoded conditionals)
+    servers = behavior_engine.classify_task(task_type)
+    
+    if servers:
+        return servers
+    
+    # Default fallback
     return ["macos-use", "filesystem"]
 
 

@@ -1,0 +1,642 @@
+# =============================================================================
+# AtlasTrinity Behavior Configuration
+# =============================================================================
+# Centralized config-driven decision system
+# Replaces hardcoded logic from: adaptive_behavior.py, atlas.py,
+# tool_dispatcher.py, mcp_registry.py, orchestrator.py
+#
+# Version: 1.0.0
+# Last Updated: 2026-01-21
+# =============================================================================
+
+# =============================================================================
+# ADAPTIVE BEHAVIOR PATTERNS
+# =============================================================================
+# Learned patterns for non-standard decision-making
+# Previously hardcoded in: adaptive_behavior.py (_register_default_patterns)
+# =============================================================================
+
+patterns:
+  adaptive_behavior:
+    web_task_fallback:
+      description: 'Fallback to macOS browser automation when web tasks fail repeatedly'
+      trigger:
+        conditions:
+          task_type: web
+          repeated_failures: true
+        min_confidence: 0.6
+      action:
+        server: macos-use
+        tool: macos-use_fetch_url
+        fallback_strategy: browser_automation
+      metadata:
+        initial_confidence: 0.6
+        success_threshold: 0.8
+        usage_priority: high
+
+    gui_vision_assist:
+      description: 'Use OCR and vision when accessibility tree fails for GUI tasks'
+      trigger:
+        conditions:
+          task_type: gui
+          accessibility_failed: true
+        min_confidence: 0.7
+      action:
+        requires_vision: true
+        use_ocr: true
+        server: macos-use
+        tool: macos-use_analyze_screen
+      metadata:
+        initial_confidence: 0.7
+        success_threshold: 0.8
+        usage_priority: medium
+
+    permission_escalation:
+      description: 'Retry with sudo when permission errors occur'
+      trigger:
+        conditions:
+          error_contains: 'permission denied'
+        min_confidence: 0.5
+      action:
+        retry_with_sudo: true
+        confirm_required: true
+        server: macos-use
+        tool: execute_command
+      metadata:
+        initial_confidence: 0.5
+        success_threshold: 0.7
+        usage_priority: medium
+
+# =============================================================================
+# INTENT DETECTION & CLASSIFICATION
+# =============================================================================
+# User request intent classification patterns
+# Previously hardcoded in: atlas.py (lines 263-315)
+# =============================================================================
+
+intent_detection:
+  # Simple conversational greetings
+  simple_chat:
+    keywords:
+      - привіт
+      - хай
+      - hello
+      - hi
+      - атлас
+      - atlas
+      - дякую
+      - окей
+      - ок
+      - 'як справи'
+      - 'як твої справи'
+    max_words: 6
+    intent: chat
+    priority: high
+    use_deep_persona: false
+
+  # Information queries requiring tool usage
+  info_query:
+    keywords:
+      - погода
+      - weather
+      - прогноз
+      - температура
+      - новини
+      - news
+      - ціна
+      - price
+      - курс
+      - 'який час'
+      - 'what time'
+      - скільки
+      - системн
+      - версія
+      - version
+      - файл
+      - file
+      - знайди
+      - find
+      - пошук
+      - search
+      - покажи
+      - шукай
+      - 'розкажи про'
+      - прочитай
+    intent: solo_task
+    require_tools: true
+    priority: medium
+    use_deep_persona: false
+
+  # Complex tasks requiring planning
+  complex_task:
+    indicators:
+      min_words: 7
+      contains_action_verbs:
+        - як
+        - чому
+        - виправ
+        - зроби
+        - поясни
+        - how
+        - why
+        - fix
+        - explain
+        - create
+        - створи
+    intent: task
+    require_planning: true
+    use_deep_persona: true
+    enable_sequential_thinking: true
+    priority: high
+
+  # Repeat/redo commands
+  repeat_intent:
+    keywords:
+      - повтор
+      - repeat
+      - redo
+      - 'останнє завдання'
+      - 'last task'
+      - 'з самого початку'
+    intent: task
+    resolve_from_memory: true
+    priority: high
+
+# =============================================================================
+# TOOL ROUTING CONFIGURATION
+# =============================================================================
+# Server and tool resolution logic
+# Previously hardcoded in: tool_dispatcher.py (lines 21-800)
+# =============================================================================
+
+tool_routing:
+  # Terminal/Command execution
+  terminal:
+    synonyms:
+      - terminal
+      - bash
+      - zsh
+      - sh
+      - python
+      - python3
+      - pip
+      - pip3
+      - cmd
+      - run
+      - execute
+      - execute_command
+      - terminal_execute
+      - execute_terminal
+      - terminal.execute
+      - osascript
+      - applescript
+      - curl
+      - wget
+      - jq
+      - grep
+      - git
+      - npm
+      - npx
+      - brew
+      - mkdir
+      - ls
+      - cat
+      - rm
+      - mv
+      - cp
+      - touch
+      - sudo
+    priority_server: macos-use
+    fallback_server: null
+    routing_rules:
+      - pattern: 'git.*'
+        server: macos-use
+        tool: execute_command
+      - pattern: 'npm.*'
+        server: macos-use
+        tool: execute_command
+      - pattern: 'curl.*'
+        server: macos-use
+        tool: macos-use_fetch_url
+
+  # Filesystem operations
+  filesystem:
+    synonyms:
+      - filesystem
+      - fs
+      - file
+      - files
+      - editor
+      - directory_tree
+      - list_directory
+      - read_file
+      - write_file
+      - tree
+    priority_server: filesystem
+    fallback_server: macos-use
+    routing_rules:
+      - pattern: 'read.*'
+        server: filesystem
+        tool: read_file
+      - pattern: 'write.*'
+        server: filesystem
+        tool: write_file
+
+  # Browser/Web automation
+  browser:
+    synonyms:
+      - browser
+      - puppeteer
+      - navigate
+      - google
+      - bing
+      - web
+      - web_search
+      - internet_search
+      - online_search
+    priority_server: puppeteer
+    fallback_server: macos-use
+    routing_rules:
+      - pattern: 'navigate.*'
+        server: puppeteer
+        tool: puppeteer_navigate
+      - pattern: 'search.*'
+        server: duckduckgo-search
+        tool: duckduckgo_search
+
+  # Search engines
+  search:
+    synonyms:
+      - duckduckgo
+      - ddg
+      - duckduckgo-search
+      - duckduckgo_search
+      - search_web
+      - web_search
+    priority_server: duckduckgo-search
+    fallback_server: puppeteer
+    special_routing:
+      business_registry:
+        keywords: [єдрпоу, company, registry, youcontrol, opendatabot, бізнес, підприємство]
+        server: duckduckgo-search
+        tool: business_registry_search
+      open_data:
+        keywords: [dataset, датасет, data.gov.ua, портал, 'відкриті дані']
+        server: duckduckgo-search
+        tool: open_data_search
+
+  # Code assistance (Vibe)
+  vibe:
+    synonyms:
+      - vibe
+      - vibe_prompt
+      - vibe_ask
+      - vibe_analyze_error
+      - vibe_smart_plan
+      - vibe_code_review
+      - vibe_implement_feature
+      - vibe_execute_subcommand
+      - vibe_list_sessions
+      - vibe_session_details
+      - vibe_which
+      - vibe_get_config
+      - vibe_configure_model
+      - vibe_set_mode
+      - vibe_configure_provider
+      - vibe_session_resume
+      - vibe_reload_config
+      - debug
+      - fix
+      - implement
+      - feature
+      - review
+      - plan
+      - ask
+      - question
+      - config
+      - model
+      - provider
+      - resume
+      - reload
+      - mode
+    priority_server: vibe
+    fallback_server: null
+
+  # Memory/Knowledge graph
+  memory:
+    synonyms:
+      - memory
+      - knowledge
+      - entity
+      - entities
+      - observation
+      - observations
+      - fact
+      - recall
+      - remember
+      - store_fact
+      - add_memory
+      - relationship
+      - relation
+    priority_server: memory
+    fallback_server: null
+    routing_rules:
+      - pattern: 'search.*'
+        server: memory
+        tool: search
+      - pattern: '.*entities.*'
+        server: memory
+        tool: create_entities
+      - pattern: '.*observations.*'
+        server: memory
+        tool: add_observations
+
+  # GitHub integration
+  github:
+    synonyms:
+      - github
+      - repo
+      - repository
+      - pull_request
+      - pr
+      - issue
+      - issues
+      - gh
+      - git_hub
+    priority_server: github
+    fallback_server: null
+    routing_rules:
+      - pattern: 'repo_.*'
+        server: github
+      - pattern: 'issue_.*'
+        server: github
+      - pattern: 'pr_.*'
+        server: github
+
+  # Development tools
+  devtools:
+    synonyms:
+      - devtools
+      - lint
+      - linter
+      - check
+      - inspect
+      - inspector
+      - validate
+      - health
+      - ruff
+      - oxlint
+      - knip
+      - pyrefly
+    priority_server: devtools
+    fallback_server: null
+    tool_mapping:
+      lint: devtools_lint_python
+      linter: devtools_lint_python
+      ruff: devtools_lint_python
+      oxlint: devtools_lint_js
+      js_lint: devtools_lint_js
+      inspect: devtools_launch_inspector
+      inspector: devtools_launch_inspector
+      health: devtools_check_mcp_health
+      check: devtools_check_mcp_health
+
+  # macOS-specific operations
+  macos_use:
+    priority_actions:
+      - bash
+      - zsh
+      - sh
+      - execute
+      - run
+      - cmd
+      - command
+      - git
+      - npm
+      - npx
+      - pip
+      - brew
+      - curl
+      - wget
+      - time
+      - clock
+      - date
+      - fetch
+      - url
+      - scrape
+      - volume
+      - brightness
+      - mute
+      - play
+      - pause
+      - calendar
+      - event
+      - reminder
+      - note
+      - mail
+      - email
+      - finder
+      - trash
+      - spotlight
+      - applescript
+      - osascript
+    action_mapping:
+      click: macos-use_click_and_traverse
+      type: macos-use_type_and_traverse
+      write: macos-use_type_and_traverse
+      press: macos-use_press_key_and_traverse
+      hotkey: macos-use_press_key_and_traverse
+      refresh: macos-use_refresh_traversal
+      screenshot: macos-use_take_screenshot
+      vision: macos-use_analyze_screen
+      ocr: macos-use_analyze_screen
+      open: macos-use_open_application_and_traverse
+      launch: macos-use_open_application_and_traverse
+      scroll: macos-use_scroll_and_traverse
+      fetch: macos-use_fetch_url
+      fetch_url: macos-use_fetch_url
+      time: macos-use_get_time
+      get_time: macos-use_get_time
+      notification: macos-use_send_notification
+      run_applescript: macos-use_run_applescript
+      applescript: macos-use_run_applescript
+      spotlight: macos-use_spotlight_search
+      spotlight_search: macos-use_spotlight_search
+      clipboard_set: macos-use_set_clipboard
+      set_clipboard: macos-use_set_clipboard
+      clipboard_get: macos-use_get_clipboard
+      get_clipboard: macos-use_get_clipboard
+      right_click: macos-use_right_click_and_traverse
+      double_click: macos-use_double_click_and_traverse
+      drag: macos-use_drag_and_drop_and_traverse
+      drop: macos-use_drag_and_drop_and_traverse
+      drag_and_drop: macos-use_drag_and_drop_and_traverse
+
+# =============================================================================
+# TASK CLASSIFICATION
+# =============================================================================
+# Task type detection and recommended server selection
+# Previously hardcoded in: mcp_registry.py (lines 216-298)
+# =============================================================================
+
+task_classification:
+  gui_tasks:
+    keywords: [gui, click, type, window, app, screen]
+    recommended_servers: [macos-use]
+    priority: tier1
+
+  terminal_tasks:
+    keywords: [terminal, command, shell, bash]
+    recommended_servers: [macos-use]
+    priority: tier1
+
+  file_tasks:
+    keywords: [file, read, write, directory]
+    recommended_servers: [filesystem, macos-use]
+    priority: tier1
+
+  web_tasks:
+    keywords: [search, web, internet, google, find, browser, navigate, automation, scrape]
+    recommended_servers: [duckduckgo-search, puppeteer, macos-use]
+    priority: tier2
+
+  calendar_tasks:
+    keywords: [calendar, event, meeting]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  reminder_tasks:
+    keywords: [reminder, todo, task]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  note_tasks:
+    keywords: [note, notes]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  email_tasks:
+    keywords: [mail, email]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  git_tasks:
+    keywords: [git, commit, push, pull, branch]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  github_tasks:
+    keywords: [github, repository, issue, pr]
+    recommended_servers: [github, macos-use]
+    priority: tier2
+
+  voice_tasks:
+    keywords: [voice, audio, transcribe, stt, speech]
+    recommended_servers: [whisper-stt]
+    priority: tier2
+
+  debug_tasks:
+    keywords: [debug, error, fix, analyze]
+    recommended_servers: [vibe, sequential-thinking, redis]
+    priority: tier2
+
+  code_tasks:
+    keywords: [code, review, refactor]
+    recommended_servers: [vibe]
+    priority: tier2
+
+  thinking_tasks:
+    keywords: [think, reason, complex, decision]
+    recommended_servers: [sequential-thinking]
+    priority: tier3
+
+  time_tasks:
+    keywords: [time, clock, date]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  fetch_tasks:
+    keywords: [fetch, url, http, download]
+    recommended_servers: [macos-use]
+    priority: tier2
+
+  memory_tasks:
+    keywords: [memory, recall, remember, fact, knowledge, observation]
+    recommended_servers: [memory]
+    priority: tier1
+
+  graph_tasks:
+    keywords: [graph, visualize, diagram, mermaid, map, relationship]
+    recommended_servers: [graph, memory]
+    priority: tier3
+
+  state_tasks:
+    keywords: [state, session, persistence, restart, recovery]
+    recommended_servers: [redis]
+    priority: tier3
+
+  lint_tasks:
+    keywords:
+      [
+        lint,
+        ruff,
+        oxlint,
+        check_code,
+        integrity,
+        health,
+        inspect_server,
+        validate_config,
+        knip,
+        dead_code,
+      ]
+    recommended_servers: [devtools]
+    priority: tier2
+
+# =============================================================================
+# STRATEGY SELECTION
+# =============================================================================
+# Dynamic strategy selection based on task type and context
+# Previously hardcoded in: adaptive_behavior.py (get_strategy_recommendation)
+# =============================================================================
+
+strategy_selection:
+  web_task:
+    has_browser: puppeteer-first
+    no_browser: macos-use-chrome
+    default: macos-use-chrome
+
+  file_task:
+    allowed_path: filesystem-direct
+    restricted_path: macos-use-finder
+    default: filesystem-direct
+
+  code_task:
+    error_present: vibe-aggressive
+    no_error: vibe-conservative
+    default: vibe-conservative
+
+  gui_task:
+    complex_ui: vision-assisted
+    simple_ui: accessibility-tree
+    default: accessibility-tree
+
+# =============================================================================
+# ENGINE CONFIGURATION
+# =============================================================================
+
+engine:
+  # Hot reload settings
+  hot_reload_enabled: true
+  config_watch_interval_seconds: 5
+
+  # Performance optimization
+  cache_enabled: true
+  cache_ttl_seconds: 1800 # 30 minutes
+
+  # Pattern matching
+  pattern_confidence_threshold: 0.6
+  max_pattern_evaluations_per_request: 10
+
+  # Logging
+  log_decisions: true
+  log_level: INFO
