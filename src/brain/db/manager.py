@@ -223,7 +223,7 @@ class DatabaseManager:
                         if fix:
                             if connection.dialect.name == "sqlite":
                                 print(
-                                    f"[DB] WARNING: Cannot add Foreign Key to '{table_name}' in SQLite via ALTER TABLE. Manual migration required if persistence is critical."
+                                    f"[DB] Info: Foreign Key missing on '{table_name}' referencing '{fk_data[1]}'. SQLite doesn't support adding FKs via ALTER TABLE. This is normal for initial setups."
                                 )
                                 continue
                             try:

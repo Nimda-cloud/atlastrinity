@@ -11,6 +11,20 @@ echo "   Це видалить ВСІ локальні налаштування!
 echo "=========================================="
 echo ""
 
+# Check for active virtual environment
+if [[ -n "$VIRTUAL_ENV" ]]; then
+    echo "⚠️  You are currently in an ACTIVATED virtual environment: $VIRTUAL_ENV"
+    echo "   Starting a fresh install from an active environment can cause issues."
+    echo "   Please run 'deactivate' first, then try again."
+    echo ""
+    read -p "❓ Do you want to continue anyway? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Aborted. Please deactivate and restart."
+        exit 1
+    fi
+fi
+
 # Confirm
 read -p "⚠️  This will DELETE ALL local configuration and environments. Continue? (y/N): " -n 1 -r
 echo

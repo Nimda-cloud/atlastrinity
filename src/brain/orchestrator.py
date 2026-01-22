@@ -85,6 +85,14 @@ class Trinity:
         self._resumption_pending = False
         self._user_node_created = False
         self.active_task = None  # Track current run task for cancellation
+        self.state = {
+            "messages": [],
+            "system_state": SystemState.IDLE.value,
+            "current_plan": None,
+            "step_results": [],
+            "error": None,
+            "logs": [],
+        }
 
     async def initialize(self):
         """Async initialization of system components via Config-Driven Workflow"""
@@ -99,7 +107,7 @@ class Trinity:
             )
 
         # Legacy fallback if workflow didn't fully initialize context (safety net)
-        if not hasattr(self, "state") or not self.state:
+        if not self.state:
             self.state = {
                 "messages": [],
                 "system_state": SystemState.IDLE.value,

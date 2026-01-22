@@ -24,6 +24,7 @@ python3 scripts/setup_dev.py
 ```
 
 **Що робить setup:**
+
 - ✅ Створює Python venv (.venv)
 - ✅ Встановлює Redis через Homebrew
 - ✅ **FORCED Build**: Завжди перекомпілює Swift MCP сервер (macos-use) для чистоти бінарника
@@ -45,6 +46,7 @@ nano ~/.config/atlastrinity/.env
 ```
 
 Додайте:
+
 ```env
 COPILOT_API_KEY=your_api_key_here
 GITHUB_TOKEN=your_github_token_here  # опціонально
@@ -57,6 +59,7 @@ npm run dev
 ```
 
 Це запустить:
+
 - **Brain** (Python FastAPI): http://127.0.0.1:8000
 - **Renderer** (Vite React): http://localhost:3000
 - **Electron** (Desktop App)
@@ -80,12 +83,14 @@ cat ~/.config/atlastrinity/mcp/config.json | jq '.mcpServers | keys'
 ## Доступні MCP Сервери
 
 ### Tier 1 (Критичні - Завжди Ввімкнені)
+
 - **macos-use** - Нативний контроль macOS (Swift, **39 інструментів**)
 - **filesystem** - Файлові операції (Node)
 - **sequential-thinking** - Динамічне планування (Node)
 - **system** - Керування станом Trinity та самовідновлення (Python)
 
 ### Tier 2 (Високий Пріоритет - Ввімкнені за замовчуванням)
+
 - **vibe** - AI Coding & Self-healing (Python, **18 інструментів**)
 - **memory** - Knowledge Graph & Long-term Memory (Python, SQLite + ChromaDB)
 - **graph** - Візуалізація графу знань (Python)
@@ -96,9 +101,11 @@ cat ~/.config/atlastrinity/mcp/config.json | jq '.mcpServers | keys'
 - **devtools** - Валідація коду та безпеки (Ruff, Oxlint, Knip, Pyrefly, MCP Inspector)
 
 ### Tier 3 (Додаткові)
+
 - **puppeteer** - Браузерна автоматизація (Node, Headless)
 
 ### Tier 4 (Спеціалізовані / Дебаг)
+
 - **chrome-devtools** - Детальне налагодження Chrome (Node)
 - **Debug Tool**: MCP Inspector (`npx @modelcontextprotocol/inspector`)
 
@@ -176,23 +183,27 @@ atlastrinity/
 ## Troubleshooting
 
 ### Redis не запускається
+
 ```bash
 brew services restart redis
 redis-cli ping  # має повернути PONG
 ```
 
 ### Помилка компіляції macos-use (Swift)
+
 ```bash
 cd vendor/mcp-server-macos-use
 swift build -c release
 ```
 
 ### Python залежності не встановлені
+
 ```bash
 .venv/bin/pip install -r requirements.txt
 ```
 
 ### Запуск тестів / Running the test suite 🔬
+
 - **Запускайте тести в активованому `.venv`** (щоб використовувати правильне середовище):
 
 ```bash
@@ -202,6 +213,8 @@ pytest
 ```
 
 - **Проблеми з імпортом (наприклад `ModuleNotFoundError: No module named 'sqlalchemy'`)** свідчать про відсутні залежності у середовищі — це проблема конфігурації середовища, **не пов'язана** з рефактором промптів. Щоб вирішити, встановіть відсутні пакети у `.venv`:
+  > [!NOTE]
+  > Під час виконання `npm run setup` або `npm run fresh-install` ви можете бачити помилки імпорту (червоні підкреслення) у вашому IDE. Це нормально і зникне автоматично після завершення інсталяції всіх пакетів.
 
 ```bash
 .venv/bin/pip install sqlalchemy
@@ -214,6 +227,7 @@ pytest
 - Рекомендація: додати окремий `requirements-dev.txt` для тестів та CI, щоб уникнути таких помилок локально.
 
 ### MCP сервери не з'єднуються
+
 ```bash
 # Перевірка конфігурації
 cat ~/.config/atlastrinity/mcp/config.json | jq '.mcpServers | keys'
