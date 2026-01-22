@@ -216,6 +216,8 @@ class ConfigValidator:
         if isinstance(data, str):
             matches = self.env_var_pattern.findall(data)
             for var_name in matches:
+                if var_name in ["PROJECT_ROOT", "CONFIG_ROOT", "HOME"]:
+                    continue
                 if not os.environ.get(var_name):
                     issues.append(
                         ValidationIssue(
