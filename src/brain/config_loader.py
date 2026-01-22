@@ -201,6 +201,10 @@ class SystemConfig:
             else:
                 return default
 
+        # Custom logic for sequential thinking model inheritance
+        if key_path == "mcp.sequential_thinking.model" and not value:
+            return self.get("models.reasoning") or self.get("models.default")
+
         return self._substitute_placeholders(value)
 
     def get_api_key(self, key_name: str) -> str:
@@ -219,8 +223,32 @@ class SystemConfig:
         return self.get(f"api.{key_name}", "")
 
     def get_agent_config(self, agent_name: str) -> dict[str, Any]:
-        """Returns specific agent configuration."""
-        return self.get(f"agents.{agent_name}", {})
+        """Returns specific agent configuration with global model inheritance."""
+        agent_config = self.get(f"agents.{agent_name}", {}).copy()
+
+        # 1. Main model inheritance
+        if not agent_config.get("model"):
+            agent_config["model"] = self.get("models.default")
+
+        # 2. Tetyana specialized models
+        if agent_name == "tetyana":
+            if not agent_config.get("reasoning_model"):
+                agent_config["reasoning_model"] = self.get("models.reasoning")
+            if not agent_config.get("vision_model"):
+                agent_config["vision_model"] = self.get("models.vision")
+            if not agent_config.get("reflexion_model"):
+                agent_config["reflexion_model"] = self.get("models.default")
+
+        # 3. Grisha specialized models
+        elif agent_name == "grisha":
+            if not agent_config.get("vision_model"):
+                agent_config["vision_model"] = self.get("models.vision")
+            if not agent_config.get("strategy_model"):
+                agent_config["strategy_model"] = self.get("models.reasoning") or self.get(
+                    "models.default"
+                )
+
+        return agent_config
 
     def get_security_config(self) -> dict[str, Any]:
         """Returns security configuration."""
