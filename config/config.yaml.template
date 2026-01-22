@@ -149,7 +149,7 @@ mcp:
     enabled: true
 
   context7:
-    enabled: false # External documentation server
+    enabled: true # External documentation server
 
 # =============================================================================
 # ORCHESTRATOR CONFIGURATION
@@ -208,7 +208,7 @@ database:
 # =============================================================================
 
 state:
-  redis_url: ${REDIS_URL}  # usually redis://localhost:6379/0
+  redis_url: redis://localhost:6379/0
 
 # =============================================================================
 # LOGGING CONFIGURATION
@@ -318,7 +318,7 @@ database_management:
       
   # Redis (state management) configuration
   redis:
-    url: ${REDIS_URL}                # redis://localhost:6379/0
+    url: redis://localhost:6379/0
     
     # Connection settings
     connection:
