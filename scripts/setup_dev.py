@@ -528,7 +528,7 @@ def sync_configs():
             shutil.copy2(env_src, env_dst)
             print_success(f"Copied .env -> {env_dst}")
 
-        # Copy behavior_config.toml template (Overwrite)
+        # Copy behavior_config.yaml template (Overwrite)
         behavior_yaml_src = PROJECT_ROOT / "config" / "behavior_config.yaml.template"
         behavior_yaml_dst = CONFIG_ROOT / "behavior_config.yaml"
         if behavior_yaml_src.exists():
