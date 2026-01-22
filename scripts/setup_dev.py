@@ -424,13 +424,11 @@ def install_deps():
     print_step("Встановлення залежностей...")
 
     # 1. Python
-    venv_python = (
-        str(VENV_PATH / "/bin/python")
-        if (VENV_PATH / "bin" / "python").exists()
-        else str(VENV_PATH / "bin" / "python")
-    )
-    # Actually VENV_PATH / "bin" / "python" is more standard, but I'll use what was there or improved.
-    venv_python = str(VENV_PATH / "bin" / "python")
+    if platform.system() == "Windows":
+        venv_python = str(VENV_PATH / "Scripts" / "python.exe")
+    else:
+        # Standard unix/mac venv path
+        venv_python = str(VENV_PATH / "bin" / "python")
 
     # Update PIP first
     subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip"], capture_output=True)
@@ -439,13 +437,13 @@ def install_deps():
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
-        subprocess.run([venv_python, "-m", "pip", "install", "-r", str(req_file)], check=True)
+        subprocess.run([venv_python, "-m", "pip", "install", "--prefer-binary", "-r", str(req_file)], check=True)
 
     # Install dev requirements if they exist (it's a dev setup)
     req_dev_file = PROJECT_ROOT / "requirements-dev.txt"
     if req_dev_file.exists():
         print_info("PIP install -r requirements-dev.txt...")
-        subprocess.run([venv_python, "-m", "pip", "install", "-r", str(req_dev_file)], check=True)
+        subprocess.run([venv_python, "-m", "pip", "install", "--prefer-binary", "-r", str(req_dev_file)], check=True)
 
     print_success("Python залежності встановлено")
 
@@ -890,18 +888,28 @@ def main():
     print("  2. Запустіть систему: npm run dev")
     print("")
 
-    if enabled_servers:
-        print_info(f"Активні MCP сервери ({len(enabled_servers)}):")
-        for srv in sorted(enabled_servers):
-            print(f"  - {srv}")
-    else:
-        print_info("Доступні MCP сервери:")
-        print("  - memory: Граф знань & Long-term Memory (Python)")
-        print("  - macos-use: Нативний контроль macOS + Термінал (Swift)")
-        print("  - vibe: Coding Agent & Self-Healing (Python)")
-        print("  - filesystem: Файлові операції (Node)")
-        print("  - sequential-thinking: Глибоке мислення (Node)")
-        print("  - github: Офіційний GitHub MCP (Node)")
+    print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else 13}):")
+    mcp_info = [
+        ("memory", "Граф знань & Long-term Memory (Python)"),
+        ("macos-use", "Нативний контроль macOS + Термінал (Swift)"),
+        ("vibe", "Coding Agent & Self-Healing (Python)"),
+        ("filesystem", "Файлові операції (Node)"),
+        ("sequential-thinking", "Глибоке мислення (Node)"),
+        ("chrome-devtools", "Автоматизація Chrome (Node)"),
+        ("puppeteer", "Веб-скрейпінг та пошук (Node)"),
+        ("github", "Офіційний GitHub MCP (Node)"),
+        ("duckduckgo-search", "Швидкий пошук (Python)"),
+        ("whisper-stt", "Локальне розпізнавання мови (Python)"),
+        ("graph", "Візуалізація графу знань (Python)"),
+        ("context7", "Документація бібліотек та API (Node)"),
+        ("devtools", "Лінтер та аналіз коду (Python)"),
+        ("redis", "Оглядовість кешу та сесій (Python)"),
+        ("self-healing", "Автоматичне відновлення стану (System-wide)"),
+    ]
+
+    for srv_id, desc in mcp_info:
+        status = " (Активен)" if srv_id in enabled_servers else ""
+        print(f"  - {srv_id}: {desc}{status}")
 
     print("  - MCP Inspector: Дебаг MCP серверів (npx @modelcontextprotocol/inspector)")
     print("=" * 60 + "\n")

@@ -37,14 +37,13 @@ def get_action(name: str) -> Callable | None:
 
 @register_action("internal.log")
 async def log_action(context: dict, msg: str, level: str = "info"):
-    """Log a message directly to the system logger."""
-    log_method = getattr(logger, level.lower(), logger.info)
-    log_method(f"[WORKFLOW] {msg}")
-
-    # Also log to Orchestrator state if available in context
+    """Log a message via orchestrator if available, otherwise fallback to system logger."""
     orchestrator = context.get("orchestrator")
     if orchestrator:
         await orchestrator._log(msg, source="workflow", type=level)
+    else:
+        log_method = getattr(logger, level.lower(), logger.info)
+        log_method(f"[WORKFLOW] {msg}")
 
 
 @register_action("internal.check_services")

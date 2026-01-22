@@ -160,28 +160,28 @@ async def main():
                 "description": "Read .zshrc file",
             },
         ],
-        "terminal": [
+        "macos-use": [
             {
                 "tool": "execute_command",
-                "args": {"command": "echo 'Test OK'"},
+                "args": {"command": "echo 'Terminal via macos-use OK'"},
                 "description": "Execute echo command",
             },
             {
-                "tool": "execute_command",
-                "args": {"command": "pwd"},
-                "description": "Check current directory",
+                "tool": "macos-use_get_time",
+                "args": {},
+                "description": "Get system time",
             },
             {
-                "tool": "execute_command",
-                "args": {"command": "ls -la | head -5"},
-                "description": "List files (truncated)",
-            },
+                "tool": "macos-use_fetch_url",
+                "args": {"url": "https://example.com"},
+                "description": "Fetch URL as markdown",
+            }
         ],
         "github": [
             {
                 "tool": "get_file_contents",
                 "args": {
-                    "owner": "olegkizima01",
+                    "owner": "olegkizyma",
                     "repo": "atlastrinity",
                     "path": "README.md",
                 },
