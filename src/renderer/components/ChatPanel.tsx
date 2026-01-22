@@ -55,7 +55,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
       if (e.deltaY < 0) {
         setUserScrolledUp(true);
       }
-      
+
       // Resumes auto-scroll if user scrolls down and IS near bottom
       if (e.deltaY > 0 && isNearBottom()) {
         setUserScrolledUp(false);
@@ -115,10 +115,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
     <div className="flex-1 flex flex-col p-4 font-mono h-full overflow-hidden relative min-h-0">
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
       {/* Main Chat Stream */}
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto pr-1 scrollbar-thin min-h-0"
-      >
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pr-1 scrollbar-thin min-h-0">
         {filteredMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center opacity-10 italic text-[9px] tracking-[0.5em] uppercase">
             Waiting for neural link...
