@@ -142,6 +142,21 @@
         "grisha"
       ]
     },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "c7-mcp-server"
+      ],
+      "description": "Context7 Documentation Server - Provides context-aware documentation for libraries and frameworks.",
+      "disabled": false,
+      "tier": 3,
+      "agents": [
+        "atlas",
+        "tetyana",
+        "grisha"
+      ]
+    },
     "whisper-stt": {
       "command": "python3",
       "connect_timeout": 60,
