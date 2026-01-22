@@ -284,11 +284,7 @@
       "Search for code examples and patterns",
       "Get version-specific API references"
     ],
-    "key_tools": [
-      "c7_search",
-      "c7_get_context",
-      "c7_list_libraries"
-    ],
+    "key_tools": ["c7_search", "c7_get_context", "c7_list_libraries"],
     "when_to_use": "When you need to look up documentation, API references, or examples for external libraries."
   }
 }
