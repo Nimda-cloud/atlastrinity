@@ -276,7 +276,7 @@ class BehaviorEngine:
             # Check if tool matches this category
             if tool_lower in synonyms or any(tool_lower.startswith(syn) for syn in synonyms):
                 priority_server = config.get("priority_server")
-                fallback_server = config.get("fallback_server")
+                # fallback_server = config.get("fallback_server")  # Reserved for future use
 
                 # Check for special routing rules
                 if "special_routing" in config:
