@@ -1,11 +1,20 @@
 import html
 import json
+import logging
 import os
 import re
 from typing import Any
 
 import requests
 from mcp.server import FastMCP
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] [SEARCH-SERVER] [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 server = FastMCP("search-server")
 
@@ -28,7 +37,7 @@ def _load_search_rules() -> dict[str, Any]:
             config = json.loads(match.group(0))
             return config.get("search_rules", {})
     except Exception as e:
-        print(f"[SEARCH-SERVER] Error loading protocol: {e}")
+        logger.error(f"Error loading protocol: {e}")
     return {}
 
 
@@ -80,14 +89,14 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
         )
         resp.raise_for_status()
         if not resp.text.strip():
-            print("[SEARCH-SERVER] Empty response from DDG")
+            logger.warning("Empty response from DDG")
             return []
 
         if "Checking your browser" in resp.text or "Cloudflare" in resp.text:
-            print("[SEARCH-SERVER] Blocked by CAPTCHA/Cloudflare")
+            logger.warning("Blocked by CAPTCHA/Cloudflare")
             return []
     except Exception as e:
-        print(f"[SEARCH-SERVER] Request error: {e}")
+        logger.error(f"Request error: {e}")
         return []
 
     # Minimal regex to find ALL links and their text
@@ -149,7 +158,10 @@ def duckduckgo_search(
         timeout_s: Request timeout in seconds (default: 10.0)
     """
     if not query or not query.strip():
+        logger.warning("Search request received with empty query")
         return {"error": "query is required"}
+    
+    logger.info(f"Executing search: query='{query.strip()}', max_results={max_results}, timeout={timeout_s}s")
 
     try:
         max_results_i = int(max_results)
@@ -163,11 +175,13 @@ def duckduckgo_search(
 
         results = _search_ddg(query=query.strip(), max_results=max_results_i, timeout_s=timeout_f)
         if not results:
+            logger.warning(f"Zero results found for query: '{query.strip()}'")
             return {
                 "success": False,
                 "error": "Zero results found. DDG might be blocking or layout changed.",
                 "query": query.strip(),
             }
+        logger.info(f"Search completed successfully for query: '{query.strip()}' - found {len(results)} results")
         return {"success": True, "query": query.strip(), "results": results}
     except Exception as e:
         return {"error": str(e)}
@@ -183,11 +197,18 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
         company_name: The name or EDRPOU code of the company to search for.
     """
     if not company_name or not company_name.strip():
+        logger.warning("Business registry search request received with empty company_name")
         return {"error": "company_name is required"}
-
-    return _execute_protocol_search(
+    
+    logger.info(f"Executing business registry search: company_name='{company_name.strip()}'")
+    result = _execute_protocol_search(
         "business", company_name, "DuckDuckGo (Optimized Registry Search)"
     )
+    if result.get("success"):
+        logger.info(f"Business registry search completed: found {len(result.get('results', []))} results")
+    else:
+        logger.warning(f"Business registry search failed: {result.get('error', 'unknown error')}")
+    return result
 
 
 @server.tool()
@@ -200,10 +221,19 @@ def open_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
         query: The search query for datasets.
     """
     if not query or not query.strip():
+        logger.warning("Open data search request received with empty query")
         return {"error": "query is required"}
-
-    return _execute_protocol_search("open_data", query, "DuckDuckGo (Open Data Portal Search)")
+    
+    logger.info(f"Executing open data search: query='{query.strip()}'")
+    result = _execute_protocol_search("open_data", query, "DuckDuckGo (Open Data Portal Search)")
+    if result.get("success"):
+        logger.info(f"Open data search completed: found {len(result.get('results', []))} results")
+    else:
+        logger.warning(f"Open data search failed: {result.get('error', 'unknown error')}")
+    return result
 
 
 if __name__ == "__main__":
+    logger.info("Starting DuckDuckGo Search Server")
+    logger.info(f"Loading search protocol from: {PROTOCOL_PATH}")
     server.run()

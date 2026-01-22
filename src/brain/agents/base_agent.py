@@ -76,9 +76,8 @@ class BaseAgent:
         agent_name = self.__class__.__name__.upper()
         logger.info(f"[{agent_name}] 🤔 Thinking deeply about: {task[:60]}...")
 
-        # 1. Get model from config
-        seq_config = config.get("mcp.sequential_thinking", {})
-        model_name = seq_config.get("model")
+        # 1. Get model from config (with fallback to models.reasoning or models.default)
+        model_name = config.get("mcp.sequential_thinking.model")
 
         if not model_name:
             raise ValueError("[BASE_AGENT] Sequential thinking model not specified in config.yaml")
