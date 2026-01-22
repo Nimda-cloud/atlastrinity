@@ -406,7 +406,9 @@ def verify_mcp_package_versions():
     # Prefer global config path
     mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
     if not mcp_config_path.exists():
-        mcp_config_path = PROJECT_ROOT / "src" / "mcp_server" / "config.json.template"
+        mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
+        if not mcp_config_path.exists():
+            mcp_config_path = PROJECT_ROOT / "config" / "mcp_servers.json.template"
 
     issues = scan_mcp_config_for_package_issues(mcp_config_path)
     # Append system limits checks
@@ -487,7 +489,7 @@ def sync_configs():
         config_yaml_src = PROJECT_ROOT / "config" / "config.yaml.template"
         config_yaml_dst = CONFIG_ROOT / "config.yaml"
 
-        mcp_json_src = PROJECT_ROOT / "src" / "mcp_server" / "config.json.template"
+        mcp_json_src = PROJECT_ROOT / "config" / "mcp_servers.json.template"
         mcp_json_dst = CONFIG_ROOT / "mcp" / "config.json"
 
         # Copy config.yaml template (Overwrite)
@@ -517,7 +519,7 @@ def sync_configs():
             shutil.copy2(mcp_json_src, mcp_json_dst)
             print_success("FORCED SYNC: Overwrote mcp/config.json from project template")
         else:
-            print_warning("mcp/config.json.template missing, skipped overwrite")
+            print_warning("mcp_servers.json.template missing, skipped overwrite")
 
         # Copy .env if not exists
         env_src = PROJECT_ROOT / ".env"
@@ -527,15 +529,13 @@ def sync_configs():
             print_success(f"Copied .env -> {env_dst}")
 
         # Copy vibe_config.toml template (Overwrite)
-        vibe_toml_src = (
-            PROJECT_ROOT / "src" / "mcp_server" / "templates" / "vibe_config.toml.template"
-        )
+        vibe_toml_src = PROJECT_ROOT / "config" / "vibe_config.toml.template"
         vibe_toml_dst = CONFIG_ROOT / "vibe_config.toml"
         if vibe_toml_src.exists():
             shutil.copy2(vibe_toml_src, vibe_toml_dst)
             print_success("FORCED SYNC: Overwrote vibe_config.toml from project template")
         else:
-            print_warning("vibe_config.toml.template missing, skipped overwrite")
+            print_warning("vibe_config.toml.template missing in config/, skipped overwrite")
 
         print_info("All configurations are in ~/.config/atlastrinity/")
         print_info("Edit configs there directly (no sync needed)")
