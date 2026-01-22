@@ -57,7 +57,7 @@ class ConsolidationModule:
                 atlas = Atlas(model_name=llm)
             else:
                 # Use consolidation model from config (fallback to default)
-                from .config import config
+                from .config_loader import config
 
                 consolidation_model = config.get("models", {}).get("consolidation") or config.get(
                     "models", {}

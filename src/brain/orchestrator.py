@@ -229,7 +229,7 @@ class Trinity:
             n_type = node_cfg.get("type")
             if isinstance(name, str) and n_type in node_functions:
                 action = node_functions[n_type]
-                workflow.add_node(name, action)
+                workflow.add_node(name, action)  # type: ignore
 
         # 2. Define edges
         entry_point = flow_config.get("entry_point")

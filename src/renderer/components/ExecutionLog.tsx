@@ -58,7 +58,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
       if (e.deltaY < 0) {
         setUserScrolledUp(true);
       }
-      
+
       // Resumes auto-scroll if user scrolls down and IS near bottom
       if (e.deltaY > 0 && isNearBottom()) {
         setUserScrolledUp(false);
