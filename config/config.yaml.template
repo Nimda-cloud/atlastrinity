@@ -18,7 +18,7 @@ models:
   vibe_default: devstral-2           # Recommended: devstral-2 for code tasks
   
   # Fallbacks (used when primary unavailable)
-  fallback: gpt-4o-mini
+  fallback: gpt-4.1
 
 # ============================================================================
 # BEHAVIOR ENGINE
