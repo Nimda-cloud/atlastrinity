@@ -863,3 +863,320 @@ model_overrides:
     simple_chat:
       preferred_model: fallback      # Use faster model for chat
       skip_planning: true
+
+# =============================================================================
+# WORKFLOW STAGES CONFIGURATION
+# =============================================================================
+# Define all execution stages and their behavior parameters
+
+workflow_stages:
+  # ---------------------------------------------------------------------------
+  # CHAT STAGE
+  # ---------------------------------------------------------------------------
+  # Simple conversational responses without task execution
+  
+  chat:
+    enabled: true
+    description: "Simple conversational chat with Atlas"
+    
+    # Behavior settings
+    use_deep_persona: false          # Use philosophical/deep personality
+    require_tools: false             # No MCP tools needed
+    skip_planning: true              # No Tetyana/Grisha involved
+    skip_memory_save: false          # Still save conversation context
+    
+    # Triggers (when to use this stage)
+    triggers:
+      max_words: 6                   # Short requests (< 6 words)
+      keywords_present: true         # Matches greeting keywords
+      no_action_verbs: true          # No task verbs detected
+      
+    # Model selection
+    preferred_model: fallback        # Use faster model for chat
+    
+  # ---------------------------------------------------------------------------
+  # DEEP CHAT STAGE
+  # ---------------------------------------------------------------------------
+  # Philosophical/identity conversations with full personality
+  
+  deep_chat:
+    enabled: true
+    description: "Deep personality-driven conversations"
+    
+    # Behavior settings
+    use_deep_persona: true           # CRITICAL: Full philosophical mode
+    require_tools: false
+    skip_planning: true
+    include_system_history: true     # Include our shared history
+    
+    # Triggers
+    triggers:
+      identity_topics: true          # Questions about Atlas identity
+      philosophical_keywords: 
+        - "хто ти"
+        - "душа"
+        - "призначення"
+        - "філософія"
+        - "who are you"
+        - "your purpose"
+        - "your soul"
+      emotional_topics: true         # Heart-to-heart discussions
+      
+    # Model selection
+    preferred_model: default         # Use full model for depth
+    
+  # ---------------------------------------------------------------------------
+  # SOLO TASK STAGE
+  # ---------------------------------------------------------------------------
+  # Atlas handles independently with tools (no Tetyana/Grisha)
+  
+  solo_task:
+    enabled: true
+    description: "Information tasks Atlas can handle solo"
+    
+    # Behavior settings
+    use_deep_persona: false
+    require_tools: true              # Atlas needs tools (search, filesystem)
+    skip_planning: true              # No multi-agent planning
+    max_execution_time: 30           # Seconds
+    
+    # Triggers
+    triggers:
+      info_query_detected: true      # From intent_detection.info_query
+      has_required_tools: true       # Atlas has necessary tools
+      no_system_changes: true        # No file creation/system control
+      
+    # Allowed tools for solo tasks
+    allowed_tools:
+      - search
+      - duckduckgo_search
+      - read_file
+      - list_files
+      - memory_search
+      - get_time
+      - fetch_url
+      
+    # Model selection
+    preferred_model: default
+    
+  # ---------------------------------------------------------------------------
+  # RECALL STAGE
+  # ---------------------------------------------------------------------------
+  # Memory retrieval from past conversations
+  
+  recall:
+    enabled: true
+    description: "Retrieve information from memory/history"
+    
+    # Behavior settings
+    use_deep_persona: false
+    require_tools: true              # Need memory tools
+    skip_planning: true
+    
+    # Memory search settings
+    memory_search:
+      max_results: 5
+      min_relevance_score: 0.6
+      include_entities: true
+      include_conversations: true
+      include_strategies: true
+      
+    # Model selection
+    preferred_model: default
+    
+  # ---------------------------------------------------------------------------
+  # STATUS STAGE
+  # ---------------------------------------------------------------------------
+  # System status and health checks
+  
+  status:
+    enabled: true
+    description: "Report system status and metrics"
+    
+    # Behavior settings
+    use_deep_persona: false
+    require_tools: true              # Health check tools
+    skip_planning: true
+    
+    # Status components
+    report_components:
+      - mcp_servers_status
+      - active_sessions
+      - memory_stats
+      - recent_tasks
+      - system_metrics
+      
+    # Model selection
+    preferred_model: fallback        # Fast model sufficient
+    
+  # ---------------------------------------------------------------------------
+  # TASK STAGE
+  # ---------------------------------------------------------------------------
+  # Full multi-agent execution (Atlas → Tetyana → Grisha)
+  
+  task:
+    enabled: true
+    description: "Complex tasks requiring planning and execution"
+    
+    # Behavior settings
+    use_deep_persona: true           # Full context for planning
+    require_planning: true           # Atlas creates plan
+    require_execution: true          # Tetyana executes
+    require_verification: false      # Grisha audit (configurable)
+    
+    # Planning phase
+    planning:
+      min_steps: 1                   # Minimum plan complexity
+      max_steps: 20                  # Maximum steps allowed
+      require_approval: false        # User approval needed
+      quality_threshold: 0.6
+      
+    # Execution phase  
+    execution:
+      allow_recursion: true
+      max_recursion_depth: 5         # From advanced.recursion
+      adaptive_timeout: true
+      base_timeout: 120
+      
+    # Verification phase
+    verification:
+      enabled: false                 # Set to true to enable Grisha
+      on_failure_only: true
+      quality_threshold: 0.7
+      
+    # Model selection (cascading from task type)
+    model_selection:
+      planning: default
+      execution: default
+      verification: default
+      
+  # ---------------------------------------------------------------------------
+  # DEVELOPMENT STAGE
+  # ---------------------------------------------------------------------------
+  # Software development tasks with Vibe escalation
+  
+  development:
+    enabled: true
+    description: "Code development with Vibe assistance"
+    
+    # Inherits from task stage
+    extends: task
+    
+    # Override settings
+    execution:
+      prefer_vibe_for_code: true     # Escalate code tasks to Vibe
+      vibe_escalation_threshold: 2   # After 2 Tetyana failures
+      
+    verification:
+      enabled: true                  # Always verify code quality
+      require_lint_pass: true
+      require_tests_pass: false
+      
+    # Model selection
+    model_selection:
+      planning: default
+      execution: code_analysis
+      verification: default
+      code_review: vibe_default       # Use Vibe for code review
+
+# =============================================================================
+# PATH CONFIGURATION
+# =============================================================================
+# Centralized path management for all system components
+
+paths:
+  # Base directories
+  config_root: ${CONFIG_ROOT}        # Usually ~/.config/atlastrinity
+  project_root: ${PROJECT_ROOT}      # Project repository root
+  home: ${HOME}                      # User home directory
+  
+  # Application directories
+  logs: ${CONFIG_ROOT}/logs
+  memory: ${CONFIG_ROOT}/memory
+  screenshots: ${CONFIG_ROOT}/screenshots
+  workspace: ${CONFIG_ROOT}/workspace
+  vibe_workspace: ${CONFIG_ROOT}/vibe_workspace
+  
+  # Model directories
+  models:
+    tts: ${CONFIG_ROOT}/models/tts
+    stt: ${CONFIG_ROOT}/models/faster-whisper
+    
+  # MCP directories
+  mcp:
+    config: ${CONFIG_ROOT}/mcp
+    servers: ${PROJECT_ROOT}/vendor
+    
+  # Database paths
+  database:
+    sqlite: ${CONFIG_ROOT}/atlastrinity.db
+    chroma: ${CONFIG_ROOT}/memory/chroma
+    
+  # Temporary and cache
+  temp: /tmp/atlastrinity
+  cache: ${CONFIG_ROOT}/cache
+  
+  # Backup directories
+  backups:
+    databases: ${PROJECT_ROOT}/backups/databases
+    configs: ${PROJECT_ROOT}/backups/configs
+
+# =============================================================================
+# BEHAVIORAL PERSONA CONFIGURATION
+# =============================================================================
+# Define personality traits and response patterns
+
+behavioral_persona:
+  # Atlas personality modes
+  atlas:
+    # Standard mode
+    standard:
+      tone: professional_friendly
+      verbosity: concise
+      language: ukrainian
+      formality: informal
+      
+    # Deep persona mode (philosophical)
+    deep:
+      tone: philosophical_warm
+      verbosity: expressive
+      include_metaphors: true
+      include_history: true
+      emotional_intelligence: high
+      
+  # Tetyana personality  
+  tetyana:
+    tone: efficient_focused
+    verbosity: minimal
+    report_style: technical
+    
+  # Grisha personality
+  grisha:
+    tone: analytical_precise
+    verbosity: detailed
+    report_style: audit_report
+
+# =============================================================================
+# RESPONSE TEMPLATES
+# =============================================================================
+# Standardized response patterns for consistency
+
+response_templates:
+  # Success messages
+  success:
+    task_completed: "Завдання успішно виконано."
+    plan_created: "План створено ({steps} кроків)."
+    verification_passed: "Верифікація пройдена успішно."
+    
+  # Error messages
+  errors:
+    no_steps: "Не вдалося створити план виконання."
+    planning_failed: "Помилка при плануванні завдання."
+    execution_failed: "Помилка при виконанні кроку {step}."
+    
+  # Status messages
+  status:
+    analyzing: "Аналізую ваш запит..."
+    planning: "Створюю план дій..."
+    executing: "Виконую крок {current}/{total}..."
+    verifying: "Перевіряю результат..."
