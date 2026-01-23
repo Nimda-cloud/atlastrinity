@@ -12,7 +12,7 @@ def test_run_no_issues(monkeypatch, tmp_path):
     # Monkeypatch the scanner to return no issues
     monkeypatch.setattr("src.brain.mcp_preflight.scan_mcp_config_for_package_issues", lambda x: [])
     # Also bypass system limits detection for this unit test
-    monkeypatch.setattr("src.brain.mcp_preflight.check_system_limits", lambda: [])
+    monkeypatch.setattr("src.brain.mcp_preflight.check_system_limits", list)
     rc = cli.run(str(p))
     assert rc == 0
 
@@ -55,17 +55,17 @@ def test_run_positive_both(monkeypatch, tmp_path):
                 ],
             },
             "dev-bun": {"command": "bunx", "args": ["chrome-devtools-mcp@latest"]},
-        }
+        },
     }
     p = tmp_path / "mcp.json"
     p.write_text(json.dumps(cfg))
 
     # Simulate no issues returned by scanner
     monkeypatch.setattr(
-        "scripts.check_mcp_preflight.scan_mcp_config_for_package_issues", lambda x: []
+        "scripts.check_mcp_preflight.scan_mcp_config_for_package_issues", lambda x: [],
     )
     # Also bypass system limits detection for this unit test
-    monkeypatch.setattr("src.brain.mcp_preflight.check_system_limits", lambda: [])
+    monkeypatch.setattr("src.brain.mcp_preflight.check_system_limits", list)
     rc = cli.run(str(p))
     assert rc == 0
 
@@ -82,7 +82,7 @@ def test_run_with_system_limits(monkeypatch, tmp_path):
     )
     # And scanner returns no package issues
     monkeypatch.setattr(
-        "scripts.check_mcp_preflight.scan_mcp_config_for_package_issues", lambda x: []
+        "scripts.check_mcp_preflight.scan_mcp_config_for_package_issues", lambda x: [],
     )
     rc = cli.run(str(p))
     # By default system-limit issues are warnings (do not fail preflight)

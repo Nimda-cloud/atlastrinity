@@ -43,17 +43,16 @@ except ImportError:  # pragma: no cover
     StdioServerParameters = None  # type: ignore
     stdio_client = None  # type: ignore
     LoggingMessageNotification = None  # type: ignore
-from sqlalchemy import text  # noqa: E402
+from sqlalchemy import text
 
-from .config import MCP_DIR  # noqa: E402
-from .config_loader import config  # noqa: E402
-from .db.manager import db_manager  # noqa: E402
-from .logger import logger  # noqa: E402
+from .config import MCP_DIR
+from .config_loader import config
+from .db.manager import db_manager
+from .logger import logger
 
 
 class MCPManager:
-    """
-    Manages persistent connections to MCP servers.
+    """Manages persistent connections to MCP servers.
 
     Note:
       - Previously we used a single shared AsyncExitStack which caused AnyIO
@@ -62,6 +61,7 @@ class MCPManager:
       - To avoid that, each server runs in its own connection task which enters
         and exits the stdio client within the same task. This ensures anyio
         cancel scopes/task-groups are exited in the same task they were entered.
+
     """
 
     def __init__(self):
@@ -111,9 +111,9 @@ class MCPManager:
         processed = {
             "mcpServers": {
                 "_defaults": {
-                    "connect_timeout": float(config.get("mcp_enhanced.connection_timeout", 30))
-                }
-            }
+                    "connect_timeout": float(config.get("mcp_enhanced.connection_timeout", 30)),
+                },
+            },
         }
 
         import re
@@ -208,7 +208,7 @@ class MCPManager:
             # Substitute environment variables in command
             if "command" in server_config:
                 server_config["command"] = _substitute_placeholders(
-                    server_config["command"], missing_env
+                    server_config["command"], missing_env,
                 )
 
             if missing_env:
@@ -236,9 +236,9 @@ class MCPManager:
                 return
 
             logger.info(
-                f"[MCP] Cleaning up orphan processes for {server_name} (search: {search_str})"
+                f"[MCP] Cleaning up orphan processes for {server_name} (search: {search_str})",
             )
-            subprocess.run(["pkill", "-9", "-f", search_str], capture_output=True)
+            subprocess.run(["pkill", "-9", "-f", search_str], check=False, capture_output=True)
             # Give OS a moment to release ports/files
             import time
 
@@ -268,11 +268,11 @@ class MCPManager:
                 return None
 
     async def _connect_server(
-        self, server_name: str, config: dict[str, Any]
+        self, server_name: str, config: dict[str, Any],
     ) -> ClientSession | None:
         """Establish a new connection to an MCP server"""
         default_timeout = float(
-            self.config.get("mcpServers", {}).get("_defaults", {}).get("connect_timeout", 30.0)
+            self.config.get("mcpServers", {}).get("_defaults", {}).get("connect_timeout", 30.0),
         )
         connect_timeout = float(config.get("connect_timeout", default_timeout))
 
@@ -280,7 +280,7 @@ class MCPManager:
         if missing_env:
             logger.error(
                 f"Missing required environment variables for MCP server '{server_name}': {missing_env}. "
-                "Set them in ~/.config/atlastrinity/.env or your shell environment."
+                "Set them in ~/.config/atlastrinity/.env or your shell environment.",
             )
             return None
         command = config.get("command")
@@ -323,7 +323,7 @@ class MCPManager:
             # in the registry before spawning the external command.
             if len(args) > 0 and not check_package_arg_for_tool(args[0], tool_cmd=command):
                 logger.error(
-                    f"Requested package '{args[0]}' for command '{command}' does not exist or version not available in registry. Aborting start for this MCP."
+                    f"Requested package '{args[0]}' for command '{command}' does not exist or version not available in registry. Aborting start for this MCP.",
                 )
                 return None
         elif command == "bunx":
@@ -342,7 +342,7 @@ class MCPManager:
                         command = fb
                         break
 
-        server_params = cast(Any, StdioServerParameters)(command=command, args=args, env=env)
+        server_params = cast("Any", StdioServerParameters)(command=command, args=args, env=env)
 
         # If a connection task already exists, wait for its session future
         if server_name in self._connection_tasks:
@@ -371,7 +371,7 @@ class MCPManager:
 
                 logger.info(f"Connecting to MCP server: {server_name}...")
                 logger.debug(f"[MCP] Command: {command}, Args: {args}")
-                async with cast(Any, stdio_client)(server_params) as (read, write):
+                async with cast("Any", stdio_client)(server_params) as (read, write):
                     # Define logging callback for this server
                     async def handle_log(params: Any):
                         # Extract level and data
@@ -401,7 +401,7 @@ class MCPManager:
                                             await cb(msg, server_name, level_str)
                                         except Exception as e:
                                             logger.error(
-                                                f"[MCP] Log callback internal error ({server_name}): {e}"
+                                                f"[MCP] Log callback internal error ({server_name}): {e}",
                                             )
 
                                     asyncio.create_task(safe_cb_wrapper())
@@ -409,11 +409,11 @@ class MCPManager:
                                     cb(msg, server_name, level_str)
                             except Exception as e:
                                 logger.error(
-                                    f"[MCP] Log callback dispatch error ({server_name}): {e}"
+                                    f"[MCP] Log callback dispatch error ({server_name}): {e}",
                                 )
 
-                    async with cast(Any, ClientSession)(
-                        read, write, logging_callback=handle_log
+                    async with cast("Any", ClientSession)(
+                        read, write, logging_callback=handle_log,
                     ) as session:
                         await session.initialize()
 
@@ -460,7 +460,7 @@ class MCPManager:
             raise
 
     async def call_tool(
-        self, server_name: str, tool_name: str, arguments: dict[str, Any] | None = None
+        self, server_name: str, tool_name: str, arguments: dict[str, Any] | None = None,
     ) -> Any:
         """Call a tool on a specific server"""
         session = await self.get_session(server_name)
@@ -474,7 +474,7 @@ class MCPManager:
             if hasattr(result, "content") and isinstance(result.content, list):
                 for item in result.content:
                     if hasattr(item, "text"):
-                        item_raw = cast(Any, item)
+                        item_raw = cast("Any", item)
                         if (
                             isinstance(item_raw.text, str)
                             and len(item_raw.text) > 100 * 1024 * 1024
@@ -539,17 +539,17 @@ class MCPManager:
         explicit_server: str | None = None,
         allow_fallback: bool = True,
     ) -> Any:
-        """
-        Unified entry point for tool calls with resolution, normalization, and intelligent fallback.
+        """Unified entry point for tool calls with resolution, normalization, and intelligent fallback.
 
         Args:
             tool_name: Tool name (can include server as dot notation)
             arguments: Tool arguments
             explicit_server: Explicitly specified server
             allow_fallback: If True, attempt macOS-use fallback on failure
+
         """
         result = await self.dispatcher.resolve_and_dispatch(
-            tool_name, arguments or {}, explicit_server
+            tool_name, arguments or {}, explicit_server,
         )
 
         # Intelligent fallback: If failed and allow_fallback, try macOS-use equivalent
@@ -561,7 +561,7 @@ class MCPManager:
                 if fallback_tool:
                     logger.warning(
                         f"[MCP] Primary tool failed: {tool_name}. "
-                        f"Attempting fallback to macos-use.{fallback_tool}"
+                        f"Attempting fallback to macos-use.{fallback_tool}",
                     )
                     try:
                         result = await self.call_tool("macos-use", fallback_tool, arguments or {})
@@ -592,7 +592,7 @@ class MCPManager:
             # FIX: Handle ClosedResourceError by reconnecting
             if "ClosedResourceError" in str(e) or "Connection closed" in str(e):
                 logger.warning(
-                    f"[MCP] Connection lost during list_tools for {server_name}, reconnecting..."
+                    f"[MCP] Connection lost during list_tools for {server_name}, reconnecting...",
                 )
                 async with self._lock:
                     if server_name in self.sessions:
@@ -614,8 +614,7 @@ class MCPManager:
             return []
 
     async def health_check(self, server_name: str) -> bool:
-        """
-        Check if a server is healthy.
+        """Check if a server is healthy.
         Returns True if server responds, False otherwise.
         """
         session = self.sessions.get(server_name)
@@ -644,8 +643,7 @@ class MCPManager:
             return False
 
     async def restart_server(self, server_name: str) -> bool:
-        """
-        Force restart a server connection with retry/backoff and concurrency limits.
+        """Force restart a server connection with retry/backoff and concurrency limits.
         """
         logger.warning(f"[MCP] Restarting server: {server_name}")
 
@@ -684,7 +682,7 @@ class MCPManager:
                     session = await self._connect_server(server_name, server_config)
                     if session:
                         logger.info(
-                            f"[MCP] Server {server_name} restarted successfully (attempt {attempt})"
+                            f"[MCP] Server {server_name} restarted successfully (attempt {attempt})",
                         )
                         return True
                 except Exception as e:
@@ -696,7 +694,7 @@ class MCPManager:
                         if isinstance(e, OSError) and getattr(e, "errno", None) == _errno.EAGAIN:
                             wait = self._restart_backoff_base * (2 ** (attempt - 1))
                             logger.warning(
-                                f"[MCP] Spawn EAGAIN for {server_name}, backing off {wait:.1f}s (attempt {attempt})"
+                                f"[MCP] Spawn EAGAIN for {server_name}, backing off {wait:.1f}s (attempt {attempt})",
                             )
                             await asyncio.sleep(wait)
                             continue
@@ -706,23 +704,23 @@ class MCPManager:
                     # For other exceptions, small backoff then retry
                     wait = min(10.0, self._restart_backoff_base * (2 ** (attempt - 1)))
                     logger.warning(
-                        f"[MCP] Restart attempt {attempt} for {server_name} failed: {type(e).__name__}: {e}. Retrying in {wait:.1f}s"
+                        f"[MCP] Restart attempt {attempt} for {server_name} failed: {type(e).__name__}: {e}. Retrying in {wait:.1f}s",
                     )
                     await asyncio.sleep(wait)
                     continue
 
             logger.error(
-                f"[MCP] Failed to restart {server_name} after {self._max_restart_attempts} attempts: {last_exc}"
+                f"[MCP] Failed to restart {server_name} after {self._max_restart_attempts} attempts: {last_exc}",
             )
             return False
 
     async def health_check_loop(self, interval: int = 60):
-        """
-        Background task that monitors server health.
+        """Background task that monitors server health.
         Automatically restarts failed servers.
 
         Args:
             interval: Seconds between health checks
+
         """
         logger.info(f"[MCP] Starting health check loop (interval={interval}s)")
 
@@ -791,8 +789,7 @@ class MCPManager:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def get_server_catalog_without_connection(self) -> str:
-        """
-        Returns full server catalog from registry WITHOUT connecting to any servers.
+        """Returns full server catalog from registry WITHOUT connecting to any servers.
         LLM uses this to decide which servers to initialize.
 
         This is FAST: no network calls, pure static data from mcp_registry.
@@ -802,14 +799,14 @@ class MCPManager:
         return get_server_catalog_for_prompt(include_key_tools=True)
 
     async def ensure_servers_connected(self, server_names: list[str]) -> dict[str, bool]:
-        """
-        Lazily initialize only the specified servers.
+        """Lazily initialize only the specified servers.
 
         Args:
             server_names: List of server names to connect
 
         Returns:
             Dict mapping server_name -> success (True/False)
+
         """
         results = {}
         for name in server_names:
@@ -835,8 +832,7 @@ class MCPManager:
         return list(self.config.get("mcpServers", {}).keys())
 
     async def shutdown(self):
-        """
-        Coordinated shutdown of all MCP server connections.
+        """Coordinated shutdown of all MCP server connections.
         Ensures all tasks are cancelled and orphan processes are killed.
         """
         logger.info("[MCP] Initiating shutdown of all server connections...")
@@ -868,7 +864,7 @@ class MCPManager:
                 # Targeted kills for known servers
                 sigs = ["mcp-server", "macos-use", "vibe_server", "vibe", "npx", "bunx"]
                 for sig in sigs:
-                    subprocess.run(["pkill", "-9", "-f", sig], capture_output=True)
+                    subprocess.run(["pkill", "-9", "-f", sig], check=False, capture_output=True)
             except Exception:
                 pass
 
@@ -884,8 +880,7 @@ class MCPManager:
         return list(self.sessions.keys())
 
     async def get_mcp_catalog(self, connected_only: bool = False) -> str:
-        """
-        Generates a concise catalog of all configured MCP servers and their roles.
+        """Generates a concise catalog of all configured MCP servers and their roles.
 
         Args:
             connected_only: If True, only shows already connected servers (fast).
@@ -893,6 +888,7 @@ class MCPManager:
 
         Returns:
             Formatted catalog string for LLM consumption.
+
         """
         # OPTIMIZATION: Use static registry for fast catalog generation
         if connected_only:
@@ -933,7 +929,7 @@ class MCPManager:
         try:
             # 2-second timeout for catalog generation is sufficient; if it's slower, we skip tool details
             all_tools_results = await asyncio.wait_for(
-                cast(Any, asyncio.gather(*tasks, return_exceptions=True)), timeout=2.0
+                cast("Any", asyncio.gather(*tasks, return_exceptions=True)), timeout=2.0,
             )
         except Exception:
             all_tools_results = [[] for _ in tasks]  # Fallback to empty lists on overall timeout
@@ -969,8 +965,7 @@ class MCPManager:
         return catalog
 
     async def get_tools_summary(self) -> str:
-        """
-        Generates a detailed summary of all available tools across all servers,
+        """Generates a detailed summary of all available tools across all servers,
         including their input schemas (arguments) for precise LLM mapping.
         """
         import json

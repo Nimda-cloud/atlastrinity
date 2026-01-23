@@ -55,7 +55,6 @@ class MetricsCollector:
 
     def record(self, name, value, tags=None):
         """Record a custom metric (stub for now to prevent crashes)."""
-        pass
 
 
 metrics_collector = MetricsCollector()

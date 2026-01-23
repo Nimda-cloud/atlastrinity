@@ -30,7 +30,7 @@ if len(row_idx) > 20:
             max(0, y1 - margin),
             min(1024, x2 + margin + 1),
             min(1024, y2 + margin + 1),
-        )
+        ),
     )
 
     w, h = cropped.size

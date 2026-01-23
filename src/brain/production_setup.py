@@ -1,5 +1,4 @@
-"""
-Production First-Run Setup
+"""Production First-Run Setup
 Копіює та СИНХРОНІЗУЄ конфігураційні файли з .app bundle в ~/.config/atlastrinity/
 Викликається автоматично при старті production .app
 
@@ -45,8 +44,7 @@ def get_resources_path():
 
 
 def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
-    """
-    Smart merge для YAML конфігу.
+    """Smart merge для YAML конфігу.
     Додає нові ключі з bundle, зберігає значення користувача.
     """
     if not YAML_AVAILABLE:
@@ -88,7 +86,7 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
         with open(dst_path, "w", encoding="utf-8") as f:
             f.write("# AtlasTrinity Configuration (auto-synced)\n")
             f.write(
-                f"# Last sync: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                f"# Last sync: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n",
             )
             yaml.dump(merged, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
@@ -101,8 +99,7 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
 
 
 def sync_json_config(src_path: Path, dst_path: Path) -> bool:
-    """
-    Копіює JSON конфіг (MCP servers - системний, не user config).
+    """Копіює JSON конфіг (MCP servers - системний, не user config).
     """
     try:
         dst_path.parent.mkdir(parents=True, exist_ok=True)
@@ -136,8 +133,7 @@ def sync_json_config(src_path: Path, dst_path: Path) -> bool:
 
 
 def copy_config_if_needed():
-    """
-    Синхронізує конфігураційні файли з Resources/ в ~/.config/atlastrinity/
+    """Синхронізує конфігураційні файли з Resources/ в ~/.config/atlastrinity/
     - config.yaml: SMART MERGE (нові ключі + user values)
     - mcp/config.json: REPLACE (системний конфіг)
     - .env: SKIP if exists (API ключі користувача)
@@ -189,8 +185,7 @@ def copy_config_if_needed():
 
 
 def ensure_tts_models():
-    """
-    Перевіряє наявність TTS моделей в ~/.config/atlastrinity/models/tts/
+    """Перевіряє наявність TTS моделей в ~/.config/atlastrinity/models/tts/
     Якщо немає - виводить інструкції (ukrainian-tts завантажить автоматично)
     """
     required_files = ["model.pth", "config.yaml", "feats_stats.npz", "spk_xvector.ark"]
@@ -205,8 +200,7 @@ def ensure_tts_models():
 
 
 def ensure_stt_models():
-    """
-    Перевіряє наявність Faster-Whisper моделей в ~/.config/atlastrinity/models/faster-whisper/
+    """Перевіряє наявність Faster-Whisper моделей в ~/.config/atlastrinity/models/faster-whisper/
     """
     if not WHISPER_DIR.exists() or not any(WHISPER_DIR.iterdir()):
         print("[Production Setup] ℹ️  Whisper models will be downloaded automatically on first use")

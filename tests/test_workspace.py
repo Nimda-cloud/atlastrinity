@@ -37,7 +37,7 @@ async def verify_workspace():
         # Note: on some systems umask might affect this, but we explicitly set os.chmod(..., 0o777)
         # 0o777 is 511 decimal.
         print(
-            f"⚠️ Permissions are {oct(mode)}. This might be due to umask or OS restrictions, but check if writable."
+            f"⚠️ Permissions are {oct(mode)}. This might be due to umask or OS restrictions, but check if writable.",
         )
 
     print("\n--- 2. Testing MCP Write Access ---")
@@ -53,7 +53,7 @@ async def verify_workspace():
 
         content = "Hello from Global Workspace!"
         result = await mcp_manager.call_tool(
-            "filesystem", "write_file", {"path": test_file, "content": content}
+            "filesystem", "write_file", {"path": test_file, "content": content},
         )
         print(f"Write Result: {result}")
 

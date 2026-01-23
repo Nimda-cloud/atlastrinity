@@ -11,8 +11,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..", "..")
 sys.path.insert(0, os.path.abspath(root))
 
-from src.brain.config_loader import config  # noqa: E402
-from src.brain.logger import logger  # noqa: E402
+from src.brain.config_loader import config
+from src.brain.logger import logger
 
 server = FastMCP("redis")
 
@@ -29,7 +29,7 @@ def get_redis_client():
         )
         try:
             _redis_client = redis.Redis.from_url(
-                redis_url, decode_responses=True, socket_connect_timeout=2
+                redis_url, decode_responses=True, socket_connect_timeout=2,
             )
             # Ping is async in redis.asyncio
             # We skip ping in initialization to avoid blocking if we don't have an event loop yet
@@ -43,10 +43,11 @@ def get_redis_client():
 
 @server.tool()
 async def redis_get(key: str) -> dict[str, Any]:
-    """
-    Get the value of a key from Redis.
+    """Get the value of a key from Redis.
+
     Args:
         key: The Redis key
+
     """
     try:
         r = get_redis_client()
@@ -68,12 +69,13 @@ async def redis_get(key: str) -> dict[str, Any]:
 
 @server.tool()
 async def redis_set(key: str, value: Any, ex_seconds: int | None = None) -> dict[str, Any]:
-    """
-    Set the value of a key in Redis.
+    """Set the value of a key in Redis.
+
     Args:
         key: The Redis key
         value: The value to set (will be JSON serialized if not a string)
         ex_seconds: Optional expiry time in seconds
+
     """
     try:
         r = get_redis_client()
@@ -88,10 +90,11 @@ async def redis_set(key: str, value: Any, ex_seconds: int | None = None) -> dict
 
 @server.tool()
 async def redis_keys(pattern: str = "*") -> dict[str, Any]:
-    """
-    List keys matching a pattern.
+    """List keys matching a pattern.
+
     Args:
         pattern: Redis glob-style pattern (default: "*")
+
     """
     try:
         r = get_redis_client()
@@ -103,10 +106,11 @@ async def redis_keys(pattern: str = "*") -> dict[str, Any]:
 
 @server.tool()
 async def redis_delete(key: str) -> dict[str, Any]:
-    """
-    Delete a key from Redis.
+    """Delete a key from Redis.
+
     Args:
         key: The Redis key
+
     """
     try:
         r = get_redis_client()
@@ -118,8 +122,7 @@ async def redis_delete(key: str) -> dict[str, Any]:
 
 @server.tool()
 async def redis_info() -> dict[str, Any]:
-    """
-    Get Redis server information and statistics.
+    """Get Redis server information and statistics.
     """
     try:
         r = get_redis_client()
@@ -139,10 +142,11 @@ async def redis_info() -> dict[str, Any]:
 
 @server.tool()
 async def redis_ttl(key: str) -> dict[str, Any]:
-    """
-    Get the time-to-live (TTL) for a key in seconds.
+    """Get the time-to-live (TTL) for a key in seconds.
+
     Args:
         key: The Redis key
+
     """
     try:
         r = get_redis_client()
@@ -155,14 +159,15 @@ async def redis_ttl(key: str) -> dict[str, Any]:
 
 @server.tool()
 async def redis_hgetall(key: str) -> dict[str, Any]:
-    """
-    Get all fields and values in a hash.
+    """Get all fields and values in a hash.
+
     Args:
         key: The Redis key (must be a hash)
+
     """
     try:
         r = get_redis_client()
-        val = await cast(Any, r.hgetall(key))
+        val = await cast("Any", r.hgetall(key))
         return {"success": True, "hash": val}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -170,15 +175,16 @@ async def redis_hgetall(key: str) -> dict[str, Any]:
 
 @server.tool()
 async def redis_hset(key: str, mapping: dict[str, Any]) -> dict[str, Any]:
-    """
-    Set multiple hash fields to multiple values.
+    """Set multiple hash fields to multiple values.
+
     Args:
         key: The Redis key
         mapping: Dictionary of fields and values
+
     """
     try:
         r = get_redis_client()
-        await cast(Any, r.hset(key, mapping=mapping))
+        await cast("Any", r.hset(key, mapping=mapping))
         return {"success": True, "key": key}
     except Exception as e:
         return {"success": False, "error": str(e)}

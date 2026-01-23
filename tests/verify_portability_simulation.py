@@ -72,7 +72,7 @@ async def test_restoration_logic():
 
     # B. Check if new tables were added (Migration Success)
     res = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='knowledge_promotions'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='knowledge_promotions'",
     ).fetchone()
     if res:
         print("SUCCESS: New table 'knowledge_promotions' added successfully!")

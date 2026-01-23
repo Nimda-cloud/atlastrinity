@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Services Manager
+"""AtlasTrinity Services Manager
 Handles system-level dependencies like Redis and Docker:
 - Check if installed
 - Install or Update if missing
@@ -44,7 +43,7 @@ def is_docker_running() -> bool:
     """Check if Docker daemon is active"""
     # docker info is a reliable way to check if daemon is responsive
     try:
-        result = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(["docker", "info"], check=False, capture_output=True, text=True, timeout=5)
         return result.returncode == 0
     except Exception:
         return False
@@ -53,7 +52,7 @@ def is_docker_running() -> bool:
 def run_command(cmd: list, timeout: int = 300) -> bool:
     """Run a system command and return success"""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=timeout)
         return result.returncode == 0
     except Exception as e:
         logger.error(f"[Services] Command failed {' '.join(cmd)}: {e}")
@@ -61,8 +60,7 @@ def run_command(cmd: list, timeout: int = 300) -> bool:
 
 
 def ensure_redis(force_check: bool = False):
-    """
-    Ensure Redis is installed, updated, and running.
+    """Ensure Redis is installed, updated, and running.
     If it's the first run (flag file missing), we attempt install/upgrade.
     """
     flag_file = CONFIG_ROOT / ".redis_ready"
@@ -112,8 +110,7 @@ def ensure_redis(force_check: bool = False):
 
 
 def ensure_docker(force_check: bool = False):
-    """
-    Ensure Docker Desktop is installed and running.
+    """Ensure Docker Desktop is installed and running.
     On Mac, start means launching the app.
     """
     flag_file = CONFIG_ROOT / ".docker_ready"
@@ -143,7 +140,7 @@ def ensure_docker(force_check: bool = False):
     elif first_run:
         logger.info("[Services] Checking for Docker updates...")
         # Try to upgrade, ignore errors if it fails due to being already up to date
-        subprocess.run(["brew", "upgrade", "--cask", "docker"], capture_output=True)
+        subprocess.run(["brew", "upgrade", "--cask", "docker"], check=False, capture_output=True)
 
     if not is_docker_running():
         logger.info("[Services] Launching Docker Desktop app...")
@@ -172,8 +169,7 @@ def ensure_docker(force_check: bool = False):
 
 
 def ensure_postgres(force_check: bool = False) -> bool:
-    """
-    Ensure PostgreSQL is installed and running.
+    """Ensure PostgreSQL is installed and running.
     """
     flag_file = CONFIG_ROOT / ".postgres_ready"
     first_run = not flag_file.exists() or force_check
@@ -213,7 +209,7 @@ def ensure_postgres(force_check: bool = False) -> bool:
     # 2. Try to start via Homebrew
     if is_brew_available():
         # Check if installed
-        res = subprocess.run(["brew", "list", "--formula", "postgresql@17"], capture_output=True)
+        res = subprocess.run(["brew", "list", "--formula", "postgresql@17"], check=False, capture_output=True)
         if res.returncode != 0:
             logger.info("[Services] PostgreSQL@17 not installed. Installing...")
             if not run_command(["brew", "install", "postgresql@17"]):
@@ -231,7 +227,7 @@ def ensure_postgres(force_check: bool = False) -> bool:
             try:
                 # Check if DB exists by trying to connect (using psql list) or just try create
                 # Simplest is just try createdb, ignore if exists
-                subprocess.run(["createdb", "atlastrinity_db"], capture_output=True)
+                subprocess.run(["createdb", "atlastrinity_db"], check=False, capture_output=True)
                 logger.info("[Services] Database 'atlastrinity_db' ensured.")
             except Exception as e:
                 logger.warning(f"[Services] Failed to create DB: {e}")
@@ -245,8 +241,7 @@ def ensure_postgres(force_check: bool = False) -> bool:
 
 
 def ensure_database(force_check: bool = False) -> bool:
-    """
-    Ensure the configured structured database is available. Supports SQLite (default) and PostgreSQL.
+    """Ensure the configured structured database is available. Supports SQLite (default) and PostgreSQL.
     For SQLite the DB is file-based and considered available if the config root is writable.
     """
     # Lazy import to avoid circulars
@@ -270,8 +265,7 @@ def ensure_database(force_check: bool = False) -> bool:
 
 
 def ensure_chrome(force_check: bool = False) -> bool:
-    """
-    Ensure Google Chrome is installed (required for Puppeteer execution).
+    """Ensure Google Chrome is installed (required for Puppeteer execution).
     """
     # Simply check for standard paths
     paths = [
@@ -296,8 +290,7 @@ def ensure_chrome(force_check: bool = False) -> bool:
 
 
 def ensure_vibe(force_check: bool = False) -> bool:
-    """
-    Ensure Mistral Vibe CLI is installed.
+    """Ensure Mistral Vibe CLI is installed.
     """
     flag_file = CONFIG_ROOT / ".vibe_ready"
     first_run = not flag_file.exists() or force_check
@@ -317,7 +310,7 @@ def ensure_vibe(force_check: bool = False) -> bool:
         # Using shell=True safely here as the command is hardcoded and trusted
         result = subprocess.run(
             "curl -fsSL https://get.vibe.sh | sh",
-            shell=True,
+            check=False, shell=True,
             capture_output=True,
             text=True,
             timeout=300,
@@ -336,8 +329,7 @@ def ensure_vibe(force_check: bool = False) -> bool:
 
 
 async def ensure_all_services(force_check: bool = False):
-    """
-    Run check for all required system services asynchronously.
+    """Run check for all required system services asynchronously.
     Updates ServiceStatus as it progresses.
     """
     import asyncio
@@ -377,7 +369,7 @@ async def ensure_all_services(force_check: bool = False):
         else:
             ServiceStatus.status_message = "Some services failed to start"
             logger.warning(
-                f"[Services] Readiness: Redis={redis_ok}, Docker={docker_ok}, DB={db_ok}"
+                f"[Services] Readiness: Redis={redis_ok}, Docker={docker_ok}, DB={db_ok}",
             )
 
     except Exception as e:

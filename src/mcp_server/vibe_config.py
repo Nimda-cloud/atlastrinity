@@ -1,5 +1,4 @@
-"""
-Vibe Configuration System
+"""Vibe Configuration System
 
 Pydantic models for type-safe configuration of Mistral Vibe CLI integration.
 Supports providers, models, agents, tool permissions, and MCP integration.
@@ -98,6 +97,7 @@ class ProviderConfig(BaseModel):
         api_key_env_var = "OPENROUTER_API_KEY"
         api_style = "openai"
         backend = "generic"
+
     """
 
     name: str = Field(..., description="Provider identifier for referencing")
@@ -126,6 +126,7 @@ class ModelConfig(BaseModel):
         temperature = 0.2
         input_price = 0.0
         output_price = 0.0
+
     """
 
     name: str = Field(..., description="Model identifier in provider's API")
@@ -146,6 +147,7 @@ class McpServerConfig(BaseModel):
         transport = "stdio"
         command = "uvx"
         args = ["mcp-server-fetch"]
+
     """
 
     name: str = Field(..., description="Short name for the server")
@@ -157,7 +159,7 @@ class McpServerConfig(BaseModel):
     api_key_env: str | None = Field(None, description="Env var for API key")
     api_key_header: str | None = Field(None, description="Header name for API key")
     api_key_format: str | None = Field(
-        None, description="Format for API key (e.g., 'Bearer {token}')"
+        None, description="Format for API key (e.g., 'Bearer {token}')",
     )
 
 
@@ -173,6 +175,7 @@ class AgentProfileConfig(BaseModel):
 
         [tools.bash]
         permission = "always"
+
     """
 
     name: str = Field(..., description="Agent profile name")
@@ -213,14 +216,14 @@ class VibeConfig(BaseModel):
 
     # Core settings
     active_model: str = Field(
-        "", description="Default model alias (Must be set in vibe_config.toml)"
+        "", description="Default model alias (Must be set in vibe_config.toml)",
     )
     system_prompt_id: str = Field("default", description="System prompt ID")
     default_mode: AgentMode = Field(AgentMode.AUTO_APPROVE, description="Default operational mode")
 
     # Tool patterns (glob/regex)
     enabled_tools: list[str] = Field(
-        default_factory=list, description="Tools to enable (empty=all)"
+        default_factory=list, description="Tools to enable (empty=all)",
     )
     disabled_tools: list[str] = Field(default_factory=list, description="Tools to disable")
 
@@ -371,6 +374,7 @@ class VibeConfig(BaseModel):
 
         Returns:
             Loaded VibeConfig instance
+
         """
         search_paths = []
 
@@ -448,6 +452,7 @@ class VibeConfig(BaseModel):
 
         Returns:
             List of CLI arguments
+
         """
         args = ["-p", prompt, "--output", output_format]
 
@@ -490,6 +495,7 @@ class VibeConfig(BaseModel):
 
         Returns:
             Dictionary of environment variables to set
+
         """
         env = {
             "TERM": "dumb",
@@ -523,6 +529,7 @@ def load_agent_profile(
 
     Returns:
         AgentProfileConfig if found, None otherwise
+
     """
     search_dirs = []
 

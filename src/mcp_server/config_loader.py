@@ -1,5 +1,4 @@
-"""
-MCP Config Loader
+"""MCP Config Loader
 Loads MCP server configurations from config.yaml
 """
 

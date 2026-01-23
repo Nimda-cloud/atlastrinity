@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Consolidation Module
+"""AtlasTrinity Consolidation Module
 
 Sleep & Consolidation - Nightly learning process that:
 1. Reads audit logs
@@ -17,8 +16,7 @@ from .memory import long_term_memory
 
 
 class ConsolidationModule:
-    """
-    Handles nightly learning and memory consolidation.
+    """Handles nightly learning and memory consolidation.
 
     Based on TDD spec:
     - Trigger: Scheduled (03:00 AM) or idle > 2 hours
@@ -31,8 +29,7 @@ class ConsolidationModule:
         self.log_path = os.path.join(os.path.expanduser("~/.config/atlastrinity/logs"), "brain.log")
 
     async def run_consolidation(self, llm=None) -> dict[str, Any]:
-        """
-        Main consolidation process using DB data and LLM.
+        """Main consolidation process using DB data and LLM.
         """
         from .db.manager import db_manager
 
@@ -60,8 +57,8 @@ class ConsolidationModule:
                 from .config_loader import config
 
                 consolidation_model = config.get("models", {}).get("consolidation") or config.get(
-                    "models", {}
-                ).get("default", "gpt-4.1")
+                    "models", {},
+                ).get("default", "gpt-4o")
                 atlas = Atlas(model_name=consolidation_model)
                 llm = atlas.llm
 
@@ -92,7 +89,7 @@ class ConsolidationModule:
             }
 
             logger.info(
-                f"[CONSOLIDATION] Complete: {lessons_added} new lessons derived from failures."
+                f"[CONSOLIDATION] Complete: {lessons_added} new lessons derived from failures.",
             )
             return stats
 
@@ -135,12 +132,12 @@ class ConsolidationModule:
                             }
                             for s in steps
                         ],
-                    }
+                    },
                 )
         return results
 
     async def _distill_lesson_via_llm(
-        self, llm, task_data: dict[str, Any]
+        self, llm, task_data: dict[str, Any],
     ) -> dict[str, str] | None:
         """Uses LLM to turn a failure into a generalized rule/lesson."""
         import json
@@ -148,7 +145,7 @@ class ConsolidationModule:
         from langchain_core.messages import HumanMessage, SystemMessage
 
         "\n".join(
-            [f"- {s['action']}: {s['status']} (Error: {s['error']})" for s in task_data["steps"]]
+            [f"- {s['action']}: {s['status']} (Error: {s['error']})" for s in task_data["steps"]],
         )
 
         prompt = """Analyze this failed task and extract a general 'Lesson' to prevent this in the future.
@@ -170,7 +167,7 @@ class ConsolidationModule:
                 [
                     SystemMessage(content="You are a Memory Consolidation Expert."),
                     HumanMessage(content=prompt),
-                ]
+                ],
             )
             content = response.content if hasattr(response, "content") else str(response)
             # Basic JSON extraction

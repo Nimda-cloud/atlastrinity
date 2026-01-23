@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Comprehensive Trinity Core Tests
+"""Comprehensive Trinity Core Tests
 Tests Atlas, Orchestrator, and core Trinity functionality
 """
 

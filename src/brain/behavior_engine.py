@@ -1,5 +1,4 @@
-"""
-Behavior Engine - Config-Driven Decision System
+"""Behavior Engine - Config-Driven Decision System
 
 Centralizes all behavioral logic through YAML configuration.
 Replaces hardcoded conditionals with dynamic pattern matching.
@@ -43,8 +42,7 @@ class RuleEvaluator(Protocol):
 
 
 class BehaviorEngine:
-    """
-    Config-driven behavior interpreter.
+    """Config-driven behavior interpreter.
 
     Features:
     - Pattern matching from YAML
@@ -71,11 +69,11 @@ class BehaviorEngine:
     """
 
     def __init__(self, config_path: Path | None = None):
-        """
-        Initialize behavior engine with config file.
+        """Initialize behavior engine with config file.
 
         Args:
             config_path: Path to behavior_config.yaml (auto-detected if None)
+
         """
         if config_path is None:
             # Try multiple locations for dev and prod
@@ -107,14 +105,14 @@ class BehaviorEngine:
         try:
             if not self.config_path.exists():
                 logger.warning(
-                    f"[BEHAVIOR ENGINE] Config not found: {self.config_path}. Using empty config."
+                    f"[BEHAVIOR ENGINE] Config not found: {self.config_path}. Using empty config.",
                 )
                 return {}
 
             with open(self.config_path) as f:
                 config = yaml.safe_load(f)
                 logger.info(
-                    f"[BEHAVIOR ENGINE] Loaded config with {len(config.get('patterns', {}))} pattern groups"
+                    f"[BEHAVIOR ENGINE] Loaded config with {len(config.get('patterns', {}))} pattern groups",
                 )
                 return config
         except Exception as e:
@@ -130,10 +128,9 @@ class BehaviorEngine:
         logger.info("[BEHAVIOR ENGINE] Configuration reloaded successfully")
 
     def classify_intent(
-        self, user_request: str, context: dict[str, Any] | None = None
+        self, user_request: str, context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Classifies user intent based on config patterns.
+        """Classifies user intent based on config patterns.
 
         Args:
             user_request: User's input text
@@ -148,6 +145,7 @@ class BehaviorEngine:
                 'require_tools': bool,
                 'require_planning': bool
             }
+
         """
         self._total_classifications += 1
         context = context or {}
@@ -225,8 +223,7 @@ class BehaviorEngine:
         }
 
     def select_strategy(self, task_type: str, context: dict[str, Any]) -> str:
-        """
-        Selects execution strategy from config.
+        """Selects execution strategy from config.
 
         Args:
             task_type: Type of task (e.g., 'web_task', 'code_task')
@@ -234,6 +231,7 @@ class BehaviorEngine:
 
         Returns:
             Strategy name (e.g., 'puppeteer-first', 'vibe-aggressive')
+
         """
         strategy_config = self.config.get("strategy_selection", {})
         task_strategies = strategy_config.get(task_type, {})
@@ -245,7 +243,7 @@ class BehaviorEngine:
             # Simple boolean context matching
             if context.get(condition.replace("_", "")) is True:
                 logger.debug(
-                    f"[BEHAVIOR ENGINE] Strategy selected: {strategy} (condition: {condition})"
+                    f"[BEHAVIOR ENGINE] Strategy selected: {strategy} (condition: {condition})",
                 )
                 return strategy
 
@@ -255,10 +253,9 @@ class BehaviorEngine:
         return default
 
     def route_tool(
-        self, tool_name: str, args: dict[str, Any], explicit_server: str | None = None
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None = None,
     ) -> tuple[str | None, str, dict[str, Any]]:
-        """
-        Routes tool to appropriate server based on config.
+        """Routes tool to appropriate server based on config.
 
         Args:
             tool_name: Name of the tool to route
@@ -267,6 +264,7 @@ class BehaviorEngine:
 
         Returns:
             (server_name, resolved_tool_name, normalized_args)
+
         """
         tool_routing = self.config.get("tool_routing", {})
         tool_lower = tool_name.lower()
@@ -288,7 +286,7 @@ class BehaviorEngine:
                             server = special_cfg.get("server")
                             tool = special_cfg.get("tool")
                             logger.info(
-                                f"[BEHAVIOR ENGINE] Special routing: {tool_name} -> {server}.{tool}"
+                                f"[BEHAVIOR ENGINE] Special routing: {tool_name} -> {server}.{tool}",
                             )
                             return server, tool, args
 
@@ -300,7 +298,7 @@ class BehaviorEngine:
                         server = rule.get("server", priority_server)
                         resolved_tool = rule.get("tool", tool_name)
                         logger.debug(
-                            f"[BEHAVIOR ENGINE] Rule match: {tool_name} -> {server}.{resolved_tool}"
+                            f"[BEHAVIOR ENGINE] Rule match: {tool_name} -> {server}.{resolved_tool}",
                         )
                         return server, resolved_tool, args
 
@@ -309,7 +307,7 @@ class BehaviorEngine:
                 if tool_lower in tool_mapping:
                     resolved_tool = tool_mapping[tool_lower]
                     logger.debug(
-                        f"[BEHAVIOR ENGINE] Mapping: {tool_name} -> {priority_server}.{resolved_tool}"
+                        f"[BEHAVIOR ENGINE] Mapping: {tool_name} -> {priority_server}.{resolved_tool}",
                     )
                     return priority_server, resolved_tool, args
 
@@ -318,14 +316,14 @@ class BehaviorEngine:
                 if tool_lower in action_mapping:
                     resolved_tool = action_mapping[tool_lower]
                     logger.debug(
-                        f"[BEHAVIOR ENGINE] Action mapping: {tool_name} -> {priority_server}.{resolved_tool}"
+                        f"[BEHAVIOR ENGINE] Action mapping: {tool_name} -> {priority_server}.{resolved_tool}",
                     )
                     return priority_server, resolved_tool, args
 
                 # Use priority server
                 if priority_server:
                     logger.debug(
-                        f"[BEHAVIOR ENGINE] Priority server: {tool_name} -> {priority_server}.{tool_name}"
+                        f"[BEHAVIOR ENGINE] Priority server: {tool_name} -> {priority_server}.{tool_name}",
                     )
                     return priority_server, tool_name, args
 
@@ -334,14 +332,14 @@ class BehaviorEngine:
         return explicit_server, tool_name, args
 
     def classify_task(self, task_description: str) -> list[str]:
-        """
-        Classifies task and returns recommended servers.
+        """Classifies task and returns recommended servers.
 
         Args:
             task_description: Description of the task
 
         Returns:
             List of recommended server names
+
         """
         task_lower = task_description.lower()
         task_classification = self.config.get("task_classification", {})
@@ -360,10 +358,9 @@ class BehaviorEngine:
         return default_servers
 
     def match_pattern(
-        self, context: dict[str, Any], pattern_type: str, confidence_threshold: float = 0.6
+        self, context: dict[str, Any], pattern_type: str, confidence_threshold: float = 0.6,
     ) -> Pattern | None:
-        """
-        Matches context against configured patterns.
+        """Matches context against configured patterns.
 
         Args:
             context: Current execution context
@@ -372,6 +369,7 @@ class BehaviorEngine:
 
         Returns:
             Matched Pattern or None
+
         """
         # Check cache first
         cache_key = f"{pattern_type}_{hash(frozenset(context.items()))}"
@@ -399,7 +397,7 @@ class BehaviorEngine:
                         confidence=initial_confidence,
                     )
                     logger.info(
-                        f"[BEHAVIOR ENGINE] Pattern matched: {pattern_name} (confidence: {initial_confidence})"
+                        f"[BEHAVIOR ENGINE] Pattern matched: {pattern_name} (confidence: {initial_confidence})",
                     )
                     return pattern
 
@@ -429,8 +427,7 @@ class BehaviorEngine:
         return bool(re.match(regex_pattern, text))
 
     def evaluate_rule(self, rule_name: str, context: dict[str, Any]) -> Any:
-        """
-        Evaluates a rule from configuration.
+        """Evaluates a rule from configuration.
 
         Args:
             rule_name: Name of rule in orchestration_flow.rules
@@ -438,6 +435,7 @@ class BehaviorEngine:
 
         Returns:
             The result of the first matching condition or default.
+
         """
         rules_config = self.config.get("orchestration_flow", {}).get("rules", {})
         rule = rules_config.get(rule_name, [])
@@ -480,16 +478,14 @@ class BehaviorEngine:
 
 
 class WorkflowEngine:
-    """
-    Deterministic Finite State Machine for executing workflows defined in config.
+    """Deterministic Finite State Machine for executing workflows defined in config.
     """
 
     def __init__(self, behavior_engine_instance: BehaviorEngine):
         self.be = behavior_engine_instance
 
     async def execute_workflow(self, workflow_name: str, context: dict[str, Any]) -> bool:
-        """
-        Executes a workflow defined in behavior config.
+        """Executes a workflow defined in behavior config.
 
         Args:
             workflow_name: Name of workflow (e.g. 'startup', 'error_recovery')
@@ -497,6 +493,7 @@ class WorkflowEngine:
 
         Returns:
             Success status
+
         """
         workflow_config = self.be.config.get("workflows", {}).get(workflow_name)
         if not workflow_config:

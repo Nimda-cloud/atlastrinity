@@ -359,8 +359,14 @@ tool_routing:
       - add_memory
       - relationship
       - relation
+      - create_entities
+      - add_observations
     priority_server: memory
     fallback_server: null
+    tool_mapping:
+      create_entities: create_entities
+      add_observations: add_observations
+      search: search
     routing_rules:
       - pattern: 'search.*'
         server: memory
@@ -430,6 +436,10 @@ tool_routing:
       - reason
     priority_server: sequential-thinking
     fallback_server: null
+    tool_mapping:
+      sequentialthinking: sequentialthinking
+      think: sequentialthinking
+      reason: sequentialthinking
 
   # macOS-specific operations
   macos_use:

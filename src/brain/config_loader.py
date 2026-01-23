@@ -32,8 +32,7 @@ class SystemConfig:
         return cls._instance
 
     def _sync_configs(self):
-        """
-        Ensure global configuration directories exist.
+        """Ensure global configuration directories exist.
         Config is read ONLY from global location (~/.config/atlastrinity/).
         User config values have PRIORITY over built-in defaults.
         No template syncing - user manages global config directly.
@@ -143,14 +142,14 @@ class SystemConfig:
             "system": {
                 "workspace_path": "${CONFIG_ROOT}/workspace",
                 "repository_path": str(
-                    PROJECT_ROOT
+                    PROJECT_ROOT,
                 ),  # Path to Trinity source code for self-healing
             },
             "database": {
                 # Default to local SQLite (async via aiosqlite). Use DATABASE_URL env var to override.
                 "url": os.getenv(
-                    "DATABASE_URL", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db"
-                )
+                    "DATABASE_URL", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
+                ),
             },
             "state": {"redis_url": os.getenv("REDIS_URL", "redis://localhost:6379/0")},
             "logging": {"level": "INFO", "max_log_size": 10485760, "backup_count": 5},
@@ -245,7 +244,7 @@ class SystemConfig:
                 agent_config["vision_model"] = self.get("models.vision")
             if not agent_config.get("strategy_model"):
                 agent_config["strategy_model"] = self.get("models.reasoning") or self.get(
-                    "models.default"
+                    "models.default",
                 )
 
         return agent_config

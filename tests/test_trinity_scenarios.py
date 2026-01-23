@@ -175,7 +175,7 @@ def isolated_globals(monkeypatch):
     monkeypatch.setattr(orch.state_manager, "available", False, raising=False)
     monkeypatch.setattr(orch.long_term_memory, "available", False, raising=False)  # type: ignore
     monkeypatch.setattr(
-        orch.consolidation_module, "should_consolidate", lambda: False, raising=False
+        orch.consolidation_module, "should_consolidate", lambda: False, raising=False,
     )
 
 
@@ -261,8 +261,8 @@ def test_simple_execution_appends_step_result(trinity_base):
                         "action": "Echo",
                         "tool": "terminal",
                         "requires_verification": False,
-                    }
-                ]
+                    },
+                ],
             )
 
         def get_voice_message(self, *args, **kwargs):
@@ -299,8 +299,8 @@ def test_verification_rejection_marks_step_failed(trinity_base):
                         "tool": "terminal",
                         "requires_verification": True,
                         "expected_result": "ok",
-                    }
-                ]
+                    },
+                ],
             )
 
         def get_voice_message(self, *args, **kwargs):
@@ -353,8 +353,8 @@ def test_verification_crash_is_caught_and_logged(trinity_base):
                         "tool": "terminal",
                         "requires_verification": True,
                         "expected_result": "ok",
-                    }
-                ]
+                    },
+                ],
             )
 
         def get_voice_message(self, *args, **kwargs):
@@ -406,8 +406,8 @@ def test_retries_then_user_rejects_recovery_aborts(trinity_base, stub_notificati
                         "action": "Do",
                         "tool": "terminal",
                         "requires_verification": False,
-                    }
-                ]
+                    },
+                ],
             )
 
         async def help_tetyana(self, step_id, error):
@@ -457,8 +457,8 @@ def test_subtask_step_triggers_recursive_run(trinity_base):
                         "type": "subtask",
                         "tool": "subtask",
                         "requires_verification": False,
-                    }
-                ]
+                    },
+                ],
             )
 
         def get_voice_message(self, *args, **kwargs):

@@ -63,7 +63,7 @@ async def run_mcp_test():
                 "capabilities": {},
                 "clientInfo": {"name": "test-client", "version": "1.0"},
             },
-        }
+        },
     )
 
     # Read init response
@@ -104,7 +104,7 @@ async def run_mcp_test():
                 "name": "execute_command",
                 "arguments": {"command": "echo 'MCP Test Success'"},
             },
-        }
+        },
     )
     while True:
         resp = await read_response()
@@ -127,7 +127,7 @@ async def run_mcp_test():
             "id": 4,
             "method": "tools/call",
             "params": {"name": "macos-use_take_screenshot", "arguments": {}},
-        }
+        },
     )
     while True:
         resp = await read_response()
@@ -154,7 +154,7 @@ async def run_mcp_test():
             "id": 5,
             "method": "tools/call",
             "params": {"name": "macos-use_analyze_screen", "arguments": {}},
-        }
+        },
     )
     while True:
         resp = await read_response()
@@ -186,7 +186,7 @@ async def run_mcp_test():
                 "name": "macos-use_open_application_and_traverse",
                 "arguments": {"identifier": "Calculator"},
             },
-        }
+        },
     )
 
     app_pid = None
@@ -226,7 +226,7 @@ async def run_mcp_test():
                     "name": "macos-use_type_and_traverse",
                     "arguments": {"pid": app_pid, "text": "5+5="},
                 },
-            }
+            },
         )
         while True:
             resp = await read_response()
@@ -246,7 +246,7 @@ async def run_mcp_test():
                 "id": 12,
                 "method": "tools/call",
                 "params": {"name": "macos-use_take_screenshot", "arguments": {}},
-            }
+            },
         )
         while True:
             resp = await read_response()
@@ -271,7 +271,7 @@ async def run_mcp_test():
                 "id": 13,
                 "method": "tools/call",
                 "params": {"name": "macos-use_analyze_screen", "arguments": {}},
-            }
+            },
         )
         while True:
             resp = await read_response()
@@ -285,7 +285,7 @@ async def run_mcp_test():
                         print("🎉 SUCCESS: Found result '10' in OCR data!")
                     else:
                         print(
-                            "⚠️ Result '10' not explicitly found in OCR text (might be graphical)."
+                            "⚠️ Result '10' not explicitly found in OCR text (might be graphical).",
                         )
                 else:
                     print(f"❌ OCR failed: {resp}")

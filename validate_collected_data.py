@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Data Validation Script for AtlasTrinity
+"""Data Validation Script for AtlasTrinity
 
 Validates collected data for completeness, accuracy, and relevance.
 Uses predefined schemas from the project's validation system.
@@ -186,7 +185,7 @@ class DataValidator:
                 if missing_fields:
                     result["valid"] = False
                     result["issues"].append(
-                        f"Server '{server_name}' missing fields: {missing_fields}"
+                        f"Server '{server_name}' missing fields: {missing_fields}",
                     )
 
             if result["valid"]:
@@ -260,7 +259,7 @@ class DataValidator:
                         {"level": issue.level, "path": issue.path, "message": issue.message}
                         for issue in config_result.issues
                     ],
-                }
+                },
             )
 
         # 2. Database schema
@@ -307,13 +306,13 @@ class DataValidator:
 
         logger.info(f"Validation complete: {report['overall_status']}")
         logger.info(
-            f"Summary: {report['summary']['passed_checks']}/{report['summary']['total_checks']} checks passed"
+            f"Summary: {report['summary']['passed_checks']}/{report['summary']['total_checks']} checks passed",
         )
 
         return report
 
     def save_validation_report(
-        self, report: dict[str, Any], output_path: Path = Path("validation_report.json")
+        self, report: dict[str, Any], output_path: Path = Path("validation_report.json"),
     ):
         """Save validation report to file."""
         try:
@@ -360,7 +359,7 @@ def main():
     print("=" * 60)
     print(f"Status: {flagged_report['overall_status']}")
     print(
-        f"Checks: {flagged_report['summary']['passed_checks']}/{flagged_report['summary']['total_checks']} passed"
+        f"Checks: {flagged_report['summary']['passed_checks']}/{flagged_report['summary']['total_checks']} passed",
     )
     print(f"Warnings: {flagged_report['summary']['warnings']}")
     print(f"Failed: {flagged_report['summary']['failed_checks']}")
@@ -375,7 +374,7 @@ def main():
             print(f"{status_icon} Config: {result.get('file', 'unknown')}")
             if result.get("errors", 0) > 0:
                 print(
-                    f"    Errors: {result.get('errors', 0)}, Warnings: {result.get('warnings', 0)}"
+                    f"    Errors: {result.get('errors', 0)}, Warnings: {result.get('warnings', 0)}",
                 )
         elif result_type == "database_schema":
             print(f"{status_icon} Database: {result.get('database', 'unknown')}")

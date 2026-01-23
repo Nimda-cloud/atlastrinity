@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Shared Context
+"""AtlasTrinity Shared Context
 
 Singleton module for sharing context between all agents.
 Solves the problem of agents using wrong paths or lacking awareness
@@ -17,8 +16,7 @@ GITHUB_ROOT = f"{ACTUAL_HOME}/Documents/GitHub"
 
 @dataclass
 class SharedContext:
-    """
-    Shared context singleton that all agents can access.
+    """Shared context singleton that all agents can access.
 
     Provides:
     - Current working directory awareness
@@ -83,8 +81,7 @@ class SharedContext:
             pass
 
     def update_path(self, path: str, operation: str = "access") -> None:
-        """
-        Update context with a new successful path.
+        """Update context with a new successful path.
         Called by agents after successful operations.
         """
         if path and (path.startswith("/Users") or path.startswith("~")):
@@ -118,8 +115,7 @@ class SharedContext:
             self.last_update = datetime.now()
 
     def get_best_path(self, hint: str = "") -> str:
-        """
-        Get the most likely correct path based on context.
+        """Get the most likely correct path based on context.
         Used by agents to auto-correct placeholder paths.
         """
         # If we have an active project, use that
@@ -136,8 +132,7 @@ class SharedContext:
         return GITHUB_ROOT
 
     def resolve_path(self, raw_path: str) -> str:
-        """
-        Resolve a potentially invalid path to a valid one.
+        """Resolve a potentially invalid path to a valid one.
         Handles placeholders, tilde, relative paths.
         """
         if not raw_path:
@@ -191,8 +186,7 @@ class SharedContext:
         }
 
     def push_goal(self, goal: str, total_steps: int = 0) -> None:
-        """
-        Push a new goal onto the stack (entering a sub-task).
+        """Push a new goal onto the stack (entering a sub-task).
         Called by Atlas when creating a new plan.
         """
         if self.current_goal:
@@ -204,8 +198,7 @@ class SharedContext:
         self.recursive_depth = len(self.goal_stack)
 
     def pop_goal(self) -> str:
-        """
-        Pop the current goal from the stack (leaving a sub-task).
+        """Pop the current goal from the stack (leaving a sub-task).
         Returns the goal that was popped.
         """
         completed_goal = self.current_goal
@@ -226,8 +219,7 @@ class SharedContext:
             self.current_step_id += 1
 
     def get_goal_context(self) -> str:
-        """
-        Get formatted goal context string for agent prompts.
+        """Get formatted goal context string for agent prompts.
         This helps agents understand the current task hierarchy.
         """
         if not self.current_goal:
@@ -253,7 +245,7 @@ class SharedContext:
 
         if self.recursive_depth > 0:
             lines.append(
-                f"🔄 RECURSION DEPTH: {self.recursive_depth} (max: {self.max_recursive_depth})"
+                f"🔄 RECURSION DEPTH: {self.recursive_depth} (max: {self.max_recursive_depth})",
             )
 
         return "\n".join(lines)

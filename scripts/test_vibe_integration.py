@@ -1,5 +1,4 @@
-"""
-Test script for Vibe MCP Server tools.
+"""Test script for Vibe MCP Server tools.
 Verifies that tools are correctly wrapped and functional.
 """
 

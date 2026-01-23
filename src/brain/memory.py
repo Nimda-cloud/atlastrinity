@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Long-Term Memory
+"""AtlasTrinity Long-Term Memory
 
 ChromaDB-based vector memory for storing:
 - Lessons learned from errors
@@ -50,8 +49,7 @@ def sanitize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
 
 
 class LongTermMemory:
-    """
-    Manages long-term vector memory using ChromaDB.
+    """Manages long-term vector memory using ChromaDB.
 
     Collections:
     - lessons: Error patterns and their solutions
@@ -72,7 +70,7 @@ class LongTermMemory:
 
             # Initialize collections
             self.lessons = self.client.get_or_create_collection(
-                name="lessons", metadata={"description": "Error patterns and solutions"}
+                name="lessons", metadata={"description": "Error patterns and solutions"},
             )
 
             self.strategies = self.client.get_or_create_collection(
@@ -98,7 +96,7 @@ class LongTermMemory:
             self.available = True
             logger.info(f"[MEMORY] ChromaDB initialized at {CHROMA_DIR}")
             logger.info(
-                f"[MEMORY] Lessons: {self.lessons.count()} | Strategies: {self.strategies.count()} | Conversations: {self.conversations.count()}"
+                f"[MEMORY] Lessons: {self.lessons.count()} | Strategies: {self.strategies.count()} | Conversations: {self.conversations.count()}",
             )
 
         except Exception as e:
@@ -112,14 +110,14 @@ class LongTermMemory:
         context: dict[str, Any],
         task_description: str = "",
     ) -> bool:
-        """
-        Store an error pattern with its solution.
+        """Store an error pattern with its solution.
 
         Args:
             error: The error message or description
             solution: How the error was resolved
             context: Additional context (step, tool, path, etc.)
             task_description: What task was being attempted
+
         """
         if not self.available:
             return False
@@ -150,16 +148,16 @@ class LongTermMemory:
             return False
 
     def remember_strategy(
-        self, task: str, plan_steps: list[str], outcome: str, success: bool
+        self, task: str, plan_steps: list[str], outcome: str, success: bool,
     ) -> bool:
-        """
-        Store a task execution strategy.
+        """Store a task execution strategy.
 
         Args:
             task: Task description
             plan_steps: List of steps taken
             outcome: Final result
             success: Whether the strategy worked
+
         """
         if not self.available:
             return False
@@ -188,8 +186,7 @@ class LongTermMemory:
             return False
 
     def recall_similar_errors(self, error: str, n_results: int = 3) -> list[dict[str, Any]]:
-        """
-        Find similar past errors and their solutions.
+        """Find similar past errors and their solutions.
 
         Args:
             error: Current error to find similar cases for
@@ -197,6 +194,7 @@ class LongTermMemory:
 
         Returns:
             List of dicts with {document, metadata, distance}
+
         """
         if not self.available or self.lessons.count() == 0:
             return []
@@ -220,7 +218,7 @@ class LongTermMemory:
                             "distance": (
                                 results["distances"][0][i] if results["distances"] else 1.0
                             ),
-                        }
+                        },
                     )
 
             logger.info(f"[MEMORY] Found {len(similar)} similar errors")
@@ -231,10 +229,9 @@ class LongTermMemory:
             return []
 
     def recall_similar_tasks(
-        self, task: str, n_results: int = 3, only_successful: bool = True
+        self, task: str, n_results: int = 3, only_successful: bool = True,
     ) -> list[dict[str, Any]]:
-        """
-        Find similar past tasks and their strategies.
+        """Find similar past tasks and their strategies.
 
         Args:
             task: Current task description
@@ -243,6 +240,7 @@ class LongTermMemory:
 
         Returns:
             List of dicts with {document, metadata, distance}
+
         """
         if not self.available or self.strategies.count() == 0:
             return []
@@ -254,7 +252,7 @@ class LongTermMemory:
                 query_texts=[task],
                 n_results=min(n_results, self.strategies.count()),
                 include=["documents", "metadatas", "distances"],
-                where=cast(Any, where_filter) if where_filter else None,
+                where=cast("Any", where_filter) if where_filter else None,
             )
 
             similar = []
@@ -269,7 +267,7 @@ class LongTermMemory:
                             "distance": (
                                 results["distances"][0][i] if results["distances"] else 1.0
                             ),
-                        }
+                        },
                     )
 
             logger.info(f"[MEMORY] Found {len(similar)} similar tasks")
@@ -305,7 +303,7 @@ class LongTermMemory:
             return False
 
     def remember_conversation(
-        self, session_id: str, summary: str, metadata: dict[str, Any] | None = None
+        self, session_id: str, summary: str, metadata: dict[str, Any] | None = None,
     ) -> bool:
         """Store a conversation summary in vector memory."""
         if not self.available:
@@ -319,7 +317,7 @@ class LongTermMemory:
                     "session_id": session_id,
                     "timestamp": datetime.now().isoformat(),
                     **(metadata or {}),
-                }
+                },
             )
             self.conversations.upsert(
                 ids=[doc_id],
@@ -352,7 +350,7 @@ class LongTermMemory:
                             "summary": doc,
                             "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
                             "distance": results["distances"][0][i] if results["distances"] else 1.0,
-                        }
+                        },
                     )
             return similar
         except Exception as e:
@@ -373,8 +371,7 @@ class LongTermMemory:
         }
 
     def consolidate(self, logs: list[dict[str, Any]], llm_summarizer=None) -> int:
-        """
-        Consolidate logs into lessons (for nightly processing).
+        """Consolidate logs into lessons (for nightly processing).
 
         Args:
             logs: List of log entries with error/success data
@@ -382,6 +379,7 @@ class LongTermMemory:
 
         Returns:
             Number of new lessons created
+
         """
         if not self.available:
             return 0
@@ -394,7 +392,7 @@ class LongTermMemory:
         for error_log in errors:
             # Check if we already have this lesson
             existing = self.recall_similar_errors(
-                error_log.get("error", str(error_log)), n_results=1
+                error_log.get("error", str(error_log)), n_results=1,
             )
 
             # Only add if not too similar
@@ -419,8 +417,7 @@ class LongTermMemory:
         context: dict[str, Any],
         decision_factors: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Store a successful logic deviation with decision context.
+        """Store a successful logic deviation with decision context.
 
         Args:
             original_intent: What was originally planned
@@ -429,6 +426,7 @@ class LongTermMemory:
             result: The outcome
             context: Execution context (step_id, etc.)
             decision_factors: Key environmental factors driving the decision (e.g. "time_pressure", "resource_unavailability")
+
         """
         if not self.available:
             return False
@@ -439,7 +437,7 @@ class LongTermMemory:
             factors_text = ""
             if decision_factors:
                 factors_text = "\nDecision Factors:\n" + "\n".join(
-                    [f"- {k}: {v}" for k, v in decision_factors.items()]
+                    [f"- {k}: {v}" for k, v in decision_factors.items()],
                 )
 
             document = (
@@ -460,11 +458,11 @@ class LongTermMemory:
             if decision_factors:
                 for k, v in decision_factors.items():
                     if isinstance(v, str | bool | int | float):
-                        metadata[f"factor_{k}"] = cast(Any, v)
+                        metadata[f"factor_{k}"] = cast("Any", v)
 
             metadata = sanitize_metadata(metadata)
             self.behavior_deviations.upsert(
-                ids=[doc_id], documents=[document], metadatas=[metadata]
+                ids=[doc_id], documents=[document], metadatas=[metadata],
             )
             logger.info(f"[MEMORY] Stored behavior deviation in ChromaDB: {doc_id}")
 
@@ -484,7 +482,7 @@ class LongTermMemory:
                                 uuid.UUID(str(step_uuid))
                         except (ValueError, TypeError):
                             logger.warning(
-                                f"[MEMORY] Invalid step_id UUID: {step_uuid}. Logging as None."
+                                f"[MEMORY] Invalid step_id UUID: {step_uuid}. Logging as None.",
                             )
                             step_uuid = None
 
@@ -535,7 +533,7 @@ class LongTermMemory:
                             "document": doc,
                             "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
                             "distance": results["distances"][0][i] if results["distances"] else 1.0,
-                        }
+                        },
                     )
             return similar
         except Exception as e:
@@ -593,7 +591,7 @@ class LongTermMemory:
             if ids_to_delete:
                 collection.delete(ids=ids_to_delete)
                 logger.info(
-                    f"[MEMORY] Deleted {len(ids_to_delete)} entries from {collection_name} matching: {query}"
+                    f"[MEMORY] Deleted {len(ids_to_delete)} entries from {collection_name} matching: {query}",
                 )
                 return len(ids_to_delete)
             return 0

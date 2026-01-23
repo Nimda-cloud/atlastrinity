@@ -53,16 +53,16 @@ async def test_tools():
         # 5. Test System Control
         logger.info("Testing System Control (volume_up)...")
         sys_res = await mcp_manager.call_tool(
-            SERVER, "macos-use_system_control", {"action": "volume_up"}
+            SERVER, "macos-use_system_control", {"action": "volume_up"},
         )
         logger.info(
-            f"Result: {sys_res.content[0].text if hasattr(sys_res, 'content') else sys_res}"
+            f"Result: {sys_res.content[0].text if hasattr(sys_res, 'content') else sys_res}",
         )
 
         # 6. Test App Launch & Window Management
         logger.info("Testing App Launch (TextEdit)...")
         open_res = await mcp_manager.call_tool(
-            SERVER, "macos-use_open_application_and_traverse", {"identifier": "com.apple.TextEdit"}
+            SERVER, "macos-use_open_application_and_traverse", {"identifier": "com.apple.TextEdit"},
         )
 
         # Extract PID
@@ -88,13 +88,13 @@ async def test_tools():
                 {"pid": pid, "action": "move", "x": 100, "y": 100},
             )
             logger.info(
-                f"Move Result: {move_res.content[0].text if hasattr(move_res, 'content') else move_res}"
+                f"Move Result: {move_res.content[0].text if hasattr(move_res, 'content') else move_res}",
             )
 
             # Type text
             logger.info("Testing Typing...")
             await mcp_manager.call_tool(
-                SERVER, "macos-use_type_and_traverse", {"pid": pid, "text": "Hello from Trinity!"}
+                SERVER, "macos-use_type_and_traverse", {"pid": pid, "text": "Hello from Trinity!"},
             )
 
             # Press Keys
@@ -122,7 +122,7 @@ async def test_tools():
         ocr_res = await mcp_manager.call_tool(SERVER, "macos-use_analyze_screen", {})
         if hasattr(ocr_res, "content") and len(ocr_res.content) > 0:
             logger.info(
-                f"✅ Vision test PASSED: Received {len(ocr_res.content[0].text)} bytes of JSON results"
+                f"✅ Vision test PASSED: Received {len(ocr_res.content[0].text)} bytes of JSON results",
             )
         else:
             logger.error(f"❌ Vision test FAILED: {ocr_res}")

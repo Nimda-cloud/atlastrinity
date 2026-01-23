@@ -1,5 +1,4 @@
-"""
-AtlasTrinity State Manager
+"""AtlasTrinity State Manager
 
 Redis-based state persistence for:
 - Surviving restarts
@@ -28,8 +27,7 @@ from .logger import logger
 
 
 class StateManager:
-    """
-    Manages orchestrator state persistence using Redis.
+    """Manages orchestrator state persistence using Redis.
 
     Features:
     - Save/restore task state
@@ -52,12 +50,12 @@ class StateManager:
 
         if redis_url:
             self.redis: Any | None = redis.Redis.from_url(
-                redis_url, decode_responses=True, socket_connect_timeout=2
+                redis_url, decode_responses=True, socket_connect_timeout=2,
             )
             logger.info("[STATE] Redis connected via URL")
         else:
             self.redis: Any | None = redis.Redis(
-                host=host, port=port, decode_responses=True, socket_connect_timeout=2
+                host=host, port=port, decode_responses=True, socket_connect_timeout=2,
             )
             logger.info(f"[STATE] Redis connected at {host}:{port}")
 
@@ -98,7 +96,7 @@ class StateManager:
                     else:
                         # Legacy data or empty - start fresh for messages
                         logger.warning(
-                            f"[STATE] No valid dict messages found. Found {len(msgs)} legacy/string items. Start fresh history."
+                            f"[STATE] No valid dict messages found. Found {len(msgs)} legacy/string items. Start fresh history.",
                         )
                         state["messages"] = []
                 else:
@@ -111,8 +109,7 @@ class StateManager:
             return {"messages": [], "system_state": "IDLE"}
 
     async def save_session(self, session_id: str, state: dict[str, Any]) -> bool:
-        """
-        Save full session state.
+        """Save full session state.
         """
         if not self.available or not self.redis:
             return False
@@ -131,8 +128,7 @@ class StateManager:
             return False
 
     async def restore_session(self, session_id: str) -> dict[str, Any] | None:
-        """
-        Restore session state.
+        """Restore session state.
         """
         if not self.available or not self.redis:
             return None
@@ -221,13 +217,13 @@ class StateManager:
         return sessions
 
     async def checkpoint(self, session_id: str, step_id: int, step_result: dict[str, Any]) -> bool:
-        """
-        Save checkpoint for a specific step.
+        """Save checkpoint for a specific step.
 
         Args:
             session_id: Current session
             step_id: Step number
             step_result: Result of the step
+
         """
         if not self.available or not self.redis:
             return False
@@ -332,12 +328,12 @@ class StateManager:
             return False
 
     async def publish_event(self, channel: str, data: dict[str, Any]) -> bool:
-        """
-        Broadcast an event via Redis Pub/Sub.
+        """Broadcast an event via Redis Pub/Sub.
 
         Args:
             channel: The channel name (e.g., 'tasks', 'steps')
             data: Event payload
+
         """
         if not self.available or not self.redis:
             return False
@@ -348,7 +344,15 @@ class StateManager:
             await self.redis.publish(full_channel, json.dumps(data, default=str))
             return True
         except Exception as e:
-            logger.error(f"[STATE] Failed to publish event: {e}")
+            import asyncio
+
+            try:
+                loop = asyncio.get_running_loop()
+                if loop.is_running() and not loop.is_closed():
+                    logger.error(f"[STATE] Failed to publish event: {e}")
+            except (RuntimeError, AttributeError):
+                # Shutdown phase, ignore
+                pass
             return False
 
     async def get_stats(self) -> dict[str, Any]:

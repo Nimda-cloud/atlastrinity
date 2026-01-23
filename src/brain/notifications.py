@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Notifications
+"""AtlasTrinity Notifications
 
 Human-in-the-Loop system for:
 - Alerting user when system is stuck
@@ -15,8 +14,7 @@ from .logger import logger
 
 
 class NotificationManager:
-    """
-    Manages user notifications via macOS notification center.
+    """Manages user notifications via macOS notification center.
 
     Used for Human-in-the-Loop interactions:
     - Alert when stuck after max retries
@@ -29,10 +27,9 @@ class NotificationManager:
         self.notification_history: list[dict] = []
 
     def send_notification(
-        self, title: str, message: str, sound: bool = True, subtitle: str = ""
+        self, title: str, message: str, sound: bool = True, subtitle: str = "",
     ) -> bool:
-        """
-        Send macOS notification.
+        """Send macOS notification.
 
         Args:
             title: Notification title
@@ -42,6 +39,7 @@ class NotificationManager:
 
         Returns:
             True if sent successfully
+
         """
         try:
             # Build AppleScript
@@ -50,7 +48,7 @@ class NotificationManager:
             display notification "{message}" with title "{title}" {subtitle_cmd} {sound_cmd}
             """
 
-            subprocess.run(["osascript", "-e", script], capture_output=True, timeout=5)
+            subprocess.run(["osascript", "-e", script], check=False, capture_output=True, timeout=5)
 
             # Log to history
             self.notification_history.append(
@@ -59,7 +57,7 @@ class NotificationManager:
                     "message": message,
                     "timestamp": datetime.now().isoformat(),
                     "type": "notification",
-                }
+                },
             )
 
             logger.info(f"[NOTIFY] Sent: {title}")
@@ -70,13 +68,13 @@ class NotificationManager:
             return False
 
     def send_stuck_alert(self, step_id: int, error: str, attempts: int = 0) -> bool:
-        """
-        Alert user that system is stuck and needs help.
+        """Alert user that system is stuck and needs help.
 
         Args:
             step_id: Which step failed
             error: Error description
             attempts: Number of attempts made
+
         """
         title = "AtlasTrinity застряла"
         message = f"Крок {step_id} не вдався після {attempts} спроб"
@@ -85,8 +83,7 @@ class NotificationManager:
         return self.send_notification(title=title, message=message, subtitle=subtitle, sound=True)
 
     def request_approval(self, action: str, risk_level: str = "medium") -> bool:
-        """
-        Request user approval for potentially dangerous action.
+        """Request user approval for potentially dangerous action.
         Shows a dialog and waits for response.
 
         Args:
@@ -95,6 +92,7 @@ class NotificationManager:
 
         Returns:
             True if approved, False if rejected
+
         """
         # Check for auto-approve environment variable
         auto_approve = os.getenv("TRINITY_AUTO_APPROVE", "false").lower() == "true"
@@ -107,7 +105,7 @@ class NotificationManager:
                     "approved": True,
                     "timestamp": datetime.now().isoformat(),
                     "type": "approval_request",
-                }
+                },
             )
             return True
 
@@ -125,7 +123,7 @@ class NotificationManager:
 
             result = subprocess.run(
                 ["osascript", "-e", script],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
                 timeout=300,  # 5 minute timeout
             )
@@ -139,11 +137,11 @@ class NotificationManager:
                     "approved": approved,
                     "timestamp": datetime.now().isoformat(),
                     "type": "approval_request",
-                }
+                },
             )
 
             logger.info(
-                f"[NOTIFY] Approval request: {action} -> {'Approved' if approved else 'Rejected'}"
+                f"[NOTIFY] Approval request: {action} -> {'Approved' if approved else 'Rejected'}",
             )
             return approved
 
@@ -155,13 +153,13 @@ class NotificationManager:
             return False
 
     def show_progress(self, current_step: int, total_steps: int, description: str = "") -> bool:
-        """
-        Show progress notification.
+        """Show progress notification.
 
         Args:
             current_step: Current step number
             total_steps: Total number of steps
             description: What's being done
+
         """
         progress = int((current_step / total_steps) * 100) if total_steps > 0 else 0
 
@@ -178,13 +176,13 @@ class NotificationManager:
         return True
 
     def show_completion(self, task: str, success: bool, duration_seconds: float = 0) -> bool:
-        """
-        Show task completion notification.
+        """Show task completion notification.
 
         Args:
             task: Task description
             success: Whether task succeeded
             duration_seconds: How long it took
+
         """
         if success:
             title = "✅ AtlasTrinity Завершила"

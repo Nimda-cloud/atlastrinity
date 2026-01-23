@@ -27,7 +27,7 @@ def test_stt_blacklist():
     success_count = 0
     for text, conf, expected_type in test_cases:
         result = TranscriptionResult(
-            text=text, language="uk", confidence=conf, segments=[], no_speech_prob=0.1
+            text=text, language="uk", confidence=conf, segments=[], no_speech_prob=0.1,
         )
         actual_type = stt._analyze_speech_type(result, "")
 

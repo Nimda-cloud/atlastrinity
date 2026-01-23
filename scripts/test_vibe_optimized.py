@@ -37,13 +37,13 @@ async def test_error_analysis_payload():
                         "action": "Try with calculator",
                         "status": "failed",
                         "error": "Crash",
-                    }
+                    },
                 ],
             },
         )
 
         logger.info(
-            f"Vibe Analysis Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}"
+            f"Vibe Analysis Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}",
         )
         return True
     except Exception as e:

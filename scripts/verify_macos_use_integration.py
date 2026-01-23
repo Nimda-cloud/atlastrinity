@@ -24,7 +24,7 @@ async def test_tetyana_macos_use():
         "action": "Open TextEdit application",
         "tool": "macos-use",  # Hint to use macos-use
         "args": {
-            "identifier": "com.apple.TextEdit"
+            "identifier": "com.apple.TextEdit",
         },  # Direct args to skip LLM for this test if possible, or Tetyana logic will handle it
         "expected_result": "TextEdit is running",
     }

@@ -1,5 +1,4 @@
-"""
-Grisha - The Visor/Auditor
+"""Grisha - The Visor/Auditor
 
 Role: Result verification via Vision, Security control
 Voice: Mykyta (male)
@@ -25,12 +24,12 @@ for r in [root_dev, root_prod]:
     if abs_r not in sys.path:
         sys.path.insert(0, abs_r)
 
-from providers.copilot import CopilotLLM  # noqa: E402
-from src.brain.agents.base_agent import BaseAgent  # noqa: E402
-from src.brain.config_loader import config  # noqa: E402
-from src.brain.context import shared_context  # noqa: E402
-from src.brain.logger import logger  # noqa: E402
-from src.brain.prompts import AgentPrompts  # noqa: E402
+from providers.copilot import CopilotLLM
+from src.brain.agents.base_agent import BaseAgent
+from src.brain.config_loader import config
+from src.brain.context import shared_context
+from src.brain.logger import logger
+from src.brain.prompts import AgentPrompts
 
 
 @dataclass
@@ -52,8 +51,7 @@ class VerificationResult:
 
 
 class Grisha(BaseAgent):
-    """
-    Grisha - The Visor/Auditor
+    """Grisha - The Visor/Auditor
 
     Functions:
     - Verifying execution results via Vision
@@ -114,8 +112,7 @@ class Grisha(BaseAgent):
         result: Any,
         goal_context: str,
     ) -> dict[str, Any]:
-        """
-        Performs deep validation reasoning using sequential thinking.
+        """Performs deep validation reasoning using sequential thinking.
         Returns structured validation insights across multiple layers.
         """
         step_action = step.get("action", "")
@@ -172,8 +169,7 @@ Synthesize findings into a comprehensive validation verdict.
         result: Any,
         context: dict[str, Any],
     ) -> list[dict[str, Any]]:
-        """
-        Performs verification across 4 layers:
+        """Performs verification across 4 layers:
         1. Tool Execution Layer - was the tool called correctly?
         2. Output Layer - is the output valid?
         3. State Layer - did system state change as expected?
@@ -195,7 +191,7 @@ Synthesize findings into a comprehensive validation verdict.
         # Layer 2: Output Validation
         output_layer = {"layer": "output_validation", "passed": False, "evidence": ""}
         result_str = str(
-            result.get("result", "") if isinstance(result, dict) else getattr(result, "result", "")
+            result.get("result", "") if isinstance(result, dict) else getattr(result, "result", ""),
         )
         if result_str and len(result_str) > 0 and "error" not in result_str.lower():
             output_layer["passed"] = True
@@ -234,8 +230,7 @@ Synthesize findings into a comprehensive validation verdict.
         context: dict,
         goal_context: str = "",
     ) -> str:
-        """
-        Uses Raptor-Mini (MSP Reasoning) to create a robust verification strategy.
+        """Uses Raptor-Mini (MSP Reasoning) to create a robust verification strategy.
         OPTIMIZATION: Caches strategies by step type to avoid redundant LLM calls.
         """
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -247,7 +242,7 @@ Synthesize findings into a comprehensive validation verdict.
             return self._strategy_cache[cache_key]
 
         prompt = AgentPrompts.grisha_strategy_prompt(
-            step_action, expected_result, context, goal_context=goal_context
+            step_action, expected_result, context, goal_context=goal_context,
         )
 
         # Get available capabilities to inform the strategist
@@ -277,8 +272,7 @@ Synthesize findings into a comprehensive validation verdict.
         return False
 
     def _get_environment_capabilities(self) -> str:
-        """
-        Collects raw facts about the environment to inform the strategist.
+        """Collects raw facts about the environment to inform the strategist.
         No heuristics here—just data for the LLM to reason about.
         """
         try:
@@ -320,8 +314,7 @@ Synthesize findings into a comprehensive validation verdict.
         return "\n".join(info)
 
     def _summarize_ui_data(self, raw_data: str) -> str:
-        """
-        Intelligently extracts the 'essence' of UI traversal data locally.
+        """Intelligently extracts the 'essence' of UI traversal data locally.
         Reduces thousands of lines of JSON to a concise list of key interactive elements.
         """
         import json
@@ -394,8 +387,7 @@ Synthesize findings into a comprehensive validation verdict.
             return raw_data[:3000]
 
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
-        """
-        Fetches the raw tool execution logs from the database for a given step.
+        """Fetches the raw tool execution logs from the database for a given step.
         This serves as the 'single source of truth' for verification.
         """
         try:
@@ -455,8 +447,7 @@ Synthesize findings into a comprehensive validation verdict.
         goal_context: str = "",
         task_id: str | None = None,
     ) -> VerificationResult:
-        """
-        Verifies the result of step execution using Vision and MCP Tools
+        """Verifies the result of step execution using Vision and MCP Tools
         """
         from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -585,9 +576,9 @@ Synthesize findings into a comprehensive validation verdict.
 
                             resampling = getattr(PILImage, "Resampling", PILImage)
                             resample_filter = getattr(
-                                resampling, "LANCZOS", 1
+                                resampling, "LANCZOS", 1,
                             )  # 1 is LANCZOS in old PIL
-                            img.thumbnail((1024, 1024), cast(Any, resample_filter))
+                            img.thumbnail((1024, 1024), cast("Any", resample_filter))
                         except Exception:
                             img.thumbnail((1024, 1024))
 
@@ -595,7 +586,7 @@ Synthesize findings into a comprehensive validation verdict.
                         img.save(output, format="JPEG", quality=70, optimize=True)
                         img_bytes = output.getvalue()
                         logger.info(
-                            f"[GRISHA] Compressed screenshot for prompt: {len(img_bytes)} bytes"
+                            f"[GRISHA] Compressed screenshot for prompt: {len(img_bytes)} bytes",
                         )
                     except Exception as e:
                         logger.warning(f"[GRISHA] Failed to compress screenshot: {e}")
@@ -605,23 +596,23 @@ Synthesize findings into a comprehensive validation verdict.
                 mime = "image/jpeg"  # We force JPEG after compression
                 content.append(
                     cast(
-                        dict[str, Any],
+                        "dict[str, Any]",
                         {
                             "type": "image_url",
                             "image_url": {"url": f"data:{mime};base64,{image_data}"},
                         },
-                    )
+                    ),
                 )
                 attach_screenshot_next = False
 
             messages = [
                 SystemMessage(content=self.SYSTEM_PROMPT),
-                HumanMessage(content=cast(Any, content)),
+                HumanMessage(content=cast("Any", content)),
             ]
 
             response = await self.llm.ainvoke(messages)
             logger.info(f"[GRISHA] Raw LLM Response: {response.content}")
-            data = self._parse_response(cast(str, response.content))
+            data = self._parse_response(cast("str", response.content))
 
             if data.get("action") == "call_tool":
                 server = data.get("server")
@@ -635,7 +626,7 @@ Synthesize findings into a comprehensive validation verdict.
                 tool_name_lower = str(tool).lower()
                 if "screenshot" in tool_name_lower or "capture" in tool_name_lower:
                     logger.info(
-                        "[GRISHA] Internal Decision: Capturing Screenshot for Visual Verification"
+                        "[GRISHA] Internal Decision: Capturing Screenshot for Visual Verification",
                     )
                     try:
                         screenshot_path = await self.take_screenshot()
@@ -645,7 +636,7 @@ Synthesize findings into a comprehensive validation verdict.
                                 "tool": f"{server}.{tool}",
                                 "args": args,
                                 "result": f"Screenshot captured and attached: {screenshot_path}",
-                            }
+                            },
                         )
                         continue
                     except Exception as e:
@@ -654,7 +645,7 @@ Synthesize findings into a comprehensive validation verdict.
                                 "tool": f"{server}.{tool}",
                                 "args": args,
                                 "result": f"Error taking screenshot: {e}",
-                            }
+                            },
                         )
                         continue
 
@@ -673,7 +664,7 @@ Synthesize findings into a comprehensive validation verdict.
                     resolved_path = shared_context.resolve_path(original_path)
                     if resolved_path != original_path:
                         logger.info(
-                            f"[GRISHA] Path auto-corrected: {original_path} -> {resolved_path}"
+                            f"[GRISHA] Path auto-corrected: {original_path} -> {resolved_path}",
                         )
                     args["path"] = resolved_path
 
@@ -721,15 +712,15 @@ Synthesize findings into a comprehensive validation verdict.
                         "tool": f"{server}.{tool}",
                         "args": args,
                         "result": result_str,
-                    }
+                    },
                 )
                 continue
-            elif data.get("action") in ["audit", "thought", "plan"] or (
+            if data.get("action") in ["audit", "thought", "plan"] or (
                 not data.get("action") and "voice_message" in data and "verified" not in data
             ):
                 # Intermediate response/announcement: Log to history and continue the loop
                 logger.info(
-                    f"[GRISHA] Intermediate Step: {data.get('action', 'thought')} - {data.get('voice_message', 'Thinking...')}"
+                    f"[GRISHA] Intermediate Step: {data.get('action', 'thought')} - {data.get('voice_message', 'Thinking...')}",
                 )
                 verification_history.append(
                     {
@@ -737,33 +728,32 @@ Synthesize findings into a comprehensive validation verdict.
                         "action": data.get("action"),
                         "voice_message": data.get("voice_message"),
                         "thought": data.get("thought"),
-                    }
+                    },
                 )
                 continue
-            else:
-                # OPTIMIZATION: Early exit on high confidence
-                confidence = data.get("confidence", 0.5)
-                if confidence >= 0.85:
-                    logger.info(f"[GRISHA] High confidence ({confidence}), early exit.")
+            # OPTIMIZATION: Early exit on high confidence
+            confidence = data.get("confidence", 0.5)
+            if confidence >= 0.85:
+                logger.info(f"[GRISHA] High confidence ({confidence}), early exit.")
 
-                verification = VerificationResult(
-                    step_id=step_id,
-                    verified=data.get("verified", False),
-                    confidence=confidence,
-                    description=data.get("description")
-                    or f"No description provided. Raw data: {data}",
-                    issues=data.get("issues", []),
-                    voice_message=data.get("voice_message", ""),
-                    screenshot_analyzed=screenshot_path is not None,
-                )
+            verification = VerificationResult(
+                step_id=step_id,
+                verified=data.get("verified", False),
+                confidence=confidence,
+                description=data.get("description")
+                or f"No description provided. Raw data: {data}",
+                issues=data.get("issues", []),
+                voice_message=data.get("voice_message", ""),
+                screenshot_analyzed=screenshot_path is not None,
+            )
 
-                self.verifications.append(verification)
+            self.verifications.append(verification)
 
-                # Save detailed rejection report to memory if verification failed
-                if not verification.verified:
-                    await self._save_rejection_report(step_id, step, verification, task_id=task_id)
+            # Save detailed rejection report to memory if verification failed
+            if not verification.verified:
+                await self._save_rejection_report(step_id, step, verification, task_id=task_id)
 
-                return verification
+            return verification
 
         # SPECIAL CASE: Consent/Approval/Confirmation steps that are organizational, not technical
         # If step action contains keywords like "consent", "approval", "confirm", "agree", "permission"
@@ -792,7 +782,7 @@ Synthesize findings into a comprehensive validation verdict.
             )
             if opened_app:
                 logger.info(
-                    "[GRISHA] Detected consent/approval step with Terminal/TextEdit opened. Auto-accepting as user can respond there."
+                    "[GRISHA] Detected consent/approval step with Terminal/TextEdit opened. Auto-accepting as user can respond there.",
                 )
                 return VerificationResult(
                     step_id=step_id,
@@ -823,10 +813,9 @@ Synthesize findings into a comprehensive validation verdict.
         )
 
     async def analyze_failure(
-        self, step: dict[str, Any], error: str, context: dict | None = None
+        self, step: dict[str, Any], error: str, context: dict | None = None,
     ) -> dict[str, Any]:
-        """
-        Analyzes a failure reported by Tetyana or Orchestrator using Deep Sequential Thinking.
+        """Analyzes a failure reported by Tetyana or Orchestrator using Deep Sequential Thinking.
         Returns constructive feedback for a retry.
         """
         step_id = step.get("id", "unknown")
@@ -963,8 +952,8 @@ Use this report to:
                                 "name": f"grisha_rejection_step_{step_id}",
                                 "entityType": "verification_report",
                                 "observations": [report_text],
-                            }
-                        ]
+                            },
+                        ],
                     },
                 )
                 logger.info(f"[GRISHA] Rejection report saved to memory for step {step_id}")
@@ -1005,7 +994,7 @@ Use this report to:
                 # Link to the task (use task_id if provided)
                 source_id = f"task:{task_id}" if task_id else f"task:rejection_{step_id}"
                 await knowledge_graph.add_edge(
-                    source_id=source_id, target_id=node_id, relation="REJECTED"
+                    source_id=source_id, target_id=node_id, relation="REJECTED",
                 )
                 logger.info(f"[GRISHA] Rejection node added to Knowledge Graph for step {step_id}")
             except Exception as e:
@@ -1034,8 +1023,7 @@ Use this report to:
             logger.warning(f"[GRISHA] Failed to save rejection report: {e}")
 
     async def security_check(self, action: dict[str, Any]) -> dict[str, Any]:
-        """
-        Performs security check before execution
+        """Performs security check before execution
         """
         from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -1057,11 +1045,10 @@ Use this report to:
         ]
 
         response = await self.llm.ainvoke(messages)
-        return self._parse_response(cast(str, response.content))
+        return self._parse_response(cast("str", response.content))
 
     async def take_screenshot(self) -> str:
-        """
-        Takes a screenshot for verification.
+        """Takes a screenshot for verification.
         Enhanced for AtlasTrinity:
         - Robust multi-monitor support (Quartz).
         - Active application window focus (AppleScript).
@@ -1118,7 +1105,7 @@ Use this report to:
                 quartz_available = True
             except Exception as qerr:
                 logger.warning(
-                    f"[GRISHA] Quartz unavailable for screenshots (will fallback to screencapture): {qerr}"
+                    f"[GRISHA] Quartz unavailable for screenshots (will fallback to screencapture): {qerr}",
                 )
 
             desktop_canvas = None
@@ -1151,7 +1138,7 @@ Use this report to:
                             "y": bounds.origin.y,
                             "width": bounds.size.width,
                             "height": bounds.size.height,
-                        }
+                        },
                     )
 
                 displays_info.sort(key=lambda d: d["x"])
@@ -1169,7 +1156,7 @@ Use this report to:
                     os.close(fhandle)
                     subprocess.run(
                         ["screencapture", "-x", "-D", str(d["sc_index"]), path],
-                        capture_output=True,
+                        check=False, capture_output=True,
                     )
                     if os.path.exists(path):
                         try:
@@ -1189,10 +1176,10 @@ Use this report to:
                 try:
                     CGWindowListCopyWindowInfo = getattr(Quartz, "CGWindowListCopyWindowInfo", None)
                     kCGWindowListOptionOnScreenOnly = getattr(
-                        Quartz, "kCGWindowListOptionOnScreenOnly", 1
+                        Quartz, "kCGWindowListOptionOnScreenOnly", 1,
                     )
                     kCGWindowListExcludeDesktopElements = getattr(
-                        Quartz, "kCGWindowListExcludeDesktopElements", 16
+                        Quartz, "kCGWindowListExcludeDesktopElements", 16,
                     )
                     kCGNullWindowID = getattr(Quartz, "kCGNullWindowID", 0)
 
@@ -1218,7 +1205,7 @@ Use this report to:
                                 "-x",
                                 active_win_path,
                             ],
-                            capture_output=True,
+                            check=False, capture_output=True,
                         )
                 except Exception as win_err:
                     logger.warning(f"Failed to detect active window ID: {win_err}")
@@ -1243,7 +1230,7 @@ Use this report to:
                     try:
                         res = subprocess.run(
                             ["screencapture", "-x", "-D", str(di), path],
-                            capture_output=True,
+                            check=False, capture_output=True,
                         )
                         if res.returncode == 0 and os.path.exists(path):
                             with Image.open(path) as img:
@@ -1266,7 +1253,7 @@ Use this report to:
                         tempfile.gettempdir(),
                         f"grisha_full_{datetime.now().strftime('%H%M%S')}.png",
                     )
-                    subprocess.run(["screencapture", "-x", tmp_full], capture_output=True)
+                    subprocess.run(["screencapture", "-x", tmp_full], check=False, capture_output=True)
                     if os.path.exists(tmp_full):
                         try:
                             with Image.open(tmp_full) as img:
@@ -1298,7 +1285,7 @@ Use this report to:
                 resampling = getattr(PILImage, "Resampling", PILImage)
                 resample_filter = getattr(resampling, "LANCZOS", 1)
                 desktop_small = desktop_canvas.resize(
-                    (target_w, max(1, dt_h)), cast(Any, resample_filter)
+                    (target_w, max(1, dt_h)), cast("Any", resample_filter),
                 )
             except Exception:
                 desktop_small = desktop_canvas.resize((target_w, max(1, dt_h)))
@@ -1317,7 +1304,7 @@ Use this report to:
                     resampling = getattr(PILImage, "Resampling", PILImage)
                     resample_filter = getattr(resampling, "LANCZOS", 1)
                     resized_win = active_win_img.resize(
-                        (target_w, max(1, win_h)), cast(Any, resample_filter)
+                        (target_w, max(1, win_h)), cast("Any", resample_filter),
                     )
                 except Exception:
                     resized_win = active_win_img.resize((target_w, max(1, win_h)))
@@ -1353,10 +1340,9 @@ Use this report to:
                 return ""
 
     async def audit_vibe_fix(
-        self, error: str, vibe_report: str, context: dict | None = None, task_id: str | None = None
+        self, error: str, vibe_report: str, context: dict | None = None, task_id: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Audits a proposed fix from Vibe AI before execution.
+        """Audits a proposed fix from Vibe AI before execution.
         Uses advanced reasoning to ensure safety and correctness.
         """
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -1373,7 +1359,7 @@ Use this report to:
             logger.warning(f"[GRISHA] Could not fetch trace for audit: {e}")
 
         prompt = AgentPrompts.grisha_vibe_audit_prompt(
-            error, vibe_report, context_data, technical_trace=technical_trace
+            error, vibe_report, context_data, technical_trace=technical_trace,
         )
 
         messages = [SystemMessage(content=self.SYSTEM_PROMPT), HumanMessage(content=prompt)]
@@ -1381,7 +1367,7 @@ Use this report to:
         try:
             logger.info("[GRISHA] Auditing Vibe's proposed fix...")
             response = await self.llm.ainvoke(messages)
-            audit_result = self._parse_response(cast(str, response.content))
+            audit_result = self._parse_response(cast("str", response.content))
 
             logger.info(f"[GRISHA] Audit Verdict: {audit_result.get('audit_verdict', 'REJECT')}")
             return audit_result

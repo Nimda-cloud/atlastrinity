@@ -1,6 +1,5 @@
 def get_atlas_deep_persona() -> str:
-    """
-    Returns the deep, philosophical, and expanded mission context for Atlas in English.
+    """Returns the deep, philosophical, and expanded mission context for Atlas in English.
     This provides the LLM with a more 'conscious' and detailed internal representation.
     """
     return """

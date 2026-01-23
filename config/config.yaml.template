@@ -8,17 +8,17 @@
 
 models:
   # Default models for different purposes
-  default: gpt-4.1                    # Default LLM для всіх agents
-  vision: gpt-4.1                     # Vision/multimodal tasks
-  reasoning: gpt-4.1                  # Deep reasoning (sequential-thinking)
-  code_analysis: gpt-4.1              # Code review and analysis
-  consolidation: gpt-4.1              # Memory consolidation (nightly)
+  default: gpt-4o                    # Default LLM для всіх agents
+  vision: gpt-4o                     # Vision/multimodal tasks
+  reasoning: gpt-4o                  # Deep reasoning (sequential-thinking)
+  code_analysis: gpt-4o              # Code review and analysis
+  consolidation: gpt-4o              # Memory consolidation (nightly)
   
   # Vibe binary defaults (external CLI tool)
   vibe_default: devstral-2           # Recommended: devstral-2 for code tasks
   
   # Fallbacks (used when primary unavailable)
-  fallback: gpt-4.1
+  fallback: gpt-4o
 
 # ============================================================================
 # BEHAVIOR ENGINE

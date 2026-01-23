@@ -20,8 +20,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 
 class CopilotLLM(BaseChatModel):
-    model_name: str = "gpt-4.1"
-    vision_model_name: str = "gpt-4.1"
+    model_name: str = "gpt-4o"
+    vision_model_name: str = "gpt-4o"
     api_key: str | None = None
     _tools: list[Any] | None = None
 
@@ -37,7 +37,7 @@ class CopilotLLM(BaseChatModel):
         self.model_name = model_name or os.getenv("COPILOT_MODEL")
         if not self.model_name:
             raise ValueError(
-                "CopilotLLM: 'model_name' must be provided via argument or COPILOT_MODEL env var."
+                "CopilotLLM: 'model_name' must be provided via argument or COPILOT_MODEL env var.",
             )
 
         vm = vision_model_name or os.getenv("COPILOT_VISION_MODEL")
@@ -69,7 +69,7 @@ class CopilotLLM(BaseChatModel):
         if not self.api_key:
             raise RuntimeError(
                 "COPILOT_API_KEY environment variable must be set. "
-                "Note: GITHUB_TOKEN is only for GitHub MCP server, not for agents."
+                "Note: GITHUB_TOKEN is only for GitHub MCP server, not for agents.",
             )
 
     def _has_image(self, messages: list[BaseMessage]) -> bool:
@@ -105,12 +105,12 @@ class CopilotLLM(BaseChatModel):
             api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_LIVE_API_KEY")
             if not api_key:
                 return AIMessage(
-                    content="[FALLBACK FAILED] No GEMINI_API_KEY found for vision fallback."
+                    content="[FALLBACK FAILED] No GEMINI_API_KEY found for vision fallback.",
                 )
 
             print("[GEMINI FALLBACK] Initializing fallback model...", flush=True)
             llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash", google_api_key=api_key, temperature=0.1
+                model="gemini-1.5-flash", google_api_key=api_key, temperature=0.1,
             )
             return llm.invoke(messages)
         except Exception as e:
@@ -118,7 +118,7 @@ class CopilotLLM(BaseChatModel):
             return self._invoke_local_blip_fallback(messages, e)
 
     def _invoke_local_blip_fallback(
-        self, messages: list[BaseMessage], prior_error: Exception
+        self, messages: list[BaseMessage], prior_error: Exception,
     ) -> AIMessage:
         """Ultimate fallback: Use Vision Module (OCR + BLIP) to describe the image."""
         try:
@@ -146,7 +146,7 @@ class CopilotLLM(BaseChatModel):
 
             if not image_b64:
                 return AIMessage(
-                    content=f"[LOCAL VISION FAILED] No image found. Original error: {prior_error}"
+                    content=f"[LOCAL VISION FAILED] No image found. Original error: {prior_error}",
                 )
 
             # Decode and save to temp file
@@ -194,7 +194,7 @@ class CopilotLLM(BaseChatModel):
                 from langchain_core.messages import HumanMessage, SystemMessage
 
                 text_only_messages = [msg for msg in messages if isinstance(msg, SystemMessage)] + [
-                    HumanMessage(content=new_prompt)
+                    HumanMessage(content=new_prompt),
                 ]
 
                 return self._internal_text_invoke(text_only_messages)
@@ -239,7 +239,7 @@ class CopilotLLM(BaseChatModel):
             # During tests we may set COPILOT_API_KEY to a dummy value; in that case
             # return a dummy token instead of raising an error to avoid network calls.
             if str(self.api_key).lower() in {"dummy", "test"} or os.getenv(
-                "COPILOT_API_KEY", ""
+                "COPILOT_API_KEY", "",
             ).lower() in {"dummy", "test"}:
                 return "dummy-session-token", "https://api.githubcopilot.com"
             raise
@@ -292,7 +292,7 @@ class CopilotLLM(BaseChatModel):
                     "\n\n" + tool_instructions if tool_instructions else ""
                 )
                 continue
-            elif isinstance(m, AIMessage):
+            if isinstance(m, AIMessage):
                 role = "assistant"
             elif isinstance(m, HumanMessage):
                 role = "user"
@@ -309,7 +309,7 @@ class CopilotLLM(BaseChatModel):
                             try:
                                 optimized_url = self._optimize_image_b64(url)
                                 processed_content.append(
-                                    {"type": "image_url", "image_url": {"url": optimized_url}}
+                                    {"type": "image_url", "image_url": {"url": optimized_url}},
                                 )
                             except Exception:
                                 processed_content.append(item)
@@ -325,7 +325,7 @@ class CopilotLLM(BaseChatModel):
         final_messages = [{"role": "system", "content": system_content}, *formatted_messages]
 
         # Use the configured model directly without mapping
-        # The model name from config (e.g., raptor-mini, gpt-4.1, gpt-4.1) is used as-is
+        # The model name from config (e.g., raptor-mini, gpt-4o, gpt-4o) is used as-is
         chosen_model = self.vision_model_name if self._has_image(messages) else self.model_name
 
         return {
@@ -380,7 +380,7 @@ class CopilotLLM(BaseChatModel):
                     httpx.TimeoutException,
                     httpx.NetworkError,
                     httpx.RemoteProtocolError,
-                )
+                ),
             ),
             reraise=True,
         )
@@ -402,7 +402,7 @@ class CopilotLLM(BaseChatModel):
             async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=30.0)) as client:
                 try:
                     response = await _do_post(
-                        client, f"{api_endpoint}/chat/completions", headers, payload
+                        client, f"{api_endpoint}/chat/completions", headers, payload,
                     )
                 except Exception as e:
                     print(f"[COPILOT] Primary request failed after retries: {e}", flush=True)
@@ -411,7 +411,7 @@ class CopilotLLM(BaseChatModel):
                 if response.status_code == 400:
                     error_detail = response.text
                     print(f"[COPILOT] Async 400 error. Content: {error_detail[:500]}", flush=True)
-                    print("[COPILOT] Retrying with gpt-4.1...", flush=True)
+                    print("[COPILOT] Retrying with gpt-4o...", flush=True)
 
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
@@ -429,19 +429,19 @@ class CopilotLLM(BaseChatModel):
                                         item.get("text", "")
                                         for item in content
                                         if isinstance(item, dict) and item.get("type") == "text"
-                                    ]
+                                    ],
                                 )
                                 cleaned_messages.append(
-                                    {**msg, "content": text_only or "[Image removed for fallback]"}
+                                    {**msg, "content": text_only or "[Image removed for fallback]"},
                                 )
                             else:
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    payload_fb["model"] = "gpt-4.1"  # Using official stable model
+                    payload_fb["model"] = "gpt-4o"  # Using official stable model
 
                     retry_response = await _do_post(
-                        client, f"{api_endpoint}/chat/completions", headers_fb, payload_fb
+                        client, f"{api_endpoint}/chat/completions", headers_fb, payload_fb,
                     )
 
                     if retry_response.status_code != 200:
@@ -459,7 +459,7 @@ class CopilotLLM(BaseChatModel):
         except Exception as e:
             print(f"[LLM] Async generation failed: {e}")
             return ChatResult(
-                generations=[ChatGeneration(message=AIMessage(content=f"[COPILOT ERROR] {e}"))]
+                generations=[ChatGeneration(message=AIMessage(content=f"[COPILOT ERROR] {e}"))],
             )
 
     def _process_json_result(self, data: dict[str, Any], messages: list[BaseMessage]) -> ChatResult:
@@ -467,8 +467,8 @@ class CopilotLLM(BaseChatModel):
         if not data.get("choices"):
             return ChatResult(
                 generations=[
-                    ChatGeneration(message=AIMessage(content="[COPILOT] No response choice."))
-                ]
+                    ChatGeneration(message=AIMessage(content="[COPILOT] No response choice.")),
+                ],
             )
 
         content = data["choices"][0]["message"]["content"]
@@ -496,7 +496,7 @@ class CopilotLLM(BaseChatModel):
                             "type": "tool_call",
                             "name": call.get("name"),
                             "args": call.get("args") or {},
-                        }
+                        },
                     )
                 final_answer = str(parsed.get("final_answer", ""))
         except Exception:
@@ -505,11 +505,11 @@ class CopilotLLM(BaseChatModel):
         if tool_calls:
             return ChatResult(
                 generations=[
-                    ChatGeneration(message=AIMessage(content=final_answer, tool_calls=tool_calls))
-                ]
+                    ChatGeneration(message=AIMessage(content=final_answer, tool_calls=tool_calls)),
+                ],
             )
         return ChatResult(
-            generations=[ChatGeneration(message=AIMessage(content=final_answer or content))]
+            generations=[ChatGeneration(message=AIMessage(content=final_answer or content))],
         )
 
     def _generate(
@@ -537,7 +537,7 @@ class CopilotLLM(BaseChatModel):
             payload = self._build_payload(messages)
 
             response = requests.post(
-                f"{api_endpoint}/chat/completions", headers=headers, json=payload, timeout=300
+                f"{api_endpoint}/chat/completions", headers=headers, json=payload, timeout=300,
             )
             response.raise_for_status()
             return self._process_json_result(response.json(), messages)
@@ -578,13 +578,13 @@ class CopilotLLM(BaseChatModel):
                         payload["messages"] = cleaned_messages
 
                     # Use GPT-4o as fallback (most stable)
-                    payload["model"] = "gpt-4.1"
+                    payload["model"] = "gpt-4o"
 
                     @retry(
                         stop=stop_after_attempt(2),
                         wait=wait_exponential(multiplier=1, min=2, max=5),
                         retry=retry_if_exception_type(
-                            (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
+                            (requests.exceptions.Timeout, requests.exceptions.ConnectionError),
                         ),
                         reraise=True,
                     )
@@ -604,14 +604,14 @@ class CopilotLLM(BaseChatModel):
                             generations=[
                                 ChatGeneration(
                                     message=AIMessage(
-                                        content="[COPILOT] No response from model (retry)."
-                                    )
-                                )
-                            ]
+                                        content="[COPILOT] No response from model (retry).",
+                                    ),
+                                ),
+                            ],
                         )
                     content = data["choices"][0]["message"]["content"]
                     return ChatResult(
-                        generations=[ChatGeneration(message=AIMessage(content=content))]
+                        generations=[ChatGeneration(message=AIMessage(content=content))],
                     )
 
                 except Exception as retry_err:
@@ -620,10 +620,10 @@ class CopilotLLM(BaseChatModel):
                         generations=[
                             ChatGeneration(
                                 message=AIMessage(
-                                    content=f"[COPILOT ERROR] Retry failed: {retry_err}"
-                                )
-                            )
-                        ]
+                                    content=f"[COPILOT ERROR] Retry failed: {retry_err}",
+                                ),
+                            ),
+                        ],
                     )
 
             error_msg = f"[COPILOT ERROR] HTTP {e.response.status_code if hasattr(e, 'response') and e.response else 'Unknown'}: {e}"
@@ -631,7 +631,7 @@ class CopilotLLM(BaseChatModel):
 
         except Exception as e:
             return ChatResult(
-                generations=[ChatGeneration(message=AIMessage(content=f"[COPILOT ERROR] {e}"))]
+                generations=[ChatGeneration(message=AIMessage(content=f"[COPILOT ERROR] {e}"))],
             )
 
     def _stream_response(
@@ -685,7 +685,7 @@ class CopilotLLM(BaseChatModel):
                                         "type": "tool_call",
                                         "name": name,
                                         "args": args,
-                                    }
+                                    },
                                 )
                         final_answer = str(parsed.get("final_answer", ""))
                         if tool_calls:
@@ -696,7 +696,7 @@ class CopilotLLM(BaseChatModel):
                 pass  # Keep content as plain text if JSON parsing fails
 
         return ChatResult(
-            generations=[ChatGeneration(message=AIMessage(content=content, tool_calls=tool_calls))]
+            generations=[ChatGeneration(message=AIMessage(content=content, tool_calls=tool_calls))],
         )
 
     def invoke_with_stream(
@@ -724,7 +724,7 @@ class CopilotLLM(BaseChatModel):
             stop=stop_after_attempt(3),
             wait=wait_exponential(multiplier=1, min=4, max=10),
             retry=retry_if_exception_type(
-                (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
+                (requests.exceptions.Timeout, requests.exceptions.ConnectionError),
             ),
             reraise=True,
         )
@@ -809,7 +809,7 @@ class CopilotLLM(BaseChatModel):
                                         "type": "tool_call",
                                         "name": name,
                                         "args": args,
-                                    }
+                                    },
                                 )
                         final_answer = str(parsed.get("final_answer", ""))
                         if tool_calls:

@@ -5,7 +5,7 @@ from pathlib import Path
 
 def _run_cmd(cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        res = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=timeout)
         return res.returncode, res.stdout or "", res.stderr or ""
     except Exception as e:
         return 1, "", str(e)
@@ -38,9 +38,9 @@ def npm_package_exists(pkg: str, ver: str) -> bool:
     return rc == 0 and bool(out.strip())
 
 
-import urllib.error  # noqa: E402
-import urllib.parse  # noqa: E402
-import urllib.request  # noqa: E402
+import urllib.error
+import urllib.parse
+import urllib.request
 
 
 def npm_registry_has_version(pkg: str, ver: str) -> bool:
@@ -55,7 +55,7 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
         if ver == "latest" or not ver[0].isdigit():
             url = f"https://registry.npmjs.org/{encoded}"
             req = urllib.request.Request(
-                url, headers={"Accept": "application/vnd.npm.install-v1+json"}
+                url, headers={"Accept": "application/vnd.npm.install-v1+json"},
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = resp.read()
@@ -96,9 +96,9 @@ def bunx_package_exists(pkg: str, ver: str) -> bool:
     return npm_registry_has_version(pkg, ver)
 
 
-import importlib.util  # noqa: E402
-import re  # noqa: E402
-import sys  # noqa: E402
+import importlib.util
+import re
+import sys
 
 
 def python_module_importable(module: str) -> bool:
@@ -169,7 +169,7 @@ def check_system_limits() -> list[str]:
             soft, _hard = resource.getrlimit(resource.RLIMIT_NPROC)
             if soft != resource.RLIM_INFINITY and soft < 1024:
                 issues.append(
-                    f"Process limit per user is low: {soft} (soft). Consider increasing ulimit -u)"
+                    f"Process limit per user is low: {soft} (soft). Consider increasing ulimit -u)",
                 )
         except Exception:
             # Not available on all platforms
@@ -182,7 +182,7 @@ def check_system_limits() -> list[str]:
                 val = int(out.strip())
                 if val < 2048:
                     issues.append(
-                        f"kern.maxproc is low: {val} (global max procs). Consider increasing via sysctl)"
+                        f"kern.maxproc is low: {val} (global max procs). Consider increasing via sysctl)",
                     )
         except Exception:
             pass
@@ -192,7 +192,7 @@ def check_system_limits() -> list[str]:
                 val = int(out.strip())
                 if val < 1024:
                     issues.append(
-                        f"kern.maxprocperuid is low: {val} (per-UID max). Consider increasing via sysctl)"
+                        f"kern.maxprocperuid is low: {val} (per-UID max). Consider increasing via sysctl)",
                     )
         except Exception:
             pass
@@ -237,7 +237,7 @@ def scan_mcp_config_for_package_issues(config_path: Path) -> list[str]:
                         module = args[idx + 1]
                         if not python_module_importable(module):
                             issues.append(
-                                f"{name}: python module {module} not importable (command={cmd} -m)"
+                                f"{name}: python module {module} not importable (command={cmd} -m)",
                             )
                     except Exception:
                         issues.append(f"{name}: could not parse -m module (command={cmd})")
@@ -250,7 +250,7 @@ def scan_mcp_config_for_package_issues(config_path: Path) -> list[str]:
                         for m in mods:
                             if not python_module_importable(m):
                                 issues.append(
-                                    f"{name}: python module {m} not importable (command={cmd} -c)"
+                                    f"{name}: python module {m} not importable (command={cmd} -c)",
                                 )
                     except Exception:
                         issues.append(f"{name}: could not parse -c code (command={cmd})")

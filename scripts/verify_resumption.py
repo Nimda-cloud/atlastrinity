@@ -23,7 +23,7 @@ async def test_resumption():
         "steps": [
             {"id": "1", "action": "Step 1 (Already Done)", "success": True},
             {"id": "2", "action": "Step 2 (Pending)", "success": False},
-        ]
+        ],
     }
 
     orch.state = {
@@ -58,7 +58,7 @@ async def test_resumption():
     # Mock initialize dependencies
     new_orch.atlas.analyze_request = AsyncMock()
     new_orch.tetyana.execute_step = AsyncMock(
-        return_value=MagicMock(success=True, result="Success Step 2", step_id="2")
+        return_value=MagicMock(success=True, result="Success Step 2", step_id="2"),
     )
     new_orch.grisha.verify_step = AsyncMock()
 

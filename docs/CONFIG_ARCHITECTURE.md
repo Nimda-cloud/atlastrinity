@@ -58,7 +58,7 @@ agents:
     temperature: 0.7
   
   tetyana:
-    model: "gpt-4.1"
+    model: "gpt-4o"
     temperature: 0.5
     
   grisha:
@@ -72,7 +72,7 @@ mcp:
   
   filesystem:
     enabled: true
-    model: "gpt-4.1"
+    model: "gpt-4o"
 ```
 
 **Розташування**: `~/.config/atlastrinity/config.yaml`
@@ -101,7 +101,7 @@ sync_env_to_config()
 config.yaml > .env > defaults
 ```
 
-**Приклад**: Якщо в `config.yaml` вказано `model: "gpt-4.1"`, але в `.env` є `COPILOT_MODEL=raptor-mini`, то буде використано `gpt-4.1`.
+**Приклад**: Якщо в `config.yaml` вказано `model: "gpt-4o"`, але в `.env` є `COPILOT_MODEL=raptor-mini`, то буде використано `gpt-4o`.
 
 ## Використання в коді
 
@@ -177,7 +177,7 @@ npm run build:mac:custom
 | Модель | ID | Краще для |
 |--------|----|-----------| 
 | Raptor mini | `raptor-mini` | Планування, reasoning |
-| GPT-4.1 | `gpt-4.1` | Виконання коду, швидкість |
+| GPT-4.1 | `gpt-4o` | Виконання коду, швидкість |
 | GPT-4o | `gpt-4o` | Vision, tool calling |
 | GPT-5 mini | `gpt-5-mini` | Компактність |
 | Grok Code Fast 1 | `grok-code-fast-1` | Швидкий coding |
@@ -190,7 +190,7 @@ agents:
     model: "raptor-mini"  # Планування потребує reasoning
     
   tetyana:
-    model: "gpt-4.1"      # Виконання - швидкість + якість
+    model: "gpt-4o"      # Виконання - швидкість + якість
     
   grisha:
     vision_model: "gpt-4o"  # Vision обов'язково gpt-4o
@@ -200,7 +200,7 @@ mcp:
     model: "gpt-4o"       # Tool calling
   
   filesystem:
-    model: "gpt-4.1"      # Швидкість
+    model: "gpt-4o"      # Швидкість
   
   playwright:
     model: "gpt-4o"       # Browser automation
@@ -211,7 +211,7 @@ mcp:
 
 ## Міграція з попередньої версії
 
-Якщо у вас вже є `.env` з `COPILOT_MODEL=gpt-4.1`:
+Якщо у вас вже є `.env` з `COPILOT_MODEL=gpt-4o`:
 
 ```bash
 # 1. Система автоматично синхронізує при старті

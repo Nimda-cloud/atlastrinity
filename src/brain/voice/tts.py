@@ -1,5 +1,4 @@
-"""
-AtlasTrinity TTS - Ukrainian Text-to-Speech
+"""AtlasTrinity TTS - Ukrainian Text-to-Speech
 
 Uses robinhad/ukrainian-tts for agent voices:
 - Atlas: Dmytro (male)
@@ -40,14 +39,13 @@ def _check_tts_available():
     except ImportError:
         TTS_AVAILABLE = False
         print(
-            "[TTS] Warning: ukrainian-tts not installed. Run: pip install git+https://github.com/robinhad/ukrainian-tts.git"
+            "[TTS] Warning: ukrainian-tts not installed. Run: pip install git+https://github.com/robinhad/ukrainian-tts.git",
         )
     return TTS_AVAILABLE
 
 
 def _patch_tts_config(cache_dir: Path):
-    """
-    Ensures config.yaml in cache_dir uses absolute paths for stats_file.
+    """Ensures config.yaml in cache_dir uses absolute paths for stats_file.
     This fixes FileNotFoundError in espnet2 on some systems.
     """
     config_path = cache_dir / "config.yaml"
@@ -85,8 +83,7 @@ def _patch_tts_config(cache_dir: Path):
 
 
 def sanitize_text_for_tts(text: str) -> str:
-    """
-    Cleans text for better TTS pronunciation.
+    """Cleans text for better TTS pronunciation.
     Removes/replaces characters and expands abbreviations.
     """
     import re
@@ -185,18 +182,17 @@ class VoiceConfig:
 # Agent voice mappings
 AGENT_VOICES = {
     "atlas": VoiceConfig(
-        name="Atlas", voice_id="Dmytro", description="Male voice for Meta-Planner"
+        name="Atlas", voice_id="Dmytro", description="Male voice for Meta-Planner",
     ),
     "tetyana": VoiceConfig(
-        name="Tetyana", voice_id="Tetiana", description="Female voice for Executor"
+        name="Tetyana", voice_id="Tetiana", description="Female voice for Executor",
     ),
     "grisha": VoiceConfig(name="Grisha", voice_id="Mykyta", description="Male voice for Visor"),
 }
 
 
 class AgentVoice:
-    """
-    TTS wrapper for agent voices
+    """TTS wrapper for agent voices
 
     Usage:
         voice = AgentVoice("atlas")
@@ -204,12 +200,12 @@ class AgentVoice:
     """
 
     def __init__(self, agent_name: str, device: str | None = None):
-        """
-        Initialize voice for an agent
+        """Initialize voice for an agent
 
         Args:
             agent_name: One of 'atlas', 'tetyana', 'grisha'
             device: 'cpu', 'cuda', or 'mps' (Apple Silicon). If None, reads from config.yaml
+
         """
         self.agent_name = agent_name.lower()
 
@@ -219,7 +215,7 @@ class AgentVoice:
 
         if self.agent_name not in AGENT_VOICES:
             raise ValueError(
-                f"Unknown agent: {agent_name}. Must be one of: {list(AGENT_VOICES.keys())}"
+                f"Unknown agent: {agent_name}. Must be one of: {list(AGENT_VOICES.keys())}",
             )
 
         self.config = AGENT_VOICES[self.agent_name]
@@ -275,7 +271,7 @@ class AgentVoice:
             try:
                 print("[TTS] Initializing engine on " + str(self.device) + "...")
                 print(
-                    "downloading https://github.com/robinhad/ukrainian-tts/releases/download/v6.0.0"
+                    "downloading https://github.com/robinhad/ukrainian-tts/releases/download/v6.0.0",
                 )
                 _patch_tts_config(MODELS_DIR)
                 self._tts = TTS(cache_folder=str(MODELS_DIR))
@@ -290,8 +286,7 @@ class AgentVoice:
         return self._tts
 
     def speak(self, text: str, output_file: str | None = None) -> str | None:
-        """
-        Generate speech from text
+        """Generate speech from text
 
         Args:
             text: Ukrainian text to speak
@@ -299,6 +294,7 @@ class AgentVoice:
 
         Returns:
             Path to the generated audio file, or None if TTS not available
+
         """
         if not _check_tts_available():
             print(f"[TTS] [{self.config.name}]: {text}")
@@ -315,7 +311,7 @@ class AgentVoice:
         # Determine output path
         if output_file is None:
             output_file = os.path.join(
-                tempfile.gettempdir(), f"tts_{self.agent_name}_{hash(text) % 10000}.wav"
+                tempfile.gettempdir(), f"tts_{self.agent_name}_{hash(text) % 10000}.wav",
             )
 
         try:
@@ -339,14 +335,14 @@ class AgentVoice:
             return None
 
     def speak_and_play(self, text: str) -> bool:
-        """
-        Generate speech and play it immediately (macOS)
+        """Generate speech and play it immediately (macOS)
 
         Args:
             text: Ukrainian text to speak
 
         Returns:
             True if successfully played, False otherwise
+
         """
         audio_file = self.speak(text)
 
@@ -368,8 +364,7 @@ class AgentVoice:
 
 
 class VoiceManager:
-    """
-    Centralized TTS manager for all agents
+    """Centralized TTS manager for all agents
     """
 
     def __init__(self, device: str = "cpu"):
@@ -455,7 +450,7 @@ class VoiceManager:
             self._tts = None
 
     def stop(self):
-        """Immediately stop current speech"""
+        \"\"\"Immediately stop current speech.\"\"\"
         if self._stop_event:
             self._stop_event.set()
 
@@ -464,14 +459,15 @@ class VoiceManager:
             try:
                 self._current_process.terminate()
                 print("[TTS] 🛑 Playback interrupted.")
-            except Exception:
-                pass
+            except Exception as e:
+                # Ignore errors during process termination
+                logger.debug(f\"[TTS] Error terminating playback process: {e}\")
             self._current_process = None
 
         self.is_speaking = False
 
     async def close(self):
-        """Shutdown the voice manager"""
+        \"\"\"Shutdown the voice manager.\"\"\"
         self.stop()
         await asyncio.sleep(0.1)
 
@@ -515,12 +511,12 @@ class VoiceManager:
                     if self._stop_event.is_set():
                         return None
 
-                    c_id = f"{agent_id}_{c_idx}_{hash(c_text) % 10000}"
-                    c_file = os.path.join(tempfile.gettempdir(), f"tts_{c_id}.wav")
+                    c_id = f\"{agent_id}_{c_idx}_{hash(c_text) % 10000}\"
+                    c_file = Path(tempfile.gettempdir()) / f\"tts_{c_id}.wav\"
 
                     def _do_gen():
                         if self.engine:
-                            with open(c_file, mode="wb") as f:
+                            with c_file.open(mode=\"wb\") as f:
                                 self.engine.tts(c_text, voice_enum, Stress.Dictionary.value, f)
 
                     await asyncio.to_thread(_do_gen)
@@ -558,7 +554,7 @@ class VoiceManager:
                 final_chunks = refined_chunks or [text]
 
                 print(
-                    f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks..."
+                    f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks...",
                 )
                 start_time = time.time()
 
@@ -585,11 +581,11 @@ class VoiceManager:
                     if idx + 1 < len(final_chunks):
                         next_gen_task = asyncio.create_task(_gen_f(final_chunks[idx + 1], idx + 1))
 
-                    if not os.path.exists(current_file):
+                    if not Path(current_file).exists():
                         continue
 
                     print(
-                        f"[TTS] [{config.name}] 🔊 Speaking chunk {idx + 1}/{len(final_chunks)}: {final_chunks[idx][:50]}..."
+                        f"[TTS] [{config.name}] 🔊 Speaking chunk {idx + 1}/{len(final_chunks)}: {final_chunks[idx][:50]}...",
                     )
                     self.last_text = final_chunks[idx].strip().lower()
                     self.history.append(self.last_text)
@@ -614,8 +610,9 @@ class VoiceManager:
                         self.is_speaking = False
                         self._current_process = None
 
-                    if os.path.exists(current_file):
-                        os.remove(current_file)
+                    current_path = Path(current_file)
+                    if current_path.exists():
+                        current_path.unlink()
 
                     # Wait for next chunk
                     if next_gen_task:

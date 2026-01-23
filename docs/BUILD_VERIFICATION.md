@@ -117,7 +117,7 @@ agents:            # Налаштування агентів
   atlas:
     model: "raptor-mini"
   tetyana:
-    model: "gpt-4.1"
+    model: "gpt-4o"
   grisha:
     vision_model: "gpt-4o"
 mcp:               # MCP сервери
@@ -231,7 +231,7 @@ final_model = agent_config.get("model") or os.getenv("COPILOT_MODEL", "raptor-mi
 ✅ **Tetyana**:
 ```python
 agent_config = config.get_agent_config("tetyana")
-final_model = agent_config.get("model") or os.getenv("COPILOT_MODEL", "gpt-4.1")
+final_model = agent_config.get("model") or os.getenv("COPILOT_MODEL", "gpt-4o")
 ```
 
 ✅ **Grisha**:

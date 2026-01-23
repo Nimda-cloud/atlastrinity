@@ -9,8 +9,7 @@ logger = logging.getLogger("brain.semantic_linker")
 
 
 class SemanticLinker:
-    """
-    Analyzes datasets to find semantic intersections with existing data.
+    """Analyzes datasets to find semantic intersections with existing data.
     Enables 'chaining' of tables via shared keys.
     """
 
@@ -37,10 +36,9 @@ class SemanticLinker:
     ]
 
     async def discover_links(
-        self, new_df: pd.DataFrame, new_node_id: str, namespace: str = "global"
+        self, new_df: pd.DataFrame, new_node_id: str, namespace: str = "global",
     ) -> list[dict[str, Any]]:
-        """
-        Scans existing DATASET nodes to find potential overlaps.
+        """Scans existing DATASET nodes to find potential overlaps.
         """
         links = []
 
@@ -81,24 +79,20 @@ class SemanticLinker:
                                     "matched_with": e_col,
                                     "description": f"Semantic link discovered between '{n_key}' and '{e_col}'",
                                 },
-                            }
+                            },
                         )
                         break  # Only one link per dataset pair for simplicity
 
         return links
 
     def _identify_possible_keys(self, df: pd.DataFrame) -> list[str]:
-        """
-        Uses heuristics to find columns that look like identifiers or linkable keys.
+        """Uses heuristics to find columns that look like identifiers or linkable keys.
         """
         possible_keys = []
         for col in df.columns:
             col_lower = str(col).lower()
             # Heuristic A: Name matches common key patterns
-            if any(hint in col_lower for hint in self.KEY_HINTS):
-                possible_keys.append(col_lower)
-            # Heuristic B: Column has high cardinality (many unique values)
-            elif df[col].nunique() / len(df) > 0.9 and len(df) > 10:
+            if any(hint in col_lower for hint in self.KEY_HINTS) or (df[col].nunique() / len(df) > 0.9 and len(df) > 10):
                 possible_keys.append(col_lower)
 
         return list(set(possible_keys))
