@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Brain Package
+"""AtlasTrinity Brain Package
 """
 
 # Для уникнення помилок імпорту на етапі установки залежностей

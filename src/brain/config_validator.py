@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Configuration Validator
+"""AtlasTrinity Configuration Validator
 
 Schema-based validation for:
 - config.yaml structure and values
@@ -160,7 +159,7 @@ class ConfigValidator:
                             level="error",
                             path=current_path,
                             message="Required key missing",
-                        )
+                        ),
                     )
                 continue
 
@@ -175,7 +174,7 @@ class ConfigValidator:
                         path=current_path,
                         message=f"Expected type '{expected_type}', got '{type(value).__name__}'",
                         value=value,
-                    )
+                    ),
                 )
                 continue
 
@@ -187,7 +186,7 @@ class ConfigValidator:
                         path=current_path,
                         message=f"Value {value} outside range {spec['_range']}",
                         value=value,
-                    )
+                    ),
                 )
 
             # Enum check
@@ -198,7 +197,7 @@ class ConfigValidator:
                         path=current_path,
                         message=f"Value '{value}' not in allowed: {spec['_enum']}",
                         value=value,
-                    )
+                    ),
                 )
 
             # Recurse into nested dicts
@@ -225,7 +224,7 @@ class ConfigValidator:
                             path=path,
                             message=f"Environment variable ${{{var_name}}} not set",
                             value=data,
-                        )
+                        ),
                     )
         elif isinstance(data, dict):
             for key, value in data.items():
@@ -257,7 +256,7 @@ class ConfigValidator:
                 file_path=path,
                 valid=False,
                 issues=[
-                    ValidationIssue(level="error", path=str(path), message=f"YAML parse error: {e}")
+                    ValidationIssue(level="error", path=str(path), message=f"YAML parse error: {e}"),
                 ],
             )
 
@@ -292,7 +291,7 @@ class ConfigValidator:
                 file_path=path,
                 valid=False,
                 issues=[
-                    ValidationIssue(level="error", path=str(path), message=f"JSON parse error: {e}")
+                    ValidationIssue(level="error", path=str(path), message=f"JSON parse error: {e}"),
                 ],
             )
 
@@ -315,7 +314,7 @@ class ConfigValidator:
                                 level="error",
                                 path=current_path,
                                 message=f"Required key '{key}' missing",
-                            )
+                            ),
                         )
                     continue
 
@@ -333,7 +332,7 @@ class ConfigValidator:
                             path=current_path,
                             message=f"Expected type '{expected_type}', got '{type(value).__name__}'",
                             value=value,
-                        )
+                        ),
                     )
 
                 if (
@@ -347,7 +346,7 @@ class ConfigValidator:
                             path=current_path,
                             message=f"Value {value} outside range {spec['_range']}",
                             value=value,
-                        )
+                        ),
                     )
 
             # Environment variable check

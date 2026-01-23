@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Comprehensive MCP Server Test Suite
+"""Comprehensive MCP Server Test Suite
 Tests all configured MCP servers and their capabilities.
 """
 
@@ -76,7 +75,7 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
 
             try:
                 result = await asyncio.wait_for(
-                    mcp_manager.call_tool(server_name, tool_name, args), timeout=5.0
+                    mcp_manager.call_tool(server_name, tool_name, args), timeout=5.0,
                 )
 
                 if isinstance(result, dict) and "error" in result:
@@ -86,7 +85,7 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
                             "test": description,
                             "status": "error",
                             "error": result["error"],
-                        }
+                        },
                     )
                 else:
                     # Truncate long output
@@ -99,7 +98,7 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
             except Exception as e:
                 print(f"{Colors.FAIL}✗ Exception: {e!s}{Colors.ENDC}")
                 results["tests"].append(
-                    {"test": description, "status": "exception", "error": str(e)}
+                    {"test": description, "status": "exception", "error": str(e)},
                 )
 
     except Exception as e:
@@ -186,7 +185,7 @@ async def main():
                     "path": "README.md",
                 },
                 "description": "Get README.md from repo",
-            }
+            },
         ],
         "memory": [
             {
@@ -197,18 +196,18 @@ async def main():
                             "name": "test_memory",
                             "entityType": "concept",
                             "observations": ["Testing MCP memory server"],
-                        }
-                    ]
+                        },
+                    ],
                 },
                 "description": "Create test memory entity",
-            }
+            },
         ],
         "puppeteer": [
             {
                 "tool": "puppeteer_navigate",
                 "args": {"url": "https://example.com"},
                 "description": "Navigate to example.com",
-            }
+            },
         ],
     }
 
@@ -235,7 +234,7 @@ async def main():
             test_count = len([t for t in result["tests"] if t["status"] == "success"])
             total_tests = len(result["tests"])
             print(
-                f"{Colors.OKGREEN}✓ {server:20} | {tool_count} tools | {test_count}/{total_tests} tests passed{Colors.ENDC}"
+                f"{Colors.OKGREEN}✓ {server:20} | {tool_count} tools | {test_count}/{total_tests} tests passed{Colors.ENDC}",
             )
         elif status == "no_tools":
             print(f"{Colors.WARNING}⚠ {server:20} | Connected but no tools{Colors.ENDC}")

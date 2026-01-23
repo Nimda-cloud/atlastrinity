@@ -16,7 +16,7 @@ def mock_behavior_engine():
                     {
                         "name": "stage1",
                         "steps": [
-                            {"action": "internal.test_action", "params": {"msg": "hello ${user}"}}
+                            {"action": "internal.test_action", "params": {"msg": "hello ${user}"}},
                         ],
                     },
                     {
@@ -32,12 +32,12 @@ def mock_behavior_engine():
                                     "action": "internal.test_action",
                                     "params": {"msg": "fallback"},
                                 },
-                            }
+                            },
                         ],
                     },
-                ]
-            }
-        }
+                ],
+            },
+        },
     }
     return be
 

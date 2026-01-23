@@ -1,5 +1,4 @@
-"""
-Knowledge Graph (GraphChain)
+"""Knowledge Graph (GraphChain)
 Bridges Structured Data (SQL/SQLite) and Semantic Data (ChromaDB)
 """
 
@@ -20,8 +19,7 @@ logger = logging.getLogger("brain.knowledge_graph")
 
 
 class KnowledgeGraph:
-    """
-    Manages the Knowledge Graph.
+    """Manages the Knowledge Graph.
     - Stores nodes/edges in SQLite (Structured)
     - Syncs text content to ChromaDB (Semantic)
     """
@@ -38,8 +36,7 @@ class KnowledgeGraph:
         namespace: str = "global",
         task_id: str | None = None,
     ) -> bool:
-        """
-        Add or update a node in the graph.
+        """Add or update a node in the graph.
 
         Args:
             node_type: FILE, TASK, TOOL, CONCEPT, DATASET
@@ -48,6 +45,7 @@ class KnowledgeGraph:
             sync_to_vector: If True, content is embedded in ChromaDB
             namespace: Isolation bucket (default: global)
             task_id: Associated Task UUID string
+
         """
         if attributes is None:
             attributes = {}
@@ -82,7 +80,7 @@ class KnowledgeGraph:
                             existing.task_id = (
                                 uuid.UUID(task_id)
                                 if isinstance(task_id, str)
-                                else cast(Any, task_id)
+                                else cast("Any", task_id)
                             )
 
                         existing.attributes = attributes
@@ -161,7 +159,7 @@ class KnowledgeGraph:
                 await session.commit()
 
             logger.info(
-                f"[GRAPH] Edge: {source_id} -[{relation}]-> {target_id} (Namespace: {namespace})"
+                f"[GRAPH] Edge: {source_id} -[{relation}]-> {target_id} (Namespace: {namespace})",
             )
             return True
         except IntegrityError:
@@ -172,10 +170,9 @@ class KnowledgeGraph:
             return False
 
     async def batch_add_nodes(
-        self, nodes: list[dict[str, Any]], namespace: str = "global"
+        self, nodes: list[dict[str, Any]], namespace: str = "global",
     ) -> dict[str, Any]:
-        """
-        Optimized batch insertion of nodes.
+        """Optimized batch insertion of nodes.
         Used for bulk data ingestion.
         """
         if not db_manager.available or not nodes:
@@ -195,7 +192,7 @@ class KnowledgeGraph:
                         "task_id": n.get("task_id"),
                         "attributes": n.get("attributes", {}),
                         "last_updated": datetime.now(),
-                    }
+                    },
                 )
 
             async with await db_manager.get_session() as session:
@@ -216,9 +213,9 @@ class KnowledgeGraph:
                         await self.add_node(
                             node_type=str(row["type"]),
                             node_id=str(row["id"]),
-                            attributes=cast(dict[str, Any], row["attributes"]),
+                            attributes=cast("dict[str, Any]", row["attributes"]),
                             namespace=str(row["namespace"]),
-                            task_id=cast(str | None, row["task_id"]),
+                            task_id=cast("str | None", row["task_id"]),
                             sync_to_vector=True,  # Batch vectorization is harder
                         )
 
@@ -228,10 +225,9 @@ class KnowledgeGraph:
             return {"success": False, "error": str(e)}
 
     async def promote_node(
-        self, node_id: str, target_namespace: str = "global", agent_name: str = "atlas"
+        self, node_id: str, target_namespace: str = "global", agent_name: str = "atlas",
     ) -> bool:
-        """
-        Elevate a node and its immediate relationships to a new namespace.
+        """Elevate a node and its immediate relationships to a new namespace.
         Part of the 'Golden Fund' architecture.
         """
         if not db_manager.available:
@@ -283,14 +279,14 @@ class KnowledgeGraph:
                     long_term_memory.knowledge.update(
                         ids=[node_id],
                         metadatas=cast(
-                            Any,
+                            "Any",
                             [
                                 {
                                     "namespace": target_namespace,
                                     "task_id": ""
                                     if target_namespace == "global"
                                     else existing.task_id or "",
-                                }
+                                },
                             ],
                         ),
                     )
@@ -298,7 +294,7 @@ class KnowledgeGraph:
                     logger.warning(f"[GRAPH] Vector metadata update failed during promotion: {ve}")
 
             logger.info(
-                f"[GRAPH] Node {node_id} promoted from {old_namespace} to {target_namespace}"
+                f"[GRAPH] Node {node_id} promoted from {old_namespace} to {target_namespace}",
             )
             return True
         except Exception as e:

@@ -1,5 +1,4 @@
-"""
-MCP Registry - Unified Tool Descriptions and Schemas
+"""MCP Registry - Unified Tool Descriptions and Schemas
 
 Single source of truth for all MCP server definitions, tool schemas,
 and documentation. Used by all agents (Atlas, Tetyana, Grisha).
@@ -136,8 +135,7 @@ load_registry()
 
 
 def get_server_catalog_for_prompt(include_key_tools: bool = True) -> str:
-    """
-    Generate LLM-readable server catalog for prompts.
+    """Generate LLM-readable server catalog for prompts.
     This replaces the hardcoded DEFAULT_REALM_CATALOG in common.py.
     """
     lines = ["AVAILABLE REALMS (MCP Servers):", ""]
@@ -186,15 +184,14 @@ def get_server_catalog_for_prompt(include_key_tools: bool = True) -> str:
     lines.append("- docker, postgres, slack → Disabled/Removed")
     lines.append("")
     lines.append(
-        "CRITICAL: Do NOT invent high-level tools. Use only the real TOOLS found inside these Realms."
+        "CRITICAL: Do NOT invent high-level tools. Use only the real TOOLS found inside these Realms.",
     )
 
     return "\n".join(lines)
 
 
 def get_tool_schema(tool_name: str) -> dict[str, Any] | None:
-    """
-    Get schema for a specific tool.
+    """Get schema for a specific tool.
     Resolves aliases to their canonical form.
     """
     schema = TOOL_SCHEMAS.get(tool_name)
@@ -214,8 +211,7 @@ def get_server_for_tool(tool_name: str) -> str | None:
 
 
 def get_servers_for_task(task_type: str) -> list[str]:
-    """
-    Suggest servers based on task type.
+    """Suggest servers based on task type.
     Now delegates to BehaviorEngine for config-driven classification.
     """
     from src.brain.behavior_engine import behavior_engine

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Example of how to correctly use the vibe_prompt tool.
+"""Example of how to correctly use the vibe_prompt tool.
 
 This demonstrates the proper way to call vibe_prompt with all required parameters.
 """
@@ -16,7 +15,6 @@ sys.path.insert(0, str(project_root))
 
 async def example_vibe_prompt_usage():
     """Example of correct vibe_prompt usage."""
-
     # Import the vibe server module
     from src.mcp_server.vibe_server import vibe_prompt
 

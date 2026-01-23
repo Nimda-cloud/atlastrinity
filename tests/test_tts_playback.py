@@ -19,7 +19,7 @@ async def test_tts():
     import subprocess
 
     try:
-        subprocess.run(["afplay", "--help"], capture_output=True)
+        subprocess.run(["afplay", "--help"], check=False, capture_output=True)
         print("'afplay' command is available.")
     except Exception as e:
         print(f"ERROR: 'afplay' not available: {e}")

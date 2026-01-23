@@ -1,5 +1,4 @@
-"""
-BaseAgent - Shared utilities for Trinity agents
+"""BaseAgent - Shared utilities for Trinity agents
 
 This module provides common functionality used by Atlas, Tetyana, and Grisha agents.
 """
@@ -12,8 +11,7 @@ class BaseAgent:
     """Base class for Trinity agents with shared utilities."""
 
     def _parse_response(self, content: str) -> dict[str, Any]:
-        """
-        Parse JSON response from LLM with fuzzy fallback.
+        """Parse JSON response from LLM with fuzzy fallback.
 
         Handles:
         1. Clean JSON responses
@@ -60,10 +58,9 @@ class BaseAgent:
         return {"raw": content}
 
     async def use_sequential_thinking(
-        self, task: str, total_thoughts: int = 3, capabilities: str | None = None
+        self, task: str, total_thoughts: int = 3, capabilities: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Universal reasoning capability for any agent.
+        """Universal reasoning capability for any agent.
         Uses a dedicated LLM (as configured in sequential_thinking.model) to generate
         deep thoughts and stores them via the sequential-thinking MCP tool.
         """
@@ -94,7 +91,7 @@ class BaseAgent:
 
         full_analysis = ""
         current_context = ""  # Accumulate thoughts for LLM context
-        
+
         # Capability context
         cap_ctx = f"\nAGENT CAPABILITIES:\n{capabilities}\n" if capabilities else ""
 
@@ -121,10 +118,10 @@ Generate the next logical thought to analyze this problem.
                 response = await thinker_llm.ainvoke(
                     [
                         SystemMessage(
-                            content="You are a Sequential Thinking Engine. Output ONLY the raw thought text."
+                            content="You are a Sequential Thinking Engine. Output ONLY the raw thought text.",
                         ),
                         HumanMessage(content=prompt),
-                    ]
+                    ],
                 )
                 thought_content = (
                     response.content if hasattr(response, "content") else str(response)

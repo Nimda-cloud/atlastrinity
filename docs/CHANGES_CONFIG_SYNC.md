@@ -44,7 +44,7 @@ agents:
     model: "raptor-mini"  # Планування
   
   tetyana:
-    model: "gpt-4.1"      # Виконання
+    model: "gpt-4o"      # Виконання
   
   grisha:
     vision_model: "gpt-4o"  # Vision
@@ -54,7 +54,7 @@ mcp:
     model: "gpt-4o"       # Tool calling
   
   filesystem:
-    model: "gpt-4.1"      # Швидкість
+    model: "gpt-4o"      # Швидкість
   
   playwright:
     model: "gpt-4o"       # Browser automation
@@ -173,7 +173,7 @@ python -c "from src.brain.config_sync import sync_env_to_config; sync_env_to_con
 | Модель | ID | Призначення |
 |--------|----|-----------| 
 | **Raptor mini** | `raptor-mini` | Планування, reasoning ✓ |
-| **GPT-4.1** | `gpt-4.1` | Виконання коду, швидкість ✓ |
+| **GPT-4.1** | `gpt-4o` | Виконання коду, швидкість ✓ |
 | **GPT-4o** | `gpt-4o` | Vision, tool calling ✓ |
 | GPT-5 mini | `gpt-5-mini` | Компактність |
 | Grok Code Fast 1 | `grok-code-fast-1` | Швидкий coding |
@@ -188,12 +188,12 @@ python -c "from src.brain.config_sync import sync_env_to_config; sync_env_to_con
 ```yaml
 # Агенти
 Atlas:    raptor-mini  # найкраща для planning/reasoning
-Tetyana:  gpt-4.1      # найкраща для code execution
+Tetyana:  gpt-4o      # найкраща для code execution
 Grisha:   gpt-4o       # обов'язково для vision
 
 # MCP
 Terminal:      gpt-4o   # tool calling + command interpretation
-Filesystem:    gpt-4.1  # швидкість
+Filesystem:    gpt-4o  # швидкість
 Playwright:    gpt-4o   # browser automation
 Computer Use:  gpt-4o   # vision-based control
 Whisper:       base     # STT (offline)

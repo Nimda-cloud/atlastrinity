@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Message Bus
+"""AtlasTrinity Message Bus
 
 Typed inter-agent communication system with DB persistence.
 Provides reliable message passing between Atlas, Tetyana, and Grisha.
@@ -62,8 +61,7 @@ class AgentMsg:
 
 
 class MessageBus:
-    """
-    Typed inter-agent communication bus with optional DB persistence.
+    """Typed inter-agent communication bus with optional DB persistence.
 
     Features:
     - Typed messages with MessageType enum
@@ -96,14 +94,14 @@ class MessageBus:
             self._db_available = False
 
     async def send(self, msg: AgentMsg) -> bool:
-        """
-        Send message to target agent.
+        """Send message to target agent.
 
         Args:
             msg: The message to send
 
         Returns:
             True if sent successfully
+
         """
         try:
             # Add to in-memory queue
@@ -115,7 +113,7 @@ class MessageBus:
 
             logger.info(
                 f"[MESSAGE_BUS] {msg.from_agent} -> {msg.to_agent}: "
-                f"{msg.message_type.value} (step={msg.step_id})"
+                f"{msg.message_type.value} (step={msg.step_id})",
             )
 
             # Persist to DB if available
@@ -128,10 +126,9 @@ class MessageBus:
             return False
 
     async def receive(
-        self, agent: str, message_type: MessageType | None = None, mark_read: bool = True
+        self, agent: str, message_type: MessageType | None = None, mark_read: bool = True,
     ) -> list[AgentMsg]:
-        """
-        Receive pending messages for an agent.
+        """Receive pending messages for an agent.
 
         Args:
             agent: The receiving agent name
@@ -140,6 +137,7 @@ class MessageBus:
 
         Returns:
             List of pending messages
+
         """
         agent = agent.lower()
         messages = []

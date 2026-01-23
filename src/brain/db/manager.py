@@ -1,5 +1,4 @@
-"""
-Database Connection Manager
+"""Database Connection Manager
 """
 
 import asyncio
@@ -44,7 +43,7 @@ class DatabaseManager:
         """Initialize DB connection and create tables if missing."""
         try:
             self._engine = create_async_engine(
-                self.db_url, echo=False, pool_size=20, max_overflow=10, pool_pre_ping=True
+                self.db_url, echo=False, pool_size=20, max_overflow=10, pool_pre_ping=True,
             )
 
             # Enable Foreign Key support for SQLite
@@ -76,15 +75,14 @@ class DatabaseManager:
             err_str = str(e)
             if "No module named 'aiosqlite'" in err_str or "aiosqlite" in err_str:
                 print(
-                    f"[DB] Failed to initialize database: {e}\n[DB] Hint: The async SQLite driver 'aiosqlite' is not installed. Install it via 'pip install aiosqlite' or set DATABASE_URL to a supported DB backend."
+                    f"[DB] Failed to initialize database: {e}\n[DB] Hint: The async SQLite driver 'aiosqlite' is not installed. Install it via 'pip install aiosqlite' or set DATABASE_URL to a supported DB backend.",
                 )
             else:
                 print(f"[DB] Failed to initialize database: {e}")
             self.available = False
 
     async def verify_schema(self, fix: bool = True):
-        """
-        Comprehensive schema verification:
+        """Comprehensive schema verification:
         1. Checks for missing columns and adds them.
         2. Checks for column type mismatches and alters them.
         3. Checks for missing indexes and creates them.
@@ -115,7 +113,7 @@ class DatabaseManager:
                 for column in table.columns:
                     if column.name not in existing_col_map:
                         print(
-                            f"[DB] Mismatch: Missing column '{column.name}' in table '{table_name}'"
+                            f"[DB] Mismatch: Missing column '{column.name}' in table '{table_name}'",
                         )
                         if fix:
                             try:
@@ -133,9 +131,7 @@ class DatabaseManager:
                                             if column.name == "namespace"
                                             else " DEFAULT ''"
                                         )
-                                    elif "INT" in str(col_type).upper():
-                                        default_val = " DEFAULT 0"
-                                    elif "BOOLEAN" in str(col_type).upper():
+                                    elif "INT" in str(col_type).upper() or "BOOLEAN" in str(col_type).upper():
                                         default_val = " DEFAULT 0"
 
                                 sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type} {nullable}{default_val};'
@@ -183,7 +179,7 @@ class DatabaseManager:
                             norm_expected in norm_existing or norm_existing in norm_expected
                         ):
                             print(
-                                f"[DB] Type Warning: Column '{column.name}' in '{table_name}' type mismatch. Found: {raw_existing_type} (norm: {norm_existing}), Expected: {expected_type} (norm: {norm_expected})"
+                                f"[DB] Type Warning: Column '{column.name}' in '{table_name}' type mismatch. Found: {raw_existing_type} (norm: {norm_existing}), Expected: {expected_type} (norm: {norm_expected})",
                             )
                             if fix:
                                 try:
@@ -191,7 +187,7 @@ class DatabaseManager:
                                     sql = f'ALTER TABLE "{table_name}" ALTER COLUMN "{column.name}" TYPE {col_type} USING "{column.name}"::{col_type};'
                                     connection.execute(text(sql))
                                     print(
-                                        f"[DB] FIXED: Altered column '{column.name}' type to {col_type}"
+                                        f"[DB] FIXED: Altered column '{column.name}' type to {col_type}",
                                     )
                                 except Exception as e:
                                     print(f"[DB] FAILED to alter type: {e}")
@@ -201,7 +197,7 @@ class DatabaseManager:
                 for index in table.indexes:
                     if index.name not in existing_indexes:
                         print(
-                            f"[DB] Mismatch: Missing index '{index.name}' on table '{table_name}'"
+                            f"[DB] Mismatch: Missing index '{index.name}' on table '{table_name}'",
                         )
                         if fix:
                             try:
@@ -228,12 +224,12 @@ class DatabaseManager:
                     )
                     if fk_data not in existing_fks:
                         print(
-                            f"[DB] Mismatch: Missing Foreign Key on '{table_name}' referencing '{fk_data[1]}'"
+                            f"[DB] Mismatch: Missing Foreign Key on '{table_name}' referencing '{fk_data[1]}'",
                         )
                         if fix:
                             if connection.dialect.name == "sqlite":
                                 print(
-                                    f"[DB] Info: Foreign Key missing on '{table_name}' referencing '{fk_data[1]}'. SQLite doesn't support adding FKs via ALTER TABLE. This is normal for initial setups."
+                                    f"[DB] Info: Foreign Key missing on '{table_name}' referencing '{fk_data[1]}'. SQLite doesn't support adding FKs via ALTER TABLE. This is normal for initial setups.",
                                 )
                                 continue
                             try:
@@ -244,7 +240,7 @@ class DatabaseManager:
                                 sql = f'ALTER TABLE "{table_name}" ADD CONSTRAINT "{constraint_name}" FOREIGN KEY ({cols}) REFERENCES "{fk_data[1]}" ({ref_cols});'
                                 connection.execute(text(sql))
                                 print(
-                                    f"[DB] FIXED: Added Foreign Key constraint '{constraint_name}'"
+                                    f"[DB] FIXED: Added Foreign Key constraint '{constraint_name}'",
                                 )
                             except Exception as e:
                                 print(f"[DB] FAILED to add Foreign Key: {e}")
@@ -253,8 +249,7 @@ class DatabaseManager:
             await conn.run_sync(_sync_verify)
 
     async def ensure_seed_data(self):
-        """
-        Ensure mandatory initial rows exist in tables (Seed Data).
+        """Ensure mandatory initial rows exist in tables (Seed Data).
         """
         if not self.available:
             return
@@ -266,7 +261,7 @@ class DatabaseManager:
         async with await self.get_session() as session:
             # 1. Ensure core system node exists in Knowledge Graph
             # Use cast(Any, ...) to satisfy linter regarding SQLAlchemy operator overloading
-            stmt = select(KGNode).where(cast(Any, KGNode.id == "entity:trinity"))
+            stmt = select(KGNode).where(cast("Any", KGNode.id == "entity:trinity"))
             res = await session.execute(stmt)
             if not res.scalar():
                 print("[DB] Seeding core Knowledge Graph nodes...")
@@ -283,8 +278,7 @@ class DatabaseManager:
                 print("[DB] Seeding complete.")
 
     async def create_table_from_df(self, table_name: str, df: pd.DataFrame) -> bool:
-        """
-        Dynamically create a table in the database matching the DataFrame schema.
+        """Dynamically create a table in the database matching the DataFrame schema.
         Used for High-Precision Ingestion.
         """
         if not self.available:
@@ -317,7 +311,7 @@ class DatabaseManager:
 
             # Explicitly cast to Any to satisfy strict linters regarding the positional type argument
             col_type = map_dtype(col_name)
-            columns.append(Column(safe_col, cast(Any, col_type)))
+            columns.append(Column(safe_col, cast("Any", col_type)))
 
         # 3. Create the table sync-style via engine.run_sync
         def sync_create(connection):
@@ -348,10 +342,10 @@ class DatabaseManager:
                 from sqlalchemy import text
 
                 cols = ", ".join(
-                    [f'"{str(c).lower().replace(" ", "_").replace("-", "_")}"' for c in df.columns]
+                    [f'"{str(c).lower().replace(" ", "_").replace("-", "_")}"' for c in df.columns],
                 )
                 placeholders = ", ".join(
-                    [f":{str(c).lower().replace(' ', '_').replace('-', '_')}" for c in df.columns]
+                    [f":{str(c).lower().replace(' ', '_').replace('-', '_')}" for c in df.columns],
                 )
                 sql = f'INSERT INTO "{table_name}" ({cols}) VALUES ({placeholders})'
 

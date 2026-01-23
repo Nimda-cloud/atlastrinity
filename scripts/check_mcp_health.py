@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-AtlasTrinity MCP Server Health Check
+"""AtlasTrinity MCP Server Health Check
 
 Enhanced CLI tool for checking MCP server status with:
 - Colored terminal output (green/yellow/red)
@@ -56,7 +55,7 @@ async def check_mcp(output_json: bool = False):
         print(f"{Colors.BOLD}{Colors.CYAN}  🔌 MCP Server Status Report{Colors.ENDC}")
         print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
         print(
-            f"  {Colors.BOLD}{'Server':<24} {'Tier':^6} {'Status':^12} {'Tools':^6} {'Time':^10}{Colors.ENDC}"
+            f"  {Colors.BOLD}{'Server':<24} {'Tier':^6} {'Status':^12} {'Tools':^6} {'Time':^10}{Colors.ENDC}",
         )
         print(f"  {'-' * 64}")
 
@@ -86,7 +85,7 @@ async def check_mcp(output_json: bool = False):
                         f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
                         f"{Colors.GREEN}ONLINE{Colors.ENDC}      "
                         f"{len(tools):^6} "
-                        f"{elapsed:>6.0f}ms"
+                        f"{elapsed:>6.0f}ms",
                     )
             # check if it's connected
             elif server_name in mcp_manager.sessions:
@@ -103,7 +102,7 @@ async def check_mcp(output_json: bool = False):
                         f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
                         f"{Colors.YELLOW}DEGRADED{Colors.ENDC}    "
                         f"{0:^6} "
-                        f"{elapsed:>6.0f}ms"
+                        f"{elapsed:>6.0f}ms",
                     )
             else:
                 results[server_name] = {
@@ -117,7 +116,7 @@ async def check_mcp(output_json: bool = False):
                         f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
                         f"{Colors.RED}OFFLINE{Colors.ENDC}     "
                         f"{'—':^6} "
-                        f"{'—':^10}"
+                        f"{'—':^10}",
                     )
 
         except TimeoutError:
@@ -132,7 +131,7 @@ async def check_mcp(output_json: bool = False):
                     f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
                     f"{Colors.RED}TIMEOUT{Colors.ENDC}     "
                     f"{'—':^6} "
-                    f"{Colors.DIM}>30s{Colors.ENDC}"
+                    f"{Colors.DIM}>30s{Colors.ENDC}",
                 )
 
         except Exception as e:
@@ -148,7 +147,7 @@ async def check_mcp(output_json: bool = False):
                     f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
                     f"{Colors.RED}ERROR{Colors.ENDC}       "
                     f"{'—':^6} "
-                    f"{Colors.DIM}{error_short}{Colors.ENDC}"
+                    f"{Colors.DIM}{error_short}{Colors.ENDC}",
                 )
 
     if output_json:
@@ -187,13 +186,13 @@ async def check_mcp(output_json: bool = False):
             f"{Colors.GREEN}{online}{Colors.ENDC} online, "
             f"{Colors.YELLOW}{degraded}{Colors.ENDC} degraded, "
             f"{Colors.RED}{offline}{Colors.ENDC} offline "
-            f"(of {total} total)"
+            f"(of {total} total)",
         )
 
         health_pct = (online / total * 100) if total > 0 else 0
         print(
             f"  {status_color}{status_icon}{Colors.ENDC} "
-            f"{Colors.BOLD}Health:{Colors.ENDC} {health_pct:.0f}%"
+            f"{Colors.BOLD}Health:{Colors.ENDC} {health_pct:.0f}%",
         )
 
         print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")

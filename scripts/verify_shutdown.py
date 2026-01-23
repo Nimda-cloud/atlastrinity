@@ -7,7 +7,7 @@ import psutil
 
 
 def find_procs_by_name(names):
-    "Return a list of processes matching 'names'."
+    """Return a list of processes matching 'names'."""
     ls = []
     for p in psutil.process_iter(["pid", "name", "cmdline"]):
         try:
@@ -62,7 +62,7 @@ def test_shutdown():
         print("SUCCESS: All processes terminated correctly.")
     else:
         print(
-            f"FAILURE: Following processes still running: {[p.info['cmdline'] for p in running_after]}"
+            f"FAILURE: Following processes still running: {[p.info['cmdline'] for p in running_after]}",
         )
         # Cleanup for safety
         for p in running_after:

@@ -25,7 +25,7 @@ async def report(limit_tasks: int = 50, limit_logs: int = 200):
 
     if not db_manager.available:
         print(
-            "[DB] Database not available. Ensure DATABASE_URL is set and the configured DB driver (e.g., aiosqlite for SQLite) is installed and accessible."
+            "[DB] Database not available. Ensure DATABASE_URL is set and the configured DB driver (e.g., aiosqlite for SQLite) is installed and accessible.",
         )
         return 2
 
@@ -41,17 +41,17 @@ async def report(limit_tasks: int = 50, limit_logs: int = 200):
                 print("No PENDING/RUNNING/FAILED tasks found.")
             for t in tasks:
                 print(
-                    f"TASK {t.id}\n  goal: {t.goal}\n  status: {t.status}\n  created_at: {t.created_at}\n  completed_at: {t.completed_at}"
+                    f"TASK {t.id}\n  goal: {t.goal}\n  status: {t.status}\n  created_at: {t.created_at}\n  completed_at: {t.completed_at}",
                 )
                 steps = await s.execute(
                     select(TaskStep)
                     .where(TaskStep.task_id == t.id)
-                    .order_by(TaskStep.sequence_number)
+                    .order_by(TaskStep.sequence_number),
                 )
                 for st in steps.scalars().all():
                     if st.status != "SUCCESS":
                         print(
-                            f"    STEP {st.sequence_number}: {st.action}\n      status: {st.status}\n      error: {st.error_message}\n      duration_ms: {st.duration_ms}"
+                            f"    STEP {st.sequence_number}: {st.action}\n      status: {st.status}\n      error: {st.error_message}\n      duration_ms: {st.duration_ms}",
                         )
 
             # Recent ERROR logs
@@ -60,7 +60,7 @@ async def report(limit_tasks: int = 50, limit_logs: int = 200):
                 select(LogEntry)
                 .where(LogEntry.level.in_(["ERROR", "CRITICAL", "FATAL"]))
                 .order_by(LogEntry.timestamp.desc())
-                .limit(limit_logs)
+                .limit(limit_logs),
             )
             logs = logs.scalars().all()
             if not logs:

@@ -1,5 +1,4 @@
-"""
-Adaptive Behavior Module
+"""Adaptive Behavior Module
 
 Provides non-standard algorithmic patterns for agent decision-making:
 - Dynamic strategy selection
@@ -26,8 +25,7 @@ class BehaviorPattern:
 
 
 class AdaptiveBehaviorEngine:
-    """
-    Manages non-standard algorithmic behavior for agents.
+    """Manages non-standard algorithmic behavior for agents.
 
     Features:
     - Pattern matching for deviation decisions
@@ -58,12 +56,12 @@ class AdaptiveBehaviorEngine:
         context: dict[str, Any],
         confidence_threshold: float = 0.6,
     ) -> tuple[bool, str]:
-        """
-        Determines if the agent should deviate from standard behavior.
+        """Determines if the agent should deviate from standard behavior.
         Now delegates to BehaviorEngine for config-driven pattern matching.
 
         Returns:
             (should_deviate: bool, reason: str)
+
         """
         # Delegate to behavior engine for pattern matching
         combined_context = {**context, "step": current_step}
@@ -130,7 +128,7 @@ class AdaptiveBehaviorEngine:
                 "success": success,
                 "context": context,
                 "timestamp": datetime.now().isoformat(),
-            }
+            },
         )
 
     def register_pattern(
@@ -153,13 +151,12 @@ class AdaptiveBehaviorEngine:
         task_type: str,
         context: dict[str, Any],
     ) -> str:
-        """
-        Returns a strategy recommendation based on task type and context.
+        """Returns a strategy recommendation based on task type and context.
         Now delegates to BehaviorEngine for config-driven selection.
         """
         # Create cache key from task type and relevant context
         context_key_parts = sorted(
-            [f"{k}={v}" for k, v in context.items() if isinstance(v, str | bool | int)]
+            [f"{k}={v}" for k, v in context.items() if isinstance(v, str | bool | int)],
         )
         cache_key = f"{task_type}:{':'.join(context_key_parts[:5])}"
 

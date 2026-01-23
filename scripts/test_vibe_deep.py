@@ -27,7 +27,7 @@ TOOLS_TO_TEST = [
 
 
 async def run_vibe_tool(
-    server_config: dict[str, Any], tool_name: str, tool_args: dict[str, Any]
+    server_config: dict[str, Any], tool_name: str, tool_args: dict[str, Any],
 ) -> bool:
     print(f"\n--- Testing Vibe -> {tool_name} ---")
 
@@ -96,9 +96,9 @@ async def run_vibe_tool(
                         # Initialized
                         process.stdin.write(
                             json.dumps(
-                                {"jsonrpc": "2.0", "method": "notifications/initialized"}
+                                {"jsonrpc": "2.0", "method": "notifications/initialized"},
                             ).encode()
-                            + b"\n"
+                            + b"\n",
                         )
                         await process.stdin.drain()
                         break
@@ -121,7 +121,7 @@ async def run_vibe_tool(
             while True:
                 try:
                     line = await asyncio.wait_for(
-                        process.stdout.readline(), timeout=30.0
+                        process.stdout.readline(), timeout=30.0,
                     )  # Longer timeout for AI
                 except TimeoutError:
                     print("❌ Timeout waiting for tool execution")
@@ -149,7 +149,7 @@ async def run_vibe_tool(
                             if tool_name == "vibe_session_details":
                                 content = result.get("content", [])
                                 text_res = "".join(
-                                    [c["text"] for c in content if c["type"] == "text"]
+                                    [c["text"] for c in content if c["type"] == "text"],
                                 )
                                 if '"success": false' in text_res or "not found" in text_res:
                                     print("✅ Correctly handled missing session")
@@ -169,7 +169,7 @@ async def run_vibe_tool(
                                     # Fallback to checking text content
                                     content = result.get("content", [])
                                     text_res = "".join(
-                                        [c["text"] for c in content if c["type"] == "text"]
+                                        [c["text"] for c in content if c["type"] == "text"],
                                     )
                                     if (
                                         "Unknown subcommand" in text_res
@@ -182,7 +182,7 @@ async def run_vibe_tool(
                                 # Check content for binary path
                                 content = result.get("content", [])
                                 text_res = "".join(
-                                    [c["text"] for c in content if c["type"] == "text"]
+                                    [c["text"] for c in content if c["type"] == "text"],
                                 )
                                 if "binary" in text_res:
                                     print(f"✅ Found binary info: {text_res[:100]}...")

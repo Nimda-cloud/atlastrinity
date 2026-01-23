@@ -32,7 +32,7 @@ async def verify_ingestion_pipeline():
             "name": ["alpha", None, None, "delta", "trash"],
             "junk": [None, None, None, None, None],  # 100% null
             "nonsense": ["valid", "valid", "NaN", "NULL", "undefined"],  # Trash markers
-        }
+        },
     )
     dirty_df.to_csv(dirty_path, index=False)
 
@@ -43,7 +43,7 @@ async def verify_ingestion_pipeline():
             "product": ["Quantum Processor", "Neural Interface", "Gravity Stabilizer"],
             "price": [1500.0, 2400.5, 9800.0],
             "status": ["active", "active", "prototype"],
-        }
+        },
     )
     clean_df.to_csv(clean_path, index=False)
 
@@ -54,7 +54,7 @@ async def verify_ingestion_pipeline():
     from src.mcp_server.memory_server import ingest_verified_dataset
 
     dirty_res = await ingest_verified_dataset(
-        file_path=str(dirty_path), dataset_name="Dirty_Test", namespace="test_isolation"
+        file_path=str(dirty_path), dataset_name="Dirty_Test", namespace="test_isolation",
     )
 
     if dirty_res.get("success") is False and "rejected" in dirty_res.get("error", "").lower():
@@ -66,7 +66,7 @@ async def verify_ingestion_pipeline():
     # 3. Test ACCEPTANCE (Clean Data)
     print("3. Testing ACCEPTANCE of clean data...")
     clean_res = await ingest_verified_dataset(
-        file_path=str(clean_path), dataset_name="Clean_Tech", namespace="global"
+        file_path=str(clean_path), dataset_name="Clean_Tech", namespace="global",
     )
 
     table_name = None
@@ -88,7 +88,7 @@ async def verify_ingestion_pipeline():
 
         async with await db_manager.get_session() as session:
             node_res = await session.execute(
-                text("SELECT * FROM kg_nodes WHERE id=:node_id"), {"node_id": node_id}
+                text("SELECT * FROM kg_nodes WHERE id=:node_id"), {"node_id": node_id},
             )
             node = node_res.fetchone()
 
@@ -102,11 +102,11 @@ async def verify_ingestion_pipeline():
             raw_data = raw_data_res.fetchall()
             if len(raw_data) == 3:
                 print(
-                    f"SUCCESS: Structured table '{table_name}' contains all {len(raw_data)} rows."
+                    f"SUCCESS: Structured table '{table_name}' contains all {len(raw_data)} rows.",
                 )
             else:
                 print(
-                    f"FAILURE: Structured table '{table_name}' has incorrect row count: {len(raw_data)}"
+                    f"FAILURE: Structured table '{table_name}' has incorrect row count: {len(raw_data)}",
                 )
 
     print("--- Verification Complete ---")

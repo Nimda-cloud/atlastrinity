@@ -52,7 +52,7 @@ async def verify_isolation():
             print(f"SUCCESS: SQL Node isolated to {namespace}")
         else:
             print(
-                f"FAILURE: SQL Node isolation failed. Namespace: {getattr(node, 'namespace', 'NONE')}"
+                f"FAILURE: SQL Node isolation failed. Namespace: {getattr(node, 'namespace', 'NONE')}",
             )
 
     print("3. Testing Bulk Ingest Mock...")
@@ -91,7 +91,7 @@ async def verify_isolation():
             print(f"SUCCESS: Dataset {node_id} promoted to global!")
         else:
             print(
-                f"FAILURE: Dataset promotion failed. Namespace: {getattr(node, 'namespace', 'NONE')}"
+                f"FAILURE: Dataset promotion failed. Namespace: {getattr(node, 'namespace', 'NONE')}",
             )
 
     print("--- Verification Complete ---")

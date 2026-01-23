@@ -43,12 +43,12 @@ async def run_verification():
         print(
             f"-> Sending {method} (Notification)"
             if is_notification
-            else f"-> Sending {method} (ID: {curr_id})"
+            else f"-> Sending {method} (ID: {curr_id})",
         )
         import subprocess
         from typing import cast
 
-        stdin = cast(subprocess.Popen, process).stdin
+        stdin = cast("subprocess.Popen", process).stdin
         assert stdin is not None
         stdin.write(json_str + "\n")
         stdin.flush()
@@ -69,7 +69,7 @@ async def run_verification():
         import subprocess
         from typing import cast
 
-        stdout = cast(subprocess.Popen, process).stdout
+        stdout = cast("subprocess.Popen", process).stdout
         assert stdout is not None
         line = stdout.readline()
         if not line:

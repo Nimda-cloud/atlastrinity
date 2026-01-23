@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test Whisper STT з різними devices (MPS vs CPU)
+"""Test Whisper STT з різними devices (MPS vs CPU)
 
 Перевіряє:
 1. Чи доступний MPS (Apple Silicon GPU)

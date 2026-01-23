@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Whisper STT Comprehensive Verification
+"""Whisper STT Comprehensive Verification
 Перевіряє всі аспекти інтеграції Whisper
 """
 
@@ -100,7 +99,7 @@ def main():
         return 1
 
     try:
-        from src.mcp_server.whisper_server import server  # noqa: F401
+        from src.mcp_server.whisper_server import server
 
         print_check("MCP Whisper Server import", True, "src.mcp_server.whisper_server")
     except Exception as e:

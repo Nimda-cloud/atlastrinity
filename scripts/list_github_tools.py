@@ -64,16 +64,16 @@ async def inspect_github():
                         # Send initialized notification
                         process.stdin.write(
                             json.dumps(
-                                {"jsonrpc": "2.0", "method": "notifications/initialized"}
+                                {"jsonrpc": "2.0", "method": "notifications/initialized"},
                             ).encode()
-                            + b"\n"
+                            + b"\n",
                         )
                         await process.stdin.drain()
 
                         # List tools
                         process.stdin.write(
                             json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}).encode()
-                            + b"\n"
+                            + b"\n",
                         )
                         await process.stdin.drain()
 

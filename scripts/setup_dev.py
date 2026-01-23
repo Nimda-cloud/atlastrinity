@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-AtlasTrinity Full Stack Development Setup Script
+"""AtlasTrinity Full Stack Development Setup Script
 Виконує комплексне налаштування середовища після клонування:
 - Перевірка середовища (Python 3.12.12, Bun, Swift)
 - Створення та синхронізація глобальних конфігурацій (~/.config/atlastrinity)
@@ -203,13 +202,13 @@ def ensure_database():
 
 
 def _brew_formula_installed(formula: str) -> bool:
-    rc = subprocess.run(["brew", "list", "--formula", formula], capture_output=True)
+    rc = subprocess.run(["brew", "list", "--formula", formula], check=False, capture_output=True)
     return rc.returncode == 0
 
 
 def _brew_cask_installed(cask: str, app_name: str) -> bool:
     # 1) check brew metadata
-    rc = subprocess.run(["brew", "list", "--cask", cask], capture_output=True)
+    rc = subprocess.run(["brew", "list", "--cask", cask], check=False, capture_output=True)
     if rc.returncode == 0:
         return True
     # 2) check known application paths (user or /Applications)
@@ -229,7 +228,7 @@ def install_brew_deps():
 
     if not shutil.which("brew"):
         print_error(
-            'Homebrew не знайдено! Встановіть: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+            'Homebrew не знайдено! Встановіть: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
         )
         return False
 
@@ -245,7 +244,7 @@ def install_brew_deps():
 
     # === Встановлення формул ===
     def _brew_formula_installed(formula: str) -> bool:
-        rc = subprocess.run(["brew", "list", "--formula", formula], capture_output=True)
+        rc = subprocess.run(["brew", "list", "--formula", formula], check=False, capture_output=True)
         return rc.returncode == 0
 
     for formula, check_cmd in formulas.items():
@@ -262,7 +261,7 @@ def install_brew_deps():
     # === Встановлення casks ===
     def _brew_cask_installed(cask: str, app_name: str) -> bool:
         # 1) check brew metadata
-        rc = subprocess.run(["brew", "list", "--cask", cask], capture_output=True)
+        rc = subprocess.run(["brew", "list", "--cask", cask], check=False, capture_output=True)
         if rc.returncode == 0:
             return True
         # 2) check known application paths (user or /Applications)
@@ -318,7 +317,7 @@ def install_brew_deps():
             # Перевіряємо статус
             result = subprocess.run(
                 ["brew", "services", "info", service, "--json"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
             )
 
@@ -333,7 +332,7 @@ def install_brew_deps():
                 print_info(f"Запуск {service}...")
                 # Use check=False and check output for 'already started'
                 res = subprocess.run(
-                    ["brew", "services", "start", service], capture_output=True, text=True
+                    ["brew", "services", "start", service], check=False, capture_output=True, text=True,
                 )
                 if res.returncode == 0 or "already started" in res.stderr.lower():
                     print_success(f"{service} запущено")
@@ -433,7 +432,7 @@ def install_deps():
     # Update PIP first
     subprocess.run(
         [venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
-        capture_output=True,
+        check=False, capture_output=True,
     )
 
     # Pre-install protobuf with no-build-isolation to avoid setuptools build issues
@@ -449,7 +448,7 @@ def install_deps():
         print_info("PIP install -r requirements.txt...")
         subprocess.run(
             [venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
-            capture_output=True,
+            check=False, capture_output=True,
         )
         # Install espnet and ukrainian-tts separately with no-build-isolation
         subprocess.run(
@@ -558,7 +557,7 @@ def sync_configs():
             defaults = {
                 "agents": {
                     "atlas": {"model": "gpt-5-mini", "temperature": 0.7},
-                    "tetyana": {"model": "gpt-4.1", "temperature": 0.5},
+                    "tetyana": {"model": "gpt-4o", "temperature": 0.5},
                     "grisha": {"vision_model": "gpt-4o", "temperature": 0.3},
                 },
                 "mcp": {},
@@ -645,7 +644,7 @@ def download_models():
             "print('STT OK')",
         ]
         res = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=900
+            cmd, check=False, capture_output=True, text=True, timeout=900,
         )  # Increased timeout for large models
         if res.returncode == 0:
             print_success(f"STT модель {model_name} готова")
@@ -695,14 +694,14 @@ finally:
 print('TTS OK')
 """
         cmd = [venv_python, "-c", python_script]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        res = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=600)
         if res.returncode == 0:
             print_success("TTS моделі готові")
         else:
             # Check if it failed specifically because of feats_stats.npz and try to provide helpful info
             if "feats_stats.npz" in res.stderr or "feats_stats.npz" in res.stdout:
                 print_warning(
-                    "Виявлено проблему з feats_stats.npz. Спробуйте вручну видалити папку models/tts та запустити знову."
+                    "Виявлено проблему з feats_stats.npz. Спробуйте вручну видалити папку models/tts та запустити знову.",
                 )
             print_warning(f"Помилка завантаження TTS: {res.stderr or res.stdout}")
     except Exception as e:
@@ -738,7 +737,7 @@ def backup_databases():
 
     print_info(f"Резервні копії збережено в: {backup_dir}")
     print_info(
-        "Тепер ви можете зробити: git add backups/ && git commit -m 'backup: database snapshot'"
+        "Тепер ви можете зробити: git add backups/ && git commit -m 'backup: database snapshot'",
     )
 
 
@@ -776,7 +775,7 @@ async def verify_database_tables():
     venv_python = str(VENV_PATH / "bin" / "python")
     try:
         subprocess.run(
-            [venv_python, str(PROJECT_ROOT / "scripts" / "verify_db_tables.py")], check=True
+            [venv_python, str(PROJECT_ROOT / "scripts" / "verify_db_tables.py")], check=True,
         )
         return True
     except Exception as e:
@@ -796,7 +795,7 @@ def check_services():
             # Use manual string parsing to avoid json import dependency if missing
             res = subprocess.run(
                 ["brew", "services", "info", service, "--json"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
             )
             # Look for running status in JSON output
@@ -806,7 +805,7 @@ def check_services():
 
             # Fallback: check functional ping (Redis only)
             if service == "redis" and shutil.which("redis-cli"):
-                if subprocess.run(["redis-cli", "ping"], capture_output=True).returncode == 0:
+                if subprocess.run(["redis-cli", "ping"], check=False, capture_output=True).returncode == 0:
                     print_success(f"{label} запущено (CLI)")
                     continue
 
@@ -828,7 +827,7 @@ def run_integrity_check():
         print_success("Python integrity OK")
     except subprocess.CalledProcessError:
         print_warning(
-            "Виявлено проблеми в Python коді. Запустіть 'npm run format:write' для виправлення."
+            "Виявлено проблеми в Python коді. Запустіть 'npm run format:write' для виправлення.",
         )
     except Exception as e:
         print_warning(f"Не вдалося запустити Ruff: {e}")
@@ -847,11 +846,11 @@ def run_integrity_check():
 
 def main():
     print(
-        f"\n{Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.ENDC}"
+        f"\n{Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.ENDC}",
     )
     print(f"{Colors.HEADER}{Colors.BOLD}║  AtlasTrinity Full Stack Dev Setup      ║{Colors.ENDC}")
     print(
-        f"{Colors.HEADER}{Colors.BOLD}╚══════════════════════════════════════════╝{Colors.ENDC}\n"
+        f"{Colors.HEADER}{Colors.BOLD}╚══════════════════════════════════════════╝{Colors.ENDC}\n",
     )
 
     # Parse arguments
@@ -895,12 +894,12 @@ def main():
             print_warning(f"  - {issue}")
         if os.getenv("FAIL_ON_MCP_PRECHECK") == "1":
             print_error(
-                "Failing setup because FAIL_ON_MCP_PRECHECK=1 and MCP precheck found issues."
+                "Failing setup because FAIL_ON_MCP_PRECHECK=1 and MCP precheck found issues.",
             )
             sys.exit(1)
         else:
             print_info(
-                "Continuing setup despite precheck issues. Set FAIL_ON_MCP_PRECHECK=1 to fail on these errors."
+                "Continuing setup despite precheck issues. Set FAIL_ON_MCP_PRECHECK=1 to fail on these errors.",
             )
 
     if not install_deps():
@@ -957,7 +956,7 @@ def main():
     print("     - COPILOT_API_KEY (обов'язково)")
     print("     - GITHUB_TOKEN (опціонально)")
     print("  2. Запустіть систему: npm run dev")
-    print("")
+    print()
 
     print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else 13}):")
     mcp_info = [

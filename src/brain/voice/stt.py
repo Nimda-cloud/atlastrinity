@@ -1,5 +1,4 @@
-"""
-AtlasTrinity STT - Speech-to-Text using OpenAI Whisper
+"""AtlasTrinity STT - Speech-to-Text using OpenAI Whisper
 
 Primary: OpenAI Whisper (local)
 Fallback: Browser Web Speech API (handled in frontend)
@@ -98,8 +97,7 @@ class SmartSTTResult:
 
 
 class WhisperSTT:
-    """
-    Speech-to-Text using Faster Whisper (CTranslate2)
+    """Speech-to-Text using Faster Whisper (CTranslate2)
     """
 
     def __init__(self, model_name: str | None = None, device: str | None = None):
@@ -203,7 +201,7 @@ class WhisperSTT:
                 self.download_root.mkdir(parents=True, exist_ok=True)
 
                 def load():
-                    return cast(Any, WhisperModel)(
+                    return cast("Any", WhisperModel)(
                         self.model_name,
                         device=self.device,
                         compute_type=self.compute_type,
@@ -215,7 +213,7 @@ class WhisperSTT:
             return self._model
 
     async def transcribe_file(
-        self, audio_path: str, language: str | None = None, initial_prompt: str | None = None
+        self, audio_path: str, language: str | None = None, initial_prompt: str | None = None,
     ) -> TranscriptionResult:
         language = language or self.language
 
@@ -227,7 +225,7 @@ class WhisperSTT:
         try:
             # Faster Whisper parameters for high accuracy
             def transcribe():
-                segments, info = cast(Any, model).transcribe(
+                segments, info = cast("Any", model).transcribe(
                     audio_path,
                     language=language,
                     beam_size=5,  # Better accuracy for large-v3
@@ -269,7 +267,7 @@ class WhisperSTT:
             return TranscriptionResult(text="", language=language, confidence=0, segments=[])
 
     async def transcribe_with_analysis(
-        self, audio_path: str, previous_text: str = "", language: str | None = None
+        self, audio_path: str, previous_text: str = "", language: str | None = None,
     ) -> SmartSTTResult:
         import time
 
@@ -303,7 +301,7 @@ class WhisperSTT:
 
                 if is_waiting_type and silence_duration >= self.silence_threshold:
                     logger.info(
-                        f"[STT] Debounce timeout ({silence_duration:.1f}s), sending aggregated text."
+                        f"[STT] Debounce timeout ({silence_duration:.1f}s), sending aggregated text.",
                     )
                     should_send = True
                     # Reset timer
@@ -410,7 +408,7 @@ class WhisperSTT:
     def list_audio_devices(self) -> list:
         if not _check_audio_available():
             return []
-        devices = cast(Any, sd).query_devices()
+        devices = cast("Any", sd).query_devices()
         return [
             {"id": i, "name": d["name"], "channels": d["max_input_channels"]}
             for i, d in enumerate(devices)
@@ -418,7 +416,7 @@ class WhisperSTT:
         ]
 
     async def record_and_transcribe(
-        self, duration: float = 5.0, language: str | None = None
+        self, duration: float = 5.0, language: str | None = None,
     ) -> TranscriptionResult:
         """Record audio and transcribe it"""
         if not _check_audio_available():
@@ -432,13 +430,13 @@ class WhisperSTT:
         fs = 16000
         print(f"[STT] Recording for {duration} seconds...")
         recording = await asyncio.to_thread(
-            cast(Any, sd).rec, int(duration * fs), samplerate=fs, channels=1
+            cast("Any", sd).rec, int(duration * fs), samplerate=fs, channels=1,
         )
-        await asyncio.to_thread(cast(Any, sd).wait)
+        await asyncio.to_thread(cast("Any", sd).wait)
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
             wav_path = tf.name
-            await asyncio.to_thread(cast(Any, sf).write, wav_path, recording, fs)
+            await asyncio.to_thread(cast("Any", sf).write, wav_path, recording, fs)
 
         try:
             result = await self.transcribe_file(wav_path, language)

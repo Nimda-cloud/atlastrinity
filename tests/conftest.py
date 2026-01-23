@@ -64,14 +64,14 @@ def test_cases(server_name):
                 "tool": "list_directory",
                 "args": {"path": "/"},
                 "description": "List root",
-            }
+            },
         ],
         "terminal": [
             {
                 "tool": "execute_command",
                 "args": {"command": "echo Test"},
                 "description": "Echo command",
-            }
+            },
         ],
         "memory": [
             {
@@ -82,11 +82,11 @@ def test_cases(server_name):
                             "name": "test_memory",
                             "entityType": "concept",
                             "observations": ["Testing"],
-                        }
-                    ]
+                        },
+                    ],
                 },
                 "description": "Create entities",
-            }
+            },
         ],
     }
     return test_plan.get(server_name, [])

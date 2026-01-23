@@ -150,7 +150,7 @@ def test_scan_mcp_config_for_package_issues(tmp_path, monkeypatch):
             },
             "other": {"command": "bunx", "args": ["otherpkg@0.0.1"]},
             "disabled": {"command": "npx", "args": ["skip@1.0.0"], "disabled": True},
-        }
+        },
     }
     p = tmp_path / "mcp.json"
     p.write_text(json.dumps(cfg))
@@ -172,7 +172,7 @@ def test_scan_mcp_config_for_package_issues(tmp_path, monkeypatch):
         url = req.get_full_url() if hasattr(req, "get_full_url") else str(req)
         if "otherpkg" in url:
             raise urllib.error.HTTPError(
-                url, 404, "Not found", hdrs=email.message.Message(), fp=None
+                url, 404, "Not found", hdrs=email.message.Message(), fp=None,
             )
 
         class R:
@@ -202,8 +202,8 @@ def test_scan_mcp_config_for_python_missing(tmp_path, monkeypatch):
             "docker": {
                 "command": "python3",
                 "args": ["-c", "from mcp_server_docker import main; main()"],
-            }
-        }
+            },
+        },
     }
     p = tmp_path / "mcp.json"
     p.write_text(json.dumps(cfg))
@@ -226,8 +226,8 @@ def test_scan_mcp_config_for_python_present(tmp_path, monkeypatch):
             "docker": {
                 "command": "python3",
                 "args": ["-c", "from mcp_server_docker import main; main()"],
-            }
-        }
+            },
+        },
     }
     p = tmp_path / "mcp.json"
     p.write_text(json.dumps(cfg))

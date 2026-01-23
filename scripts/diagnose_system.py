@@ -42,7 +42,7 @@ async def diagnose_db():
 
         # Check for recursion (steps with dots)
         result = await session.execute(
-            select(TaskStep.sequence_number).filter(TaskStep.sequence_number.contains("."))
+            select(TaskStep.sequence_number).filter(TaskStep.sequence_number.contains(".")),
         )
         recursive_steps = result.scalars().all()
         print(f"[RECURSION] Found {len(recursive_steps)} recursive steps in history.")

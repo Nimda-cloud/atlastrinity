@@ -68,7 +68,7 @@ async def main():
 
         # Send initialized notification
         process.stdin.write(
-            json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}).encode() + b"\n"
+            json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}).encode() + b"\n",
         )
         await process.stdin.drain()
 

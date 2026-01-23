@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Check that required environment secrets are available in CI.
+"""Check that required environment secrets are available in CI.
 """
 
 import os
@@ -9,7 +8,6 @@ import sys
 
 def check_secrets() -> bool:
     """Check for required and optional secrets."""
-
     # Critical secrets - must be present
     critical_secrets = {
         "GITHUB_TOKEN": "GitHub API access (auto-provided by Actions)",

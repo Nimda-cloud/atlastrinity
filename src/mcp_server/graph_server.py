@@ -9,19 +9,19 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..", "..")
 sys.path.insert(0, os.path.abspath(root))
 
-from src.brain.db.manager import db_manager  # noqa: E402
-from src.brain.knowledge_graph import knowledge_graph  # noqa: E402
+from src.brain.db.manager import db_manager
+from src.brain.knowledge_graph import knowledge_graph
 
 server = FastMCP("graph")
 
 
 @server.tool()
 async def get_graph_json(namespace: str | None = None) -> dict[str, Any]:
-    """
-    Returns the Knowledge Graph in JSON format.
+    """Returns the Knowledge Graph in JSON format.
 
     Args:
         namespace: Optional filter (e.g. task_id or 'global').
+
     """
     await db_manager.initialize()
     return await knowledge_graph.get_graph_data(namespace=namespace)
@@ -29,12 +29,12 @@ async def get_graph_json(namespace: str | None = None) -> dict[str, Any]:
 
 @server.tool()
 async def generate_mermaid(node_type: str | None = None, namespace: str | None = None) -> str:
-    """
-    Generates a Mermaid.js flowchart representation of the current Knowledge Graph.
+    """Generates a Mermaid.js flowchart representation of the current Knowledge Graph.
 
     Args:
         node_type: Optional filter (FILE, TASK, TOOL, ENTITY)
         namespace: Optional filter (task_id or 'global')
+
     """
     await db_manager.initialize()
     data = await knowledge_graph.get_graph_data(namespace=namespace)

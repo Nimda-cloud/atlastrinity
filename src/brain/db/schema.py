@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Database Schema
+"""AtlasTrinity Database Schema
 Uses SQLAlchemy 2.0+ (Async)
 """
 
@@ -63,7 +62,7 @@ class Session(Base):
     metadata_blob: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
 
     tasks: Mapped[list["Task"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan"
+        back_populates="session", cascade="all, delete-orphan",
     )
 
 
@@ -75,7 +74,7 @@ class Task(Base):
 
     goal: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(
-        String(50), default="PENDING"
+        String(50), default="PENDING",
     )  # PENDING, RUNNING, COMPLETED, FAILED
     golden_path: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -84,7 +83,7 @@ class Task(Base):
 
     session: Mapped["Session"] = relationship(back_populates="tasks")
     steps: Mapped[list["TaskStep"]] = relationship(
-        back_populates="task", cascade="all, delete-orphan"
+        back_populates="task", cascade="all, delete-orphan",
     )
 
 
@@ -219,8 +218,7 @@ class ConversationSummary(Base):
 
 
 class BehavioralDeviation(Base):
-    """
-    Stores logic deviations from original plans for auditing and analytics.
+    """Stores logic deviations from original plans for auditing and analytics.
     Complements the vector-based memory in ChromaDB.
     """
 
@@ -229,7 +227,7 @@ class BehavioralDeviation(Base):
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"))
     step_id: Mapped[uuid.UUID | None] = mapped_column(
-        GUID(), ForeignKey("task_steps.id"), nullable=True
+        GUID(), ForeignKey("task_steps.id"), nullable=True,
     )
 
     original_intent: Mapped[str] = mapped_column(Text)
@@ -242,8 +240,7 @@ class BehavioralDeviation(Base):
 
 
 class KnowledgePromotion(Base):
-    """
-    Tracks the elevation of data from task-specific to global (Golden Fund).
+    """Tracks the elevation of data from task-specific to global (Golden Fund).
     Provides an audit log for knowledge accumulation.
     """
 

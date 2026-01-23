@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-AtlasTrinity Environment Verification Script
+"""AtlasTrinity Environment Verification Script
 Comprehensive check of the entire system state:
 - System tools (python, node, swift, etc)
 - Configuration files and Environment Variables
@@ -197,7 +196,7 @@ def check_services():
     # Check Redis
     if shutil.which("redis-cli"):
         try:
-            res = subprocess.run(["redis-cli", "ping"], capture_output=True, text=True, timeout=2)
+            res = subprocess.run(["redis-cli", "ping"], check=False, capture_output=True, text=True, timeout=2)
             if "PONG" in res.stdout:
                 print_pass("Redis is running (PONG received)")
                 STATUS_REPORT["passed"] += 1
@@ -336,7 +335,7 @@ def check_mcp_servers():
                     STATUS_REPORT["passed"] += 1
                 else:
                     print_warn(
-                        "Graph Server is DISABLED or missing in config (Recommended: Enabled for Atlas)"
+                        "Graph Server is DISABLED or missing in config (Recommended: Enabled for Atlas)",
                     )
                     STATUS_REPORT["warnings"] += 1
         except Exception:
@@ -363,7 +362,7 @@ def main():
 
     if STATUS_REPORT["failed"] > 0:
         print(
-            f"\n{Colors.FAIL}Run 'python3 scripts/setup_dev.py' to attempt auto-repair.{Colors.ENDC}"
+            f"\n{Colors.FAIL}Run 'python3 scripts/setup_dev.py' to attempt auto-repair.{Colors.ENDC}",
         )
         sys.exit(1)
     else:

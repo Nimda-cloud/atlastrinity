@@ -22,7 +22,7 @@ async def check():
             JOIN task_steps ts ON te.step_id = ts.id
             WHERE ts.sequence_number = '3'
             ORDER BY te.created_at DESC LIMIT 5;
-        """)
+        """),
         )
         print("\n--- Tool Executions for Step 3 ---")
         for row in result:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Validate MCP configuration file against schema.
+"""Validate MCP configuration file against schema.
 Ensures all required fields are present and types are correct.
 """
 

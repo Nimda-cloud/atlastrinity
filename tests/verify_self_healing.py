@@ -22,7 +22,7 @@ class MockLLM:
             "root_cause": "Permission denied error indicates lack of privilege.",
             "technical_advice": "Use sudo for protected directories.",
             "voice_message": "FEEDBACK_GENERATED"
-        }"""
+        }""",
         )
 
 
@@ -78,7 +78,7 @@ async def test_tetyana_feedback_usage():
     # but we can check if the prompt generation includes the feedback.
 
     prompt = AgentPrompts.tetyana_reasoning_prompt(
-        str(mock_step), {"mock": "context"}, feedback=mock_step["grisha_feedback"]
+        str(mock_step), {"mock": "context"}, feedback=mock_step["grisha_feedback"],
     )
 
     if "PREVIOUS REJECTION FEEDBACK" in prompt and "Use sudo" in prompt:

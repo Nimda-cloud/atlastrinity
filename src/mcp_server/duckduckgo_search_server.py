@@ -147,22 +147,22 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
 
 @server.tool()
 def duckduckgo_search(
-    query: str, max_results: int = 5, timeout_s: float = 10.0, step_id: str | None = None
+    query: str, max_results: int = 5, timeout_s: float = 10.0, step_id: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Perform a web search using DuckDuckGo.
+    """Perform a web search using DuckDuckGo.
 
     Args:
         query: The search query string
         max_results: Maximum number of results to return (default: 5, max: 20)
         timeout_s: Request timeout in seconds (default: 10.0)
+
     """
     if not query or not query.strip():
         logger.warning("Search request received with empty query")
         return {"error": "query is required"}
 
     logger.info(
-        f"Executing search: query='{query.strip()}', max_results={max_results}, timeout={timeout_s}s"
+        f"Executing search: query='{query.strip()}', max_results={max_results}, timeout={timeout_s}s",
     )
 
     try:
@@ -184,7 +184,7 @@ def duckduckgo_search(
                 "query": query.strip(),
             }
         logger.info(
-            f"Search completed successfully for query: '{query.strip()}' - found {len(results)} results"
+            f"Search completed successfully for query: '{query.strip()}' - found {len(results)} results",
         )
         return {"success": True, "query": query.strip(), "results": results}
     except Exception as e:
@@ -193,12 +193,12 @@ def duckduckgo_search(
 
 @server.tool()
 def business_registry_search(company_name: str, step_id: str | None = None) -> dict[str, Any]:
-    """
-    Perform a specialized search for Ukrainian company data in business registries.
+    """Perform a specialized search for Ukrainian company data in business registries.
     Rules and targets are defined in search_protocol.txt.
 
     Args:
         company_name: The name or EDRPOU code of the company to search for.
+
     """
     if not company_name or not company_name.strip():
         logger.warning("Business registry search request received with empty company_name")
@@ -206,11 +206,11 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
 
     logger.info(f"Executing business registry search: company_name='{company_name.strip()}'")
     result = _execute_protocol_search(
-        "business", company_name, "DuckDuckGo (Optimized Registry Search)"
+        "business", company_name, "DuckDuckGo (Optimized Registry Search)",
     )
     if result.get("success"):
         logger.info(
-            f"Business registry search completed: found {len(result.get('results', []))} results"
+            f"Business registry search completed: found {len(result.get('results', []))} results",
         )
     else:
         logger.warning(f"Business registry search failed: {result.get('error', 'unknown error')}")
@@ -219,12 +219,12 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
 
 @server.tool()
 def open_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
-    """
-    Search for datasets on the Ukrainian Open Data Portal (data.gov.ua).
+    """Search for datasets on the Ukrainian Open Data Portal (data.gov.ua).
     Rules and targets are defined in search_protocol.txt.
 
     Args:
         query: The search query for datasets.
+
     """
     if not query or not query.strip():
         logger.warning("Open data search request received with empty query")

@@ -1,5 +1,4 @@
-"""
-AtlasTrinity First Run Installer
+"""AtlasTrinity First Run Installer
 Автоматичне налаштування на новому Mac при першому запуску .app
 
 Features:
@@ -73,7 +72,7 @@ ProgressCallback = Callable[[SetupProgress], None]
 def _run_command(cmd: list, timeout: int = 300, capture: bool = True) -> tuple[int, str, str]:
     """Execute command and return (returncode, stdout, stderr)"""
     try:
-        result = subprocess.run(cmd, capture_output=capture, text=True, timeout=timeout)
+        result = subprocess.run(cmd, check=False, capture_output=capture, text=True, timeout=timeout)
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
         return -1, "", "Command timed out"
@@ -84,15 +83,14 @@ def _run_command(cmd: list, timeout: int = 300, capture: bool = True) -> tuple[i
 def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
     """Execute shell command with pipe handling"""
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(cmd, check=False, shell=True, capture_output=True, text=True, timeout=timeout)
         return result.returncode, result.stdout, result.stderr
     except Exception as e:
         return -1, "", str(e)
 
 
 class FirstRunInstaller:
-    """
-    Orchestrates first-run setup on a new Mac
+    """Orchestrates first-run setup on a new Mac
     """
 
     def __init__(self, progress_callback: ProgressCallback | None = None):
@@ -103,7 +101,7 @@ class FirstRunInstaller:
         """Default console output"""
         icon = "✓" if progress.success else "✗"
         print(
-            f"[{icon}] {progress.step.value}: {progress.message} ({progress.progress * 100:.0f}%)"
+            f"[{icon}] {progress.step.value}: {progress.message} ({progress.progress * 100:.0f}%)",
         )
         if progress.error:
             print(f"    Error: {progress.error}")
@@ -124,7 +122,7 @@ class FirstRunInstaller:
                 message=message,
                 success=success,
                 error=error,
-            )
+            ),
         )
         if not success and error:
             self.errors.append(f"{step.value}: {error}")
@@ -184,7 +182,7 @@ class FirstRunInstaller:
                     "osascript",
                     "-e",
                     'tell application "System Events" to return name of first process',
-                ]
+                ],
             )
             permissions["accessibility"] = code == 0
 
@@ -225,7 +223,7 @@ class FirstRunInstaller:
                 [
                     "open",
                     "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
-                ]
+                ],
             )
 
         return permissions
@@ -303,7 +301,7 @@ class FirstRunInstaller:
     # ============ SERVICES ============
 
     def _install_brew_package(
-        self, step: SetupStep, formula: str, cask: bool = False, check_cmd: str | None = None
+        self, step: SetupStep, formula: str, cask: bool = False, check_cmd: str | None = None,
     ) -> bool:
         """Generic brew install helper"""
         self._report(step, 0.0, f"Перевірка {formula}...")
@@ -345,7 +343,7 @@ class FirstRunInstaller:
     def install_docker(self) -> bool:
         """Install Docker Desktop"""
         return self._install_brew_package(
-            SetupStep.INSTALL_DOCKER, "docker", cask=True, check_cmd="docker"
+            SetupStep.INSTALL_DOCKER, "docker", cask=True, check_cmd="docker",
         )
 
     def install_redis(self) -> bool:
@@ -384,7 +382,7 @@ class FirstRunInstaller:
         from .config_loader import config as sys_config
 
         db_url = sys_config.get(
-            "database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db"
+            "database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
         )
         if db_url.startswith("sqlite"):
             self._report(
@@ -395,7 +393,7 @@ class FirstRunInstaller:
             return True
 
         return self._install_brew_package(
-            SetupStep.INSTALL_POSTGRES, "postgresql@17", check_cmd="psql"
+            SetupStep.INSTALL_POSTGRES, "postgresql@17", check_cmd="psql",
         )
 
     def start_services(self) -> bool:
@@ -406,7 +404,7 @@ class FirstRunInstaller:
         from .config_loader import config as sys_config
 
         db_url = sys_config.get(
-            "database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db"
+            "database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
         )
 
         services = ["redis"]
@@ -457,7 +455,7 @@ class FirstRunInstaller:
         """Ensure the specified role exists in Postgres."""
         try:
             _rc, out, _ = _run_command(
-                ["psql", "-tAc", f"SELECT 1 FROM pg_roles WHERE rolname='{username}';"]
+                ["psql", "-tAc", f"SELECT 1 FROM pg_roles WHERE rolname='{username}';"],
             )
             if "1" not in out:
                 self._report(SetupStep.CREATE_DATABASE, 0.1, f"Створення ролі '{username}'...")
@@ -478,7 +476,7 @@ class FirstRunInstaller:
         from .config_loader import config as sys_config
 
         db_url = sys_config.get(
-            "database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db"
+            "database.url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
         )
 
         if db_url.startswith("sqlite"):
@@ -532,7 +530,7 @@ class FirstRunInstaller:
                 "-t",
                 "-c",
                 f"SELECT 1 FROM pg_database WHERE datname='{db_name}';",
-            ]
+            ],
         )
 
         if "1" not in out:
@@ -573,7 +571,7 @@ class FirstRunInstaller:
     def build_macos_use(self) -> bool:
         """Build macOS native helpers (placeholder)."""
         self._report(
-            SetupStep.BUILD_MACOS_USE, 0.0, "Building macOS native helpers (placeholder)..."
+            SetupStep.BUILD_MACOS_USE, 0.0, "Building macOS native helpers (placeholder)...",
         )
         # TODO: implement build steps for macos-use native helper binary
         self._report(SetupStep.BUILD_MACOS_USE, 1.0, "macos-use build skipped (placeholder).")
@@ -582,7 +580,7 @@ class FirstRunInstaller:
     def download_tts_models(self) -> bool:
         """Download Ukrainian TTS models (silently)"""
         self._report(
-            SetupStep.DOWNLOAD_TTS, 0.2, "Завантаження ukrainian-tts (може тривати довго)..."
+            SetupStep.DOWNLOAD_TTS, 0.2, "Завантаження ukrainian-tts (може тривати довго)...",
         )
 
         try:
@@ -643,8 +641,7 @@ class FirstRunInstaller:
     # ============ MAIN ORCHESTRATOR ============
 
     async def run_full_setup(self) -> bool:
-        """
-        Run complete first-run setup.
+        """Run complete first-run setup.
         Returns True if all critical steps succeeded.
         """
         print("\n" + "=" * 60)
@@ -704,7 +701,7 @@ class FirstRunInstaller:
         setup_marker = CONFIG_ROOT / "setup_complete"
         setup_marker.parent.mkdir(parents=True, exist_ok=True)
         setup_marker.write_text(
-            f"Completed at: {__import__('datetime').datetime.now().isoformat()}"
+            f"Completed at: {__import__('datetime').datetime.now().isoformat()}",
         )
 
         self._report(SetupStep.SETUP_COMPLETE, 1.0, "Налаштування завершено!")

@@ -24,8 +24,8 @@ async def migrate():
             # Check if column exists strictly if needed, but IF NOT EXISTS is cleaner
             await session.execute(
                 text(
-                    "ALTER TABLE tool_executions ADD COLUMN IF NOT EXISTS task_id UUID REFERENCES tasks(id);"
-                )
+                    "ALTER TABLE tool_executions ADD COLUMN IF NOT EXISTS task_id UUID REFERENCES tasks(id);",
+                ),
             )
             await session.commit()
             print("✅ Migration successful: 'task_id' column added (or already existed).")

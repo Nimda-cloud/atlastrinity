@@ -153,7 +153,7 @@ temperature = agent_config.get("temperature", 0.7)
 **Tetyana**:
 ```python
 agent_config = config.get_agent_config("tetyana")
-model = agent_config.get("model") or "gpt-4.1"
+model = agent_config.get("model") or "gpt-4o"
 temperature = agent_config.get("temperature", 0.5)
 ```
 
@@ -195,12 +195,12 @@ language = stt_config.get("language", "uk")
 | Компонент | Модель | Джерело конфігу |
 |-----------|--------|-----------------|
 | Atlas | `raptor-mini` | `config.yaml: agents.atlas.model` ✅ |
-| Tetyana | `gpt-4.1` | `config.yaml: agents.tetyana.model` ✅ |
+| Tetyana | `gpt-4o` | `config.yaml: agents.tetyana.model` ✅ |
 | Grisha | `gpt-4o` | `config.yaml: agents.grisha.vision_model` ✅ |
 | TTS | device: `mps` | `config.yaml: voice.tts.device` ✅ |
 | STT | model: `base` | `config.yaml: voice.stt.model` ✅ |
 | MCP Terminal | `gpt-4o` | `config.yaml: mcp.terminal.model` ⚠️ |
-| MCP Filesystem | `gpt-4.1` | `config.yaml: mcp.filesystem.model` ⚠️ |
+| MCP Filesystem | `gpt-4o` | `config.yaml: mcp.filesystem.model` ⚠️ |
 | MCP Playwright | `gpt-4o` | `config.yaml: mcp.playwright.model` ⚠️ |
 | MCP Computer Use | `gpt-4o` | `config.yaml: mcp.computer_use.model` ⚠️ |
 

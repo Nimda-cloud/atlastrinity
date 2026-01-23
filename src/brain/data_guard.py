@@ -7,8 +7,7 @@ logger = logging.getLogger("brain.data_guard")
 
 
 class DataQualityGuard:
-    """
-    Validates external datasets before ingestion into the Golden Fund.
+    """Validates external datasets before ingestion into the Golden Fund.
     Provides checks for completeness, structural integrity, and data sanity.
     """
 
@@ -17,8 +16,7 @@ class DataQualityGuard:
         self.max_null_ratio = max_null_ratio
 
     def validate_dataframe(self, df: pd.DataFrame, dataset_name: str) -> dict[str, Any]:
-        """
-        Performs a multi-point validation of a pandas DataFrame.
+        """Performs a multi-point validation of a pandas DataFrame.
         """
         report = {
             "dataset": dataset_name,
@@ -51,7 +49,7 @@ class DataQualityGuard:
                 effective_types = [t for t in types if t is not type(None) and t is not float]
                 if len(effective_types) > 1:
                     report["issues"].append(
-                        f"Column '{col}' has mixed data types: {effective_types}"
+                        f"Column '{col}' has mixed data types: {effective_types}",
                     )
                     # Mixed types are a warning, not necessarily a rejection, but we mark it
                     report["is_worthy"] = False if len(effective_types) > 2 else report["is_worthy"]
@@ -81,7 +79,7 @@ class DataQualityGuard:
         if trash_count > len(df) * 0.1:  # If more than 10% of cells look like trash
             report["is_worthy"] = False
             report["issues"].append(
-                f"High volume of trash or corrupted markers detected ({trash_count} hits)"
+                f"High volume of trash or corrupted markers detected ({trash_count} hits)",
             )
 
         return report

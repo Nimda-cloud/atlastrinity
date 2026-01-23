@@ -1,5 +1,4 @@
-"""
-Unit tests for vibe_server.py (v3.0 Hyper-Refactored)
+"""Unit tests for vibe_server.py (v3.0 Hyper-Refactored)
 
 Tests:
 1. Configuration loading (vibe_config.py)
@@ -88,7 +87,7 @@ class TestVibeConfig:
         from src.mcp_server.vibe_config import AgentMode, VibeConfig
 
         config = VibeConfig(
-            active_model="devstral-2", default_mode=AgentMode.AUTO_APPROVE, max_turns=10
+            active_model="devstral-2", default_mode=AgentMode.AUTO_APPROVE, max_turns=10,
         )
 
         args = config.to_cli_args(
@@ -157,8 +156,8 @@ class TestVibeConfig:
 
         config = VibeConfig(
             models=[
-                ModelConfig(name="gpt-4o", provider="openrouter", alias="gpt4", temperature=0.3)
-            ]
+                ModelConfig(name="gpt-4o", provider="openrouter", alias="gpt4", temperature=0.3),
+            ],
         )
 
         model = config.get_model_by_alias("gpt4")
@@ -339,7 +338,7 @@ class TestToolPermissions:
             tools={
                 "bash": ToolConfig(permission=ToolPermission.NEVER),
                 "read_file": ToolConfig(permission=ToolPermission.ALWAYS),
-            }
+            },
         )
 
         assert config.get_tool_permission("bash") == ToolPermission.NEVER

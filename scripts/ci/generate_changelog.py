@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate changelog from git commits since last tag.
+"""Generate changelog from git commits since last tag.
 """
 
 import subprocess
@@ -58,7 +57,7 @@ def get_commits_since_tag(tag: str) -> list[dict[str, str]]:
                         "author": parts[2],
                         "email": parts[3],
                         "date": parts[4],
-                    }
+                    },
                 )
 
         return commits

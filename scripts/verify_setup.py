@@ -47,13 +47,13 @@ def test_setup():
     print(f"Vibe PROJECT_ROOT: {PROJECT_ROOT}")
     print(f"Vibe REPOSITORY_ROOT: {REPOSITORY_ROOT}")
 
-    if REPOSITORY_ROOT == repo_path or REPOSITORY_ROOT == str(
-        Path(repo_path).expanduser().absolute()
-    ):
+    if repo_path == REPOSITORY_ROOT or str(
+        Path(repo_path).expanduser().absolute(),
+    ) == REPOSITORY_ROOT:
         print("✅ Vibe REPOSITORY_ROOT matches config.")
     else:
         print(
-            f"⚠️  Vibe REPOSITORY_ROOT ({REPOSITORY_ROOT}) differs from config ({repo_path}) - check symlinks/paths."
+            f"⚠️  Vibe REPOSITORY_ROOT ({REPOSITORY_ROOT}) differs from config ({repo_path}) - check symlinks/paths.",
         )
 
 

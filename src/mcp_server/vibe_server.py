@@ -1,5 +1,4 @@
-"""
-Vibe MCP Server - Hyper-Refactored Implementation
+"""Vibe MCP Server - Hyper-Refactored Implementation
 
 This server wraps the Mistral Vibe CLI in MCP-compliant programmatic mode.
 Fully aligned with official Mistral Vibe documentation and configuration.
@@ -64,7 +63,7 @@ try:
         logging.Formatter(
             "%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
-        )
+        ),
     )
     logger.addHandler(fh)
 except Exception as e:
@@ -88,7 +87,7 @@ try:
 
     if not AGENT_MODEL_OVERRIDE:
         logger.warning(
-            "[VIBE] AGENT_MODEL_OVERRIDE not set in config, strict configuration enforced"
+            "[VIBE] AGENT_MODEL_OVERRIDE not set in config, strict configuration enforced",
         )
 
 except Exception:
@@ -110,7 +109,7 @@ LOG_DIR = str(CONFIG_ROOT / "logs")
 INSTRUCTIONS_DIR = str(Path(VIBE_WORKSPACE) / "instructions")
 VIBE_SESSION_DIR = Path.home() / ".vibe" / "logs" / "session"
 DATABASE_URL = get_config_value(
-    "database", "url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db"
+    "database", "url", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
 )
 
 # ANSI escape code pattern for stripping colors
@@ -177,7 +176,7 @@ logger.info(
     f"[VIBE] Server initialized | "
     f"Binary: {VIBE_BINARY} | "
     f"Workspace: {VIBE_WORKSPACE} | "
-    f"Timeout: {DEFAULT_TIMEOUT_S}s"
+    f"Timeout: {DEFAULT_TIMEOUT_S}s",
 )
 
 
@@ -194,7 +193,7 @@ def strip_ansi(text: str) -> str:
 
 
 async def is_network_available(
-    host: str = "api.mistral.ai", port: int = 443, timeout: float = 3.0
+    host: str = "api.mistral.ai", port: int = 443, timeout: float = 3.0,
 ) -> bool:
     """Check if the network and specific host are reachable."""
     try:
@@ -270,8 +269,7 @@ def cleanup_old_instructions(max_age_hours: int = 24) -> int:
 
 
 def handle_long_prompt(prompt: str, cwd: str | None = None) -> tuple[str, str | None]:
-    """
-    Handle long prompts by offloading to a file.
+    """Handle long prompts by offloading to a file.
     Returns (final_prompt_arg, file_path_to_cleanup)
     """
     if len(prompt) <= 2000:
@@ -310,11 +308,11 @@ async def run_vibe_subprocess(
     ctx: Context | None = None,
     prompt_preview: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Execute Vibe CLI subprocess with streaming output.
+    """Execute Vibe CLI subprocess with streaming output.
 
     Returns:
         Dict with keys: success, stdout, stderr, returncode, command
+
     """
     config = get_vibe_config()
 
@@ -354,7 +352,7 @@ async def run_vibe_subprocess(
         stderr_chunks: list[bytes] = []
 
         async def read_stream_with_logging(
-            stream: asyncio.StreamReader, chunks: list[bytes], stream_name: str
+            stream: asyncio.StreamReader, chunks: list[bytes], stream_name: str,
         ) -> None:
             """Read from stream, log important lines, collect output."""
             buffer = b""
@@ -530,11 +528,11 @@ async def run_vibe_subprocess(
 
 @server.tool()
 async def vibe_which(ctx: Context) -> dict[str, Any]:
-    """
-    Locate the Vibe CLI binary and report its version and configuration.
+    """Locate the Vibe CLI binary and report its version and configuration.
 
     Returns:
         Dict with 'binary' path, 'version', current 'model', and 'mode'
+
     """
     vibe_path = resolve_vibe_binary()
     if not vibe_path:
@@ -588,8 +586,7 @@ async def vibe_prompt(
     max_price: float | None = None,
     output_format: str = "streaming",
 ) -> dict[str, Any]:
-    """
-    Send a prompt to Vibe AI agent in programmatic mode.
+    """Send a prompt to Vibe AI agent in programmatic mode.
 
     The PRIMARY tool for interacting with Vibe. Executes in CLI mode with
     structured output. All execution is logged and visible.
@@ -610,6 +607,7 @@ async def vibe_prompt(
 
     Returns:
         Dict with 'success', 'stdout', 'stderr', 'returncode', 'parsed_response'
+
     """
     prepare_workspace_and_instructions()
 
@@ -708,8 +706,7 @@ async def vibe_analyze_error(
     actual_result: str | None = None,
     full_plan_context: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Deep error analysis and optional auto-fix using Vibe AI.
+    """Deep error analysis and optional auto-fix using Vibe AI.
 
     Designed for self-healing scenarios when the system encounters errors
     it cannot resolve. Vibe acts as a Senior Engineer.
@@ -729,6 +726,7 @@ async def vibe_analyze_error(
 
     Returns:
         Analysis with root cause, suggested or applied fixes, and verification
+
     """
     prepare_workspace_and_instructions()
 
@@ -753,7 +751,7 @@ async def vibe_analyze_error(
             [
                 "",
                 f"STEP ACTION: {step_action}",
-            ]
+            ],
         )
 
     if expected_result:
@@ -776,7 +774,7 @@ async def vibe_analyze_error(
             "- tasks: id, session_id, goal, status, created_at",
             "- task_steps: id, task_id, sequence_number, action, tool, status, error_message",
             "- tool_executions: id, step_id, server_name, tool_name, arguments, result",
-        ]
+        ],
     )
 
     if log_context:
@@ -785,7 +783,7 @@ async def vibe_analyze_error(
                 "",
                 "RECENT LOGS:",
                 log_context,
-            ]
+            ],
         )
 
     if recovery_history:
@@ -795,13 +793,13 @@ async def vibe_analyze_error(
                 "=" * 40,
                 "3. PAST ATTEMPTS (What Was Already Tried)",
                 "=" * 40,
-            ]
+            ],
         )
         if isinstance(recovery_history, list):
             for i, attempt in enumerate(recovery_history):
                 status = "✅ SUCCESS" if attempt.get("status") == "success" else "❌ FAILED"
                 prompt_parts.append(
-                    f"Attempt {i + 1}: {attempt.get('action', 'Unknown')} | {status}"
+                    f"Attempt {i + 1}: {attempt.get('action', 'Unknown')} | {status}",
                 )
                 if attempt.get("error"):
                     prompt_parts.append(f"  └─ Error: {attempt.get('error')}")
@@ -817,7 +815,7 @@ async def vibe_analyze_error(
                 "",
                 "FULL PLAN CONTEXT:",
                 str(full_plan_context)[:2000],  # Limit for token efficiency
-            ]
+            ],
         )
 
     if file_path and os.path.exists(file_path):
@@ -831,7 +829,7 @@ async def vibe_analyze_error(
                         "```",
                         content,
                         "```",
-                    ]
+                    ],
                 )
         except Exception as e:
             logger.warning(f"Could not read file {file_path}: {e}")
@@ -842,7 +840,7 @@ async def vibe_analyze_error(
             "=" * 40,
             "4. YOUR INSTRUCTIONS",
             "=" * 40,
-        ]
+        ],
     )
 
     if auto_fix:
@@ -870,7 +868,7 @@ async def vibe_analyze_error(
                 "- FIX_APPLIED: [description of what you changed]",
                 "- VERIFICATION: [how you verified it works]",
                 "- STATUS: SUCCESS | PARTIAL | FAILED",
-            ]
+            ],
         )
     else:
         prompt_parts.extend(
@@ -883,7 +881,7 @@ async def vibe_analyze_error(
                 "4. Estimate complexity and risk of each fix",
                 "",
                 "Do NOT apply any changes - analysis only.",
-            ]
+            ],
         )
 
     prompt = "\n".join(prompt_parts)
@@ -916,8 +914,7 @@ async def vibe_implement_feature(
     run_linting: bool = True,
     code_style: str = "ruff",
 ) -> dict[str, Any]:
-    """
-    Deep coding mode: Implements a complex feature or refactoring.
+    """Deep coding mode: Implements a complex feature or refactoring.
 
     Vibe acts as a Senior Architect to plan, implement, verify, and iteratively
     improve the code until quality standards are met.
@@ -936,6 +933,7 @@ async def vibe_implement_feature(
 
     Returns:
         Implementation report with changed files, verification results, and quality metrics
+
     """
     prepare_workspace_and_instructions()
 
@@ -1077,8 +1075,7 @@ async def vibe_code_review(
     cwd: str | None = None,
     timeout_s: float | None = None,
 ) -> dict[str, Any]:
-    """
-    Request a code review from Vibe AI for a specific file.
+    """Request a code review from Vibe AI for a specific file.
 
     Args:
         file_path: Path to the file to review
@@ -1088,6 +1085,7 @@ async def vibe_code_review(
 
     Returns:
         Code review analysis with suggestions
+
     """
     if not os.path.exists(file_path):
         return {
@@ -1139,8 +1137,7 @@ async def vibe_smart_plan(
     cwd: str | None = None,
     timeout_s: float | None = None,
 ) -> dict[str, Any]:
-    """
-    Generate a smart execution plan for a complex objective.
+    """Generate a smart execution plan for a complex objective.
 
     Args:
         objective: The goal or task to plan for
@@ -1150,6 +1147,7 @@ async def vibe_smart_plan(
 
     Returns:
         Structured plan with steps, actions, tools, and verification criteria
+
     """
     prompt_parts = [
         "CREATE A DETAILED EXECUTION PLAN",
@@ -1168,7 +1166,7 @@ async def vibe_smart_plan(
             "- Required tools/commands",
             "- Expected outcome",
             "- Verification criteria",
-        ]
+        ],
     )
 
     return await vibe_prompt(
@@ -1188,11 +1186,11 @@ async def vibe_smart_plan(
 
 @server.tool()
 async def vibe_get_config(ctx: Context) -> dict[str, Any]:
-    """
-    Get the current Vibe configuration state.
+    """Get the current Vibe configuration state.
 
     Returns:
         Current configuration including active model, mode, providers, and models
+
     """
     config = get_vibe_config()
 
@@ -1233,8 +1231,7 @@ async def vibe_configure_model(
     model_alias: str,
     persist: bool = False,
 ) -> dict[str, Any]:
-    """
-    Switch the active model for Vibe operations.
+    """Switch the active model for Vibe operations.
 
     Args:
         model_alias: Alias of the model to use (from models list)
@@ -1242,6 +1239,7 @@ async def vibe_configure_model(
 
     Returns:
         Confirmation with the new active model
+
     """
     global _current_model
 
@@ -1282,8 +1280,7 @@ async def vibe_set_mode(
     ctx: Context,
     mode: str,
 ) -> dict[str, Any]:
-    """
-    Change the operational mode for Vibe.
+    """Change the operational mode for Vibe.
 
     Args:
         mode: Operational mode - "default", "plan", "accept-edits", or "auto-approve"
@@ -1294,6 +1291,7 @@ async def vibe_set_mode(
 
     Returns:
         Confirmation with the new mode
+
     """
     global _current_mode
 
@@ -1330,8 +1328,7 @@ async def vibe_configure_provider(
     api_style: str = "openai",
     backend: str = "generic",
 ) -> dict[str, Any]:
-    """
-    Add or update a provider configuration (runtime only).
+    """Add or update a provider configuration (runtime only).
 
     Args:
         name: Provider identifier
@@ -1342,6 +1339,7 @@ async def vibe_configure_provider(
 
     Returns:
         Confirmation with provider details
+
     """
     config = get_vibe_config()
 
@@ -1385,8 +1383,7 @@ async def vibe_session_resume(
     cwd: str | None = None,
     timeout_s: float | None = None,
 ) -> dict[str, Any]:
-    """
-    Resume a previous Vibe session.
+    """Resume a previous Vibe session.
 
     Args:
         session_id: Session ID to resume (partial match supported)
@@ -1396,6 +1393,7 @@ async def vibe_session_resume(
 
     Returns:
         Result of the resumed session
+
     """
     # Verify session exists
     target_path = None
@@ -1438,8 +1436,7 @@ async def vibe_ask(
     cwd: str | None = None,
     timeout_s: float | None = None,
 ) -> dict[str, Any]:
-    """
-    Ask Vibe AI a quick question (read-only, no tool execution).
+    """Ask Vibe AI a quick question (read-only, no tool execution).
 
     Args:
         question: The question to ask
@@ -1448,6 +1445,7 @@ async def vibe_ask(
 
     Returns:
         AI response without file modifications
+
     """
     return await vibe_prompt(
         ctx=ctx,
@@ -1469,8 +1467,7 @@ async def vibe_execute_subcommand(
     timeout_s: float | None = None,
     env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """
-    Execute a specific Vibe CLI subcommand (utility operations).
+    """Execute a specific Vibe CLI subcommand (utility operations).
 
     For AI interactions, use vibe_prompt() instead.
 
@@ -1488,6 +1485,7 @@ async def vibe_execute_subcommand(
 
     Returns:
         Command output and exit code
+
     """
     vibe_path = resolve_vibe_binary()
     if not vibe_path:
@@ -1532,8 +1530,7 @@ async def vibe_execute_subcommand(
 
 @server.tool()
 async def vibe_list_sessions(ctx: Context, limit: int = 10) -> dict[str, Any]:
-    """
-    List recent Vibe session logs with metrics.
+    """List recent Vibe session logs with metrics.
 
     Useful for tracking costs, context size, and session IDs for resuming.
 
@@ -1542,6 +1539,7 @@ async def vibe_list_sessions(ctx: Context, limit: int = 10) -> dict[str, Any]:
 
     Returns:
         List of recent sessions with metadata
+
     """
     if not VIBE_SESSION_DIR.exists():
         return {
@@ -1572,7 +1570,7 @@ async def vibe_list_sessions(ctx: Context, limit: int = 10) -> dict[str, Any]:
                             "prompt_tokens": stats.get("session_prompt_tokens", 0),
                             "completion_tokens": stats.get("session_completion_tokens", 0),
                             "file": f.name,
-                        }
+                        },
                     )
             except Exception as e:
                 logger.debug(f"Failed to parse session {f.name}: {e}")
@@ -1593,14 +1591,14 @@ async def vibe_list_sessions(ctx: Context, limit: int = 10) -> dict[str, Any]:
 
 @server.tool()
 async def vibe_session_details(ctx: Context, session_id_or_file: str) -> dict[str, Any]:
-    """
-    Get full details of a specific Vibe session.
+    """Get full details of a specific Vibe session.
 
     Args:
         session_id_or_file: Session ID or filename
 
     Returns:
         Full session details including history and token counts
+
     """
     target_path = None
 
@@ -1641,11 +1639,11 @@ async def vibe_session_details(ctx: Context, session_id_or_file: str) -> dict[st
 
 @server.tool()
 async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
-    """
-    Reload the Vibe configuration from disk.
+    """Reload the Vibe configuration from disk.
 
     Returns:
         New configuration summary
+
     """
     global _current_mode, _current_model
 
@@ -1678,8 +1676,7 @@ async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
 
 @server.tool()
 async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
-    """
-    Execute a read-only SQL query against the AtlasTrinity database.
+    """Execute a read-only SQL query against the AtlasTrinity database.
 
     Use this to inspect task execution history, tool results, and system state.
 
@@ -1695,6 +1692,7 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
 
     Returns:
         Query results as list of dictionaries
+
     """
     from sqlalchemy import text
 
@@ -1729,13 +1727,13 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
 
 @server.tool()
 async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
-    """
-    Retrieve current operational context from the database.
+    """Retrieve current operational context from the database.
 
     Helps Vibe focus on the current state before performing deep analysis.
 
     Returns:
         Current session, recent tasks, and errors
+
     """
     from sqlalchemy import text
 
@@ -1750,7 +1748,7 @@ async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
         try:
             # Latest session
             res = await db_session.execute(
-                text("SELECT id, started_at FROM sessions ORDER BY started_at DESC LIMIT 1")
+                text("SELECT id, started_at FROM sessions ORDER BY started_at DESC LIMIT 1"),
             )
             session_row = res.mappings().first()
             session_id = str(session_row["id"]) if session_row else None
@@ -1760,7 +1758,7 @@ async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
             if session_id:
                 tasks_res = await db_session.execute(
                     text(
-                        "SELECT id, goal, status, created_at FROM tasks WHERE session_id = :sid ORDER BY created_at DESC LIMIT 5"
+                        "SELECT id, goal, status, created_at FROM tasks WHERE session_id = :sid ORDER BY created_at DESC LIMIT 5",
                     ),
                     {"sid": session_id},
                 )
@@ -1769,8 +1767,8 @@ async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
             # Recent errors
             errors_res = await db_session.execute(
                 text(
-                    "SELECT timestamp, source, message FROM logs WHERE level IN ('ERROR', 'WARNING') ORDER BY timestamp DESC LIMIT 5"
-                )
+                    "SELECT timestamp, source, message FROM logs WHERE level IN ('ERROR', 'WARNING') ORDER BY timestamp DESC LIMIT 5",
+                ),
             )
             errors = [dict(r) for r in errors_res.mappings().all()]
 
@@ -1802,7 +1800,7 @@ if __name__ == "__main__":
     try:
         config = get_vibe_config()
         logger.info(
-            f"[VIBE] Configuration loaded: {len(config.models)} models, {len(config.providers)} providers"
+            f"[VIBE] Configuration loaded: {len(config.models)} models, {len(config.providers)} providers",
         )
     except Exception as e:
         logger.warning(f"[VIBE] Could not load configuration: {e}")

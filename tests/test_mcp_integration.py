@@ -14,7 +14,7 @@ def _integration_enabled() -> bool:
 
 def _mcp_package_available() -> bool:
     try:
-        import mcp  # noqa: F401
+        import mcp
 
         return True
     except Exception:
@@ -87,7 +87,7 @@ def test_mcp_servers_connect_and_list_tools():
                 if missing_env:
                     pytest.fail(
                         f"Missing required env vars for {name}: {sorted(set(missing_env))}. "
-                        "Add them to ~/.config/atlastrinity/.env or export them in your shell."
+                        "Add them to ~/.config/atlastrinity/.env or export them in your shell.",
                     )
 
                 session = await asyncio.wait_for(mgr.get_session(name), timeout=timeout + 5.0)

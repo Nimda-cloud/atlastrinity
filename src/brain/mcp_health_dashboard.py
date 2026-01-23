@@ -1,5 +1,4 @@
-"""
-AtlasTrinity MCP Health Dashboard
+"""AtlasTrinity MCP Health Dashboard
 
 Centralized health monitoring for all MCP servers with:
 - Parallel async health checks
@@ -64,8 +63,7 @@ class Colors:
 
 
 class MCPHealthDashboard:
-    """
-    Centralized health monitoring dashboard for MCP servers.
+    """Centralized health monitoring dashboard for MCP servers.
 
     Features:
     - Async parallel health checks for all servers
@@ -75,11 +73,11 @@ class MCPHealthDashboard:
     """
 
     def __init__(self, mcp_manager=None):
-        """
-        Initialize dashboard.
+        """Initialize dashboard.
 
         Args:
             mcp_manager: Optional MCPManager instance. If None, imports lazily.
+
         """
         self._mcp_manager = mcp_manager
         self._last_result: HealthCheckResult | None = None
@@ -107,8 +105,7 @@ class MCPHealthDashboard:
         return server_config.get("description", "")
 
     async def _check_single_server(self, server_name: str) -> ServerStatus:
-        """
-        Check health of a single server.
+        """Check health of a single server.
 
         Returns ServerStatus with timing and status information.
         """
@@ -160,8 +157,7 @@ class MCPHealthDashboard:
         return status
 
     async def run_all_checks(self) -> HealthCheckResult:
-        """
-        Run parallel health checks for all configured servers.
+        """Run parallel health checks for all configured servers.
 
         Returns HealthCheckResult with aggregate statistics and per-server status.
         """
@@ -212,8 +208,7 @@ class MCPHealthDashboard:
         return self._last_result
 
     def format_startup_diagnostics(self, result: HealthCheckResult) -> str:
-        """
-        Format health check result as colored terminal output.
+        """Format health check result as colored terminal output.
 
         Returns multi-line string with ANSI color codes.
         """
@@ -232,7 +227,7 @@ class MCPHealthDashboard:
             else (c.YELLOW if result.health_percentage >= 50 else c.RED)
         )
         lines.append(
-            f"  {c.BOLD}Status:{c.ENDC} {health_color}{result.online_count}/{result.total_servers} online ({result.health_percentage:.0f}%){c.ENDC}"
+            f"  {c.BOLD}Status:{c.ENDC} {health_color}{result.online_count}/{result.total_servers} online ({result.health_percentage:.0f}%){c.ENDC}",
         )
         lines.append(f"  {c.BOLD}Time:{c.ENDC} {result.timestamp.strftime('%H:%M:%S')}\n")
 
@@ -254,7 +249,7 @@ class MCPHealthDashboard:
                 continue
 
             lines.append(
-                f"  {c.BOLD}{c.BLUE}Tier {tier_num}: {tier_names.get(tier_num, '')}{c.ENDC}"
+                f"  {c.BOLD}{c.BLUE}Tier {tier_num}: {tier_names.get(tier_num, '')}{c.ENDC}",
             )
 
             for srv in sorted(servers_in_tier, key=lambda x: x.name):
@@ -280,8 +275,7 @@ class MCPHealthDashboard:
         return "\n".join(lines)
 
     async def startup_diagnostics(self) -> str:
-        """
-        Run health checks and return formatted diagnostics string.
+        """Run health checks and return formatted diagnostics string.
 
         This is the main entry point for startup diagnostics.
         """
@@ -294,7 +288,7 @@ class MCPHealthDashboard:
         if result.offline_count > 0:
             logger.warning(
                 f"[HealthDashboard] {result.offline_count} servers offline: "
-                f"{[n for n, s in result.servers.items() if s.status == 'offline']}"
+                f"{[n for n, s in result.servers.items() if s.status == 'offline']}",
             )
         else:
             logger.info(f"[HealthDashboard] All {result.online_count} servers online")
@@ -302,8 +296,7 @@ class MCPHealthDashboard:
         return output
 
     def get_summary(self) -> dict[str, Any]:
-        """
-        Get last health check result as dictionary for API responses.
+        """Get last health check result as dictionary for API responses.
 
         Returns empty dict if no checks have been run yet.
         """

@@ -56,7 +56,7 @@ TEST_CASES = {
 
 
 async def run_mcp_tool(
-    server_name: str, config: dict[str, Any], tool_name: str, tool_args: dict[str, Any]
+    server_name: str, config: dict[str, Any], tool_name: str, tool_args: dict[str, Any],
 ) -> bool:
     print(f"\n--- Testing {server_name} -> {tool_name} ---")
 
@@ -139,9 +139,9 @@ async def run_mcp_tool(
                         # Send Initialized
                         process.stdin.write(
                             json.dumps(
-                                {"jsonrpc": "2.0", "method": "notifications/initialized"}
+                                {"jsonrpc": "2.0", "method": "notifications/initialized"},
                             ).encode()
-                            + b"\n"
+                            + b"\n",
                         )
                         await process.stdin.drain()
                         break

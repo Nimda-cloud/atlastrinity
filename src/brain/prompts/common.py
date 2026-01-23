@@ -1,5 +1,4 @@
-"""
-Common constants and shared fragments for prompts.
+"""Common constants and shared fragments for prompts.
 
 This module now uses the centralized mcp_registry for dynamic catalog generation.
 """
@@ -34,16 +33,14 @@ __all__ = [
 
 
 def get_realm_catalog() -> str:
-    """
-    Get current realm catalog, generated dynamically from mcp_registry.
+    """Get current realm catalog, generated dynamically from mcp_registry.
     This replaces the hardcoded DEFAULT_REALM_CATALOG.
     """
     return get_server_catalog_for_prompt(include_key_tools=True)
 
 
 def get_vibe_documentation() -> str:
-    """
-    Get Vibe tools documentation from registry.
+    """Get Vibe tools documentation from registry.
     This replaces the hardcoded VIBE_TOOLS_DOCUMENTATION.
     """
     return VIBE_DOCUMENTATION

@@ -16,8 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 @server.tool()
 def devtools_check_mcp_health() -> dict[str, Any]:
-    """
-    Run the system-wide MCP health check script.
+    """Run the system-wide MCP health check script.
     Ping all enabled servers and report their status, response time, and tool counts.
     """
     script_path = PROJECT_ROOT / "scripts" / "check_mcp_health.py"
@@ -46,14 +45,14 @@ def devtools_check_mcp_health() -> dict[str, Any]:
 
 @server.tool()
 def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
-    """
-    Launch the official MCP Inspector for a specific server (Tier 1-4).
+    """Launch the official MCP Inspector for a specific server (Tier 1-4).
     This starts a background process and returns a URL (localhost) to open in the browser.
 
     Args:
         server_name: The name of the server to inspect (e.g., 'memory', 'vibe', 'filesystem').
 
     Note: The inspector process continues running in the background.
+
     """
     # Load active MCP config to find command
     config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
@@ -147,8 +146,7 @@ def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
 
 @server.tool()
 def devtools_validate_config() -> dict[str, Any]:
-    """
-    Validate the syntax and basic structure of the local MCP configuration file.
+    """Validate the syntax and basic structure of the local MCP configuration file.
     """
     config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
 
@@ -173,8 +171,7 @@ def devtools_validate_config() -> dict[str, Any]:
 
 @server.tool()
 def devtools_lint_python(file_path: str = ".") -> dict[str, Any]:
-    """
-    Run the 'ruff' linter on a specific file or directory.
+    """Run the 'ruff' linter on a specific file or directory.
     Returns structured JSON results of any violations found.
     """
     # Check if ruff is installed
@@ -216,8 +213,7 @@ def devtools_lint_python(file_path: str = ".") -> dict[str, Any]:
 
 @server.tool()
 def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
-    """
-    Run 'oxlint' on a specific file or directory (for JS/TS).
+    """Run 'oxlint' on a specific file or directory (for JS/TS).
     Returns structured JSON results.
     """
     if not shutil.which("oxlint"):
@@ -250,8 +246,7 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
 
 @server.tool()
 def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
-    """
-    Run 'knip' to find unused files, dependencies, and exports.
+    """Run 'knip' to find unused files, dependencies, and exports.
     Requires 'knip' to be installed in the project (usually via npm).
     """
     if not shutil.which("knip") and not shutil.which("npx"):
@@ -287,8 +282,7 @@ def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
 
 @server.tool()
 def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
-    """
-    Run 'pyrefly' to check code integrity and find generic coding errors.
+    """Run 'pyrefly' to check code integrity and find generic coding errors.
     """
     if not shutil.which("pyrefly"):
         return {"error": "pyrefly is not installed."}

@@ -9,8 +9,7 @@ from brain.mcp_manager import MCPManager
 
 
 async def test_restart():
-    """
-    Test the restart_mcp_server functionality.
+    """Test the restart_mcp_server functionality.
     We will target a less critical server like 'filesystem' or 'memory'.
     """
     print("Initializing MCP Manager...")

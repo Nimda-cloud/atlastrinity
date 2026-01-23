@@ -1,5 +1,4 @@
-"""
-AtlasTrinity Brain Server
+"""AtlasTrinity Brain Server
 Exposes the orchestrator via FastAPI for Electron IPC
 """
 
@@ -11,8 +10,8 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="espnet2.torch_utils.device_funcs")
 
 # Import CONFIG_ROOT before using it
-from .config_loader import config  # noqa: E402
-from .services_manager import ServiceStatus, ensure_all_services  # noqa: E402
+from .config_loader import config
+from .services_manager import ServiceStatus, ensure_all_services
 
 # Step 1: Ensure core system services (Redis, Docker) are running
 # We'll run this in the background to avoid blocking server binding
@@ -30,14 +29,14 @@ if github_token:
 
 import asyncio
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from pydantic import BaseModel  # noqa: E402
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-from .logger import logger  # noqa: E402
-from .orchestrator import Trinity  # noqa: E402
-from .production_setup import run_production_setup  # noqa: E402
-from .voice.stt import SpeechType, WhisperSTT  # noqa: E402
+from .logger import logger
+from .orchestrator import Trinity
+from .production_setup import run_production_setup
+from .voice.stt import SpeechType, WhisperSTT
 
 # Global instances (Trinity will now find Redis running)
 trinity = Trinity()
@@ -60,7 +59,7 @@ class SmartSTTRequest(BaseModel):
 current_task = None
 is_recording = False
 
-from contextlib import asynccontextmanager  # noqa: E402
+from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
@@ -100,7 +99,6 @@ app.add_middleware(
 @app.post("/api/chat")
 async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
     """Send a user request to the system"""
-
     if current_task and not current_task.done():
         raise HTTPException(status_code=409, detail="System is busy")
 
@@ -220,7 +218,7 @@ async def speech_to_text(audio: UploadFile = File(...)):
                         "wav",
                         wav_path,
                     ],
-                    capture_output=True,
+                    check=False, capture_output=True,
                     text=True,
                     timeout=10,
                 )
@@ -272,10 +270,9 @@ async def speech_to_text(audio: UploadFile = File(...)):
 
 @app.post("/api/stt/smart")
 async def smart_speech_to_text(
-    audio: UploadFile = File(...), previous_text: str = Form(default="")
+    audio: UploadFile = File(...), previous_text: str = Form(default=""),
 ):
-    """
-    Smart STT with Full Duplex support (Barge-in).
+    """Smart STT with Full Duplex support (Barge-in).
     """
     try:
         import subprocess
@@ -337,7 +334,7 @@ async def smart_speech_to_text(
                         pass
                 else:
                     logger.warning(
-                        f"[STT] FFmpeg failed ({process.returncode}): {stderr.decode()}, using original"
+                        f"[STT] FFmpeg failed ({process.returncode}): {stderr.decode()}, using original",
                     )
                     wav_path = temp_file_path
             except Exception as e:
@@ -397,7 +394,7 @@ async def smart_speech_to_text(
                 if ratio > 0.85:  # Increased from 0.75 to be less aggressive
                     is_echo = True
                     logger.info(
-                        f"[STT] Echo detected (History Match): '{clean_text}' ~= '{past_clean}' (Ratio: {ratio:.2f})"
+                        f"[STT] Echo detected (History Match): '{clean_text}' ~= '{past_clean}' (Ratio: {ratio:.2f})",
                     )
                     break
 
@@ -457,7 +454,7 @@ async def smart_speech_to_text(
         # Standard logging
         if result.text:
             logger.info(
-                f"[STT] Result: '{result.text}' (Type: {result.speech_type.value}, Conf: {result.confidence:.2f})"
+                f"[STT] Result: '{result.text}' (Type: {result.speech_type.value}, Conf: {result.confidence:.2f})",
             )
 
         # Clean up

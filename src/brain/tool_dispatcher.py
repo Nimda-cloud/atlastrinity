@@ -12,8 +12,7 @@ from .state_manager import state_manager
 
 
 class ToolDispatcher:
-    """
-    Centralized dispatcher for MCP tools.
+    """Centralized dispatcher for MCP tools.
     Unifies tool name resolution, synonym mapping, and argument normalization.
     """
 
@@ -353,10 +352,9 @@ class ToolDispatcher:
     }
 
     async def resolve_and_dispatch(
-        self, tool_name: str | None, args: dict[str, Any], explicit_server: str | None = None
+        self, tool_name: str | None, args: dict[str, Any], explicit_server: str | None = None,
     ) -> dict[str, Any]:
-        """
-        The main entry point for dispatching a tool call.
+        """The main entry point for dispatching a tool call.
         Resolves the tool name, normalizes arguments, and executes the call via MCPManager.
         """
         try:
@@ -369,7 +367,7 @@ class ToolDispatcher:
             if tool_name in self.HALLUCINATED_TOOLS:
                 suggestion = self.HALLUCINATED_TOOLS[tool_name]
                 logger.warning(
-                    f"[DISPATCHER] Hallucinated tool detected: '{tool_name}'. {suggestion}"
+                    f"[DISPATCHER] Hallucinated tool detected: '{tool_name}'. {suggestion}",
                 )
                 return {
                     "success": False,
@@ -402,14 +400,13 @@ class ToolDispatcher:
                         for prefix in prefixes:
                             if tool_name.startswith(prefix):
                                 potential_tool = tool_name[len(prefix) :]
-                                if potential_tool.startswith("_"):
-                                    potential_tool = potential_tool[1:]
+                                potential_tool = potential_tool.removeprefix("_")
 
                                 # Only strip if the remaining part exists as a tool or is recognized
                                 explicit_server = s_name
                                 tool_name = potential_tool
                                 logger.info(
-                                    f"[DISPATCHER] Normalized {prefix}{tool_name} to {explicit_server}.{tool_name}"
+                                    f"[DISPATCHER] Normalized {prefix}{tool_name} to {explicit_server}.{tool_name}",
                                 )
                                 break
                         if explicit_server:
@@ -417,7 +414,7 @@ class ToolDispatcher:
 
             # 5. Intelligent Routing with macOS-use Priority
             server, resolved_tool, normalized_args = self._intelligent_routing(
-                tool_name, args, explicit_server
+                tool_name, args, explicit_server,
             )
 
             # Special case: System tools handled internally
@@ -448,7 +445,7 @@ class ToolDispatcher:
             if validated_args.get("__validation_error__"):
                 error_msg = validated_args.pop("__validation_error__")
                 logger.warning(
-                    f"[DISPATCHER] Argument validation failed for {resolved_tool}: {error_msg}"
+                    f"[DISPATCHER] Argument validation failed for {resolved_tool}: {error_msg}",
                 )
                 return {
                     "success": False,
@@ -463,7 +460,7 @@ class ToolDispatcher:
 
             # 8. Metrics & Final Dispatch via MCPManager
             logger.info(
-                f"[DISPATCHER] Calling {server}.{resolved_tool} with {list(validated_args.keys())}"
+                f"[DISPATCHER] Calling {server}.{resolved_tool} with {list(validated_args.keys())}",
             )
 
             result = await self.mcp_manager.call_tool(server, resolved_tool, validated_args)
@@ -473,7 +470,7 @@ class ToolDispatcher:
                 error_msg = str(result.get("error", ""))
                 if "not found" in error_msg.lower() or "-32602" in error_msg:
                     logger.warning(
-                        f"[DISPATCHER] Tool not found on server: {server}.{resolved_tool}"
+                        f"[DISPATCHER] Tool not found on server: {server}.{resolved_tool}",
                     )
                     result["suggestion"] = (
                         f"Tool '{resolved_tool}' may not exist on server '{server}'. Check available tools with list_tools."
@@ -486,8 +483,7 @@ class ToolDispatcher:
             return {"success": False, "error": str(e)}
 
     def _validate_args(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
-        """
-        Validate and normalize arguments according to tool schema.
+        """Validate and normalize arguments according to tool schema.
         Returns args with __validation_error__ key if validation failed.
         """
         from .mcp_registry import get_tool_schema
@@ -578,10 +574,9 @@ class ToolDispatcher:
         return False
 
     def _intelligent_routing(
-        self, tool_name: str, args: dict[str, Any], explicit_server: str | None = None
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None = None,
     ) -> tuple[str | None, str, dict[str, Any]]:
-        """
-        Intelligent tier-based routing with macOS-use priority.
+        """Intelligent tier-based routing with macOS-use priority.
         Now delegates to BehaviorEngine for config-driven routing.
         """
         from .behavior_engine import behavior_engine
@@ -593,17 +588,17 @@ class ToolDispatcher:
         # Delegate to behavior engine for routing (replaces 150+ lines of hardcoded logic)
         try:
             server, resolved_tool, normalized_args = behavior_engine.route_tool(
-                tool_name, args, explicit_server
+                tool_name, args, explicit_server,
             )
 
             if server and server != resolved_tool:
                 logger.debug(
-                    f"[DISPATCHER] BehaviorEngine routing: {tool_name} -> {server}.{resolved_tool}"
+                    f"[DISPATCHER] BehaviorEngine routing: {tool_name} -> {server}.{resolved_tool}",
                 )
                 return server, resolved_tool, normalized_args
         except Exception as e:
             logger.warning(
-                f"[DISPATCHER] BehaviorEngine routing failed: {e}, falling back to registry"
+                f"[DISPATCHER] BehaviorEngine routing failed: {e}, falling back to registry",
             )
 
         # Fallback: Use registry-based resolution
@@ -622,10 +617,9 @@ class ToolDispatcher:
         }
 
     def _resolve_tool_and_args(
-        self, tool_name: str, args: dict[str, Any], explicit_server: str | None = None
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None = None,
     ) -> tuple[str | None, str, dict[str, Any]]:
         """Resolves tool name to canonical form and normalizes arguments."""
-
         # --- TERMINAL ROUTING ---
         if tool_name in self.TERMINAL_SYNONYMS or explicit_server == "terminal":
             return self._handle_terminal(tool_name, args)
@@ -710,7 +704,7 @@ class ToolDispatcher:
         return server, tool_name, args
 
     def _handle_legacy_git(
-        self, tool_name: str, args: dict[str, Any]
+        self, tool_name: str, args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
         """Maps legacy git_server tools to macos-use execute_command."""
         subcommand = tool_name.replace("git_", "").replace("_", "-")  # git_status -> status
@@ -749,7 +743,7 @@ class ToolDispatcher:
         return "macos-use", "execute_command", new_args
 
     def _handle_terminal(
-        self, tool_name: str, args: dict[str, Any]
+        self, tool_name: str, args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
         """Standardizes terminal command execution via macos-use."""
         cmd = (
@@ -785,7 +779,7 @@ class ToolDispatcher:
         return "macos-use", "execute_command", args
 
     def _handle_filesystem(
-        self, tool_name: str, args: dict[str, Any]
+        self, tool_name: str, args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
         """Maps filesystem synonyms to canonical tools."""
         action = args.get("action") or tool_name
@@ -812,7 +806,7 @@ class ToolDispatcher:
         return "filesystem", resolved_tool, args
 
     def _handle_browser(
-        self, tool_name: str, args: dict[str, Any]
+        self, tool_name: str, args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
         """Maps browser synonyms to Puppeteer tools.
 
@@ -941,7 +935,7 @@ class ToolDispatcher:
             logger.info(f"[DISPATCHER] Repository root verified for self-healing: {repo_path}")
         else:
             logger.warning(
-                f"[DISPATCHER] Repository root at {repo_path} is NOT a git repo. Self-healing might be limited."
+                f"[DISPATCHER] Repository root at {repo_path} is NOT a git repo. Self-healing might be limited.",
             )
 
         return "vibe", resolved_tool, args
@@ -983,8 +977,8 @@ class ToolDispatcher:
                         "timestamp": datetime.now().isoformat(),
                         "session_id": "current",  # Or a specific active session ID if known
                     }
-                    cast(Any, state_manager).redis.set(
-                        cast(Any, state_manager)._key("restart_pending"),
+                    cast("Any", state_manager).redis.set(
+                        cast("Any", state_manager)._key("restart_pending"),
                         json.dumps(restart_metadata),
                     )
                     logger.info("[SYSTEM] restart_pending flag set in Redis.")
@@ -1012,14 +1006,12 @@ class ToolDispatcher:
         return {"success": False, "error": f"Unknown system tool: {tool_name}"}
 
     def _handle_macos_use(
-        self, tool_name: str, args: dict[str, Any]
+        self, tool_name: str, args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
         """Standardizes macos-use GUI and productivity tool calls."""
         # Clean prefix if it exists
         clean_name = tool_name
-        if tool_name.startswith("macos-use_"):
-            clean_name = tool_name[10:]
-        elif tool_name.startswith("macos_use_"):
+        if tool_name.startswith("macos-use_") or tool_name.startswith("macos_use_"):
             clean_name = tool_name[10:]
         elif tool_name.startswith("git_"):
             return self._handle_legacy_git(tool_name, args)

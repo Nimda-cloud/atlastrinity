@@ -24,17 +24,17 @@ async def verify_official_mcp():
             # 2. List tools
             tools = await mcp_manager.list_tools(server)
             print(
-                f"Found {len(tools)} tools: {[t.name for t in tools[:5]]}{'...' if len(tools) > 5 else ''}"
+                f"Found {len(tools)} tools: {[t.name for t in tools[:5]]}{'...' if len(tools) > 5 else ''}",
             )
 
             # 3. Simple execution test
             if server == "filesystem":
                 # List home dir
                 res = await mcp_manager.call_tool(
-                    server, "list_directory", {"path": os.path.expanduser("~")}
+                    server, "list_directory", {"path": os.path.expanduser("~")},
                 )
                 print(
-                    f"Execution test (list_directory): {'SUCCESS' if not hasattr(res, 'isError') or res.isError is False else 'FAILURE'}"
+                    f"Execution test (list_directory): {'SUCCESS' if not hasattr(res, 'isError') or res.isError is False else 'FAILURE'}",
                 )
 
             elif server == "sequential-thinking":
@@ -50,16 +50,16 @@ async def verify_official_mcp():
                     },
                 )
                 print(
-                    f"Execution test (thinking): {'SUCCESS' if not hasattr(res, 'isError') or res.isError is False else 'FAILURE'}"
+                    f"Execution test (thinking): {'SUCCESS' if not hasattr(res, 'isError') or res.isError is False else 'FAILURE'}",
                 )
 
             elif server == "fetch":
                 # Fetch a simple URL (Google)
                 res = await mcp_manager.call_tool(
-                    server, "fetch_url", {"url": "https://www.google.com"}
+                    server, "fetch_url", {"url": "https://www.google.com"},
                 )
                 print(
-                    f"Execution test (fetch): {'SUCCESS' if not hasattr(res, 'isError') or res.isError is False else 'FAILURE'}"
+                    f"Execution test (fetch): {'SUCCESS' if not hasattr(res, 'isError') or res.isError is False else 'FAILURE'}",
                 )
 
         except Exception as e:
