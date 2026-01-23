@@ -431,19 +431,81 @@ def install_deps():
         venv_python = str(VENV_PATH / "bin" / "python")
 
     # Update PIP first
-    subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip"], capture_output=True)
+    subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"], capture_output=True)
+
+    # Pre-install protobuf with no-build-isolation to avoid setuptools build issues
+    print_info("Pre-installing protobuf to avoid build issues...")
+    subprocess.run([venv_python, "-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"], check=True)
 
     # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
-        subprocess.run([venv_python, "-m", "pip", "install", "--prefer-binary", "-r", str(req_file)], check=True)
+        subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"], capture_output=True)
+        # Install espnet and ukrainian-tts separately with no-build-isolation
+        subprocess.run(
+            [
+                venv_python,
+                "-m",
+                "pip",
+                "install",
+                "--no-build-isolation",
+                "--no-deps",
+                "espnet==202301",
+            ],
+            check=True,
+        )
+        # Install ukrainian-tts from git (works with espnet 202301)
+        subprocess.run(
+            [
+                venv_python,
+                "-m",
+                "pip",
+                "install",
+                "git+https://github.com/robinhad/ukrainian-tts.git",
+            ],
+            check=True,
+        )
+        # Install remaining requirements
+        with open(req_file, "r") as f:
+            lines = f.readlines()
+        filtered_lines = [
+            line
+            for line in lines
+            if not line.strip().startswith("espnet==")
+            and not line.strip().startswith("ukrainian-tts")
+        ]
+        filtered_file = str(req_file) + ".filtered"
+        with open(filtered_file, "w") as f:
+            f.writelines(filtered_lines)
+        subprocess.run(
+            [venv_python, "-m", "pip", "install", "--prefer-binary", "-r", filtered_file],
+            check=True,
+        )
+        os.remove(filtered_file)
+
+    # Fix dependency conflicts for espnet compatibility after all installations
+    print_info("Fixing dependency conflicts for espnet compatibility...")
+    subprocess.run(
+        [
+            venv_python,
+            "-m",
+            "pip",
+            "install",
+            "importlib-metadata<5.0",
+            "protobuf<=3.20.1",
+        ],
+        check=True,
+    )
 
     # Install dev requirements if they exist (it's a dev setup)
     req_dev_file = PROJECT_ROOT / "requirements-dev.txt"
     if req_dev_file.exists():
         print_info("PIP install -r requirements-dev.txt...")
-        subprocess.run([venv_python, "-m", "pip", "install", "--prefer-binary", "-r", str(req_dev_file)], check=True)
+        subprocess.run(
+            [venv_python, "-m", "pip", "install", "--prefer-binary", "-r", str(req_dev_file)],
+            check=True,
+        )
 
     print_success("Python залежності встановлено")
 
@@ -535,6 +597,15 @@ def sync_configs():
         else:
             print_warning("behavior_config.yaml.template missing in config/, skipped overwrite")
 
+        # Copy vibe_config.toml template (Overwrite)
+        vibe_toml_src = PROJECT_ROOT / "config" / "vibe_config.toml.template"
+        vibe_toml_dst = CONFIG_ROOT / "vibe_config.toml"
+        if vibe_toml_src.exists():
+            shutil.copy2(vibe_toml_src, vibe_toml_dst)
+            print_success("FORCED SYNC: Overwrote vibe_config.toml from project template")
+        else:
+            print_warning("vibe_config.toml.template missing in config/, skipped overwrite")
+
         print_info("All configurations are in ~/.config/atlastrinity/")
         print_info("Edit configs there directly (no sync needed)")
         return True
@@ -603,7 +674,12 @@ except ImportError:
 cache_dir = Path('{DIRS["tts_models"]}')
 cache_dir.mkdir(parents=True, exist_ok=True)
 
-from ukrainian_tts.tts import TTS
+# Skip TTS if ukrainian_tts is not available (package disabled in requirements.txt)
+try:
+    from ukrainian_tts.tts import TTS
+except ImportError:
+    print("TTS skipped: ukrainian_tts not installed (package disabled in requirements.txt)")
+    sys.exit(0)
 
 # 1. Спробуємо ініціалізацію з автоматичним патчингом у разі помилки
 old_cwd = os.getcwd()
