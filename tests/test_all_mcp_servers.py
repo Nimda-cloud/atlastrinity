@@ -175,7 +175,7 @@ async def main():
                 "tool": "macos-use_fetch_url",
                 "args": {"url": "https://example.com"},
                 "description": "Fetch URL as markdown",
-            }
+            },
         ],
         "github": [
             {
