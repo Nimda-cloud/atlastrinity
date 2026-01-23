@@ -10,5 +10,5 @@
     "stripe",
     "tailwindcss"
   ],
-  "ignoreBinaries": ["python", "python3", "pytest", "unset"]
+  "ignoreBinaries": ["python", "python3", "pytest", "unset", "ruff"]
 }

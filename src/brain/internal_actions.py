@@ -86,3 +86,38 @@ async def memory_warmup_action(context: dict, async_warmup: bool = True):
     if orchestrator:
         await orchestrator.warmup(async_warmup=async_warmup)
     logger.info("[WORKFLOW] Warmup triggered.")
+@register_action("internal.analyze_error")
+async def analyze_error_action(context: dict):
+    """Diagnose current error state and return analysis."""
+    logger.info("[WORKFLOW] Analyzing error...")
+    # In a real implementation, this would call Vibe or a specialized diagnostic agent
+    error = context.get("error", "Unknown error")
+    analysis = {
+        "can_auto_fix": "permission" in str(error).lower() or "not found" in str(error).lower(),
+        "fix_id": "sudo_retry" if "permission" in str(error).lower() else "re-initialize",
+        "severity": "high",
+    }
+    context["error_analysis"] = analysis
+    logger.info(f"[WORKFLOW] Error analysis complete: {analysis}")
+    return analysis
+
+
+@register_action("internal.apply_fix")
+async def apply_fix_action(context: dict, fix_id: str):
+    """Apply a corrective action based on fix_id."""
+    logger.info(f"[WORKFLOW] Applying fix: {fix_id}...")
+    # Mock implementation of applying a fix
+    await asyncio.sleep(1)
+    logger.info(f"[WORKFLOW] Fix '{fix_id}' applied.")
+
+
+@register_action("internal.escalate")
+async def escalate_action(context: dict, target: str = "user"):
+    """Escalate issue to user or higher-level agent."""
+    logger.info(f"[WORKFLOW] Escalating to {target}...")
+    orchestrator = context.get("orchestrator")
+    if orchestrator:
+        await orchestrator._speak(
+            "atlas", "Мені потрібна ваша допомога. Виникла помилка, яку я не можу виправити сам."
+        )
+    logger.info(f"[WORKFLOW] Escalation to {target} initiated.")

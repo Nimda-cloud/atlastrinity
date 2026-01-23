@@ -501,7 +501,6 @@ async def transcribe_audio(file_path: str):
 class WhisperMCPServer:
     def __init__(self):
         # Local WhisperSTT instance for MCP wrapper
-        from .voice.stt import WhisperSTT
 
         self.stt = WhisperSTT()
 
