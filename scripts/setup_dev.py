@@ -431,17 +431,26 @@ def install_deps():
         venv_python = str(VENV_PATH / "bin" / "python")
 
     # Update PIP first
-    subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"], capture_output=True)
+    subprocess.run(
+        [venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
+        capture_output=True,
+    )
 
     # Pre-install protobuf with no-build-isolation to avoid setuptools build issues
     print_info("Pre-installing protobuf to avoid build issues...")
-    subprocess.run([venv_python, "-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"], check=True)
+    subprocess.run(
+        [venv_python, "-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"],
+        check=True,
+    )
 
     # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
-        subprocess.run([venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"], capture_output=True)
+        subprocess.run(
+            [venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
+            capture_output=True,
+        )
         # Install espnet and ukrainian-tts separately with no-build-isolation
         subprocess.run(
             [
@@ -483,8 +492,6 @@ def install_deps():
             check=True,
         )
         os.remove(filtered_file)
-
-
 
     # Install dev requirements if they exist (it's a dev setup)
     req_dev_file = PROJECT_ROOT / "requirements-dev.txt"

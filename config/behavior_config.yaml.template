@@ -717,6 +717,12 @@ advanced:
     auto_escalate_after_tetyana_failures: 3  # Escalate after N Tetyana failures
     auto_escalate_on_critical_error: true    # Immediate escalation on critical errors
     
+    # Vibe Optimization Parameters
+    vibe_auto_fix: true                      # Whether Vibe should automatically apply fixes
+    vibe_quality_checks: true                # Run quality checks (lint/syntax) after Vibe changes
+    vibe_max_iterations: 3                   # Max review/fix loops for complex tasks
+    vibe_code_style: "ruff"                  # Preferred linter/style checker
+    
     # Escalation types
     escalation_types:
       debugging:
@@ -737,6 +743,7 @@ advanced:
     # Cooldown to prevent spam
     cooldown_seconds: 30
     max_escalations_per_session: 5
+
   
   # ---------------------------------------------------------------------------
   # RETRY AND RECOVERY POLICIES

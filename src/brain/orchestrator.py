@@ -1393,6 +1393,23 @@ class Trinity:
                 log_context = "\n".join(recent_logs)
                 error_context = f"Step ID: {step_id}\nAction: {step.get('action', '')}\n"
 
+                # Build structured recovery history for this step
+                raw_results = self.state.get("step_results", []) if self.state else []
+                # Ensure raw_results is indeed a list before enumerating
+                if not isinstance(raw_results, list):
+                    raw_results = []
+                
+                step_recovery_history = [
+                    {
+                        "attempt": i + 1,
+                        "action": str(r.get("action", ""))[:200],
+                        "status": "success" if r.get("success") else "failed",
+                        "error": str(r.get("error", ""))[:500] if r.get("error") else None,
+                    }
+                    for i, r in enumerate(raw_results)
+                    if isinstance(r, dict) and str(r.get("step_id", "")).startswith(str(step_id).split(".")[0])
+                ]
+
                 # Vibe diagnostics & multi-agent healing
                 vibe_text = None
                 try:
@@ -1405,6 +1422,14 @@ class Trinity:
                                 "error_message": f"{error_context}\n{last_error}",
                                 "log_context": log_context,
                                 "auto_fix": False,
+                                # Enhanced context for better self-healing
+                                "step_action": step.get("action", ""),
+                                "expected_result": step.get("expected_result", ""),
+                                "actual_result": str(step_result.result if step_result else "N/A")[
+                                    :2000
+                                ],
+                                "recovery_history": step_recovery_history,
+                                "full_plan_context": str(self.state.get("current_plan", ""))[:3000],
                             },
                         ),
                         timeout=300,

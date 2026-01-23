@@ -871,6 +871,9 @@ Synthesize findings into a comprehensive validation verdict.
         step: dict[str, Any],
         verification: VerificationResult,
         task_id: str | None = None,
+        root_cause_analysis: str | None = None,
+        suggested_fix: str | None = None,
+        verification_evidence: list[str] | None = None,
     ) -> None:
         """Save detailed rejection report to memory and notes servers for Atlas and Tetyana to access"""
         from datetime import datetime
@@ -882,25 +885,72 @@ Synthesize findings into a comprehensive validation verdict.
         try:
             timestamp = datetime.now().isoformat()
 
-            # Prepare detailed report text
-            report_text = f"""GRISHA VERIFICATION REPORT - REJECTED
+            # Build structured sections
+            issues_formatted = (
+                chr(10).join(f"  - {issue}" for issue in verification.issues)
+                if verification.issues
+                else "  - No specific issues identified"
+            )
 
-Step ID: {step_id}
-Action: {step.get("action", "")}
-Expected: {step.get("expected_result", "")}
-Confidence: {verification.confidence}
+            evidence_section = ""
+            if verification_evidence:
+                evidence_section = f"""
+## Verification Evidence
+{chr(10).join(f"  - {e}" for e in verification_evidence)}
+"""
 
-DESCRIPTION:
+            root_cause_section = ""
+            if root_cause_analysis:
+                root_cause_section = f"""
+## Root Cause Analysis
+{root_cause_analysis}
+"""
+
+            fix_section = ""
+            if suggested_fix:
+                fix_section = f"""
+## Suggested Fix
+{suggested_fix}
+"""
+
+            # Prepare detailed report text with enhanced structure
+            report_text = f"""========================================
+GRISHA VERIFICATION REPORT - REJECTED
+========================================
+
+## Summary
+| Field | Value |
+|-------|-------|
+| Step ID | {step_id} |
+| Task ID | {task_id or "N/A"} |
+| Confidence | {verification.confidence:.2f} |
+| Screenshot Analyzed | {"Yes" if verification.screenshot_analyzed else "No"} |
+| Timestamp | {timestamp} |
+
+## Step Details
+**Action:** {step.get("action", "N/A")}
+**Expected Result:** {step.get("expected_result", "N/A")}
+
+## Verification Result
+**Status:** ❌ REJECTED
+
+**Description:**
 {verification.description}
 
-ISSUES FOUND:
-{chr(10).join(f"- {issue}" for issue in verification.issues)}
+## Issues Found
+{issues_formatted}
+{root_cause_section}{fix_section}{evidence_section}
 
-VOICE MESSAGE (Ukrainian):
-{verification.voice_message}
+## Voice Message (Ukrainian)
+{verification.voice_message or "Верифікація не пройдена."}
 
-Screenshot Analyzed: {verification.screenshot_analyzed}
-Timestamp: {timestamp}
+## For Recovery
+Use this report to:
+1. Understand WHAT failed (see Issues Found)
+2. Understand WHY it failed (see Root Cause if available)
+3. Know HOW to fix it (see Suggested Fix if available)
+
+========================================
 """
 
             # Save to memory server (for graph/relations)
