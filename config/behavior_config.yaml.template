@@ -5,8 +5,8 @@
 # Replaces hardcoded logic from: adaptive_behavior.py, atlas.py,
 # tool_dispatcher.py, mcp_registry.py, orchestrator.py
 #
-# Version: 1.0.0
-# Last Updated: 2026-01-21
+# Version: 1.1.0 (Atlas Focus Fix)
+# Last Updated: 2026-01-23
 # =============================================================================
 
 # =============================================================================
