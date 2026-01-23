@@ -466,7 +466,15 @@ class Atlas(BaseAgent):
 
         if not is_simple_chat and is_complex:
             logger.info("[ATLAS] Engaging deep reasoning for chat...")
-            reasoning = await self.use_sequential_thinking(user_request, total_thoughts=2)
+            # Detect capabilities for the thinker
+            cap_for_thinker = (
+                "- Web search, File read, Spotlight, System info (Read-only)."
+                if intent == "solo_task"
+                else "- General conversational partner."
+            )
+            reasoning = await self.use_sequential_thinking(
+                user_request, total_thoughts=2, capabilities=cap_for_thinker
+            )
             if reasoning.get("success"):
                 analysis_context = f"\nDEEP ANALYSIS:\n{reasoning.get('analysis')}\n"
 
@@ -477,8 +485,16 @@ class Atlas(BaseAgent):
             else "- Conversational assistant."
         )
 
+        # Injection logic: Deep Analysis should come AFTER capabilities but BEFORE instructions
+        # Or even better: inject it as a separate 'thought' message if possible, 
+        # but for now we put it inside SystemMessage for consistency.
+        
+        system_prompt_text = ""
+        if analysis_context:
+            system_prompt_text += f"PAST REASONING/ANALYSIS (Internal):{analysis_context}\n"
+
         if intent == "solo_task":
-            system_prompt_text = generate_atlas_solo_task_prompt(
+            system_prompt_text += generate_atlas_solo_task_prompt(
                 user_query=user_request,
                 graph_context=graph_context,
                 vector_context=vector_context,
@@ -487,7 +503,7 @@ class Atlas(BaseAgent):
                 use_deep_persona=use_deep_persona,
             )
         else:
-            system_prompt_text = generate_atlas_chat_prompt(
+            system_prompt_text += generate_atlas_chat_prompt(
                 user_query=user_request,
                 graph_context=graph_context,
                 vector_context=vector_context,
@@ -495,8 +511,6 @@ class Atlas(BaseAgent):
                 agent_capabilities=agent_capabilities,
                 use_deep_persona=use_deep_persona,
             )
-        if analysis_context:
-            system_prompt_text += f"\n{analysis_context}"
 
         from langchain_core.messages import BaseMessage
 
@@ -555,13 +569,15 @@ class Atlas(BaseAgent):
             except Exception:
                 pass
 
-            # Add to history, but for subsequent turns, we might want to strip the preamble
-            # to avoid the model getting stuck in a "planning" loop.
-            # We add the AIMessage with tool_calls.
-            # If we were to strip the content here, some models might fail tool-turn logic.
-            # However, for Turn 2+, having the preamble in history often leads to Turn 2
-            # REPEATING the preamble instead of synthesizing.
+            # Add to history. 
+            # DYNAMIC FILTERING: If the response has tool_calls, we might want to 
+            # suppress the 'content' for the NEXT turn to prevent preamble repetition.
+            # However, for Turn 1 -> Turn 2, the model needs to see it already spoke.
+            # We add a Turn Continuity hint instead of stripping.
             messages.append(response)
+            
+            if current_turn == 0:
+                messages.append(SystemMessage(content="CONTINUITY HINT: You have already greeted the user and explained your plan. Now, focus ONLY on the data found in tools. Deliver the final answer immediately without repeating 'I am checking' or 'Searching' phrases."))
 
             # Process Tool Calls
             for tool_call in response.tool_calls:

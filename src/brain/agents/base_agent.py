@@ -59,7 +59,9 @@ class BaseAgent:
         # 3. Return raw content as fallback
         return {"raw": content}
 
-    async def use_sequential_thinking(self, task: str, total_thoughts: int = 3) -> dict[str, Any]:
+    async def use_sequential_thinking(
+        self, task: str, total_thoughts: int = 3, capabilities: str | None = None
+    ) -> dict[str, Any]:
         """
         Universal reasoning capability for any agent.
         Uses a dedicated LLM (as configured in sequential_thinking.model) to generate
@@ -92,15 +94,18 @@ class BaseAgent:
 
         full_analysis = ""
         current_context = ""  # Accumulate thoughts for LLM context
+        
+        # Capability context
+        cap_ctx = f"\nAGENT CAPABILITIES:\n{capabilities}\n" if capabilities else ""
 
         try:
             for i in range(1, total_thoughts + 1):
                 is_last = i == total_thoughts
 
                 # 3. Ask LLM for the next thought
-                prompt = f"""You are a deep technical reasoning engine.
+                prompt = f"""You are a deep technical reasoning engine and Strategic Architect.
 TASK: {task}
-
+{cap_ctx}
 PREVIOUS THOUGHTS:
 {current_context}
 
@@ -109,6 +114,9 @@ Generate the next logical thought to analyze this problem.
 - Focus on root causes, technical details, and specific actionable solutions.
 - If this is the final thought, provide a summary and recommendation.
 - Output ONLY the raw thought text. Do not wrap in JSON or Markdown blocks.
+- **IMPORTANT**: If your task requires real-time data (weather, news, system stats), check AGENT CAPABILITIES. 
+- If 'Web search' or 'duckduckgo' is listed, you DO have access to real-time data. 
+- Never say "I don't have access" if the tools are listed.
 """
                 response = await thinker_llm.ainvoke(
                     [
