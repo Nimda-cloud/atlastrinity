@@ -400,6 +400,15 @@ tool_routing:
       inspector: devtools_launch_inspector
       health: devtools_check_mcp_health
       check: devtools_check_mcp_health
+  # Thinking & Reasoning
+  thinking:
+    synonyms:
+      - sequentialthinking
+      - sequential-thinking
+      - think
+      - reason
+    priority_server: sequential-thinking
+    fallback_server: null
 
   # macOS-specific operations
   macos_use:
