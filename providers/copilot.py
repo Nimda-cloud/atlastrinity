@@ -267,17 +267,19 @@ class CopilotLLM(BaseChatModel):
             tools_desc = "\n".join(tools_desc_lines)
 
             tool_instructions = (
-                "You have the following tools available in the user's system:\n"
+                "CRITICAL: If you need to use tools, you MUST respond ONLY in the following JSON format. "
+                "Any other text outside the JSON will cause a system error.\n\n"
+                "AVAILABLE TOOLS:\n"
                 f"{tools_desc}\n\n"
-                "If text response is enough, answer normally.\n"
-                "If you need to use tools, RESPOND STRICTLY in JSON format:\n"
+                "JSON FORMAT (ONLY IF USING TOOLS):\n"
                 "{\n"
                 '  "tool_calls": [\n'
                 '    { "name": "tool_name", "args": { ... } }\n'
                 "  ],\n"
-                '  "final_answer": "IMMEDIATE feedback to the user in UKRAINIAN (e.g., \'Зараз перевірю...\'). Zero English words."\n'
-                "}\n"
-                "If you ALREADY checked results (ToolMessages are above), provide the final summary as a normal text response (no JSON).\n"
+                '  "final_answer": "Immediate feedback in UKRAINIAN (e.g., \'Зараз перевірю...\')."\n'
+                "}\n\n"
+                "If text response is enough (no tools needed), answer normally in Ukrainian.\n"
+                "If you ALREADY checked results (ToolMessages provided), provide a final summary in plain text.\n"
             )
         else:
             tool_instructions = ""

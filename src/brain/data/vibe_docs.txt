@@ -23,7 +23,7 @@ FEATURES:
      - session_id: Session ID to resume
      - max_turns: Max conversation turns (default 10)
      - max_price: Cost limit in dollars
-   Example: vibe_prompt(prompt="Refactor this function", model="gpt-4o", mode="auto-approve")
+   Example: vibe_prompt(prompt="Refactor this function", model="gpt-4.1", mode="auto-approve")
 
 2. **vibe_analyze_error** (SELF-HEALING)
    Purpose: Deep error analysis with optional auto-fix
@@ -75,7 +75,7 @@ FEATURES:
    Args:
      - model_alias: Alias of the model to use (required)
      - persist: Save to config file (default False)
-   Example: vibe_configure_model(model_alias="gpt-4o")
+   Example: vibe_configure_model(model_alias="gpt-4.1")
 
 9. **vibe_set_mode**
    Purpose: Change operational mode

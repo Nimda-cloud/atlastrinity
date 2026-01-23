@@ -262,7 +262,7 @@ class Atlas(BaseAgent):
         history: list[Any] | None = None,
         use_deep_persona: bool = False,
         intent: str = "chat",
-        on_preamble: Callable[[str], Any] | None = None,
+        on_preamble: Callable[[str, str], Any] | None = None,
         llm_instance: Any | None = None,
     ) -> str:
         """

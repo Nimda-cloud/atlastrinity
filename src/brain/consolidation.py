@@ -61,7 +61,7 @@ class ConsolidationModule:
 
                 consolidation_model = config.get("models", {}).get("consolidation") or config.get(
                     "models", {}
-                ).get("default", "gpt-4o")
+                ).get("default", "gpt-4.1")
                 atlas = Atlas(model_name=consolidation_model)
                 llm = atlas.llm
 
