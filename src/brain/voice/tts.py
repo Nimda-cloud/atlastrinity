@@ -90,81 +90,86 @@ def sanitize_text_for_tts(text: str) -> str:
     Removes/replaces characters and expands abbreviations.
     """
     import re
-    
+
     # 1. Remove URLs (unpronounceable)
-    text = re.sub(r'http[s]?://\S+', '', text)
-    
+    text = re.sub(r"http[s]?://\S+", "", text)
+
     # 2. Remove markdown links [text](url) -> text
-    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
-    
+    text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
+
     # 3. Remove code blocks and inline code
-    text = re.sub(r'```[\s\S]*?```', '', text)
-    text = re.sub(r'`[^`]+`', '', text)
-    
+    text = re.sub(r"```[\s\S]*?```", "", text)
+    text = re.sub(r"`[^`]+`", "", text)
+
     # 4. Expand Ukrainian abbreviations and units
     abbreviations = {
         # Temperature
-        r'°C': ' градусів Цельсія',
-        r'°': ' градусів',
-        r'℃': ' градусів Цельсія',
+        r"°C": " градусів Цельсія",
+        r"°": " градусів",
+        r"℃": " градусів Цельсія",
         # Distance
-        r'\bкм\b': ' кілометрів',
-        r'\bм\b(?!\/)': ' метрів',  # Not before /
-        r'\bсм\b': ' сантиметрів',
-        r'\bмм\b': ' міліметрів',
+        r"\bкм\b": " кілометрів",
+        r"\bм\b(?!\/)": " метрів",  # Not before /
+        r"\bсм\b": " сантиметрів",
+        r"\bмм\b": " міліметрів",
         # Time
-        r'\bсек\b': ' секунд',
-        r'\bс\b(?=\s|\.|,|$)': ' секунд',
-        r'\bхв\b': ' хвилин',
-        r'\bгод\b': ' годин',
+        r"\bсек\b": " секунд",
+        r"\bс\b(?=\s|\.|,|$)": " секунд",
+        r"\bхв\b": " хвилин",
+        r"\bгод\b": " годин",
         # Speed
-        r'\bм/с\b': ' метрів на секунду',
-        r'\bкм/год\b': ' кілометрів на годину',
+        r"\bм/с\b": " метрів на секунду",
+        r"\bкм/год\b": " кілометрів на годину",
         # Weight
-        r'\bкг\b': ' кілограмів',
-        r'\bг\b(?=\s|\.|,|$)': ' грамів',
-        r'\bт\b(?=\s|\.|,|$)': ' тонн',
+        r"\bкг\b": " кілограмів",
+        r"\bг\b(?=\s|\.|,|$)": " грамів",
+        r"\bт\b(?=\s|\.|,|$)": " тонн",
         # Percent and numbers
-        r'%': ' відсотків',
-        r'\bнр\b': ' наприклад',
-        r'\bтощо\b': ' і так далі',
+        r"%": " відсотків",
+        r"\bнр\b": " наприклад",
+        r"\bтощо\b": " і так далі",
     }
-    
+
     for pattern, replacement in abbreviations.items():
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-    
+
     # 5. Replace special punctuation
     replacements = {
-        '—': ',',
-        '–': ',',
-        '…': '',
-        '"': '',
-        "'": '',
-        '«': '',
-        '»': '',
-        '/': ' ',
-        '@': ' at ',
-        '#': ' номер ',
-        '&': ' і ',
-        '*': '', '_': '',
-        '|': ',',
-        '<': '', '>': '',
-        '{': '', '}': '',
-        '[': '', ']': '',
-        '(': ',', ')': ',',
-        '+': ' плюс ',
-        '=': ' дорівнює ',
+        "—": ",",
+        "–": ",",
+        "…": "",
+        '"': "",
+        "'": "",
+        "«": "",
+        "»": "",
+        "/": " ",
+        "@": " at ",
+        "#": " номер ",
+        "&": " і ",
+        "*": "",
+        "_": "",
+        "|": ",",
+        "<": "",
+        ">": "",
+        "{": "",
+        "}": "",
+        "[": "",
+        "]": "",
+        "(": ",",
+        ")": ",",
+        "+": " плюс ",
+        "=": " дорівнює ",
     }
-    
+
     for char, replacement in replacements.items():
         text = text.replace(char, replacement)
-    
+
     # 6. Clean up spacing and punctuation
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'([,.!?])\1+', r'\1', text)
-    text = re.sub(r'\s+([,.!?])', r'\1', text)
-    text = re.sub(r'([,.!?])([^\s])', r'\1 \2', text)
-    
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"([,.!?])\1+", r"\1", text)
+    text = re.sub(r"\s+([,.!?])", r"\1", text)
+    text = re.sub(r"([,.!?])([^\s])", r"\1 \2", text)
+
     return text.strip()
 
 

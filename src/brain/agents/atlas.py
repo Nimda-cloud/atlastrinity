@@ -359,22 +359,22 @@ class Atlas(BaseAgent):
                     # deep reasoning (sequential-thinking), and all other servers.
                     discovery_servers = {
                         # Tier 1: Core system
-                        "macos-use",          # GUI, terminal, fetch, time, spotlight (read ops only)
-                        "filesystem",         # File read/write (filtered to read-only below)
-                        "sequential-thinking", # Deep reasoning
+                        "macos-use",  # GUI, terminal, fetch, time, spotlight (read ops only)
+                        "filesystem",  # File read/write (filtered to read-only below)
+                        "sequential-thinking",  # Deep reasoning
                         # Tier 2: High priority
-                        "memory",             # Knowledge graph (read/write)
-                        "graph",              # Graph visualization
-                        "redis",              # State inspection (read ops)
+                        "memory",  # Knowledge graph (read/write)
+                        "graph",  # Graph visualization
+                        "redis",  # State inspection (read ops)
                         "duckduckgo-search",  # Web search
-                        "github",             # GitHub API (read ops)
-                        "context7",           # Library documentation
-                        "devtools",           # Linting, code inspection
-                        "whisper-stt",        # Voice transcription (read-only)
+                        "github",  # GitHub API (read ops)
+                        "context7",  # Library documentation
+                        "devtools",  # Linting, code inspection
+                        "whisper-stt",  # Voice transcription (read-only)
                         # Tier 3-4: Specialized (Atlas can discover but may not use frequently)
-                        "vibe",               # Code analysis (read-only ops like ask)
-                        "puppeteer",          # Browser automation (read-only ops like navigate)
-                        "chrome-devtools",    # Chrome DevTools Protocol
+                        "vibe",  # Code analysis (read-only ops like ask)
+                        "puppeteer",  # Browser automation (read-only ops like navigate)
+                        "chrome-devtools",  # Chrome DevTools Protocol
                     }
 
                     # Be proactive: try all discovery servers that are in the config, not just "connected" ones
@@ -525,7 +525,7 @@ class Atlas(BaseAgent):
             # 5. Model requested tools. Extract 'final_answer' (preamble) if present.
             # In our protocol, the model puts immediate feedback in 'content' or 'final_answer'.
             preamble = str(response.content).strip()
-            
+
             # If there's a preamble, use the callback to speak it NOW
             if preamble and len(preamble) > 2:
                 logger.info(f"[ATLAS CHAT] Preamble detected: {preamble}")
@@ -540,22 +540,26 @@ class Atlas(BaseAgent):
             # Emit a 'thinking' event to the UI
             try:
                 from ..state_manager import state_manager
+
                 if state_manager and state_manager.available:
                     asyncio.create_task(
-                        state_manager.publish_event("logs", {
-                            "source": "atlas",
-                            "type": "thinking",
-                            "content": "Analyzing and fetching data..."
-                        })
+                        state_manager.publish_event(
+                            "logs",
+                            {
+                                "source": "atlas",
+                                "type": "thinking",
+                                "content": "Analyzing and fetching data...",
+                            },
+                        )
                     )
             except Exception:
                 pass
 
             # Add to history, but for subsequent turns, we might want to strip the preamble
             # to avoid the model getting stuck in a "planning" loop.
-            # We add the AIMessage with tool_calls. 
+            # We add the AIMessage with tool_calls.
             # If we were to strip the content here, some models might fail tool-turn logic.
-            # However, for Turn 2+, having the preamble in history often leads to Turn 2 
+            # However, for Turn 2+, having the preamble in history often leads to Turn 2
             # REPEATING the preamble instead of synthesizing.
             messages.append(response)
 

@@ -26,6 +26,12 @@ class MessageType(Enum):
     STEP_COMPLETE = "step_complete"  # Tetyana -> Grisha: ready for verification
     VOICE = "voice"  # Any agent: signal for orchestrator to speak
     LOG = "log"  # Any agent: signal for custom UI log
+    # Enhanced communication types for self-healing
+    ERROR_ANALYSIS = "error_analysis"  # Vibe -> Grisha/Atlas: detailed error analysis
+    VERIFICATION_REQUEST = "verification_request"  # Tetyana -> Grisha: verify result
+    APPROVAL = "approval"  # Grisha/Atlas -> Tetyana: proceed with action
+    CORRECTION = "correction"  # Grisha -> Tetyana: specific fix instruction
+    HEALING_STATUS = "healing_status"  # Vibe -> All: self-healing progress update
 
 
 @dataclass

@@ -86,6 +86,8 @@ async def memory_warmup_action(context: dict, async_warmup: bool = True):
     if orchestrator:
         await orchestrator.warmup(async_warmup=async_warmup)
     logger.info("[WORKFLOW] Warmup triggered.")
+
+
 @register_action("internal.analyze_error")
 async def analyze_error_action(context: dict):
     """Diagnose current error state and return analysis."""

@@ -586,3 +586,45 @@ Output your internal verification strategy in English. Do NOT use markdown forma
             "voice_message": "Mandatory Ukrainian message for the user. Set the tempo. Explain WHAT we found and HOW we are fixing it (Professional and authoritative)."
         }}
         """
+
+    @staticmethod
+    def vibe_self_healing_prompt(
+        error: str,
+        step_context: dict,
+        recovery_history: list,
+        expected_vs_actual: str,
+    ) -> str:
+        """Enhanced prompt for Vibe self-healing with structured problem description."""
+        history_formatted = (
+            "\n".join(
+                [
+                    f"- Attempt {h.get('attempt', i + 1)}: {h.get('status', 'Unknown')} - {h.get('error', 'OK')}"
+                    for i, h in enumerate(recovery_history)
+                ]
+            )
+            if recovery_history
+            else "No previous attempts."
+        )
+
+        return f"""SELF-HEALING TASK FOR ATLASTRINITY
+
+## PROBLEM REPORT
+### What Happened
+Error: {error}
+Step Action: {step_context.get("action", "Unknown")}
+Expected Result: {step_context.get("expected_result", "Unknown")}
+Actual vs Expected: {expected_vs_actual}
+
+### Past Attempts
+{history_formatted}
+
+## INSTRUCTIONS
+1. ANALYZE the root cause with evidence from logs/files.
+2. EXPLAIN specifically why the previous approach (if any) failed.
+3. PROPOSE a fix with clear technical rationale.
+4. IMPLEMENT the fix using your architect capabilities.
+5. VERIFY the fix resolves the specific issue identified.
+6. REPORT back with a structured result: ROOT_CAUSE, FIX_APPLIED, VERIFICATION, and final STATUS.
+
+Your goal is to restore system integrity and progress towards the user's objective.
+"""

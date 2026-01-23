@@ -702,6 +702,11 @@ async def vibe_analyze_error(
     cwd: str | None = None,
     timeout_s: float | None = None,
     auto_fix: bool = True,
+    # Enhanced context for better self-healing
+    step_action: str | None = None,
+    expected_result: str | None = None,
+    actual_result: str | None = None,
+    full_plan_context: str | None = None,
 ) -> dict[str, Any]:
     """
     Deep error analysis and optional auto-fix using Vibe AI.
@@ -717,76 +722,173 @@ async def vibe_analyze_error(
         cwd: Working directory
         timeout_s: Timeout in seconds (default: 600)
         auto_fix: Automatically apply fixes (default: True)
+        step_action: The action that was being performed when the error occurred
+        expected_result: What was expected to happen
+        actual_result: What actually happened
+        full_plan_context: The full execution plan for context
 
     Returns:
         Analysis with root cause, suggested or applied fixes, and verification
     """
     prepare_workspace_and_instructions()
 
+    # Build structured problem report
     prompt_parts = [
-        "SYSTEM: You are the Senior Self-Healing Engineer for AtlasTrinity.",
+        "=" * 60,
+        "ATLASTRINITY SELF-HEALING DIAGNOSTIC REPORT",
+        "=" * 60,
         "",
-        "DATABASE SCHEMA:",
-        "- sessions: id, started_at, ended_at",
-        "- tasks: id, session_id, goal, status, created_at",
-        "- task_steps: id, task_id, sequence_number, action, tool, status, error_message",
-        "- tool_executions: id, step_id, server_name, tool_name, arguments, result",
+        "ROLE: You are the Senior Self-Healing Engineer for AtlasTrinity.",
+        "MISSION: Diagnose, fix, and verify the resolution of this error.",
         "",
-        f"CONTEXT: System Root: {SYSTEM_ROOT} | Project: {cwd or VIBE_WORKSPACE}",
-        "",
+        "=" * 40,
+        "1. WHAT HAPPENED (Problem Description)",
+        "=" * 40,
         f"ERROR MESSAGE:\n{error_message}",
     ]
 
+    # Add step context if available
+    if step_action:
+        prompt_parts.extend(
+            [
+                "",
+                f"STEP ACTION: {step_action}",
+            ]
+        )
+
+    if expected_result:
+        prompt_parts.append(f"EXPECTED RESULT: {expected_result}")
+
+    if actual_result:
+        prompt_parts.append(f"ACTUAL RESULT: {actual_result}")
+
+    prompt_parts.extend(
+        [
+            "",
+            "=" * 40,
+            "2. CONTEXT (Environment & History)",
+            "=" * 40,
+            f"System Root: {SYSTEM_ROOT}",
+            f"Project Directory: {cwd or VIBE_WORKSPACE}",
+            "",
+            "DATABASE SCHEMA (for reference):",
+            "- sessions: id, started_at, ended_at",
+            "- tasks: id, session_id, goal, status, created_at",
+            "- task_steps: id, task_id, sequence_number, action, tool, status, error_message",
+            "- tool_executions: id, step_id, server_name, tool_name, arguments, result",
+        ]
+    )
+
     if log_context:
-        prompt_parts.append(f"\nRECENT LOGS:\n{log_context}")
+        prompt_parts.extend(
+            [
+                "",
+                "RECENT LOGS:",
+                log_context,
+            ]
+        )
 
     if recovery_history:
+        prompt_parts.extend(
+            [
+                "",
+                "=" * 40,
+                "3. PAST ATTEMPTS (What Was Already Tried)",
+                "=" * 40,
+            ]
+        )
         if isinstance(recovery_history, list):
-            history_str = "\n".join(
-                [
-                    f"- Attempt {i + 1}: {a.get('action', 'Unknown')} | Result: {a.get('status', 'Unknown')} | Error: {a.get('error_message', 'N/A')}"
-                    for i, a in enumerate(recovery_history)
-                ]
-            )
-            prompt_parts.append(
-                f"\nPAST ATTEMPTS:\n{history_str}\n(Avoid repeating failed strategies)"
-            )
+            for i, attempt in enumerate(recovery_history):
+                status = "✅ SUCCESS" if attempt.get("status") == "success" else "❌ FAILED"
+                prompt_parts.append(
+                    f"Attempt {i + 1}: {attempt.get('action', 'Unknown')} | {status}"
+                )
+                if attempt.get("error"):
+                    prompt_parts.append(f"  └─ Error: {attempt.get('error')}")
+            prompt_parts.append("")
+            prompt_parts.append("⚠️ CRITICAL: Do NOT repeat strategies that have already failed!")
         else:
-            prompt_parts.append(
-                f"\nPAST ATTEMPTS:\n{recovery_history}\n(Avoid repeating failed strategies)"
-            )
+            prompt_parts.append(recovery_history)
+            prompt_parts.append("⚠️ CRITICAL: Do NOT repeat strategies that have already failed!")
+
+    if full_plan_context:
+        prompt_parts.extend(
+            [
+                "",
+                "FULL PLAN CONTEXT:",
+                str(full_plan_context)[:2000],  # Limit for token efficiency
+            ]
+        )
 
     if file_path and os.path.exists(file_path):
         try:
             with open(file_path, encoding="utf-8") as f:
                 content = f.read()[:5000]  # Limit
-                prompt_parts.append(f"\nFILE: {file_path}\n```\n{content}\n```")
+                prompt_parts.extend(
+                    [
+                        "",
+                        f"RELEVANT FILE: {file_path}",
+                        "```",
+                        content,
+                        "```",
+                    ]
+                )
         except Exception as e:
             logger.warning(f"Could not read file {file_path}: {e}")
+
+    prompt_parts.extend(
+        [
+            "",
+            "=" * 40,
+            "4. YOUR INSTRUCTIONS",
+            "=" * 40,
+        ]
+    )
 
     if auto_fix:
         prompt_parts.extend(
             [
                 "",
-                "INSTRUCTIONS:",
-                "1. Perform Root Cause Analysis (RCA)",
-                "2. Create a fix strategy",
-                "3. Execute the fix (edit code, run commands)",
-                "4. Verify the fix works",
-                "5. Report the results",
+                "PHASE 1 - DIAGNOSE:",
+                "  1.1. Perform Root Cause Analysis (RCA) - identify the EXACT cause",
+                "  1.2. Explain WHY this error occurred (not just what happened)",
+                "  1.3. Check if this is related to configuration, code, or environment",
+                "",
+                "PHASE 2 - FIX:",
+                "  2.1. Create a fix strategy with clear rationale",
+                "  2.2. Execute the fix (edit code, run commands as needed)",
+                "  2.3. Ensure the fix addresses the ROOT CAUSE, not symptoms",
+                "",
+                "PHASE 3 - VERIFY:",
+                "  3.1. Verify the fix works by running appropriate checks",
+                "  3.2. Confirm no new issues were introduced",
+                "  3.3. Report results with evidence of success",
+                "",
+                "OUTPUT FORMAT:",
+                "Provide a structured response with:",
+                "- ROOT_CAUSE: [one-line description]",
+                "- FIX_APPLIED: [description of what you changed]",
+                "- VERIFICATION: [how you verified it works]",
+                "- STATUS: SUCCESS | PARTIAL | FAILED",
             ]
         )
     else:
         prompt_parts.extend(
             [
                 "",
-                "Analyze and suggest fixes without applying them.",
+                "ANALYSIS MODE (no changes):",
+                "1. Perform deep root cause analysis",
+                "2. Explain WHY this error occurred",
+                "3. Suggest specific fixes with rationale",
+                "4. Estimate complexity and risk of each fix",
+                "",
+                "Do NOT apply any changes - analysis only.",
             ]
         )
 
     prompt = "\n".join(prompt_parts)
 
-    logger.info(f"[VIBE] Analyzing error (auto_fix={auto_fix})")
+    logger.info(f"[VIBE] Analyzing error (auto_fix={auto_fix}, step={step_action})")
 
     return await vibe_prompt(
         ctx=ctx,
@@ -807,11 +909,18 @@ async def vibe_implement_feature(
     constraints: str | None = None,
     cwd: str | None = None,
     timeout_s: float | None = 1200,
+    # Enhanced options for software development
+    quality_checks: bool = True,
+    iterative_review: bool = True,
+    max_iterations: int = 3,
+    run_linting: bool = True,
+    code_style: str = "ruff",
 ) -> dict[str, Any]:
     """
     Deep coding mode: Implements a complex feature or refactoring.
 
-    Vibe acts as a Senior Architect to plan, implement, and verify changes.
+    Vibe acts as a Senior Architect to plan, implement, verify, and iteratively
+    improve the code until quality standards are met.
 
     Args:
         goal: High-level objective (e.g., "Add user profile page with API and DB")
@@ -819,9 +928,14 @@ async def vibe_implement_feature(
         constraints: Technical constraints or guidelines
         cwd: Working directory
         timeout_s: Timeout (default: 1200s for deep work)
+        quality_checks: Run lint/syntax checks after implementation (default: True)
+        iterative_review: Self-review and fix issues until clean (default: True)
+        max_iterations: Maximum review/fix iterations (default: 3)
+        run_linting: Run linter on modified files (default: True)
+        code_style: Linter to use - "ruff" or "pylint" (default: "ruff")
 
     Returns:
-        Implementation report with changed files and verification
+        Implementation report with changed files, verification results, and quality metrics
     """
     prepare_workspace_and_instructions()
 
@@ -841,29 +955,108 @@ async def vibe_implement_feature(
 
     context_str = "\n\n".join(file_contents) if file_contents else "(No files provided)"
 
+    # Build enhanced prompt with iterative workflow
+    quality_section = ""
+    if quality_checks:
+        quality_section = f"""
+QUALITY REQUIREMENTS:
+- All code must pass {code_style} linting
+- Type hints required for function parameters and returns
+- Docstrings required for public functions
+- Error handling for external operations
+- No hardcoded secrets or credentials
+"""
+
+    iterative_section = ""
+    if iterative_review:
+        iterative_section = f"""
+ITERATIVE IMPROVEMENT PROTOCOL:
+After initial implementation, follow this loop (max {max_iterations} iterations):
+
+1. RUN VERIFICATION:
+   - Syntax check: python -m py_compile <file>
+   - Lint check: {code_style} check <file> (if applicable)
+   
+2. SELF-REVIEW:
+   - Check for edge cases not handled
+   - Verify error messages are helpful
+   - Ensure code is readable and maintainable
+   
+3. IF ISSUES FOUND:
+   - Fix the issues
+   - Return to step 1
+   
+4. IF CLEAN:
+   - Report success with summary
+
+Track your iterations and report final status.
+"""
+
     prompt = f"""
-SYSTEM: You are the Senior Software Architect and Lead Developer for AtlasTrinity.
-ROLE: Implement a complex feature efficiently and robustly.
+============================================================
+ATLASTRINITY SOFTWARE DEVELOPMENT TASK
+============================================================
 
-GOAL: {goal}
+ROLE: You are the Senior Software Architect and Lead Developer for AtlasTrinity.
+MISSION: Implement a feature that will work reliably in production.
 
-CONTEXT FILES:
+GOAL:
+{goal}
+
+============================================================
+CONTEXT FILES
+============================================================
 {context_str}
 
-CONSTRAINTS:
+============================================================
+CONSTRAINTS & GUIDELINES
+============================================================
 {constraints or "Standard project guidelines apply."}
+{quality_section}
 
+============================================================
+ENVIRONMENT
+============================================================
 System Root: {SYSTEM_ROOT}
 Project Directory: {cwd or VIBE_WORKSPACE}
 
-INSTRUCTIONS:
-1. PLAN: Analyze the goal and files
-2. IMPLEMENT: Edit necessary files, handle imports and dependencies
-3. VERIFY: Run checks to ensure no syntax errors
-4. REPORT: List exactly which files were modified and confirm success
+============================================================
+IMPLEMENTATION WORKFLOW
+============================================================
 
-EXECUTE NOW.
+PHASE 1 - ANALYZE & PLAN:
+  1.1. Understand the goal completely
+  1.2. Review existing code structure
+  1.3. Identify files to create/modify
+  1.4. Plan the implementation approach
+
+PHASE 2 - IMPLEMENT:
+  2.1. Create/edit necessary files
+  2.2. Handle imports and dependencies
+  2.3. Add proper error handling
+  2.4. Include type hints and docstrings
+
+PHASE 3 - VERIFY:
+  3.1. Check syntax is valid
+  3.2. Run linting checks
+  3.3. Verify imports resolve correctly
+{iterative_section}
+
+PHASE 4 - REPORT:
+  Provide a structured summary:
+  - FILES_MODIFIED: [list of files]
+  - FILES_CREATED: [list of files]
+  - CHANGES_SUMMARY: [brief description]
+  - VERIFICATION_STATUS: PASSED | FAILED
+  - ISSUES_REMAINING: [any known issues]
+  - NEXT_STEPS: [recommendations if any]
+
+============================================================
+EXECUTE NOW
+============================================================
 """
+
+    logger.info(f"[VIBE] Implementing feature: {goal[:50]}... (iterative={iterative_review})")
 
     return await vibe_prompt(
         ctx=ctx,
@@ -872,7 +1065,7 @@ EXECUTE NOW.
         timeout_s=timeout_s or 1200,
         model=AGENT_MODEL_OVERRIDE,
         mode="auto-approve",
-        max_turns=30,
+        max_turns=30 + (max_iterations * 5 if iterative_review else 0),
     )
 
 
