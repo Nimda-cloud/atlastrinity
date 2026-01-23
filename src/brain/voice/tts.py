@@ -84,6 +84,88 @@ def _patch_tts_config(cache_dir: Path):
         print(f"[TTS] Warning: Failed to patch config.yaml: {e}")
 
 
+def sanitize_text_for_tts(text: str) -> str:
+    """
+    Cleans text for better TTS pronunciation.
+    Removes/replaces characters and expands abbreviations.
+    """
+    import re
+    
+    # 1. Remove URLs (unpronounceable)
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # 2. Remove markdown links [text](url) -> text
+    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+    
+    # 3. Remove code blocks and inline code
+    text = re.sub(r'```[\s\S]*?```', '', text)
+    text = re.sub(r'`[^`]+`', '', text)
+    
+    # 4. Expand Ukrainian abbreviations and units
+    abbreviations = {
+        # Temperature
+        r'°C': ' градусів Цельсія',
+        r'°': ' градусів',
+        r'℃': ' градусів Цельсія',
+        # Distance
+        r'\bкм\b': ' кілометрів',
+        r'\bм\b(?!\/)': ' метрів',  # Not before /
+        r'\bсм\b': ' сантиметрів',
+        r'\bмм\b': ' міліметрів',
+        # Time
+        r'\bсек\b': ' секунд',
+        r'\bс\b(?=\s|\.|,|$)': ' секунд',
+        r'\bхв\b': ' хвилин',
+        r'\bгод\b': ' годин',
+        # Speed
+        r'\bм/с\b': ' метрів на секунду',
+        r'\bкм/год\b': ' кілометрів на годину',
+        # Weight
+        r'\bкг\b': ' кілограмів',
+        r'\bг\b(?=\s|\.|,|$)': ' грамів',
+        r'\bт\b(?=\s|\.|,|$)': ' тонн',
+        # Percent and numbers
+        r'%': ' відсотків',
+        r'\bнр\b': ' наприклад',
+        r'\bтощо\b': ' і так далі',
+    }
+    
+    for pattern, replacement in abbreviations.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    
+    # 5. Replace special punctuation
+    replacements = {
+        '—': ',',
+        '–': ',',
+        '…': '',
+        '"': '', '"': '', ''': '', ''': '',
+        '«': '', '»': '',
+        '/': ' ',
+        '@': ' at ',
+        '#': ' номер ',
+        '&': ' і ',
+        '*': '', '_': '',
+        '|': ',',
+        '<': '', '>': '',
+        '{': '', '}': '',
+        '[': '', ']': '',
+        '(': ',', ')': ',',
+        '+': ' плюс ',
+        '=': ' дорівнює ',
+    }
+    
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    
+    # 6. Clean up spacing and punctuation
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'([,.!?])\1+', r'\1', text)
+    text = re.sub(r'\s+([,.!?])', r'\1', text)
+    text = re.sub(r'([,.!?])([^\s])', r'\1 \2', text)
+    
+    return text.strip()
+
+
 @dataclass
 class VoiceConfig:
     """Voice configuration for an agent"""
@@ -216,6 +298,11 @@ class AgentVoice:
             return None
 
         if not text:
+            return None
+
+        # Clean text for better pronunciation
+        text = sanitize_text_for_tts(text)
+        if not text:  # Check again after sanitization
             return None
 
         # Determine output path
@@ -393,6 +480,11 @@ class VoiceManager:
 
             if not _check_tts_available() or not text:
                 print(f"[TTS] [{agent_id.upper()}] (Text-only): {text}")
+                return None
+
+            # Clean text for better pronunciation
+            text = sanitize_text_for_tts(text)
+            if not text:
                 return None
 
             agent_id = agent_id.lower()

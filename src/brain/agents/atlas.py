@@ -347,14 +347,28 @@ class Atlas(BaseAgent):
                     mcp_manager.get_status()
                     # Subset of servers that Atlas can use independently for chat/research
                     configured_servers = set(mcp_manager.config.get("mcpServers", {}).keys())
+                    # Expanded discovery: Atlas can now access ALL configured MCP servers.
+                    # Safety is enforced via tool filtering below (is_safe check).
+                    # This includes: documentation (context7), dev tools (devtools),
+                    # deep reasoning (sequential-thinking), and all other servers.
                     discovery_servers = {
-                        "macos-use",
-                        "filesystem",
-                        "duckduckgo-search",
-                        "memory",
-                        "github",
-                        "weather",
-                        "search",
+                        # Tier 1: Core system
+                        "macos-use",          # GUI, terminal, fetch, time, spotlight (read ops only)
+                        "filesystem",         # File read/write (filtered to read-only below)
+                        "sequential-thinking", # Deep reasoning
+                        # Tier 2: High priority
+                        "memory",             # Knowledge graph (read/write)
+                        "graph",              # Graph visualization
+                        "redis",              # State inspection (read ops)
+                        "duckduckgo-search",  # Web search
+                        "github",             # GitHub API (read ops)
+                        "context7",           # Library documentation
+                        "devtools",           # Linting, code inspection
+                        "whisper-stt",        # Voice transcription (read-only)
+                        # Tier 3-4: Specialized (Atlas can discover but may not use frequently)
+                        "vibe",               # Code analysis (read-only ops like ask)
+                        "puppeteer",          # Browser automation (read-only ops like navigate)
+                        "chrome-devtools",    # Chrome DevTools Protocol
                     }
 
                     # Be proactive: try all discovery servers that are in the config, not just "connected" ones

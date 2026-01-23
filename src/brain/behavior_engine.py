@@ -184,7 +184,8 @@ class BehaviorEngine:
                 "require_planning": False,
             }
 
-        # Priority 3: Info queries
+        # Priority 3: Info queries (MUST come before complex_task)
+        # Info queries like "погода у Львові" should trigger solo_task, not complex_task
         info_cfg = intent_config.get("info_query", {})
         if any(kw in request_lower for kw in info_cfg.get("keywords", [])):
             return {
