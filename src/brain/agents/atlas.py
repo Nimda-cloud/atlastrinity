@@ -573,7 +573,7 @@ class Atlas(BaseAgent):
             if current_turn == 0:
                 messages.append(
                     SystemMessage(
-                        content="CONTINUITY HINT: You have already greeted the user and explained your plan. Now, focus ONLY on the data found in tools. Deliver the final answer immediately without repeating 'I am checking' or 'Searching' phrases.",
+                        content="CONTINUITY HINT: You have accessed the tools. Now, SYNTHESIZE the findings into a natural, engaging answer. Do NOT repeat 'I have found' or 'Checking'. Just tell the story of the data. End with a relevant question.",
                     ),
                 )
 
@@ -629,7 +629,7 @@ class Atlas(BaseAgent):
 
 Current Query: {query}
 
-Task: If the current query is ambiguous or refers to previous topics (like "it", "they", "near there", "the one mentioned"), rewrite it to be a standalone search query that preserves the intended context. 
+Task: If the current query is ambiguous or refers to previous topics (like "it", "they", "near there", "the one mentioned"), rewrite it to be a standalone search query that preserves the intended context.
 If it is already standalone, return the original query.
 Response should be only the query text, preferably in the original language of the query.
 
@@ -1053,7 +1053,7 @@ GOAL: {goal}
 HISTORY: {history}
 DEEP ANALYSIS: {synthesis_context}
 
-IMPORTANT: The final_report must be a DIRECT ANSWER in UKRAINIAN. 0% English words. 
+IMPORTANT: The final_report must be a DIRECT ANSWER in UKRAINIAN. 0% English words.
 If the user asked to 'count', you MUST state the exact number found.
 {AgentPrompts.atlas_evaluation_prompt(goal, history)}"""
 
