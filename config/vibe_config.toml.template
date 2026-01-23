@@ -117,9 +117,9 @@ output_price = 0.0  # Price per million output tokens (USD)
 
 # Copilot Models (GPT-4o)
 [[models]]
-name = "gpt-4o"
+name = "gpt-4.1"
 provider = "copilot"
-alias = "gpt-4o"
+alias = "gpt-4.1"
 temperature = 0.3
 input_price = 5.0
 output_price = 15.0
@@ -130,9 +130,9 @@ output_price = 15.0
 
 # Example: GPT-4 via OpenRouter
 # [[models]]
-# name = "openai/gpt-4o"
+# name = "openai/gpt-4.1"
 # provider = "openrouter"
-# alias = "gpt-4o"
+# alias = "gpt-4.1"
 # temperature = 0.3
 # input_price = 2.5
 # output_price = 10.0

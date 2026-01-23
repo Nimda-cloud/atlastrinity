@@ -39,6 +39,45 @@ def setup_logging(name: str = "brain"):
     stream_handler.setFormatter(stream_formatter)
     logger.addHandler(stream_handler)
 
+    # UI Log Handler (Streams to Redis for Electron)
+    try:
+        from .state_manager import state_manager
+
+        class UIHandler(logging.Handler):
+            def emit(self, record):
+                try:
+                    import asyncio
+                    from datetime import datetime
+
+                    # Format: HH:MM
+                    log_time = datetime.fromtimestamp(record.created).strftime("%H:%M")
+                    log_entry = {
+                        "source": record.name,
+                        "type": record.levelname.lower(),
+                        "content": self.format(record),
+                        "timestamp": log_time,
+                    }
+
+                    # Use fire-and-forget task if loop is running
+                    try:
+                        loop = asyncio.get_running_loop()
+                        if loop.is_running():
+                            loop.create_task(state_manager.publish_event("logs", log_entry))
+                    except RuntimeError:
+                        # Fallback for synchronous contexts - not ideal but prevents crash
+                        pass
+                except Exception:
+                    pass
+
+        ui_handler = UIHandler()
+        ui_handler.setLevel(logging.INFO)
+        # Cleaner formatter for UI: [SOURCE] MESSAGE
+        ui_formatter = logging.Formatter("[%(name)s] %(message)s")
+        ui_handler.setFormatter(ui_formatter)
+        logger.addHandler(ui_handler)
+    except Exception as e:
+        print(f"Failed to setup UI Log Handler: {e}")
+
     return logger
 
 

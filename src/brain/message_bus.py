@@ -24,6 +24,8 @@ class MessageType(Enum):
     FEEDBACK = "feedback"  # Any agent: general feedback
     RECOVERY_COMPLETE = "recovery_complete"  # Vibe/Atlas: fix applied
     STEP_COMPLETE = "step_complete"  # Tetyana -> Grisha: ready for verification
+    VOICE = "voice"  # Any agent: signal for orchestrator to speak
+    LOG = "log"  # Any agent: signal for custom UI log
 
 
 @dataclass

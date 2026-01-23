@@ -7,12 +7,12 @@ agents:
     max_tokens: 1500
     strategy_model: raptor-mini
     temperature: 0.3
-    vision_model: gpt-4o
+    vision_model: gpt-4.1
   tetyana:
     max_tokens: 2000
-    model: gpt-4o
-    reasoning_model: gpt-4o
-    reflexion_model: gpt-4o
+    model: gpt-4.1
+    reasoning_model: gpt-4.1
+    reflexion_model: gpt-4.1
     temperature: 0.5
 api:
   retry_count: 3
@@ -35,7 +35,7 @@ mcp:
     deny_write_paths: []
     deny_write_repo: true
     enabled: true
-    model: gpt-4o
+    model: gpt-4.1
     repo_write_allowed_subdir: .atlastrinity_runtime
   github:
     enabled: true
