@@ -467,7 +467,7 @@ def install_deps():
             check=True,
         )
         # Install remaining requirements
-        with open(req_file, "r") as f:
+        with open(req_file) as f:
             lines = f.readlines()
         filtered_lines = [
             line
@@ -484,19 +484,7 @@ def install_deps():
         )
         os.remove(filtered_file)
 
-    # Fix dependency conflicts for espnet compatibility after all installations
-    print_info("Fixing dependency conflicts for espnet compatibility...")
-    subprocess.run(
-        [
-            venv_python,
-            "-m",
-            "pip",
-            "install",
-            "importlib-metadata<5.0",
-            "protobuf<=3.20.1",
-        ],
-        check=True,
-    )
+
 
     # Install dev requirements if they exist (it's a dev setup)
     req_dev_file = PROJECT_ROOT / "requirements-dev.txt"
