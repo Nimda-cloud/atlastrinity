@@ -41,13 +41,14 @@ def setup_logging(name: str = "brain"):
 
     # UI Log Handler (Streams to Redis for Electron)
     try:
-        from .state_manager import state_manager
-
         class UIHandler(logging.Handler):
             def emit(self, record):
                 try:
                     import asyncio
                     from datetime import datetime
+                    
+                    # Local import to avoid circular dependency with setup_logging
+                    from .state_manager import state_manager
 
                     # Format: HH:MM
                     log_time = datetime.fromtimestamp(record.created).strftime("%H:%M")
@@ -68,6 +69,7 @@ def setup_logging(name: str = "brain"):
                         pass
                 except Exception:
                     pass
+
 
         ui_handler = UIHandler()
         ui_handler.setLevel(logging.INFO)

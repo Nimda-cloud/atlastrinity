@@ -1635,3 +1635,5 @@ tool_routing_fallbacks:
   search: "macos-use_spotlight_search"
   notification: "macos-use_send_notification"
   finder_list: "macos-use_finder_list_files"
+  sequentialthinking: "sequential-thinking_sequentialthinking"
+
