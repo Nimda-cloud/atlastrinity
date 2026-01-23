@@ -20,8 +20,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 
 class CopilotLLM(BaseChatModel):
-    model_name: str = "gpt-4o"
-    vision_model_name: str = "gpt-4o"
+    model_name: str = "gpt-4.1"
+    vision_model_name: str = "gpt-4.1"
     api_key: str | None = None
     _tools: list[Any] | None = None
 
@@ -275,9 +275,9 @@ class CopilotLLM(BaseChatModel):
                 '  "tool_calls": [\n'
                 '    { "name": "tool_name", "args": { ... } }\n'
                 "  ],\n"
-                '  "final_answer": "What to say to the user (voice_message/summary) in UKRAINIAN"\n'
+                '  "final_answer": "IMMEDIATE feedback to the user in UKRAINIAN (e.g., \'Зараз перевірю...\'). Zero English words."\n'
                 "}\n"
-                "Do not add any text outside this JSON.\n"
+                "If you ALREADY checked results (ToolMessages are above), provide the final summary as a normal text response (no JSON).\n"
             )
         else:
             tool_instructions = ""
@@ -323,7 +323,7 @@ class CopilotLLM(BaseChatModel):
         final_messages = [{"role": "system", "content": system_content}, *formatted_messages]
 
         # Use the configured model directly without mapping
-        # The model name from config (e.g., raptor-mini, gpt-4.1, gpt-4o) is used as-is
+        # The model name from config (e.g., raptor-mini, gpt-4.1, gpt-4.1) is used as-is
         chosen_model = self.vision_model_name if self._has_image(messages) else self.model_name
 
         return {
@@ -409,7 +409,7 @@ class CopilotLLM(BaseChatModel):
                 if response.status_code == 400:
                     error_detail = response.text
                     print(f"[COPILOT] Async 400 error. Content: {error_detail[:500]}", flush=True)
-                    print("[COPILOT] Retrying with gpt-4o...", flush=True)
+                    print("[COPILOT] Retrying with gpt-4.1...", flush=True)
 
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
@@ -436,7 +436,7 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    payload_fb["model"] = "gpt-4o"  # Using official stable model
+                    payload_fb["model"] = "gpt-4.1"  # Using official stable model
 
                     retry_response = await _do_post(
                         client, f"{api_endpoint}/chat/completions", headers_fb, payload_fb
@@ -576,7 +576,7 @@ class CopilotLLM(BaseChatModel):
                         payload["messages"] = cleaned_messages
 
                     # Use GPT-4o as fallback (most stable)
-                    payload["model"] = "gpt-4o"
+                    payload["model"] = "gpt-4.1"
 
                     @retry(
                         stop=stop_after_attempt(2),

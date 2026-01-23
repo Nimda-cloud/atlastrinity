@@ -10,6 +10,7 @@ import asyncio
 import json
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, cast
@@ -70,17 +71,20 @@ class Atlas(BaseAgent):
     COLOR = AgentPrompts.ATLAS["COLOR"]
     SYSTEM_PROMPT = AgentPrompts.ATLAS["SYSTEM_PROMPT"]
 
-    def __init__(self, model_name: str | None = None):
+    def __init__(self, model_name: str | None = None, llm: Any | None = None):
         # Get model config (config.yaml > parameter)
         agent_config = config.get_agent_config("atlas")
 
-        # Priority: 1. Constructor arg, 2. Config file, 3. Default in config_loader
-        final_model = model_name or agent_config.get("model")
+        if llm:
+            self.llm = llm
+        else:
+            # Priority: 1. Constructor arg, 2. Config file, 3. Default in config_loader
+            final_model = model_name or agent_config.get("model")
 
-        if not final_model:
-            raise ValueError("[ATLAS] Model not specified in config.yaml or constructor")
+            if not final_model:
+                raise ValueError("[ATLAS] Model not specified in config.yaml or constructor")
 
-        self.llm = CopilotLLM(model_name=final_model)
+            self.llm = CopilotLLM(model_name=final_model)
 
         # Optimization: Tool Cache
         self._cached_info_tools = []
@@ -258,6 +262,8 @@ class Atlas(BaseAgent):
         history: list[Any] | None = None,
         use_deep_persona: bool = False,
         intent: str = "chat",
+        on_preamble: Callable[[str], Any] | None = None,
+        llm_instance: Any | None = None,
     ) -> str:
         """
         Omni-Knowledge Chat Mode.
@@ -384,7 +390,7 @@ class Atlas(BaseAgent):
                     )
 
                     for s_name, t_list in zip(list(active_servers), server_tools, strict=True):
-                        if isinstance(t_list, (Exception, BaseException)):
+                        if isinstance(t_list, Exception | BaseException):
                             logger.warning(f"[ATLAS] Could not list tools for {s_name}: {t_list}")
                             continue
 
@@ -510,18 +516,56 @@ class Atlas(BaseAgent):
         while current_turn < MAX_CHAT_TURNS:
             response = await llm_instance.ainvoke(messages)
 
+            # 4. Handle tool calls or final answer
             if not getattr(response, "tool_calls", None):
+                # This is a final textual answer or the model didn't call tools
                 await self._memorize_chat_interaction(user_request, cast(str, response.content))
                 return cast(str, response.content)
 
-            # Process Tool Calls (Same logic as before but using cached info)
+            # 5. Model requested tools. Extract 'final_answer' (preamble) if present.
+            # In our protocol, the model puts immediate feedback in 'content' or 'final_answer'.
+            preamble = str(response.content).strip()
+            
+            # If there's a preamble, use the callback to speak it NOW
+            if preamble and len(preamble) > 2:
+                logger.info(f"[ATLAS CHAT] Preamble detected: {preamble}")
+                if on_preamble:
+                    # Execute callback (usually Trinity._speak)
+                    if asyncio.iscoroutinefunction(on_preamble) or callable(on_preamble):
+                        if asyncio.iscoroutinefunction(on_preamble):
+                            asyncio.create_task(on_preamble("atlas", preamble))
+                        else:
+                            on_preamble("atlas", preamble)
+
+            # Emit a 'thinking' event to the UI
+            try:
+                from ..state_manager import state_manager
+                if state_manager and state_manager.available:
+                    asyncio.create_task(
+                        state_manager.publish_event("logs", {
+                            "source": "atlas",
+                            "type": "thinking",
+                            "content": "Analyzing and fetching data..."
+                        })
+                    )
+            except Exception:
+                pass
+
+            # Add to history, but for subsequent turns, we might want to strip the preamble
+            # to avoid the model getting stuck in a "planning" loop.
+            # We add the AIMessage with tool_calls. 
+            # If we were to strip the content here, some models might fail tool-turn logic.
+            # However, for Turn 2+, having the preamble in history often leads to Turn 2 
+            # REPEATING the preamble instead of synthesizing.
+            messages.append(response)
+
+            # Process Tool Calls
             for tool_call in response.tool_calls:
                 logical_tool_name = tool_call.get("name")
                 args = tool_call.get("args", {})
 
                 if logical_tool_name:
                     logger.info(f"[ATLAS CHAT] Executing: {logical_tool_name}")
-                    messages.append(response)
                     try:
                         # Use intelligent dispatch (handles server resolution & args)
                         result = await mcp_manager.dispatch_tool(logical_tool_name, args)
@@ -538,8 +582,6 @@ class Atlas(BaseAgent):
                             tool_call_id=tool_call.get("id", "chat_call"),
                         )
                     )
-                else:
-                    return cast(str, response.content)
 
             current_turn += 1
 
