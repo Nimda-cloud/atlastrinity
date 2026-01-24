@@ -215,6 +215,45 @@ class ToolDispatcher:
         "git_hub",
     ]
 
+    DATA_ANALYSIS_SYNONYMS = [
+        "data_analysis",
+        "data-analysis",
+        "analyze_data",
+        "analyze-data",
+        "data_analyze",
+        "data-analyze",
+        "statistics",
+        "statistical_analysis",
+        "data_processing",
+        "data-processing",
+        "data_visualization",
+        "data-visualization",
+        "data_cleaning",
+        "data-cleaning",
+        "data_transformation",
+        "data-transformation",
+        "machine_learning",
+        "machine-learning",
+        "predictive_modeling",
+        "predictive-modeling",
+        "data_aggregation",
+        "data-aggregation",
+        "data_reporting",
+        "data-reporting",
+        "analyze_dataset",
+        "analyze-dataset",
+        "generate_statistics",
+        "generate-statistics",
+        "create_visualization",
+        "create-visualization",
+        "data_cleaning",
+        "data-cleaning",
+        "predictive_modeling",
+        "predictive-modeling",
+        "data_aggregation",
+        "data-aggregation",
+    ]
+
     MACOS_MAP = {
         "click": "macos-use_click_and_traverse",
         "type": "macos-use_type_and_traverse",
@@ -455,7 +494,21 @@ class ToolDispatcher:
                     "unknown_tool": True,
                 }
 
-            # 6. Validate and normalize arguments before calling MCP
+            # 6. Validate realm-tool compatibility
+            is_compatible, compatibility_error = self._validate_realm_tool_compatibility(
+                server, resolved_tool, normalized_args
+            )
+            if not is_compatible:
+                logger.warning(
+                    f"[DISPATCHER] Realm-tool compatibility validation failed: {server}.{resolved_tool} - {compatibility_error}",
+                )
+                return {
+                    "success": False,
+                    "error": f"Realm-tool compatibility error: {compatibility_error}",
+                    "compatibility_error": True,
+                }
+
+            # 7. Validate and normalize arguments before calling MCP
             validated_args = self._validate_args(resolved_tool, normalized_args)
             if validated_args.get("__validation_error__"):
                 error_msg = validated_args.pop("__validation_error__")
@@ -496,6 +549,75 @@ class ToolDispatcher:
         except Exception as e:
             logger.error(f"[DISPATCHER] Dispatch failed: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    def _validate_realm_tool_compatibility(
+        self, server: str, tool_name: str, args: dict[str, Any]
+    ) -> tuple[bool, str]:
+        """Validate that a tool is compatible with its assigned realm/server.
+        
+        Returns:
+            (is_valid: bool, error_message: str)
+        """
+        from .mcp_registry import SERVER_CATALOG, TOOL_SCHEMAS
+        
+        # Get server capabilities and key tools
+        server_info = SERVER_CATALOG.get(server)
+        if not server_info:
+            return False, f"Unknown server/realm: {server}"
+        
+        # Check if tool is in the server's key tools
+        key_tools = server_info.get("key_tools", [])
+        if tool_name in key_tools:
+            return True, ""
+        
+        # Check if tool exists in the tool schemas for this server
+        # Tool names in schemas are typically in the format "server_tool_name"
+        expected_tool_patterns = [
+            f"{server}_{tool_name}",
+            f"{server.replace('-', '_')}_{tool_name}",
+            tool_name,  # Some tools might be listed without server prefix
+        ]
+        
+        # Check if any of the patterns exist in tool schemas
+        tool_found = False
+        for pattern in expected_tool_patterns:
+            if pattern in TOOL_SCHEMAS:
+                tool_found = True
+                break
+        
+        if tool_found:
+            return True, ""
+        
+        # Special case: data-analysis realm validation
+        if server == "data-analysis":
+            data_analysis_tools = [
+                "analyze_dataset",
+                "generate_statistics", 
+                "create_visualization",
+                "data_cleaning",
+                "predictive_modeling",
+                "data_aggregation"
+            ]
+            if tool_name in data_analysis_tools:
+                return True, ""
+            else:
+                return False, f"Tool '{tool_name}' is not compatible with data-analysis realm. Available tools: {', '.join(data_analysis_tools)}"
+        
+        # For other realms, provide a generic compatibility check
+        capabilities = server_info.get("capabilities", [])
+        tool_lower = tool_name.lower()
+        
+        # Check if tool name contains keywords from server capabilities
+        capability_match = any(
+            cap_keyword in tool_lower 
+            for capability in capabilities 
+            for cap_keyword in capability.lower().split()
+        )
+        
+        if capability_match:
+            return True, ""
+        
+        return False, f"Tool '{tool_name}' may not be compatible with {server} realm. Server capabilities: {', '.join(capabilities)}"
 
     def _validate_args(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Validate and normalize arguments according to tool schema.
@@ -711,6 +833,10 @@ class ToolDispatcher:
             
             return "golden-fund", tool_name, args
 
+        # --- DATA ANALYSIS ROUTING ---
+        if tool_name in self.DATA_ANALYSIS_SYNONYMS or explicit_server == "data-analysis":
+            return self._handle_data_analysis(tool_name, args)
+
         # --- GIT LEGACY ROUTING ---
         if tool_name.startswith("git_") or explicit_server == "git":
             return self._handle_legacy_git(tool_name, args)
@@ -769,6 +895,35 @@ class ToolDispatcher:
             new_args["command"] = f"cd {path} && {full_command}"
 
         return "macos-use", "execute_command", new_args
+
+    def _handle_data_analysis(
+        self, tool_name: str, args: dict[str, Any],
+    ) -> tuple[str, str, dict[str, Any]]:
+        """Maps data analysis synonyms to canonical data-analysis tools."""
+        action = args.get("action") or tool_name
+
+        # Action mappings
+        mapping = {
+            "analyze_data": "analyze_dataset",
+            "analyze-dataset": "analyze_dataset",
+            "statistics": "generate_statistics",
+            "generate-statistics": "generate_statistics",
+            "visualization": "create_visualization",
+            "create-visualization": "create_visualization",
+            "cleaning": "data_cleaning",
+            "data-cleaning": "data_cleaning",
+            "modeling": "predictive_modeling",
+            "predictive-modeling": "predictive_modeling",
+            "aggregation": "data_aggregation",
+            "data-aggregation": "data_aggregation",
+        }
+        resolved_tool = mapping.get(action, action)
+
+        # If the tool name itself was the action
+        if resolved_tool == "data-analysis":
+            resolved_tool = "analyze_dataset"  # Default
+
+        return "data-analysis", resolved_tool, args
 
     def _handle_terminal(
         self, tool_name: str, args: dict[str, Any],
