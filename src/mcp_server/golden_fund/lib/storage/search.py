@@ -3,11 +3,12 @@ Search Storage Adapter for Golden Fund
 Ported from etl_module/src/distribution/opensearch_adapter.py
 """
 
-from typing import Any, Dict, List, Optional, Union
-from datetime import datetime
 import json
 import logging
 import uuid
+from datetime import datetime
+from typing import Any, Optional, Union
+
 from .types import StorageResult
 
 logger = logging.getLogger("golden_fund.storage.search")
@@ -26,7 +27,7 @@ class SearchStorage:
         else:
             logger.info("SearchStorage disabled")
 
-    def index_documents(self, data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> StorageResult:
+    def index_documents(self, data: dict[str, Any] | list[dict[str, Any]]) -> StorageResult:
         if not self.enabled:
             return StorageResult(False, "search", error="SearchStorage is disabled")
             

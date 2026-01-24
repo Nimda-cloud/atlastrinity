@@ -3,12 +3,13 @@ Blob Storage Adapter for Golden Fund
 Ported from etl_module/src/distribution/minio_adapter.py
 """
 
-from typing import Any, Dict, List, Optional, Union
-from datetime import datetime
 import json
 import logging
-from pathlib import Path
 import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional, Union
+
 from .types import StorageResult
 
 logger = logging.getLogger("golden_fund.storage.blob")
@@ -19,7 +20,7 @@ class BlobStorage:
     Persists data to local disk in a structured way (simulating bucket storage).
     """
     
-    def __init__(self, root_path: str = None, bucket: str = "default"):
+    def __init__(self, root_path: str | None = None, bucket: str = "default"):
         if root_path is None:
             root_path = Path.home() / ".config" / "atlastrinity" / "data" / "golden_fund" / "blobs"
         self.root = Path(root_path)
@@ -29,7 +30,7 @@ class BlobStorage:
         self.bucket_path.mkdir(exist_ok=True)
         logger.info(f"BlobStorage initialized at {self.bucket_path}")
 
-    def store(self, data: Any, filename: Optional[str] = None) -> StorageResult:
+    def store(self, data: Any, filename: str | None = None) -> StorageResult:
         try:
             if not filename:
                 filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.json"
@@ -37,7 +38,7 @@ class BlobStorage:
             file_path = self.bucket_path / filename
             
             with open(file_path, "w", encoding="utf-8") as f:
-                if isinstance(data, (dict, list)):
+                if isinstance(data, dict | list):
                     json.dump(data, f, indent=2, default=str)
                 else:
                     f.write(str(data))
@@ -60,7 +61,7 @@ class BlobStorage:
             if not file_path.exists():
                 return StorageResult(False, "blob", error="File not found")
                 
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 try:
                     data = json.load(f)
                 except json.JSONDecodeError:

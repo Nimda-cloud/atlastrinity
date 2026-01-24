@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
+
 class StorageResult:
     """Result container for storage operations."""
     

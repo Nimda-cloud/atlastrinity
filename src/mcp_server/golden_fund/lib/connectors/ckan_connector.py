@@ -4,9 +4,10 @@ Handles interaction with CKAN-based open data portals (e.g., data.gov.ua).
 """
 
 import logging
-import requests
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Optional
+
+import requests
 
 logger = logging.getLogger("golden_fund.connectors.ckan")
 
@@ -20,7 +21,7 @@ class CKANConnector:
         })
         logger.info(f"CKAN Connector initialized for {self.base_url}")
 
-    def search_packages(self, query: str, rows: int = 10) -> List[Dict[str, Any]]:
+    def search_packages(self, query: str, rows: int = 10) -> list[dict[str, Any]]:
         """
         Search for datasets (packages) in CKAN.
         """
@@ -45,7 +46,7 @@ class CKANConnector:
             logger.error(f"Error searching CKAN: {e}")
             return []
 
-    def get_package_details(self, package_id: str) -> Optional[Dict[str, Any]]:
+    def get_package_details(self, package_id: str) -> dict[str, Any] | None:
         """
         Get details for a specific package.
         """
@@ -65,13 +66,15 @@ class CKANConnector:
             logger.error(f"Error fetching package {package_id}: {e}")
             return None
 
-    def get_resource_url(self, resource: Dict[str, Any]) -> str:
+    def get_resource_url(self, resource: dict[str, Any]) -> str:
         """
         Extract the download URL for a resource.
         """
         return resource.get("url")
 
-    def find_resources_by_format(self, package: Dict[str, Any], formats: List[str] = ["CSV", "JSON", "XML"]) -> List[Dict[str, Any]]:
+    def find_resources_by_format(self, package: dict[str, Any], formats: list[str] | None = None) -> list[dict[str, Any]]:
+        if formats is None:
+            formats = ["CSV", "JSON", "XML"]
         """
         Find resources in a package matching specific formats.
         """

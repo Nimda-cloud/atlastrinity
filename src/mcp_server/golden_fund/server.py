@@ -1,15 +1,17 @@
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
-from mcp.server.fastmcp import FastMCP, Context
+from typing import Any, Optional
+
+from mcp.server.fastmcp import Context, FastMCP
+
+from .lib.storage import SearchStorage, VectorStorage
+from .lib.storage.blob import BlobStorage
+from .tools.chain import recursive_enrichment
+from .tools.ingest import ingest_dataset as ingest_impl
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("golden_fund")
-
-from .tools.ingest import ingest_dataset as ingest_impl
-from .lib.storage import VectorStorage, SearchStorage
-from .tools.chain import recursive_enrichment
 
 # Initialize storage
 vector_store = VectorStorage()
@@ -44,12 +46,10 @@ async def search_golden_fund(query: str, mode: str = "semantic") -> str:
         
     return str(result)
 
-# Initialize Blob Storage
-from .lib.storage.blob import BlobStorage
 blob_store = BlobStorage()
 
 @mcp.tool()
-async def store_blob(content: str, filename: str = None) -> str:
+async def store_blob(content: str, filename: str | None = None) -> str:
     """Store raw data as a blob (mock MinIO)."""
     return str(blob_store.store(content, filename))
 
@@ -59,7 +59,8 @@ async def retrieve_blob(filename: str) -> str:
     return str(blob_store.retrieve(filename))
 
 @mcp.tool()
-async def ingest_dataset(url: str, type: str, process_pipeline: List[str] = []) -> str:
+@mcp.tool()
+async def ingest_dataset(url: str, type: str, process_pipeline: list[str] | None = None) -> str:
     """
     Ingest a dataset into the Golden Fund.
     
@@ -68,6 +69,8 @@ async def ingest_dataset(url: str, type: str, process_pipeline: List[str] = []) 
         type: Type of data source (e.g., 'api', 'web_page', 'csv_url').
         process_pipeline: List of processing steps (e.g., ['extract_entities', 'vectorize']).
     """
+    if process_pipeline is None:
+        process_pipeline = []
     return await ingest_impl(url, type, process_pipeline)
 
 @mcp.tool()
@@ -83,7 +86,7 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
     return f"Probing results for {entity_id} (Placeholder)"
 
 @mcp.tool()
-async def add_knowledge_node(content: str, metadata: Dict[str, Any], links: List[Dict[str, str]] = []) -> str:
+async def add_knowledge_node(content: str, metadata: dict[str, Any], links: list[dict[str, str]] | None = None) -> str:
     """
     Manually add a confirmed knowledge node to the Golden Fund.
     
@@ -92,6 +95,8 @@ async def add_knowledge_node(content: str, metadata: Dict[str, Any], links: List
         metadata: Key-value metadata pairs.
         links: List of links to other nodes [{'relation': 'related_to', 'target_id': '...'}]
     """
+    if links is None:
+        links = []
     logger.info(f"Adding knowledge node: {content[:50]}...")
     return "Node added successfully (Placeholder)"
 

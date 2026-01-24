@@ -3,13 +3,13 @@ Ingestion Tool for Golden Fund
 """
 
 import logging
-from pathlib import Path
-from datetime import datetime
 import uuid
-from typing import List, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
 
-from ..lib.scraper import DataScraper, ScrapeFormat
 from ..lib.parser import DataParser
+from ..lib.scraper import DataScraper, ScrapeFormat
 
 logger = logging.getLogger("golden_fund.tools.ingest")
 
@@ -19,7 +19,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 RAW_DIR = DATA_DIR / "raw"
 RAW_DIR.mkdir(exist_ok=True)
 
-async def ingest_dataset(url: str, type: str = "web_page", process_pipeline: List[str] = None) -> str:
+async def ingest_dataset(url: str, type: str = "web_page", process_pipeline: list[str] | None = None) -> str:
     """
     Ingest a dataset from a URL.
     
@@ -37,11 +37,9 @@ async def ingest_dataset(url: str, type: str = "web_page", process_pipeline: Lis
     # 1. Scrape / Fetch
     if type == "api":
         result = scraper.scrape_api_endpoint(url)
-        format_hint = "json"
     else:
         # Default to web page scraping
         result = scraper.scrape_web_page(url)
-        format_hint = "html" # Soup object
         
     if not result.success:
         return f"Ingestion failed during scraping: {result.error}"
@@ -49,7 +47,7 @@ async def ingest_dataset(url: str, type: str = "web_page", process_pipeline: Lis
     # 2. Save Raw Data
     if result.data:
         # Determine format for saving
-        if isinstance(result.data, (dict, list)):
+        if isinstance(result.data, dict | list):
              save_fmt = ScrapeFormat.JSON
              ext = ".json"
         else:

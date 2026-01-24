@@ -3,12 +3,14 @@ Unified Data Format Parsers for Golden Fund
 Ported and consolidated from etl_module/src/parsing/formats/
 """
 
-import json
 import csv
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+import json
 import xml.etree.ElementTree as ET
+from pathlib import Path
+from typing import Any, Optional, Union
+
 import pandas as pd
+
 
 class ParseResult:
     """Result container for parsed data."""
@@ -27,7 +29,7 @@ class JSONParser:
                 return ParseResult(True, data=df)
             except ValueError:
                 # Fallback to standard json
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, encoding='utf-8') as f:
                     data = json.load(f)
                 return ParseResult(True, data=data)
         except Exception as e:
@@ -51,7 +53,7 @@ class XMLParser:
         except Exception as e:
             return ParseResult(False, error=f"XML parse error: {e}")
 
-    def _xml_to_dict(self, element: ET.Element) -> Dict[str, Any]:
+    def _xml_to_dict(self, element: ET.Element) -> dict[str, Any]:
         result = {}
         if element.attrib:
             result["@attributes"] = element.attrib
