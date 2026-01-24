@@ -7,6 +7,13 @@ from mcp.server.fastmcp import FastMCP, Context
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("golden_fund")
 
+from .tools.ingest import ingest_dataset as ingest_impl
+from .lib.storage import VectorStorage, SearchStorage
+
+# Initialize storage
+vector_store = VectorStorage()
+search_store = SearchStorage()
+
 # Create FastMCP server
 mcp = FastMCP("golden_fund")
 
@@ -17,10 +24,24 @@ async def search_golden_fund(query: str, mode: str = "semantic") -> str:
     
     Args:
         query: The search query.
-        mode: Search mode - 'semantic' (vector), 'graph' (relationships), or 'hybrid'.
+        mode: Search mode - 'semantic' (vector), 'keyword' (text), 'graph' (relationships), or 'hybrid'.
     """
     logger.info(f"Searching Golden Fund: {query} (mode={mode})")
-    return f"Results for '{query}' in {mode} mode (Placeholder)"
+    
+    if mode == "semantic":
+        result = vector_store.search(query)
+    elif mode == "keyword":
+        result = search_store.search(query)
+    elif mode == "hybrid":
+        # Simple hybrid simulation: returning both
+        vec_res = vector_store.search(query)
+        txt_res = search_store.search(query)
+        return f"Hybrid Results:\nVector: {vec_res}\nText: {txt_res}"
+    else:
+        # Default or graph placeholder
+        result = vector_store.search(query)
+        
+    return str(result)
 
 @mcp.tool()
 async def ingest_dataset(url: str, type: str, process_pipeline: List[str] = []) -> str:
@@ -32,8 +53,7 @@ async def ingest_dataset(url: str, type: str, process_pipeline: List[str] = []) 
         type: Type of data source (e.g., 'api', 'web_page', 'csv_url').
         process_pipeline: List of processing steps (e.g., ['extract_entities', 'vectorize']).
     """
-    logger.info(f"Ingesting dataset from {url} ({type})")
-    return f"Ingestion started for {url} (Placeholder)"
+    return await ingest_impl(url, type, process_pipeline)
 
 @mcp.tool()
 async def probe_entity(entity_id: str, depth: int = 1) -> str:
