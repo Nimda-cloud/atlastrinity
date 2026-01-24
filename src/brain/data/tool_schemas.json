@@ -1330,5 +1330,80 @@
       "path": "str"
     },
     "description": "Run 'pyrefly' to check code integrity and find generic coding errors."
+  },
+  "analyze_dataset": {
+    "server": "data-analysis",
+    "required": ["data_source"],
+    "optional": ["analysis_type", "output_format", "target_path"],
+    "types": {
+      "data_source": "str",
+      "analysis_type": "str",
+      "output_format": "str",
+      "target_path": "str"
+    },
+    "description": "Analyze a dataset with statistical methods and generate insights"
+  },
+  "generate_statistics": {
+    "server": "data-analysis",
+    "required": ["data_source"],
+    "optional": ["statistics_type", "output_format", "group_by"],
+    "types": {
+      "data_source": "str",
+      "statistics_type": "str",
+      "output_format": "str",
+      "group_by": "str"
+    },
+    "description": "Generate statistical analysis (mean, median, std dev, etc.) from a dataset"
+  },
+  "create_visualization": {
+    "server": "data-analysis",
+    "required": ["data_source", "visualization_type"],
+    "optional": ["output_format", "title", "x_axis", "y_axis"],
+    "types": {
+      "data_source": "str",
+      "visualization_type": "str",
+      "output_format": "str",
+      "title": "str",
+      "x_axis": "str",
+      "y_axis": "str"
+    },
+    "description": "Create visualizations (charts, graphs, plots) from data"
+  },
+  "data_cleaning": {
+    "server": "data-analysis",
+    "required": ["data_source"],
+    "optional": ["cleaning_methods", "output_format", "handle_missing"],
+    "types": {
+      "data_source": "str",
+      "cleaning_methods": "list",
+      "output_format": "str",
+      "handle_missing": "str"
+    },
+    "description": "Clean and preprocess data (handle missing values, normalize, etc.)"
+  },
+  "predictive_modeling": {
+    "server": "data-analysis",
+    "required": ["data_source", "target_variable"],
+    "optional": ["model_type", "test_size", "output_format"],
+    "types": {
+      "data_source": "str",
+      "target_variable": "str",
+      "model_type": "str",
+      "test_size": "float",
+      "output_format": "str"
+    },
+    "description": "Build predictive models using machine learning algorithms"
+  },
+  "data_aggregation": {
+    "server": "data-analysis",
+    "required": ["data_source"],
+    "optional": ["group_by", "aggregation_methods", "output_format"],
+    "types": {
+      "data_source": "str",
+      "group_by": "str",
+      "aggregation_methods": "list",
+      "output_format": "str"
+    },
+    "description": "Aggregate and summarize data by grouping and applying functions"
   }
 }

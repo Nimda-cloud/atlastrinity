@@ -300,5 +300,27 @@
     ],
     "key_tools": ["c7_search", "c7_get_context", "c7_list_libraries"],
     "when_to_use": "When you need to look up documentation, API references, or examples for external libraries."
+  },
+  "data-analysis": {
+    "name": "data-analysis",
+    "tier": 2,
+    "category": "analytics",
+    "description": "Data Analysis and Processing Engine - Statistical analysis, data transformation, and visualization.",
+    "capabilities": [
+      "Statistical analysis and data processing",
+      "Data cleaning and transformation",
+      "Data visualization and reporting",
+      "Machine learning and predictive modeling",
+      "Large dataset processing and aggregation"
+    ],
+    "key_tools": [
+      "analyze_dataset",
+      "generate_statistics",
+      "create_visualization",
+      "data_cleaning",
+      "predictive_modeling",
+      "data_aggregation"
+    ],
+    "when_to_use": "When performing data analysis, statistical computations, data visualization, or machine learning tasks."
   }
 }
