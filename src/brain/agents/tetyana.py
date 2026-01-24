@@ -589,11 +589,19 @@ IMPORTANT:
                 "version",
                 "status",
                 "health",
+                "search",
+                "find",
+                "looking",
+                "identify",
+                "analyze",
+                "mapping",
+                "documentation",
+                "plans",
             ]
             if any(tk in step_action_lower for tk in technical_verification_keywords):
                 is_consent_request = False
                 logger.info(
-                    f"[TETYANA] Step '{step_id}' - skipping consent: identified as technical verification.",
+                    f"[TETYANA] Step '{step_id}' - skipping consent: identified as informational/search task.",
                 )
 
         if is_consent_request:

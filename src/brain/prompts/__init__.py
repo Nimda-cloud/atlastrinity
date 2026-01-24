@@ -433,7 +433,13 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
  Current plan: {current_plan}
 
  You are the Meta-Planner. Provide an ALTERNATIVE strategy or a structural correction.
- IMPORTANT: If Grisha provided detailed feedback above, use it to understand EXACTLY what went wrong and avoid repeating the same mistake.
+  IMPORTANT: If Grisha provided detailed feedback above, use it to understand EXACTLY what went wrong and avoid repeating the same mistake.
+
+  CRITICAL RECOVERY DOCTRINE:
+  1. **PERSISTENCE FIRST**: Do not abruptly change course or abandon the main goal on the first failure. Help Tetyana overcome the specific technical obstacle.
+  2. **TARGETED ANALYSIS**: If you need more information to fix the step, use Vibe (`vibe.vibe_prompt`) or search tools to gather EXACT data (documentation, paths, UI states).
+  3. **NO GENERIC STEP NAMES**: Do NOT name steps "Consultation and Analysis" or "Information Gathering". Be technical and specific (e.g., "Analyze ETL error logs via Vibe", "Inspect satellite imagery resolution").
+  4. **GRADUAL PIVOT**: Only redesign the entire plan if the current path is technically impossible or 100% dead.
 
  Output JSON matching the 'help_tetyana' schema:
  {{
@@ -441,7 +447,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
      "alternative_steps": [
          {{"id": 1, "action": "English description", "expected_result": "English description"}}
      ],
-     "voice_message": "Mandatory Ukrainian message explaining the pivot to the user"
+     "voice_message": "Mandatory Ukrainian message. Explain SPECIFICALLY what you are doing to solve the blocker. No generalities."
  }}
  """
 

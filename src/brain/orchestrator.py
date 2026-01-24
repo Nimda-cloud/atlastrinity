@@ -95,6 +95,11 @@ class Trinity:
         }
         self._background_tasks = set()
 
+        # ARCHITECTURAL IMPROVEMENT: Live Voice status during long tools (like Vibe)
+        self._last_live_speech_time = 0
+        from .mcp_manager import mcp_manager
+        mcp_manager.register_log_callback(self._mcp_log_voice_callback)
+
     async def initialize(self):
         """Async initialization of system components via Config-Driven Workflow"""
         # Execute 'startup' workflow from behavior config
@@ -383,6 +388,32 @@ class Trinity:
             raise
         except Exception as e:
             print(f"TTS Error: {e}")
+
+    async def _mcp_log_voice_callback(self, msg: str, server_name: str, level: str):
+        """Callback to handle live log notifications from MCP servers for voice feedback."""
+        import time
+        now = time.time()
+
+        # Rate limit live speech to once per 10 seconds to avoid spamming
+        if now - self._last_live_speech_time < 10:
+            return
+
+        # We specifically care about Vibe-Live updates
+        significant_markers = ["[VIBE-THOUGHT]", "[VIBE-ACTION]", "[VIBE-LIVE]"]
+        if server_name == "vibe" and any(marker in msg for marker in significant_markers):
+            # Strip markers for speech
+            speech_text = msg
+            for marker in significant_markers:
+                speech_text = speech_text.replace(marker, "")
+            
+            # Remove emojis
+            import re
+            speech_text = re.sub(r'[^\w\s\.,!\?]', '', speech_text).strip()
+
+            if len(speech_text) > 5:
+                # Use 'atlas' for status updates
+                self._last_live_speech_time = now
+                asyncio.create_task(self._speak("atlas", speech_text))
 
     async def _log(self, text: str, source: str = "system", type: str = "info"):
         """Log wrapper with message types and DB persistence"""
@@ -796,20 +827,26 @@ class Trinity:
                         intent=intent,
                         on_preamble=self._speak,
                     )
-                    await self._speak("atlas", response)
 
-                    # Background session save to avoid blocking response
-                    try:
-                        from src.brain.state_manager import state_manager
-
-                        if state_manager and getattr(state_manager, "available", False):
-                            asyncio.create_task(state_manager.save_session(session_id, self.state))
-                    except (ImportError, NameError):
+                    if response == "__ESCALATE__":
+                        await self._speak("atlas", "Мій швидкий аналіз показав, що це завдання потребує глибшого опрацювання. Я залучаю Тетяну та Грішу для повного виконання.")
+                        # Proceed to planning phase (fall-through to planning logic below)
                         pass
+                    else:
+                        await self._speak("atlas", response)
 
-                    self.state["system_state"] = SystemState.IDLE.value
-                    self.active_task = None
-                    return {"status": "completed", "result": response, "type": intent}
+                        # Background session save to avoid blocking response
+                        try:
+                            from src.brain.state_manager import state_manager
+
+                            if state_manager and getattr(state_manager, "available", False):
+                                asyncio.create_task(state_manager.save_session(session_id, self.state))
+                        except (ImportError, NameError):
+                            pass
+
+                        self.state["system_state"] = SystemState.IDLE.value
+                        self.active_task = None
+                        return {"status": "completed", "result": response, "type": intent}
 
                 self.state["system_state"] = SystemState.PLANNING.value
 
@@ -1442,6 +1479,17 @@ class Trinity:
                         )
 
                         if healing_decision.get("decision") == "PROCEED":
+                            # USE SEQUENTIAL THINKING BEFORE RETRY (User Requirement: chances via deep thinking)
+                            await self._log(f"[ORCHESTRATOR] Engaging Deep Reasoning (MSP) before Attempt {attempt+1}...", "system")
+                            analysis = await self.atlas.use_sequential_thinking(
+                                f"Analyze why step {step_id} failed and how to apply the vibe fix effectively.\nError: {last_error}\nVibe Fix: {vibe_text}\nInstructions: {healing_decision.get('instructions_for_vibe')}",
+                                total_thoughts=3
+                            )
+                            if analysis.get("success"):
+                                await self._log(f"[ATLAS] Deep Analysis: {analysis.get('analysis')[:200]}...", "atlas")
+                                # Inject analysis results into the next attempt's context
+                                step["grisha_feedback"] = f"DEEP ANALYSIS FROM PREVIOUS FAILURE:\n{analysis.get('analysis')}\nSUGGESTED ACTION: {healing_decision.get('instructions_for_vibe')}"
+
                             await mcp_manager.call_tool(
                                 "vibe",
                                 "vibe_prompt",
