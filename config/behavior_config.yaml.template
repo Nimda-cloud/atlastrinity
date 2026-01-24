@@ -69,6 +69,22 @@ patterns:
         success_threshold: 0.7
         usage_priority: medium
 
+    technical_audit_escalation:
+      description: 'Perform raw SQL audit of tool_executions when verification artifacts are missing'
+      trigger:
+        conditions:
+          verification_failed: true
+          artifact_missing: true
+        min_confidence: 0.8
+      action:
+        server: memory
+        tool: query_db
+        strategy: log_forensics
+      metadata:
+        initial_confidence: 0.9
+        success_threshold: 1.0
+        usage_priority: highest
+
 # =============================================================================
 # INTENT DETECTION & CLASSIFICATION
 # =============================================================================
