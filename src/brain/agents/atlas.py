@@ -5,25 +5,20 @@ Voice: Dmytro (male)
 Model: GPT-4.1 / GPT-5 mini
 """
 
-import asyncio
-import json
 import os
 import sys
+
+# Set up paths first
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root = os.path.join(current_dir, "..", "..")
+sys.path.insert(0, os.path.abspath(root))
+
+import asyncio
+import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, cast
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# Check root (Dev: src/brain/agents -> root)
-root_dev = os.path.join(current_dir, "..", "..", "..")
-# Check resources (Prod: brain/agents -> Resources)
-root_prod = os.path.join(current_dir, "..", "..")
-
-for r in [root_dev, root_prod]:
-    abs_r = os.path.abspath(r)
-    if abs_r not in sys.path:
-        sys.path.insert(0, abs_r)
 
 from langchain_core.messages import HumanMessage, SystemMessage
 

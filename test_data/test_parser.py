@@ -4,13 +4,14 @@
 Test script for the data parsing component.
 """
 
-import sys
 import os
+import sys
 
 # Add the etl_module to Python path
 sys.path.insert(0, "/Users/dev/Documents/GitHub/atlastrinity")
 
-from etl_module.src.parsing import DataParser, DataFormat
+from etl_module.src.parsing import DataFormat, DataParser
+
 
 def test_csv_parsing():
     """Test CSV parsing functionality."""

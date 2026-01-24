@@ -19,8 +19,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 # Adjust imports to match MCP server structure
-from src.mcp_server.golden_fund.lib.storage.vector import VectorStorage
 from src.mcp_server.golden_fund.lib.storage.blob import BlobStorage
+from src.mcp_server.golden_fund.lib.storage.vector import VectorStorage
 from src.mcp_server.golden_fund.lib.transformer import DataTransformer
 from src.mcp_server.golden_fund.tools.chain import enricher
 
