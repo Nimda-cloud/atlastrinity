@@ -10,9 +10,9 @@ import json
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Optional, Union, List, Dict
 from enum import Enum
+from pathlib import Path
+from typing import Any, Optional, Union
 
 import requests
 from bs4 import BeautifulSoup
@@ -98,7 +98,7 @@ class DataScraper:
         except Exception as e:
             return ScrapeResult(False, error=f"API scraping failed: {e!s}")
             
-    def save_data(self, data: Any, file_path: Union[str, Path], format: ScrapeFormat = ScrapeFormat.JSON) -> ScrapeResult:
+    def save_data(self, data: Any, file_path: str | Path, format: ScrapeFormat = ScrapeFormat.JSON) -> ScrapeResult:
         file_path = Path(file_path)
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)

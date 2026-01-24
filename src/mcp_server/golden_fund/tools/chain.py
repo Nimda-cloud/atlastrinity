@@ -3,9 +3,9 @@ Recursive Enrichment Chain for Golden Fund
 Implements "Search -> Miss -> External Fetch -> Ingest -> Link -> Search" loop.
 """
 
-import logging
 import asyncio
-from typing import List, Dict, Any, Optional
+import logging
+from typing import Any, Optional
 
 from ..lib.connectors.ckan_connector import CKANConnector
 from ..lib.storage import VectorStorage
@@ -58,7 +58,7 @@ class RecursiveEnricher:
         # 4. Re-Search Local
         retry_results = self.vector_store.search(query, limit=5)
         
-        return f"Enrichment Complete:\n" + "\n".join(enrichment_summary) + f"\n\nFinal Search Results:\n{retry_results.data}"
+        return "Enrichment Complete:\n" + "\n".join(enrichment_summary) + f"\n\nFinal Search Results:\n{retry_results.data}"
 
 # Singleton instance
 enricher = RecursiveEnricher()

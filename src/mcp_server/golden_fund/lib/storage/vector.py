@@ -2,13 +2,14 @@
 Vector Storage Adapter for Golden Fund (ChromaDB)
 """
 
-from typing import Any, Dict, List, Optional, Union
-from datetime import datetime
 import json
 import logging
 import uuid
-import numpy as np
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Optional, Union
+
+import numpy as np
 
 # Try importing chromadb, handle failure for CI/Bootstrap
 try:
@@ -27,7 +28,7 @@ class VectorStorage:
     Vector storage adapter using ChromaDB for persistence.
     """
     
-    def __init__(self, persistence_path: str = None, collection_name: str = "golden_fund_vectors"):
+    def __init__(self, persistence_path: str | None = None, collection_name: str = "golden_fund_vectors"):
         if persistence_path is None:
             persistence_path = Path.home() / ".config" / "atlastrinity" / "data" / "golden_fund" / "chroma_db"
         self.enabled = CHROMA_AVAILABLE
@@ -48,7 +49,7 @@ class VectorStorage:
         else:
             logger.warning("ChromaDB not available. VectorStorage disabled or running in simulation mode.")
     
-    def store(self, data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> StorageResult:
+    def store(self, data: dict[str, Any] | list[dict[str, Any]]) -> StorageResult:
         """Store data with generated embeddings."""
         if not self.enabled:
             return StorageResult(False, "vector", error="VectorStorage is disabled (ChromaDB missing)")
@@ -73,7 +74,7 @@ class VectorStorage:
                 # Chroma metadata must be int, float, str, bool
                 meta = {}
                 for k, v in record.items():
-                    if isinstance(v, (str, int, float, bool)):
+                    if isinstance(v, str | int | float | bool):
                         meta[k] = v
                     elif isinstance(v, list):
                         meta[k] = str(v) # Flatten lists

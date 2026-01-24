@@ -3,9 +3,10 @@ Data Transformation Layer for Golden Fund
 Ported from etl_module/src/transformation/data_transformer.py
 """
 
-from typing import Any, Dict, List, Optional, Union
 import logging
 from datetime import datetime
+from typing import Any, Optional, Union
+
 from pydantic import BaseModel, Field, ValidationError
 
 logging.basicConfig(level=logging.INFO)
@@ -27,14 +28,14 @@ class UnifiedSchema(BaseModel):
     content: Any = Field(default=None, description="Main content or payload")
     source_format: str = Field(..., description="Original format")
     timestamp: datetime = Field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 class DataTransformer:
     def __init__(self):
         self.schema = UnifiedSchema
         logger.info("DataTransformer initialized")
 
-    def transform(self, data: Union[Dict[str, Any], List[Dict[str, Any]]], source_format: str = "unknown") -> TransformResult:
+    def transform(self, data: dict[str, Any] | list[dict[str, Any]], source_format: str = "unknown") -> TransformResult:
         try:
             if isinstance(data, list):
                 transformed = []
@@ -49,7 +50,7 @@ class DataTransformer:
         except Exception as e:
             return TransformResult(False, error=f"Transformation error: {e}")
 
-    def _transform_item(self, item: Dict[str, Any], source_format: str) -> Optional[Dict[str, Any]]:
+    def _transform_item(self, item: dict[str, Any], source_format: str) -> dict[str, Any] | None:
         try:
             # Heuristic mapping flexibility
             name = item.get("name") or item.get("title") or item.get("id") or "Untitled"

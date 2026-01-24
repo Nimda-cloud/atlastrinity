@@ -4,8 +4,10 @@ Ported from etl_module/src/parsing/data_parser.py
 """
 
 from pathlib import Path
-from typing import Optional, Union, List
-from .formats import JSONParser, CSVParser, XMLParser, ParseResult
+from typing import Optional, Union
+
+from .formats import CSVParser, JSONParser, ParseResult, XMLParser
+
 
 class DataParser:
     def __init__(self):
@@ -15,7 +17,7 @@ class DataParser:
             "xml": XMLParser()
         }
     
-    def parse(self, file_path: Union[str, Path], format_hint: Optional[str] = None) -> ParseResult:
+    def parse(self, file_path: str | Path, format_hint: str | None = None) -> ParseResult:
         file_path = Path(file_path)
         
         if not file_path.exists():
