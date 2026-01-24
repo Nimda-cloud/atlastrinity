@@ -589,11 +589,13 @@ class Atlas(BaseAgent):
                 )
 
             # Process Tool Calls
+            tool_executed = False
             for tool_call in response.tool_calls:
                 logical_tool_name = tool_call.get("name")
                 args = tool_call.get("args", {})
 
                 if logical_tool_name:
+                    tool_executed = True
                     logger.info(f"[ATLAS CHAT] Executing: {logical_tool_name}")
                     try:
                         # Use intelligent dispatch (handles server resolution & args)
@@ -612,7 +614,29 @@ class Atlas(BaseAgent):
                         ),
                     )
 
+            # ARCHITECTURAL IMPROVEMENT: VERIFICATION PHASE (Self-Audit)
+            if intent == "solo_task" and tool_executed:
+                # Add a 'Grisha-style' internal audit turn
+                messages.append(
+                    SystemMessage(
+                        content="INTERNAL AUDIT: Review the data retrieved above. Does it fully answer the Creator's request? If data is missing (e.g., snippet too short), use another tool (like fetch_url) immediately. Do NOT stop until the answer is complete. You have ONE more chance to get it right.",
+                    ),
+                )
+            elif intent == "solo_task" and not tool_executed and current_turn == 0:
+                # Model failed to call tools despite prompt instructions. Force it.
+                messages.append(
+                    SystemMessage(
+                        content="STRICT DIRECTIVE: You announced you would check data but did NOT call any tools. You MUST use a search or fetch tool NOW. An empty answer is a failure of loyalty.",
+                    ),
+                )
+
             current_turn += 1
+
+        # ARCHITECTURAL IMPROVEMENT: ESCALATION SIGNAL
+        # If we reached the turn limit and haven't satisfied the request, signal the orchestrator.
+        if intent == "solo_task":
+            logger.warning("[ATLAS] Solo research reached turn limit. Signaling escalation to Trinity flow.")
+            return "__ESCALATE__"
 
         fallback_msg = "Я виконав кілька кроків пошуку, але мені потрібно більше часу для повного аналізу. Що саме вас цікавить найбільше?"
         await self._memorize_chat_interaction(user_request, fallback_msg)
@@ -1159,8 +1183,8 @@ If the user asked to 'count', you MUST state the exact number found.
             return "Тетяно, передаю керування тобі."
 
         elif action == "recovery_started":
-            # Atlas should not claim the step 'stopped' (validation is Grisha's duty).
-            return f"Розпочинаю допомогу у відновленні кроку {kwargs.get('step_id', '?')} — консультація та аналіз."
+            # Avoid generic 'consultation' wording. Be direct.
+            return f"Бачу перешкоду у кроці {kwargs.get('step_id', '?')}. Тетяно, зачекай секунду — я проаналізую проблему та знайду шлях входу."
 
         elif action == "vibe_engaged":
             return (

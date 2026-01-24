@@ -512,16 +512,20 @@ class MCPManager:
                     "Broken pipe",
                     "ClosedResourceError",
                     "unhandled errors in a TaskGroup",
+                    "McpError: Connection closed"
                 ]
             ):
-                logger.warning(f"Connection lost to {server_name}, attempting reconnection...")
+                logger.warning(f"Connection lost to {server_name}, attempting reconnection (resiliency fix)...")
+                # Wait a small bit for OS to cleanup
+                await asyncio.sleep(1)
                 async with self._lock:
                     if server_name in self.sessions:
                         del self.sessions[server_name]
                     if server_name in self._connection_tasks:
-                        # Cancel existing task to allow fresh start
                         task = self._connection_tasks.pop(server_name)
                         task.cancel()
+                        self._close_events.pop(server_name, None)
+                        self._session_futures.pop(server_name, None)
 
                 session = await self.get_session(server_name)
                 if session:
