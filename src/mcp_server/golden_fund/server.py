@@ -9,6 +9,7 @@ logger = logging.getLogger("golden_fund")
 
 from .tools.ingest import ingest_dataset as ingest_impl
 from .lib.storage import VectorStorage, SearchStorage
+from .tools.chain import recursive_enrichment
 
 # Initialize storage
 vector_store = VectorStorage()
@@ -24,7 +25,7 @@ async def search_golden_fund(query: str, mode: str = "semantic") -> str:
     
     Args:
         query: The search query.
-        mode: Search mode - 'semantic' (vector), 'keyword' (text), 'graph' (relationships), or 'hybrid'.
+        mode: Search mode - 'semantic', 'keyword', 'hybrid', or 'recursive' (chains external data).
     """
     logger.info(f"Searching Golden Fund: {query} (mode={mode})")
     
@@ -33,12 +34,12 @@ async def search_golden_fund(query: str, mode: str = "semantic") -> str:
     elif mode == "keyword":
         result = search_store.search(query)
     elif mode == "hybrid":
-        # Simple hybrid simulation: returning both
         vec_res = vector_store.search(query)
         txt_res = search_store.search(query)
         return f"Hybrid Results:\nVector: {vec_res}\nText: {txt_res}"
+    elif mode == "recursive":
+        return await recursive_enrichment(query)
     else:
-        # Default or graph placeholder
         result = vector_store.search(query)
         
     return str(result)
