@@ -59,7 +59,6 @@ async def retrieve_blob(filename: str) -> str:
     return str(blob_store.retrieve(filename))
 
 @mcp.tool()
-@mcp.tool()
 async def ingest_dataset(url: str, type: str, process_pipeline: list[str] | None = None) -> str:
     """
     Ingest a dataset into the Golden Fund.
