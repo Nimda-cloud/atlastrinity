@@ -735,6 +735,17 @@ def backup_databases():
     else:
         print_warning("ChromaDB не знайдена, пропускаємо.")
 
+    # 3. Backup Golden Fund
+    gf_src = PROJECT_ROOT / "data" / "golden_fund"
+    if gf_src.exists():
+        gf_dst = backup_dir / "golden_fund"
+        if gf_dst.exists():
+            shutil.rmtree(gf_dst)
+        shutil.copytree(gf_src, gf_dst)
+        print_success(f"Golden Fund сховище збережено: {gf_dst}")
+    else:
+        print_warning("Golden Fund дані не знайдені, пропускаємо.")
+
     print_info(f"Резервні копії збережено в: {backup_dir}")
     print_info(
         "Тепер ви можете зробити: git add backups/ && git commit -m 'backup: database snapshot'",
@@ -765,6 +776,15 @@ def restore_databases():
             shutil.rmtree(chroma_dst)
         shutil.copytree(chroma_src, chroma_dst)
         print_success(f"ChromaDB відновлена: {chroma_dst}")
+
+    # 3. Restore Golden Fund
+    gf_src = backup_dir / "golden_fund"
+    if gf_src.exists():
+        gf_dst = PROJECT_ROOT / "data" / "golden_fund"
+        if gf_dst.exists():
+            shutil.rmtree(gf_dst)
+        shutil.copytree(gf_src, gf_dst)
+        print_success(f"Golden Fund сховище відновлено: {gf_dst}")
 
     print_success("Бази даних успішно відновлено!")
 
