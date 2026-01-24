@@ -5,24 +5,19 @@ Voice: Mykyta (male)
 Model: GPT-4o (Vision)
 """
 
-import base64
-import json
 import os
+import sys
 
 # Robust path handling for both Dev and Production (Packaged)
-import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root = os.path.join(current_dir, "..", "..")
+sys.path.insert(0, os.path.abspath(root))
+
+import base64
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dev = os.path.join(current_dir, "..", "..", "..")
-root_prod = os.path.join(current_dir, "..", "..")
-
-for r in [root_dev, root_prod]:
-    abs_r = os.path.abspath(r)
-    if abs_r not in sys.path:
-        sys.path.insert(0, abs_r)
 
 from providers.copilot import CopilotLLM
 from src.brain.agents.base_agent import BaseAgent

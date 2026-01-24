@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import Any, Dict, Optional
+import time
+from typing import Any, Optional
 
 import psutil
 
@@ -33,7 +33,7 @@ class MetricsCollector:
         else:
             return f"{bytes_per_sec / 1024**3:.1f}", "G/S"
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """
         Get formatted system metrics.
         
@@ -73,7 +73,7 @@ class MetricsCollector:
             "net_down_unit": down_unit,
         }
 
-    def record(self, name: str, value: Any, tags: Optional[Dict[str, Any]] = None) -> None:
+    def record(self, name: str, value: Any, tags: dict[str, Any] | None = None) -> None:
         """
         Record a custom metric and integrate with monitoring system.
         

@@ -10,27 +10,23 @@ import os
 
 # Robust path handling for both Dev and Production (Packaged)
 import sys
+
+# Set up paths first
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root = os.path.join(current_dir, "..", "..")
+sys.path.insert(0, os.path.abspath(root))
+
 import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
 
-from src.brain.logger import logger
-from src.brain.mcp_manager import mcp_manager
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dev = os.path.join(current_dir, "..", "..", "..")
-root_prod = os.path.join(current_dir, "..", "..")
-
-for r in [root_dev, root_prod]:
-    abs_r = os.path.abspath(r)
-    if abs_r not in sys.path:
-        sys.path.insert(0, abs_r)
-
 from providers.copilot import CopilotLLM
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
 from src.brain.context import shared_context
+from src.brain.logger import logger
+from src.brain.mcp_manager import mcp_manager
 from src.brain.prompts import AgentPrompts
 
 

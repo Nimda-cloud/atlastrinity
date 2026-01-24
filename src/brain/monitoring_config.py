@@ -4,10 +4,10 @@ Monitoring Configuration Loader
 Loads and manages monitoring configuration for Prometheus, Grafana, and OpenSearch integration.
 """
 
+import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
-import logging
+from typing import Any, Optional
 
 import yaml
 
@@ -24,7 +24,7 @@ class MonitoringConfig:
     and provides access to monitoring settings.
     """
     
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """
         Initialize the monitoring configuration loader.
         
@@ -56,7 +56,7 @@ class MonitoringConfig:
         # Return default location (will be created if needed)
         return Path.home() / ".config" / "atlastrinity" / "monitoring_config.yaml"
         
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self) -> dict[str, Any]:
         """
         Load monitoring configuration from YAML file.
         
@@ -67,7 +67,7 @@ class MonitoringConfig:
         
         try:
             if self.config_path.exists():
-                with open(self.config_path, 'r', encoding='utf-8') as f:
+                with open(self.config_path, encoding='utf-8') as f:
                     user_config = yaml.safe_load(f) or {}
                     
                 # Deep merge user config with defaults
@@ -81,7 +81,7 @@ class MonitoringConfig:
             logger.info("Falling back to default configuration")
             return default_config
             
-    def _get_default_config(self) -> Dict[str, Any]:
+    def _get_default_config(self) -> dict[str, Any]:
         """
         Get default monitoring configuration.
         
@@ -141,7 +141,7 @@ class MonitoringConfig:
             }
         }
         
-    def _deep_merge(self, base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
+    def _deep_merge(self, base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
         """
         Deep merge two dictionaries.
         
@@ -160,7 +160,7 @@ class MonitoringConfig:
                 result[key] = value
         return result
         
-    def get_prometheus_config(self) -> Dict[str, Any]:
+    def get_prometheus_config(self) -> dict[str, Any]:
         """
         Get Prometheus configuration.
         
@@ -169,7 +169,7 @@ class MonitoringConfig:
         """
         return self.config.get("monitoring", {}).get("prometheus", {})
         
-    def get_grafana_config(self) -> Dict[str, Any]:
+    def get_grafana_config(self) -> dict[str, Any]:
         """
         Get Grafana configuration.
         
@@ -178,7 +178,7 @@ class MonitoringConfig:
         """
         return self.config.get("monitoring", {}).get("grafana", {})
         
-    def get_opensearch_config(self) -> Dict[str, Any]:
+    def get_opensearch_config(self) -> dict[str, Any]:
         """
         Get OpenSearch configuration.
         
@@ -187,7 +187,7 @@ class MonitoringConfig:
         """
         return self.config.get("monitoring", {}).get("opensearch", {})
         
-    def get_tracing_config(self) -> Dict[str, Any]:
+    def get_tracing_config(self) -> dict[str, Any]:
         """
         Get tracing configuration.
         
@@ -196,7 +196,7 @@ class MonitoringConfig:
         """
         return self.config.get("monitoring", {}).get("tracing", {})
         
-    def get_etl_config(self) -> Dict[str, Any]:
+    def get_etl_config(self) -> dict[str, Any]:
         """
         Get ETL monitoring configuration.
         
@@ -205,7 +205,7 @@ class MonitoringConfig:
         """
         return self.config.get("monitoring", {}).get("etl", {})
         
-    def get_alerts_config(self) -> Dict[str, Any]:
+    def get_alerts_config(self) -> dict[str, Any]:
         """
         Get alerts configuration.
         
@@ -259,7 +259,7 @@ class MonitoringConfig:
         """
         return self.config_path
         
-    def save_config(self, config: Dict[str, Any]) -> bool:
+    def save_config(self, config: dict[str, Any]) -> bool:
         """
         Save monitoring configuration to file.
         

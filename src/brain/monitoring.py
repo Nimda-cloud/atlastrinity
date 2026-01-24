@@ -39,7 +39,7 @@ class MonitoringSystem:
                  prometheus_port: int = 8001,
                  opensearch_enabled: bool = True,
                  grafana_enabled: bool = True,
-                 config: Optional[dict[str, Any]] = None):
+                 config: dict[str, Any] | None = None):
         """
         Initialize the monitoring system.
         
@@ -256,7 +256,7 @@ class MonitoringSystem:
         """Decrement active request counter."""
         self.active_requests.dec()
         
-    def get_metrics_snapshot(self) -> Dict[str, Any]:
+    def get_metrics_snapshot(self) -> dict[str, Any]:
         """
         Get a snapshot of current metrics.
         

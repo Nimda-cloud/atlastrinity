@@ -4,14 +4,15 @@
 Test script for the dataset parser component.
 """
 
-import sys
-import os
 import asyncio
+import os
+import sys
 
 # Add the project root to Python path
 sys.path.insert(0, "/Users/dev/Documents/GitHub/atlastrinity")
 
 from etl_module.src.parsing import DatasetParser
+
 
 def test_company_dataset():
     """Test parsing of company dataset."""
@@ -44,7 +45,7 @@ def test_company_dataset():
     result = parser.parse_dataset(test_file, dataset_type="company")
     
     if result["success"]:
-        print(f"✓ Company dataset parsing successful")
+        print("✓ Company dataset parsing successful")
         print(f"  Dataset type: {result['dataset_type']}")
         print(f"  Records extracted: {len(result['transformed_data'])}")
         print(f"  Sample data: {result['transformed_data'][0]}")
@@ -82,7 +83,7 @@ def test_director_dataset():
     result = parser.parse_dataset(test_file, dataset_type="director")
     
     if result["success"]:
-        print(f"✓ Director dataset parsing successful")
+        print("✓ Director dataset parsing successful")
         print(f"  Dataset type: {result['dataset_type']}")
         print(f"  Records extracted: {len(result['transformed_data'])}")
         print(f"  Sample data: {result['transformed_data'][0]}")
@@ -125,13 +126,13 @@ def test_knowledge_graph_logging():
         try:
             kg_result = asyncio.run(parser.log_to_knowledge_graph(result))
             if kg_result["success"]:
-                print(f"✓ Knowledge Graph logging successful")
+                print("✓ Knowledge Graph logging successful")
                 print(f"  Nodes added: {kg_result['nodes_added']}")
                 print(f"  Edges added: {kg_result['edges_added']}")
             else:
                 print(f"✗ Knowledge Graph logging failed: {kg_result['error']}")
         except Exception as e:
-            print(f"✗ Knowledge Graph logging exception: {str(e)}")
+            print(f"✗ Knowledge Graph logging exception: {e!s}")
     else:
         print("✗ Skipping KG test - no successful parsing result")
 

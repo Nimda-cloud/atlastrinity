@@ -4,14 +4,15 @@
 Test script for the data transformation component.
 """
 
-import sys
 import os
+import sys
 
 # Add the etl_module to Python path
 sys.path.insert(0, "/Users/dev/Documents/GitHub/atlastrinity")
 
-from etl_module.src.parsing import DataParser, DataFormat
+from etl_module.src.parsing import DataFormat, DataParser
 from etl_module.src.transformation import DataTransformer, TransformResult
+
 
 def test_csv_transformation():
     """Test CSV data transformation."""
@@ -166,7 +167,7 @@ def test_data_normalization():
     result = transformer.normalize_data_types(mixed_type_data)
     
     if result.success:
-        print(f"✓ Data normalization successful")
+        print("✓ Data normalization successful")
         print(f"  Normalized data: {result.data}")
         print(f"  Age type: {type(result.data['age']).__name__}")
         print(f"  Score type: {type(result.data['score']).__name__}")
@@ -200,7 +201,7 @@ def test_schema_inspection():
     transformer = DataTransformer()
     schema = transformer.get_schema()
     
-    print(f"✓ Schema retrieved successfully")
+    print("✓ Schema retrieved successfully")
     print(f"  Schema fields: {list(schema['properties'].keys())}")
     print(f"  Required fields: {schema.get('required', [])}")
     print()
