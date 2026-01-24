@@ -188,6 +188,21 @@ class ToolDispatcher:
         "lookup",
     ]
 
+    GOLDEN_FUND_SYNONYMS = [
+        "golden_fund",
+        "goldenfund",
+        "gold_fund",
+        "goldfund",
+        "gf",
+        "ingest",
+        "ingestion",
+        "probe",
+        "vector_search",
+        "semantic_search",
+        "knowledge_base",
+        "kb",
+    ]
+
     GITHUB_SYNONYMS = [
         "github",
         "repo",
@@ -682,6 +697,19 @@ class ToolDispatcher:
             if tool_name in ["docs", "documentation", "lookup", "library"]:
                 return "context7", "c7_search", args
             return "context7", tool_name, args
+
+        # --- GOLDEN FUND ROUTING ---
+        if tool_name in self.GOLDEN_FUND_SYNONYMS or explicit_server in ["golden-fund", "golden_fund"]:
+            if tool_name in ["ingest", "ingestion", "etl"]:
+                return "golden-fund", "ingest_dataset", args
+            if tool_name in ["probe", "deep_search", "explore"]:
+                return "golden-fund", "probe_entity", args
+            if tool_name in ["vector_search", "semantic_search", "kb_search", "search_kb"]:
+                # Assume semantic mode for generic searches
+                args["mode"] = args.get("mode", "semantic")
+                return "golden-fund", "search_golden_fund", args
+            
+            return "golden-fund", tool_name, args
 
         # --- GIT LEGACY ROUTING ---
         if tool_name.startswith("git_") or explicit_server == "git":

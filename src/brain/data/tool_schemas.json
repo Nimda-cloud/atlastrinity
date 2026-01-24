@@ -14,6 +14,48 @@
     },
     "description": "Run a general AI coding or analysis task with full TUI capabilities"
   },
+  "search_golden_fund": {
+    "server": "golden-fund",
+    "required": ["query"],
+    "optional": ["mode"],
+    "types": {
+      "query": "str",
+      "mode": "str"
+    },
+    "description": "Search the Golden Fund (semantic, keyword, graph, or hybrid)"
+  },
+  "ingest_dataset": {
+    "server": "golden-fund",
+    "required": ["url", "type"],
+    "optional": ["process_pipeline"],
+    "types": {
+      "url": "str",
+      "type": "str",
+      "process_pipeline": "list"
+    },
+    "description": "Ingest a dataset from a URL (web_page, api, etc.)"
+  },
+  "probe_entity": {
+    "server": "golden-fund",
+    "required": ["entity_id"],
+    "optional": ["depth"],
+    "types": {
+      "entity_id": "str",
+      "depth": "int"
+    },
+    "description": "Deeply explore relationships for a specific entity in the Golden Fund"
+  },
+  "add_knowledge_node": {
+    "server": "golden-fund",
+    "required": ["content", "metadata"],
+    "optional": ["links"],
+    "types": {
+      "content": "str",
+      "metadata": "dict",
+      "links": "list"
+    },
+    "description": "Manually add a confirmed knowledge node"
+  },
   "c7_search": {
     "server": "context7",
     "required": ["query"],
