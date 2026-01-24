@@ -119,6 +119,11 @@ mcp:
   duckduckgo_search:
     enabled: true
 
+  golden_fund:
+    enabled: true
+    # Golden Fund Knowledge Base: Ingestion, Graphing, Vectorization
+    # Data stored in data/golden_fund/
+
   github:
     enabled: true
     # Advanced GitHub API: Pull Requests, Issues, Search, Repository Management

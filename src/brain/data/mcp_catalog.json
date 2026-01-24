@@ -274,6 +274,20 @@
     ],
     "when_to_use": "Validating code quality, finding errors, and checking project health."
   },
+  "golden-fund": {
+    "name": "golden-fund",
+    "tier": 2,
+    "category": "knowledge",
+    "description": "Golden Fund Knowledge Base: Ingestion, Graphing, Vectorization, and Sequential Analysis.",
+    "capabilities": [
+      "Ingest open/paid datasets (ETL)",
+      "Semantic and Graph search",
+      "Vector storage (Simulated/Qdrant)",
+      "Deep entity probing"
+    ],
+    "key_tools": ["search_golden_fund", "ingest_dataset", "probe_entity", "add_knowledge_node"],
+    "when_to_use": "When you need to persist large datasets, search for global knowledge, or perform deep sequential analysis."
+  },
   "context7": {
     "name": "context7",
     "tier": 3,
