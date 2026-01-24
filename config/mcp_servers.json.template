@@ -142,6 +142,22 @@
         "grisha"
       ]
     },
+    "golden-fund": {
+      "command": "python3",
+      "connect_timeout": 60,
+      "args": [
+        "-m",
+        "src.mcp_server.golden_fund.server"
+      ],
+      "description": "Golden Fund Knowledge Base: Ingestion, Graphing, Vectorization, and Sequential Analysis of internal/external data.",
+      "disabled": false,
+      "tier": 2,
+      "agents": [
+        "atlas",
+        "tetyana",
+        "grisha"
+      ]
+    },
     "context7": {
       "command": "npx",
       "args": [
