@@ -278,22 +278,28 @@
     "name": "golden-fund",
     "tier": 2,
     "category": "knowledge",
-    "description": "Golden Fund Knowledge Base: Ingestion, Graphing, Vectorization, and Sequential Analysis.",
+    "description": "Golden Fund Knowledge Base (8 tools): Semantic search, entity probing, data ingestion, analysis storage, and blob management.",
     "capabilities": [
-      "Ingest open/paid datasets (CKAN/API)",
-      "Semantic and Graph search (ChromaDB)",
-      "Blob storage (Simulated MinIO)",
-      "Recursive Data Enrichment"
+      "Semantic and keyword search (ChromaDB)",
+      "Entity probing with relationship exploration",
+      "Dataset ingestion from CKAN/API/web",
+      "Data analysis storage and retrieval",
+      "Blob storage (MinIO-style)",
+      "Recursive data enrichment from external sources",
+      "Knowledge node creation with linking"
     ],
     "key_tools": [
       "search_golden_fund",
-      "ingest_dataset",
       "probe_entity",
+      "ingest_dataset",
       "add_knowledge_node",
+      "analyze_and_store",
+      "get_dataset_insights",
       "store_blob",
       "retrieve_blob"
     ],
-    "when_to_use": "When you need to persist large datasets, search for global knowledge, or perform deep sequential analysis."
+    "when_to_use": "When you need to persist knowledge, search for stored facts, explore entity relationships, or store analysis results for later retrieval.",
+    "priority_note": "For raw data analysis (statistics, visualization), use 'data-analysis' first, then store results here with 'analyze_and_store'."
   },
   "context7": {
     "name": "context7",
@@ -312,22 +318,27 @@
     "name": "data-analysis",
     "tier": 2,
     "category": "analytics",
-    "description": "Data Analysis and Processing Engine - Statistical analysis, data transformation, and visualization.",
+    "description": "Pandas-based Data Analysis Engine (10 tools) - File metadata extraction, statistical analysis, visualization, data cleaning, and aggregation.",
     "capabilities": [
-      "Statistical analysis and data processing",
-      "Data cleaning and transformation",
-      "Data visualization and reporting",
-      "Machine learning and predictive modeling",
-      "Large dataset processing and aggregation"
+      "File metadata extraction (CSV, Excel, JSON, Parquet)",
+      "Statistical analysis (descriptive, inferential, correlation)",
+      "Data visualization (histogram, scatter, bar, line, box, heatmap)",
+      "Data cleaning (duplicates, missing values, normalization, outliers)",
+      "Data aggregation and grouping",
+      "Column value interpretation",
+      "Safe pandas code execution"
     ],
     "key_tools": [
+      "read_metadata",
       "analyze_dataset",
       "generate_statistics",
       "create_visualization",
       "data_cleaning",
-      "predictive_modeling",
-      "data_aggregation"
+      "data_aggregation",
+      "interpret_column_data",
+      "run_pandas_code"
     ],
-    "when_to_use": "When performing data analysis, statistical computations, data visualization, or machine learning tasks."
+    "when_to_use": "When performing data analysis on CSV/Excel/JSON files, generating statistics, creating charts, cleaning data, or running pandas operations.",
+    "priority_note": "For knowledge base storage and semantic search, use 'golden-fund' instead. For raw file operations, use 'filesystem'."
   }
 }
