@@ -3,7 +3,7 @@
 
 models:
   default: "gpt-4o"
-  reasoning: "o1-preview"
+  reasoning: "gpt-4.1"
   vision: "gpt-4o"
 
 agents:
@@ -16,7 +16,7 @@ agents:
     
   tetyana:
     model: "gpt-4o"
-    reasoning_model: "o1-preview"
+    reasoning_model: "gpt-4.1"
     vision_model: "gpt-4o"
     temperature: 0.3
     max_tokens: 4000

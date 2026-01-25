@@ -133,6 +133,11 @@ intent_detection:
       - 'програма'
       - 'код'
       - 'живий'
+      - 'місія'
+      - 'mission'
+      - 'хто тебе створив'
+      - 'хто твій батько'
+      - 'твоя мета'
     intent: chat
     priority: highest
     use_deep_persona: true
