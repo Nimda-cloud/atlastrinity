@@ -91,9 +91,18 @@ vim_keybindings = false
 # api_style = "anthropic"
 # backend = "anthropic"
 
+# Mistral Official Provider (Default for devstral models)
+[[providers]]
+name = "mistral"
+api_base = "https://api.mistral.ai/v1"
+api_key_env_var = "MISTRAL_API_KEY"
+api_style = "mistral"
+backend = "mistral"
+
+# Copilot Global Provider (Uses OpenAI-style API)
 [[providers]]
 name = "copilot"
-api_base = "YOUR_COPILOT_ENDPOINT"  # e.g., https://api.atlastrinity.ai/v1 or local proxy
+api_base = "https://api.atlastrinity.ai/v1"  # Or your local proxy
 api_key_env_var = "COPILOT_API_KEY"
 api_style = "openai"
 backend = "generic"

@@ -170,7 +170,11 @@ def check_system_tools():
                     print_success(f"{tool} знайдено у .venv")
                     continue
             if tool == "vibe":
-                print_warning("Vibe CLI не знайдено! (Буде встановлено нижче)")
+                venv_tool = PROJECT_ROOT / ".venv" / "bin" / "vibe"
+                if venv_tool.exists():
+                    print_success("Vibe CLI знайдено у .venv")
+                    continue
+                print_warning("Vibe CLI не знайдено! (Буде встановлено через pip)")
             else:
                 print_warning(f"{tool} НЕ знайдено")
             missing.append(tool)
@@ -191,22 +195,17 @@ def check_system_tools():
 
     # Auto-install Vibe if missing
     if "vibe" in missing:
-        print_info("Vibe CLI не знайдено. Встановлення Vibe...")
+        print_info("Vibe CLI не знайдено. Встановлення Mistral Vibe через pip у .venv...")
         try:
-            # Official vibe installation script - with dynamic resolution
-            # Try npm fallback if curl fails
-            res = subprocess.run("curl -fsSL https://get.vibe.sh | sh", shell=True, check=False, capture_output=True)
-            if res.returncode == 0:
-                print_success("Vibe CLI встановлено (via curl)")
-            else:
-                print_info("Curl install failed, trying npm install -g vibe-cli...")
-                subprocess.run(["npm", "install", "-g", "vibe-cli"], check=False)
-                print_success("Vibe CLI встановлено (via npm)")
+            # Install into the project's venv for isolation
+            venv_python_bin = PROJECT_ROOT / ".venv" / "bin" / "python"
+            subprocess.run([str(venv_python_bin), "-m", "pip", "install", "mistral-vibe"], check=True)
+            print_success("Mistral Vibe встановлено у .venv")
             
             if "vibe" in missing:
                 missing.remove("vibe")
         except Exception as e:
-            print_warning(f"Не вдалося встановити Vibe CLI (це не критично): {e}")
+            print_warning(f"Не вдалося встановити Mistral Vibe: {e}")
 
     # Auto-install JS dev tools if missing
     if any(t in missing for t in ["oxlint", "knip"]):
@@ -426,8 +425,13 @@ def check_venv():
     print_step("Налаштування Python venv...")
     if not VENV_PATH.exists():
         try:
+            # Prefer Homebrew Python 3.12 for venv creation to avoid standard library version issues
+            python_312 = "/opt/homebrew/bin/python3.12"
+            exec_bin = python_312 if os.path.exists(python_312) else sys.executable
+            print_info(f"Using {exec_bin} to create venv...")
+            
             # Use --copies to avoid symlink issues on shared volumes/VMs
-            subprocess.run([sys.executable, "-m", "venv", "--copies", str(VENV_PATH)], check=True)
+            subprocess.run([exec_bin, "-m", "venv", "--copies", str(VENV_PATH)], check=True)
             print_success("Virtual environment створено (using --copies)")
         except Exception as e:
             print_error(f"Не вдалося створити venv: {e}")
@@ -471,10 +475,8 @@ def verify_mcp_package_versions():
 def install_deps():
     """Встановлює всі залежності (Python, NPM, MCP)"""
     print_step("Встановлення залежностей...")
-
-    else:
-        # Standard unix/mac venv path
-        venv_python_bin = VENV_PATH / "bin" / "python"
+    # Standard unix/mac venv path
+    venv_python_bin = VENV_PATH / "bin" / "python"
         
     # Helper to run commands using venv environment but possibly system interpreter if venv binary is unexecutable
     def run_venv_cmd(cmd_args, **kwargs):
@@ -508,13 +510,13 @@ def install_deps():
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
         subprocess.run(
-            [venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
+            [str(venv_python_bin), "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
             check=False, capture_output=True,
         )
         # Install espnet and ukrainian-tts separately with no-build-isolation
         subprocess.run(
             [
-                venv_python,
+                str(venv_python_bin),
                 "-m",
                 "pip",
                 "install",
@@ -527,7 +529,7 @@ def install_deps():
         # Install ukrainian-tts from git (works with espnet 202301)
         subprocess.run(
             [
-                venv_python,
+                str(venv_python_bin),
                 "-m",
                 "pip",
                 "install",
@@ -548,7 +550,7 @@ def install_deps():
         with open(filtered_file, "w") as f:
             f.writelines(filtered_lines)
         subprocess.run(
-            [venv_python, "-m", "pip", "install", "--prefer-binary", "-r", filtered_file],
+            [str(venv_python_bin), "-m", "pip", "install", "--prefer-binary", "-r", filtered_file],
             check=True,
         )
         os.remove(filtered_file)
@@ -558,7 +560,7 @@ def install_deps():
     if req_dev_file.exists():
         print_info("PIP install -r requirements-dev.txt...")
         subprocess.run(
-            [venv_python, "-m", "pip", "install", "--prefer-binary", "-r", str(req_dev_file)],
+            [str(venv_python_bin), "-m", "pip", "install", "--prefer-binary", "-r", str(req_dev_file)],
             check=True,
         )
 
