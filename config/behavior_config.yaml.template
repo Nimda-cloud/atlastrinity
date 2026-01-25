@@ -344,6 +344,8 @@ tool_routing:
         keywords: [dataset, датасет, data.gov.ua, портал, 'відкриті дані']
         server: duckduckgo-search
         tool: open_data_search
+    tool_mapping:
+      business_registry_search: business_registry_search
 
   # Code assistance (Vibe)
   vibe:
