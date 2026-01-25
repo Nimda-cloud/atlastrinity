@@ -478,10 +478,10 @@ class MCPManager:
                         item_raw = cast("Any", item)
                         if (
                             isinstance(item_raw.text, str)
-                            and len(item_raw.text) > 100 * 1024 * 1024
-                        ):  # 100MB limit
+                            and len(item_raw.text) > 200 * 1024 * 1024
+                        ):  # 200MB limit (increased from 100MB)
                             item_raw.text = (
-                                item_raw.text[: 100 * 1024 * 1024]
+                                item_raw.text[: 200 * 1024 * 1024]
                                 + "\n... [TRUNCATED DUE TO SIZE] ..."
                             )
                             logger.warning(f"Truncated large output from {server_name}.{tool_name}")

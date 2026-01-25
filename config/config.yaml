@@ -1,0 +1,110 @@
+# AtlasTrinity Configuration
+# This file controls the behavior of the Trinity system
+
+models:
+  default: "gpt-4o"
+  reasoning: "o1-preview"
+  vision: "gpt-4o"
+
+agents:
+  atlas:
+    model: "gpt-4o"                    # Standard model for regular chat
+    deep_model: "gpt-4.1"             # Deep chat model for philosophical conversations
+    temperature: 0.7
+    max_tokens: 2000                  # Standard chat/task mode
+    max_tokens_deep: 12000            # Deep persona mode (increased from 8000)
+    
+  tetyana:
+    model: "gpt-4o"
+    reasoning_model: "o1-preview"
+    vision_model: "gpt-4o"
+    temperature: 0.3
+    max_tokens: 4000
+    
+  grisha:
+    model: "gpt-4o"
+    vision_model: "gpt-4o"
+    temperature: 0.2
+    max_tokens: 3000
+
+# MCP Server Configuration
+mcp_servers:
+  memory:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.memory_server"]
+    
+  filesystem:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.filesystem_server"]
+    
+  macos-use:
+    transport: "stdio"
+    command: ["python", "-m", "vendor.mcp-server-macos-use"]
+    
+  sequential-thinking:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.sequential_thinking_server"]
+    
+  vibe:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.vibe_server"]
+    
+  redis:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.redis_server"]
+    
+  duckduckgo-search:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.duckduckgo_server"]
+    
+  github:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.github_server"]
+    
+  context7:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.context7_server"]
+    
+  devtools:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.devtools_server"]
+    
+  whisper-stt:
+    transport: "http"
+    url: "http://127.0.0.1:8000"
+    
+  puppeteer:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.puppeteer_server"]
+    
+  chrome-devtools:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.chrome_devtools_server"]
+    
+  graph:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.graph_server"]
+    
+  golden_fund:
+    transport: "stdio"
+    command: ["python", "-m", "src.mcp_server.golden_fund_server"]
+
+# System Configuration
+system:
+  log_level: "INFO"
+  max_concurrent_tools: 10
+  timeout_seconds: 30
+  
+# Behavior Engine Configuration
+behavior:
+  enable_deep_persona: true
+  deep_persona_threshold: 0.7
+  semantic_verification: true
+  
+# Context Limits for Deep Chat
+context_limits:
+  deep_chat:
+    tool_results: 3000      # Increased from 1000
+    verification_data: 16000 # Increased from 8000  
+    mcp_responses: 200       # Increased from 100 (MB)
+    max_tokens: 12000       # Increased from 8000

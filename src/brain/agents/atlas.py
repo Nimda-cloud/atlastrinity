@@ -75,21 +75,22 @@ class Atlas(BaseAgent):
         else:
             # Priority: 1. Constructor arg, 2. Config file, 3. Default in config_loader
             final_model = model_name or agent_config.get("model")
+            deep_model = agent_config.get("deep_model", "gpt-4.1")  # Deep chat model
 
             if not final_model:
                 raise ValueError("[ATLAS] Model not specified in config.yaml or constructor")
 
             # Token limits from config
             max_tokens_standard = agent_config.get("max_tokens", 2000)
-            max_tokens_deep = agent_config.get("max_tokens_deep", 8000)
+            max_tokens_deep = agent_config.get("max_tokens_deep", 12000)
 
-            # Create two LLM instances: standard and deep persona
+            # Create two LLM instances: standard and deep persona with different models
             self.llm = CopilotLLM(model_name=final_model, max_tokens=max_tokens_standard)
-            self.llm_deep = CopilotLLM(model_name=final_model, max_tokens=max_tokens_deep)
+            self.llm_deep = CopilotLLM(model_name=deep_model, max_tokens=max_tokens_deep)
             
             logger.info(
-                f"[ATLAS] Initialized with max_tokens: {max_tokens_standard} (standard), "
-                f"{max_tokens_deep} (deep persona)"
+                f"[ATLAS] Initialized with models: {final_model} (standard), {deep_model} (deep persona) | "
+                f"max_tokens: {max_tokens_standard} (standard), {max_tokens_deep} (deep persona)"
             )
 
         # Optimization: Tool Cache

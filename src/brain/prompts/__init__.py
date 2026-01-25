@@ -51,8 +51,8 @@ class AgentPrompts:
             for res in previous_results:
                 # Truncate long outputs
                 res_str = str(res)
-                if len(res_str) > 1000:
-                    res_str = res_str[:1000] + "...(truncated)"
+                if len(res_str) > 3000:
+                    res_str = res_str[:3000] + "...(truncated)"
                 formatted_results.append(res_str)
             results_section = f"\n        RESULTS OF PREVIOUS STEPS (Use this data to fill arguments):\n        {formatted_results}\n"
 
