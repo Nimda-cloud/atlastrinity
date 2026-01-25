@@ -6,7 +6,7 @@
 - Компіляція нативних MCP серверів (Swift)
 - Встановлення Python та NPM залежностей
 - Завантаження AI моделей (STT/TTS)
-- Перевірка системних сервісів (Docker, Redis)
+- Перевірка системних сервісів (Redis, Vibe CLI)
 """
 
 import asyncio
@@ -151,7 +151,7 @@ def check_system_tools():
             print_success(f"{tool} знайдено")
         else:
             # Check venv for python tools (only if venv exists)
-            if tool in ["ruff", "pyrefly", "vibe"]:
+            if tool in ["ruff", "pyrefly"]:
                 venv_tool = PROJECT_ROOT / ".venv" / "bin" / tool
                 if venv_tool.exists():
                     print_success(f"{tool} знайдено у .venv")
@@ -160,6 +160,9 @@ def check_system_tools():
             if tool in ["bun", "swift", "npm"]:
                 print_warning(f"{tool} НЕ знайдено")
                 missing.append(tool)
+            elif tool == "vibe":
+                print_warning(f"{tool} НЕ знайдено")
+                print_info("Встановіть Vibe CLI: curl -LsSf https://mistral.ai/vibe/install.sh | bash")
             else:
                 # Python-specific tools are non-blocking here as they'll be installed later
                 print_info(f"{tool} поки не знайдено (буде встановлено у .venv пізніше)")

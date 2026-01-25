@@ -29,26 +29,9 @@ def check_redis_installed() -> bool:
     return shutil.which("redis-server") is not None
 
 
-def check_docker_installed() -> bool:
-    """Check if Docker Desktop is installed"""
-    return os.path.exists("/Applications/Docker.app") or shutil.which("docker") is not None
-
-
 def check_vibe_installed() -> bool:
     """Check if Mistral Vibe CLI is installed"""
     return shutil.which("vibe") is not None
-
-
-def is_docker_running() -> bool:
-    """Check if Docker daemon is active"""
-    # docker info is a reliable way to check if daemon is responsive
-    try:
-        result = subprocess.run(
-            ["docker", "info"], check=False, capture_output=True, text=True, timeout=5
-        )
-        return result.returncode == 0
-    except Exception:
-        return False
 
 
 def run_command(cmd: list, timeout: int = 300) -> bool:
@@ -111,46 +94,6 @@ def ensure_redis(force_check: bool = False):
         return False
 
 
-def ensure_docker(force_check: bool = False):
-    """Ensure Docker Desktop is installed and running.
-    On Mac, start means launching the app.
-    """
-    flag_file = CONFIG_ROOT / ".docker_ready"
-    first_run = not flag_file.exists() or force_check
-
-    if not first_run:
-        if is_docker_running():
-            return True
-        logger.info("[Services] Docker not responding, attempting to launch...")
-    else:
-        logger.info("[Services] Performing first-run Docker check/update...")
-
-    if not is_brew_available():
-        logger.warning("[Services] Homebrew not found. Cannot automate Docker management.")
-        return False
-
-    installed = check_docker_installed()
-
-    if not installed:
-        logger.info("[Services] Docker not found. Installing Docker Desktop via Homebrew Cask...")
-        # Note: Brew might ask for password via Mac secondary dialog
-        if run_command(["brew", "install", "--cask", "docker"]):
-            logger.info("[Services] ✓ Docker Desktop installed.")
-        else:
-            logger.error("[Services] ✗ Failed to install Docker Desktop.")
-            return False
-    elif first_run:
-        logger.info("[Services] Checking for Docker updates...")
-        # Try to upgrade, ignore errors if it fails due to being already up to date
-        subprocess.run(["brew", "upgrade", "--cask", "docker"], check=False, capture_output=True)
-
-    if not is_docker_running():
-        logger.warning("[Services] Docker is not running. Skipping auto-launch to avoid Hypervisor errors.")
-        return False
-        
-    if first_run:
-        flag_file.touch()
-    return True
 
 
 def ensure_postgres(force_check: bool = False) -> bool:
@@ -292,8 +235,9 @@ def ensure_vibe(force_check: bool = False) -> bool:
     logger.info("[Services] Installing Mistral Vibe CLI via official script...")
     try:
         # Using shell=True safely here as the command is hardcoded and trusted
+        # Official install: https://help.mistral.ai/en/articles/496007-get-started-with-mistral-vibe
         result = subprocess.run(
-            "curl -fsSL https://get.vibe.sh | sh",
+            "curl -LsSf https://mistral.ai/vibe/install.sh | bash",
             check=False,
             shell=True,
             capture_output=True,
@@ -328,11 +272,6 @@ async def ensure_all_services(force_check: bool = False):
         redis_ok = await asyncio.to_thread(ensure_redis, force_check)
         ServiceStatus.details["redis"] = "ok" if redis_ok else "failed"
 
-        # Check Docker (blocking and potentially slow)
-        ServiceStatus.status_message = "Ensuring Docker is active (may take time)..."
-        docker_ok = await asyncio.to_thread(ensure_docker, force_check)
-        ServiceStatus.details["docker"] = "ok" if docker_ok else "failed"
-
         # Check Database (respects config: SQLite or PostgreSQL)
         ServiceStatus.status_message = "Checking Database..."
         db_ok = await asyncio.to_thread(ensure_database, force_check)
@@ -351,16 +290,16 @@ async def ensure_all_services(force_check: bool = False):
             # Critical services are ready
             ServiceStatus.is_ready = True
             
-            if docker_ok and vibe_ok:
+            if vibe_ok:
                  ServiceStatus.status_message = "All systems operational"
                  logger.info("[Services] All system services are ready.")
             else:
-                 ServiceStatus.status_message = "System ready (Vibe/Docker limited)"
-                 logger.warning("[Services] System started with limited functionality (No Docker/Vibe).")
+                 ServiceStatus.status_message = "System ready (Vibe optional)"
+                 logger.warning("[Services] System started without Vibe CLI (optional feature).")
         else:
             ServiceStatus.status_message = "Critical services failed (Redis/DB)"
             logger.warning(
-                f"[Services] Readiness: Redis={redis_ok}, Docker={docker_ok} (Optional), DB={db_ok}",
+                f"[Services] Readiness: Redis={redis_ok}, DB={db_ok}",
             )
 
     except Exception as e:

@@ -43,7 +43,6 @@ class SetupStep(Enum):
     CHECK_SYSTEM = "check_system"
     CHECK_PERMISSIONS = "check_permissions"
     INSTALL_HOMEBREW = "install_homebrew"
-    INSTALL_DOCKER = "install_docker"
     INSTALL_REDIS = "install_redis"
     INSTALL_POSTGRES = "install_postgres"
     START_SERVICES = "start_services"
@@ -347,14 +346,6 @@ class FirstRunInstaller:
             )
             return False
 
-    def install_docker(self) -> bool:
-        """Install Docker Desktop"""
-        return self._install_brew_package(
-            SetupStep.INSTALL_DOCKER,
-            "docker",
-            cask=True,
-            check_cmd="docker",
-        )
 
     def install_redis(self) -> bool:
         """Install Redis"""
@@ -370,8 +361,8 @@ class FirstRunInstaller:
 
         self._report(SetupStep.INSTALL_VIBE, 0.3, "Встановлення Vibe CLI...")
 
-        # Install via official script
-        cmd = "curl -fsSL https://get.vibe.sh | sh"
+        # Install via official script (https://help.mistral.ai/en/articles/496007-get-started-with-mistral-vibe)
+        cmd = "curl -LsSf https://mistral.ai/vibe/install.sh | bash"
         code, _stdout, stderr = _run_command_async(cmd, timeout=300)
 
         if code == 0:
@@ -684,7 +675,6 @@ class FirstRunInstaller:
             return False
 
         # 4. Install services (important but can continue)
-        self.install_docker()
         self.install_redis()
         self.install_vibe()
         # self.install_postgres() # Перейшли на SQLite, установка PostgreSQL більше не є обов'язковою
