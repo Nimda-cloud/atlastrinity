@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Atlas - The Strategist
 
 Role: Strategic analysis, plan formulation, task delegation

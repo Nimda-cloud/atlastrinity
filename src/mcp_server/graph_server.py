@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 # Setup paths (for standalone run if needed)
 import os
 import sys

@@ -1,10 +1,19 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import re
 import shutil
 import subprocess
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
-from typing import Union, Optional, Tuple, List
+from typing import Union
 
 
-def _run_cmd(cmd: List[str], timeout: int = 10) -> Tuple[int, str, str]:
+def _run_cmd(cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
     try:
         res = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=timeout)
         return res.returncode, res.stdout or "", res.stderr or ""
@@ -12,7 +21,7 @@ def _run_cmd(cmd: List[str], timeout: int = 10) -> Tuple[int, str, str]:
         return 1, "", str(e)
 
 
-def _parse_package_arg(arg: str) -> Optional[Tuple[str, str]]:
+def _parse_package_arg(arg: str) -> tuple[str, str] | None:
     """Parse strings like 'pkg@1.2.3' or '@scope/pkg@1.2.3' and return (pkg, ver).
     Returns None if no explicit version present or arg is a file/path.
     """
@@ -39,9 +48,7 @@ def npm_package_exists(pkg: str, ver: str) -> bool:
     return rc == 0 and bool(out.strip())
 
 
-import urllib.error
-import urllib.parse
-import urllib.request
+
 
 
 def npm_registry_has_version(pkg: str, ver: str) -> bool:
@@ -60,8 +67,6 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = resp.read()
-                import json
-
                 meta = json.loads(data.decode())
                 # Check dist-tags and versions
                 dist = meta.get("dist-tags", {}) or {}
@@ -97,9 +102,7 @@ def bunx_package_exists(pkg: str, ver: str) -> bool:
     return npm_registry_has_version(pkg, ver)
 
 
-import importlib.util
-import re
-import sys
+
 
 
 def python_module_importable(module: str) -> bool:
@@ -119,12 +122,12 @@ def python_module_importable(module: str) -> bool:
     return rc == 0
 
 
-def _extract_modules_from_python_code(code: str) -> List[str]:
+def _extract_modules_from_python_code(code: str) -> list[str]:
     """Rudimentary parser to extract top-level module names from a python code snippet.
 
     Captures patterns like `from pkg.subpkg import something` and `import pkg, pkg2`.
     """
-    mods: List[str] = []
+    mods: list[str] = []
     # from <module> import ...
     for m in re.findall(r"\bfrom\s+([a-zA-Z0-9_\.]+)\b", code):
         mods.append(m)
@@ -156,7 +159,7 @@ def check_package_arg_for_tool(arg: str, tool_cmd: str = "npx") -> bool:
     return True
 
 
-def check_system_limits() -> List[str]:
+def check_system_limits() -> list[str]:
     """Check OS process limits and return list of human-readable issues found.
 
     Uses resource.getrlimit(RLIMIT_NPROC) where available and sysctl values on macOS
@@ -204,10 +207,8 @@ def check_system_limits() -> List[str]:
     return issues
 
 
-def scan_mcp_config_for_package_issues(config_path: Path) -> List[str]:
+def scan_mcp_config_for_package_issues(config_path: Path) -> list[str]:
     """Given a path to MCP config JSON, return list of issue strings found."""
-    import json
-
     issues: list[str] = []
     try:
         with open(config_path, encoding="utf-8") as f:

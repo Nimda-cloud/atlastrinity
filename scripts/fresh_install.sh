@@ -158,7 +158,10 @@ if [ -d "$HOME/.config/atlastrinity" ]; then
         echo "✅ ~/.config/atlastrinity видалено (Models збережено)"
     else
         rm -rf "$HOME/.config/atlastrinity"
+        # Also cleanup the often-auto-created stanza_resources in Home if it exists
+        rm -rf "$HOME/stanza_resources"
         echo "✅ ~/.config/atlastrinity видалено (Models теж видалено)"
+        echo "✅ ~/stanza_resources видалено"
     fi
 else
     echo "ℹ️  ~/.config/atlastrinity не існує"
