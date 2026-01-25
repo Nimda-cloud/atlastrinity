@@ -243,14 +243,20 @@ async def analyze_dataset(
             for i in range(len(corr_matrix.columns)):
                 for j in range(i + 1, len(corr_matrix.columns)):
                     val = corr_matrix.iloc[i, j]
-                    if abs(val) > 0.7:
-                        strong_corrs.append(
-                            {
-                                "col1": corr_matrix.columns[i],
-                                "col2": corr_matrix.columns[j],
-                                "correlation": round(val, 4),
-                            }
-                        )
+                    # Handle potential Timedelta or other non-float types
+                    try:
+                        v_any: Any = val
+                        f_val = float(v_any)
+                        if abs(f_val) > 0.7:
+                            strong_corrs.append(
+                                {
+                                    "col1": str(corr_matrix.columns[i]),
+                                    "col2": str(corr_matrix.columns[j]),
+                                    "correlation": round(f_val, 4),
+                                }
+                            )
+                    except (TypeError, ValueError):
+                        continue
             results["strong_correlations"] = strong_corrs
         else:
             results["correlation_matrix"] = {}
@@ -263,12 +269,15 @@ async def analyze_dataset(
         for col in numeric_cols[:10]:  # Limit to first 10
             series = df[col].dropna()
             if len(series) > 0:
+                # Cast to Any to satisfy Pyrefly's strict type checking for pandas series
+                val_skew: Any = series.skew()
+                val_kurt: Any = series.kurtosis()
                 distributions[col] = {
                     "mean": round(float(series.mean()), 4),
                     "median": float(series.median()),
                     "std": round(float(series.std()), 4),
-                    "skewness": round(float(series.skew()), 4),
-                    "kurtosis": round(float(series.kurtosis()), 4),
+                    "skewness": round(float(val_skew), 4) if not pd.isna(val_skew) else 0.0,
+                    "kurtosis": round(float(val_kurt), 4) if not pd.isna(val_kurt) else 0.0,
                     "percentiles": {
                         "25%": float(series.quantile(0.25)),
                         "50%": float(series.quantile(0.50)),
@@ -352,8 +361,9 @@ async def generate_statistics(
                 grouped[numeric_cols].agg(["count", "mean", "std", "min", "max"]).to_dict()
             )
         elif statistics_type == "frequency":
-            results["group_counts"] = grouped.size().to_dict()
-            results["group_percentages"] = (grouped.size() / len(df) * 100).round(2).to_dict()
+            size: Any = grouped.size()
+            results["group_counts"] = size.to_dict()
+            results["group_percentages"] = (size / len(df) * 100).round(2).to_dict()
     else:
         # Overall statistics
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -366,10 +376,14 @@ async def generate_statistics(
             for col in numeric_cols[:10]:
                 series = df[col].dropna()
                 if len(series) > 0:
+                    val_var: Any = series.var()
+                    val_skew: Any = series.skew()
+                    val_kurt: Any = series.kurtosis()
+                    
                     results.setdefault("additional", {})[col] = {
-                        "variance": round(float(series.var()), 4),
-                        "skewness": round(float(series.skew()), 4),
-                        "kurtosis": round(float(series.kurtosis()), 4),
+                        "variance": round(float(val_var), 4) if not pd.isna(val_var) else 0.0,
+                        "skewness": round(float(val_skew), 4) if not pd.isna(val_skew) else 0.0,
+                        "kurtosis": round(float(val_kurt), 4) if not pd.isna(val_kurt) else 0.0,
                         "coefficient_of_variation": round(
                             float(series.std() / series.mean() * 100), 2
                         )
@@ -452,29 +466,31 @@ async def create_visualization(
         if visualization_type == "histogram":
             if x_axis and x_axis in df.columns:
                 df[x_axis].hist(ax=ax, bins=30, edgecolor="black")
-                ax.set_xlabel(x_axis)
+                ax.set_xlabel(str(x_axis))
                 ax.set_ylabel("Frequency")
             else:
                 # Histogram of first numeric column
                 numeric_cols = df.select_dtypes(include=[np.number]).columns
                 if len(numeric_cols) > 0:
-                    df[numeric_cols[0]].hist(ax=ax, bins=30, edgecolor="black")
-                    ax.set_xlabel(numeric_cols[0])
+                    col_name = numeric_cols[0]
+                    df[col_name].hist(ax=ax, bins=30, edgecolor="black")
+                    ax.set_xlabel(str(col_name))
                     ax.set_ylabel("Frequency")
 
         elif visualization_type == "scatter":
             if x_axis and y_axis and x_axis in df.columns and y_axis in df.columns:
                 ax.scatter(df[x_axis], df[y_axis], alpha=0.6)
-                ax.set_xlabel(x_axis)
-                ax.set_ylabel(y_axis)
+                ax.set_xlabel(str(x_axis))
+                ax.set_ylabel(str(y_axis))
             else:
                 return {"success": False, "error": "x_axis and y_axis required for scatter plot"}
+
 
         elif visualization_type == "bar":
             if x_axis and x_axis in df.columns:
                 value_counts = df[x_axis].value_counts().head(20)
                 value_counts.plot(kind="bar", ax=ax)
-                ax.set_xlabel(x_axis)
+                ax.set_xlabel(str(x_axis))
                 ax.set_ylabel("Count")
                 plt.xticks(rotation=45, ha="right")
             else:
@@ -687,7 +703,8 @@ async def data_aggregation(
         result = df.groupby(group_by).size().reset_index(name="count")
     else:
         # Build aggregation dict
-        agg_dict = {col: aggregation_methods for col in numeric_cols}
+        # Cast to Any to satisfy pandas type hints which are sometimes overly strict
+        agg_dict: Any = {col: aggregation_methods for col in numeric_cols}
         result = df.groupby(group_by).agg(agg_dict)
 
         # Flatten column names
@@ -742,15 +759,13 @@ async def interpret_column_data(
         series = df[col_name]
         value_counts = series.value_counts()
 
-        interpretation = {
+        interpretation: dict[str, Any] = {
             "column_name": col_name,
             "data_type": str(series.dtype),
             "total_values": len(series),
             "null_count": int(series.isna().sum()),
             "unique_count": int(series.nunique()),
-            "unique_values_with_counts": [[str(k), int(v)] for k, v in value_counts.items()][
-                :100
-            ],  # Limit to top 100
+            "unique_values_with_counts": [[str(k), int(v)] for k, v in value_counts.items()][:100],
         }
 
         interpretations.append(interpretation)

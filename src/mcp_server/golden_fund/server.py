@@ -216,6 +216,9 @@ async def add_knowledge_node(
         return json.dumps({"success": False, "error": transform_result.error})
 
     # Store in vector DB
+    if transform_result.data is None:
+        return json.dumps({"success": False, "error": "Transformation produced no data"})
+    
     store_result = vector_store.store(transform_result.data)
 
     if not store_result.success:
@@ -284,7 +287,7 @@ async def analyze_and_store(
             return json.dumps({"success": False, "error": f"Unsupported format: {suffix}"})
 
         # Generate analysis
-        analysis = {
+        analysis: dict[str, Any] = {
             "dataset_name": dataset_name,
             "file_path": str(path),
             "row_count": len(df),
@@ -304,20 +307,29 @@ async def analyze_and_store(
 
         elif analysis_type == "correlation":
             if len(numeric_cols) > 1:
-                corr = df[numeric_cols].corr()
+                # Cast df[numeric_cols] to Any to avoid Series/float inference confusion
+                df_numeric: Any = df[numeric_cols]
+                corr: Any = df_numeric.corr()
                 # Find strong correlations
                 strong = []
                 for i in range(len(corr.columns)):
                     for j in range(i + 1, len(corr.columns)):
                         val = corr.iloc[i, j]
-                        if abs(val) > 0.7:
-                            strong.append(
-                                {
-                                    "col1": corr.columns[i],
-                                    "col2": corr.columns[j],
-                                    "correlation": round(val, 4),
-                                }
-                            )
+                        # Handle potential Timedelta or other non-float types from pandas corr
+                        try:
+                            # Cast val to Any to satisfy Pyrefly's strict type checking
+                            v_any: Any = val
+                            f_val = float(v_any)
+                            if abs(f_val) > 0.7:
+                                strong.append(
+                                    {
+                                        "col1": str(corr.columns[i]),
+                                        "col2": str(corr.columns[j]),
+                                        "correlation": round(f_val, 4),
+                                    }
+                                )
+                        except (TypeError, ValueError):
+                            continue
                 analysis["strong_correlations"] = strong
 
         elif analysis_type == "distribution":
@@ -325,11 +337,12 @@ async def analyze_and_store(
             for col in numeric_cols[:5]:
                 series = df[col].dropna()
                 if len(series) > 0:
-                    analysis["distributions"][col] = {
+                    dist_meta: dict[str, Any] = {
                         "mean": round(float(series.mean()), 4),
                         "median": float(series.median()),
                         "std": round(float(series.std()), 4),
                     }
+                    analysis["distributions"][col] = dist_meta
 
         # Store in Golden Fund
         store_result = vector_store.store(analysis)
