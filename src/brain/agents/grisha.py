@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Grisha - The Visor/Auditor
 
 Role: Result verification via Vision, Security control

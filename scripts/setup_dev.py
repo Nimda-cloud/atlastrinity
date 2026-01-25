@@ -68,6 +68,8 @@ DIRS = {
     "mcp": CONFIG_ROOT / "mcp",
     "workspace": CONFIG_ROOT / "workspace",
     "vibe_workspace": CONFIG_ROOT / "vibe_workspace",
+    "stanza": CONFIG_ROOT / "models" / "stanza",
+    "huggingface": CONFIG_ROOT / "models" / "huggingface",
 }
 
 
@@ -659,7 +661,13 @@ def download_models():
 
     stt_dir = DIRS["stt_models"]
     tts_dir = DIRS["tts_models"]
+    stanza_dir = DIRS["stanza"]
+    hf_dir = DIRS["huggingface"]
     
+    # Set environment variables for the process
+    os.environ["STANZA_RESOURCES_DIR"] = str(stanza_dir)
+    os.environ["HF_HOME"] = str(hf_dir)
+
     # Check if models already exist
     stt_exists = (stt_dir / "model.bin").exists() or (stt_dir / model_name / "model.bin").exists()
     tts_exists = any(tts_dir.iterdir()) if tts_dir.exists() else False
@@ -684,8 +692,9 @@ def download_models():
     if choice in ["a", "stt"]:
         try:
             print_info(f"Завантаження Faster-Whisper {model_name}...")
+            env = os.environ.copy()
             cmd = [venv_python, "-c", f"from faster_whisper import WhisperModel; WhisperModel('{model_name}', device='cpu', compute_type='int8', download_root='{stt_dir}'); print('STT OK')"]
-            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=900)
+            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=900, env=env)
             print_success(f"STT модель {model_name} готова")
         except Exception as e:
             print_warning(f"Помилка завантаження STT: {e}")
@@ -698,14 +707,20 @@ def download_models():
 import os, sys
 from pathlib import Path
 from ukrainian_tts.tts import TTS
+
+# Set resources dir for stanza which is used under the hood
+os.environ['STANZA_RESOURCES_DIR'] = '{stanza_dir}'
+os.environ['HF_HOME'] = '{hf_dir}'
+
 cache_dir = Path('{tts_dir}')
 cache_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(str(cache_dir))
 TTS(cache_folder='.', device='cpu')
 print('TTS OK')
 """
+            env = os.environ.copy()
             cmd = [venv_python, "-c", python_script]
-            subprocess.run(cmd, check=True, timeout=600)
+            subprocess.run(cmd, check=True, timeout=600, env=env)
             print_success("TTS моделі готові")
         except Exception as e:
             print_warning(f"Помилка завантаження TTS: {e}")
@@ -1022,7 +1037,7 @@ def main():
     print("  2. Запустіть систему: npm run dev")
     print()
 
-    print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else 13}):")
+    print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else 15}):")
     mcp_info = [
         ("memory", "Граф знань & Long-term Memory (Python)"),
         ("macos-use", "Нативний контроль macOS + Термінал (Swift)"),

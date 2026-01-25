@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Tetyana - The Executor
 
 Role: macOS interaction, executing atomic plan steps
