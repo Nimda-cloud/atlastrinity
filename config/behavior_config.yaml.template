@@ -341,6 +341,7 @@ tool_routing:
       - duckduckgo_search
       - search_web
       - web_search
+      - business_registry_search
     priority_server: duckduckgo-search
     fallback_server: puppeteer
     special_routing:

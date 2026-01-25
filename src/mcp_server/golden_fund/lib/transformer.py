@@ -12,6 +12,14 @@ from pydantic import BaseModel, Field, ValidationError
 logging.basicConfig(level=logging.INFO, encoding='utf-8')
 logger = logging.getLogger("golden_fund.transformer")
 
+# Import validation module for integration
+try:
+    from .validation import DataValidator, ValidationResult
+except ImportError:
+    # Fallback for when validation module is not available
+    DataValidator = None
+    ValidationResult = None
+
 
 class TransformResult:
     def __init__(self, success: bool, data: Any | None = None, error: str | None = None):
@@ -37,10 +45,11 @@ class UnifiedSchema(BaseModel):
 class DataTransformer:
     def __init__(self):
         self.schema = UnifiedSchema
+        self.validator = DataValidator() if DataValidator else None
         logger.info("DataTransformer initialized")
 
     def transform(
-        self, data: dict[str, Any] | list[dict[str, Any]], source_format: str = "unknown"
+        self, data: dict[str, Any] | list[dict[str, Any]], source_format: str = "unknown", validate_completeness: bool = False
     ) -> TransformResult:
         try:
             if isinstance(data, list):
@@ -49,6 +58,19 @@ class DataTransformer:
                     res = self._transform_item(item, source_format)
                     if res:
                         transformed.append(res)
+                
+                # Add validation checkpoint if requested
+                if validate_completeness and self.validator:
+                    validation_res = self.validator.validate_data_completeness(transformed, context="transformation")
+                    if not validation_res.success:
+                        logger.warning(f"Data completeness validation failed: {validation_res.error}")
+                        # Continue with transformed data but add warning
+                        return TransformResult(
+                            True, 
+                            data=transformed,
+                            error=f"Validation warning: {validation_res.error}"
+                        )
+                
                 return TransformResult(True, data=transformed)
             else:
                 res = self._transform_item(data, source_format)

@@ -10,6 +10,7 @@ from typing import Optional
 
 from ..lib.parser import DataParser
 from ..lib.scraper import DataScraper, ScrapeFormat
+from ..lib.validation import DataValidator
 
 logger = logging.getLogger("golden_fund.tools.ingest")
 
@@ -29,10 +30,11 @@ async def ingest_dataset(
     Args:
         url: URL to ingest
         type: 'web_page', 'api', or 'file'
-        process_pipeline: List of steps (e.g. ['parse', 'vectorize'])
+        process_pipeline: List of steps (e.g. ['parse', 'vectorize', 'validate'])
     """
     scraper = DataScraper()
     parser = DataParser()
+    validator = DataValidator()
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
     logger.info(f"Starting ingestion run {run_id} for {url} ({type})")
@@ -79,6 +81,18 @@ async def ingest_dataset(
         parse_res = parser.parse(raw_file)
         if parse_res.success:
             summary += f" Parsed {len(parse_res.data) if isinstance(parse_res.data, list) else 'content'} records."
+            
+            # 4. Validation Checkpoint - Data Completeness
+            if "validate" in process_pipeline:
+                validation_res = validator.validate_data_completeness(
+                    parse_res.data, 
+                    context=f"ingestion_{run_id}"
+                )
+                if validation_res.success:
+                    summary += f" Validation passed: Found {validation_res.metadata.get('valid_employees_found', 0)} employees with roles."
+                else:
+                    summary += f" Validation warning: {validation_res.error}"
+                    logger.warning(f"Data validation issue: {validation_res.error}")
         else:
             summary += f" Parsing failed: {parse_res.error}"
 
