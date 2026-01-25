@@ -1,0 +1,145 @@
+🧹 ==========================================
+   FRESH INSTALL SIMULATION
+   Це видалить ВСІ локальні налаштування!
+==========================================
+
+DEBUG: INTERACTIVE=false msg=This will DELETE ALL local configuration and environments. Continue?
+🛡️  Backup Check
+DEBUG: INTERACTIVE=false msg=Create database backup before wiping?
+📦 Backing up databases...
+
+[95m[1m╔══════════════════════════════════════════╗[0m
+[95m[1m║  AtlasTrinity Full Stack Dev Setup      ║[0m
+[95m[1m╚══════════════════════════════════════════╝[0m
+
+
+[1m[94m[SETUP][0m Створення резервних копій баз даних...
+[93m⚠[0m SQLite база не знайдена, пропускаємо.
+[93m⚠[0m ChromaDB не знайдена, пропускаємо.
+[92m✓[0m Golden Fund сховище збережено: /Volumes/My Shared Files/atlastrinity/backups/databases/golden_fund
+[96mℹ[0m Резервні копії збережено в: /Volumes/My Shared Files/atlastrinity/backups/databases
+[96mℹ[0m Тепер ви можете зробити: git add backups/ && git commit -m 'backup: database snapshot'
+✅ Backup completed successfully.
+
+📦 Крок 1/6: Видалення Python venv...
+ℹ️  .venv не існує
+
+📦 Крок 2/8: Видалення node_modules + lockfile...
+ℹ️  node_modules не існує
+ℹ️  package-lock.json не існує
+
+📦 Крок 3/8: Видалення Python cache...
+✅ Python cache видалено
+
+📦 Крок 4/8: Видалення build артефактів...
+✅ Build artifacts видалено
+
+📦 Крок 5/8: Видалення Swift компіляції...
+ℹ️  Swift .build не існує
+
+📦 Крок 6/8: Видалення глобальної конфігурації...
+
+📦 Крок 6/8: Видалення глобальної конфігурації...
+ℹ️  ~/.config/atlastrinity не існує
+
+📦 Крок 7/8: Видалення Electron cache...
+✅ Electron userData видалено
+
+📦 Крок 8/8: Очищення логів та кешів...
+✅ Логи та .DS_Store видалено
+
+🎉 ==========================================
+   ОЧИЩЕННЯ ЗАВЕРШЕНО!
+==========================================
+
+Тепер запустіть:
+  1️⃣  python3.12 scripts/setup_dev.py  (або просто python3)
+  2️⃣  npm run dev
+
+DEBUG: INTERACTIVE=false msg=Бажаєте запустити налаштування (setup_dev.py) прямо зараз?
+🚀 Запуск python3.12 scripts/setup_dev.py --yes...
+swift-driver version: 1.127.14.1 #=#=#                                                                          ##O#-#                                                                         ##O=#  #                                                                                                                                                  0.1%##                                                                         3.7%##############                                                            20.4%#################################                                         47.1%#######################################################                   77.5%######################################################################## 100.0%
+bun was installed successfully to ~/.bun/bin/bun 
+
+Added "~/.bun/bin" to $PATH in "~/.zshrc" 
+
+To get started, run: 
+
+  exec /bin/zsh 
+  bun --help 
+
+[95m[1m╔══════════════════════════════════════════╗[0m
+[95m[1m║  AtlasTrinity Full Stack Dev Setup      ║[0m
+[95m[1m╚══════════════════════════════════════════╝[0m
+
+[96mℹ[0m Non-interactive mode ENABLED.
+
+[1m[94m[SETUP][0m Перевірка версії Python (ціль: 3.12.12)...
+[92m✓[0m Python 3.12.12 знайдено
+
+[1m[94m[SETUP][0m Налаштування глобальних директорій...
+[92m✓[0m Створено config: /Users/hawk/.config/atlastrinity
+[92m✓[0m Створено logs: /Users/hawk/.config/atlastrinity/logs
+[92m✓[0m Створено memory: /Users/hawk/.config/atlastrinity/memory
+[92m✓[0m Створено screenshots: /Users/hawk/.config/atlastrinity/screenshots
+[92m✓[0m Створено tts_models: /Users/hawk/.config/atlastrinity/models/tts
+[92m✓[0m Створено stt_models: /Users/hawk/.config/atlastrinity/models/faster-whisper
+[92m✓[0m Створено mcp: /Users/hawk/.config/atlastrinity/mcp
+[92m✓[0m Створено workspace: /Users/hawk/.config/atlastrinity/workspace
+[92m✓[0m Створено vibe_workspace: /Users/hawk/.config/atlastrinity/vibe_workspace
+[96mℹ[0m Виявлено резервні копії баз даних у репозиторії...
+
+[1m[94m[SETUP][0m Відновлення баз даних з резервних копій...
+[92m✓[0m SQLite база відновлена: /Users/hawk/.config/atlastrinity/atlastrinity.db
+[92m✓[0m ChromaDB відновлена: /Users/hawk/.config/atlastrinity/memory
+[92m✓[0m Golden Fund сховище відновлено: /Volumes/My Shared Files/atlastrinity/data/golden_fund
+[92m✓[0m Бази даних успішно відновлено!
+
+[1m[94m[SETUP][0m Перевірка базових інструментів (Brew, Python, Node, Bun)...
+[92m✓[0m Python 3.12 знайдено
+[92m✓[0m Node знайдено (v22.22.0)
+[93m⚠[0m bun НЕ знайдено
+[92m✓[0m swift знайдено (Apple Swift version 6.2.3 (swiftlang-6.2.3.3.21 clang-1700.6.3.2))
+[92m✓[0m npm знайдено (10.9.4)
+[93m⚠[0m Vibe CLI не знайдено! (Буде встановлено нижче)
+[92m✓[0m oxlint знайдено (Version: 1.41.0)
+[92m✓[0m knip знайдено (5.82.1)
+[93m⚠[0m ruff НЕ знайдено
+[93m⚠[0m pyrefly НЕ знайдено
+[96mℹ[0m Bun не знайдено. Встановлення Bun...
+[92m✓[0m Bun встановлено
+[96mℹ[0m Vibe CLI не знайдено. Встановлення Vibe...
+[92m✓[0m Vibe CLI встановлено (via curl)
+
+[1m[94m[SETUP][0m Налаштування Python venv...
+[92m✓[0m Venv вже існує
+
+[1m[94m[SETUP][0m Перевірка та встановлення системних залежностей (Homebrew)...
+[92m✓[0m redis вже встановлено
+[92m✓[0m google-chrome вже встановлено (виявлено локально)
+
+[1m[94m[SETUP][0m Запуск сервісів (Redis)...
+[92m✓[0m redis вже запущено
+
+[1m[94m[SETUP][0m MCP package preflight: checking specified package versions...
+[93m⚠[0m Detected potential MCP package issues:
+[93m⚠[0m   - kern.maxproc is low: 2000 (global max procs). Consider increasing via sysctl)
+[96mℹ[0m Continuing setup despite precheck issues. Set FAIL_ON_MCP_PRECHECK=1 to fail on these errors.
+
+[1m[94m[SETUP][0m Встановлення залежностей...
+Traceback (most recent call last):
+  File "/Volumes/My Shared Files/atlastrinity/scripts/setup_dev.py", line 1071, in <module>
+    main()
+  File "/Volumes/My Shared Files/atlastrinity/scripts/setup_dev.py", line 987, in main
+    if not install_deps():
+           ^^^^^^^^^^^^^^
+  File "/Volumes/My Shared Files/atlastrinity/scripts/setup_dev.py", line 483, in install_deps
+    subprocess.run(
+  File "/opt/homebrew/Cellar/python@3.12/3.12.12_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.12_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/opt/homebrew/Cellar/python@3.12/3.12.12_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+OSError: [Errno 22] Invalid argument: '/Volumes/My Shared Files/atlastrinity/.venv/bin/python'
