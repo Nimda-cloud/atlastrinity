@@ -145,26 +145,9 @@ def ensure_docker(force_check: bool = False):
         subprocess.run(["brew", "upgrade", "--cask", "docker"], check=False, capture_output=True)
 
     if not is_docker_running():
-        logger.info("[Services] Launching Docker Desktop app...")
-        run_command(["open", "-a", "Docker"])
-
-        # Wait for Docker to start (it can take up to 2 minutes)
-        import time
-
-        max_retries = 45  # ~90 seconds
-        for i in range(max_retries):
-            if is_docker_running():
-                logger.info("[Services] ✓ Docker is now active.")
-                if first_run:
-                    flag_file.touch()
-                return True
-            if i % 5 == 0:
-                logger.info(f"[Services] Waiting for Docker to wake up... ({i * 2}s)")
-            time.sleep(2)
-
-        logger.error("[Services] ✗ Docker failed to start within timeout.")
+        logger.warning("[Services] Docker is not running. Skipping auto-launch to avoid Hypervisor errors.")
         return False
-
+        
     if first_run:
         flag_file.touch()
     return True
@@ -364,14 +347,20 @@ async def ensure_all_services(force_check: bool = False):
         vibe_ok = await asyncio.to_thread(ensure_vibe, force_check)
         ServiceStatus.details["vibe"] = "ok" if vibe_ok else "failed"
 
-        if redis_ok and docker_ok and db_ok and vibe_ok:
+        if redis_ok and db_ok:
+            # Critical services are ready
             ServiceStatus.is_ready = True
-            ServiceStatus.status_message = "System services ready"
-            logger.info("[Services] All system services are ready.")
+            
+            if docker_ok and vibe_ok:
+                 ServiceStatus.status_message = "All systems operational"
+                 logger.info("[Services] All system services are ready.")
+            else:
+                 ServiceStatus.status_message = "System ready (Vibe/Docker limited)"
+                 logger.warning("[Services] System started with limited functionality (No Docker/Vibe).")
         else:
-            ServiceStatus.status_message = "Some services failed to start"
+            ServiceStatus.status_message = "Critical services failed (Redis/DB)"
             logger.warning(
-                f"[Services] Readiness: Redis={redis_ok}, Docker={docker_ok}, DB={db_ok}",
+                f"[Services] Readiness: Redis={redis_ok}, Docker={docker_ok} (Optional), DB={db_ok}",
             )
 
     except Exception as e:

@@ -207,14 +207,14 @@ class AgentPrompts:
     Shared Context (for correct paths and global situation): {context_info}
 
     DATABASE AUDIT (Authority):
-    If Tetyana's report is ambiguous or if this step is critical, you MUST use 'query_db' tool to see exactly what happened in the background.
+    If Tetyana's report is ambiguous or if this step is critical, you MUST use 'vibe_check_db' tool (on 'vibe' server) to see exactly what happened in the background.
     - Check 'tool_executions' for the exact command, arguments, and full untruncated result of Tetyana's tool calls.
     - Example: SELECT * FROM tool_executions WHERE step_id = '{step_id}' ORDER BY created_at DESC;
 
     Verification History (Tool actions taken during this verification): {history}
 
     PRIORITY ORDER FOR VERIFICATION:
-    1. **TECHNICAL EVIDENCE (DB LOGS)**: query the 'tool_executions' table. Did the tool confirm success?
+    1. **TECHNICAL EVIDENCE (DB LOGS)**: query the 'tool_executions' table via `vibe_check_db`. Did the tool confirm success?
     2. **EXPERT TRUTH (GOLDEN FUND)**: Use 'search_golden_fund' or 'probe_entity' to cross-reference with historical or verified data.
     3. **INDEPENDENT CHECK**: Use 'ls', 'grep', 'ps' to verify the side-effect exists.
     4. **VISUALS**: Screenshots as a last resort.
@@ -245,8 +245,8 @@ class AgentPrompts:
       "steps": [
         {{
           "step": "Check DB for tool execution",
-          "server": "memory",
-          "tool": "query_db",
+          "server": "vibe",
+          "tool": "vibe_check_db",
           "args": {{"query": "SELECT * FROM tool_executions WHERE step_id = '{step_id}'"}}
         }},
         {{
@@ -575,7 +575,7 @@ GUIDELINES:
 - If the result is system-level (files, processes, database, git), prioritize MCP tools (filesystem, terminal, etc.).
 - Favor 'macos-use' for everything related to macOS interface and system control.
 - You can combine tools if needed for multi-layer verification.
-- DATABASE AUDIT: You have full read access to the 'tool_executions' table. Use 'query_db' to see exactly what Tetyana did if it's not clear from the report.
+- DATABASE AUDIT: You have full read access to the 'tool_executions' table. Use 'vibe_check_db' to see exactly what Tetyana did if it's not clear from the report.
 - Be precise and efficient. Do not request screenshots if a simple 'ls' or 'pgrep' provides the proof.
 
 Output your internal verification strategy in English. Do NOT use markdown formatting for the strategy itself, just plain text."""
