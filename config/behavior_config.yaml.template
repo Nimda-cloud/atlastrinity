@@ -323,6 +323,7 @@ tool_routing:
     tool_mapping:
       browser: puppeteer_navigate
       puppeteer: puppeteer_navigate
+      navigate: puppeteer_navigate
     routing_rules:
       - pattern: 'navigate.*'
         server: puppeteer
@@ -536,6 +537,11 @@ tool_routing:
       - spotlight
       - applescript
       - osascript
+      - clipboard
+      - get_clipboard
+      - set_clipboard
+      - copy
+      - paste
     action_mapping:
       # Tool discovery and inspection
       list_tools_dynamic: macos-use_list_tools_dynamic
