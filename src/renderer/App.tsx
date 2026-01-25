@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import NeuralCore from './components/NeuralCore';
 import ExecutionLog from './components/ExecutionLog.tsx';
 import AgentStatus from './components/AgentStatus.tsx';
@@ -129,27 +129,31 @@ const App: React.FC = () => {
             );
           }
 
-          if (data.messages) {
-            setChatHistory(
-              data.messages.map(
-                (m: {
-                  agent: AgentName;
-                  text: string;
-                  timestamp: number | string;
-                  type: 'text' | 'voice';
-                }) => {
-                  let ts: Date;
-                  if (typeof m.timestamp === 'number') {
-                    ts = new Date(m.timestamp * 1000);
-                  } else if (typeof m.timestamp === 'string') {
-                    ts = new Date(m.timestamp);
-                  } else {
-                    ts = new Date();
+          if (data.messages && data.messages.length > 0) {
+            // Only update if message count changed to avoid flickering
+            setChatHistory((prev) => {
+              if (prev.length !== data.messages.length) {
+                return data.messages.map(
+                  (m: {
+                    agent: AgentName;
+                    text: string;
+                    timestamp: number | string;
+                    type: 'text' | 'voice';
+                  }) => {
+                    let ts: Date;
+                    if (typeof m.timestamp === 'number') {
+                      ts = new Date(m.timestamp * 1000);
+                    } else if (typeof m.timestamp === 'string') {
+                      ts = new Date(m.timestamp);
+                    } else {
+                      ts = new Date();
+                    }
+                    return { ...m, timestamp: ts };
                   }
-                  return { ...m, timestamp: ts };
-                }
-              )
-            );
+                );
+              }
+              return prev;
+            });
           }
         }
       }
@@ -272,14 +276,18 @@ const App: React.FC = () => {
     }
   };
 
-  // Derived messages for ChatPanel
-  const chatMessages = chatHistory.map((m, idx) => ({
-    id: `chat-${m.timestamp.getTime()}-${idx}`,
-    agent: m.agent,
-    text: m.text,
-    timestamp: m.timestamp,
-    type: m.type,
-  }));
+  // Derived messages for ChatPanel - memoized to prevent unnecessary re-renders
+  const chatMessages = useMemo(
+    () =>
+      chatHistory.map((m, idx) => ({
+        id: `chat-${m.timestamp.getTime()}-${idx}`,
+        agent: m.agent,
+        text: m.text,
+        timestamp: m.timestamp,
+        type: m.type,
+      })),
+    [chatHistory]
+  );
 
   return (
     <div className="app-container scanlines">

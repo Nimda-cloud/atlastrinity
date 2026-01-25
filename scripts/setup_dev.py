@@ -813,8 +813,8 @@ def backup_databases():
     else:
         print_warning("ChromaDB не знайдена, пропускаємо.")
 
-    # 3. Backup Golden Fund
-    gf_src = PROJECT_ROOT / "data" / "golden_fund"
+    # 3. Backup Golden Fund (from CONFIG_ROOT, not PROJECT_ROOT)
+    gf_src = CONFIG_ROOT / "data" / "golden_fund"
     if gf_src.exists():
         gf_dst = backup_dir / "golden_fund"
         if gf_dst.exists():
@@ -822,7 +822,7 @@ def backup_databases():
         shutil.copytree(gf_src, gf_dst)
         print_success(f"Golden Fund сховище збережено: {gf_dst}")
     else:
-        print_warning("Golden Fund дані не знайдені, пропускаємо.")
+        print_info(f"Golden Fund директорія ({gf_src}) ще не створена, пропускаємо.")
 
     print_info(f"Резервні копії збережено в: {backup_dir}")
     print_info(
@@ -855,12 +855,14 @@ def restore_databases():
         shutil.copytree(chroma_src, chroma_dst)
         print_success(f"ChromaDB відновлена: {chroma_dst}")
 
-    # 3. Restore Golden Fund
+    # 3. Restore Golden Fund (to CONFIG_ROOT, not PROJECT_ROOT)
     gf_src = backup_dir / "golden_fund"
     if gf_src.exists():
-        gf_dst = PROJECT_ROOT / "data" / "golden_fund"
+        gf_dst = CONFIG_ROOT / "data" / "golden_fund"
         if gf_dst.exists():
             shutil.rmtree(gf_dst)
+        # Ensure parent directory exists
+        gf_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(gf_src, gf_dst)
         print_success(f"Golden Fund сховище відновлено: {gf_dst}")
 

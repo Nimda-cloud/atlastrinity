@@ -19,7 +19,7 @@ interface ChatPanelProps {
   messages: Message[];
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
+const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
   // FILTER: Only voice messages and user messages
   const filteredMessages = messages.filter((m) => m.type === 'voice' || m.agent === 'USER');
 
@@ -163,6 +163,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ messages }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ChatPanel;
