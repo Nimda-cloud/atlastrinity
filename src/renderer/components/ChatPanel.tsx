@@ -165,4 +165,6 @@ const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
   );
 });
 
+ChatPanel.displayName = 'ChatPanel';
+
 export default ChatPanel;
