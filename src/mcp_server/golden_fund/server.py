@@ -10,7 +10,7 @@ from .tools.chain import recursive_enrichment
 from .tools.ingest import ingest_dataset as ingest_impl
 
 # Initialize logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, encoding='utf-8')
 logger = logging.getLogger("golden_fund")
 
 # Initialize storage
