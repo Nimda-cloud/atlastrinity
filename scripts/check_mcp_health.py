@@ -33,22 +33,35 @@ class Colors:
     ENDC = "\033[0m"
 
 
-async def check_mcp(output_json: bool = False):
+async def check_mcp(output_json: bool = False, show_tools: bool = False, check_all: bool = False):
     """Run MCP health checks for all servers."""
     from brain.config import ensure_dirs
     from brain.mcp_manager import mcp_manager
+    from brain.mcp_registry import SERVER_CATALOG
 
     ensure_dirs()
 
-    servers = mcp_manager.config.get("mcpServers", {})
+    config_servers = mcp_manager.config.get("mcpServers", {})
     results = {}
 
-    # Filter out comment keys and disabled servers
-    active_servers = [
-        (name, cfg)
-        for name, cfg in servers.items()
-        if not name.startswith("_") and not cfg.get("disabled", False)
-    ]
+    if check_all:
+        # Use full catalog as source
+        servers_to_check = []
+        for name in SERVER_CATALOG.keys():
+            if name.startswith("_"):
+                continue
+            # Use data from config if available, else catalog info
+            cfg = config_servers.get(name, {"disabled": False, "tier": 2})
+            if "name" not in cfg:
+                cfg["name"] = name
+            servers_to_check.append((name, cfg))
+    else:
+        # Filter out comment keys and disabled servers
+        servers_to_check = [
+            (name, cfg)
+            for name, cfg in config_servers.items()
+            if not name.startswith("_") and not cfg.get("disabled", False)
+        ]
 
     if not output_json:
         print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}")
@@ -59,8 +72,32 @@ async def check_mcp(output_json: bool = False):
         )
         print(f"  {'-' * 64}")
 
-    for server_name, server_config in active_servers:
+    for server_name, server_config in servers_to_check:
         tier = server_config.get("tier", 4)
+
+        # Special case for 'system' which is internal
+        if server_name == "system":
+            from brain.mcp_registry import get_tool_names_for_server
+            tools = get_tool_names_for_server("system")
+            results[server_name] = {
+                "status": "online",
+                "tier": tier,
+                "tools_count": len(tools),
+                "response_time_ms": 0,
+                "note": "Internal Trinity System",
+            }
+            if not output_json:
+                print(
+                    f"  {Colors.GREEN}✓{Colors.ENDC} {server_name:<22} "
+                    f"{Colors.BLUE}T{tier}{Colors.ENDC}     "
+                    f"{Colors.GREEN}ONLINE{Colors.ENDC}      "
+                    f"{len(tools):^6} "
+                    f"{0:>8}ms",
+                )
+                if show_tools:
+                    for name in sorted(tools):
+                        print(f"    • {name}")
+            continue
 
         try:
             import time
@@ -87,6 +124,10 @@ async def check_mcp(output_json: bool = False):
                         f"{len(tools):^6} "
                         f"{elapsed:>6.0f}ms",
                     )
+                    if show_tools:
+                        tool_names = sorted([t.name if hasattr(t, "name") else str(t) for t in tools])
+                        for name in tool_names:
+                            print(f"    • {name}")
             # check if it's connected
             elif server_name in mcp_manager.sessions:
                 results[server_name] = {
@@ -201,9 +242,11 @@ async def check_mcp(output_json: bool = False):
 def main():
     parser = argparse.ArgumentParser(description="Check MCP server health")
     parser.add_argument("--json", action="store_true", help="Output in JSON format for automation")
+    parser.add_argument("--tools", action="store_true", help="List all tools for each server")
+    parser.add_argument("--all", action="store_true", help="Probe all servers in registry, even if disabled")
     args = parser.parse_args()
 
-    asyncio.run(check_mcp(output_json=args.json))
+    asyncio.run(check_mcp(output_json=args.json, show_tools=args.tools, check_all=args.all))
 
 
 if __name__ == "__main__":
