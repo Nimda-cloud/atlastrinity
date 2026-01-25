@@ -162,7 +162,9 @@ def check_system_tools():
                 missing.append(tool)
             elif tool == "vibe":
                 print_warning(f"{tool} НЕ знайдено")
-                print_info("Встановіть Vibe CLI: curl -LsSf https://mistral.ai/vibe/install.sh | bash")
+                print_info(
+                    "Встановіть Vibe CLI: curl -LsSf https://mistral.ai/vibe/install.sh | bash"
+                )
             else:
                 # Python-specific tools are non-blocking here as they'll be installed later
                 print_info(f"{tool} поки не знайдено (буде встановлено у .venv пізніше)")

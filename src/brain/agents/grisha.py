@@ -384,9 +384,11 @@ Synthesize findings into a comprehensive validation verdict.
             logger.debug(f"[GRISHA] UI summarization failed (falling back to truncation): {e}")
             return raw_data[:3000]
 
-    async def _analyze_verification_goal(self, step: dict[str, Any], goal_context: str) -> dict[str, Any]:
+    async def _analyze_verification_goal(
+        self, step: dict[str, Any], goal_context: str
+    ) -> dict[str, Any]:
         """Phase 1: Use sequential-thinking to deeply understand verification goal and select tools.
-        
+
         Returns:
             {
                 "verification_purpose": str,  # Clear goal of what needs verification
@@ -397,7 +399,7 @@ Synthesize findings into a comprehensive validation verdict.
         step_action = step.get("action", "")
         expected_result = step.get("expected_result", "")
         step_id = step.get("id", "unknown")
-        
+
         query = f"""VERIFICATION GOAL ANALYSIS:
 
 Step {step_id}: {step_action}
@@ -418,22 +420,25 @@ TASK: Analyze this verification deeply:
 Output structured analysis."""
 
         logger.info(f"[GRISHA] Phase 1: Analyzing verification goal for step {step_id}...")
-        
+
         try:
             reasoning_result = await self.use_sequential_thinking(query, total_thoughts=3)
-            
+
             if not reasoning_result.get("success"):
                 logger.warning("[GRISHA] Sequential thinking failed, using fallback strategy")
                 return {
                     "verification_purpose": f"Verify that '{step_action}' was executed correctly",
                     "selected_tools": [
-                        {"tool": "vibe.vibe_check_db", "reason": "Check database for execution records"},
+                        {
+                            "tool": "vibe.vibe_check_db",
+                            "reason": "Check database for execution records",
+                        },
                     ],
                     "success_criteria": "Tool execution found in database with non-empty result",
                 }
-            
+
             analysis_text = reasoning_result.get("analysis", "")
-            
+
             # Parse the analysis (simple extraction, can be improved)
             return {
                 "verification_purpose": analysis_text,
@@ -441,7 +446,7 @@ Output structured analysis."""
                 "success_criteria": analysis_text,
                 "full_reasoning": analysis_text,
             }
-            
+
         except Exception as e:
             logger.error(f"[GRISHA] Verification goal analysis failed: {e}")
             return {
@@ -449,40 +454,50 @@ Output structured analysis."""
                 "selected_tools": [{"tool": "vibe.vibe_check_db", "reason": "Fallback"}],
                 "success_criteria": "Non-empty execution results",
             }
-    
+
     def _extract_tools_from_analysis(self, analysis: str, step: dict) -> list[dict]:
         """Extract tool recommendations from sequential-thinking analysis."""
         tools = []
         step_id = step.get("id", "unknown")
-        
+
         # Always include database check as primary source of truth
-        tools.append({
-            "tool": "vibe.vibe_check_db",
-            "args": {
-                "query": f"SELECT te.tool_name, te.arguments, te.result, te.created_at FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = '{step_id}' ORDER BY te.created_at DESC LIMIT 5"
-            },
-            "reason": "Primary source of truth - database audit",
-        })
-        
+        tools.append(
+            {
+                "tool": "vibe.vibe_check_db",
+                "args": {
+                    "query": f"SELECT te.tool_name, te.arguments, te.result, te.created_at FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = '{step_id}' ORDER BY te.created_at DESC LIMIT 5"
+                },
+                "reason": "Primary source of truth - database audit",
+            }
+        )
+
         # Add context-aware tools based on step type
         step_action_lower = step.get("action", "").lower()
-        
-        if "file" in step_action_lower or "save" in step_action_lower or "create" in step_action_lower:
-            tools.append({
-                "tool": "macos-use.list_directory",
-                "args": {"path": "/Users/hawk/Documents/GitHub/atlastrinity"},
-                "reason": "Check if files were created",
-            })
-        
+
+        if (
+            "file" in step_action_lower
+            or "save" in step_action_lower
+            or "create" in step_action_lower
+        ):
+            tools.append(
+                {
+                    "tool": "macos-use.list_directory",
+                    "args": {"path": "/Users/hawk/Documents/GitHub/atlastrinity"},
+                    "reason": "Check if files were created",
+                }
+            )
+
         if "search" in step_action_lower or "find" in step_action_lower:
-            tools.append({
-                "tool": "macos-use.get_clipboard",
-                "args": {},
-                "reason": "Check if search results were copied",
-            })
-        
+            tools.append(
+                {
+                    "tool": "macos-use.get_clipboard",
+                    "args": {},
+                    "reason": "Check if search results were copied",
+                }
+            )
+
         return tools[:4]  # Limit to 4 tools max
-    
+
     async def _form_logical_verdict(
         self,
         step: dict[str, Any],
@@ -491,13 +506,13 @@ Output structured analysis."""
         goal_context: str,
     ) -> dict[str, Any]:
         """Phase 2: Use sequential-thinking to form LOGICAL verdict based on collected evidence.
-        
+
         Args:
             step: Step being verified
             goal_analysis: Results from Phase 1 (verification purpose, criteria)
             verification_results: List of tool execution results
             goal_context: Overall task goal
-        
+
         Returns:
             {
                 "verified": bool,
@@ -508,22 +523,24 @@ Output structured analysis."""
         """
         step_id = step.get("id", "unknown")
         step_action = step.get("action", "")
-        
+
         # Format results for analysis
-        results_summary = "\n".join([
-            f"Tool {i+1}: {r['tool']}\n  Success: {not r.get('error', False)}\n  Result: {r.get('result', 'N/A')[:500]}\n"
-            for i, r in enumerate(verification_results)
-        ])
-        
+        results_summary = "\n".join(
+            [
+                f"Tool {i + 1}: {r['tool']}\n  Success: {not r.get('error', False)}\n  Result: {r.get('result', 'N/A')[:500]}\n"
+                for i, r in enumerate(verification_results)
+            ]
+        )
+
         query = f"""LOGICAL VERIFICATION VERDICT:
 
 Step {step_id}: {step_action}
 
 VERIFICATION PURPOSE (from Phase 1):
-{goal_analysis.get('verification_purpose', 'Unknown')}
+{goal_analysis.get("verification_purpose", "Unknown")}
 
 SUCCESS CRITERIA:
-{goal_analysis.get('success_criteria', 'Unknown')}
+{goal_analysis.get("success_criteria", "Unknown")}
 
 COLLECTED EVIDENCE ({len(verification_results)} tools executed):
 {results_summary}
@@ -545,29 +562,34 @@ Provide:
 - **ISSUES**: Specific problems found (if any)"""
 
         logger.info(f"[GRISHA] Phase 2: Forming logical verdict for step {step_id}...")
-        
+
         try:
             reasoning_result = await self.use_sequential_thinking(query, total_thoughts=4)
-            
+
             if not reasoning_result.get("success"):
                 logger.warning("[GRISHA] Logical verdict analysis failed, using fallback")
                 return self._fallback_verdict(verification_results)
-            
+
             analysis_text = reasoning_result.get("analysis", "")
-            
+
             # Parse verdict from analysis
-            verified = "VERIFIED" in analysis_text.upper() and "FAILED" not in analysis_text.upper()[:200]
-            
+            verified = (
+                "VERIFIED" in analysis_text.upper() and "FAILED" not in analysis_text.upper()[:200]
+            )
+
             # Extract confidence (look for numbers between 0-1 or percentages)
             import re
-            confidence_match = re.search(r'confidence[:\s]*(\d+\.?\d*)\%?', analysis_text, re.IGNORECASE)
+
+            confidence_match = re.search(
+                r"confidence[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE
+            )
             if confidence_match:
                 confidence = float(confidence_match.group(1))
                 if confidence > 1.0:
                     confidence = confidence / 100.0
             else:
                 confidence = 0.8 if verified else 0.2
-            
+
             # Extract issues
             issues = []
             if "empty result" in analysis_text.lower():
@@ -576,7 +598,7 @@ Provide:
                 issues.append("Tool routing issues")
             if not verified:
                 issues.append("Verification criteria not met")
-            
+
             return {
                 "verified": verified,
                 "confidence": confidence,
@@ -584,18 +606,18 @@ Provide:
                 "issues": issues,
                 "full_analysis": analysis_text,
             }
-            
+
         except Exception as e:
             logger.error(f"[GRISHA] Logical verdict formation failed: {e}")
             return self._fallback_verdict(verification_results)
-    
+
     def _fallback_verdict(self, verification_results: list[dict]) -> dict[str, Any]:
         """Fallback verdict logic if sequential-thinking fails."""
         success_count = sum(1 for r in verification_results if not r.get("error", False))
         total = len(verification_results)
-        
+
         verified = success_count > 0 and success_count >= total // 2
-        
+
         return {
             "verified": verified,
             "confidence": 0.3,
@@ -731,35 +753,38 @@ Provide:
             actual = actual[:16000] + "...(truncated for brevity)"
 
         # ========== NEW TWO-PHASE VERIFICATION WITH SEQUENTIAL-THINKING ==========
-        
+
         # PHASE 1: ANALYZE VERIFICATION GOAL (Sequential-Thinking #1)
         logger.info(f"[GRISHA] 🧠 Phase 1: Analyzing verification goal for step {step_id}...")
         goal_analysis = await self._analyze_verification_goal(
-            step,
-            goal_context or shared_context.get_goal_context()
+            step, goal_context or shared_context.get_goal_context()
         )
-        
-        logger.info(f"[GRISHA] Verification Purpose: {goal_analysis.get('verification_purpose', 'Unknown')[:200]}...")
-        logger.info(f"[GRISHA] Selected {len(goal_analysis.get('selected_tools', []))} tools for verification")
-        
+
+        logger.info(
+            f"[GRISHA] Verification Purpose: {goal_analysis.get('verification_purpose', 'Unknown')[:200]}..."
+        )
+        logger.info(
+            f"[GRISHA] Selected {len(goal_analysis.get('selected_tools', []))} tools for verification"
+        )
+
         # PHASE 1.5: EXECUTE SELECTED VERIFICATION TOOLS
         logger.info("[GRISHA] 🔧 Executing verification tools...")
         verification_results = []
-        
-        for tool_config in goal_analysis.get('selected_tools', []):
-            tool_name = tool_config.get('tool', '')
-            tool_args = tool_config.get('args', {})
-            tool_reason = tool_config.get('reason', 'Unknown')
-            
+
+        for tool_config in goal_analysis.get("selected_tools", []):
+            tool_name = tool_config.get("tool", "")
+            tool_args = tool_config.get("args", {})
+            tool_reason = tool_config.get("reason", "Unknown")
+
             logger.info(f"[GRISHA] Verif-Step: {tool_name} - {tool_reason}")
-            
+
             try:
                 v_output = await mcp_manager.dispatch_tool(tool_name, tool_args)
                 v_res_str = str(v_output)
-                
+
                 # Smart error detection with empty result checking for info tasks
                 has_error = False
-                
+
                 if isinstance(v_output, dict):
                     if v_output.get("error") or v_output.get("success") is False:
                         has_error = True
@@ -768,57 +793,74 @@ Provide:
                         data = v_output.get("data", [])
                         count = v_output.get("count", 0)
                         results = v_output.get("results", [])
-                        
+
                         step_action_lower = step.get("action", "").lower()
-                        is_info_task = any(kw in step_action_lower for kw in ["search", "find", "gather", "collect", "identify", "locate"])
-                        
+                        is_info_task = any(
+                            kw in step_action_lower
+                            for kw in ["search", "find", "gather", "collect", "identify", "locate"]
+                        )
+
                         if is_info_task and (
-                            (isinstance(data, list) and len(data) == 0 and count == 0) or
-                            (isinstance(results, list) and len(results) == 0) or
-                            (len(v_res_str.strip()) == 0)
+                            (isinstance(data, list) and len(data) == 0 and count == 0)
+                            or (isinstance(results, list) and len(results) == 0)
+                            or (len(v_res_str.strip()) == 0)
                         ):
                             has_error = True
-                            logger.warning(f"[GRISHA] Empty result in info-gathering task: {tool_name}")
+                            logger.warning(
+                                f"[GRISHA] Empty result in info-gathering task: {tool_name}"
+                            )
                 else:
                     lower_result = v_res_str.lower()[:500]
-                    if "error:" in lower_result or "exception" in lower_result or "failed:" in lower_result:
+                    if (
+                        "error:" in lower_result
+                        or "exception" in lower_result
+                        or "failed:" in lower_result
+                    ):
                         has_error = True
-                
+
                 if len(v_res_str) > 2000:
                     v_res_str = v_res_str[:2000] + "...(truncated)"
-                
-                verification_results.append({
-                    "tool": tool_name,
-                    "args": tool_args,
-                    "result": v_res_str,
-                    "error": has_error,
-                    "reason": tool_reason,
-                })
-                
+
+                verification_results.append(
+                    {
+                        "tool": tool_name,
+                        "args": tool_args,
+                        "result": v_res_str,
+                        "error": has_error,
+                        "reason": tool_reason,
+                    }
+                )
+
             except Exception as e:
                 logger.warning(f"[GRISHA] Verif-Step failed: {e}")
-                verification_results.append({
-                    "tool": tool_name,
-                    "args": tool_args,
-                    "result": f"Error: {e}",
-                    "error": True,
-                    "reason": tool_reason,
-                })
-        
+                verification_results.append(
+                    {
+                        "tool": tool_name,
+                        "args": tool_args,
+                        "result": f"Error: {e}",
+                        "error": True,
+                        "reason": tool_reason,
+                    }
+                )
+
         # PHASE 2: FORM LOGICAL VERDICT (Sequential-Thinking #2)
-        logger.info(f"[GRISHA] 🧠 Phase 2: Forming logical verdict based on {len(verification_results)} tool results...")
+        logger.info(
+            f"[GRISHA] 🧠 Phase 2: Forming logical verdict based on {len(verification_results)} tool results..."
+        )
         verdict = await self._form_logical_verdict(
             step,
             goal_analysis,
             verification_results,
-            goal_context or shared_context.get_goal_context()
+            goal_context or shared_context.get_goal_context(),
         )
-        
+
         # Log verdict details
-        logger.info(f"[GRISHA] Verdict: {'✅ VERIFIED' if verdict.get('verified') else '❌ FAILED'}")
+        logger.info(
+            f"[GRISHA] Verdict: {'✅ VERIFIED' if verdict.get('verified') else '❌ FAILED'}"
+        )
         logger.info(f"[GRISHA] Confidence: {verdict.get('confidence', 0.0):.2f}")
         logger.info(f"[GRISHA] Reasoning: {verdict.get('reasoning', 'N/A')[:300]}...")
-        
+
         # Return structured verification result
         return VerificationResult(
             step_id=step_id,
@@ -828,7 +870,7 @@ Provide:
             issues=verdict.get("issues", []),
             voice_message=self._generate_voice_message(verdict, step),
         )
-    
+
     def _generate_voice_message(self, verdict: dict, step: dict) -> str:
         """Generate Ukrainian voice message based on verdict."""
         if verdict.get("verified"):

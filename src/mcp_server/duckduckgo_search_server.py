@@ -199,70 +199,74 @@ def _scrape_opendatabot(company_name: str) -> dict[str, Any]:
     """Direct web scraping fallback for Opendatabot.ua."""
     try:
         # Try to detect if company_name is an EDRPOU code (8-10 digits)
-        if re.match(r'^\d{8,10}$', company_name.strip()):
+        if re.match(r"^\d{8,10}$", company_name.strip()):
             search_url = f"https://opendatabot.ua/company/{company_name.strip()}"
         else:
             # Search by name
             search_url = f"https://opendatabot.ua/?q={company_name.strip()}"
 
         logger.info(f"Attempting direct Opendatabot scraping: {search_url}")
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
         }
-        
+
         response = requests.get(search_url, headers=headers, timeout=30)
         response.raise_for_status()
-        
+
         if "Checking your browser" in response.text or "Cloudflare" in response.text:
             logger.warning("Opendatabot scraping blocked by CAPTCHA/Cloudflare")
             return {"error": "Opendatabot scraping blocked by anti-bot protection"}
-        
+
         # Extract basic company information using regex patterns
         results = []
-        
+
         # Look for company name
-        name_pattern = re.compile(r'<h1[^>]*>(.*?)</h1>', re.IGNORECASE | re.DOTALL)
+        name_pattern = re.compile(r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL)
         name_match = name_pattern.search(response.text)
-        
+
         # Look for EDRPOU code
-        edrpou_pattern = re.compile(r'ЄДРПОУ[^<]*?(\d{8,10})', re.IGNORECASE)
+        edrpou_pattern = re.compile(r"ЄДРПОУ[^<]*?(\d{8,10})", re.IGNORECASE)
         edrpou_match = edrpou_pattern.search(response.text)
-        
+
         # Look for address
-        address_pattern = re.compile(r'Адреса[^<]*?<[^>]+>(.*?)</[^>]+>', re.IGNORECASE | re.DOTALL)
+        address_pattern = re.compile(r"Адреса[^<]*?<[^>]+>(.*?)</[^>]+>", re.IGNORECASE | re.DOTALL)
         address_match = address_pattern.search(response.text)
-        
+
         if name_match or edrpou_match or address_match:
             result_item = {
                 "title": name_match.group(1).strip() if name_match else "Company Information",
                 "url": search_url,
                 "snippet": "",
             }
-            
+
             # Build snippet with found information
             snippet_parts = []
             if edrpou_match:
                 snippet_parts.append(f"ЄДРПОУ: {edrpou_match.group(1)}")
             if address_match:
-                address_text = re.sub(r'<.*?>', '', address_match.group(1)).strip()
+                address_text = re.sub(r"<.*?>", "", address_match.group(1)).strip()
                 snippet_parts.append(f"Address: {address_text}")
-            
-            result_item["snippet"] = ", ".join(snippet_parts) if snippet_parts else "Company data found"
+
+            result_item["snippet"] = (
+                ", ".join(snippet_parts) if snippet_parts else "Company data found"
+            )
             results.append(result_item)
         else:
             # Try to find any company links on search results page
             company_links = re.findall(r'href="(/company/\d+)"', response.text)
             if company_links:
                 for link in company_links[:3]:  # Top 3 results
-                    results.append({
-                        "title": f"Company Profile - {link.strip('/company/')}",
-                        "url": f"https://opendatabot.ua{link}",
-                        "snippet": "Company profile found on Opendatabot",
-                    })
-        
+                    results.append(
+                        {
+                            "title": f"Company Profile - {link.replace('/company/', '')}",
+                            "url": f"https://opendatabot.ua{link}",
+                            "snippet": "Company profile found on Opendatabot",
+                        }
+                    )
+
         if results:
             return {
                 "success": True,
@@ -273,80 +277,88 @@ def _scrape_opendatabot(company_name: str) -> dict[str, Any]:
             }
         else:
             return {"error": "No company data found on Opendatabot"}
-            
+
     except Exception as e:
         logger.error(f"Opendatabot scraping failed: {e}")
-        return {"error": f"Opendatabot scraping error: {str(e)}"}
+        return {"error": f"Opendatabot scraping error: {e!s}"}
 
 
 def _scrape_youcontrol(company_name: str) -> dict[str, Any]:
     """Direct web scraping fallback for YouControl.com.ua."""
     try:
         # Try to detect if company_name is an EDRPOU code (8-10 digits)
-        if re.match(r'^\d{8,10}$', company_name.strip()):
-            search_url = f"https://youcontrol.com.ua/catalog/company_details/{company_name.strip()}/"
+        if re.match(r"^\d{8,10}$", company_name.strip()):
+            search_url = (
+                f"https://youcontrol.com.ua/catalog/company_details/{company_name.strip()}/"
+            )
         else:
             # Search by name
             search_url = f"https://youcontrol.com.ua/catalog/search/?q={company_name.strip()}"
 
         logger.info(f"Attempting direct YouControl scraping: {search_url}")
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
         }
-        
+
         response = requests.get(search_url, headers=headers, timeout=30)
         response.raise_for_status()
-        
+
         if "Checking your browser" in response.text or "Cloudflare" in response.text:
             logger.warning("YouControl scraping blocked by CAPTCHA/Cloudflare")
             return {"error": "YouControl scraping blocked by anti-bot protection"}
-        
+
         # Extract basic company information using regex patterns
         results = []
-        
+
         # Look for company name
-        name_pattern = re.compile(r'<h1[^>]*>(.*?)</h1>', re.IGNORECASE | re.DOTALL)
+        name_pattern = re.compile(r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL)
         name_match = name_pattern.search(response.text)
-        
+
         # Look for EDRPOU code
-        edrpou_pattern = re.compile(r'ЄДРПОУ[^<]*?(\d{8,10})', re.IGNORECASE)
+        edrpou_pattern = re.compile(r"ЄДРПОУ[^<]*?(\d{8,10})", re.IGNORECASE)
         edrpou_match = edrpou_pattern.search(response.text)
-        
+
         # Look for address
-        address_pattern = re.compile(r'Юридична адреса[^<]*?<[^>]+>(.*?)</[^>]+>', re.IGNORECASE | re.DOTALL)
+        address_pattern = re.compile(
+            r"Юридична адреса[^<]*?<[^>]+>(.*?)</[^>]+>", re.IGNORECASE | re.DOTALL
+        )
         address_match = address_pattern.search(response.text)
-        
+
         if name_match or edrpou_match or address_match:
             result_item = {
                 "title": name_match.group(1).strip() if name_match else "Company Information",
                 "url": search_url,
                 "snippet": "",
             }
-            
+
             # Build snippet with found information
             snippet_parts = []
             if edrpou_match:
                 snippet_parts.append(f"ЄДРПОУ: {edrpou_match.group(1)}")
             if address_match:
-                address_text = re.sub(r'<.*?>', '', address_match.group(1)).strip()
+                address_text = re.sub(r"<.*?>", "", address_match.group(1)).strip()
                 snippet_parts.append(f"Address: {address_text}")
-            
-            result_item["snippet"] = ", ".join(snippet_parts) if snippet_parts else "Company data found"
+
+            result_item["snippet"] = (
+                ", ".join(snippet_parts) if snippet_parts else "Company data found"
+            )
             results.append(result_item)
         else:
             # Try to find any company links on search results page
             company_links = re.findall(r'href="(/catalog/company_details/\d+/)', response.text)
             if company_links:
                 for link in company_links[:3]:  # Top 3 results
-                    results.append({
-                        "title": f"Company Profile - {link.strip('/catalog/company_details/').strip('/')}",
-                        "url": f"https://youcontrol.com.ua{link}",
-                        "snippet": "Company profile found on YouControl",
-                    })
-        
+                    results.append(
+                        {
+                            "title": f"Company Profile - {link.replace('/catalog/company_details/', '').strip('/')}",
+                            "url": f"https://youcontrol.com.ua{link}",
+                            "snippet": "Company profile found on YouControl",
+                        }
+                    )
+
         if results:
             return {
                 "success": True,
@@ -357,17 +369,17 @@ def _scrape_youcontrol(company_name: str) -> dict[str, Any]:
             }
         else:
             return {"error": "No company data found on YouControl"}
-            
+
     except Exception as e:
         logger.error(f"YouControl scraping failed: {e}")
-        return {"error": f"YouControl scraping error: {str(e)}"}
+        return {"error": f"YouControl scraping error: {e!s}"}
 
 
 @server.tool()
 def business_registry_search(company_name: str, step_id: str | None = None) -> dict[str, Any]:
     """Perform a specialized search for Ukrainian company data in business registries.
     Rules and targets are defined in search_protocol.txt.
-    
+
     Enhanced with direct web scraping fallback for Opendatabot and YouControl.
 
     Args:
@@ -379,14 +391,14 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
         return {"error": "company_name is required"}
 
     logger.info(f"Executing business registry search: company_name='{company_name.strip()}'")
-    
+
     # Step 1: Try DuckDuckGo protocol search first
     result = _execute_protocol_search(
         "business",
         company_name,
         "DuckDuckGo (Optimized Registry Search)",
     )
-    
+
     if result.get("success"):
         logger.info(
             f"Business registry search completed: found {len(result.get('results', []))} results",
@@ -394,26 +406,34 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
         return result
     else:
         logger.warning(f"DuckDuckGo search failed: {result.get('error', 'unknown error')}")
-        
+
         # Step 2: Fallback to direct web scraping
         logger.info("Initiating fallback web scraping for business registry data")
-        
+
         # Try Opendatabot first
         opendatabot_result = _scrape_opendatabot(company_name)
         if opendatabot_result.get("success"):
-            logger.info(f"Opendatabot scraping successful: found {len(opendatabot_result.get('results', []))} results")
+            logger.info(
+                f"Opendatabot scraping successful: found {len(opendatabot_result.get('results', []))} results"
+            )
             return opendatabot_result
         else:
-            logger.warning(f"Opendatabot scraping failed: {opendatabot_result.get('error', 'unknown error')}")
-        
+            logger.warning(
+                f"Opendatabot scraping failed: {opendatabot_result.get('error', 'unknown error')}"
+            )
+
         # Try YouControl as second fallback
         youcontrol_result = _scrape_youcontrol(company_name)
         if youcontrol_result.get("success"):
-            logger.info(f"YouControl scraping successful: found {len(youcontrol_result.get('results', []))} results")
+            logger.info(
+                f"YouControl scraping successful: found {len(youcontrol_result.get('results', []))} results"
+            )
             return youcontrol_result
         else:
-            logger.warning(f"YouControl scraping failed: {youcontrol_result.get('error', 'unknown error')}")
-        
+            logger.warning(
+                f"YouControl scraping failed: {youcontrol_result.get('error', 'unknown error')}"
+            )
+
         # If all methods failed, return the original DuckDuckGo error with fallback context
         return {
             **result,
@@ -421,7 +441,7 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
             "fallback_errors": {
                 "opendatabot": opendatabot_result.get("error", "unknown error"),
                 "youcontrol": youcontrol_result.get("error", "unknown error"),
-            }
+            },
         }
 
 
@@ -461,9 +481,13 @@ def structured_data_search(query: str, step_id: str | None = None) -> dict[str, 
         return {"error": "query is required"}
 
     logger.info(f"Executing structured data search: query='{query.strip()}'")
-    result = _execute_protocol_search("structured_data", query, "DuckDuckGo (Structured Data Search)")
+    result = _execute_protocol_search(
+        "structured_data", query, "DuckDuckGo (Structured Data Search)"
+    )
     if result.get("success"):
-        logger.info(f"Structured data search completed: found {len(result.get('results', []))} results")
+        logger.info(
+            f"Structured data search completed: found {len(result.get('results', []))} results"
+        )
     else:
         logger.warning(f"Structured data search failed: {result.get('error', 'unknown error')}")
     return result

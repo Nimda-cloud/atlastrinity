@@ -5,7 +5,15 @@
 import React from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
-type SystemState = 'IDLE' | 'PROCESSING' | 'EXECUTING' | 'VERIFYING' | 'ERROR' | 'PLANNING' | 'COMPLETED' | 'CHAT';
+type SystemState =
+  | 'IDLE'
+  | 'PROCESSING'
+  | 'EXECUTING'
+  | 'VERIFYING'
+  | 'ERROR'
+  | 'PLANNING'
+  | 'COMPLETED'
+  | 'CHAT';
 
 interface AgentStatusProps {
   activeAgent: AgentName;
@@ -137,7 +145,9 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
           <div className="flex items-center gap-2 px-3 w-[80px] shrink-0 border-r border-white/5 h-full">
             <span className="opacity-20 font-light text-[7px] w-[25px] shrink-0">LINK</span>
             <div className="flex-1 flex items-center gap-1">
-              <span className={`font-bold ${isConnected ? 'text-green-400' : 'text-red-400 animate-pulse'}`}>
+              <span
+                className={`font-bold ${isConnected ? 'text-green-400' : 'text-red-400 animate-pulse'}`}
+              >
                 {isConnected ? 'LIVE' : 'DOWN'}
               </span>
               {isConnected && (

@@ -346,7 +346,6 @@ class FirstRunInstaller:
             )
             return False
 
-
     def install_redis(self) -> bool:
         """Install Redis"""
         return self._install_brew_package(SetupStep.INSTALL_REDIS, "redis", check_cmd="redis-cli")

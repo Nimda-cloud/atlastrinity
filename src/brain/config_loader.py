@@ -73,7 +73,7 @@ class SystemConfig:
         for config_spec in configs_to_sync:
             global_path = config_spec["global"]
             template_path = config_spec["template"]
-            
+
             if not global_path.exists():
                 if config_spec["use_defaults"]:
                     # Generate from defaults (for config.yaml)

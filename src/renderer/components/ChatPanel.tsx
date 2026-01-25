@@ -115,7 +115,11 @@ const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
     <div className="flex-1 flex flex-col p-4 font-mono h-full overflow-hidden relative min-h-0">
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
       {/* Main Chat Stream */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin min-h-0" style={{ overscrollBehavior: 'contain' }}>
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin min-h-0"
+        style={{ overscrollBehavior: 'contain' }}
+      >
         {filteredMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center opacity-10 italic text-[9px] tracking-[0.5em] uppercase">
             Waiting for neural link...

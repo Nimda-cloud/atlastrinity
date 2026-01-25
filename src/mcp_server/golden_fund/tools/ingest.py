@@ -81,12 +81,11 @@ async def ingest_dataset(
         parse_res = parser.parse(raw_file)
         if parse_res.success:
             summary += f" Parsed {len(parse_res.data) if isinstance(parse_res.data, list) else 'content'} records."
-            
+
             # 4. Validation Checkpoint - Data Completeness
             if "validate" in process_pipeline:
                 validation_res = validator.validate_data_completeness(
-                    parse_res.data, 
-                    context=f"ingestion_{run_id}"
+                    parse_res.data, context=f"ingestion_{run_id}"
                 )
                 if validation_res.success:
                     summary += f" Validation passed: Found {validation_res.metadata.get('valid_employees_found', 0)} employees with roles."

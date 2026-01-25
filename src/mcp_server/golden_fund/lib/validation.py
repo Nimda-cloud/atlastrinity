@@ -5,12 +5,12 @@ to inspect extracted data for completeness.
 """
 
 import logging
-from typing import Any, Optional, Union
 from datetime import datetime
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, ValidationError
 
-logging.basicConfig(level=logging.INFO, encoding='utf-8')
+logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("golden_fund.validation")
 
 
@@ -23,7 +23,7 @@ class ValidationResult:
         data: Any | None = None,
         error: str | None = None,
         warnings: list[str] | None = None,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ):
         self.success = success
         self.data = data
@@ -54,15 +54,15 @@ class DataValidator:
         logger.info("DataValidator initialized")
 
     def validate_data_completeness(
-        self, data: Union[dict[str, Any], list[dict[str, Any]]], context: str = "unknown"
+        self, data: dict[str, Any] | list[dict[str, Any]], context: str = "unknown"
     ) -> ValidationResult:
         """
         Validate that extracted data contains at least one named employee with a role/position.
-        
+
         Args:
             data: The data to validate (can be dict or list of dicts)
             context: Context for validation (e.g., 'company_dataset', 'director_dataset')
-            
+
         Returns:
             ValidationResult with success status and details
         """
@@ -72,7 +72,7 @@ class DataValidator:
                 "context": context,
                 "timestamp": datetime.now().isoformat(),
                 "check_type": "completeness",
-                "check_name": "employee_role_completeness"
+                "check_name": "employee_role_completeness",
             }
 
             # Convert single dict to list for uniform processing
@@ -82,23 +82,19 @@ class DataValidator:
                 data_list = data
             else:
                 return ValidationResult(
-                    False,
-                    error=f"Unsupported data type: {type(data)}",
-                    metadata=metadata
+                    False, error=f"Unsupported data type: {type(data)}", metadata=metadata
                 )
 
             # Check for empty data
             if not data_list:
                 return ValidationResult(
-                    False,
-                    error="Empty dataset - no records to validate",
-                    metadata=metadata
+                    False, error="Empty dataset - no records to validate", metadata=metadata
                 )
 
             # Define what constitutes a valid employee with role
             employee_fields = {
                 "name_fields": ["name", "director", "employee", "person", "full_name"],
-                "role_fields": ["position", "role", "title", "job_title", "occupation"]
+                "role_fields": ["position", "role", "title", "job_title", "occupation"],
             }
 
             found_valid_employee = False
@@ -108,32 +104,34 @@ class DataValidator:
             for i, record in enumerate(data_list):
                 if not isinstance(record, dict):
                     continue
-                    
+
                 # Look for name and role in this record
                 name_found = None
                 role_found = None
-                
+
                 # Check for name fields
                 for name_field in employee_fields["name_fields"]:
-                    if name_field in record and record[name_field]:
+                    if record.get(name_field):
                         name_found = str(record[name_field])
                         break
-                
-                # Check for role fields  
+
+                # Check for role fields
                 for role_field in employee_fields["role_fields"]:
-                    if role_field in record and record[role_field]:
+                    if record.get(role_field):
                         role_found = str(record[role_field])
                         break
-                
+
                 # If we found both name and role, this is a valid employee
                 if name_found and role_found:
                     found_valid_employee = True
-                    employee_details.append({
-                        "record_index": i,
-                        "name": name_found,
-                        "role": role_found,
-                        "record": record
-                    })
+                    employee_details.append(
+                        {
+                            "record_index": i,
+                            "name": name_found,
+                            "role": role_found,
+                            "record": record,
+                        }
+                    )
 
             # Determine validation result
             if found_valid_employee:
@@ -143,51 +141,51 @@ class DataValidator:
                     {"name": emp["name"], "role": emp["role"]}
                     for emp in employee_details[:3]  # Limit to 3 samples
                 ]
-                
+
                 return ValidationResult(
                     True,
                     data={
                         "valid_employees": employee_details,
                         "total_records": len(data_list),
-                        "validation_type": "employee_role_completeness"
+                        "validation_type": "employee_role_completeness",
                     },
-                    metadata=metadata
+                    metadata=metadata,
                 )
             else:
                 # Validation failed - no valid employees found
                 metadata["validation_passed"] = False
                 metadata["valid_employees_found"] = 0
-                
+
                 return ValidationResult(
                     False,
                     error="Data completeness check failed: No named employees with roles/positions found",
                     warnings=[
                         "Dataset may be incomplete or missing employee information",
-                        f"Checked {len(data_list)} records but found no valid employee-role pairs"
+                        f"Checked {len(data_list)} records but found no valid employee-role pairs",
                     ],
-                    metadata=metadata
+                    metadata=metadata,
                 )
 
         except Exception as e:
             return ValidationResult(
                 False,
-                error=f"Validation error: {str(e)}",
+                error=f"Validation error: {e!s}",
                 metadata={
                     "context": context,
                     "timestamp": datetime.now().isoformat(),
-                    "exception_type": type(e).__name__
-                }
+                    "exception_type": type(e).__name__,
+                },
             )
 
     def validate_schema_compatibility(
-        self, data: Union[dict[str, Any], list[dict[str, Any]]]
+        self, data: dict[str, Any] | list[dict[str, Any]]
     ) -> ValidationResult:
         """
         Validate that data conforms to expected schema structure.
-        
+
         Args:
             data: The data to validate
-            
+
         Returns:
             ValidationResult with schema compatibility status
         """
@@ -197,40 +195,38 @@ class DataValidator:
                 return ValidationResult(
                     True,
                     data={"message": "Data structure is valid"},
-                    metadata={"schema_check": "passed"}
+                    metadata={"schema_check": "passed"},
                 )
             else:
                 return ValidationResult(
                     False,
                     error=f"Invalid data structure: expected dict or list, got {type(data)}",
-                    metadata={"schema_check": "failed"}
+                    metadata={"schema_check": "failed"},
                 )
         except Exception as e:
             return ValidationResult(
-                False,
-                error=f"Schema validation error: {str(e)}",
-                metadata={"exception": str(e)}
+                False, error=f"Schema validation error: {e!s}", metadata={"exception": str(e)}
             )
 
     def create_validation_checkpoint(
-        self, 
-        data: Union[dict[str, Any], list[dict[str, Any]]], 
+        self,
+        data: dict[str, Any] | list[dict[str, Any]],
         checkpoint_name: str = "completeness",
-        context: str = "data_pipeline"
+        context: str = "data_pipeline",
     ) -> ValidationResult:
         """
         Create an intermediate validation checkpoint in the data pipeline.
-        
+
         Args:
             data: The data to validate
             checkpoint_name: Type of validation checkpoint
             context: Context for the validation
-            
+
         Returns:
             ValidationResult with checkpoint results
         """
         logger.info(f"Running validation checkpoint: {checkpoint_name}")
-        
+
         if checkpoint_name == "completeness":
             return self.validate_data_completeness(data, context)
         elif checkpoint_name == "schema":
@@ -239,5 +235,5 @@ class DataValidator:
             return ValidationResult(
                 False,
                 error=f"Unknown validation checkpoint: {checkpoint_name}",
-                metadata={"available_checkpoints": ["completeness", "schema"]}
+                metadata={"available_checkpoints": ["completeness", "schema"]},
             )
