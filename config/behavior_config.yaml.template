@@ -77,9 +77,16 @@ patterns:
           artifact_missing: true
         min_confidence: 0.8
       action:
-        server: memory
-        tool: query_db
+        server: vibe
+        tool: vibe_check_db
         strategy: log_forensics
+        sql_template: |
+          SELECT te.tool_name, te.arguments, te.result, te.created_at 
+          FROM tool_executions te 
+          JOIN task_steps ts ON te.step_id = ts.id 
+          WHERE ts.sequence_number = '{STEP_NUMBER}' 
+          ORDER BY te.created_at DESC LIMIT 5
+        max_retries: 2
       metadata:
         initial_confidence: 0.9
         success_threshold: 1.0

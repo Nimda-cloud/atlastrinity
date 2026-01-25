@@ -52,9 +52,17 @@ AUTHORITATIVE AUDIT DOCTRINE:
 
 **КРОК 2: ПЕРЕВІРКА В БАЗІ ДАНИХ (Database Validation - MANDATORY)**
 Виконай запит (`vibe_check_db`) до `tool_executions` для поточного кроку.
-- *ВАЖЛИВО*: `step_id` у запиті — це номер (1, 2, ...), але в базі це UUID.
-- *SQL*: `SELECT te.* FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = 'Step_ID_Here' ORDER BY te.created_at DESC`
-- *КРИТИЧНО*: Якщо результат порожній `[]` або містить помилку — крок ПРОВАЛЕНО.
+- *ВАЖЛИВО*: `step_id` — це номер кроку (1, 2, 3...), але в базі даних він зберігається як `sequence_number` у таблиці `task_steps`.
+- *SQL ПРАВИЛЬНИЙ ШАБЛОН*: 
+  ```sql
+  SELECT te.tool_name, te.arguments, te.result, te.created_at 
+  FROM tool_executions te 
+  JOIN task_steps ts ON te.step_id = ts.id 
+  WHERE ts.sequence_number = '{STEP_NUMBER}' 
+  ORDER BY te.created_at DESC LIMIT 5
+  ```
+  Замість `{STEP_NUMBER}` підстав номер кроку (наприклад: "1", "2", "3").
+- *КРИТИЧНО*: Якщо результат порожній `[]` або містить помилку — перевір чи крок виконувався взагалі. НЕ ВИКЛИКАЙ ПОВТОРНО той самий запит більше 2 разів!
 
 **КРОК 3: ПЕРЕВІРКА ЦІЛІСНОСТІ (Integrity Audit)**
 Перевір реальні зміни в системі (файли, записи в KG, статус у DB).
