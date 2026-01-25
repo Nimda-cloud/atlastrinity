@@ -73,7 +73,7 @@ protobuf==3.19.6
 onnxruntime
 opentelemetry-api==1.15.0
 opentelemetry-sdk==1.15.0
-opentelemetry-exporter-otlp-proto-grpc==1.15.0
+opentelemetry-exporter-otlp-proto-grpc==1.39.1
 opentelemetry-proto==1.15.0
 
 aiosqlite>=0.19.0
