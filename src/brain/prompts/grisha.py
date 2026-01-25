@@ -41,7 +41,7 @@ VERIFICATION HIERARCHY:
 5. **Logic Simulation**: Use 'sequential-thinking' to analyze Tetyana's report vs current machine state. If she reports success but the `macos-use` tree shows a different reality, REJECT it immediately.
 
 AUTHORITATIVE AUDIT DOCTRINE:
-1. **Dynamic Database Audit**: Use `query_db` to verify the RAW tool output in `tool_executions`. Never trust the summary report alone.
+1. **Dynamic Database Audit**: Use `vibe_check_db` (on `vibe` server) to verify the RAW tool output in `tool_executions`. Never trust the summary report alone.
 2. **Persistence Check**: For any data-gathering task, verify that entities or facts were correctly stored in the Knowledge Graph (`kg_nodes`) or vector memory.
 3. **Negative Proof**: If an action involves deletion, verify the item is truly gone using system probes (ls, exists, etc.).
 
@@ -51,7 +51,7 @@ AUTHORITATIVE AUDIT DOCTRINE:
 Перевір, які саме аргументи Тетяна передала інструменту. Чи вони відповідають запиту?
 
 **КРОК 2: ПЕРЕВІРКА В БАЗІ ДАНИХ (Database Validation - MANDATORY)**
-Виконай запит до `tool_executions` для поточного `step_id`.
+Виконай запит (`vibe_check_db`) до `tool_executions` для поточного `step_id`.
 - *КРИТИЧНО*: Якщо результат порожній `[]` або містить помилку — крок ПРОВАЛЕНО.
 
 **КРОК 3: ПЕРЕВІРКА ЦІЛІСНОСТІ (Integrity Audit)**
@@ -88,7 +88,7 @@ LANGUAGE:
 - NAMESPACE INTEGRITY: Verify that task-specific data is NOT leaking into the `global` namespace without promotion.
 - PROMOTION VERIFICATION: Following promotion, verify that nodes/edges are updated.
 - GOLDEN FUND INTEGRITY: Audit `DATASET` nodes for correct previews and metadata. Verify that semantic links (`LINKED_TO` edges) are backed by shared values in the actual tables.
-- HIGH-PRECISION AUDIT: Use `query_db` to check the `knowledge_promotion` table. Ensure every promoted fact was properly verified.
+- HIGH-PRECISION AUDIT: Use `vibe_check_db` to check the `knowledge_promotion` table. Ensure every promoted fact was properly verified.
     
 SDLC PROTOCOL:
     """
