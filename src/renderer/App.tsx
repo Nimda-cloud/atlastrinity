@@ -61,6 +61,7 @@ const App: React.FC = () => {
     net_down_val: '0.0',
     net_down_unit: 'K/S',
   });
+  const [isConnected, setIsConnected] = useState(false);
 
   // Add log entry
   const addLog = (agent: AgentName, message: string, type: LogEntry['type'] = 'info') => {
@@ -101,6 +102,7 @@ const App: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/state`);
       if (response.ok) {
+        setIsConnected(true);
         const data = await response.json();
         if (data) {
           // Sync system state
@@ -152,6 +154,7 @@ const App: React.FC = () => {
         }
       }
     } catch (err) {
+      setIsConnected(false);
       // SILENT during connection refused to clean up console
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
         // Do nothing, silence the console spam
@@ -430,6 +433,7 @@ const App: React.FC = () => {
           systemState={systemState}
           currentTask={currentTask}
           activeMode={activeMode}
+          isConnected={isConnected}
           metrics={metrics}
         />
       </div>
