@@ -103,15 +103,13 @@ class DataScraper:
         except Exception as e:
             return ScrapeResult(False, error=f"API scraping failed: {e!s}")
 
-    def scrape_html_tables(
-        self, url: str, timeout: int = 30
-    ) -> ScrapeResult:
+    def scrape_html_tables(self, url: str, timeout: int = 30) -> ScrapeResult:
         """Scrape HTML tables from a web page as a fallback when structured data is not available.
-        
+
         Args:
             url: The URL to scrape tables from
             timeout: Request timeout in seconds
-            
+
         Returns:
             ScrapeResult with list of tables (each table is list of rows, each row is list of cells)
         """
@@ -122,7 +120,7 @@ class DataScraper:
 
             soup = BeautifulSoup(response.content, "html.parser")
             tables = []
-            
+
             # Find all table elements
             for table in soup.find_all("table"):
                 table_data = []
@@ -143,7 +141,7 @@ class DataScraper:
             result.metadata = {
                 "url": url,
                 "status_code": response.status_code,
-                "table_count": len(tables)
+                "table_count": len(tables),
             }
             return result
 

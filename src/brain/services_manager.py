@@ -94,8 +94,6 @@ def ensure_redis(force_check: bool = False):
         return False
 
 
-
-
 def ensure_postgres(force_check: bool = False) -> bool:
     """Ensure PostgreSQL is installed and running."""
     flag_file = CONFIG_ROOT / ".postgres_ready"
@@ -289,13 +287,13 @@ async def ensure_all_services(force_check: bool = False):
         if redis_ok and db_ok:
             # Critical services are ready
             ServiceStatus.is_ready = True
-            
+
             if vibe_ok:
-                 ServiceStatus.status_message = "All systems operational"
-                 logger.info("[Services] All system services are ready.")
+                ServiceStatus.status_message = "All systems operational"
+                logger.info("[Services] All system services are ready.")
             else:
-                 ServiceStatus.status_message = "System ready (Vibe optional)"
-                 logger.warning("[Services] System started without Vibe CLI (optional feature).")
+                ServiceStatus.status_message = "System ready (Vibe optional)"
+                logger.warning("[Services] System started without Vibe CLI (optional feature).")
         else:
             ServiceStatus.status_message = "Critical services failed (Redis/DB)"
             logger.warning(

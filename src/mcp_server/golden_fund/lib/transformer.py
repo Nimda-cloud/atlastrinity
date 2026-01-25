@@ -9,7 +9,7 @@ from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, ValidationError
 
-logging.basicConfig(level=logging.INFO, encoding='utf-8')
+logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("golden_fund.transformer")
 
 # Import validation module for integration
@@ -49,7 +49,10 @@ class DataTransformer:
         logger.info("DataTransformer initialized")
 
     def transform(
-        self, data: dict[str, Any] | list[dict[str, Any]], source_format: str = "unknown", validate_completeness: bool = False
+        self,
+        data: dict[str, Any] | list[dict[str, Any]],
+        source_format: str = "unknown",
+        validate_completeness: bool = False,
     ) -> TransformResult:
         try:
             if isinstance(data, list):
@@ -58,19 +61,23 @@ class DataTransformer:
                     res = self._transform_item(item, source_format)
                     if res:
                         transformed.append(res)
-                
+
                 # Add validation checkpoint if requested
                 if validate_completeness and self.validator:
-                    validation_res = self.validator.validate_data_completeness(transformed, context="transformation")
+                    validation_res = self.validator.validate_data_completeness(
+                        transformed, context="transformation"
+                    )
                     if not validation_res.success:
-                        logger.warning(f"Data completeness validation failed: {validation_res.error}")
+                        logger.warning(
+                            f"Data completeness validation failed: {validation_res.error}"
+                        )
                         # Continue with transformed data but add warning
                         return TransformResult(
-                            True, 
+                            True,
                             data=transformed,
-                            error=f"Validation warning: {validation_res.error}"
+                            error=f"Validation warning: {validation_res.error}",
                         )
-                
+
                 return TransformResult(True, data=transformed)
             else:
                 res = self._transform_item(data, source_format)

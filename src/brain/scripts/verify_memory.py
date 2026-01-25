@@ -10,7 +10,7 @@ from src.brain.mcp_manager import mcp_manager
 from src.brain.memory import long_term_memory
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, encoding='utf-8')
+logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("verify_memory")
 
 
