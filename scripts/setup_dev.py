@@ -672,103 +672,74 @@ def sync_configs():
 
 
 def download_models():
-    """Завантажує AI моделі"""
-    print_step("Завантаження моделей (може тривати довго)...")
+    """Завантажує AI моделі зі смарт-перевіркою"""
+    print_step("Налаштування AI моделей...")
     venv_python = str(VENV_PATH / "bin" / "python")
-
-    # 1. Faster-Whisper: Detect model from config or template
-    model_name = "large-v3"  # Default fallback
+    
+    # 1. Faster-Whisper: Detect model
+    model_name = "large-v3"
     try:
         import yaml
-
         config_path = CONFIG_ROOT / "config.yaml"
-        template_path = PROJECT_ROOT / "config" / "config.yaml.template"
-        target_path = config_path if config_path.exists() else template_path
-
+        target_path = config_path if config_path.exists() else PROJECT_ROOT / "config" / "config.yaml.template"
         if target_path.exists():
             with open(target_path, encoding="utf-8") as f:
                 cfg = yaml.safe_load(f) or {}
-                # Try voice.stt.model or fallback to whisper_stt.model
-                model_name = (
-                    cfg.get("voice", {}).get("stt", {}).get("model")
-                    or cfg.get("mcp", {}).get("whisper_stt", {}).get("model")
-                    or model_name
-                )
-    except Exception:
-        pass
+                model_name = cfg.get("voice", {}).get("stt", {}).get("model") or cfg.get("mcp", {}).get("whisper_stt", {}).get("model") or model_name
+    except Exception: pass
 
-    try:
-        print_info(f"Завантаження Faster-Whisper {model_name}...")
-        cmd = [
-            venv_python,
-            "-c",
-            "from faster_whisper import WhisperModel; "
-            f"WhisperModel('{model_name}', device='cpu', compute_type='int8', download_root='{DIRS['stt_models']}'); "
-            "print('STT OK')",
-        ]
-        res = subprocess.run(
-            cmd, check=False, capture_output=True, text=True, timeout=900,
-        )  # Increased timeout for large models
-        if res.returncode == 0:
+    stt_dir = DIRS["stt_models"]
+    tts_dir = DIRS["tts_models"]
+    
+    # Check if models already exist
+    stt_exists = (stt_dir / "model.bin").exists() or (stt_dir / model_name / "model.bin").exists()
+    tts_exists = any(tts_dir.iterdir()) if tts_dir.exists() else False
+
+    print_info(f"Статус моделей: STT({model_name}): {'✅' if stt_exists else '❌'}, TTS: {'✅' if tts_exists else '❌'}")
+
+    if stt_exists and tts_exists:
+        print_info("Всі моделі вже завантажені. Пропускаємо за замовчуванням.")
+        print(f"{Colors.OKCYAN}❓ Бажаєте перекачати моделі? У вас є 5 секунд для вибору: [s]kip (default), [a]ll, [stt], [tts]{Colors.ENDC}")
+        
+        import select
+        i, o, e = select.select([sys.stdin], [], [], 5)
+        choice = sys.stdin.readline().strip().lower() if i else "s"
+    else:
+        choice = "a" # Download all if any missing
+
+    if choice == "s":
+        print_success("Моделі пропущено")
+        return
+
+    # STT Download
+    if choice in ["a", "stt"]:
+        try:
+            print_info(f"Завантаження Faster-Whisper {model_name}...")
+            cmd = [venv_python, "-c", f"from faster_whisper import WhisperModel; WhisperModel('{model_name}', device='cpu', compute_type='int8', download_root='{stt_dir}'); print('STT OK')"]
+            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=900)
             print_success(f"STT модель {model_name} готова")
-        else:
-            print_warning(f"Помилка завантаження STT: {res.stderr}")
-    except Exception as e:
-        print_warning(f"Помилка завантаження STT: {e}")
+        except Exception as e:
+            print_warning(f"Помилка завантаження STT: {e}")
 
-    # TTS
-    try:
-        print_info("Ініціалізація TTS моделей (з автоматичним патчингом)...")
-        python_script = f"""
+    # TTS Download
+    if choice in ["a", "tts"]:
+        try:
+            print_info("Ініціалізація TTS моделей (з пакуванням)...")
+            python_script = f"""
 import os, sys
 from pathlib import Path
-sys.path.append(os.getcwd())
-try:
-    from src.brain.voice.tts import _patch_tts_config
-except ImportError:
-    def _patch_tts_config(d): pass
-
-cache_dir = Path('{DIRS["tts_models"]}')
+from ukrainian_tts.tts import TTS
+cache_dir = Path('{tts_dir}')
 cache_dir.mkdir(parents=True, exist_ok=True)
-
-# Skip TTS if ukrainian_tts is not available (package disabled in requirements.txt)
-try:
-    from ukrainian_tts.tts import TTS
-except ImportError:
-    print("TTS skipped: ukrainian_tts not installed (package disabled in requirements.txt)")
-    sys.exit(0)
-
-# 1. Спробуємо ініціалізацію з автоматичним патчингом у разі помилки
-old_cwd = os.getcwd()
-try:
-    os.chdir(str(cache_dir))
-    # TTS constructor downloads files if missing
-    TTS(cache_folder='.', device='cpu')
-except Exception as e:
-    print(f"Initial TTS load failed (likely missing files or unpatched config): {{e}}")
-    os.chdir(old_cwd)
-    # Якщо завантаження відбулося, але завантаження не вдалося, спробуємо патчити
-    _patch_tts_config(cache_dir)
-    os.chdir(str(cache_dir))
-    # Спроба №2 після патчу
-    TTS(cache_folder='.', device='cpu')
-finally:
-    os.chdir(old_cwd)
+os.chdir(str(cache_dir))
+TTS(cache_folder='.', device='cpu')
 print('TTS OK')
 """
-        cmd = [venv_python, "-c", python_script]
-        res = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=600)
-        if res.returncode == 0:
+            cmd = [venv_python, "-c", python_script]
+            subprocess.run(cmd, check=True, timeout=600)
             print_success("TTS моделі готові")
-        else:
-            # Check if it failed specifically because of feats_stats.npz and try to provide helpful info
-            if "feats_stats.npz" in res.stderr or "feats_stats.npz" in res.stdout:
-                print_warning(
-                    "Виявлено проблему з feats_stats.npz. Спробуйте вручну видалити папку models/tts та запустити знову.",
-                )
-            print_warning(f"Помилка завантаження TTS: {res.stderr or res.stdout}")
-    except Exception as e:
-        print_warning(f"Помилка завантаження TTS: {e}")
+        except Exception as e:
+            print_warning(f"Помилка завантаження TTS: {e}")
 
 
 def backup_databases():
@@ -1018,7 +989,43 @@ def main():
                         except Exception:
                             pass
 
-    download_models()
+    # Git Remote Check
+    print_step("Перевірка Git конфігурації...")
+    try:
+        remote_res = subprocess.run(["git", "remote", "-v"], capture_output=True, text=True)
+        if "github.com" in remote_res.stdout:
+            print_success("Git remote налаштовано на GitHub")
+            
+            # Check for token in .env
+            env_path = CONFIG_ROOT / ".env"
+            has_env_token = False
+            if env_path.exists():
+                with open(env_path, encoding="utf-8") as f:
+                    if "GITHUB_TOKEN" in f.read():
+                        has_env_token = True
+            
+            if has_env_token:
+                print_success("Git: Виявлено GITHUB_TOKEN у .env (використовується для MCP та API)")
+            
+            if "https://" in remote_res.stdout and "@" not in remote_res.stdout:
+                helper_res = subprocess.run(["git", "config", "--get", "credential.helper"], capture_output=True, text=True)
+                if "osxkeychain" in helper_res.stdout:
+                    print_success("Git CLI: Налаштовано через HTTPS + Keychain (osxkeychain)")
+                else:
+                    print_info("Git CLI: Використовується HTTPS. Можливо знадобиться персональний токен для push.")
+            elif "@" in remote_res.stdout:
+                print_success("Git CLI: Налаштовано через персональний токен (embedded)")
+        else:
+            print_warning("Remote origin не знайдено або не вказує на GitHub.")
+    except Exception: pass
+
+    try:
+        download_models()
+    except KeyboardInterrupt:
+        print_warning("\nЗавантаження моделей перервано користувачем.")
+    except Exception as e:
+        print_error(f"Помилка при обробці моделей: {e}")
+
     check_services()
     run_integrity_check()
 
