@@ -757,13 +757,23 @@ Synthesize findings into a comprehensive validation verdict.
                         v_output = await mcp_manager.dispatch_tool(full_v_tool, v_args)
                         v_res_str = str(v_output)
                         
-                        # Better error detection
-                        has_error = (
-                            (isinstance(v_output, dict) and v_output.get("error")) or
-                            "error" in v_res_str.lower()[:500] or
-                            "failed" in v_res_str.lower()[:500] or
-                            "not found" in v_res_str.lower()[:500]
-                        )
+                        # Smart error detection - distinguish between actual errors and empty/no-data results
+                        has_error = False
+                        
+                        if isinstance(v_output, dict):
+                            # Explicit error in response
+                            if v_output.get("error") or v_output.get("success") is False:
+                                has_error = True
+                            # vibe_check_db returns {"success": True, "count": 0, "data": []} when no data
+                            # This is NOT an error, just empty result
+                            elif v_output.get("success") is True:
+                                has_error = False
+                        else:
+                            # For non-dict responses, check for error keywords
+                            # But be more specific - only mark as error if there's clear failure indication
+                            lower_result = v_res_str.lower()[:500]
+                            if "error:" in lower_result or "exception" in lower_result or "failed:" in lower_result:
+                                has_error = True
                         
                         if len(v_res_str) > 2000:
                             v_res_str = v_res_str[:2000] + "...(truncated)"
@@ -878,13 +888,10 @@ Synthesize findings into a comprehensive validation verdict.
 
         logger.warning(f"[GRISHA] Forcing verdict after {max_attempts} attempts")
         
-        # Better success detection - check error flag and result content
+        # Better success detection - primarily use the error flag set during tool execution
         success_count = sum(
             1 for h in verification_history 
-            if not h.get("error", False) 
-            and "error" not in str(h.get("result", "")).lower()[:200]
-            and "failed" not in str(h.get("result", "")).lower()[:200]
-            and "skipped" not in str(h.get("result", "")).lower()[:200]
+            if not h.get("error", False)
         )
         
         # Only auto-verify if we have actual successful verifications
