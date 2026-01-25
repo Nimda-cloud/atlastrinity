@@ -3,109 +3,109 @@ import XCTest
 
 class CalculatorBrainTests: XCTestCase {
 
-    var calculatorBrain: CalculatorBrain!
+    var calculatorViewModel: CalculatorViewModel.TestableCalculatorViewModel!
 
     override func setUp() {
         super.setUp()
-        calculatorBrain = CalculatorBrain()
+        calculatorViewModel = CalculatorViewModel.TestableCalculatorViewModel()
     }
 
     override func tearDown() {
-        calculatorBrain = nil
+        calculatorViewModel = nil
         super.tearDown()
     }
 
     func testInitialState() {
-        XCTAssertEqual(calculatorBrain.displayValue, "0")
+        XCTAssertEqual(calculatorViewModel.displayValue, "0")
     }
 
     func testClear() {
-        calculatorBrain.appendDigit("5")
-        calculatorBrain.clear()
-        XCTAssertEqual(calculatorBrain.displayValue, "0")
+        calculatorViewModel.testAppendDigit("5")
+        calculatorViewModel.testClear()
+        XCTAssertEqual(calculatorViewModel.displayValue, "0")
     }
 
     func testToggleSign() {
-        calculatorBrain.appendDigit("5")
-        calculatorBrain.toggleSign()
-        XCTAssertEqual(calculatorBrain.displayValue, "-5")
+        calculatorViewModel.testAppendDigit("5")
+        calculatorViewModel.testToggleSign()
+        XCTAssertEqual(calculatorViewModel.displayValue, "-5")
         
-        calculatorBrain.toggleSign()
-        XCTAssertEqual(calculatorBrain.displayValue, "5")
+        calculatorViewModel.testToggleSign()
+        XCTAssertEqual(calculatorViewModel.displayValue, "5")
     }
 
     func testPercentage() {
-        calculatorBrain.appendDigit("5")
-        calculatorBrain.appendDigit("0")
-        calculatorBrain.percentage()
-        XCTAssertEqual(calculatorBrain.displayValue, "0.5")
+        calculatorViewModel.testAppendDigit("5")
+        calculatorViewModel.testAppendDigit("0")
+        calculatorViewModel.testPercentage()
+        XCTAssertEqual(calculatorViewModel.displayValue, "0.5")
     }
 
     func testBasicAddition() {
-        calculatorBrain.appendDigit("5")
-        calculatorBrain.setOperation("+")
-        calculatorBrain.appendDigit("3")
-        calculatorBrain.performOperation()
-        XCTAssertEqual(calculatorBrain.displayValue, "8")
+        calculatorViewModel.testAppendDigit("5")
+        calculatorViewModel.testSetOperation("+")
+        calculatorViewModel.testAppendDigit("3")
+        calculatorViewModel.testPerformOperation()
+        XCTAssertEqual(calculatorViewModel.displayValue, "8")
     }
 
     func testBasicSubtraction() {
-        calculatorBrain.appendDigit("1")
-        calculatorBrain.appendDigit("0")
-        calculatorBrain.setOperation("-")
-        calculatorBrain.appendDigit("3")
-        calculatorBrain.performOperation()
-        XCTAssertEqual(calculatorBrain.displayValue, "7")
+        calculatorViewModel.testAppendDigit("1")
+        calculatorViewModel.testAppendDigit("0")
+        calculatorViewModel.testSetOperation("-")
+        calculatorViewModel.testAppendDigit("3")
+        calculatorViewModel.testPerformOperation()
+        XCTAssertEqual(calculatorViewModel.displayValue, "7")
     }
 
     func testBasicMultiplication() {
-        calculatorBrain.appendDigit("4")
-        calculatorBrain.setOperation("×")
-        calculatorBrain.appendDigit("3")
-        calculatorBrain.performOperation()
-        XCTAssertEqual(calculatorBrain.displayValue, "12")
+        calculatorViewModel.testAppendDigit("4")
+        calculatorViewModel.testSetOperation("×")
+        calculatorViewModel.testAppendDigit("3")
+        calculatorViewModel.testPerformOperation()
+        XCTAssertEqual(calculatorViewModel.displayValue, "12")
     }
 
     func testBasicDivision() {
-        calculatorBrain.appendDigit("1")
-        calculatorBrain.appendDigit("2")
-        calculatorBrain.setOperation("÷")
-        calculatorBrain.appendDigit("3")
-        calculatorBrain.performOperation()
-        XCTAssertEqual(calculatorBrain.displayValue, "4")
+        calculatorViewModel.testAppendDigit("1")
+        calculatorViewModel.testAppendDigit("2")
+        calculatorViewModel.testSetOperation("÷")
+        calculatorViewModel.testAppendDigit("3")
+        calculatorViewModel.testPerformOperation()
+        XCTAssertEqual(calculatorViewModel.displayValue, "4")
     }
 
     func testDecimalInput() {
-        calculatorBrain.appendDigit("1")
-        calculatorBrain.appendDigit(".")
-        calculatorBrain.appendDigit("5")
-        XCTAssertEqual(calculatorBrain.displayValue, "1.5")
+        calculatorViewModel.testAppendDigit("1")
+        calculatorViewModel.testAppendDigit(".")
+        calculatorViewModel.testAppendDigit("5")
+        XCTAssertEqual(calculatorViewModel.displayValue, "1.5")
     }
 
     func testChainedOperations() {
-        calculatorBrain.appendDigit("5")
-        calculatorBrain.setOperation("+")
-        calculatorBrain.appendDigit("3")
-        calculatorBrain.performOperation()
-        calculatorBrain.setOperation("×")
-        calculatorBrain.appendDigit("2")
-        calculatorBrain.performOperation()
-        XCTAssertEqual(calculatorBrain.displayValue, "16")
+        calculatorViewModel.testAppendDigit("5")
+        calculatorViewModel.testSetOperation("+")
+        calculatorViewModel.testAppendDigit("3")
+        calculatorViewModel.testPerformOperation()
+        calculatorViewModel.testSetOperation("×")
+        calculatorViewModel.testAppendDigit("2")
+        calculatorViewModel.testPerformOperation()
+        XCTAssertEqual(calculatorViewModel.displayValue, "16")
     }
 
     func testDisplayFormatting() {
         // Test that .0 is removed for integers
-        calculatorBrain.appendDigit("5")
-        calculatorBrain.appendDigit(".")
-        calculatorBrain.appendDigit("0")
-        XCTAssertEqual(calculatorBrain.displayValue, "5")
+        calculatorViewModel.testAppendDigit("5")
+        calculatorViewModel.testAppendDigit(".")
+        calculatorViewModel.testAppendDigit("0")
+        XCTAssertEqual(calculatorViewModel.displayValue, "5")
         
         // Test decimal places are preserved when needed
-        calculatorBrain.clear()
-        calculatorBrain.appendDigit("1")
-        calculatorBrain.appendDigit(".")
-        calculatorBrain.appendDigit("2")
-        calculatorBrain.appendDigit("5")
-        XCTAssertEqual(calculatorBrain.displayValue, "1.25")
+        calculatorViewModel.testClear()
+        calculatorViewModel.testAppendDigit("1")
+        calculatorViewModel.testAppendDigit(".")
+        calculatorViewModel.testAppendDigit("2")
+        calculatorViewModel.testAppendDigit("5")
+        XCTAssertEqual(calculatorViewModel.displayValue, "1.25")
     }
 }
