@@ -52,7 +52,8 @@ agents:
   atlas:
     # model: inherited from models.default
     temperature: 0.7
-    max_tokens: 2000
+    max_tokens: 2000              # Standard chat/task mode
+    max_tokens_deep: 8000         # Deep persona mode (philosophical consciousness)
 
   tetyana:
     # model, reasoning_model, vision_model: inherited from defaults

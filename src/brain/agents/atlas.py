@@ -71,6 +71,7 @@ class Atlas(BaseAgent):
 
         if llm:
             self.llm = llm
+            self.llm_deep = llm  # Use same LLM if provided externally
         else:
             # Priority: 1. Constructor arg, 2. Config file, 3. Default in config_loader
             final_model = model_name or agent_config.get("model")
@@ -78,7 +79,18 @@ class Atlas(BaseAgent):
             if not final_model:
                 raise ValueError("[ATLAS] Model not specified in config.yaml or constructor")
 
-            self.llm = CopilotLLM(model_name=final_model)
+            # Token limits from config
+            max_tokens_standard = agent_config.get("max_tokens", 2000)
+            max_tokens_deep = agent_config.get("max_tokens_deep", 8000)
+
+            # Create two LLM instances: standard and deep persona
+            self.llm = CopilotLLM(model_name=final_model, max_tokens=max_tokens_standard)
+            self.llm_deep = CopilotLLM(model_name=final_model, max_tokens=max_tokens_deep)
+            
+            logger.info(
+                f"[ATLAS] Initialized with max_tokens: {max_tokens_standard} (standard), "
+                f"{max_tokens_deep} (deep persona)"
+            )
 
         # Optimization: Tool Cache
         self._cached_info_tools = []
@@ -525,9 +537,13 @@ class Atlas(BaseAgent):
             messages.extend(history[-20:])
         messages.append(HumanMessage(content=user_request))
 
-        # 3. Tool Binding (Only if tools available)
+        # 3. Select LLM instance based on deep persona mode
+        # Deep persona uses llm_deep with larger max_tokens (8000 vs 2000)
+        base_llm = self.llm_deep if use_deep_persona else self.llm
+        
+        # 4. Tool Binding (Only if tools available)
         llm_instance = (
-            self.llm.bind_tools(available_tools_info) if available_tools_info else self.llm
+            base_llm.bind_tools(available_tools_info) if available_tools_info else base_llm
         )
 
         MAX_CHAT_TURNS = 5

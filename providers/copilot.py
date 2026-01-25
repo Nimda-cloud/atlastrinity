@@ -23,6 +23,7 @@ class CopilotLLM(BaseChatModel):
     model_name: str = "gpt-4o"
     vision_model_name: str = "gpt-4o"
     api_key: str | None = None
+    max_tokens: int = 4096  # Default, can be overridden per instance
     _tools: list[Any] | None = None
 
     def __init__(
@@ -30,6 +31,7 @@ class CopilotLLM(BaseChatModel):
         model_name: str | None = None,
         vision_model_name: str | None = None,
         api_key: str | None = None,
+        max_tokens: int | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -44,6 +46,9 @@ class CopilotLLM(BaseChatModel):
         self.vision_model_name = (
             vm or self.model_name
         )  # Fallback to main model if vision not distinct
+
+        # Set max_tokens (default 4096 for backward compatibility)
+        self.max_tokens = max_tokens or 4096
 
         # Use COPILOT_API_KEY for regular models, VISION_API_KEY for vision models
         # IMPORTANT: GITHUB_TOKEN is ONLY for GitHub MCP server, NOT for agents!
@@ -332,7 +337,7 @@ class CopilotLLM(BaseChatModel):
             "model": chosen_model,
             "messages": final_messages,
             "temperature": 0.1,
-            "max_tokens": 4096,
+            "max_tokens": self.max_tokens,  # Use instance variable, not hardcoded
             "stream": stream if stream is not None else False,
         }
 

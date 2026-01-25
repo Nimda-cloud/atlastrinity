@@ -91,6 +91,7 @@ class SystemConfig:
                     "model": "",  # Must be set in config.yaml
                     "temperature": 0.7,
                     "max_tokens": 2000,
+                    "max_tokens_deep": 8000,  # Deep persona/philosophical mode
                 },
                 "tetyana": {
                     "model": "",  # Execution (Main)
