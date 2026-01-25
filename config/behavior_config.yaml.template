@@ -530,6 +530,7 @@ tool_routing:
       - applescript
       - osascript
     action_mapping:
+      notes_get: macos-use_notes_get_content
       click: macos-use_click_and_traverse
       type: macos-use_type_and_traverse
       write: macos-use_type_and_traverse
