@@ -35,33 +35,61 @@ class SystemConfig:
         """Ensure global configuration directories exist.
         Config is read ONLY from global location (~/.config/atlastrinity/).
         User config values have PRIORITY over built-in defaults.
-        No template syncing - user manages global config directly.
+        Templates are synced to global location on first run only.
         """
-        global_path = CONFIG_ROOT / "config.yaml"
-        env_path = CONFIG_ROOT / ".env"
-        mcp_global = MCP_DIR / "config.json"
-
         CONFIG_ROOT.mkdir(parents=True, exist_ok=True)
         MCP_DIR.mkdir(parents=True, exist_ok=True)
 
-        # 1. Ensure global config.yaml exists (first run only)
-        if not global_path.exists():
-            with open(global_path, "w", encoding="utf-8") as f:
-                yaml.dump(
-                    self._get_defaults(),
-                    f,
-                    default_flow_style=False,
-                    allow_unicode=True,
-                )
+        # Configuration files to sync from templates
+        configs_to_sync = [
+            {
+                "global": CONFIG_ROOT / "config.yaml",
+                "template": PROJECT_ROOT / "config" / "config.yaml.template",
+                "use_defaults": True,  # Generate from _get_defaults() if template missing
+            },
+            {
+                "global": CONFIG_ROOT / "behavior_config.yaml",
+                "template": PROJECT_ROOT / "config" / "behavior_config.yaml.template",
+                "use_defaults": False,
+            },
+            {
+                "global": CONFIG_ROOT / "vibe_config.toml",
+                "template": PROJECT_ROOT / "config" / "vibe_config.toml.template",
+                "use_defaults": False,
+            },
+            {
+                "global": CONFIG_ROOT / "monitoring_config.yaml",
+                "template": PROJECT_ROOT / "config" / "monitoring_config.yaml.template",
+                "use_defaults": False,
+            },
+            {
+                "global": MCP_DIR / "config.json",
+                "template": PROJECT_ROOT / "src" / "mcp_server" / "config.json.template",
+                "use_defaults": False,
+            },
+        ]
 
-        # 2. Ensure global MCP config.json exists (first run only)
-        if not mcp_global.exists():
-            # Copy from bundled template
-            template_mcp = PROJECT_ROOT / "src" / "mcp_server" / "config.json.template"
-            if template_mcp.exists():
-                shutil.copy2(template_mcp, mcp_global)
+        # Sync each config file (first run only)
+        for config_spec in configs_to_sync:
+            global_path = config_spec["global"]
+            template_path = config_spec["template"]
+            
+            if not global_path.exists():
+                if config_spec["use_defaults"]:
+                    # Generate from defaults (for config.yaml)
+                    with open(global_path, "w", encoding="utf-8") as f:
+                        yaml.dump(
+                            self._get_defaults(),
+                            f,
+                            default_flow_style=False,
+                            allow_unicode=True,
+                        )
+                elif template_path.exists():
+                    # Copy from template
+                    shutil.copy2(template_path, global_path)
 
-        # 2. Load .env secrets into process environment (do NOT rewrite config.yaml)
+        # Load .env secrets into process environment (do NOT rewrite config files)
+        env_path = CONFIG_ROOT / ".env"
         if env_path.exists():
             env_vars = dotenv_values(env_path)
             for key, value in (env_vars or {}).items():
