@@ -5,7 +5,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "setup": "python3 scripts/setup_dev.py",
-    "fresh-install": "./scripts/fresh_install.sh && python3 scripts/setup_dev.py",
+    "fresh-install": "./scripts/fresh_install.sh",
     "clean": "./scripts/clean-cache.sh",
     "dev": "npm run clean && concurrently \"npm run dev:brain\" \"npm run dev:electron\" \"npm run dev:renderer\" --kill-others",
     "dev:electron": "tsc -p tsconfig.main.json && NODE_ENV=development electron .",
