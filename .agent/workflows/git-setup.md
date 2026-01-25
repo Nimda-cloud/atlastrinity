@@ -19,3 +19,10 @@ git config user.email "oleg1203@gmail.com"
 ```zsh
 git config --list | grep user
 ```
+
+4. Force use of Token from `.env`:
+If Git still asks for login, run:
+```zsh
+git remote set-url origin https://<TOKEN>@github.com/Nimda-cloud/atlastrinity
+```
+*(Замініть `<TOKEN>` на значенння з вашого `.env`)*
