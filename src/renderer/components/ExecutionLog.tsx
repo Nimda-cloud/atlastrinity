@@ -144,7 +144,8 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
       <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-1 scrollbar-thin min-h-0 pb-24"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-1 scrollbar-thin min-h-0"
+        style={{ overscrollBehavior: 'contain', paddingBottom: '120px' }}
       >
         {filteredLogs.map((log) => (
           <div
