@@ -76,4 +76,4 @@ opentelemetry-sdk==1.15.0
 opentelemetry-exporter-otlp-proto-grpc==1.15.0
 opentelemetry-proto==1.15.0
 
-aiosqlite>=0.19.0
+aiosqlite>=0.19.0prometheus-client>=0.17.1

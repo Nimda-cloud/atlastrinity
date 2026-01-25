@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, TypedDict, cast
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage  # type: ignore
 from langgraph.graph import END, StateGraph
 
 try:
@@ -412,7 +412,7 @@ class Trinity:
 
             if len(speech_text) > 5:
                 # Use 'atlas' for status updates
-                self._last_live_speech_time = now
+                self._last_live_speech_time = int(now)
                 asyncio.create_task(self._speak("atlas", speech_text))
 
     async def _log(self, text: str, source: str = "system", type: str = "info"):
@@ -1486,7 +1486,7 @@ class Trinity:
                                 total_thoughts=3
                             )
                             if analysis.get("success"):
-                                await self._log(f"[ATLAS] Deep Analysis: {analysis.get('analysis')[:200]}...", "atlas")
+                                await self._log(f"[ATLAS] Deep Analysis: {(analysis.get('analysis') or '')[:200]}...", "atlas")
                                 # Inject analysis results into the next attempt's context
                                 step["grisha_feedback"] = f"DEEP ANALYSIS FROM PREVIOUS FAILURE:\n{analysis.get('analysis')}\nSUGGESTED ACTION: {healing_decision.get('instructions_for_vibe')}"
 

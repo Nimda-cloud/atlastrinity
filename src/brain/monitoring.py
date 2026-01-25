@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import psutil
 from opentelemetry import trace
@@ -148,7 +148,7 @@ class MonitoringSystem:
             
         except Exception as e:
             logger.error(f"Failed to initialize OpenTelemetry tracing: {e}")
-            self.tracer = None
+            self.tracer = cast("Any", None)
             
     def _start_prometheus_server(self) -> None:
         """Start Prometheus metrics server."""

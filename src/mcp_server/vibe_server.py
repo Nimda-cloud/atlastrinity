@@ -32,7 +32,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from re import Pattern
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from mcp.server import FastMCP
 from mcp.server.fastmcp import Context
@@ -457,7 +457,7 @@ async def run_vibe_subprocess(
                     tasks.append(process.wait())
 
                     await asyncio.wait_for(
-                        asyncio.gather(*tasks),
+                        cast("Any", asyncio.gather(*tasks)),
                         timeout=timeout_s + 20,  # Add buffer for graceful shutdown
                     )
                     # Повідомлення про успіх
@@ -540,6 +540,12 @@ async def run_vibe_subprocess(
             "error": error_msg,
             "command": argv,
         }
+
+    return {
+        "success": False,
+        "error": "Unknown error in run_vibe_subprocess",
+        "command": argv,
+    }
 
 
 # =============================================================================
