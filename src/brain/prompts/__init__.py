@@ -210,6 +210,7 @@ class AgentPrompts:
     If Tetyana's report is ambiguous or if this step is critical, you MUST use 'vibe_check_db' tool (on 'vibe' server) to see exactly what happened in the background.
     - Check 'tool_executions' for the exact command, arguments, and full untruncated result of Tetyana's tool calls.
     - Example: SELECT * FROM tool_executions WHERE step_id = '{step_id}' ORDER BY created_at DESC;
+    - NOTE: Empty results (count: 0, data: []) mean no logs were recorded, NOT that the step failed. Try alternative verification methods.
 
     Verification History (Tool actions taken during this verification): {history}
     

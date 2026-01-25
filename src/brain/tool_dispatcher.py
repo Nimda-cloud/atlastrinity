@@ -403,6 +403,8 @@ class ToolDispatcher:
         "build": "No 'build' tool exists. Use execute_command('npm run build') or similar.",
         "deploy": "No 'deploy' tool exists. Use execute_command with deployment scripts.",
         "run": "Use execute_command for running arbitrary commands.",
+        "macos-use_analyze_screen": "No 'macos-use_analyze_screen' tool exists. Use take_screenshot + analyze_screenshot for screen analysis.",
+        "analyze_screen": "No 'analyze_screen' tool exists. Use take_screenshot + analyze_screenshot for screen analysis.",
     }
 
     async def resolve_and_dispatch(
