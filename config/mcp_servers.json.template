@@ -153,7 +153,7 @@
         "-m",
         "src.mcp_server.golden_fund.server"
       ],
-      "description": "Golden Fund Knowledge Base: Ingestion, Graphing, Vectorization, and Sequential Analysis of internal/external data.",
+      "description": "Golden Fund Knowledge Base (8 tools): search_golden_fund, probe_entity, ingest_dataset, add_knowledge_node, analyze_and_store, get_dataset_insights, store_blob, retrieve_blob. Semantic search, entity probing, data analysis storage.",
       "disabled": false,
       "tier": 2,
       "agents": [

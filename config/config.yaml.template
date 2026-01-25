@@ -1,4 +1,4 @@
-# Синхронізовано: 2026-01-23 07:15:00 (v4.7 - Atlas Information Retrieval Fix)
+# Синхронізовано: 2026-01-25 12:30:00 (v4.8 - Data Analysis + Golden Fund Integration)
 
 # =============================================================================
 # GLOBAL MODEL CONFIGURATION
@@ -134,8 +134,16 @@ mcp:
 
   golden_fund:
     enabled: true
-    # Golden Fund Knowledge Base: Ingestion, Graphing, Vectorization
-    # Data stored in data/golden_fund/
+    # Golden Fund Knowledge Base (8 tools): Semantic search, entity probing, 
+    # data ingestion, analysis storage, blob management
+    # Data stored in ~/.config/atlastrinity/data/golden_fund/
+
+  data_analysis:
+    enabled: true
+    # Pandas-based Data Analysis Engine (8 tools): read_metadata, analyze_dataset,
+    # generate_statistics, create_visualization, data_cleaning, data_aggregation,
+    # interpret_column_data, run_pandas_code
+    # Supports CSV, Excel, JSON, Parquet
 
   github:
     enabled: true
