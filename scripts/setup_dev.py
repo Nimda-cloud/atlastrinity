@@ -146,38 +146,21 @@ def check_system_tools():
     for tool in tools:
         path = shutil.which(tool)
         if path:
-            try:
-                if tool == "swift":
-                    version = subprocess.check_output([tool, "--version"]).decode().splitlines()[0]
-                elif tool == "vibe":
-                    # Vibe might not support --version or behave differently, try standard
-                    try:
-                        version = (
-                            subprocess.check_output([tool, "--version"], timeout=2).decode().strip()
-                        )
-                    except Exception:
-                        version = "detected"
-                else:
-                    version = subprocess.check_output([tool, "--version"]).decode().strip()
-                print_success(f"{tool} знайдено ({version})")
-            except Exception:
-                print_success(f"{tool} знайдено")
+            print_success(f"{tool} знайдено")
         else:
-            # Check venv for python tools
-            if tool in ["ruff", "pyrefly"]:
+            # Check venv for python tools (only if venv exists)
+            if tool in ["ruff", "pyrefly", "vibe"]:
                 venv_tool = PROJECT_ROOT / ".venv" / "bin" / tool
                 if venv_tool.exists():
                     print_success(f"{tool} знайдено у .venv")
                     continue
-            if tool == "vibe":
-                venv_tool = PROJECT_ROOT / ".venv" / "bin" / "vibe"
-                if venv_tool.exists():
-                    print_success("Vibe CLI знайдено у .venv")
-                    continue
-                print_warning("Vibe CLI не знайдено! (Буде встановлено через pip)")
-            else:
+            
+            if tool in ["bun", "swift", "npm"]:
                 print_warning(f"{tool} НЕ знайдено")
-            missing.append(tool)
+                missing.append(tool)
+            else:
+                # Python-specific tools are non-blocking here as they'll be installed later
+                print_info(f"{tool} поки не знайдено (буде встановлено у .venv пізніше)")
 
     # Auto-install Bun if missing
     if "bun" in missing:
@@ -192,20 +175,6 @@ def check_system_tools():
                 missing.remove("bun")
         except Exception as e:
             print_error(f"Не вдалося встановити Bun: {e}")
-
-    # Auto-install Vibe if missing
-    if "vibe" in missing:
-        print_info("Vibe CLI не знайдено. Встановлення Mistral Vibe через pip у .venv...")
-        try:
-            # Install into the project's venv for isolation
-            venv_python_bin = PROJECT_ROOT / ".venv" / "bin" / "python"
-            subprocess.run([str(venv_python_bin), "-m", "pip", "install", "mistral-vibe"], check=True)
-            print_success("Mistral Vibe встановлено у .venv")
-            
-            if "vibe" in missing:
-                missing.remove("vibe")
-        except Exception as e:
-            print_warning(f"Не вдалося встановити Mistral Vibe: {e}")
 
     # Auto-install JS dev tools if missing
     if any(t in missing for t in ["oxlint", "knip"]):
