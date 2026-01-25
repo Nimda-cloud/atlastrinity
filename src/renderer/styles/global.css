@@ -637,7 +637,7 @@ body {
 .command-dock-floating {
   position: fixed;
   right: 20px;
-  bottom: 4px;
+  bottom: 32px;
   width: calc(350px - 20px);
   max-width: calc(100vw - 40px);
   z-index: 100;
