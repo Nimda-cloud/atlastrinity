@@ -43,7 +43,27 @@
       "entity_id": "str",
       "depth": "int"
     },
-    "description": "Deeply explore relationships for a specific entity in the Golden Fund"
+    "description": "Probe the knowledge graph for an entity to explore relationships. Returns matches, related entities, and deeper exploration results."
+  },
+  "analyze_and_store": {
+    "server": "golden-fund",
+    "required": ["file_path", "dataset_name"],
+    "optional": ["analysis_type"],
+    "types": {
+      "file_path": "str",
+      "dataset_name": "str",
+      "analysis_type": "str"
+    },
+    "description": "Analyze a data file (CSV/Excel/JSON) and store insights in Golden Fund. Bridges data-analysis with knowledge persistence."
+  },
+  "get_dataset_insights": {
+    "server": "golden-fund",
+    "required": ["dataset_name"],
+    "optional": [],
+    "types": {
+      "dataset_name": "str"
+    },
+    "description": "Retrieve stored insights for a dataset from Golden Fund."
   },
   "add_knowledge_node": {
     "server": "golden-fund",
@@ -1331,6 +1351,16 @@
     },
     "description": "Run 'pyrefly' to check code integrity and find generic coding errors."
   },
+  "read_metadata": {
+    "server": "data-analysis",
+    "required": ["file_path"],
+    "optional": ["sheet_name"],
+    "types": {
+      "file_path": "str",
+      "sheet_name": "str"
+    },
+    "description": "Extract comprehensive metadata from a data file (CSV, Excel, JSON, Parquet) including columns, types, statistics, and data quality info"
+  },
   "analyze_dataset": {
     "server": "data-analysis",
     "required": ["data_source"],
@@ -1341,7 +1371,7 @@
       "output_format": "str",
       "target_path": "str"
     },
-    "description": "Analyze a dataset with statistical methods and generate insights"
+    "description": "Analyze a dataset with statistical methods (summary, correlation, distribution, outliers) and generate insights"
   },
   "generate_statistics": {
     "server": "data-analysis",
@@ -1396,14 +1426,36 @@
   },
   "data_aggregation": {
     "server": "data-analysis",
-    "required": ["data_source"],
-    "optional": ["group_by", "aggregation_methods", "output_format"],
+    "required": ["data_source", "group_by"],
+    "optional": ["aggregation_methods", "output_format"],
     "types": {
       "data_source": "str",
       "group_by": "str",
       "aggregation_methods": "list",
       "output_format": "str"
     },
-    "description": "Aggregate and summarize data by grouping and applying functions"
+    "description": "Aggregate and summarize data by grouping and applying functions (sum, mean, count, min, max, std)"
+  },
+  "interpret_column_data": {
+    "server": "data-analysis",
+    "required": ["file_path", "column_names"],
+    "optional": ["sheet_name"],
+    "types": {
+      "file_path": "str",
+      "column_names": "list",
+      "sheet_name": "str"
+    },
+    "description": "Interpret specific columns to understand their value patterns with counts and distributions"
+  },
+  "run_pandas_code": {
+    "server": "data-analysis",
+    "required": ["code"],
+    "optional": ["data_source", "timeout_seconds"],
+    "types": {
+      "code": "str",
+      "data_source": "str",
+      "timeout_seconds": "int"
+    },
+    "description": "Execute pandas code safely in a sandboxed environment. Data is loaded as 'df' variable if data_source provided."
   }
 }

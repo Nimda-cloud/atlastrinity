@@ -197,10 +197,16 @@ class ToolDispatcher:
         "ingest",
         "ingestion",
         "probe",
+        "probe_entity",
         "vector_search",
         "semantic_search",
         "knowledge_base",
         "kb",
+        "analyze_and_store",
+        "get_dataset_insights",
+        "dataset_insights",
+        "store_analysis",
+        "persist_analysis",
     ]
 
     GITHUB_SYNONYMS = [
@@ -246,12 +252,12 @@ class ToolDispatcher:
         "generate-statistics",
         "create_visualization",
         "create-visualization",
-        "data_cleaning",
-        "data-cleaning",
-        "predictive_modeling",
-        "predictive-modeling",
-        "data_aggregation",
-        "data-aggregation",
+        "read_metadata",
+        "interpret_column_data",
+        "run_pandas_code",
+        "pandas",
+        "csv_analysis",
+        "excel_analysis",
     ]
 
     MACOS_MAP = {
@@ -610,6 +616,9 @@ class ToolDispatcher:
                 "data_cleaning",
                 "predictive_modeling",
                 "data_aggregation",
+                "read_metadata",
+                "interpret_column_data",
+                "run_pandas_code",
             ]
             if tool_name in data_analysis_tools:
                 return True, ""
@@ -617,6 +626,26 @@ class ToolDispatcher:
                 return (
                     False,
                     f"Tool '{tool_name}' is not compatible with data-analysis realm. Available tools: {', '.join(data_analysis_tools)}",
+                )
+
+        # Special case: golden-fund realm validation
+        if server == "golden-fund":
+            golden_fund_tools = [
+                "search_golden_fund",
+                "ingest_dataset",
+                "probe_entity",
+                "add_knowledge_node",
+                "store_blob",
+                "retrieve_blob",
+                "analyze_and_store",
+                "get_dataset_insights",
+            ]
+            if tool_name in golden_fund_tools:
+                return True, ""
+            else:
+                return (
+                    False,
+                    f"Tool '{tool_name}' is not compatible with golden-fund realm. Available tools: {', '.join(golden_fund_tools)}",
                 )
 
         # For other realms, provide a generic compatibility check
