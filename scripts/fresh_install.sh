@@ -10,33 +10,63 @@ echo "   FRESH INSTALL SIMULATION"
 echo "   Це видалить ВСІ локальні налаштування!"
 echo "=========================================="
 echo ""
+INTERACTIVE=true
+for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
+        INTERACTIVE=false
+    fi
+done
+
+# Confirm function
+confirm() {
+    local msg=$1
+    local default=$2
+    
+    if [[ "$INTERACTIVE" == "false" ]]; then
+        return 0
+    fi
+
+    if [[ "$default" == "Y" ]]; then
+        read -t 10 -p "❓ $msg (Y/n): " choice </dev/tty || choice="Y"
+    else
+        read -t 10 -p "❓ $msg (y/N): " choice </dev/tty || choice="N"
+    fi
+    echo ""
+    if [[ "$choice" =~ ^[Yy]$ || ( -z "$choice" && "$default" == "Y" ) ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 # Check for active virtual environment
-if [[ -n "$VIRTUAL_ENV" ]]; then
+if [[ -n "$VIRTUAL_ENV" && "$INTERACTIVE" == "true" ]]; then
     echo "⚠️  You are currently in an ACTIVATED virtual environment: $VIRTUAL_ENV"
     echo "   Starting a fresh install from an active environment can cause issues."
     echo "   Please run 'deactivate' first, then try again."
     echo ""
-    read -p "❓ Do you want to continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    if ! confirm "Do you want to continue anyway?" "N"; then
         echo "❌ Aborted. Please deactivate and restart."
         exit 1
     fi
 fi
 
-# Confirm
-read -p "⚠️  This will DELETE ALL local configuration and environments. Continue? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+
+# Ensure Brew and basic paths are available
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+if ! command -v brew &> /dev/null; then
+    echo "❌ Homebrew NOT found. Please install it first."
+    exit 1
+fi
+
+if ! confirm "This will DELETE ALL local configuration and environments. Continue?" "N"; then
     echo "❌ Cancelled"
     exit 1
 fi
 # 0. Backup Prompt
 echo "🛡️  Backup Check"
-read -p "❓ Create database backup before wiping? (Y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ || -z $REPLY ]]; then
+if confirm "Create database backup before wiping?" "Y"; then
     echo "📦 Backing up databases..."
     python3 scripts/setup_dev.py --backup
     if [ $? -eq 0 ]; then
@@ -104,12 +134,11 @@ DELETE_MODELS="n"
 if [ -d "$HOME/.config/atlastrinity/models" ]; then
     echo ""
     echo "❓ Бажаєте видалити AI моделі (TTS/STT)? (Заощадить ~3GB трафіку якщо залишити)"
-    read -t 5 -p "   Видалити моделі? (y/N) [default: N]: " choice || choice="n"
-    echo ""
-    if [[ "$choice" =~ ^[Yy]$ ]]; then
+    if confirm "Видалити моделі?" "N"; then
         DELETE_MODELS="y"
         echo "   -> Моделі буде видалено."
     else
+        DELETE_MODELS="n"
         echo "   -> Моделі буде збережено."
     fi
 fi
@@ -156,8 +185,36 @@ echo "   ОЧИЩЕННЯ ЗАВЕРШЕНО!"
 echo "=========================================="
 echo ""
 echo "Тепер запустіть:"
-echo "  1️⃣  python scripts/setup_dev.py"
+echo "  1️⃣  python3.12 scripts/setup_dev.py  (або просто python3)"
 echo "  2️⃣  npm run dev"
+echo ""
+
+if confirm "Бажаєте запустити налаштування (setup_dev.py) прямо зараз?" "Y"; then
+    # Pass --yes if we are in non-interactive mode
+    SETUP_ARGS=""
+    if [[ "$INTERACTIVE" == "false" ]]; then
+        SETUP_ARGS="--yes"
+    fi
+
+    # Try python3.12 first, then python3, then python
+    PYTHON_CMD="python3" # Default to python3
+    if command -v python3.12 &> /dev/null; then
+        PYTHON_CMD="python3.12"
+    elif command -v python3 &> /dev/null; then
+        PYTHON_CMD="python3"
+    elif command -v python &> /dev/null; then
+        PYTHON_CMD="python"
+    else
+        echo "❌ Error: No python interpreter found (python3.12, python3, or python)."
+        exit 1
+    fi
+    
+    echo "🚀 Запуск $PYTHON_CMD scripts/setup_dev.py $SETUP_ARGS..."
+    $PYTHON_CMD scripts/setup_dev.py $SETUP_ARGS
+else
+    echo "👋 Ви можете запустити налаштування пізніше."
+fi
+
 echo ""
 echo "Очікуваний результат:"
 echo "  ✅ Відновлення баз даних з backups/"

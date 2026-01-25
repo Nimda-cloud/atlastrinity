@@ -15,6 +15,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -96,9 +97,50 @@ def ensure_directories():
 
 
 def check_system_tools():
-    """Перевіряє наявність базових інструментів"""
-    print_step("Перевірка базових інструментів...")
-    tools = ["brew", "bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly"]
+    """Перевіряє наявність базових інструментів та встановлює відсутні"""
+    print_step("Перевірка базових інструментів (Brew, Python, Node, Bun)...")
+    
+    # Ensure Homebrew is in PATH
+    brew_paths = ["/opt/homebrew/bin", "/usr/local/bin"]
+    for p in brew_paths:
+        if p not in os.environ["PATH"]:
+            os.environ["PATH"] = p + os.pathsep + os.environ["PATH"]
+
+    if not shutil.which("brew"):
+        print_error("Homebrew не знайдено! Він критично необхідний.")
+        return False
+
+    # 1. Ensure Python 3.12
+    if not shutil.which("python3.12"):
+        print_info("Python 3.12 не знайдено. Встановлення через Brew...")
+        try:
+            subprocess.run(["brew", "install", "python@3.12"], check=True)
+            print_success("Python 3.12 встановлено")
+        except Exception as e:
+            print_error(f"Не вдалося встановити Python 3.12: {e}")
+    else:
+        print_success("Python 3.12 знайдено")
+
+    # 2. Ensure Node 22
+    if not shutil.which("node") or "v22" not in subprocess.getoutput("node --version"):
+        print_info("Node 22 не знайдено або версія застаріла. Встановлення node@22 через Brew...")
+        try:
+            subprocess.run(["brew", "install", "node@22"], check=True)
+            # Link node@22 if possible
+            subprocess.run(["brew", "link", "--overwrite", "node@22"], check=False)
+            
+            # Export path for current session
+            node_path = "/opt/homebrew/opt/node@22/bin"
+            if os.path.exists(node_path):
+                os.environ["PATH"] = node_path + os.pathsep + os.environ["PATH"]
+            print_success("Node 22 встановлено")
+        except Exception as e:
+            print_error(f"Не вдалося встановити Node 22: {e}")
+    else:
+        print_success(f"Node знайдено ({subprocess.getoutput('node --version').strip()})")
+
+    # 3. Check other tools
+    tools = ["bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly"]
     missing = []
 
     for tool in tools:
@@ -151,13 +193,20 @@ def check_system_tools():
     if "vibe" in missing:
         print_info("Vibe CLI не знайдено. Встановлення Vibe...")
         try:
-            # Official vibe installation script
-            subprocess.run("curl -fsSL https://get.vibe.sh | sh", shell=True, check=True)
-            print_success("Vibe CLI встановлено")
+            # Official vibe installation script - with dynamic resolution
+            # Try npm fallback if curl fails
+            res = subprocess.run("curl -fsSL https://get.vibe.sh | sh", shell=True, check=False, capture_output=True)
+            if res.returncode == 0:
+                print_success("Vibe CLI встановлено (via curl)")
+            else:
+                print_info("Curl install failed, trying npm install -g vibe-cli...")
+                subprocess.run(["npm", "install", "-g", "vibe-cli"], check=False)
+                print_success("Vibe CLI встановлено (via npm)")
+            
             if "vibe" in missing:
                 missing.remove("vibe")
         except Exception as e:
-            print_error(f"Не вдалося встановити Vibe: {e}")
+            print_warning(f"Не вдалося встановити Vibe CLI (це не критично): {e}")
 
     # Auto-install JS dev tools if missing
     if any(t in missing for t in ["oxlint", "knip"]):
@@ -377,8 +426,9 @@ def check_venv():
     print_step("Налаштування Python venv...")
     if not VENV_PATH.exists():
         try:
-            subprocess.run([sys.executable, "-m", "venv", str(VENV_PATH)], check=True)
-            print_success("Virtual environment створено")
+            # Use --copies to avoid symlink issues on shared volumes/VMs
+            subprocess.run([sys.executable, "-m", "venv", "--copies", str(VENV_PATH)], check=True)
+            print_success("Virtual environment створено (using --copies)")
         except Exception as e:
             print_error(f"Не вдалося створити venv: {e}")
             return False
@@ -422,25 +472,36 @@ def install_deps():
     """Встановлює всі залежності (Python, NPM, MCP)"""
     print_step("Встановлення залежностей...")
 
-    # 1. Python
-    if platform.system() == "Windows":
-        venv_python = str(VENV_PATH / "Scripts" / "python.exe")
     else:
         # Standard unix/mac venv path
-        venv_python = str(VENV_PATH / "bin" / "python")
+        venv_python_bin = VENV_PATH / "bin" / "python"
+        
+    # Helper to run commands using venv environment but possibly system interpreter if venv binary is unexecutable
+    def run_venv_cmd(cmd_args, **kwargs):
+        env = os.environ.copy()
+        env["VIRTUAL_ENV"] = str(VENV_PATH)
+        env["PATH"] = str(VENV_PATH / "bin") + os.pathsep + env.get("PATH", "")
+        
+        # Try running via venv binary first
+        try:
+            return subprocess.run([str(venv_python_bin)] + cmd_args, env=env, **kwargs)
+        except OSError as e:
+            if e.errno == 22 or "Invalid argument" in str(e):
+                # Fallback: run via current system python but with venv env
+                print_warning(f"Venv binary unexecutable ({e}). Falling back to system python with VIRTUAL_ENV.")
+                return subprocess.run([sys.executable] + cmd_args, env=env, **kwargs)
+            raise
 
     # Update PIP first
-    subprocess.run(
-        [venv_python, "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
-        check=False, capture_output=True,
-    )
+    run_venv_cmd(["-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"], check=False, capture_output=True)
 
     # Pre-install protobuf with no-build-isolation to avoid setuptools build issues
     print_info("Pre-installing protobuf to avoid build issues...")
-    subprocess.run(
-        [venv_python, "-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"],
-        check=True,
-    )
+    try:
+        run_venv_cmd(["-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"], check=True)
+    except Exception as e:
+        print_warning(f"Failed to install protobuf with no-build-isolation: {e}. Trying standard install...")
+        run_venv_cmd(["-m", "pip", "install", "protobuf==3.19.6"], check=True)
 
     # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
@@ -876,10 +937,15 @@ def main():
     # Parse arguments
     import argparse
 
-    parser = argparse.ArgumentParser(description="AtlasTrinity Setup Script")
+    parser = argparse.ArgumentParser(description="AtlasTrinity Dev Setup")
     parser.add_argument("--backup", action="store_true", help="Backup databases and exit")
     parser.add_argument("--restore", action="store_true", help="Restore databases and exit")
+    parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode (auto-confirm)")
     args = parser.parse_args()
+
+    if args.yes:
+        print_info("Non-interactive mode ENABLED.")
+        os.environ["ATLAS_SETUP_NON_INTERACTIVE"] = "1"
 
     if args.backup:
         backup_databases()
