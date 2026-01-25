@@ -5,13 +5,14 @@
 import React from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
-type SystemState = 'IDLE' | 'PROCESSING' | 'EXECUTING' | 'VERIFYING' | 'ERROR';
+type SystemState = 'IDLE' | 'PROCESSING' | 'EXECUTING' | 'VERIFYING' | 'ERROR' | 'PLANNING' | 'COMPLETED' | 'CHAT';
 
 interface AgentStatusProps {
   activeAgent: AgentName;
   systemState: SystemState;
   currentTask?: string;
   activeMode?: string;
+  isConnected?: boolean;
   metrics?: {
     cpu: string;
     memory: string;
@@ -24,8 +25,8 @@ interface AgentStatusProps {
 
 const AGENT_INFO: Record<AgentName, { ukrainianName: string; color: string }> = {
   ATLAS: { ukrainianName: 'Атлас', color: '#00A3FF' },
-  TETYANA: { ukrainianName: 'Тетяна', color: '#00A3FF' },
-  GRISHA: { ukrainianName: 'Гріша', color: '#00A3FF' },
+  TETYANA: { ukrainianName: 'Тетяна', color: '#00FF41' },
+  GRISHA: { ukrainianName: 'Гріша', color: '#FF8C00' },
   SYSTEM: { ukrainianName: 'Система', color: '#00A3FF' },
   USER: { ukrainianName: 'Користувач', color: '#00E5FF' },
 };
@@ -35,6 +36,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
   systemState,
   currentTask,
   activeMode,
+  isConnected = true,
   metrics,
 }) => {
   const agent = AGENT_INFO[activeAgent];
@@ -72,7 +74,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
         <div className="flex items-center px-3 h-full gap-2 border-r border-white/5 overflow-hidden w-[120px] shrink-0">
           <span className="opacity-20 font-light text-[7px] w-[35px] shrink-0">AGENT</span>
           <div className="flex-1 flex items-center gap-1 overflow-hidden">
-            <span style={{ color: agent.color }} className="font-bold truncate grayscale-[0.2]">
+            <span style={{ color: agent.color }} className="font-bold truncate">
               {agent.ukrainianName}
             </span>
             <div className="w-0.5 h-0.5 shrink-0 rounded-full bg-current shadow-[0_0_2px_currentColor]"></div>
@@ -134,8 +136,13 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
           </div>
           <div className="flex items-center gap-2 px-3 w-[80px] shrink-0 border-r border-white/5 h-full">
             <span className="opacity-20 font-light text-[7px] w-[25px] shrink-0">LINK</span>
-            <div className="flex-1">
-              <span className="text-green-400/40 font-bold">LIVE</span>
+            <div className="flex-1 flex items-center gap-1">
+              <span className={`font-bold ${isConnected ? 'text-green-400' : 'text-red-400 animate-pulse'}`}>
+                {isConnected ? 'LIVE' : 'DOWN'}
+              </span>
+              {isConnected && (
+                <div className="w-1 h-1 rounded-full bg-green-400 animate-pulse shadow-[0_0_4px_currentColor]"></div>
+              )}
             </div>
           </div>
         </div>

@@ -59,7 +59,6 @@ body {
   background-color: var(--bg-black);
   color: var(--atlas-blue);
   font-size: 10.5px;
-  /* Slightly smaller base font */
   font-weight: 300;
   line-height: 1.5;
   letter-spacing: 0.02em;
@@ -67,6 +66,8 @@ body {
   background: radial-gradient(circle at center, #0b1021 0%, #000000 70%, #000000 100%);
   height: 100vh;
   width: 100vw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* --- KEYFRAME ANIMATIONS (from animations.css) --- */
@@ -188,11 +189,17 @@ body {
 @keyframes fade-in {
   from {
     opacity: 0;
+    transform: translateY(4px);
   }
 
   to {
     opacity: 1;
+    transform: translateY(0);
   }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
 }
 
 @keyframes pulse-glow {
@@ -366,9 +373,10 @@ body {
 /* Glass Panel */
 .glass-panel {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+  will-change: background;
 }
 
 .border-opacity-20 {
@@ -409,7 +417,6 @@ body {
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
-  scroll-behavior: smooth;
 }
 
 ::-webkit-scrollbar-track {
@@ -417,16 +424,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 163, 255, 0.15);
   border-radius: 3px;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 163, 255, 0.4);
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 
 /* --- APP LAYOUT --- */

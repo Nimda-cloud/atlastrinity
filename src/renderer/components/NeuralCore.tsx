@@ -61,20 +61,21 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
   const getStateLabel = () => {
     switch (state) {
       case 'IDLE':
-        return 'SYSTEM ONLINE';
+        return 'SYSTEM_ONLINE';
       case 'COMPLETED':
-        return 'TASK_FINISHED_OK';
+        return 'TASK_COMPLETED';
       case 'PLANNING':
+        return 'ANALYZING_REQUEST';
       case 'PROCESSING':
-        return 'THINKING_PROCES...';
+        return 'PROCESSING_DATA';
       case 'CHAT':
         return 'NEURAL_DIALOGUE';
       case 'EXECUTING':
-        return 'EXECUTING PROTOCOL';
+        return 'EXECUTING_TASK';
       case 'VERIFYING':
-        return 'VAL_DATA_AUDIT';
+        return 'VERIFYING_RESULTS';
       case 'ERROR':
-        return 'CORE_FAILURE_ERR';
+        return 'SYSTEM_ERROR';
       default:
         return 'CORE_ACTIVE';
     }
@@ -356,10 +357,11 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
                 .status-box {
                     position: relative;
                     padding: 10px 30px;
-                    background: rgba(0, 0, 0, 0.9);
-                    border: 1.5px solid currentColor;
-                    box-shadow: 0 0 15px currentColor, inset 0 0 5px currentColor;
+                    background: rgba(0, 0, 0, 0.95);
+                    border: 2px solid currentColor;
+                    box-shadow: 0 0 20px currentColor, inset 0 0 8px currentColor;
                     z-index: 2;
+                    transition: all 0.3s ease;
                 }
                 .status-glow {
                     position: absolute;
@@ -372,12 +374,12 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
                 }
                 .status-text {
                     font-family: 'JetBrains Mono', monospace;
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 700;
-                    letter-spacing: 4px;
+                    letter-spacing: 3px;
                     color: currentColor;
                     text-transform: uppercase;
-                    text-shadow: 0 0 8px currentColor;
+                    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
                 }
                 /* Custom CCW rotation for inner rings */
                 @keyframes spin-ccw {
