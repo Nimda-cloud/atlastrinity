@@ -133,6 +133,15 @@ temperature = 0.3
 input_price = 5.0
 output_price = 15.0
 
+# Copilot Models (GPT-4.1)
+[[models]]
+name = "gpt-4.1"
+provider = "copilot"
+alias = "gpt-4.1"
+temperature = 0.2
+input_price = 5.0
+output_price = 15.0
+
 
 
 
