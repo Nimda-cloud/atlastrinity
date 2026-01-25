@@ -34,6 +34,7 @@ from src.brain.db.schema import Session as DBSession
 from src.brain.db.schema import Task as DBTask
 from src.brain.db.schema import TaskStep as DBStep
 from src.brain.db.schema import ToolExecution as DBToolExecution
+from src.brain.error_router import error_router
 from src.brain.knowledge_graph import knowledge_graph
 from src.brain.logger import logger
 from src.brain.mcp_manager import mcp_manager
@@ -1320,7 +1321,62 @@ class Trinity:
                         "error",
                     )
 
-                # RECOVERY LOGIC
+                # === SMART SELF-HEALING ROUTER ===
+                strategy = error_router.decide(last_error, attempt)
+                logger.info(f"[ORCHESTRATOR] Recovery Strategy: {strategy.action} (Reason: {strategy.reason})")
+
+                if strategy.action == "RETRY":
+                    # Simple patient retry for transient errors
+                    if attempt < strategy.max_retries:
+                        await self._log(f"Transient error detected. {strategy.reason}. Retrying in {strategy.backoff}s...", "orchestrator")
+                        await asyncio.sleep(strategy.backoff)
+                        continue  # Continue loop to retry
+                    # If max retries exhausted, flow down to fallback (or escalation)
+
+                elif strategy.action == "RESTART":
+                    # Critical State Error
+                    await self._log(f"CRITICAL: {strategy.reason}. Initiating System Restart...", "system", type="error")
+                    
+                    # Safe Redis access
+                    redis_client = getattr(state_manager, "redis", None)
+                    
+                    # Save state immediately
+                    if state_manager and state_manager.available:
+                        await state_manager.save_session(self.current_session_id, self.state)
+                        if redis_client:
+                            restart_metadata = {
+                                "reason": strategy.reason,
+                                "timestamp": datetime.now().isoformat(),
+                                "source": "orchestrator_self_healing"
+                            }
+                            await redis_client.set("restart_pending", json.dumps(restart_metadata))
+                    
+                    # Execute Restart
+                    import os
+                    import sys
+                    logger.info("[ORCHESTRATOR] Executing os.execv restart now...")
+                    await asyncio.sleep(1.0) # Give logs time to flush
+                    os.execv(sys.executable, [sys.executable, *sys.argv])
+                    return False  # Stop current execution
+
+                elif strategy.action == "ASK_USER":
+                    await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
+                    # Flow continues to user input handling logic below or breaks retry loop to ask user
+                    # Integration with 'need_user_input' logic
+                    # For now we break to let the loop finish and potentially ask user via result.error="need_user_input"
+                    # But here we are in Exception block, so we might need to synthesize a result
+                    step_result = StepResult(step_id=step_id, success=False, error="need_user_input", result=strategy.reason)
+                    break 
+
+                elif strategy.action == "VIBE_HEAL":
+                     # Logic/Complex Error -> Engage Vibe immediately
+                     await self._log(f"Logic Error: {strategy.reason}. Engaging Vibe...", "orchestrator")
+                     # Proceed to VIBE logic below...
+                
+                # ... fall through to existing Vibe/Atlas recovery logic if action is VIBE_HEAL or ATLAS_PLAN ...
+
+
+                # RECOVERY LOGIC (Legacy + Vibe Integration)
                 validate_with_grisha = bool(
                     config.get("orchestrator", {}).get("validate_failed_steps_with_grisha", False),
                 )
