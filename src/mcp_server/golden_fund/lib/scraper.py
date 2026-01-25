@@ -103,6 +103,55 @@ class DataScraper:
         except Exception as e:
             return ScrapeResult(False, error=f"API scraping failed: {e!s}")
 
+    def scrape_html_tables(
+        self, url: str, timeout: int = 30
+    ) -> ScrapeResult:
+        """Scrape HTML tables from a web page as a fallback when structured data is not available.
+        
+        Args:
+            url: The URL to scrape tables from
+            timeout: Request timeout in seconds
+            
+        Returns:
+            ScrapeResult with list of tables (each table is list of rows, each row is list of cells)
+        """
+        try:
+            logger.info(f"Scraping HTML tables from: {url}")
+            response = self.session.get(url, timeout=timeout)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, "html.parser")
+            tables = []
+            
+            # Find all table elements
+            for table in soup.find_all("table"):
+                table_data = []
+                for row in table.find_all("tr"):
+                    row_data = []
+                    for cell in row.find_all(["td", "th"]):
+                        row_data.append(cell.get_text(strip=True))
+                    if row_data:  # Only add non-empty rows
+                        table_data.append(row_data)
+                if table_data:  # Only add non-empty tables
+                    tables.append(table_data)
+
+            if not tables:
+                logger.warning(f"No tables found on page: {url}")
+                return ScrapeResult(False, error="No HTML tables found on page")
+
+            result = ScrapeResult(True, data=tables)
+            result.metadata = {
+                "url": url,
+                "status_code": response.status_code,
+                "table_count": len(tables)
+            }
+            return result
+
+        except requests.exceptions.RequestException as e:
+            return ScrapeResult(False, error=f"Failed to scrape tables from {url}: {e!s}")
+        except Exception as e:
+            return ScrapeResult(False, error=f"Unexpected error scraping tables: {e!s}")
+
     def save_data(
         self, data: Any, file_path: str | Path, format: ScrapeFormat = ScrapeFormat.JSON
     ) -> ScrapeResult:
