@@ -20,6 +20,7 @@ class ErrorCategory(Enum):
     STATE = "state"  # Corrupted session/environment (Restart)
     PERMISSION = "permission"  # Access denied (Ask User/Atlas)
     USER_INPUT = "user_input"  # Missing info (Ask User)
+    VERIFICATION = "verification"  # Grisha's verification logic failed (Immediate escalation)
     UNKNOWN = "unknown"  # Unclassified (Default fallback)
 
 
@@ -85,6 +86,15 @@ class SmartErrorRouter:
         r"403\s+forbidden",
     ]
 
+    # Verification: Grisha's verification system detected issues
+    VERIFICATION_PATTERNS = [
+        r"grisha\s+rejected",
+        r"auto-verdict\s+after",
+        r"verification.*failed",
+        r"max\s+attempts\s+reached.*verification",
+        r"0/\d+\s+successful",
+    ]
+
     def __init__(self):
         self._cache = {}
 
@@ -96,7 +106,9 @@ class SmartErrorRouter:
 
         category = ErrorCategory.UNKNOWN
 
-        if any(re.search(p, error_str) for p in self.TRANSIENT_PATTERNS):
+        if any(re.search(p, error_str) for p in self.VERIFICATION_PATTERNS):
+            category = ErrorCategory.VERIFICATION
+        elif any(re.search(p, error_str) for p in self.TRANSIENT_PATTERNS):
             category = ErrorCategory.TRANSIENT
         elif any(re.search(p, error_str) for p in self.LOGIC_PATTERNS):
             category = ErrorCategory.LOGIC
@@ -146,6 +158,15 @@ class SmartErrorRouter:
         if category == ErrorCategory.PERMISSION:
             return RecoveryStrategy(
                 action="ASK_USER", reason="Permission denied. Creating manual request."
+            )
+
+        if category == ErrorCategory.VERIFICATION:
+            # Verification failures indicate systemic issues with Grisha's logic or tool error detection
+            # Don't retry - escalate immediately for deep analysis
+            return RecoveryStrategy(
+                action="ATLAS_PLAN",
+                context_needed=True,
+                reason="Verification system failure detected. This indicates issues with Grisha's error detection logic, not the task itself. Escalating for diagnostic review.",
             )
 
         # Unknown / Default Fallback
