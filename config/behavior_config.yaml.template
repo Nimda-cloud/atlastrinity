@@ -7,8 +7,8 @@
 # Conversely, if you modify the active config, update this template.
 # =============================================================================
 #
-# Version: 1.1.0 (Atlas Focus Fix)
-# Last Updated: 2026-01-23
+# Version: 1.2.0 (Data Analysis + Golden Fund Integration)
+# Last Updated: 2026-01-25
 # =============================================================================
 
 # =============================================================================
@@ -501,6 +501,79 @@ tool_routing:
       think: sequentialthinking
       reason: sequentialthinking
 
+  # Data Analysis
+  data_analysis:
+    synonyms:
+      - data_analysis
+      - data-analysis
+      - analyze_data
+      - statistics
+      - statistical_analysis
+      - data_processing
+      - data_visualization
+      - data_cleaning
+      - pandas
+      - csv_analysis
+      - excel_analysis
+      - read_metadata
+      - interpret_column_data
+      - run_pandas_code
+    priority_server: data-analysis
+    fallback_server: null
+    tool_mapping:
+      analyze_dataset: analyze_dataset
+      generate_statistics: generate_statistics
+      create_visualization: create_visualization
+      data_cleaning: data_cleaning
+      data_aggregation: data_aggregation
+      read_metadata: read_metadata
+      interpret_column_data: interpret_column_data
+      run_pandas_code: run_pandas_code
+    routing_rules:
+      - pattern: 'analyze.*'
+        server: data-analysis
+        tool: analyze_dataset
+      - pattern: 'statistics.*'
+        server: data-analysis
+        tool: generate_statistics
+      - pattern: 'visualiz.*'
+        server: data-analysis
+        tool: create_visualization
+
+  # Golden Fund Knowledge Base
+  golden_fund:
+    synonyms:
+      - golden_fund
+      - golden-fund
+      - goldenfund
+      - knowledge_base
+      - kb
+      - ingest
+      - probe_entity
+      - analyze_and_store
+      - get_dataset_insights
+    priority_server: golden-fund
+    fallback_server: null
+    tool_mapping:
+      search_golden_fund: search_golden_fund
+      probe_entity: probe_entity
+      ingest_dataset: ingest_dataset
+      add_knowledge_node: add_knowledge_node
+      analyze_and_store: analyze_and_store
+      get_dataset_insights: get_dataset_insights
+      store_blob: store_blob
+      retrieve_blob: retrieve_blob
+    routing_rules:
+      - pattern: 'search.*knowledge.*'
+        server: golden-fund
+        tool: search_golden_fund
+      - pattern: 'probe.*'
+        server: golden-fund
+        tool: probe_entity
+      - pattern: 'ingest.*'
+        server: golden-fund
+        tool: ingest_dataset
+
   # macOS-specific operations
   macos_use:
     priority_actions:
@@ -729,6 +802,16 @@ task_classification:
         dead_code,
       ]
     recommended_servers: [devtools]
+    priority: tier2
+
+  data_analysis_tasks:
+    keywords: [data, analysis, statistics, pandas, csv, excel, visualization, chart, aggregate, clean]
+    recommended_servers: [data-analysis, golden-fund]
+    priority: tier2
+
+  knowledge_base_tasks:
+    keywords: [knowledge, ingest, probe, entity, golden, fund, insights, dataset]
+    recommended_servers: [golden-fund, memory]
     priority: tier2
 
 # =============================================================================
