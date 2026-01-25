@@ -38,7 +38,11 @@ SEARCH PROTOCOL (v1.1)
       "priority_domains": ["youcontrol.com.ua", "opendatabot.ua", "clarity-project.info"]
     },
     "open_data": {
-      "operator": "site:data.gov.ua {query}",
+      "operator": "site:data.gov.ua \"{query}\" filetype:csv OR filetype:xlsx OR filetype:json",
+      "priority_domains": ["data.gov.ua"]
+    },
+    "structured_data": {
+      "operator": "site:data.gov.ua \"{query}\" filetype:csv OR filetype:xlsx OR filetype:json",
       "priority_domains": ["data.gov.ua"]
     }
   }

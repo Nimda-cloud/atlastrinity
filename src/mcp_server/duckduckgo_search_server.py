@@ -244,6 +244,28 @@ def open_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
     return result
 
 
+@server.tool()
+def structured_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
+    """Search for structured data sources (CSV, XLSX, JSON) on data.gov.ua.
+    Uses refined queries targeting specific file types.
+
+    Args:
+        query: The search query for structured data.
+
+    """
+    if not query or not query.strip():
+        logger.warning("Structured data search request received with empty query")
+        return {"error": "query is required"}
+
+    logger.info(f"Executing structured data search: query='{query.strip()}'")
+    result = _execute_protocol_search("structured_data", query, "DuckDuckGo (Structured Data Search)")
+    if result.get("success"):
+        logger.info(f"Structured data search completed: found {len(result.get('results', []))} results")
+    else:
+        logger.warning(f"Structured data search failed: {result.get('error', 'unknown error')}")
+    return result
+
+
 if __name__ == "__main__":
     logger.info("Starting DuckDuckGo Search Server")
     logger.info(f"Loading search protocol from: {PROTOCOL_PATH}")
