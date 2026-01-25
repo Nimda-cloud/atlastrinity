@@ -99,29 +99,31 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
         depth: How deep to traverse the graph relationships (1-3).
     """
     logger.info(f"Probing entity: {entity_id} (depth={depth})")
-    
+
     # Search for the entity in vector store
     search_result = vector_store.search(entity_id, limit=5)
-    
+
     if not search_result.success:
         return json.dumps({"error": f"Entity search failed: {search_result.error}"})
-    
+
     results = search_result.data.get("results", []) if search_result.data else []
-    
+
     if not results:
         # Try keyword search as fallback
         keyword_result = search_store.search(entity_id)
         if keyword_result.success and keyword_result.data:
             results = keyword_result.data.get("results", [])
-    
+
     if not results:
-        return json.dumps({
-            "entity_id": entity_id,
-            "found": False,
-            "message": "Entity not found in Golden Fund. Consider ingesting relevant data first.",
-            "suggestion": f"Use ingest_dataset or add_knowledge_node to add information about '{entity_id}'"
-        })
-    
+        return json.dumps(
+            {
+                "entity_id": entity_id,
+                "found": False,
+                "message": "Entity not found in Golden Fund. Consider ingesting relevant data first.",
+                "suggestion": f"Use ingest_dataset or add_knowledge_node to add information about '{entity_id}'",
+            }
+        )
+
     # Build entity profile from results
     entity_profile = {
         "entity_id": entity_id,
@@ -129,35 +131,41 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
         "depth": depth,
         "matches": [],
         "related_entities": [],
-        "metadata": {}
+        "metadata": {},
     }
-    
+
     seen_entities = set()
-    
+
     for result in results[:10]:  # Limit to top 10
         match_info = {
             "id": result.get("id"),
             "score": round(result.get("score", 0), 4),
             "content_preview": str(result.get("content", ""))[:200],
         }
-        
+
         # Extract metadata
         meta = result.get("metadata", {})
         if meta:
             match_info["metadata"] = meta
-            
+
             # Extract related entities from metadata
             for key, value in meta.items():
-                if isinstance(value, str) and len(value) > 2 and key not in ["timestamp", "source_format"]:
+                if (
+                    isinstance(value, str)
+                    and len(value) > 2
+                    and key not in ["timestamp", "source_format"]
+                ):
                     if value not in seen_entities and value != entity_id:
                         seen_entities.add(value)
-                        entity_profile["related_entities"].append({
-                            "name": value,
-                            "relation": key,
-                        })
-        
+                        entity_profile["related_entities"].append(
+                            {
+                                "name": value,
+                                "relation": key,
+                            }
+                        )
+
         entity_profile["matches"].append(match_info)
-    
+
     # Recursive depth exploration
     if depth > 1 and entity_profile["related_entities"]:
         entity_profile["deeper_exploration"] = []
@@ -166,12 +174,14 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
             if sub_result.success and sub_result.data:
                 sub_matches = sub_result.data.get("results", [])
                 if sub_matches:
-                    entity_profile["deeper_exploration"].append({
-                        "entity": related["name"],
-                        "relation": related["relation"],
-                        "sub_matches_count": len(sub_matches),
-                    })
-    
+                    entity_profile["deeper_exploration"].append(
+                        {
+                            "entity": related["name"],
+                            "relation": related["relation"],
+                            "sub_matches_count": len(sub_matches),
+                        }
+                    )
+
     return json.dumps(entity_profile, indent=2, default=str)
 
 
@@ -189,28 +199,28 @@ async def add_knowledge_node(
     """
     if links is None:
         links = []
-    
+
     logger.info(f"Adding knowledge node: {content[:50]}...")
-    
+
     # Transform to unified schema
     node_data = {
         "name": metadata.get("name", content[:50]),
         "type": metadata.get("type", "entity"),
         "content": content,
-        **metadata
+        **metadata,
     }
-    
+
     transform_result = transformer.transform(node_data, source_format="manual")
-    
+
     if not transform_result.success:
         return json.dumps({"success": False, "error": transform_result.error})
-    
+
     # Store in vector DB
     store_result = vector_store.store(transform_result.data)
-    
+
     if not store_result.success:
         return json.dumps({"success": False, "error": store_result.error})
-    
+
     # Process links (create relationships)
     links_created = 0
     for link in links:
@@ -227,13 +237,15 @@ async def add_knowledge_node(
             }
             vector_store.store(link_node)
             links_created += 1
-    
-    return json.dumps({
-        "success": True,
-        "node_id": store_result.data.get("records_inserted", 1) if store_result.data else 1,
-        "links_created": links_created,
-        "message": f"Knowledge node '{node_data['name']}' added to Golden Fund"
-    })
+
+    return json.dumps(
+        {
+            "success": True,
+            "node_id": store_result.data.get("records_inserted", 1) if store_result.data else 1,
+            "links_created": links_created,
+            "message": f"Knowledge node '{node_data['name']}' added to Golden Fund",
+        }
+    )
 
 
 @mcp.tool()
@@ -252,13 +264,13 @@ async def analyze_and_store(
         analysis_type: Type of analysis - 'summary', 'correlation', 'distribution'.
     """
     import pandas as pd
-    
+
     logger.info(f"Analyzing and storing: {file_path} as '{dataset_name}'")
-    
+
     path = Path(file_path).expanduser()
     if not path.exists():
         return json.dumps({"success": False, "error": f"File not found: {file_path}"})
-    
+
     try:
         # Load data
         suffix = path.suffix.lower()
@@ -270,7 +282,7 @@ async def analyze_and_store(
             df = pd.read_json(path)
         else:
             return json.dumps({"success": False, "error": f"Unsupported format: {suffix}"})
-        
+
         # Generate analysis
         analysis = {
             "dataset_name": dataset_name,
@@ -281,15 +293,15 @@ async def analyze_and_store(
             "analysis_type": analysis_type,
             "timestamp": datetime.now().isoformat(),
         }
-        
+
         # Add statistics based on analysis type
         numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-        
+
         if analysis_type == "summary":
             if numeric_cols:
                 analysis["numeric_summary"] = df[numeric_cols].describe().to_dict()
             analysis["missing_values"] = df.isna().sum().to_dict()
-            
+
         elif analysis_type == "correlation":
             if len(numeric_cols) > 1:
                 corr = df[numeric_cols].corr()
@@ -299,13 +311,15 @@ async def analyze_and_store(
                     for j in range(i + 1, len(corr.columns)):
                         val = corr.iloc[i, j]
                         if abs(val) > 0.7:
-                            strong.append({
-                                "col1": corr.columns[i],
-                                "col2": corr.columns[j],
-                                "correlation": round(val, 4)
-                            })
+                            strong.append(
+                                {
+                                    "col1": corr.columns[i],
+                                    "col2": corr.columns[j],
+                                    "correlation": round(val, 4),
+                                }
+                            )
                 analysis["strong_correlations"] = strong
-                
+
         elif analysis_type == "distribution":
             analysis["distributions"] = {}
             for col in numeric_cols[:5]:
@@ -316,25 +330,29 @@ async def analyze_and_store(
                         "median": float(series.median()),
                         "std": round(float(series.std()), 4),
                     }
-        
+
         # Store in Golden Fund
         store_result = vector_store.store(analysis)
-        
+
         # Save analysis to cache
-        cache_file = ANALYSIS_CACHE_DIR / f"{dataset_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        cache_file = (
+            ANALYSIS_CACHE_DIR / f"{dataset_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(analysis, f, indent=2, default=str)
-        
-        return json.dumps({
-            "success": True,
-            "dataset_name": dataset_name,
-            "rows_analyzed": len(df),
-            "columns": len(df.columns),
-            "stored_in_golden_fund": store_result.success,
-            "cache_file": str(cache_file),
-            "message": f"Dataset '{dataset_name}' analyzed and stored in Golden Fund"
-        })
-        
+
+        return json.dumps(
+            {
+                "success": True,
+                "dataset_name": dataset_name,
+                "rows_analyzed": len(df),
+                "columns": len(df.columns),
+                "stored_in_golden_fund": store_result.success,
+                "cache_file": str(cache_file),
+                "message": f"Dataset '{dataset_name}' analyzed and stored in Golden Fund",
+            }
+        )
+
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
         return json.dumps({"success": False, "error": str(e)})
@@ -349,22 +367,24 @@ async def get_dataset_insights(dataset_name: str) -> str:
         dataset_name: Name of the dataset to retrieve insights for.
     """
     logger.info(f"Retrieving insights for: {dataset_name}")
-    
+
     # Search for dataset in vector store
     result = vector_store.search(dataset_name, limit=5)
-    
+
     if not result.success:
         return json.dumps({"success": False, "error": result.error})
-    
+
     matches = result.data.get("results", []) if result.data else []
-    
+
     if not matches:
-        return json.dumps({
-            "success": False,
-            "dataset_name": dataset_name,
-            "message": "No insights found. Use analyze_and_store to analyze the dataset first."
-        })
-    
+        return json.dumps(
+            {
+                "success": False,
+                "dataset_name": dataset_name,
+                "message": "No insights found. Use analyze_and_store to analyze the dataset first.",
+            }
+        )
+
     # Filter for dataset-type matches
     insights = []
     for match in matches:
@@ -374,20 +394,24 @@ async def get_dataset_insights(dataset_name: str) -> str:
                 data = json.loads(content)
             else:
                 data = content
-            if data.get("dataset_name") == dataset_name or dataset_name.lower() in str(data).lower():
-                insights.append({
-                    "score": round(match.get("score", 0), 4),
-                    "data": data
-                })
+            if (
+                data.get("dataset_name") == dataset_name
+                or dataset_name.lower() in str(data).lower()
+            ):
+                insights.append({"score": round(match.get("score", 0), 4), "data": data})
         except (json.JSONDecodeError, TypeError):
             pass
-    
-    return json.dumps({
-        "success": True,
-        "dataset_name": dataset_name,
-        "insights_count": len(insights),
-        "insights": insights[:5]  # Top 5
-    }, indent=2, default=str)
+
+    return json.dumps(
+        {
+            "success": True,
+            "dataset_name": dataset_name,
+            "insights_count": len(insights),
+            "insights": insights[:5],  # Top 5
+        },
+        indent=2,
+        default=str,
+    )
 
 
 if __name__ == "__main__":
