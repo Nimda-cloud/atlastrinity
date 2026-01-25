@@ -457,12 +457,12 @@ def install_deps():
         
         # Try running via venv binary first
         try:
-            return subprocess.run([str(venv_python_bin)] + cmd_args, env=env, **kwargs)
+            return subprocess.run([str(venv_python_bin), *cmd_args], env=env, **kwargs)
         except OSError as e:
             if e.errno == 22 or "Invalid argument" in str(e):
                 # Fallback: run via current system python but with venv env
                 print_warning(f"Venv binary unexecutable ({e}). Falling back to system python with VIRTUAL_ENV.")
-                return subprocess.run([sys.executable] + cmd_args, env=env, **kwargs)
+                return subprocess.run([sys.executable, *cmd_args], env=env, **kwargs)
             raise
 
     # Update PIP first
@@ -657,7 +657,8 @@ def download_models():
             with open(target_path, encoding="utf-8") as f:
                 cfg = yaml.safe_load(f) or {}
                 model_name = cfg.get("voice", {}).get("stt", {}).get("model") or cfg.get("mcp", {}).get("whisper_stt", {}).get("model") or model_name
-    except Exception: pass
+    except Exception:
+        pass
 
     stt_dir = DIRS["stt_models"]
     tts_dir = DIRS["tts_models"]
@@ -1001,7 +1002,8 @@ def main():
                 print_success("Git CLI: Налаштовано через персональний токен (embedded)")
         else:
             print_warning("Remote origin не знайдено або не вказує на GitHub.")
-    except Exception: pass
+    except Exception:
+        pass
 
     try:
         download_models()
