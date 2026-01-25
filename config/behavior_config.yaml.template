@@ -537,21 +537,42 @@ tool_routing:
       - applescript
       - osascript
     action_mapping:
+      # Tool discovery and inspection
+      list_tools_dynamic: macos-use_list_tools_dynamic
+      list_tools: macos-use_list_tools_dynamic
+      discovery: macos-use_list_tools_dynamic
+      
+      # Screen and UI analysis
+      analyze_screen: macos-use_analyze_screen
+      vision: macos-use_analyze_screen
+      ocr: macos-use_analyze_screen
+      screenshot: macos-use_take_screenshot
+      
+      # Notes and content
       notes_get: macos-use_notes_get_content
+      notes_get_content: macos-use_notes_get_content
+      
+      # UI interaction
       click: macos-use_click_and_traverse
       type: macos-use_type_and_traverse
       write: macos-use_type_and_traverse
       press: macos-use_press_key_and_traverse
       hotkey: macos-use_press_key_and_traverse
       refresh: macos-use_refresh_traversal
-      screenshot: macos-use_take_screenshot
-      vision: macos-use_analyze_screen
-      ocr: macos-use_analyze_screen
       open: macos-use_open_application_and_traverse
       launch: macos-use_open_application_and_traverse
       scroll: macos-use_scroll_and_traverse
+      right_click: macos-use_right_click_and_traverse
+      double_click: macos-use_double_click_and_traverse
+      drag: macos-use_drag_and_drop_and_traverse
+      drop: macos-use_drag_and_drop_and_traverse
+      drag_and_drop: macos-use_drag_and_drop_and_traverse
+      
+      # Web and URL
       fetch: macos-use_fetch_url
       fetch_url: macos-use_fetch_url
+      
+      # System
       time: macos-use_get_time
       get_time: macos-use_get_time
       notification: macos-use_send_notification
@@ -563,11 +584,6 @@ tool_routing:
       set_clipboard: macos-use_set_clipboard
       clipboard_get: macos-use_get_clipboard
       get_clipboard: macos-use_get_clipboard
-      right_click: macos-use_right_click_and_traverse
-      double_click: macos-use_double_click_and_traverse
-      drag: macos-use_drag_and_drop_and_traverse
-      drop: macos-use_drag_and_drop_and_traverse
-      drag_and_drop: macos-use_drag_and_drop_and_traverse
 
 # =============================================================================
 # TASK CLASSIFICATION
