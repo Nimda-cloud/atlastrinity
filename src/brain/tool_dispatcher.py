@@ -542,11 +542,17 @@ class ToolDispatcher:
             if isinstance(result, dict) and result.get("error"):
                 error_msg = str(result.get("error", ""))
                 if "not found" in error_msg.lower() or "-32602" in error_msg:
-                    logger.warning(
-                        f"[DISPATCHER] Tool not found on server: {server}.{resolved_tool}",
+                    logger.error(
+                        f"[DISPATCHER] Tool not found on server: {server}.{resolved_tool}. Error: {error_msg}",
                     )
                     result["suggestion"] = (
                         f"Tool '{resolved_tool}' may not exist on server '{server}'. Check available tools with list_tools."
+                    )
+                    result["tool_not_found"] = True
+                else:
+                    # Log all tool errors for debugging
+                    logger.error(
+                        f"[DISPATCHER] Tool execution failed: {server}.{resolved_tool}. Error: {error_msg}",
                     )
 
             return result

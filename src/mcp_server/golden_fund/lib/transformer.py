@@ -9,7 +9,7 @@ from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, ValidationError
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, encoding='utf-8')
 logger = logging.getLogger("golden_fund.transformer")
 
 

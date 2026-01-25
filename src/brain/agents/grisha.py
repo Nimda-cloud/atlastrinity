@@ -723,6 +723,9 @@ Synthesize findings into a comprehensive validation verdict.
 
                 logger.info(f"[GRISHA] Executing {len(steps)} sequential verification steps")
 
+                # ANTI-LOOP: Detect if we're calling the same tool with same args repeatedly
+                recent_calls = [f"{h.get('tool')}:{str(h.get('args'))}" for h in verification_history[-3:]]
+                
                 for v_step in steps:
                     v_tool = v_step.get("tool")
                     v_args = v_step.get("args") or v_step.get("arguments", {})
@@ -732,11 +735,36 @@ Synthesize findings into a comprehensive validation verdict.
                         continue
 
                     full_v_tool = f"{v_server}.{v_tool}" if v_server else v_tool
+                    call_signature = f"{full_v_tool}:{str(v_args)}"
+                    
+                    # ANTI-LOOP: Skip if we've made this exact call twice already
+                    if recent_calls.count(call_signature) >= 2:
+                        logger.warning(f"[GRISHA] Skipping repeated verification call: {full_v_tool}")
+                        verification_history.append(
+                            {
+                                "tool": full_v_tool,
+                                "args": v_args,
+                                "result": "SKIPPED: Repeated call detected. LLM should try alternative verification method.",
+                                "step_desc": v_step.get("step"),
+                                "error": True,
+                            }
+                        )
+                        continue
+                    
                     logger.info(f"[GRISHA] Verif-Step: {full_v_tool}({v_args})")
 
                     try:
                         v_output = await mcp_manager.dispatch_tool(full_v_tool, v_args)
                         v_res_str = str(v_output)
+                        
+                        # Better error detection
+                        has_error = (
+                            isinstance(v_output, dict) and v_output.get("error") or
+                            "error" in v_res_str.lower()[:500] or
+                            "failed" in v_res_str.lower()[:500] or
+                            "not found" in v_res_str.lower()[:500]
+                        )
+                        
                         if len(v_res_str) > 2000:
                             v_res_str = v_res_str[:2000] + "...(truncated)"
 
@@ -746,6 +774,7 @@ Synthesize findings into a comprehensive validation verdict.
                                 "args": v_args,
                                 "result": v_res_str,
                                 "step_desc": v_step.get("step"),
+                                "error": has_error,
                             }
                         )
                     except Exception as e:
@@ -756,6 +785,7 @@ Synthesize findings into a comprehensive validation verdict.
                                 "args": v_args,
                                 "result": f"Error: {e}",
                                 "step_desc": v_step.get("step"),
+                                "error": True,
                             }
                         )
                 continue
@@ -847,10 +877,21 @@ Synthesize findings into a comprehensive validation verdict.
                 )
 
         logger.warning(f"[GRISHA] Forcing verdict after {max_attempts} attempts")
+        
+        # Better success detection - check error flag and result content
         success_count = sum(
-            1 for h in verification_history if "error" not in str(h.get("result", "")).lower()
+            1 for h in verification_history 
+            if not h.get("error", False) 
+            and "error" not in str(h.get("result", "")).lower()[:200]
+            and "failed" not in str(h.get("result", "")).lower()[:200]
+            and "skipped" not in str(h.get("result", "")).lower()[:200]
         )
+        
+        # Only auto-verify if we have actual successful verifications
         auto_verified = success_count > 0 and success_count >= len(verification_history) // 2
+        
+        # Log detailed breakdown for debugging
+        logger.info(f"[GRISHA] Verification breakdown: {success_count} successful out of {len(verification_history)} calls")
 
         return VerificationResult(
             step_id=step_id,

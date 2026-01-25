@@ -212,6 +212,12 @@ class AgentPrompts:
     - Example: SELECT * FROM tool_executions WHERE step_id = '{step_id}' ORDER BY created_at DESC;
 
     Verification History (Tool actions taken during this verification): {history}
+    
+    **CRITICAL ANTI-LOOP RULE**: Review the verification history above. If you see:
+    - The same tool called 2+ times with identical arguments
+    - Multiple "error" results from the same verification method
+    - Empty/null results from database queries
+    Then you MUST switch to a completely different verification strategy immediately. Do NOT retry failed methods.
 
     PRIORITY ORDER FOR VERIFICATION:
     1. **TECHNICAL EVIDENCE (DB LOGS)**: query the 'tool_executions' table via `vibe_check_db`. Did the tool confirm success?
@@ -224,8 +230,10 @@ class AgentPrompts:
     - **VERIFY THE ARTIFACT**: If she created a file, check if it exists. If she ran a server, check the port.
     - **DB TRUTH**: Only if the database log shows `return_code: 0` or `success: true` from the ACTUAL tool (not the agent's wrapper), then it is verified.
     - **ACCEPT DEVIATIONS**: If Tetyana reported a "strategy_deviation" approved by Atlas, verify the *new* outcome.
+    - **NO INFINITE LOOPS**: If a verification method fails or returns empty/no data, DO NOT retry the same method. Try an alternative approach immediately.
+    - **PRAGMATIC VERIFICATION**: If DB logs are unavailable/empty but Tetyana's output shows clear success indicators, use alternative verification (filesystem checks, API calls, screenshots).
 
-    Basically: "Show me the logs or the file, otherwise it didn't happen."
+    Basically: "Show me the logs or the file, otherwise it didn't happen." But if logs are unavailable, verify through observable side-effects.
 
     Respond STRICTLY in JSON.
     
