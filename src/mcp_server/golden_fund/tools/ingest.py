@@ -82,8 +82,7 @@ async def ingest_dataset(
         if parse_res.success:
             summary += f" Parsed {len(parse_res.data) if isinstance(parse_res.data, list) else 'content'} records."
 
-            # 4. Validation Checkpoint - Data Completeness
-            if "validate" in process_pipeline:
+            if "validate" in process_pipeline and parse_res.data is not None:
                 validation_res = validator.validate_data_completeness(
                     parse_res.data, context=f"ingestion_{run_id}"
                 )

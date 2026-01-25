@@ -66,14 +66,15 @@ class DataValidator:
         Returns:
             ValidationResult with success status and details
         """
+        # Initialize validation metadata
+        metadata: dict[str, Any] = {
+            "context": context,
+            "timestamp": datetime.now().isoformat(),
+            "check_type": "completeness",
+            "check_name": "employee_role_completeness",
+        }
+
         try:
-            # Initialize validation metadata
-            metadata = {
-                "context": context,
-                "timestamp": datetime.now().isoformat(),
-                "check_type": "completeness",
-                "check_name": "employee_role_completeness",
-            }
 
             # Convert single dict to list for uniform processing
             if isinstance(data, dict):
@@ -135,12 +136,14 @@ class DataValidator:
 
             # Determine validation result
             if found_valid_employee:
-                metadata["validation_passed"] = True
-                metadata["valid_employees_found"] = len(employee_details)
-                metadata["employee_samples"] = [
-                    {"name": emp["name"], "role": emp["role"]}
-                    for emp in employee_details[:3]  # Limit to 3 samples
-                ]
+                metadata.update({
+                    "validation_passed": True,
+                    "valid_employees_found": len(employee_details),
+                    "employee_samples": [
+                        {"name": emp["name"], "role": emp["role"]}
+                        for emp in employee_details[:3]  # Limit to 3 samples
+                    ],
+                })
 
                 return ValidationResult(
                     True,
@@ -153,8 +156,14 @@ class DataValidator:
                 )
             else:
                 # Validation failed - no valid employees found
-                metadata["validation_passed"] = False
-                metadata["valid_employees_found"] = 0
+                metadata_fail: dict[str, Any] = {
+                    "context": context,
+                    "timestamp": datetime.now().isoformat(),
+                    "check_type": "completeness",
+                    "check_name": "employee_role_completeness",
+                    "validation_passed": False,
+                    "valid_employees_found": 0,
+                }
 
                 return ValidationResult(
                     False,
@@ -163,7 +172,7 @@ class DataValidator:
                         "Dataset may be incomplete or missing employee information",
                         f"Checked {len(data_list)} records but found no valid employee-role pairs",
                     ],
-                    metadata=metadata,
+                    metadata=metadata_fail,
                 )
 
         except Exception as e:
