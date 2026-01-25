@@ -51,7 +51,9 @@ AUTHORITATIVE AUDIT DOCTRINE:
 Перевір, які саме аргументи Тетяна передала інструменту. Чи вони відповідають запиту?
 
 **КРОК 2: ПЕРЕВІРКА В БАЗІ ДАНИХ (Database Validation - MANDATORY)**
-Виконай запит (`vibe_check_db`) до `tool_executions` для поточного `step_id`.
+Виконай запит (`vibe_check_db`) до `tool_executions` для поточного кроку.
+- *ВАЖЛИВО*: `step_id` у запиті — це номер (1, 2, ...), але в базі це UUID.
+- *SQL*: `SELECT te.* FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = 'Step_ID_Here' ORDER BY te.created_at DESC`
 - *КРИТИЧНО*: Якщо результат порожній `[]` або містить помилку — крок ПРОВАЛЕНО.
 
 **КРОК 3: ПЕРЕВІРКА ЦІЛІСНОСТІ (Integrity Audit)**
