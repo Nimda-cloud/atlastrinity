@@ -355,6 +355,8 @@ tool_routing:
         tool: open_data_search
     tool_mapping:
       business_registry_search: business_registry_search
+      registry_search: business_registry_search
+      company_search: business_registry_search
 
   # Code assistance (Vibe)
   vibe:
@@ -543,19 +545,34 @@ tool_routing:
       - set_clipboard
       - copy
       - paste
+      - discovery
+      - list_tools
+      - list_tools_dynamic
+      - analyze_screen
+      - vision
+      - ocr
+      - screenshot
+      - take_screenshot
+      - notes_get
+      - notes_get_content
     action_mapping:
       # Tool discovery and inspection
+      macos-use_list_tools_dynamic: macos-use_list_tools_dynamic
       list_tools_dynamic: macos-use_list_tools_dynamic
       list_tools: macos-use_list_tools_dynamic
       discovery: macos-use_list_tools_dynamic
       
       # Screen and UI analysis
+      macos-use_analyze_screen: macos-use_analyze_screen
       analyze_screen: macos-use_analyze_screen
       vision: macos-use_analyze_screen
       ocr: macos-use_analyze_screen
+      macos-use_take_screenshot: macos-use_take_screenshot
       screenshot: macos-use_take_screenshot
+      take_screenshot: macos-use_take_screenshot
       
       # Notes and content
+      macos-use_notes_get_content: macos-use_notes_get_content
       notes_get: macos-use_notes_get_content
       notes_get_content: macos-use_notes_get_content
       
@@ -587,8 +604,10 @@ tool_routing:
       applescript: macos-use_run_applescript
       spotlight: macos-use_spotlight_search
       spotlight_search: macos-use_spotlight_search
+      macos-use_set_clipboard: macos-use_set_clipboard
       clipboard_set: macos-use_set_clipboard
       set_clipboard: macos-use_set_clipboard
+      macos-use_get_clipboard: macos-use_get_clipboard
       clipboard_get: macos-use_get_clipboard
       get_clipboard: macos-use_get_clipboard
 

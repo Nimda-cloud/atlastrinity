@@ -12,7 +12,7 @@ python-multipart>=0.0.6
 # === LLM Provider ===
 requests>=2.31.0
 tenacity>=8.2.0
-mistral-vibe>=1.0.0
+# mistral-vibe CLI встановлюється окремо: curl -LsSf https://mistral.ai/vibe/install.sh | bash
 
 # === Voice ===
 # TTS

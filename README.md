@@ -28,12 +28,12 @@ python3 scripts/setup_dev.py
 
 ### Що робить Setup:
 
-- ✅ **Environment**: Перевіряє версію Python (3.12.12), наявність Swift, Bun та Docker.
+- ✅ **Environment**: Перевіряє версію Python (3.12.12), наявність Swift, Bun, Redis та Vibe CLI.
 - ✅ **FORCED Native Build**: Автоматично **перекомпілює** Swift MCP сервер (`macos-use`) для гарантованої роботи останніх функцій.
 - ✅ **Dependencies**: Встановлює Python venv та всі NPM пакети (включаючи 8 основних MCP серверів).
 - ✅ **Models**: Завантажує TTS (український голос) та STT (Faster-Whisper large-v3) моделі (~3GB).
 - ✅ **FORCED Sync**: Повна синхронізація конфігурацій з примусовим перезаписом `~/.config/atlastrinity/` з актуальних темплейтів.
-- ✅ **Services**: Перевіряє готовність Redis, PostgreSQL та Docker.
+- ✅ **Services**: Встановлює Redis через Homebrew, перевіряє Vibe CLI (Mistral AI) та SQLite database.
 
 ## ⚙️ Розумна Конфігурація (Global First)
 
