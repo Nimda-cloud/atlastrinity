@@ -113,7 +113,7 @@ class SmartErrorRouter:
     def decide(self, error: Any, attempt: int = 1) -> RecoveryStrategy:
         """Decides the recovery strategy based on error and attempt count"""
         category = self.classify(str(error))
-        
+
         logger.info(f"[ROUTER] Error classified as: {category.value} (Attempt {attempt})")
 
         if category == ErrorCategory.TRANSIENT:
@@ -123,7 +123,7 @@ class SmartErrorRouter:
                 action="RETRY",
                 backoff=backoff,
                 max_retries=5,
-                reason="Transient network/system issue. Retrying with backoff."
+                reason="Transient network/system issue. Retrying with backoff.",
             )
 
         if category == ErrorCategory.LOGIC:
@@ -132,34 +132,35 @@ class SmartErrorRouter:
             return RecoveryStrategy(
                 action="VIBE_HEAL",
                 backoff=0.0,
-                max_retries=2, # Give Vibe 2 shots using Reflection
+                max_retries=2,  # Give Vibe 2 shots using Reflection
                 context_needed=True,
-                reason="Logic error detected. Engaging Vibe for code repair."
+                reason="Logic error detected. Engaging Vibe for code repair.",
             )
 
         if category == ErrorCategory.STATE:
             # Immediate Restart
             return RecoveryStrategy(
-                action="RESTART",
-                reason="System state corruption detected. Restarting application."
+                action="RESTART", reason="System state corruption detected. Restarting application."
             )
 
         if category == ErrorCategory.PERMISSION:
             return RecoveryStrategy(
-                action="ASK_USER",
-                reason="Permission denied. Creating manual request."
+                action="ASK_USER", reason="Permission denied. Creating manual request."
             )
 
         # Unknown / Default Fallback
         if attempt <= 2:
-            return RecoveryStrategy(action="RETRY", backoff=1.0, reason="Unknown error. Trying again.")
+            return RecoveryStrategy(
+                action="RETRY", backoff=1.0, reason="Unknown error. Trying again."
+            )
         else:
             # If 2 simple retries failed, assume it's complex and ask Vibe/Atlas
             return RecoveryStrategy(
-                action="ATLAS_PLAN", 
+                action="ATLAS_PLAN",
                 context_needed=True,
-                reason="Persistent unknown error. Escalating to Atlas."
+                reason="Persistent unknown error. Escalating to Atlas.",
             )
+
 
 # Global Instance
 error_router = SmartErrorRouter()
