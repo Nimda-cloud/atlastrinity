@@ -162,12 +162,26 @@ def check_system_tools():
                 missing.append(tool)
             elif tool == "vibe":
                 print_warning(f"{tool} НЕ знайдено")
-                print_info(
-                    "Встановіть Vibe CLI: curl -LsSf https://mistral.ai/vibe/install.sh | bash"
-                )
+                missing.append(tool)
             else:
                 # Python-specific tools are non-blocking here as they'll be installed later
                 print_info(f"{tool} поки не знайдено (буде встановлено у .venv пізніше)")
+
+    # Auto-install Vibe if missing
+    if "vibe" in missing:
+        print_info("Vibe CLI не знайдено. Встановлення Vibe...")
+        try:
+            subprocess.run(
+                "curl -LsSf https://mistral.ai/vibe/install.sh | bash", shell=True, check=True
+            )
+            # Add to PATH for current session (Vibe installs to ~/.local/bin)
+            vibe_bin = Path.home() / ".local" / "bin"
+            os.environ["PATH"] = str(vibe_bin) + os.pathsep + os.environ.get("PATH", "")
+            print_success("Vibe CLI встановлено")
+            if "vibe" in missing:
+                missing.remove("vibe")
+        except Exception as e:
+            print_error(f"Не вдалося встановити Vibe CLI: {e}")
 
     # Auto-install Bun if missing
     if "bun" in missing:
@@ -380,17 +394,46 @@ def build_swift_mcp():
     mcp_path = PROJECT_ROOT / "vendor" / "mcp-server-macos-use"
 
     if not mcp_path.exists():
-        print_warning("Папка vendor/mcp-server-macos-use не знайдена. Пропускаємо.")
-        return True
+        print_info("Папка vendor/mcp-server-macos-use не знайдена. Клонування...")
+        try:
+            # Clone the repository
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "https://github.com/mistralai/mcp-server-macos-use.git",
+                    str(mcp_path),
+                ],
+                check=True,
+            )
+            print_success("mcp-server-macos-use успішно клоновано")
+        except subprocess.CalledProcessError as e:
+            print_error(f"Не вдалося клонувати mcp-server-macos-use: {e}")
+            print_info("Спробуйте клонувати вручну:")
+            print_info(
+                "  cd vendor && git clone https://github.com/mistralai/mcp-server-macos-use.git"
+            )
+            return False
+
+    # Check if binary already exists and is recent
+    binary_path = mcp_path / ".build" / "release" / "mcp-server-macos-use"
+    if binary_path.exists():
+        # Check if binary is recent (modified in last 7 days)
+        import time
+        binary_age = time.time() - binary_path.stat().st_mtime
+        if binary_age < 7 * 24 * 3600:  # 7 days
+            print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
+            return True
+        else:
+            print_info(f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція...")
 
     # Force recompilation: removing existing binary check to ensure latest logic is built
-    print_info("Forcing recompilation of macos-use to ensure binary integrity...")
+    print_info("Компіляція macos-use...")
 
     try:
         print_info("Запуск 'swift build -c release' (це може зайняти час)...")
         subprocess.run(["swift", "build", "-c", "release"], cwd=mcp_path, check=True)
 
-        binary_path = mcp_path / ".build" / "release" / "mcp-server-macos-use"
         if binary_path.exists():
             print_success(f"Скомпільовано успішно: {binary_path}")
             return True
