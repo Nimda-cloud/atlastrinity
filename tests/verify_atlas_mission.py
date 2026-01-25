@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.brain.agents.atlas import Atlas
 
+
 async def verify_mission_depth():
     print("=== Testing Atlas Mission Depth & Identity ===")
     atlas = Atlas()
