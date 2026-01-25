@@ -48,9 +48,6 @@ def npm_package_exists(pkg: str, ver: str) -> bool:
     return rc == 0 and bool(out.strip())
 
 
-
-
-
 def npm_registry_has_version(pkg: str, ver: str) -> bool:
     """Query the npm registry directly for pkg@ver. Returns True if exists.
 
@@ -63,7 +60,8 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
         if ver == "latest" or not ver[0].isdigit():
             url = f"https://registry.npmjs.org/{encoded}"
             req = urllib.request.Request(
-                url, headers={"Accept": "application/vnd.npm.install-v1+json"},
+                url,
+                headers={"Accept": "application/vnd.npm.install-v1+json"},
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = resp.read()
@@ -100,9 +98,6 @@ def bunx_package_exists(pkg: str, ver: str) -> bool:
     # If bun is installed we could attempt bun-specific calls in future, but
     # the npm registry is authoritative and works for bunx too.
     return npm_registry_has_version(pkg, ver)
-
-
-
 
 
 def python_module_importable(module: str) -> bool:

@@ -19,10 +19,9 @@ def generate_atlas_chat_prompt(
     agent_capabilities: str = "",
     use_deep_persona: bool = False,
 ) -> str:
-    """Generates the omni-knowledge systemic prompt for Atlas Chat.
-    """
+    """Generates the omni-knowledge systemic prompt for Atlas Chat."""
     deep_persona = get_atlas_deep_persona() if use_deep_persona else ""
-    
+
     # DYNAMIC INSTRUCTION SET
     if use_deep_persona:
         depth_instruction = """
@@ -217,8 +216,7 @@ def generate_atlas_solo_task_prompt(
     agent_capabilities: str = "",
     use_deep_persona: bool = False,
 ) -> str:
-    """Generates the prompt for Atlas Solo Task mode (direct tool use without Trinity).
-    """
+    """Generates the prompt for Atlas Solo Task mode (direct tool use without Trinity)."""
     deep_persona = get_atlas_deep_persona() if use_deep_persona else ""
 
     return f"""

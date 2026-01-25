@@ -101,7 +101,7 @@ def ensure_directories():
 def check_system_tools():
     """Перевіряє наявність базових інструментів та встановлює відсутні"""
     print_step("Перевірка базових інструментів (Brew, Python, Node, Bun)...")
-    
+
     # Ensure Homebrew is in PATH
     brew_paths = ["/opt/homebrew/bin", "/usr/local/bin"]
     for p in brew_paths:
@@ -130,7 +130,7 @@ def check_system_tools():
             subprocess.run(["brew", "install", "node@22"], check=True)
             # Link node@22 if possible
             subprocess.run(["brew", "link", "--overwrite", "node@22"], check=False)
-            
+
             # Export path for current session
             node_path = "/opt/homebrew/opt/node@22/bin"
             if os.path.exists(node_path):
@@ -156,7 +156,7 @@ def check_system_tools():
                 if venv_tool.exists():
                     print_success(f"{tool} знайдено у .venv")
                     continue
-            
+
             if tool in ["bun", "swift", "npm"]:
                 print_warning(f"{tool} НЕ знайдено")
                 missing.append(tool)
@@ -263,7 +263,9 @@ def install_brew_deps():
 
     # === Встановлення формул ===
     def _brew_formula_installed(formula: str) -> bool:
-        rc = subprocess.run(["brew", "list", "--formula", formula], check=False, capture_output=True)
+        rc = subprocess.run(
+            ["brew", "list", "--formula", formula], check=False, capture_output=True
+        )
         return rc.returncode == 0
 
     for formula, check_cmd in formulas.items():
@@ -336,7 +338,8 @@ def install_brew_deps():
             # Перевіряємо статус
             result = subprocess.run(
                 ["brew", "services", "info", service, "--json"],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 text=True,
             )
 
@@ -351,7 +354,10 @@ def install_brew_deps():
                 print_info(f"Запуск {service}...")
                 # Use check=False and check output for 'already started'
                 res = subprocess.run(
-                    ["brew", "services", "start", service], check=False, capture_output=True, text=True,
+                    ["brew", "services", "start", service],
+                    check=False,
+                    capture_output=True,
+                    text=True,
                 )
                 if res.returncode == 0 or "already started" in res.stderr.lower():
                     print_success(f"{service} запущено")
@@ -400,7 +406,7 @@ def check_venv():
             python_312 = "/opt/homebrew/bin/python3.12"
             exec_bin = python_312 if os.path.exists(python_312) else sys.executable
             print_info(f"Using {exec_bin} to create venv...")
-            
+
             # Use --copies to avoid symlink issues on shared volumes/VMs
             subprocess.run([exec_bin, "-m", "venv", "--copies", str(VENV_PATH)], check=True)
             print_success("Virtual environment створено (using --copies)")
@@ -448,32 +454,42 @@ def install_deps():
     print_step("Встановлення залежностей...")
     # Standard unix/mac venv path
     venv_python_bin = VENV_PATH / "bin" / "python"
-        
+
     # Helper to run commands using venv environment but possibly system interpreter if venv binary is unexecutable
     def run_venv_cmd(cmd_args, **kwargs):
         env = os.environ.copy()
         env["VIRTUAL_ENV"] = str(VENV_PATH)
         env["PATH"] = str(VENV_PATH / "bin") + os.pathsep + env.get("PATH", "")
-        
+
         # Try running via venv binary first
         try:
             return subprocess.run([str(venv_python_bin), *cmd_args], env=env, **kwargs)
         except OSError as e:
             if e.errno == 22 or "Invalid argument" in str(e):
                 # Fallback: run via current system python but with venv env
-                print_warning(f"Venv binary unexecutable ({e}). Falling back to system python with VIRTUAL_ENV.")
+                print_warning(
+                    f"Venv binary unexecutable ({e}). Falling back to system python with VIRTUAL_ENV."
+                )
                 return subprocess.run([sys.executable, *cmd_args], env=env, **kwargs)
             raise
 
     # Update PIP first
-    run_venv_cmd(["-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"], check=False, capture_output=True)
+    run_venv_cmd(
+        ["-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
+        check=False,
+        capture_output=True,
+    )
 
     # Pre-install protobuf with no-build-isolation to avoid setuptools build issues
     print_info("Pre-installing protobuf to avoid build issues...")
     try:
-        run_venv_cmd(["-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"], check=True)
+        run_venv_cmd(
+            ["-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"], check=True
+        )
     except Exception as e:
-        print_warning(f"Failed to install protobuf with no-build-isolation: {e}. Trying standard install...")
+        print_warning(
+            f"Failed to install protobuf with no-build-isolation: {e}. Trying standard install..."
+        )
         run_venv_cmd(["-m", "pip", "install", "protobuf==3.19.6"], check=True)
 
     # Install main requirements
@@ -481,8 +497,18 @@ def install_deps():
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
         subprocess.run(
-            [str(venv_python_bin), "-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
-            check=False, capture_output=True,
+            [
+                str(venv_python_bin),
+                "-m",
+                "pip",
+                "install",
+                "-U",
+                "pip",
+                "setuptools<72.0.0",
+                "wheel",
+            ],
+            check=False,
+            capture_output=True,
         )
         # Install espnet and ukrainian-tts separately with no-build-isolation
         subprocess.run(
@@ -531,7 +557,15 @@ def install_deps():
     if req_dev_file.exists():
         print_info("PIP install -r requirements-dev.txt...")
         subprocess.run(
-            [str(venv_python_bin), "-m", "pip", "install", "--prefer-binary", "-r", str(req_dev_file)],
+            [
+                str(venv_python_bin),
+                "-m",
+                "pip",
+                "install",
+                "--prefer-binary",
+                "-r",
+                str(req_dev_file),
+            ],
             check=True,
         )
 
@@ -588,6 +622,7 @@ def sync_configs():
             # Fallback: create minimal config
             try:
                 import yaml
+
                 defaults = {
                     "agents": {
                         "atlas": {"model": "gpt-5-mini", "temperature": 0.7},
@@ -650,19 +685,28 @@ def download_models():
     """Завантажує AI моделі зі смарт-перевіркою"""
     print_step("Налаштування AI моделей...")
     venv_python = str(VENV_PATH / "bin" / "python")
-    
+
     # 1. Faster-Whisper: Detect model
     model_name = "large-v3"
     try:
         import yaml
+
         config_path = CONFIG_ROOT / "config.yaml"
-        target_path = config_path if config_path.exists() else PROJECT_ROOT / "config" / "config.yaml.template"
+        target_path = (
+            config_path
+            if config_path.exists()
+            else PROJECT_ROOT / "config" / "config.yaml.template"
+        )
         if target_path.exists():
             with open(target_path, encoding="utf-8") as f:
                 # Use dynamic lookup to satisfy Pyrefly and Ruff
                 yml_load = getattr(yaml, "safe_loa" + "d")
                 cfg = yml_load(f) or {}
-                model_name = cfg.get("voice", {}).get("stt", {}).get("model") or cfg.get("mcp", {}).get("whisper_stt", {}).get("model") or model_name
+                model_name = (
+                    cfg.get("voice", {}).get("stt", {}).get("model")
+                    or cfg.get("mcp", {}).get("whisper_stt", {}).get("model")
+                    or model_name
+                )
     except Exception:
         pass
 
@@ -670,7 +714,7 @@ def download_models():
     tts_dir = DIRS["tts_models"]
     stanza_dir = DIRS["stanza"]
     hf_dir = DIRS["huggingface"]
-    
+
     # Set environment variables for the process
     os.environ["STANZA_RESOURCES_DIR"] = str(stanza_dir)
     os.environ["HF_HOME"] = str(hf_dir)
@@ -679,17 +723,22 @@ def download_models():
     stt_exists = (stt_dir / "model.bin").exists() or (stt_dir / model_name / "model.bin").exists()
     tts_exists = any(tts_dir.iterdir()) if tts_dir.exists() else False
 
-    print_info(f"Статус моделей: STT({model_name}): {'✅' if stt_exists else '❌'}, TTS: {'✅' if tts_exists else '❌'}")
+    print_info(
+        f"Статус моделей: STT({model_name}): {'✅' if stt_exists else '❌'}, TTS: {'✅' if tts_exists else '❌'}"
+    )
 
     if stt_exists and tts_exists:
         print_info("Всі моделі вже завантажені. Пропускаємо за замовчуванням.")
-        print(f"{Colors.OKCYAN}❓ Бажаєте перекачати моделі? У вас є 5 секунд для вибору: [s]kip (default), [a]ll, [stt], [tts]{Colors.ENDC}")
-        
+        print(
+            f"{Colors.OKCYAN}❓ Бажаєте перекачати моделі? У вас є 5 секунд для вибору: [s]kip (default), [a]ll, [stt], [tts]{Colors.ENDC}"
+        )
+
         import select
+
         i, o, e = select.select([sys.stdin], [], [], 5)
         choice = sys.stdin.readline().strip().lower() if i else "s"
     else:
-        choice = "a" # Download all if any missing
+        choice = "a"  # Download all if any missing
 
     if choice == "s":
         print_success("Моделі пропущено")
@@ -700,7 +749,11 @@ def download_models():
         try:
             print_info(f"Завантаження Faster-Whisper {model_name}...")
             env = os.environ.copy()
-            cmd = [venv_python, "-c", f"from faster_whisper import WhisperModel; WhisperModel('{model_name}', device='cpu', compute_type='int8', download_root='{stt_dir}'); print('STT OK')"]
+            cmd = [
+                venv_python,
+                "-c",
+                f"from faster_whisper import WhisperModel; WhisperModel('{model_name}', device='cpu', compute_type='int8', download_root='{stt_dir}'); print('STT OK')",
+            ]
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=900, env=env)
             print_success(f"STT модель {model_name} готова")
         except Exception as e:
@@ -820,7 +873,8 @@ async def verify_database_tables():
     venv_python = str(VENV_PATH / "bin" / "python")
     try:
         subprocess.run(
-            [venv_python, str(PROJECT_ROOT / "scripts" / "verify_db_tables.py")], check=True,
+            [venv_python, str(PROJECT_ROOT / "scripts" / "verify_db_tables.py")],
+            check=True,
         )
         return True
     except Exception as e:
@@ -840,7 +894,8 @@ def check_services():
             # Use manual string parsing to avoid json import dependency if missing
             res = subprocess.run(
                 ["brew", "services", "info", service, "--json"],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 text=True,
             )
             # Look for running status in JSON output
@@ -850,7 +905,12 @@ def check_services():
 
             # Fallback: check functional ping (Redis only)
             if service == "redis" and shutil.which("redis-cli"):
-                if subprocess.run(["redis-cli", "ping"], check=False, capture_output=True).returncode == 0:
+                if (
+                    subprocess.run(
+                        ["redis-cli", "ping"], check=False, capture_output=True
+                    ).returncode
+                    == 0
+                ):
                     print_success(f"{label} запущено (CLI)")
                     continue
 
@@ -904,7 +964,9 @@ def main():
     parser = argparse.ArgumentParser(description="AtlasTrinity Dev Setup")
     parser.add_argument("--backup", action="store_true", help="Backup databases and exit")
     parser.add_argument("--restore", action="store_true", help="Restore databases and exit")
-    parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode (auto-confirm)")
+    parser.add_argument(
+        "--yes", "-y", action="store_true", help="Non-interactive mode (auto-confirm)"
+    )
     args = parser.parse_args()
 
     if args.yes:
@@ -986,7 +1048,7 @@ def main():
         remote_res = subprocess.run(["git", "remote", "-v"], capture_output=True, text=True)
         if "github.com" in remote_res.stdout:
             print_success("Git remote налаштовано на GitHub")
-            
+
             # Check for token in .env
             env_path = CONFIG_ROOT / ".env"
             has_env_token = False
@@ -994,16 +1056,20 @@ def main():
                 with open(env_path, encoding="utf-8") as f:
                     if "GITHUB_TOKEN" in f.read():
                         has_env_token = True
-            
+
             if has_env_token:
                 print_success("Git: Виявлено GITHUB_TOKEN у .env (використовується для MCP та API)")
-            
+
             if "https://" in remote_res.stdout and "@" not in remote_res.stdout:
-                helper_res = subprocess.run(["git", "config", "--get", "credential.helper"], capture_output=True, text=True)
+                helper_res = subprocess.run(
+                    ["git", "config", "--get", "credential.helper"], capture_output=True, text=True
+                )
                 if "osxkeychain" in helper_res.stdout:
                     print_success("Git CLI: Налаштовано через HTTPS + Keychain (osxkeychain)")
                 else:
-                    print_info("Git CLI: Використовується HTTPS. Можливо знадобиться персональний токен для push.")
+                    print_info(
+                        "Git CLI: Використовується HTTPS. Можливо знадобиться персональний токен для push."
+                    )
             elif "@" in remote_res.stdout:
                 print_success("Git CLI: Налаштовано через персональний токен (embedded)")
         else:
