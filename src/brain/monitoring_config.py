@@ -31,7 +31,7 @@ class MonitoringConfig:
         Args:
             config_path: Optional path to monitoring config file
         """
-        self.config_path = config_path or self._get_default_config_path()
+        self.config_path = Path(config_path) if config_path else self._get_default_config_path()
         self.config = self._load_config()
         
     def _get_default_config_path(self) -> Path:

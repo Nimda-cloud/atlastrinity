@@ -570,6 +570,8 @@ async def get_db_schema() -> dict[str, Any]:
 
     def _sync_get_schema(connection):
         ins = inspect(connection)
+        if not ins:
+            return {}
         tables = {}
         for table_name in ins.get_table_names():
             cols = ins.get_columns(table_name)
@@ -578,10 +580,12 @@ async def get_db_schema() -> dict[str, Any]:
             ]
         return tables
 
-    async with await db_manager.get_session():
-        # engine.connect().run_sync is deprecated, but DatabaseManager doesn't expose engine easily for run_sync
-        # We can use the internal _engine
-        tables = await db_manager._engine.run_sync(_sync_get_schema)
+    engine = db_manager._engine
+    if not engine:
+        return {"error": "Database engine not initialized"}
+
+    async with engine.connect() as conn:
+        tables = await conn.run_sync(_sync_get_schema)
 
     return {"success": True, "tables": tables}
 
