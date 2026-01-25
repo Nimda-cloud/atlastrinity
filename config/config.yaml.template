@@ -65,6 +65,11 @@ agents:
     # vision_model, strategy_model: inherited from defaults
     temperature: 0.3
     max_tokens: 1500
+    
+    # Two-Phase Verification Sequential-Thinking (NEW)
+    verification_reasoning_model: gpt-4.1  # Model for logical verdict analysis
+    verification_temperature: 0.2          # Low temp for precise reasoning
+    verification_max_tokens: 4000          # Sufficient for deep analysis
 
 # =============================================================================
 # MCP SERVER CONFIGURATION
@@ -93,8 +98,14 @@ mcp:
 
   sequential_thinking:
     enabled: true
-    # model: inherited from models.reasoning
+    model: gpt-4.1                 # Explicit model for deep reasoning (used by Grisha verification)
     max_history_size: 1000
+    temperature: 0.2               # Precise reasoning
+    max_tokens: 4000               # Sufficient for complex analysis
+    
+    # Grisha Verification Usage
+    grisha_phase1_thoughts: 3      # Goal analysis (what to verify, which tools)
+    grisha_phase2_thoughts: 4      # Verdict formation (logical analysis of evidence)
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
   vibe:

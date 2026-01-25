@@ -923,6 +923,16 @@ advanced:
       require_grisha_audit: false     # Require Grisha verification
       audit_frequency: on_failure     # always | on_failure | never
       quality_threshold: 0.7          # Minimum quality to pass
+      
+      # NEW: Two-Phase Sequential-Thinking Verification
+      two_phase_verification:
+        enabled: true                 # Use enhanced logical verification
+        phase1_thoughts: 3            # Sequential-thinking iterations for goal analysis
+        phase2_thoughts: 4            # Sequential-thinking iterations for verdict formation
+        single_success_rule: true     # Allow 1 successful tool to verify step
+        fallback_to_mechanical: true  # Use old logic if sequential-thinking fails
+        empty_results_as_error: true  # Treat empty results in info-tasks as errors
+        max_tools_per_verification: 4 # Maximum verification tools to execute
   
   # ---------------------------------------------------------------------------
   # MEMORY AND LEARNING
@@ -1147,6 +1157,14 @@ workflow_stages:
       enabled: false                 # Set to true to enable Grisha
       on_failure_only: true
       quality_threshold: 0.7
+      
+      # Two-Phase Sequential-Thinking Verification (NEW)
+      two_phase_verification:
+        enabled: true                 # Enhanced logical verification
+        phase1_thoughts: 3            # Goal analysis depth
+        phase2_thoughts: 4            # Verdict analysis depth
+        single_success_rule: true     # 1 success can verify step
+        empty_results_as_error: true  # Empty data = failure for info tasks
       
     # Model selection (cascading from task type)
     model_selection:
