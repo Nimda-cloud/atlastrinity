@@ -27,9 +27,9 @@ confirm() {
     fi
 
     if [[ "$default" == "Y" ]]; then
-        read -t 10 -p "❓ $msg (Y/n): " choice </dev/tty || choice="Y"
+        read -t 5 -p "❓ $msg (Y/n): " choice </dev/tty || choice="Y"
     else
-        read -t 10 -p "❓ $msg (y/N): " choice </dev/tty || choice="N"
+        read -t 5 -p "❓ $msg (y/N): " choice </dev/tty || choice="N"
     fi
     echo ""
     if [[ "$choice" =~ ^[Yy]$ || ( -z "$choice" && "$default" == "Y" ) ]]; then
@@ -60,7 +60,7 @@ if ! command -v brew &> /dev/null; then
     exit 1
 fi
 
-if ! confirm "This will DELETE ALL local configuration and environments. Continue?" "N"; then
+if ! confirm "This will DELETE ALL local configuration and environments. Continue?" "Y"; then
     echo "❌ Cancelled"
     exit 1
 fi
