@@ -508,8 +508,8 @@ Synthesize findings into a comprehensive validation verdict.
         actual += tool_proof
 
         # Double safety truncation for the final string sent to LLM
-        if len(actual) > 8000:
-            actual = actual[:8000] + "...(truncated for brevity)"
+        if len(actual) > 16000:
+            actual = actual[:16000] + "...(truncated for brevity)"
 
         # 1. PLAN STRATEGY with Raptor-Mini
         strategy_context = await self._plan_verification_strategy(
@@ -699,8 +699,8 @@ Synthesize findings into a comprehensive validation verdict.
 
                 # Truncate large tool outputs to prevent context window overflow
                 result_str = str(tool_output)
-                if len(result_str) > 1000:
-                    result_str = result_str[:1000] + "...(truncated)"
+                if len(result_str) > 3000:
+                    result_str = result_str[:3000] + "...(truncated)"
 
                 verification_history.append(
                     {

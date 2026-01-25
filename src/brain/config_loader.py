@@ -89,9 +89,10 @@ class SystemConfig:
             "agents": {
                 "atlas": {
                     "model": "",  # Must be set in config.yaml
+                    "deep_model": "gpt-4.1",  # Deep chat model for philosophical conversations
                     "temperature": 0.7,
                     "max_tokens": 2000,
-                    "max_tokens_deep": 8000,  # Deep persona/philosophical mode
+                    "max_tokens_deep": 12000,  # Deep persona/philosophical mode (increased)
                 },
                 "tetyana": {
                     "model": "",  # Execution (Main)
