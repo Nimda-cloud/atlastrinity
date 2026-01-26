@@ -44,6 +44,7 @@
   "author": "AtlasTrinity Team",
   "license": "MIT",
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.1",
     "@modelcontextprotocol/inspector": "^0.18.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
@@ -58,7 +59,6 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "knip": "^5.82.1",
-    "@mermaid-js/mermaid-cli": "^11.4.1",
     "oxlint": "^1.41.0",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.18",
