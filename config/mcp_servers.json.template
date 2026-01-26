@@ -54,9 +54,25 @@
     "chrome-devtools": {
       "command": "bunx",
       "args": [
-        "chrome-devtools-mcp"
+        "chrome-devtools-mcp",
+        "--headless",
+        "--isolated",
+        "--viewport", "1280x720",
+        "--chromeArg", "--no-sandbox",
+        "--chromeArg", "--disable-setuid-sandbox",
+        "--chromeArg", "--disable-dev-shm-usage",
+        "--chromeArg", "--disable-gpu",
+        "--chromeArg", "--disable-web-security",
+        "--chromeArg", "--allow-running-insecure-content",
+        "--chromeArg", "--remote-debugging-port=9222"
       ],
-      "description": "Chrome DevTools Protocol for browser automation",
+      "env": {
+        "CHROME_PATH": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "NODE_OPTIONS": "--max-old-space-size=4096",
+        "DEBUG": "*"
+      },
+      "connect_timeout": 120,
+      "description": "Chrome DevTools Protocol for browser automation (Note: requires Chrome 145+, current: 144 - may have issues)",
       "disabled": false,
       "tier": 4,
       "agents": [
