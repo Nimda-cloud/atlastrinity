@@ -358,14 +358,34 @@
     "name": "postgres",
     "tier": 3,
     "category": "database",
-    "description": "PostgreSQL Database Access (Read-Only)",
+    "description": "PostgreSQL Database Access (PLANNED - Not Implemented)",
+    "status": "planned",
+    "implementation_date": "Future (when database >10MB)",
     "capabilities": [
       "Execute read-only SQL queries",
+      "Execute write queries (INSERT/UPDATE/DELETE)",
+      "Schema modifications (ALTER TABLE, CREATE INDEX)",
       "List database tables",
-      "Describe table schemas"
+      "Describe table schemas",
+      "Health monitoring",
+      "Performance analytics"
     ],
-    "key_tools": ["postgres_query", "postgres_list_tables", "postgres_describe_table"],
-    "when_to_use": "When you need to access structured data stored in the central PostgreSQL database (PostgreSQL 17).",
-    "priority_note": "Currently disabled by default. Requires local PostgreSQL installation."
+    "key_tools": [
+      "postgres_query",
+      "postgres_execute", 
+      "postgres_schema_alter",
+      "postgres_list_tables",
+      "postgres_describe_table",
+      "postgres_health_check"
+    ],
+    "when_to_use": "When database grows large (>10MB) or high concurrency needed. Currently SQLite + vibe_check_db sufficient.",
+    "priority_note": "PLANNED for future implementation. See .docs/postgresql_migration_plan.md for complete implementation details.",
+    "migration_triggers": [
+      "Database size >10MB",
+      "More than 5 concurrent agents",
+      "Need for complex analytics",
+      "Production deployment required"
+    ],
+    "current_alternative": "vibe_check_db (SQLite) + DatabaseManager (internal API)"
   }
 }
