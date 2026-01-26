@@ -22,7 +22,7 @@ models:
   # Default models for different purposes (ALL from Copilot provider)
   default: gpt-4.1                    # Default LLM для всіх agents
   vision: gpt-4o                      # Vision/multimodal tasks
-  reasoning: raptor-mini              # Specialized deep reasoning (sequential-thinking)
+  reasoning: gpt-4o              # Deep reasoning (replaced raptor-mini for stability)
   code_analysis: gpt-4.1              # Code review and analysis
   consolidation: gpt-4.1              # Memory consolidation (nightly)
   
@@ -71,7 +71,7 @@ agents:
 
   tetyana:
     model: gpt-4.1                   # Execution model (inherited from models.default if empty)
-    reasoning_model: raptor-mini     # Tool selection reasoning (inherited from models.reasoning if empty)
+    reasoning_model: gpt-4o       # Tool selection reasoning (replaced raptor-mini for stability)
     vision_model: gpt-4o             # Vision tasks (inherited from models.vision if empty)
     temperature: 0.5
     max_tokens: 2000
@@ -79,14 +79,14 @@ agents:
   grisha:
     # Three-Phase Verification Architecture:
     # Phase 1: Strategy planning (what to verify, which tools)
-    strategy_model: raptor-mini      # Deep reasoning for verification strategy
+    strategy_model: gpt-4o        # Deep reasoning for verification strategy (replaced raptor-mini)
     
     # Phase 2: Tool selection & execution (MCP server interaction)
     model: gpt-4.1                   # Execution model for MCP tool calls (similar to Tetyana)
     
     # Phase 3: Result analysis & verdict
     vision_model: gpt-4o             # Vision/multimodal verification (if screenshots needed)
-    verdict_model: raptor-mini       # Final verdict reasoning (can use gpt-4.1 if raptor fails)
+    verdict_model: gpt-4o          # Final verdict reasoning (replaced raptor-mini for stability)
     
     # General settings
     temperature: 0.3
@@ -123,7 +123,7 @@ mcp:
 
   sequential_thinking:
     enabled: true
-    model: raptor-mini             # Explicit model for deep reasoning (used by Grisha verification)
+    model: gpt-4o                  # Explicit model for deep reasoning (replaced raptor-mini for stability)
     max_history_size: 1000
     temperature: 0.2               # Precise reasoning
     max_tokens: 4000               # Sufficient for complex analysis
