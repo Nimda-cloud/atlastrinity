@@ -129,9 +129,10 @@ debugging:
 
 ```python
 # Vibe reads internal diagrams for context
+# Note: These paths are relative to PROJECT_ROOT when accessed by agents
 diagram_paths = [
-    "~/.config/atlastrinity/.agent/docs/mcp_architecture_diagram.md",
-    "~/.config/atlastrinity/src/brain/data/architecture_diagrams/mcp_architecture.md"
+    ".agent/docs/mcp_architecture_diagram.md",
+    "src/brain/data/architecture_diagrams/mcp_architecture.md"
 ]
 
 diagram_content = []
@@ -542,6 +543,8 @@ User involvement: ZERO
 
 ---
 
-**Status:** ✅ Protocol ACTIVE and OPERATIONAL  
+**Status:** ✅ ACTIVE - Protocol fully integrated in behavior_config v4.8.0  
 **Last Updated:** 2026-01-26  
+**Configuration:** `config/behavior_config.yaml.template` (debugging.vibe_debugging + vibe_escalation)  
+**Location:** `src/brain/data/protocols/self-healing-protocol.md`  
 **Next Review:** After first 10 self-healing incidents

@@ -172,5 +172,22 @@ See templates/vibe_config.toml.template for full configuration example.
 - Planning multi-step implementations
 - Understanding unfamiliar code patterns
 - System diagnostics and self-healing
+- Creating new programs/projects (with architecture diagrams)
+
+=== INTEGRATION WITH OTHER SYSTEMS ===
+
+- **Architecture Diagrams**: Vibe has access to internal diagrams for context during debugging
+  * Reads: .agent/docs/mcp_architecture_diagram.md
+  * Reads: src/brain/data/architecture_diagrams/mcp_architecture.md
+  * Protocol: src/brain/data/protocols/self-healing-protocol.md
+
+- **GitHub MCP**: Vibe can use GitHub MCP for additional context
+  * Read files, search code, list commits
+  * Token from global .env (~/.config/atlastrinity/.env)
+  * Write operations require agent approval (Grisha verifies)
+
+- **devtools MCP**: Post-fix diagram updates
+  * After Vibe fixes code, devtools updates diagrams automatically
+  * Ensures diagrams stay synchronized with code
 
 IMPORTANT: All Vibe output is logged and visible in the Electron app logs!

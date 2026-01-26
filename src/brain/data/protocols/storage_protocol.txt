@@ -39,8 +39,9 @@ B. VECTOR MEMORY (ChromaDB):
 5. BULK INGESTION & SEMANTIC INDEXING
 -------------------------------------
 - VECTORIZED TABLES: For large datasets (>10,000 rows), do not create individual KG nodes for every row. 
-- INDEXING STRATEGY: Create a specialized ChromaDB collection (Vectorized Table) for the dataset and link it to the KG as a node of type `DATASET`.
-- BATCHING: Use the `bulk_ingest_table` tool for efficient processing (embeddings are generated in batches).
+- INDEXING STRATEGY: Create a specialized ChromaDB collection for the dataset and link it to the KG as a node of type `DATASET`.
+- BATCHING: Use `ingest_verified_dataset` for structured data with automatic validation and KG registration.
+- HIGH-PRECISION: The `ingest_verified_dataset` tool provides Quality Guard validation and automatic semantic link discovery.
 
 DEVIATION POLICY (ROOM TO MANEUVER)
 ===================================

@@ -41,5 +41,6 @@ DATA PROCESSING PROTOCOL (v1.0)
 
 DEVIATION POLICY (ROOM TO MANEUVER)
 ===================================
-- FORMAT SHIFT: If a format is unsupported by standard tools (e.g., proprietary binary), আপনি (you) ARE AUTHORIZED to use `vibe_prompt` to write a custom parser on-the-fly.
-- TEMPORARY STORAGE: You may use `/tmp` or `workspace/workspace` for intermediate CSV/JSON conversions.
+- FORMAT SHIFT: If a format is unsupported by standard tools (e.g., proprietary binary), you ARE AUTHORIZED to use `vibe_prompt` to write a custom parser on-the-fly.
+- TEMPORARY STORAGE: You may use `/tmp` or `~/.config/atlastrinity/workspace` for intermediate CSV/JSON conversions.
+- AI-POWERED PARSING: For complex or proprietary formats, leverage Vibe MCP to generate custom parsers.
