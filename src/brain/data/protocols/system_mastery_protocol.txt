@@ -4,8 +4,10 @@ SYSTEM MASTERY & RECURSIVE ANALYSIS (v1.0)
 1. SOURCE OF TRUTH (HIERARCHY):
    - Level 1: `README.md` (Project Root) - General purpose and startup.
    - Level 2: `docs/SYSTEM_OVERVIEW.md` - Technical architecture and logic flows.
-   - Level 3: `docs/mcp_architecture.md` - Details on MCP server interactions.
-   - Level 4: Recursive Codebase Reading (Source files via `filesystem`).
+   - Level 3: `.agent/docs/mcp_architecture_diagram.md` - Visual MCP architecture with Mermaid diagrams.
+   - Level 4: `docs/mcp_architecture.md` - Detailed MCP server documentation.
+   - Level 5: `src/brain/data/protocols/` - Agent operational protocols.
+   - Level 6: Recursive Codebase Reading (Source files via `filesystem`).
 
 2. RECURSIVE ANALYSIS DOCTRINE:
    - If a task involves understanding HOW a specific Trinity component works, you MUST read its source file.

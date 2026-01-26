@@ -295,9 +295,11 @@ setup_workflow:
 
 ## 📝 Configuration in behavior_config.yaml
 
-**Current status:** ❌ NOT YET CONFIGURED
+**Current status:** ✅ CONFIGURED (v4.8.0)
 
-**Required additions:**
+**Location:** `config/behavior_config.yaml.template`
+
+**Current configuration:**
 
 ```yaml
 # NEW SECTION NEEDED
@@ -391,6 +393,7 @@ atlas create new Python project at ~/test-project with Flask API
 
 ---
 
-**Status:** 🔨 Protocol defined, awaiting behavior_config integration  
+**Status:** ✅ ACTIVE - Protocol integrated in behavior_config v4.8.0  
 **Last Updated:** 2026-01-26  
-**Next Steps:** Add project_creation section to behavior_config.yaml.template
+**Configuration:** `config/behavior_config.yaml.template` (lines 1800-1885)  
+**Location:** `src/brain/data/protocols/create-new-program.md`
