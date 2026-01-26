@@ -301,31 +301,41 @@ sequenceDiagram
 
 ## How to Use This Diagram
 
-### View Locally (VSCode)
-1. Install extension: **Markdown Preview Mermaid Support**
-2. Open this file
-3. Click "Preview" button
-4. Diagrams render automatically ✨
+### 📱 Quick Preview (macOS)
+```bash
+# Відкрити файл у дефолтному Markdown viewer
+npm run diagram:preview
+```
+**Для VSCode:** Встанови розширення **Markdown Preview Mermaid Support**
 
-### View on GitHub
+### 🖼️ Export as Image
+```bash
+# Експорт у PNG (темна тема, прозорий фон)
+npm run diagram:export
+
+# Експорт у PNG + SVG
+npm run diagram:export:all
+```
+**Результат:** `.agent/docs/diagrams/mcp_architecture.png`
+
+### 🌐 View on GitHub
 - Push to GitHub
 - Open this file in browser
 - Mermaid renders automatically ✨
 
-### Export as Image
-```bash
-# Install mermaid-cli
-npm install -g @mermaid-js/mermaid-cli
+### 🔄 Update Process (Manual)
+**⚠️ ВАЖЛИВО:** Діаграми НЕ оновлюються автоматично!
 
-# Convert to PNG/SVG
-mmdc -i mcp_architecture_diagram.md -o architecture.png
-mmdc -i mcp_architecture_diagram.md -o architecture.svg
-```
+1. **Code changes** → Manually update relevant Mermaid diagram
+2. **Update diagram** → Edit this file to reflect code changes
+3. **Commit** → Both code and diagram
+4. **Export** → `npm run diagram:export` (optional, for presentations)
 
-### Update Process
-1. **Code changes** → Update relevant Mermaid diagram
-2. **Commit** → Diagrams update automatically
-3. **No manual image editing needed!** 🎉
+**Чому не автоматично?**
+- Mermaid діаграми = text-based код
+- Потрібен AI або ручне редагування
+- GitHub Actions можуть генерувати, але треба налаштувати
+- Для цього проекту: **оновлюємо вручну** (швидше та точніше)
 
 ---
 
