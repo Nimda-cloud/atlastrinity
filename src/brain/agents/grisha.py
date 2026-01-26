@@ -3,7 +3,7 @@
 
 Role: Result verification via Vision, Security control
 Voice: Mykyta (male)
-Model: GPT-4o (Vision)
+Model: Configured in config.yaml (agents.grisha.vision_model)
 """
 
 import os
@@ -49,11 +49,27 @@ class VerificationResult:
 class Grisha(BaseAgent):
     """Grisha - The Visor/Auditor
 
-    Functions:
-    - Verifying execution results via Vision
-    - Analyzing screenshots
-    - Security control (blocking dangerous actions)
-    - Confirming or rejecting steps
+    3-Phase Verification Architecture:
+    
+    Phase 1: Strategy Planning (strategy_model: raptor-mini)
+             - Analyzes step requirements and determines verification approach
+             - Plans which MCP tools are needed for evidence collection
+             - Outputs verification strategy in natural language
+    
+    Phase 2: Tool Execution (model: gpt-4.1)
+             - Selects and executes MCP server tools based on strategy
+             - Collects evidence (logs, file contents, DB queries, etc.)
+             - Similar to Tetyana's execution phase
+    
+    Phase 3: Verdict Formation (verdict_model: raptor-mini, vision_model: gpt-4o)
+             - Analyzes evidence collected from Phase 2
+             - Uses vision model for screenshot analysis if needed
+             - Forms logical verdict: PASS/FAIL with confidence
+             - Can fallback to gpt-4.1 if raptor-mini fails
+    
+    Security Functions:
+    - Blocking dangerous commands via BLOCKLIST
+    - Multi-layer verification for critical operations
     """
 
     NAME = AgentPrompts.GRISHA["NAME"]
@@ -75,32 +91,54 @@ class Grisha(BaseAgent):
     ]
 
     def __init__(self, vision_model: str | None = None):
+        """Initialize Grisha with 3-phase verification architecture.
+        
+        Phase 1: Strategy Planning (strategy_model: raptor-mini)
+                 - Analyze what needs verification and which tools to use
+        
+        Phase 2: Tool Execution (model: gpt-4.1) 
+                 - Select and execute MCP server tools (similar to Tetyana)
+        
+        Phase 3: Verdict Formation (verdict_model: raptor-mini, vision_model: gpt-4o)
+                 - Analyze collected evidence and form final verdict
+        """
         # Get model config (config.yaml > parameter)
         agent_config = config.get_agent_config("grisha")
         security_config = config.get_security_config()
 
-        # Primary vision model
-        final_model = vision_model or agent_config.get("vision_model")
-        if not final_model:
-            raise ValueError("[GRISHA] Vision model not specified in config.yaml or constructor")
-
-        self.llm = CopilotLLM(model_name=final_model, vision_model_name=final_model)
-        self.temperature = agent_config.get("temperature", 0.3)
-
-        # Load dangerous commands from config with fallback to hardcoded BLOCKLIST
-        self.dangerous_commands = security_config.get("dangerous_commands", self.BLOCKLIST)
-        self.verifications: list = []
-
-        # OPTIMIZATION: Strategy cache to avoid redundant LLM calls
-        self._strategy_cache = {}
-
-        # Reasoner Model for Strategy Planning
+        # Phase 1: Strategy Planning Model
         strategy_model = agent_config.get("strategy_model")
         if not strategy_model:
             raise ValueError("[GRISHA] Strategy model not specified in config.yaml")
-
         self.strategist = CopilotLLM(model_name=strategy_model)
-        logger.info(f"[GRISHA] Initialized with Vision={final_model}, Strategy={strategy_model}")
+
+        # Phase 2: Execution Model (for MCP tool calls, like Tetyana)
+        execution_model = agent_config.get("model")
+        if not execution_model:
+            raise ValueError("[GRISHA] Execution model not specified in config.yaml")
+        self.executor = CopilotLLM(model_name=execution_model)
+
+        # Phase 3: Verdict & Vision Models
+        vision_model_name = vision_model or agent_config.get("vision_model")
+        if not vision_model_name:
+            raise ValueError("[GRISHA] Vision model not specified in config.yaml")
+        self.llm = CopilotLLM(model_name=vision_model_name, vision_model_name=vision_model_name)
+        
+        verdict_model = agent_config.get("verdict_model", strategy_model)  # Fallback to strategy model
+        self.verdict_llm = CopilotLLM(model_name=verdict_model)
+
+        # General settings
+        self.temperature = agent_config.get("temperature", 0.3)
+        self.dangerous_commands = security_config.get("dangerous_commands", self.BLOCKLIST)
+        self.verifications: list = []
+        self._strategy_cache = {}
+
+        logger.info(
+            f"[GRISHA] 3-Phase Architecture Initialized:\n"
+            f"  Phase 1 (Strategy): {strategy_model}\n"
+            f"  Phase 2 (Execution): {execution_model}\n"
+            f"  Phase 3 (Verdict): {verdict_model}, Vision: {vision_model_name}"
+        )
 
     async def _deep_validation_reasoning(
         self,
@@ -218,30 +256,26 @@ Synthesize findings into a comprehensive validation verdict.
 
         return layers
 
-    async def _plan_verification_strategy(
+    async def _create_robust_strategy_via_reasoning(
         self,
-        step_action: str,
-        expected_result: str,
+        step_description: str,
         context: dict,
         goal_context: str = "",
     ) -> str:
-        """Uses Raptor-Mini (MSP Reasoning) to create a robust verification strategy.
+        """Uses reasoning model (configured in config.yaml) to create a robust verification strategy.
         OPTIMIZATION: Caches strategies by step type to avoid redundant LLM calls.
+        NOTE: This method appears to be legacy/unused. Consider removal or refactoring.
         """
         from langchain_core.messages import HumanMessage, SystemMessage
 
         # OPTIMIZATION: Check cache first
-        cache_key = f"{step_action[:50]}:{expected_result[:50]}"
+        cache_key = f"{step_description[:50]}"
         if cache_key in self._strategy_cache:
             logger.info(f"[GRISHA] Using cached strategy for: {cache_key[:30]}...")
             return self._strategy_cache[cache_key]
 
-        prompt = AgentPrompts.grisha_strategy_prompt(
-            step_action,
-            expected_result,
-            context,
-            goal_context=goal_context,
-        )
+        # Legacy code - parameters don't match usage
+        prompt = f"Create verification strategy for: {step_description}\nContext: {context}\nGoal: {goal_context}"
 
         # Get available capabilities to inform the strategist
         capabilities = self._get_environment_capabilities()
@@ -1119,11 +1153,12 @@ Use this report to:
         return self._parse_response(cast("str", response.content))
 
     async def take_screenshot(self) -> str:
-        """Takes a screenshot for verification.
+        """Captures and analyzes screenshot via Vision model.
+        
         Enhanced for AtlasTrinity:
         - Robust multi-monitor support (Quartz).
         - Active application window focus (AppleScript).
-        - Combined context+detail image for GPT-4o Vision.
+        - Combined context+detail image for vision model analysis.
         """
         import subprocess
         import tempfile

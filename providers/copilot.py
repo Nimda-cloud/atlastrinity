@@ -470,8 +470,10 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    # Use stable model for fallback - gpt-4o is most reliable
-                    payload_fb["model"] = "gpt-4o"
+                    # Use stable model for fallback from config (all models are Copilot)
+                    from src.brain.config_loader import config
+                    fallback_model = config.get("models.error_retry") or payload_fb.get("model")
+                    payload_fb["model"] = fallback_model
                     # Reduce temperature for more reliable fallback
                     payload_fb["temperature"] = min(payload_fb.get("temperature", 0.7), 0.5)
 
@@ -640,8 +642,10 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload["messages"] = cleaned_messages
 
-                    # Use GPT-4o as fallback (most stable)
-                    payload["model"] = "gpt-4o"
+                    # Use stable model for fallback from config (all models are Copilot)
+                    from src.brain.config_loader import config
+                    fallback_model = config.get("models.error_retry") or payload.get("model")
+                    payload["model"] = fallback_model
                     # Reduce temperature for more reliable fallback
                     payload["temperature"] = min(payload.get("temperature", 0.7), 0.5)
 

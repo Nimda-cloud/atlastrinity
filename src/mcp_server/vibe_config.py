@@ -579,22 +579,9 @@ def get_default_providers() -> list[ProviderConfig]:
 
 
 def get_default_models() -> list[ModelConfig]:
-    """Get default model configurations."""
-    return [
-        ModelConfig(
-            name="devstral-2",
-            provider="mistral",
-            alias="devstral-2",
-            temperature=0.2,
-            input_price=0.0,
-            output_price=0.0,
-        ),
-        ModelConfig(
-            name="mistralai/devstral-2512:free",
-            provider="openrouter",
-            alias="devstral-openrouter",
-            temperature=0.2,
-            input_price=0.0,
-            output_price=0.0,
-        ),
-    ]
+    """Get default model configurations.
+    
+    Note: Models should be defined in vibe_config.toml template.
+    This function returns empty list as fallback - models must be configured.
+    """
+    return []

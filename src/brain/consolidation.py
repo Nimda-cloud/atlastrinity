@@ -55,10 +55,10 @@ class ConsolidationModule:
                 # Use consolidation model from config (fallback to default)
                 from .config_loader import config
 
-                consolidation_model = config.get("models", {}).get("consolidation") or config.get(
-                    "models",
-                    {},
-                ).get("default", "gpt-4o")
+                consolidation_model = (
+                    config.get("models.consolidation") 
+                    or config.get("models.default")
+                )
                 atlas = Atlas(model_name=consolidation_model)
                 llm = atlas.llm
 
