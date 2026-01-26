@@ -864,6 +864,49 @@ class MCPManager:
         """Get list of currently connected server names."""
         return list(self.sessions.keys())
 
+    async def list_tools(self, server_name: str) -> list[Any]:
+        """List all tools available on a specific MCP server.
+        
+        Args:
+            server_name: Name of the MCP server
+            
+        Returns:
+            List of tool objects from the server
+        """
+        try:
+            session = await self.get_session(server_name)
+            if not session:
+                logger.warning(f"[MCP] No session for {server_name}, cannot list tools")
+                return []
+            
+            result = await session.list_tools()
+            return result.tools if hasattr(result, 'tools') else []
+            
+        except Exception as e:
+            # Check if connection was lost
+            if "connection" in str(e).lower() or "closed" in str(e).lower():
+                logger.warning(
+                    f"[MCP] Connection lost during list_tools for {server_name}, reconnecting...",
+                )
+                async with self._lock:
+                    if server_name in self.sessions:
+                        del self.sessions[server_name]
+                
+                # Try to get fresh session
+                session = await self.get_session(server_name)
+                if session:
+                    try:
+                        result = await session.list_tools()
+                        return result.tools if hasattr(result, 'tools') else []
+                    except Exception as retry_e:
+                        logger.error(f"[MCP] Retry list_tools failed for {server_name}: {retry_e}")
+            
+            logger.error(
+                f"[MCP] Error listing tools for {server_name}: {type(e).__name__}: {e}",
+                exc_info=True,
+            )
+            return []
+
     async def get_mcp_catalog(self, connected_only: bool = False) -> str:
         """Generates a concise catalog of all configured MCP servers and their roles.
 

@@ -556,7 +556,7 @@ class ToolDispatcher:
                 )
                 return {
                     "success": False,
-                    "error": f"MCP call failed: {str(e)}",
+                    "error": f"MCP call failed: {e!s}",
                     "server": server,
                     "tool": resolved_tool,
                     "exception_type": type(e).__name__,
@@ -731,8 +731,8 @@ class ToolDispatcher:
         types_map = schema.get("types", {})
         for key, expected_type in types_map.items():
             if key in validated and validated[key] is not None:
+                value = validated[key]
                 try:
-                    value = validated[key]
                     if expected_type == "str" and not isinstance(value, str):
                         validated[key] = str(value)
                     elif expected_type == "int" and not isinstance(value, int):

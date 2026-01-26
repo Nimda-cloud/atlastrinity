@@ -1344,7 +1344,7 @@ class Trinity:
                         "warning",
                     )
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     last_error = f"Step execution timeout after {config.get('orchestrator', {}).get('task_timeout', 1200.0)}s"
                     logger.error(f"[ORCHESTRATOR] Step {step_id} timed out on attempt {attempt}")
                     await self._log(
