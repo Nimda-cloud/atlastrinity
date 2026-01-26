@@ -12,10 +12,23 @@
 # =============================================================================
 
 # =============================================================================
-# ADAPTIVE BEHAVIOR PATTERNS
+# ADAPTIVE BEHAVIOR CONFIGURATION
 # =============================================================================
-# Learned patterns for non-standard decision-making
-# Previously hardcoded in: adaptive_behavior.py (_register_default_patterns)
+# Version: 4.8.0
+# Purpose: Centralized decision-making config for behavior_engine.py
+# 
+# This configuration drives:
+# - Intent detection & classification
+# - Strategy selection
+# - Tool routing
+# - Agent coordination
+# - Self-healing & escalation
+# - Project creation automation
+# 
+# Related Protocols:
+# - .agent/workflows/self-healing-protocol.md
+# - .agent/workflows/create-new-program.md
+# - .agent/workflows/github-operations.md
 # =============================================================================
 
 patterns:
@@ -1700,8 +1713,9 @@ software_development:
       quality_threshold: 0.8
       
   # ---------------------------------------------------------------------------
-  # DEBUGGING WORKFLOW
+  # DEBUGGING WORKFLOW & SELF-HEALING
   # ---------------------------------------------------------------------------
+  # Protocol: .agent/workflows/self-healing-protocol.md
   debugging:
     enabled: true
     
@@ -1777,6 +1791,99 @@ software_development:
     # Decision-making
     decisions:
       consult_vibe_for_design: true
+  
+  # ---------------------------------------------------------------------------
+  # PROJECT CREATION (NEW PROGRAMS)
+  # ---------------------------------------------------------------------------
+  # Protocol: .agent/workflows/create-new-program.md
+  project_creation:
+    enabled: true
+    
+    # Default structures for different project types
+    templates:
+      python:
+        files:
+          - README.md
+          - requirements.txt
+          - .gitignore
+          - pyproject.toml
+        directories:
+          - src/
+          - tests/
+          - docs/
+      
+      nodejs:
+        files:
+          - README.md
+          - package.json
+          - .gitignore
+          - tsconfig.json
+        directories:
+          - src/
+          - tests/
+          - docs/
+      
+      rust:
+        files:
+          - README.md
+          - Cargo.toml
+          - .gitignore
+        directories:
+          - src/
+          - tests/
+      
+      go:
+        files:
+          - README.md
+          - go.mod
+          - .gitignore
+        directories:
+          - cmd/
+          - pkg/
+          - internal/
+    
+    # Automated workflow steps
+    workflow:
+      enabled: true
+      steps:
+        - initialize_structure    # Create dirs + files
+        - setup_git              # Git init + .gitignore
+        - generate_diagram       # devtools_update_architecture_diagrams
+        - implement_code         # Vibe generates initial code
+        - create_tests           # Vibe generates tests
+        - create_documentation   # Tetyana writes README
+        - verify_quality         # Grisha reviews
+        - commit_to_github       # GitHub MCP push (agent-approved)
+    
+    # Agent coordination
+    agents:
+      orchestrator: atlas           # Coordinates workflow
+      implementer: vibe            # Generates code
+      documenter: tetyana          # Writes docs
+      verifier: grisha             # Reviews quality
+    
+    # Automatic features
+    features:
+      auto_git_init: true          # Initialize git automatically
+      auto_github_setup: true      # Setup GitHub remote if token available
+      auto_diagram_generation: true # Generate architecture diagram
+      auto_tests: true             # Generate basic tests
+      auto_documentation: true     # Generate README
+    
+    # Routing rules for project creation
+    triggers:
+      - pattern: 'create.*project'
+        agent: atlas
+        workflow: project_creation
+      - pattern: 'new.*program'
+        agent: atlas
+        workflow: project_creation
+      - pattern: 'initialize.*repo'
+        agent: atlas
+        workflow: project_creation
+      - pattern: 'setup.*project'
+        agent: atlas
+        workflow: project_creation
       vibe_tool: vibe_smart_plan
       
       # When to consult
