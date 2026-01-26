@@ -8,8 +8,8 @@
 
 models:
   # Default models for different purposes
-  default: gpt-4.1                    # Default LLM для всіх agents (Upgraded from 4o)
-  vision: gpt-4.1                     # Vision/multimodal tasks
+  default: gpt-4.1                    # Default LLM для всіх agents
+  vision: gpt-4o                      # Vision/multimodal tasks
   reasoning: raptor-mini              # Specialized deep reasoning (sequential-thinking)
   code_analysis: gpt-4.1              # Code review and analysis
   consolidation: gpt-4.1              # Memory consolidation (nightly)
