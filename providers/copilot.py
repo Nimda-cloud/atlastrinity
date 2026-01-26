@@ -20,8 +20,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 
 class CopilotLLM(BaseChatModel):
-    model_name: str = "gpt-4o"
-    vision_model_name: str = "gpt-4o"
+    model_name: str
+    vision_model_name: str
     api_key: str | None = None
     max_tokens: int = 4096  # Default, can be overridden per instance
     _tools: list[Any] | None = None
@@ -334,15 +334,14 @@ class CopilotLLM(BaseChatModel):
         # Prepend system message
         final_messages = [{"role": "system", "content": system_content}, *formatted_messages]
 
-        # Use the configured model directly without mapping
-        # The model name from config (e.g., raptor-mini, gpt-4o, gpt-4o) is used as-is
+        # Choose model based on whether we have images
         chosen_model = self.vision_model_name if self._has_image(messages) else self.model_name
 
         return {
             "model": chosen_model,
             "messages": final_messages,
             "temperature": 0.1,
-            "max_tokens": self.max_tokens,  # Use instance variable, not hardcoded
+            "max_tokens": self.max_tokens,
             "stream": stream if stream is not None else False,
         }
 
@@ -425,7 +424,19 @@ class CopilotLLM(BaseChatModel):
                     error_detail = response.text
                     print(f"[COPILOT] Async 400 error detected. Status: {response.status_code}", flush=True)
                     print(f"[COPILOT] Error details: {error_detail[:500]}", flush=True)
-                    print("[COPILOT] Attempting fallback to gpt-4o without vision...", flush=True)
+                    
+                    # Parse error to determine type
+                    error_type = "unknown"
+                    try:
+                        error_json = response.json()
+                        error_code = error_json.get("error", {}).get("code", "")
+                        if error_code == "model_not_supported":
+                            error_type = "model_not_supported"
+                            print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
+                    except:
+                        pass
+                    
+                    print("[COPILOT] Attempting fallback to gpt-4o...", flush=True)
 
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
@@ -455,7 +466,7 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    # Use stable model for fallback
+                    # Use stable model for fallback - gpt-4o is most reliable
                     payload_fb["model"] = "gpt-4o"
                     # Reduce temperature for more reliable fallback
                     payload_fb["temperature"] = min(payload_fb.get("temperature", 0.7), 0.5)
@@ -580,7 +591,19 @@ class CopilotLLM(BaseChatModel):
             if hasattr(e, "response") and e.response is not None and e.response.status_code == 400:
                 print(f"[COPILOT] 400 Error intercepted. Status: {e.response.status_code}", flush=True)
                 print(f"[COPILOT] Error details: {e.response.text[:500]}", flush=True)
-                print("[COPILOT] Retrying without Vision...", flush=True)
+                
+                # Parse error to determine type
+                error_type = "unknown"
+                try:
+                    error_json = e.response.json()
+                    error_code = error_json.get("error", {}).get("code", "")
+                    if error_code == "model_not_supported":
+                        error_type = "model_not_supported"
+                        print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
+                except:
+                    pass
+                
+                print("[COPILOT] Retrying with gpt-4o...", flush=True)
                 # Retry without vision header AND remove image content from payload
                 try:
                     headers.pop("Copilot-Vision-Request", None)
