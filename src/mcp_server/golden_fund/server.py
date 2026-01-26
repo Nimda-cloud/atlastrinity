@@ -218,7 +218,7 @@ async def add_knowledge_node(
     # Store in vector DB
     if transform_result.data is None:
         return json.dumps({"success": False, "error": "Transformation produced no data"})
-    
+
     store_result = vector_store.store(transform_result.data)
 
     if not store_result.success:

@@ -1,17 +1,8 @@
 {
   "vibe_prompt": {
     "server": "vibe",
-    "required": [
-      "prompt"
-    ],
-    "optional": [
-      "cwd",
-      "timeout_s",
-      "output_format",
-      "auto_approve",
-      "max_turns",
-      "resume"
-    ],
+    "required": ["prompt"],
+    "optional": ["cwd", "timeout_s", "output_format", "auto_approve", "max_turns", "resume"],
     "types": {
       "prompt": "str",
       "cwd": "str",
@@ -25,12 +16,8 @@
   },
   "search_golden_fund": {
     "server": "golden-fund",
-    "required": [
-      "query"
-    ],
-    "optional": [
-      "mode"
-    ],
+    "required": ["query"],
+    "optional": ["mode"],
     "types": {
       "query": "str",
       "mode": "str"
@@ -39,13 +26,8 @@
   },
   "ingest_dataset": {
     "server": "golden-fund",
-    "required": [
-      "url",
-      "type"
-    ],
-    "optional": [
-      "process_pipeline"
-    ],
+    "required": ["url", "type"],
+    "optional": ["process_pipeline"],
     "types": {
       "url": "str",
       "type": "str",
@@ -55,12 +37,8 @@
   },
   "probe_entity": {
     "server": "golden-fund",
-    "required": [
-      "entity_id"
-    ],
-    "optional": [
-      "depth"
-    ],
+    "required": ["entity_id"],
+    "optional": ["depth"],
     "types": {
       "entity_id": "str",
       "depth": "int"
@@ -69,13 +47,8 @@
   },
   "analyze_and_store": {
     "server": "golden-fund",
-    "required": [
-      "file_path",
-      "dataset_name"
-    ],
-    "optional": [
-      "analysis_type"
-    ],
+    "required": ["file_path", "dataset_name"],
+    "optional": ["analysis_type"],
     "types": {
       "file_path": "str",
       "dataset_name": "str",
@@ -85,9 +58,7 @@
   },
   "get_dataset_insights": {
     "server": "golden-fund",
-    "required": [
-      "dataset_name"
-    ],
+    "required": ["dataset_name"],
     "optional": [],
     "types": {
       "dataset_name": "str"
@@ -96,13 +67,8 @@
   },
   "add_knowledge_node": {
     "server": "golden-fund",
-    "required": [
-      "content",
-      "metadata"
-    ],
-    "optional": [
-      "links"
-    ],
+    "required": ["content", "metadata"],
+    "optional": ["links"],
     "types": {
       "content": "str",
       "metadata": "dict",
@@ -112,12 +78,8 @@
   },
   "store_blob": {
     "server": "golden-fund",
-    "required": [
-      "content"
-    ],
-    "optional": [
-      "filename"
-    ],
+    "required": ["content"],
+    "optional": ["filename"],
     "types": {
       "content": "str",
       "filename": "str"
@@ -126,9 +88,7 @@
   },
   "retrieve_blob": {
     "server": "golden-fund",
-    "required": [
-      "filename"
-    ],
+    "required": ["filename"],
     "optional": [],
     "types": {
       "filename": "str"
@@ -137,12 +97,8 @@
   },
   "c7_search": {
     "server": "context7",
-    "required": [
-      "query"
-    ],
-    "optional": [
-      "library"
-    ],
+    "required": ["query"],
+    "optional": ["library"],
     "types": {
       "query": "str",
       "library": "str"
@@ -151,9 +107,7 @@
   },
   "c7_get_context": {
     "server": "context7",
-    "required": [
-      "query"
-    ],
+    "required": ["query"],
     "optional": [],
     "types": {
       "query": "str"
@@ -168,9 +122,7 @@
   },
   "vibe_analyze_error": {
     "server": "vibe",
-    "required": [
-      "error_message"
-    ],
+    "required": ["error_message"],
     "optional": [
       "context_files",
       "cwd",
@@ -192,15 +144,8 @@
   },
   "vibe_implement_feature": {
     "server": "vibe",
-    "required": [
-      "goal"
-    ],
-    "optional": [
-      "context_files",
-      "constraints",
-      "cwd",
-      "timeout_s"
-    ],
+    "required": ["goal"],
+    "optional": ["context_files", "constraints", "cwd", "timeout_s"],
     "types": {
       "goal": "str",
       "context_files": "list",
@@ -212,14 +157,8 @@
   },
   "vibe_code_review": {
     "server": "vibe",
-    "required": [
-      "files"
-    ],
-    "optional": [
-      "focus",
-      "cwd",
-      "timeout_s"
-    ],
+    "required": ["files"],
+    "optional": ["focus", "cwd", "timeout_s"],
     "types": {
       "files": "list",
       "focus": "str",
@@ -230,13 +169,8 @@
   },
   "vibe_smart_plan": {
     "server": "vibe",
-    "required": [
-      "goal"
-    ],
-    "optional": [
-      "cwd",
-      "timeout_s"
-    ],
+    "required": ["goal"],
+    "optional": ["cwd", "timeout_s"],
     "types": {
       "goal": "str",
       "cwd": "str",
@@ -246,13 +180,8 @@
   },
   "vibe_ask": {
     "server": "vibe",
-    "required": [
-      "question"
-    ],
-    "optional": [
-      "cwd",
-      "timeout_s"
-    ],
+    "required": ["question"],
+    "optional": ["cwd", "timeout_s"],
     "types": {
       "question": "str",
       "cwd": "str",
@@ -262,13 +191,8 @@
   },
   "vibe_execute_subcommand": {
     "server": "vibe",
-    "required": [
-      "subcommand"
-    ],
-    "optional": [
-      "args",
-      "cwd"
-    ],
+    "required": ["subcommand"],
+    "optional": ["args", "cwd"],
     "types": {
       "subcommand": "str",
       "args": "list",
@@ -284,9 +208,7 @@
   },
   "vibe_session_details": {
     "server": "vibe",
-    "required": [
-      "session_id"
-    ],
+    "required": ["session_id"],
     "optional": [],
     "types": {
       "session_id": "str"
@@ -301,9 +223,7 @@
   },
   "vibe_check_db": {
     "server": "vibe",
-    "required": [
-      "query"
-    ],
+    "required": ["query"],
     "optional": [],
     "types": {
       "query": "str"
@@ -318,9 +238,7 @@
   },
   "macos-use_open_application_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "identifier"
-    ],
+    "required": ["identifier"],
     "optional": [],
     "types": {
       "identifier": "str"
@@ -329,17 +247,8 @@
   },
   "macos-use_click_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "x",
-      "y"
-    ],
-    "optional": [
-      "pid",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "required": ["x", "y"],
+    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
     "types": {
       "pid": "int",
       "x": "float",
@@ -353,16 +262,8 @@
   },
   "macos-use_type_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "text"
-    ],
-    "optional": [
-      "pid",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "required": ["text"],
+    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
     "types": {
       "pid": "int",
       "text": "str",
@@ -375,9 +276,7 @@
   },
   "macos-use_press_key_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "keyName"
-    ],
+    "required": ["keyName"],
     "optional": [
       "pid",
       "modifierFlags",
@@ -400,9 +299,7 @@
   "macos-use_refresh_traversal": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "pid"
-    ],
+    "optional": ["pid"],
     "types": {
       "pid": "int"
     },
@@ -410,9 +307,7 @@
   },
   "macos-use_scroll_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "direction"
-    ],
+    "required": ["direction"],
     "optional": [
       "pid",
       "amount",
@@ -434,17 +329,8 @@
   },
   "macos-use_right_click_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "x",
-      "y"
-    ],
-    "optional": [
-      "pid",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "required": ["x", "y"],
+    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
     "types": {
       "pid": "int",
       "x": "float",
@@ -458,17 +344,8 @@
   },
   "macos-use_double_click_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "x",
-      "y"
-    ],
-    "optional": [
-      "pid",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "required": ["x", "y"],
+    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
     "types": {
       "pid": "int",
       "x": "float",
@@ -482,19 +359,8 @@
   },
   "macos-use_drag_and_drop_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "startX",
-      "startY",
-      "endX",
-      "endY"
-    ],
-    "optional": [
-      "pid",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "required": ["startX", "startY", "endX", "endY"],
+    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
     "types": {
       "pid": "int",
       "startX": "float",
@@ -510,16 +376,8 @@
   },
   "macos-use_window_management": {
     "server": "macos-use",
-    "required": [
-      "action"
-    ],
-    "optional": [
-      "pid",
-      "x",
-      "y",
-      "width",
-      "height"
-    ],
+    "required": ["action"],
+    "optional": ["pid", "x", "y", "width", "height"],
     "types": {
       "pid": "int",
       "action": "str",
@@ -532,9 +390,7 @@
   },
   "execute_command": {
     "server": "macos-use",
-    "required": [
-      "command"
-    ],
+    "required": ["command"],
     "optional": [],
     "types": {
       "command": "str"
@@ -557,13 +413,8 @@
   },
   "macos-use_set_clipboard": {
     "server": "macos-use",
-    "required": [
-      "text"
-    ],
-    "optional": [
-      "showAnimation",
-      "animationDuration"
-    ],
+    "required": ["text"],
+    "optional": ["showAnimation", "animationDuration"],
     "types": {
       "text": "str",
       "showAnimation": "bool",
@@ -580,9 +431,7 @@
   },
   "macos-use_system_control": {
     "server": "macos-use",
-    "required": [
-      "action"
-    ],
+    "required": ["action"],
     "optional": [],
     "types": {
       "action": "str"
@@ -592,9 +441,7 @@
   "macos-use_get_time": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "timezone"
-    ],
+    "optional": ["timezone"],
     "types": {
       "timezone": "str"
     },
@@ -602,9 +449,7 @@
   },
   "macos-use_fetch_url": {
     "server": "macos-use",
-    "required": [
-      "url"
-    ],
+    "required": ["url"],
     "optional": [],
     "types": {
       "url": "str"
@@ -619,12 +464,8 @@
   },
   "macos-use_notes_create_note": {
     "server": "macos-use",
-    "required": [
-      "body"
-    ],
-    "optional": [
-      "folder"
-    ],
+    "required": ["body"],
+    "optional": ["folder"],
     "types": {
       "body": "str",
       "folder": "str"
@@ -639,9 +480,7 @@
   },
   "macos-use_notes_get_content": {
     "server": "macos-use",
-    "required": [
-      "name"
-    ],
+    "required": ["name"],
     "optional": [],
     "types": {
       "name": "str"
@@ -650,11 +489,7 @@
   },
   "macos-use_mail_send": {
     "server": "macos-use",
-    "required": [
-      "to",
-      "subject",
-      "body"
-    ],
+    "required": ["to", "subject", "body"],
     "optional": [],
     "types": {
       "to": "str",
@@ -666,9 +501,7 @@
   "macos-use_mail_read_inbox": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "limit"
-    ],
+    "optional": ["limit"],
     "types": {
       "limit": "int"
     },
@@ -677,9 +510,7 @@
   "macos-use_finder_list_files": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "path"
-    ],
+    "optional": ["path"],
     "types": {
       "path": "str"
     },
@@ -693,9 +524,7 @@
   },
   "macos-use_finder_open_path": {
     "server": "macos-use",
-    "required": [
-      "path"
-    ],
+    "required": ["path"],
     "optional": [],
     "types": {
       "path": "str"
@@ -704,9 +533,7 @@
   },
   "macos-use_finder_move_to_trash": {
     "server": "macos-use",
-    "required": [
-      "path"
-    ],
+    "required": ["path"],
     "optional": [],
     "types": {
       "path": "str"
@@ -715,10 +542,7 @@
   },
   "macos-use_calendar_events": {
     "server": "macos-use",
-    "required": [
-      "start",
-      "end"
-    ],
+    "required": ["start", "end"],
     "optional": [],
     "types": {
       "start": "str",
@@ -728,10 +552,7 @@
   },
   "macos-use_create_event": {
     "server": "macos-use",
-    "required": [
-      "title",
-      "date"
-    ],
+    "required": ["title", "date"],
     "optional": [],
     "types": {
       "title": "str",
@@ -742,9 +563,7 @@
   "macos-use_reminders": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "list"
-    ],
+    "optional": ["list"],
     "types": {
       "list": "str"
     },
@@ -752,9 +571,7 @@
   },
   "macos-use_create_reminder": {
     "server": "macos-use",
-    "required": [
-      "title"
-    ],
+    "required": ["title"],
     "optional": [],
     "types": {
       "title": "str"
@@ -763,9 +580,7 @@
   },
   "macos-use_spotlight_search": {
     "server": "macos-use",
-    "required": [
-      "query"
-    ],
+    "required": ["query"],
     "optional": [],
     "types": {
       "query": "str"
@@ -774,10 +589,7 @@
   },
   "macos-use_send_notification": {
     "server": "macos-use",
-    "required": [
-      "title",
-      "message"
-    ],
+    "required": ["title", "message"],
     "optional": [],
     "types": {
       "title": "str",
@@ -787,9 +599,7 @@
   },
   "create_entities": {
     "server": "memory",
-    "required": [
-      "entities"
-    ],
+    "required": ["entities"],
     "optional": [],
     "types": {
       "entities": "list"
@@ -798,10 +608,7 @@
   },
   "add_observations": {
     "server": "memory",
-    "required": [
-      "name",
-      "observations"
-    ],
+    "required": ["name", "observations"],
     "optional": [],
     "types": {
       "name": "str",
@@ -811,9 +618,7 @@
   },
   "get_entity": {
     "server": "memory",
-    "required": [
-      "name"
-    ],
+    "required": ["name"],
     "optional": [],
     "types": {
       "name": "str"
@@ -828,12 +633,8 @@
   },
   "search": {
     "server": "memory",
-    "required": [
-      "query"
-    ],
-    "optional": [
-      "limit"
-    ],
+    "required": ["query"],
+    "optional": ["limit"],
     "types": {
       "query": "str",
       "limit": "int"
@@ -842,11 +643,7 @@
   },
   "create_relation": {
     "server": "memory",
-    "required": [
-      "source",
-      "target",
-      "relation"
-    ],
+    "required": ["source", "target", "relation"],
     "optional": [],
     "types": {
       "source": "str",
@@ -857,9 +654,7 @@
   },
   "delete_entity": {
     "server": "memory",
-    "required": [
-      "name"
-    ],
+    "required": ["name"],
     "optional": [],
     "types": {
       "name": "str"
@@ -868,14 +663,8 @@
   },
   "ingest_verified_dataset": {
     "server": "memory",
-    "required": [
-      "file_path",
-      "dataset_name"
-    ],
-    "optional": [
-      "namespace",
-      "task_id"
-    ],
+    "required": ["file_path", "dataset_name"],
+    "optional": ["namespace", "task_id"],
     "types": {
       "file_path": "str",
       "dataset_name": "str",
@@ -886,14 +675,8 @@
   },
   "trace_data_chain": {
     "server": "memory",
-    "required": [
-      "start_value",
-      "start_dataset_id"
-    ],
-    "optional": [
-      "namespace",
-      "max_depth"
-    ],
+    "required": ["start_value", "start_dataset_id"],
+    "optional": ["namespace", "max_depth"],
     "types": {
       "start_value": "any",
       "start_dataset_id": "str",
@@ -911,9 +694,7 @@
   "generate_mermaid": {
     "server": "graph",
     "required": [],
-    "optional": [
-      "node_type"
-    ],
+    "optional": ["node_type"],
     "types": {
       "node_type": "str"
     },
@@ -921,9 +702,7 @@
   },
   "get_node_details": {
     "server": "graph",
-    "required": [
-      "node_id"
-    ],
+    "required": ["node_id"],
     "optional": [],
     "types": {
       "node_id": "str"
@@ -932,9 +711,7 @@
   },
   "get_related_nodes": {
     "server": "graph",
-    "required": [
-      "node_id"
-    ],
+    "required": ["node_id"],
     "optional": [],
     "types": {
       "node_id": "str"
@@ -943,9 +720,7 @@
   },
   "read_file": {
     "server": "filesystem",
-    "required": [
-      "path"
-    ],
+    "required": ["path"],
     "optional": [],
     "types": {
       "path": "str"
@@ -954,10 +729,7 @@
   },
   "write_file": {
     "server": "filesystem",
-    "required": [
-      "path",
-      "content"
-    ],
+    "required": ["path", "content"],
     "optional": [],
     "types": {
       "path": "str",
@@ -967,9 +739,7 @@
   },
   "list_directory": {
     "server": "filesystem",
-    "required": [
-      "path"
-    ],
+    "required": ["path"],
     "optional": [],
     "types": {
       "path": "str"
@@ -978,10 +748,7 @@
   },
   "search_files": {
     "server": "filesystem",
-    "required": [
-      "path",
-      "pattern"
-    ],
+    "required": ["path", "pattern"],
     "optional": [],
     "types": {
       "path": "str",
@@ -991,9 +758,7 @@
   },
   "get_file_info": {
     "server": "filesystem",
-    "required": [
-      "path"
-    ],
+    "required": ["path"],
     "optional": [],
     "types": {
       "path": "str"
@@ -1002,9 +767,7 @@
   },
   "puppeteer_navigate": {
     "server": "puppeteer",
-    "required": [
-      "url"
-    ],
+    "required": ["url"],
     "optional": [],
     "types": {
       "url": "str"
@@ -1013,13 +776,8 @@
   },
   "puppeteer_screenshot": {
     "server": "puppeteer",
-    "required": [
-      "path"
-    ],
-    "optional": [
-      "selector",
-      "full_page"
-    ],
+    "required": ["path"],
+    "optional": ["selector", "full_page"],
     "types": {
       "path": "str",
       "selector": "str",
@@ -1029,9 +787,7 @@
   },
   "puppeteer_click": {
     "server": "puppeteer",
-    "required": [
-      "selector"
-    ],
+    "required": ["selector"],
     "optional": [],
     "types": {
       "selector": "str"
@@ -1040,10 +796,7 @@
   },
   "puppeteer_fill": {
     "server": "puppeteer",
-    "required": [
-      "selector",
-      "value"
-    ],
+    "required": ["selector", "value"],
     "optional": [],
     "types": {
       "selector": "str",
@@ -1054,13 +807,7 @@
   "captureScreenshot": {
     "server": "chrome-devtools",
     "required": [],
-    "optional": [
-      "format",
-      "quality",
-      "clip",
-      "fromSurface",
-      "captureBeyondViewport"
-    ],
+    "optional": ["format", "quality", "clip", "fromSurface", "captureBeyondViewport"],
     "types": {
       "format": "str",
       "quality": "int",
@@ -1084,14 +831,8 @@
   },
   "sequentialthinking": {
     "server": "sequential-thinking",
-    "required": [
-      "thought",
-      "thoughtNumber",
-      "totalThoughts"
-    ],
-    "optional": [
-      "nextThoughtNeeded"
-    ],
+    "required": ["thought", "thoughtNumber", "totalThoughts"],
+    "optional": ["nextThoughtNeeded"],
     "types": {
       "thought": "str",
       "thoughtNumber": "int",
@@ -1102,9 +843,7 @@
   },
   "macos-use_run_applescript": {
     "server": "macos-use",
-    "required": [
-      "script"
-    ],
+    "required": ["script"],
     "optional": [],
     "types": {
       "script": "str"
@@ -1140,13 +879,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "owner",
-        "repo",
-        "path",
-        "content",
-        "message"
-      ]
+      "required": ["owner", "repo", "path", "content", "message"]
     }
   },
   "search_code": {
@@ -1166,9 +899,7 @@
           "type": "integer"
         }
       },
-      "required": [
-        "q"
-      ]
+      "required": ["q"]
     }
   },
   "list_issues": {
@@ -1185,20 +916,13 @@
         },
         "state": {
           "type": "string",
-          "enum": [
-            "open",
-            "closed",
-            "all"
-          ]
+          "enum": ["open", "closed", "all"]
         },
         "assignee": {
           "type": "string"
         }
       },
-      "required": [
-        "owner",
-        "repo"
-      ]
+      "required": ["owner", "repo"]
     }
   },
   "create_issue": {
@@ -1226,11 +950,7 @@
           }
         }
       },
-      "required": [
-        "owner",
-        "repo",
-        "title"
-      ]
+      "required": ["owner", "repo", "title"]
     }
   },
   "create_pull_request": {
@@ -1260,13 +980,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "owner",
-        "repo",
-        "title",
-        "head",
-        "base"
-      ]
+      "required": ["owner", "repo", "title", "head", "base"]
     }
   },
   "search_repositories": {
@@ -1286,9 +1000,7 @@
           "type": "integer"
         }
       },
-      "required": [
-        "q"
-      ]
+      "required": ["q"]
     }
   },
   "list_pull_requests": {
@@ -1305,17 +1017,10 @@
         },
         "state": {
           "type": "string",
-          "enum": [
-            "open",
-            "closed",
-            "all"
-          ]
+          "enum": ["open", "closed", "all"]
         }
       },
-      "required": [
-        "owner",
-        "repo"
-      ]
+      "required": ["owner", "repo"]
     }
   },
   "merge_pull_request": {
@@ -1338,18 +1043,10 @@
         },
         "merge_method": {
           "type": "string",
-          "enum": [
-            "merge",
-            "squash",
-            "rebase"
-          ]
+          "enum": ["merge", "squash", "rebase"]
         }
       },
-      "required": [
-        "owner",
-        "repo",
-        "pull_number"
-      ]
+      "required": ["owner", "repo", "pull_number"]
     }
   },
   "search_nodes": {
@@ -1374,13 +1071,8 @@
   },
   "duckduckgo_search": {
     "server": "duckduckgo-search",
-    "required": [
-      "query"
-    ],
-    "optional": [
-      "max_results",
-      "timeout_s"
-    ],
+    "required": ["query"],
+    "optional": ["max_results", "timeout_s"],
     "types": {
       "query": "str",
       "max_results": "int",
@@ -1390,12 +1082,8 @@
   },
   "business_registry_search": {
     "server": "duckduckgo-search",
-    "required": [
-      "company_name"
-    ],
-    "optional": [
-      "step_id"
-    ],
+    "required": ["company_name"],
+    "optional": ["step_id"],
     "types": {
       "company_name": "str",
       "step_id": "str"
@@ -1404,12 +1092,8 @@
   },
   "open_data_search": {
     "server": "duckduckgo-search",
-    "required": [
-      "query"
-    ],
-    "optional": [
-      "step_id"
-    ],
+    "required": ["query"],
+    "optional": ["step_id"],
     "types": {
       "query": "str",
       "step_id": "str"
@@ -1419,9 +1103,7 @@
   "github_whoami": {
     "server": "github",
     "required": [],
-    "optional": [
-      "timeout_s"
-    ],
+    "optional": ["timeout_s"],
     "types": {
       "timeout_s": "float"
     },
@@ -1429,15 +1111,8 @@
   },
   "get_file_contents": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "path"
-    ],
-    "optional": [
-      "ref",
-      "timeout_s"
-    ],
+    "required": ["owner", "repo", "path"],
+    "optional": ["ref", "timeout_s"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -1449,12 +1124,8 @@
   },
   "transcribe_audio": {
     "server": "whisper-stt",
-    "required": [
-      "audio_path"
-    ],
-    "optional": [
-      "language"
-    ],
+    "required": ["audio_path"],
+    "optional": ["language"],
     "types": {
       "audio_path": "str",
       "language": "str"
@@ -1464,10 +1135,7 @@
   "record_and_transcribe": {
     "server": "whisper-stt",
     "required": [],
-    "optional": [
-      "duration",
-      "language"
-    ],
+    "optional": ["duration", "language"],
     "types": {
       "duration": "float",
       "language": "str"
@@ -1476,9 +1144,7 @@
   },
   "restart_application": {
     "server": "system",
-    "required": [
-      "reason"
-    ],
+    "required": ["reason"],
     "optional": [],
     "types": {
       "reason": "str"
@@ -1487,12 +1153,8 @@
   },
   "restart_mcp_server": {
     "server": "system",
-    "required": [
-      "server_name"
-    ],
-    "optional": [
-      "reason"
-    ],
+    "required": ["server_name"],
+    "optional": ["reason"],
     "types": {
       "server_name": "str",
       "reason": "str"
@@ -1501,9 +1163,7 @@
   },
   "redis_get": {
     "server": "redis",
-    "required": [
-      "key"
-    ],
+    "required": ["key"],
     "optional": [],
     "types": {
       "key": "str"
@@ -1512,13 +1172,8 @@
   },
   "redis_set": {
     "server": "redis",
-    "required": [
-      "key",
-      "value"
-    ],
-    "optional": [
-      "ex_seconds"
-    ],
+    "required": ["key", "value"],
+    "optional": ["ex_seconds"],
     "types": {
       "key": "str",
       "value": "any",
@@ -1528,9 +1183,7 @@
   },
   "redis_keys": {
     "server": "redis",
-    "required": [
-      "pattern"
-    ],
+    "required": ["pattern"],
     "optional": [],
     "types": {
       "pattern": "str"
@@ -1539,9 +1192,7 @@
   },
   "redis_delete": {
     "server": "redis",
-    "required": [
-      "key"
-    ],
+    "required": ["key"],
     "optional": [],
     "types": {
       "key": "str"
@@ -1557,9 +1208,7 @@
   },
   "redis_ttl": {
     "server": "redis",
-    "required": [
-      "key"
-    ],
+    "required": ["key"],
     "optional": [],
     "types": {
       "key": "str"
@@ -1568,9 +1217,7 @@
   },
   "redis_hgetall": {
     "server": "redis",
-    "required": [
-      "key"
-    ],
+    "required": ["key"],
     "optional": [],
     "types": {
       "key": "str"
@@ -1579,10 +1226,7 @@
   },
   "redis_hset": {
     "server": "redis",
-    "required": [
-      "key",
-      "mapping"
-    ],
+    "required": ["key", "mapping"],
     "optional": [],
     "types": {
       "key": "str",
@@ -1599,12 +1243,8 @@
   },
   "vibe_configure_model": {
     "server": "vibe",
-    "required": [
-      "model_alias"
-    ],
-    "optional": [
-      "persist"
-    ],
+    "required": ["model_alias"],
+    "optional": ["persist"],
     "types": {
       "model_alias": "str",
       "persist": "bool"
@@ -1613,9 +1253,7 @@
   },
   "vibe_set_mode": {
     "server": "vibe",
-    "required": [
-      "mode"
-    ],
+    "required": ["mode"],
     "optional": [],
     "types": {
       "mode": "str"
@@ -1624,15 +1262,8 @@
   },
   "vibe_configure_provider": {
     "server": "vibe",
-    "required": [
-      "name",
-      "api_base",
-      "api_key_env_var"
-    ],
-    "optional": [
-      "api_style",
-      "backend"
-    ],
+    "required": ["name", "api_base", "api_key_env_var"],
+    "optional": ["api_style", "backend"],
     "types": {
       "name": "str",
       "api_base": "str",
@@ -1644,14 +1275,8 @@
   },
   "vibe_session_resume": {
     "server": "vibe",
-    "required": [
-      "session_id"
-    ],
-    "optional": [
-      "prompt",
-      "cwd",
-      "timeout_s"
-    ],
+    "required": ["session_id"],
+    "optional": ["prompt", "cwd", "timeout_s"],
     "types": {
       "session_id": "str",
       "prompt": "str",
@@ -1675,9 +1300,7 @@
   },
   "devtools_launch_inspector": {
     "server": "devtools",
-    "required": [
-      "server_name"
-    ],
+    "required": ["server_name"],
     "optional": [],
     "types": {
       "server_name": "str"
@@ -1693,9 +1316,7 @@
   "devtools_lint_python": {
     "server": "devtools",
     "required": [],
-    "optional": [
-      "file_path"
-    ],
+    "optional": ["file_path"],
     "types": {
       "file_path": "str"
     },
@@ -1704,9 +1325,7 @@
   "devtools_lint_js": {
     "server": "devtools",
     "required": [],
-    "optional": [
-      "file_path"
-    ],
+    "optional": ["file_path"],
     "types": {
       "file_path": "str"
     },
@@ -1715,9 +1334,7 @@
   "devtools_find_dead_code": {
     "server": "devtools",
     "required": [],
-    "optional": [
-      "target_path"
-    ],
+    "optional": ["target_path"],
     "types": {
       "target_path": "str"
     },
@@ -1726,9 +1343,7 @@
   "devtools_check_integrity": {
     "server": "devtools",
     "required": [],
-    "optional": [
-      "path"
-    ],
+    "optional": ["path"],
     "types": {
       "path": "str"
     },
@@ -1736,12 +1351,8 @@
   },
   "read_metadata": {
     "server": "data-analysis",
-    "required": [
-      "file_path"
-    ],
-    "optional": [
-      "sheet_name"
-    ],
+    "required": ["file_path"],
+    "optional": ["sheet_name"],
     "types": {
       "file_path": "str",
       "sheet_name": "str"
@@ -1750,14 +1361,8 @@
   },
   "analyze_dataset": {
     "server": "data-analysis",
-    "required": [
-      "data_source"
-    ],
-    "optional": [
-      "analysis_type",
-      "output_format",
-      "target_path"
-    ],
+    "required": ["data_source"],
+    "optional": ["analysis_type", "output_format", "target_path"],
     "types": {
       "data_source": "str",
       "analysis_type": "str",
@@ -1768,14 +1373,8 @@
   },
   "generate_statistics": {
     "server": "data-analysis",
-    "required": [
-      "data_source"
-    ],
-    "optional": [
-      "statistics_type",
-      "output_format",
-      "group_by"
-    ],
+    "required": ["data_source"],
+    "optional": ["statistics_type", "output_format", "group_by"],
     "types": {
       "data_source": "str",
       "statistics_type": "str",
@@ -1786,16 +1385,8 @@
   },
   "create_visualization": {
     "server": "data-analysis",
-    "required": [
-      "data_source",
-      "visualization_type"
-    ],
-    "optional": [
-      "output_format",
-      "title",
-      "x_axis",
-      "y_axis"
-    ],
+    "required": ["data_source", "visualization_type"],
+    "optional": ["output_format", "title", "x_axis", "y_axis"],
     "types": {
       "data_source": "str",
       "visualization_type": "str",
@@ -1808,14 +1399,8 @@
   },
   "data_cleaning": {
     "server": "data-analysis",
-    "required": [
-      "data_source"
-    ],
-    "optional": [
-      "cleaning_methods",
-      "output_format",
-      "handle_missing"
-    ],
+    "required": ["data_source"],
+    "optional": ["cleaning_methods", "output_format", "handle_missing"],
     "types": {
       "data_source": "str",
       "cleaning_methods": "list",
@@ -1826,15 +1411,8 @@
   },
   "predictive_modeling": {
     "server": "data-analysis",
-    "required": [
-      "data_source",
-      "target_variable"
-    ],
-    "optional": [
-      "model_type",
-      "test_size",
-      "output_format"
-    ],
+    "required": ["data_source", "target_variable"],
+    "optional": ["model_type", "test_size", "output_format"],
     "types": {
       "data_source": "str",
       "target_variable": "str",
@@ -1846,14 +1424,8 @@
   },
   "data_aggregation": {
     "server": "data-analysis",
-    "required": [
-      "data_source",
-      "group_by"
-    ],
-    "optional": [
-      "aggregation_methods",
-      "output_format"
-    ],
+    "required": ["data_source", "group_by"],
+    "optional": ["aggregation_methods", "output_format"],
     "types": {
       "data_source": "str",
       "group_by": "str",
@@ -1864,13 +1436,8 @@
   },
   "interpret_column_data": {
     "server": "data-analysis",
-    "required": [
-      "file_path",
-      "column_names"
-    ],
-    "optional": [
-      "sheet_name"
-    ],
+    "required": ["file_path", "column_names"],
+    "optional": ["sheet_name"],
     "types": {
       "file_path": "str",
       "column_names": "list",
@@ -1880,13 +1447,8 @@
   },
   "run_pandas_code": {
     "server": "data-analysis",
-    "required": [
-      "code"
-    ],
-    "optional": [
-      "data_source",
-      "timeout_seconds"
-    ],
+    "required": ["code"],
+    "optional": ["data_source", "timeout_seconds"],
     "types": {
       "code": "str",
       "data_source": "str",
@@ -1896,9 +1458,7 @@
   },
   "postgres_query": {
     "server": "postgres",
-    "required": [
-      "query"
-    ],
+    "required": ["query"],
     "optional": [],
     "types": {
       "query": "str"
@@ -1908,9 +1468,7 @@
   "postgres_list_tables": {
     "server": "postgres",
     "required": [],
-    "optional": [
-      "schema"
-    ],
+    "optional": ["schema"],
     "types": {
       "schema": "str"
     },
@@ -1918,12 +1476,8 @@
   },
   "postgres_describe_table": {
     "server": "postgres",
-    "required": [
-      "table_name"
-    ],
-    "optional": [
-      "schema"
-    ],
+    "required": ["table_name"],
+    "optional": ["schema"],
     "types": {
       "table_name": "str",
       "schema": "str"

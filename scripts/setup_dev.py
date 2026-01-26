@@ -420,12 +420,15 @@ def build_swift_mcp():
     if binary_path.exists():
         # Check if binary is recent (modified in last 7 days)
         import time
+
         binary_age = time.time() - binary_path.stat().st_mtime
         if binary_age < 7 * 24 * 3600:  # 7 days
             print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
             return True
         else:
-            print_info(f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція...")
+            print_info(
+                f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція..."
+            )
 
     # Force recompilation: removing existing binary check to ensure latest logic is built
     print_info("Компіляція macos-use...")

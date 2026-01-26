@@ -379,7 +379,7 @@ async def generate_statistics(
                     val_var: Any = series.var()
                     val_skew: Any = series.skew()
                     val_kurt: Any = series.kurtosis()
-                    
+
                     results.setdefault("additional", {})[col] = {
                         "variance": round(float(val_var), 4) if not pd.isna(val_var) else 0.0,
                         "skewness": round(float(val_skew), 4) if not pd.isna(val_skew) else 0.0,
@@ -484,7 +484,6 @@ async def create_visualization(
                 ax.set_ylabel(str(y_axis))
             else:
                 return {"success": False, "error": "x_axis and y_axis required for scatter plot"}
-
 
         elif visualization_type == "bar":
             if x_axis and x_axis in df.columns:

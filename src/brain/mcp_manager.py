@@ -866,10 +866,10 @@ class MCPManager:
 
     async def list_tools(self, server_name: str) -> list[Any]:
         """List all tools available on a specific MCP server.
-        
+
         Args:
             server_name: Name of the MCP server
-            
+
         Returns:
             List of tool objects from the server
         """
@@ -878,10 +878,10 @@ class MCPManager:
             if not session:
                 logger.warning(f"[MCP] No session for {server_name}, cannot list tools")
                 return []
-            
+
             result = await session.list_tools()
-            return result.tools if hasattr(result, 'tools') else []
-            
+            return result.tools if hasattr(result, "tools") else []
+
         except Exception as e:
             # Check if connection was lost
             if "connection" in str(e).lower() or "closed" in str(e).lower():
@@ -891,16 +891,16 @@ class MCPManager:
                 async with self._lock:
                     if server_name in self.sessions:
                         del self.sessions[server_name]
-                
+
                 # Try to get fresh session
                 session = await self.get_session(server_name)
                 if session:
                     try:
                         result = await session.list_tools()
-                        return result.tools if hasattr(result, 'tools') else []
+                        return result.tools if hasattr(result, "tools") else []
                     except Exception as retry_e:
                         logger.error(f"[MCP] Retry list_tools failed for {server_name}: {retry_e}")
-            
+
             logger.error(
                 f"[MCP] Error listing tools for {server_name}: {type(e).__name__}: {e}",
                 exc_info=True,
