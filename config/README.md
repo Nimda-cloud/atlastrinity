@@ -12,6 +12,7 @@ AtlasTrinity використовує централізовану систем�
 | `behavior_config.yaml.template` | Behavior Engine патерни, intent detection, tool routing | `~/.config/atlastrinity/behavior_config.yaml` |
 | `mcp_servers.json.template` | MCP серверна конфігурація (маршрутизація серверів) | `~/.config/atlastrinity/mcp/config.json` |
 | `vibe_config.toml.template` | Vibe MCP server конфігурація | `~/.config/atlastrinity/vibe_config.toml` |
+| `monitoring_config.yaml.template` | Monitoring та metrics (Prometheus, Grafana, OpenSearch) | `~/.config/atlastrinity/monitoring_config.yaml` |
 
 ## Deployment Process
 
@@ -64,6 +65,34 @@ Vibe-specific налаштування:
 - Providers (Copilot, Mistral)
 - Tool permissions
 - MCP integrations
+
+### monitoring_config.yaml (YAML)
+Monitoring та metrics:
+- Prometheus configuration
+- Grafana settings
+- OpenSearch integration
+- Alerting rules
+
+## Agent Protocols
+
+**Location:** `src/brain/data/protocols/`
+
+Операційні протоколи для внутрішніх агентів (Atlas, Tetyana, Grisha, Vibe):
+- `create-new-program.md` - Створення нових проектів
+- `self-healing-protocol.md` - Самолікування системи
+- `vibe_docs.txt` - Vibe MCP documentation
+- `data_protocol.txt` - Data processing rules
+- `search_protocol.txt` - Search strategies
+- `storage_protocol.txt` - Storage management
+- `sdlc_protocol.txt` - Software development lifecycle
+- `task_protocol.txt` - Task execution doctrine
+- `system_mastery_protocol.txt` - System understanding
+- `voice_protocol.txt` - Voice communication rules
+
+**Завантаження:** Протоколи читаються через `src/brain/mcp_registry.py` при старті системи.  
+**Використання:** Atlas, Tetyana, Grisha отримують протоколи через prompts (см. `src/brain/prompts/`).
+
+**NOT to confuse with:** `.agent/workflows/` - це для Windsurf агента (редактор коду), НЕ для внутрішніх агентів.
 
 ## Чи об'єднувати конфіги?
 
