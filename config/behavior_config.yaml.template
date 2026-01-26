@@ -25,10 +25,15 @@
 # - Self-healing & escalation
 # - Project creation automation
 # 
-# Related Protocols:
-# - .agent/workflows/self-healing-protocol.md
-# - .agent/workflows/create-new-program.md
-# - .agent/workflows/github-operations.md
+# Related Protocols (Internal Agents):
+# - src/brain/data/protocols/self-healing-protocol.md
+# - src/brain/data/protocols/create-new-program.md
+# - src/brain/data/protocols/*.txt (data, sdlc, search, storage, system_mastery, task, voice)
+# 
+# Windsurf Agent Workflows:
+# - .agent/workflows/github-operations.md (git operations for Windsurf)
+# - .agent/workflows/git-setup.md (git identity setup)
+# - .agent/workflows/integrity.md (integrity checks)
 # =============================================================================
 
 patterns:
@@ -1715,7 +1720,7 @@ software_development:
   # ---------------------------------------------------------------------------
   # DEBUGGING WORKFLOW & SELF-HEALING
   # ---------------------------------------------------------------------------
-  # Protocol: .agent/workflows/self-healing-protocol.md
+  # Protocol: src/brain/data/protocols/self-healing-protocol.md
   debugging:
     enabled: true
     
@@ -1795,7 +1800,7 @@ software_development:
   # ---------------------------------------------------------------------------
   # PROJECT CREATION (NEW PROGRAMS)
   # ---------------------------------------------------------------------------
-  # Protocol: .agent/workflows/create-new-program.md
+  # Protocol: src/brain/data/protocols/create-new-program.md
   project_creation:
     enabled: true
     
