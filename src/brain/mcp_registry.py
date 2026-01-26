@@ -37,6 +37,11 @@ TASK_PROTOCOL: str = ""
 DATA_PROTOCOL: str = ""
 SYSTEM_MASTERY_PROTOCOL: str = ""
 
+# Cache for frequently accessed data
+_tool_lookup_cache: dict[str, str | None] = {}  # tool_name -> server_name
+_schema_cache_hits: int = 0
+_schema_cache_misses: int = 0
+
 
 def load_registry():
     """Load registry data from JSON and text files."""
@@ -193,21 +198,42 @@ def get_server_catalog_for_prompt(include_key_tools: bool = True) -> str:
 def get_tool_schema(tool_name: str) -> dict[str, Any] | None:
     """Get schema for a specific tool.
     Resolves aliases to their canonical form.
+    Uses caching for performance.
     """
+    global _schema_cache_hits, _schema_cache_misses
+
     schema = TOOL_SCHEMAS.get(tool_name)
-    if schema and "alias_for" in schema:
-        return TOOL_SCHEMAS.get(schema["alias_for"])
-    return schema
+    if schema:
+        _schema_cache_hits += 1
+        if "alias_for" in schema:
+            canonical = TOOL_SCHEMAS.get(schema["alias_for"])
+            return canonical
+        return schema
+
+    _schema_cache_misses += 1
+    return None
 
 
 def get_server_for_tool(tool_name: str) -> str | None:
-    """Get the server name for a tool."""
+    """Get the server name for a tool.
+    Uses cache for performance.
+    """
+    # Check cache first
+    if tool_name in _tool_lookup_cache:
+        return _tool_lookup_cache[tool_name]
+
+    # Cache miss - look up in schemas
     schema = TOOL_SCHEMAS.get(tool_name)
+    result = None
     if schema:
         if "alias_for" in schema:
-            return schema.get("server")
-        return schema.get("server")
-    return None
+            result = schema.get("server")
+        else:
+            result = schema.get("server")
+
+    # Cache the result (even if None)
+    _tool_lookup_cache[tool_name] = result
+    return result
 
 
 def get_servers_for_task(task_type: str) -> list[str]:
@@ -238,3 +264,48 @@ def get_tool_names_for_server(server_name: str) -> list[str]:
         for name, schema in TOOL_SCHEMAS.items()
         if schema.get("server") == server_name and "alias_for" not in schema
     ]
+
+
+def get_registry_stats() -> dict[str, Any]:
+    """Get statistics about registry usage and cache performance."""
+    total_requests = _schema_cache_hits + _schema_cache_misses
+    cache_hit_rate = (_schema_cache_hits / total_requests * 100) if total_requests > 0 else 0
+
+    return {
+        "total_servers": len(SERVER_CATALOG),
+        "total_tools": len(TOOL_SCHEMAS),
+        "cache_size": len(_tool_lookup_cache),
+        "cache_hits": _schema_cache_hits,
+        "cache_misses": _schema_cache_misses,
+        "cache_hit_rate_pct": round(cache_hit_rate, 2),
+        "schemas_loaded": bool(TOOL_SCHEMAS),
+        "catalog_loaded": bool(SERVER_CATALOG),
+    }
+
+
+def clear_caches() -> None:
+    """Clear all internal caches. Useful for testing or after registry reload."""
+    global _schema_cache_hits, _schema_cache_misses  # noqa: PLW0603
+
+    _tool_lookup_cache.clear()
+    _schema_cache_hits = 0
+    _schema_cache_misses = 0
+
+
+def validate_tool_call(tool_name: str, arguments: dict[str, Any]) -> tuple[bool, str | None]:
+    """Validate if a tool call has all required arguments.
+
+    Returns:
+        (is_valid, error_message)
+    """
+    schema = get_tool_schema(tool_name)
+    if not schema:
+        return True, None  # No schema = cannot validate, pass through
+
+    required = schema.get("required", [])
+    missing = [arg for arg in required if arg not in arguments]
+
+    if missing:
+        return False, f"Missing required arguments: {', '.join(missing)}"
+
+    return True, None
