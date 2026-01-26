@@ -1593,7 +1593,7 @@ func setupAndStartServer() async throws -> Server {
                 // We will build a simple string representation
                 var helpText = "Available Tools:\n"
                 for tool in allTools {
-                    helpText += "- \(tool.name): \(tool.description)\n"
+                    helpText += "- \(tool.name): \(tool.description ?? "No description")\n"
                 }
                 return CallTool.Result(content: [.text(helpText)])  // Simplified for now
 
