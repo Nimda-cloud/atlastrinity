@@ -257,7 +257,7 @@ class Trinity:
 
         flow_config = behavior_engine.config.get("orchestration_flow", {})
 
-        workflow = StateGraph(TrinityState)
+        workflow = StateGraph(TrinityState)  # type: ignore[arg-type]
 
         # Mapping of config node types to orchestrator functions
         node_functions = {
