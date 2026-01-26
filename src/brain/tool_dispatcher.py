@@ -291,6 +291,7 @@ class ToolDispatcher:
         "macos-use_set_clipboard": "macos-use_set_clipboard",
         # Screenshot tools (note: no analyze_screen tool exists)
         "take_screenshot": "macos-use_take_screenshot",
+        "screenshot": "macos-use_take_screenshot",
         # Notes tools
         "create_note": "macos-use_notes_create_note",
         "notes_create": "macos-use_notes_create_note",
