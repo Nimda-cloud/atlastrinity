@@ -132,6 +132,10 @@ def validate_swift_server(name: str, config: dict) -> bool:
     """Перевіряє Swift MCP сервер"""
     command = config.get("command")
     
+    if not command:
+        print_error(f"{name}: Command not specified in config")
+        return False
+    
     # Розгортаємо змінні середовища
     if "${PROJECT_ROOT}" in command:
         command = command.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))

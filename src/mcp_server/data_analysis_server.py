@@ -445,10 +445,10 @@ async def create_visualization(
     logger.info(f"Creating visualization: {visualization_type}")
 
     try:
-        import matplotlib
+        import matplotlib  # type: ignore[import-not-found]
 
         matplotlib.use("Agg")  # Non-interactive backend
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # type: ignore[import-not-found]
     except ImportError:
         return {"success": False, "error": "matplotlib not available"}
 
