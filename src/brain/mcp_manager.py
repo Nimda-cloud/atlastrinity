@@ -590,45 +590,14 @@ class MCPManager:
 
     def _get_macos_equivalent(self, tool_name: str) -> str | None:
         """Find macOS-use equivalent for a given tool from behavior config."""
-        from src.brain.behavior_engine import behavior_engine
-
-        fallbacks = behavior_engine.config.get("tool_routing_fallbacks", {})
-        return fallbacks.get(tool_name.lower())
-
-    async def list_tools(self, server_name: str) -> list[Any]:
-        """List available tools for a server"""
-        session = await self.get_session(server_name)
-        if not session:
-            logger.warning(f"[MCP] Could not get session for {server_name}")
-            return []
-
-        try:
-            result = await session.list_tools()
-            return result.tools
-        except Exception as e:
-            # FIX: Handle ClosedResourceError by reconnecting
-            if "ClosedResourceError" in str(e) or "Connection closed" in str(e):
-                logger.warning(
-                    f"[MCP] Connection lost during list_tools for {server_name}, reconnecting...",
-                )
-                async with self._lock:
-                    if server_name in self.sessions:
-                        del self.sessions[server_name]
-
-                # Try to get fresh session
-                session = await self.get_session(server_name)
-                if session:
-                    try:
-                        result = await session.list_tools()
-                        return result.tools
-                    except Exception as retry_e:
-                        logger.error(f"[MCP] Retry list_tools failed for {server_name}: {retry_e}")
-
-            logger.error(
-                f"Error listing tools for {server_name}: {type(e).__name__}: {e}",
-                exc_info=True,
-            )
-            return []
+        # Simple mapping for common tools
+        equivalents = {
+            "click": "macos-use_click_and_traverse",
+            "type": "macos-use_type_and_traverse",
+            "screenshot": "macos-use_take_screenshot",
+            "open": "macos-use_open_application_and_traverse",
+        }
+        return equivalents.get(tool_name)
 
     async def health_check(self, server_name: str) -> bool:
         """Check if a server is healthy.
