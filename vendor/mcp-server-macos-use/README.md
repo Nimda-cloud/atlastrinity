@@ -1,98 +1,96 @@
 # mcp-server-macos-use
 
-Model Model Context Protocol (MCP) server in Swift. It allows controlling macOS applications by leveraging the accessibility APIs, primarily through the `MacosUseSDK`.
+Model Context Protocol (MCP) server in Swift. It allows controlling macOS applications by leveraging the accessibility APIs, primarily through the `MacosUseSDK`.
 
 You can use it in Claude Desktop or other compatible MCP-client.
 
 The server listens for MCP commands over standard input/output (`stdio`) and exposes several tools to interact with applications.
 
+
 https://github.com/user-attachments/assets/b43622a3-3d20-4026-b02f-e9add06afe2b
 
-## Complete List of Tools (39 Tools)
+## Available Tools
 
-The server provides a comprehensive set of 39 tools for macOS automation, categorized below:
+The server exposes the following tools via the `CallTool` MCP method:
 
-### 1. Application Management & Accessibility
+1.  **`macos-use_open_application_and_traverse`**
+    *   **Description:** Opens or activates a specified application and then traverses its accessibility tree.
+    *   **Parameters:**
+        *   `identifier` (String, Required): The application's name, bundle ID, or file path.
 
-- **`macos-use_open_application_and_traverse`**: Opens/activates an app and traverses its UI tree.
-- **`macos-use_refresh_traversal`**: Re-scans the current app's UI tree without action.
+2.  **`macos-use_click_and_traverse`**
+    *   **Description:** Simulates a mouse click at specific coordinates within the window of the target application (identified by PID) and then traverses its accessibility tree.
+    *   **Parameters:**
+        *   `pid` (Number, Required): The Process ID (PID) of the target application.
+        *   `x` (Number, Required): The X-coordinate for the click (relative to the window/screen, depending on SDK behavior).
+        *   `y` (Number, Required): The Y-coordinate for the click.
 
-### 2. Mouse & Keyboard Control
+3.  **`macos-use_type_and_traverse`**
+    *   **Description:** Simulates typing text into the target application (identified by PID) and then traverses its accessibility tree.
+    *   **Parameters:**
+        *   `pid` (Number, Required): The Process ID (PID) of the target application.
+        *   `text` (String, Required): The text to be typed.
 
-- **`macos-use_click_and_traverse`**: Left click at (x, y). Supports visual feedback.
-- **`macos-use_type_and_traverse`**: Type text into the focused element.
-- **`macos-use_press_key_and_traverse`**: Press specific keys (e.g., 'Return', 'Esc') with modifiers.
-- **`macos-use_right_click_and_traverse`**: Right click (context menu).
-- **`macos-use_double_click_and_traverse`**: Double click.
-- **`macos-use_drag_and_drop_and_traverse`**: Drag from (x1, y1) to (x2, y2).
-- **`macos-use_scroll_and_traverse`**: Scroll (up/down/left/right).
+4.  **`macos-use_press_key_and_traverse`**
+    *   **Description:** Simulates pressing a specific keyboard key (e.g., 'Enter', 'Tab', 'a', 'B') with optional modifier keys held down, targeting the application specified by PID, and then traverses its accessibility tree.
+    *   **Parameters:**
+        *   `pid` (Number, Required): The Process ID (PID) of the target application.
+        *   `keyName` (String, Required): The name of the key (e.g., `Return`, `Escape`, `ArrowUp`, `Delete`, `a`, `B`). Case-sensitive for letters if no modifiers are active.
+        *   `modifierFlags` (Array<String>, Optional): An array of modifier keys to hold during the press. Valid values: `CapsLock` (or `Caps`), `Shift`, `Control` (or `Ctrl`), `Option` (or `Opt`, `Alt`), `Command` (or `Cmd`), `Function` (or `Fn`), `NumericPad` (or `Numpad`), `Help`.
 
-### 3. Window & System Management
+5.  **`macos-use_refresh_traversal`**
+    *   **Description:** Only performs the accessibility tree traversal for the specified application (identified by PID). Useful for getting the current UI state without performing an action.
+    *   **Parameters:**
+        *   `pid` (Number, Required): The Process ID (PID) of the application to traverse.
 
-- **`macos-use_window_management`**: Move, resize, minimize, maximize, or focus windows.
-- **`macos-use_system_control`**: Media controls (volume, brightness, play/pause).
-- **`macos-use_set_clipboard`**: Set clipboard text.
-- **`macos-use_get_clipboard`**: Get clipboard text.
-- **`macos-use_take_screenshot`**: Capture main screen (Base64 PNG). Alias: `screenshot`.
-- **`macos-use_analyze_screen`**: Vision/OCR analysis of the screen content. Aliases: `ocr`, `analyze`.
+**Common Optional Parameters (for `CallTool`)**
 
-### 4. Finder Integration (New)
+These can potentially be passed in the `arguments` object for any tool call to override default `MacosUseSDK` behavior (refer to `ActionOptions` in the code):
 
-- **`macos-use_finder_list_files`**: Lists files in the frontmost Finder window or a specified path.
-- **`macos-use_finder_get_selection`**: Returns the POSIX paths of currently selected items in Finder.
-- **`macos-use_finder_open_path`**: Opens a folder or file in Finder.
-- **`macos-use_finder_move_to_trash`**: Moves the specified item to the Trash.
+*   `traverseBefore` (Boolean, Optional): Traverse accessibility tree before the primary action.
+*   `traverseAfter` (Boolean, Optional): Traverse accessibility tree after the primary action (usually defaults to true).
+*   `showDiff` (Boolean, Optional): Include a diff between traversals (if applicable).
+*   `onlyVisibleElements` (Boolean, Optional): Limit traversal to visible elements.
+*   `showAnimation` (Boolean, Optional): Show visual feedback animation for actions.
+*   `animationDuration` (Number, Optional): Duration of the feedback animation.
+*   `delayAfterAction` (Number, Optional): Add a delay after performing the action.
 
-### 5. Native OS Integrations (Universal)
+## Dependencies
 
-- **`macos-use_get_time`**: Get system time (supports timezones).
-- **`macos-use_fetch_url`**: Fetch and parse website content (HTML -> Markdown).
-- **`macos-use_run_applescript`**: Execute arbitrary AppleScript code.
-- **`macos-use_spotlight_search`**: Fast file search using mdfind.
-- **`macos-use_send_notification`**: Send primitive system notifications (via AppleScript).
-
-### 6. Productivity Apps
-
-- **Calendar**:
-  - `macos-use_calendar_events`: List events.
-  - `macos-use_create_event`: Create new events.
-- **Reminders**:
-  - `macos-use_reminders`: List incomplete reminders.
-  - `macos-use_create_reminder`: Create tasks.
-- **Notes**:
-  - `macos-use_notes_list_folders`: List folders.
-  - `macos-use_notes_create_note`: Create notes (HTML supported).
-  - `macos-use_notes_get_content`: Read note content.
-- **Mail**:
-  - `macos-use_mail_send`: Send emails.
-  - `macos-use_mail_read_inbox`: Read recent subjects/senders.
-
-### 7. Discovery & Help
-
-- **`macos-use_list_tools_dynamic`**: Returns a detailed structure describing all available tools and their schemas.
-
-### 8. Terminal Command Execution
-
-- **`execute_command`**: Execute a shell command (`/bin/zsh`). Alias: `terminal`. Maintains persistent CWD.
-
-## Common Options
-
-UI interaction tools accept these optional parameters:
-
-- `showAnimation` (bool): Show a green indicator where the click happens.
-- `animationDuration` (float): Speed of the animation.
+*   `MacosUseSDK` (Assumed local or external Swift package providing macOS control functionality)
 
 ## Building and Running
 
 ```bash
-# Production build
-swift build -c release
+# Example build command (adjust as needed, use 'debug' for development)
+swift build -c debug # Or 'release' for production
 
-# Run
-./.build/release/mcp-server-macos-use
+# Running the server (it communicates via stdin/stdout)
+./.build/debug/mcp-server-macos-use
 ```
 
-## Privacy & Permissions
+**Integrating with Clients (Example: Claude Desktop)**
 
-On first run, macOS will prompt for:
-**Accessibility**, **Screen Recording**, **Calendar/Reminders**, and **Apple Events** (for AppleScript).
+Once built, you need to tell your client application where to find the server executable. For example, to configure Claude Desktop, you might add the following to its configuration:
+
+```json
+{
+    "mcpServers": {
+        "mcp-server-macos-use": {
+            "command": "/path/to/your/project/mcp-server-macos-use/.build/debug/mcp-server-macos-use"
+        }
+    }
+}
+```
+
+*Replace `/path/to/your/project/` with the actual absolute path to your `mcp-server-macos-use` directory.*
+
+## Help
+
+Reach out to matt@mediar.ai
+Discord: m13v_
+
+
+## Plans
+
+Happy to tailor the server for your needs, feel free to open an issue or reach out

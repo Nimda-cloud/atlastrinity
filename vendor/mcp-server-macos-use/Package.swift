@@ -11,7 +11,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/modelcontextprotocol/swift-sdk.git", from: "0.7.1"),
         .package(url: "https://github.com/mediar-ai/MacosUseSDK.git", branch: "main"),
-        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
+        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -21,8 +21,8 @@ let package = Package(
             dependencies: [
                 .product(name: "MCP", package: "swift-sdk"),
                 .product(name: "MacosUseSDK", package: "MacosUseSDK"),
-                .product(name: "SwiftSoup", package: "SwiftSoup"),
+                .product(name: "SwiftSoup", package: "SwiftSoup")
             ]
-        )
+        ),
     ]
 )
