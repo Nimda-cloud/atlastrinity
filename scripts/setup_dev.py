@@ -394,26 +394,10 @@ def build_swift_mcp():
     mcp_path = PROJECT_ROOT / "vendor" / "mcp-server-macos-use"
 
     if not mcp_path.exists():
-        print_info("Папка vendor/mcp-server-macos-use не знайдена. Клонування...")
-        try:
-            # Clone the repository
-            subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "https://github.com/mistralai/mcp-server-macos-use.git",
-                    str(mcp_path),
-                ],
-                check=True,
-            )
-            print_success("mcp-server-macos-use успішно клоновано")
-        except subprocess.CalledProcessError as e:
-            print_error(f"Не вдалося клонувати mcp-server-macos-use: {e}")
-            print_info("Спробуйте клонувати вручну:")
-            print_info(
-                "  cd vendor && git clone https://github.com/mistralai/mcp-server-macos-use.git"
-            )
-            return False
+        print_error(f"Папка vendor/mcp-server-macos-use не знайдена!")
+        print_info("Це кастомний Swift MCP сервер, який має бути в репозиторії.")
+        print_info("Переконайтеся, що клонували повний репозиторій з усіма submodule.")
+        return False
 
     # Check if binary already exists and is recent
     binary_path = mcp_path / ".build" / "release" / "mcp-server-macos-use"
