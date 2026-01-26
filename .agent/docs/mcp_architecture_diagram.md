@@ -323,19 +323,41 @@ npm run diagram:export:all
 - Open this file in browser
 - Mermaid renders automatically ✨
 
-### 🔄 Update Process (Manual)
-**⚠️ ВАЖЛИВО:** Діаграми НЕ оновлюються автоматично!
+### 🔄 Update Process (Automated via MCP devtools)
+**✅ АВТОМАТИЗОВАНО:** Діаграми оновлюються через MCP devtools tool!
 
-1. **Code changes** → Manually update relevant Mermaid diagram
-2. **Update diagram** → Edit this file to reflect code changes
-3. **Commit** → Both code and diagram
-4. **Export** → `npm run diagram:export` (optional, for presentations)
+#### Automatic Update (Recommended)
+```bash
+# Через MCP devtools tool (agent access)
+# Atlas/Tetyana/Grisha можуть викликати:
+devtools_update_architecture_diagrams(
+  target_mode="internal",
+  commits_back=1
+)
 
-**Чому не автоматично?**
-- Mermaid діаграми = text-based код
-- Потрібен AI або ручне редагування
-- GitHub Actions можуть генерувати, але треба налаштувати
-- Для цього проекту: **оновлюємо вручну** (швидше та точніше)
+# Або через npm script
+npm run diagram:update
+```
+
+**Що робить automatic update:**
+1. Аналізує git diff останніх commits
+2. Виявляє змінені компоненти (tool_dispatcher, mcp_manager, etc.)
+3. Додає AUTO-UPDATE markers з timestamp
+4. **Оновлює ОБА файли одночасно:**
+   - `.agent/docs/mcp_architecture_diagram.md` (цей файл)
+   - `src/brain/data/architecture_diagrams/mcp_architecture.md` (sync копія)
+5. Експортує PNG/SVG в `exports/`
+
+**Self-healing integration:**
+- При самолікуванні Vibe автоматично тригерить update після фіксу
+- Grisha верифікує перед commit
+- Діаграми завжди синхронізовані з кодом
+
+#### Manual Update (якщо потрібно)
+1. **Code changes** → Редагувати діаграму вручну
+2. **Update diagram** → Змінити Mermaid код в цьому файлі
+3. **Sync** → Запустити `devtools_update_architecture_diagrams` для sync в обидва файли
+4. **Export** → `npm run diagram:export` (optional)
 
 ---
 
@@ -352,4 +374,6 @@ npm run diagram:export:all
 ---
 
 **Last Updated:** 2026-01-26 (v4.7)  
-**Auto-updates with:** Code changes in `src/brain/`
+**Auto-updates via:** `devtools_update_architecture_diagrams` (MCP tool)  
+**Dual-location sync:** `.agent/docs/` ↔ `src/brain/data/architecture_diagrams/`  
+**Self-healing enabled:** Vibe triggers update post-fix with Grisha verification
