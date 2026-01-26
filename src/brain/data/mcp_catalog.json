@@ -87,18 +87,21 @@
     "name": "vibe",
     "tier": 2,
     "category": "ai",
-    "description": "Mistral AI-powered CODING and DEBUGGING engine (18 tools)",
+    "description": "Mistral AI-powered CODING and DEBUGGING engine with architecture diagram and GitHub integration (18 tools)",
     "capabilities": [
-      "Deep error analysis with auto-fix",
+      "Complex code generation and refactoring",
       "Code review and architectural advice",
       "Writing complex software/scripts",
-      "Self-healing when tools fail",
+      "Self-healing when tools fail with diagram context",
+      "Architecture diagram-aware debugging (reads internal diagrams for context)",
+      "GitHub integration via @modelcontextprotocol/server-github (read files, search, commits)",
       "Direct database inspection (vibe_check_db) using configured SQL backend (SQLite)",
       "Context-aware system monitoring (vibe_get_system_context)",
-      "Long-running task planning",
+      "Long-running task planning with architectural insights",
       "Dynamic model/provider switching",
       "Custom agent profiles",
-      "Session resume capability"
+      "Session resume capability",
+      "Post-fix diagram updates (coordinates with devtools MCP)"
     ],
     "key_tools": [
       "vibe_prompt",
@@ -120,7 +123,13 @@
       "vibe_session_resume",
       "vibe_reload_config"
     ],
-    "when_to_use": "ONLY for software development, writing code/scripts, fixing hard errors (self-healing), and deep system state inspection via DB."
+    "when_to_use": "ONLY for software development, writing code/scripts, fixing hard errors (self-healing), and deep system state inspection via DB.",
+    "integration_notes": {
+      "diagram_access": "Vibe can read architecture diagrams from internal_docs and internal_data paths for context during debugging and self-healing",
+      "github_access": "Uses GitHub MCP server (@modelcontextprotocol/server-github) with GITHUB_TOKEN from .env for read operations (files, search, commits)",
+      "post_action_coordination": "After Vibe fixes, devtools_update_architecture_diagrams can be triggered to update diagrams reflecting the changes",
+      "token_security": "GitHub token is read from environment variable, never hardcoded or exposed in logs"
+    }
   },
   "memory": {
     "name": "memory",
