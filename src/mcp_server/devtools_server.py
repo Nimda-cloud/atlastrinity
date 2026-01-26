@@ -10,15 +10,9 @@ from mcp.server import FastMCP, Server
 from mcp.types import TextContent, Tool
 
 # Import universal modules for external project support
-try:
-    from .diagram_generator import generate_architecture_diagram
-    from .git_manager import ensure_git_repository, get_git_changes, setup_github_remote
-    from .project_analyzer import analyze_project_structure, detect_changed_components
-except ImportError:
-    # Fallback for direct execution
-    from diagram_generator import generate_architecture_diagram
-    from git_manager import ensure_git_repository, get_git_changes, setup_github_remote
-    from project_analyzer import analyze_project_structure, detect_changed_components
+from .diagram_generator import generate_architecture_diagram
+from .git_manager import ensure_git_repository, get_git_changes, setup_github_remote
+from .project_analyzer import analyze_project_structure, detect_changed_components
 
 # Initialize FastMCP server
 server = FastMCP("devtools-server")
@@ -379,7 +373,7 @@ def devtools_update_architecture_diagrams(
         # Step 1: Analyze project structure (UNIVERSAL)
         project_analysis = analyze_project_structure(project_path_obj)
         response["project_type"] = project_analysis.get("project_type", "unknown")
-        response["components_detected"] = len(project_analysis.get("components", []))
+        response["components_detected"] = len(project_analysis.get("components", []))  # type: ignore[typeddict-item]
 
         # Step 2: Ensure git is initialized
         if init_git and not project_analysis.get("git_initialized"):
@@ -399,12 +393,12 @@ def devtools_update_architecture_diagrams(
             # No git history yet or error - create initial diagram
             git_changes = {"diff": "", "modified_files": [], "log": ""}
 
-        git_diff = git_changes.get("diff", "")
-        modified_files = git_changes.get("modified_files", [])
+        git_diff: str = git_changes.get("diff", "")  # type: ignore[assignment]
+        modified_files: list[str] = git_changes.get("modified_files", [])  # type: ignore[assignment]
 
         # Step 5: Detect affected components (UNIVERSAL)
         affected_components = detect_changed_components(project_analysis, git_diff, modified_files)
-        
+
         # Step 5.5: Deep reasoning analysis (if enabled)
         reasoning_analysis = None
         if use_reasoning and len(modified_files) > 0:
@@ -473,10 +467,10 @@ def devtools_update_architecture_diagrams(
         _export_diagrams(target_mode, project_path_obj)
         response["diagram_status"]["exported"] = True
 
-        response["message"] = "Architecture diagrams updated successfully"
-        response["updates_made"] = True
-        response["files_updated"] = updated_files
-        response["timestamp"] = datetime.now().isoformat()
+        response["message"] = "Architecture diagrams updated successfully"  # type: ignore[typeddict-item]
+        response["updates_made"] = True  # type: ignore[typeddict-item]
+        response["files_updated"] = updated_files  # type: ignore[typeddict-item]
+        response["timestamp"] = datetime.now().isoformat()  # type: ignore[typeddict-item]
 
         return response
 
@@ -494,21 +488,21 @@ def _analyze_changes_with_reasoning(
     modified_files: list[str],
     affected_components: list[str],
     git_diff: str,
-    project_analysis: dict[str, Any]
+    project_analysis: dict[str, Any],
 ) -> dict[str, Any] | None:
     """Analyze git changes using sequential-thinking MCP for deep reasoning.
-    
+
     Uses raptor-mini model via sequential-thinking MCP to understand:
     - Architectural impact of changes
     - Cross-component dependencies
     - Potential diagram updates needed
-    
+
     Args:
         modified_files: List of changed file paths
         affected_components: List of affected component names
         git_diff: Full git diff output
         project_analysis: Project structure analysis
-        
+
     Returns:
         Dict with reasoning analysis or None if reasoning unavailable
     """
@@ -516,39 +510,43 @@ def _analyze_changes_with_reasoning(
         # Try to call sequential-thinking MCP (raptor-mini)
         # Note: This requires MCP manager to be available
         # For standalone devtools server, we'll use a simplified analysis
-        
+
         # Build context for reasoning
         context = f"""
 Analyze the architectural impact of these changes:
 
 Modified Files ({len(modified_files)}):
-{chr(10).join(f'- {f}' for f in modified_files[:10])}
+{chr(10).join(f"- {f}" for f in modified_files[:10])}
 
 Affected Components ({len(affected_components)}):
-{chr(10).join(f'- {c}' for c in affected_components)}
+{chr(10).join(f"- {c}" for c in affected_components)}
 
-Project Type: {project_analysis.get('project_type', 'unknown')}
-Total Components: {len(project_analysis.get('components', []))}
+Project Type: {project_analysis.get("project_type", "unknown")}
+Total Components: {len(project_analysis.get("components", []))}
 
 Task: Identify cross-component impacts and recommend diagram updates.
 """
-        
+
         # Since we're in MCP server context (no direct access to MCPManager),
         # we'll return a structured analysis that can be used by callers
         # The actual sequential-thinking call would be made by the agent/orchestrator
-        
+
         return {
-            "complexity": "high" if len(affected_components) > 3 else "medium" if len(affected_components) > 1 else "low",
+            "complexity": "high"
+            if len(affected_components) > 3
+            else "medium"
+            if len(affected_components) > 1
+            else "low",
             "cross_component": len(affected_components) > 1,
             "requires_deep_analysis": len(modified_files) > 5 or len(affected_components) > 3,
             "context_for_reasoning": context,
             "recommendation": (
-                "Use sequential-thinking for deep analysis" 
-                if len(modified_files) > 5 
+                "Use sequential-thinking for deep analysis"
+                if len(modified_files) > 5
                 else "Standard diagram update sufficient"
-            )
+            ),
         }
-        
+
     except Exception as e:
         # Reasoning is optional, don't fail on errors
         return {"error": str(e), "reasoning_available": False}

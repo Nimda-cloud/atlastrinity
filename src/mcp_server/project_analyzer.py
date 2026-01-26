@@ -148,7 +148,7 @@ def _analyze_rust_project(project_path: Path) -> dict[str, Any]:
         # Simple parsing - could use toml library
         content = cargo_toml.read_text()
         if "[dependencies]" in content:
-            info["dependencies"] = {}  # Would parse here
+            info["dependencies"] = {}  # type: ignore[typeddict-item]  # Would parse here
 
     # Analyze src/
     src_path = project_path / "src"
