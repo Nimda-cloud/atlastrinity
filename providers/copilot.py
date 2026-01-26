@@ -20,8 +20,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 
 class CopilotLLM(BaseChatModel):
-    model_name: str
-    vision_model_name: str
+    model_name: str | None = None
+    vision_model_name: str | None = None
     api_key: str | None = None
     max_tokens: int = 4096  # Default, can be overridden per instance
     _tools: list[Any] | None = None
@@ -55,19 +55,25 @@ class CopilotLLM(BaseChatModel):
         copilot_key = os.getenv("COPILOT_API_KEY")
         vision_key = os.getenv("VISION_API_KEY")
 
-        # Determine which key to use based on whether this is a vision model
+        # Determine which key to use based on model name and vision_model_name
+        # gpt-4.1 is GitHub Copilot's internal model name and requires VISION_API_KEY
+        uses_vision_key = (
+            vision_model_name is not None  # Explicit vision model
+            or (self.model_name and self.model_name.startswith("gpt-4.1"))  # gpt-4.1 variants
+        )
+        
         if api_key:
             self.api_key = api_key
             print(f"[COPILOT] Using API key from parameter: {self.api_key[:10]}...", flush=True)
-        elif vision_model_name and vision_key:
+        elif uses_vision_key and vision_key:
             self.api_key = vision_key
             print(
-                f"[COPILOT] Using VISION_API_KEY for vision model: {self.api_key[:10]}...",
+                f"[COPILOT] Using VISION_API_KEY for model '{self.model_name}': {self.api_key[:10]}...",
                 flush=True,
             )
         elif copilot_key:
             self.api_key = copilot_key
-            print(f"[COPILOT] Using COPILOT_API_KEY: {self.api_key[:10]}...", flush=True)
+            print(f"[COPILOT] Using COPILOT_API_KEY for model '{self.model_name}': {self.api_key[:10]}...", flush=True)
         else:
             self.api_key = None
 
@@ -426,12 +432,10 @@ class CopilotLLM(BaseChatModel):
                     print(f"[COPILOT] Error details: {error_detail[:500]}", flush=True)
                     
                     # Parse error to determine type
-                    error_type = "unknown"
                     try:
                         error_json = response.json()
                         error_code = error_json.get("error", {}).get("code", "")
                         if error_code == "model_not_supported":
-                            error_type = "model_not_supported"
                             print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
                     except:
                         pass
@@ -593,12 +597,10 @@ class CopilotLLM(BaseChatModel):
                 print(f"[COPILOT] Error details: {e.response.text[:500]}", flush=True)
                 
                 # Parse error to determine type
-                error_type = "unknown"
                 try:
                     error_json = e.response.json()
                     error_code = error_json.get("error", {}).get("code", "")
                     if error_code == "model_not_supported":
-                        error_type = "model_not_supported"
                         print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
                 except:
                     pass
