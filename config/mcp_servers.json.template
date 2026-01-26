@@ -256,14 +256,29 @@
         "tetyana",
         "grisha"
       ]
+    },
+    "postgres": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "src.mcp_server.postgres_server"
+      ],
+      "description": "PostgreSQL Database Access (Experimental). Requires local PostgreSQL 17 installation.",
+      "disabled": true,
+      "tier": 3,
+      "agents": [
+        "tetyana",
+        "grisha"
+      ],
+      "note": "Disabled by default. Used for structured data querying when SQLite is insufficient."
     }
   },
   "_metadata": {
-    "version": "4.5",
+    "version": "4.6",
     "last_updated": "2026-01-25",
     "description": "Synced MCP configuration for AtlasTrinity - matches mcp_registry.py and data/ JSONs",
-    "active_servers": 12,
-    "total_servers": 12,
+    "active_servers": 16,
+    "total_servers": 17,
     "notes": [
       "Servers with 'disabled': true are not loaded by default",
       "Tier 1-2 servers load at startup, Tier 3-4 on-demand"
