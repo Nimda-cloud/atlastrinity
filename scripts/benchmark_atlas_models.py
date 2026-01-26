@@ -1,6 +1,6 @@
 import asyncio
-import sys
 import os
+import sys
 
 # Add src to path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
 
 from brain.mcp_manager import mcp_manager
 from brain.tool_dispatcher import ToolDispatcher
+
 
 async def benchmark():
     print("🚀 Starting Atlas gpt-4.1 Benchmark...")
@@ -46,11 +47,10 @@ async def benchmark():
     print("\n[TEST 5] Complex Coordination (Search + Note)...")
     # Simulate a coordinated task: Find something and write it down.
     # We'll use the already verified tools to simulate the process.
-    version_res = await mcp_manager.call_tool('filesystem', 'read_file', {"path": f"{PROJECT_ROOT}/package.json"})
-    note_content = f"AtlasTrinity gpt-4.1 Benchmark: Project info read successfully at {__import__('datetime').datetime.now()}"
+    await mcp_manager.call_tool('filesystem', 'read_file', {"path": f"{PROJECT_ROOT}/package.json"})
     note_res = await mcp_manager.call_tool('macos-use', 'macos-use_send_notification', {
         "title": "Benchmark Success",
-        "message": "gpt-4.1 handled tool coordination perfectly."
+        "message": f"gpt-4.1 handled tool coordination perfectly at {__import__('datetime').datetime.now()}"
     })
     print(f"Coordination Result: {note_res}")
 
