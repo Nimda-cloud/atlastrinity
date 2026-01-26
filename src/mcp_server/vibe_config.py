@@ -580,7 +580,7 @@ def get_default_providers() -> list[ProviderConfig]:
 
 def get_default_models() -> list[ModelConfig]:
     """Get default model configurations.
-    
+
     Note: Models should be defined in vibe_config.toml template.
     This function returns empty list as fallback - models must be configured.
     """

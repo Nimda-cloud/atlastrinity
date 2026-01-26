@@ -1196,7 +1196,7 @@ IMPORTANT:
                 # Enhanced error handling for dispatcher errors
                 if not result.get("success"):
                     error_msg = result.get("error", "")
-                    
+
                     # Check for specific error types from dispatcher
                     if result.get("validation_error"):
                         logger.error(
@@ -1214,10 +1214,8 @@ IMPORTANT:
                             f"Suggestion: {result.get('suggestion')}"
                         )
                     elif result.get("compatibility_error"):
-                        logger.error(
-                            f"[TETYANA] Compatibility error for {tool_name}: {error_msg}"
-                        )
-                    
+                        logger.error(f"[TETYANA] Compatibility error for {tool_name}: {error_msg}")
+
                     # If failed, ensure 'error' field exists for feedback loop
                     if "error" not in result:
                         # Extract error from content if possible

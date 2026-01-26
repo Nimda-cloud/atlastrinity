@@ -713,7 +713,9 @@ class ToolDispatcher:
         schema = get_tool_schema(tool_name)
         if not schema:
             # No schema found - pass through without validation
-            logger.debug(f"[DISPATCHER] No schema found for tool '{tool_name}', skipping validation")
+            logger.debug(
+                f"[DISPATCHER] No schema found for tool '{tool_name}', skipping validation"
+            )
             return args if isinstance(args, dict) else {}
 
         validated = dict(args) if isinstance(args, dict) else {}

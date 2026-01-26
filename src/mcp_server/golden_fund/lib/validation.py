@@ -75,7 +75,6 @@ class DataValidator:
         }
 
         try:
-
             # Convert single dict to list for uniform processing
             if isinstance(data, dict):
                 data_list = [data]
@@ -136,14 +135,16 @@ class DataValidator:
 
             # Determine validation result
             if found_valid_employee:
-                metadata.update({
-                    "validation_passed": True,
-                    "valid_employees_found": len(employee_details),
-                    "employee_samples": [
-                        {"name": emp["name"], "role": emp["role"]}
-                        for emp in employee_details[:3]  # Limit to 3 samples
-                    ],
-                })
+                metadata.update(
+                    {
+                        "validation_passed": True,
+                        "valid_employees_found": len(employee_details),
+                        "employee_samples": [
+                            {"name": emp["name"], "role": emp["role"]}
+                            for emp in employee_details[:3]  # Limit to 3 samples
+                        ],
+                    }
+                )
 
                 return ValidationResult(
                     True,

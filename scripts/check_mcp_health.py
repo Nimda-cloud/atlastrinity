@@ -78,6 +78,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
         # Special case for 'system' which is internal
         if server_name == "system":
             from brain.mcp_registry import get_tool_names_for_server
+
             tools = get_tool_names_for_server("system")
             results[server_name] = {
                 "status": "online",
@@ -125,7 +126,9 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                         f"{elapsed:>6.0f}ms",
                     )
                     if show_tools:
-                        tool_names = sorted([t.name if hasattr(t, "name") else str(t) for t in tools])
+                        tool_names = sorted(
+                            [t.name if hasattr(t, "name") else str(t) for t in tools]
+                        )
                         for name in tool_names:
                             print(f"    • {name}")
             # check if it's connected
@@ -243,7 +246,9 @@ def main():
     parser = argparse.ArgumentParser(description="Check MCP server health")
     parser.add_argument("--json", action="store_true", help="Output in JSON format for automation")
     parser.add_argument("--tools", action="store_true", help="List all tools for each server")
-    parser.add_argument("--all", action="store_true", help="Probe all servers in registry, even if disabled")
+    parser.add_argument(
+        "--all", action="store_true", help="Probe all servers in registry, even if disabled"
+    )
     args = parser.parse_args()
 
     asyncio.run(check_mcp(output_json=args.json, show_tools=args.tools, check_all=args.all))

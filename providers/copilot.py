@@ -61,7 +61,7 @@ class CopilotLLM(BaseChatModel):
             vision_model_name is not None  # Explicit vision model
             or (self.model_name and self.model_name.startswith("gpt-4.1"))  # gpt-4.1 variants
         )
-        
+
         if api_key:
             self.api_key = api_key
             print(f"[COPILOT] Using API key from parameter: {self.api_key[:10]}...", flush=True)
@@ -73,7 +73,10 @@ class CopilotLLM(BaseChatModel):
             )
         elif copilot_key:
             self.api_key = copilot_key
-            print(f"[COPILOT] Using COPILOT_API_KEY for model '{self.model_name}': {self.api_key[:10]}...", flush=True)
+            print(
+                f"[COPILOT] Using COPILOT_API_KEY for model '{self.model_name}': {self.api_key[:10]}...",
+                flush=True,
+            )
         else:
             self.api_key = None
 
@@ -428,18 +431,23 @@ class CopilotLLM(BaseChatModel):
 
                 if response.status_code == 400:
                     error_detail = response.text
-                    print(f"[COPILOT] Async 400 error detected. Status: {response.status_code}", flush=True)
+                    print(
+                        f"[COPILOT] Async 400 error detected. Status: {response.status_code}",
+                        flush=True,
+                    )
                     print(f"[COPILOT] Error details: {error_detail[:500]}", flush=True)
-                    
+
                     # Parse error to determine type
                     try:
                         error_json = response.json()
                         error_code = error_json.get("error", {}).get("code", "")
                         if error_code == "model_not_supported":
-                            print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
+                            print(
+                                f"[COPILOT] Model not supported: {payload.get('model')}", flush=True
+                            )
                     except:
                         pass
-                    
+
                     print("[COPILOT] Attempting fallback to gpt-4o...", flush=True)
 
                     # Clean headers and payload for fallback
@@ -461,10 +469,15 @@ class CopilotLLM(BaseChatModel):
                                         if item.get("type") == "text":
                                             text_parts.append(item.get("text", ""))
                                         elif item.get("type") == "image_url":
-                                            text_parts.append("[Image content removed for compatibility]")
+                                            text_parts.append(
+                                                "[Image content removed for compatibility]"
+                                            )
                                 text_only = " ".join(text_parts)
                                 cleaned_messages.append(
-                                    {**msg, "content": text_only or "[Content processed for fallback]"},
+                                    {
+                                        **msg,
+                                        "content": text_only or "[Content processed for fallback]",
+                                    },
                                 )
                             else:
                                 cleaned_messages.append(msg)
@@ -472,6 +485,7 @@ class CopilotLLM(BaseChatModel):
 
                     # Use stable model for fallback from config (all models are Copilot)
                     from src.brain.config_loader import config
+
                     fallback_model = config.get("models.error_retry") or payload_fb.get("model")
                     payload_fb["model"] = fallback_model
                     # Reduce temperature for more reliable fallback
@@ -491,7 +505,7 @@ class CopilotLLM(BaseChatModel):
                                 flush=True,
                             )
                             retry_response.raise_for_status()
-                        
+
                         print("[COPILOT] Fallback successful with gpt-4o", flush=True)
                         return self._process_json_result(retry_response.json(), messages)
                     except Exception as fallback_error:
@@ -595,9 +609,11 @@ class CopilotLLM(BaseChatModel):
         except requests.exceptions.HTTPError as e:
             # Check for Vision error (400) and try fallback with different model
             if hasattr(e, "response") and e.response is not None and e.response.status_code == 400:
-                print(f"[COPILOT] 400 Error intercepted. Status: {e.response.status_code}", flush=True)
+                print(
+                    f"[COPILOT] 400 Error intercepted. Status: {e.response.status_code}", flush=True
+                )
                 print(f"[COPILOT] Error details: {e.response.text[:500]}", flush=True)
-                
+
                 # Parse error to determine type
                 try:
                     error_json = e.response.json()
@@ -606,7 +622,7 @@ class CopilotLLM(BaseChatModel):
                         print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
                 except:
                     pass
-                
+
                 print("[COPILOT] Retrying with gpt-4o...", flush=True)
                 # Retry without vision header AND remove image content from payload
                 try:
@@ -625,7 +641,9 @@ class CopilotLLM(BaseChatModel):
                                         if item.get("type") == "text":
                                             text_parts.append(item.get("text", ""))
                                         elif item.get("type") == "image_url":
-                                            text_parts.append("[Image content removed for compatibility]")
+                                            text_parts.append(
+                                                "[Image content removed for compatibility]"
+                                            )
                                         elif item.get("type") != "image_url":
                                             text_parts.append(str(item))
                                     elif isinstance(item, str):
@@ -644,6 +662,7 @@ class CopilotLLM(BaseChatModel):
 
                     # Use stable model for fallback from config (all models are Copilot)
                     from src.brain.config_loader import config
+
                     fallback_model = config.get("models.error_retry") or payload.get("model")
                     payload["model"] = fallback_model
                     # Reduce temperature for more reliable fallback

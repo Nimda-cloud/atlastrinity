@@ -50,23 +50,23 @@ class Grisha(BaseAgent):
     """Grisha - The Visor/Auditor
 
     3-Phase Verification Architecture:
-    
+
     Phase 1: Strategy Planning (strategy_model: raptor-mini)
              - Analyzes step requirements and determines verification approach
              - Plans which MCP tools are needed for evidence collection
              - Outputs verification strategy in natural language
-    
+
     Phase 2: Tool Execution (model: gpt-4.1)
              - Selects and executes MCP server tools based on strategy
              - Collects evidence (logs, file contents, DB queries, etc.)
              - Similar to Tetyana's execution phase
-    
+
     Phase 3: Verdict Formation (verdict_model: raptor-mini, vision_model: gpt-4o)
              - Analyzes evidence collected from Phase 2
              - Uses vision model for screenshot analysis if needed
              - Forms logical verdict: PASS/FAIL with confidence
              - Can fallback to gpt-4.1 if raptor-mini fails
-    
+
     Security Functions:
     - Blocking dangerous commands via BLOCKLIST
     - Multi-layer verification for critical operations
@@ -92,13 +92,13 @@ class Grisha(BaseAgent):
 
     def __init__(self, vision_model: str | None = None):
         """Initialize Grisha with 3-phase verification architecture.
-        
+
         Phase 1: Strategy Planning (strategy_model: raptor-mini)
                  - Analyze what needs verification and which tools to use
-        
-        Phase 2: Tool Execution (model: gpt-4.1) 
+
+        Phase 2: Tool Execution (model: gpt-4.1)
                  - Select and execute MCP server tools (similar to Tetyana)
-        
+
         Phase 3: Verdict Formation (verdict_model: raptor-mini, vision_model: gpt-4o)
                  - Analyze collected evidence and form final verdict
         """
@@ -123,8 +123,10 @@ class Grisha(BaseAgent):
         if not vision_model_name:
             raise ValueError("[GRISHA] Vision model not specified in config.yaml")
         self.llm = CopilotLLM(model_name=vision_model_name, vision_model_name=vision_model_name)
-        
-        verdict_model = agent_config.get("verdict_model", strategy_model)  # Fallback to strategy model
+
+        verdict_model = agent_config.get(
+            "verdict_model", strategy_model
+        )  # Fallback to strategy model
         self.verdict_llm = CopilotLLM(model_name=verdict_model)
 
         # General settings
@@ -1154,7 +1156,7 @@ Use this report to:
 
     async def take_screenshot(self) -> str:
         """Captures and analyzes screenshot via Vision model.
-        
+
         Enhanced for AtlasTrinity:
         - Robust multi-monitor support (Quartz).
         - Active application window focus (AppleScript).
