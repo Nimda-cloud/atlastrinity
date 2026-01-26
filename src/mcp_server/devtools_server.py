@@ -6,7 +6,19 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from mcp.server import FastMCP
+from mcp.server import FastMCP, Server
+from mcp.types import TextContent, Tool
+
+# Import universal modules for external project support
+try:
+    from .diagram_generator import generate_architecture_diagram
+    from .git_manager import ensure_git_repository, get_git_changes, setup_github_remote
+    from .project_analyzer import analyze_project_structure, detect_changed_components
+except ImportError:
+    # Fallback for direct execution
+    from diagram_generator import generate_architecture_diagram
+    from git_manager import ensure_git_repository, get_git_changes, setup_github_remote
+    from project_analyzer import analyze_project_structure, detect_changed_components
 
 # Initialize FastMCP server
 server = FastMCP("devtools-server")
@@ -314,20 +326,35 @@ def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
 
 @server.tool()
 def devtools_update_architecture_diagrams(
-    project_path: str | None = None, commits_back: int = 1, target_mode: str = "internal"
+    project_path: str | None = None,
+    commits_back: int = 1,
+    target_mode: str = "internal",
+    github_repo: str | None = None,
+    github_token: str | None = None,
+    init_git: bool = True,
 ) -> dict[str, Any]:
-    """Auto-update architecture diagrams by analyzing recent git changes.
+    """Auto-update architecture diagrams by analyzing git changes.
 
-    Uses git MCP to fetch diffs, sequential-thinking MCP for analysis,
-    and updates Mermaid diagrams in appropriate locations.
+    Universal system that works for ANY project type (Python, Node.js, Rust, Go, etc.).
+    Analyzes project structure dynamically and generates appropriate diagrams.
+
+    Features:
+    - Universal project detection (Python, Node.js, Rust, Go, generic)
+    - Dynamic component analysis
+    - Git initialization for new projects
+    - GitHub token setup and remote configuration
+    - Intelligent diagram generation based on project structure
 
     Args:
-        project_path: Path to project (None = AtlasTrinity internal)
-        commits_back: Number of commits to analyze (default: 1)
+        project_path: Path to project. None = AtlasTrinity internal project
+        commits_back: Number of commits to analyze for changes (default: 1)
         target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)
+        github_repo: GitHub repo name (e.g., 'user/repo') for remote setup
+        github_token: GitHub token (reads from .env if not provided)
+        init_git: Auto-initialize git if not present (default: True)
 
     Returns:
-        Status of diagram updates with file locations
+        Status of diagram updates with file locations, git status, GitHub config
     """
     import asyncio
     from datetime import datetime
@@ -340,57 +367,58 @@ def devtools_update_architecture_diagrams(
         project_path_obj = Path(project_path).resolve()
 
     if not project_path_obj.exists():
-        return {"error": f"Project path does not exist: {project_path_obj}"}
+        return {"error": f"Project path does not exist: {project_path_obj}", "success": False}
+
+    response = {"success": True, "git_status": {}, "github_status": {}, "diagram_status": {}}
 
     try:
-        # Step 1: Get git diff/log using git command
-        git_log_cmd = ["git", "log", f"-{commits_back}", "--stat", "--pretty=format:%H|%an|%ad|%s"]
-        result = subprocess.run(
-            git_log_cmd, cwd=project_path_obj, capture_output=True, text=True, check=False
-        )
+        # Step 1: Analyze project structure (UNIVERSAL)
+        project_analysis = analyze_project_structure(project_path_obj)
+        response["project_type"] = project_analysis.get("project_type", "unknown")
+        response["components_detected"] = len(project_analysis.get("components", []))
 
-        if result.returncode != 0:
-            return {"error": f"Git log failed: {result.stderr}"}
+        # Step 2: Ensure git is initialized
+        if init_git and not project_analysis.get("git_initialized"):
+            git_init_result = ensure_git_repository(project_path_obj)
+            response["git_status"]["initialized"] = git_init_result
+            if not git_init_result.get("initialized"):
+                return {"error": git_init_result.get("error", "Git init failed"), "success": False}
 
-        git_log = result.stdout.strip()
+        # Step 3: Setup GitHub remote if requested
+        if github_repo or github_token:
+            github_result = setup_github_remote(project_path_obj, github_repo, github_token)
+            response["github_status"] = github_result
 
-        # Get actual diff
-        git_diff_cmd = ["git", "diff", f"HEAD~{commits_back}", "HEAD", "--", "src/brain/"]
-        diff_result = subprocess.run(
-            git_diff_cmd, cwd=project_path_obj, capture_output=True, text=True, check=False
-        )
+        # Step 4: Get git changes (UNIVERSAL - all files, not just src/brain/)
+        git_changes = get_git_changes(project_path_obj, commits_back)
+        if not git_changes.get("success"):
+            # No git history yet or error - create initial diagram
+            git_changes = {"diff": "", "modified_files": [], "log": ""}
 
-        git_diff = diff_result.stdout.strip()
+        git_diff = git_changes.get("diff", "")
+        modified_files = git_changes.get("modified_files", [])
 
-        if not git_diff:
+        # Step 5: Detect affected components (UNIVERSAL)
+        affected_components = detect_changed_components(project_analysis, git_diff, modified_files)
+
+        response["analysis"] = {
+            "modified_files": modified_files,
+            "affected_components": affected_components,
+            "has_changes": len(modified_files) > 0 or len(affected_components) > 0,
+        }
+
+        if not response["analysis"]["has_changes"]:
             return {
                 "success": True,
-                "message": "No changes detected in src/brain/",
+                "message": "No changes detected in project",
                 "updates_made": False,
             }
 
-        # Step 2: Analyze changes using sequential-thinking pattern
-        # This would normally call MCP sequential-thinking server
-        # For now, we'll use a simplified analysis pattern
-
-        analysis = _analyze_code_changes(git_log, git_diff)
-
-        # Step 3: Determine which diagrams need updates
-        diagrams_to_update = _determine_diagram_updates(analysis)
-
-        if not diagrams_to_update:
-            return {
-                "success": True,
-                "message": "Changes don't require diagram updates",
-                "analysis": analysis,
-                "updates_made": False,
-            }
-
-        # Step 4: Update diagrams
+        # Step 6: Generate/Update diagrams (UNIVERSAL)
         updated_files = []
 
         if target_mode == "internal":
-            # Update both locations for AtlasTrinity
+            # AtlasTrinity internal mode - update both locations
             internal_path = (
                 PROJECT_ROOT
                 / "src"
@@ -401,178 +429,53 @@ def devtools_update_architecture_diagrams(
             )
             docs_path = PROJECT_ROOT / ".agent" / "docs" / "mcp_architecture_diagram.md"
 
-            # Read current diagram
+            # For internal, keep existing diagram and add update marker
             if docs_path.exists():
                 with open(docs_path, encoding="utf-8") as f:
                     current_diagram = f.read()
 
-                # Apply updates (this would be AI-driven in real implementation)
-                updated_diagram = _apply_diagram_updates(
-                    current_diagram, analysis, diagrams_to_update
-                )
+                # Add update notice
+                update_notice = f"\n<!-- AUTO-UPDATED: {datetime.now().isoformat()} -->\n"
+                update_notice += f"<!-- Modified: {', '.join(modified_files[:3])} -->\n\n"
+                updated_diagram = update_notice + current_diagram
 
-                # Write to both locations
                 with open(internal_path, "w", encoding="utf-8") as f:
                     f.write(updated_diagram)
-                updated_files.append(str(internal_path))
-
                 with open(docs_path, "w", encoding="utf-8") as f:
                     f.write(updated_diagram)
-                updated_files.append(str(docs_path))
 
+                updated_files = [str(internal_path), str(docs_path)]
         else:
-            # External project: update only in project root
+            # External project - generate diagram from project analysis
             diagram_path = project_path_obj / "architecture_diagram.md"
 
-            if diagram_path.exists():
-                with open(diagram_path, encoding="utf-8") as f:
-                    current_diagram = f.read()
-            else:
-                # Create new diagram for external project
-                current_diagram = _create_base_diagram(project_path_obj)
-
-            updated_diagram = _apply_diagram_updates(current_diagram, analysis, diagrams_to_update)
+            # Generate diagram based on project structure
+            diagram_content = generate_architecture_diagram(project_path_obj, project_analysis)
 
             with open(diagram_path, "w", encoding="utf-8") as f:
-                f.write(updated_diagram)
+                f.write(diagram_content)
+
             updated_files.append(str(diagram_path))
 
-        # Step 5: Export diagrams to PNG/SVG
+        # Step 7: Export diagrams to PNG/SVG
         _export_diagrams(target_mode, project_path_obj)
+        response["diagram_status"]["exported"] = True
 
-        return {
-            "success": True,
-            "message": "Architecture diagrams updated successfully",
-            "updates_made": True,
-            "analysis": analysis,
-            "diagrams_updated": diagrams_to_update,
-            "files_updated": updated_files,
-            "timestamp": datetime.now().isoformat(),
-        }
+        response["message"] = "Architecture diagrams updated successfully"
+        response["updates_made"] = True
+        response["files_updated"] = updated_files
+        response["timestamp"] = datetime.now().isoformat()
+
+        return response
 
     except Exception as e:
-        return {"error": f"Failed to update diagrams: {e}"}
+        return {"error": f"Failed to update diagrams: {e}", "success": False}
 
 
-def _analyze_code_changes(git_log: str, git_diff: str) -> dict[str, Any]:
-    """Analyze git changes to determine architectural impact.
-
-    In production, this would call sequential-thinking MCP for deep analysis.
-    For now, uses pattern matching.
-    """
-    analysis = {
-        "modified_files": [],
-        "affected_components": [],
-        "change_types": [],
-        "requires_diagram_update": False,
-    }
-
-    # Parse diff for file changes
-    for line in git_diff.split("\n"):
-        if line.startswith("diff --git"):
-            file_path = line.split()[-1].replace("b/", "")
-            analysis["modified_files"].append(file_path)
-
-    # Detect affected components
-    key_files = {
-        "tool_dispatcher.py": "Tool Routing & Validation",
-        "mcp_manager.py": "Tool Execution",
-        "mcp_registry.py": "Registry & Caching",
-        "behavior_engine.py": "Intent Detection",
-    }
-
-    for file_path in analysis["modified_files"]:
-        for key_file, component in key_files.items():
-            if key_file in file_path:
-                analysis["affected_components"].append(component)
-                analysis["requires_diagram_update"] = True
-
-    # Detect change types
-    if "+def " in git_diff or "+async def " in git_diff:
-        analysis["change_types"].append("new_function")
-    if "+class " in git_diff:
-        analysis["change_types"].append("new_class")
-    if "- " in git_diff and "+ " in git_diff:
-        analysis["change_types"].append("modification")
-
-    return analysis
-
-
-def _determine_diagram_updates(analysis: dict[str, Any]) -> list[str]:
-    """Determine which diagrams need updates based on analysis."""
-    diagrams = []
-
-    if not analysis["requires_diagram_update"]:
-        return diagrams
-
-    component_to_diagram = {
-        "Tool Routing & Validation": "Phase 2: Tool Routing & Validation",
-        "Tool Execution": "Phase 3: Tool Execution",
-        "Registry & Caching": "Phase 4: Registry & Caching",
-        "Intent Detection": "Phase 1: Intent Detection",
-    }
-
-    for component in analysis["affected_components"]:
-        if component in component_to_diagram:
-            diagrams.append(component_to_diagram[component])
-
-    # Always update main flow if core components changed
-    if diagrams:
-        diagrams.insert(0, "Complete Execution Flow")
-
-    return list(set(diagrams))
-
-
-def _apply_diagram_updates(
-    current_diagram: str, analysis: dict[str, Any], diagrams_to_update: list[str]
-) -> str:
-    """Apply updates to diagram based on analysis.
-
-    In production, this would use AI (Claude/GPT via MCP) to intelligently update.
-    For now, adds update marker.
-    """
-    from datetime import datetime
-
-    # Add update notice at the top
-    update_notice = f"""
-<!-- AUTO-UPDATED: {datetime.now().isoformat()} -->
-<!-- Changes detected in: {", ".join(analysis["affected_components"])} -->
-<!-- Diagrams updated: {", ".join(diagrams_to_update)} -->
-
-"""
-
-    # Remove old auto-update notice if exists
-    lines = current_diagram.split("\n")
-    filtered_lines = [line for line in lines if not line.startswith("<!-- AUTO-UPDATED:")]
-
-    updated_diagram = update_notice + "\n".join(filtered_lines)
-
-    return updated_diagram
-
-
-def _create_base_diagram(project_path: Path) -> str:
-    """Create base architecture diagram for external projects."""
-    return f"""# Architecture Diagram - {project_path.name}
-
-> **Auto-generated by AtlasTrinity MCP devtools**
-
-## System Architecture
-
-```mermaid
-flowchart TD
-    Start([Application Entry]) --> Init[Initialization]
-    Init --> Main[Main Logic]
-    Main --> End([Exit])
-    
-    style Init fill:#e1f5ff
-    style Main fill:#e1ffe1
-```
-
----
-
-**Last Updated:** Auto-generated  
-**Project:** {project_path.name}
-"""
+# Old hardcoded functions removed - replaced by universal modules:
+# - project_analyzer.py: analyze_project_structure, detect_changed_components
+# - diagram_generator.py: generate_architecture_diagram
+# - git_manager.py: ensure_git_repository, setup_github_remote, get_git_changes
 
 
 def _export_diagrams(target_mode: str, project_path: Path) -> None:

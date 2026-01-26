@@ -1487,12 +1487,22 @@
   "devtools_update_architecture_diagrams": {
     "server": "devtools",
     "required": [],
-    "optional": ["project_path", "commits_back", "target_mode"],
+    "optional": [
+      "project_path",
+      "commits_back",
+      "target_mode",
+      "github_repo",
+      "github_token",
+      "init_git"
+    ],
     "types": {
       "project_path": "str",
       "commits_back": "int",
-      "target_mode": "str"
+      "target_mode": "str",
+      "github_repo": "str",
+      "github_token": "str",
+      "init_git": "bool"
     },
-    "description": "Auto-update architecture diagrams by analyzing recent git changes. Uses git diffs and sequential-thinking for analysis. target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)."
+    "description": "Universal architecture diagram generator for ANY project type (Python, Node.js, Rust, Go, etc.). Analyzes project structure, initializes git if needed, configures GitHub remote, and generates/updates diagrams dynamically. target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)."
   }
 }

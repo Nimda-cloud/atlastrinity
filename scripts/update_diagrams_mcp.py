@@ -18,7 +18,7 @@ from brain.mcp_manager import MCPManager
 async def main():
     """Call devtools MCP to update architecture diagrams."""
     manager = MCPManager()
-    
+
     try:
         # Call the tool
         result = await manager.call_tool(
