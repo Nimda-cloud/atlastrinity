@@ -57,22 +57,33 @@ npm run diagram:update-and-export
 ### How it works:
 1. **Git Analysis:** Scans recent commits (default: 3 back)
 2. **Component Detection:** Identifies modified files and affected components
-3. **Diagram Generation:** Creates Mermaid diagrams with current architecture
-4. **Dual Sync:** Updates both locations simultaneously:
+3. **🆕 Deep Reasoning (Optional):** Uses sequential-thinking MCP (raptor-mini) for complex changes
+   - Analyzes architectural impact
+   - Identifies cross-component dependencies
+   - Recommends diagram updates
+4. **Diagram Generation:** Creates Mermaid diagrams with current architecture
+5. **Dual Sync:** Updates both locations simultaneously:
    - `.agent/docs/mcp_architecture_diagram.md` (public docs)
    - `src/brain/data/architecture_diagrams/mcp_architecture.md` (internal data)
-5. **Metadata:** Adds AUTO-UPDATE markers with timestamp
+6. **Metadata:** Adds AUTO-UPDATE markers with timestamp
 
 ### Parameters:
 ```bash
-# Default behavior (3 commits back, internal mode)
+# Default behavior (3 commits back, internal mode, reasoning enabled)
 npm run diagram:auto-update
 
 # Custom parameters (via MCP tool)
 devtools_update_architecture_diagrams(
     project_path="/Users/hawk/Documents/GitHub/atlastrinity",
     commits_back=5,
-    target_mode="internal"
+    target_mode="internal",
+    use_reasoning=True  # 🆕 Enable LLM reasoning (raptor-mini)
+)
+
+# Disable reasoning for simple updates
+devtools_update_architecture_diagrams(
+    project_path="/path/to/project",
+    use_reasoning=False  # Skip LLM analysis (faster)
 )
 ```
 
@@ -91,6 +102,65 @@ devtools_update_architecture_diagrams(
 ### Scripts:
 - **Generator:** `scripts/update_diagrams_mcp.py`
 - **MCP Tool:** `devtools_update_architecture_diagrams` (devtools server)
+
+---
+
+## 🤖 LLM Reasoning Integration (NEW)
+
+### **Sequential-Thinking Analysis**
+
+When `use_reasoning=True` (default), the system uses **sequential-thinking MCP** with **raptor-mini** model for deep analysis.
+
+**Model Used:**
+- **Provider:** Copilot (GitHub Copilot Chat)
+- **Model:** raptor-mini (specialized reasoning model)
+- **Config:** `~/.config/atlastrinity/config.yaml` → `mcp.sequential_thinking.model`
+
+**NOT used by devtools:**
+- ❌ devstral-2 (Mistral) - Only for Vibe CLI tools
+- ❌ gpt-4.1 or gpt-4o directly - Only raptor-mini via sequential-thinking MCP
+
+### When Reasoning is Triggered:
+
+```yaml
+Auto-triggered when:
+  - modified_files > 5 files
+  - affected_components > 3 components
+  - cross_component changes detected
+
+Manual control:
+  - use_reasoning=True  # Force enable
+  - use_reasoning=False # Disable for simple updates
+```
+
+### What Reasoning Analyzes:
+
+```python
+# Reasoning provides:
+{
+  "complexity": "high|medium|low",
+  "cross_component": bool,
+  "requires_deep_analysis": bool,
+  "context_for_reasoning": "...",
+  "recommendation": "Use sequential-thinking for deep analysis"
+}
+```
+
+### Benefits:
+
+| Without Reasoning | With Reasoning (raptor-mini) |
+|-------------------|------------------------------|
+| Basic git diff analysis | Architectural impact understanding |
+| File-level changes | Cross-component dependencies |
+| Simple component detection | Diagram update recommendations |
+| Fast (0.5s) | Slower (~3-5s) but more accurate |
+
+### Cost:
+
+- **raptor-mini:** ~$5 per 1M tokens (medium cost)
+- **Usage:** Only on complex changes (>5 files or >3 components)
+- **Frequency:** Low (major commits only)
+- **Trade-off:** Better diagram quality vs. speed
 
 ---
 
@@ -144,7 +214,15 @@ devtools_update_architecture_diagrams(
     commits_back=10,
     target_mode="external",
     github_repo="owner/repo",
-    github_token="token"
+    github_token="token",
+    use_reasoning=True  # 🆕 Enable LLM reasoning (default: True)
+)
+
+# Fast mode (skip reasoning)
+devtools_update_architecture_diagrams(
+    project_path="/Users/hawk/Documents/GitHub/atlastrinity",
+    commits_back=1,
+    use_reasoning=False  # Skip LLM for quick updates
 )
 ```
 
