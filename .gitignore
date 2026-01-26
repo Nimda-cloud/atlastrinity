@@ -51,6 +51,9 @@ feats_stats.npz
 # ChromaDB data (local only, backups are in backups/)
 data/chroma/
 
+# TypeScript
+*.tsbuildinfo
+
 # Swift
 .build/
 .swiftpm/
