@@ -394,7 +394,7 @@ def build_swift_mcp():
     mcp_path = PROJECT_ROOT / "vendor" / "mcp-server-macos-use"
 
     if not mcp_path.exists():
-        print_error(f"Папка vendor/mcp-server-macos-use не знайдена!")
+        print_error("Папка vendor/mcp-server-macos-use не знайдена!")
         print_info("Це кастомний Swift MCP сервер, який має бути в репозиторії.")
         print_info("Переконайтеся, що клонували повний репозиторій з усіма submodule.")
         return False

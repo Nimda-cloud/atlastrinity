@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
 # Кольори для консолі
 class Colors:
     OKGREEN = "\033[92m"
@@ -64,7 +65,6 @@ def validate_python_server(name: str, config: dict) -> bool:
         return False
     
     module_name = args[1]
-    module_path = PROJECT_ROOT / "src" / module_name.replace(".", "/").replace("src/", "")
     
     # Перевірка наявності файлу
     if module_name.startswith("src.mcp_server.golden_fund"):
@@ -170,7 +170,7 @@ def validate_server(name: str, config: dict) -> dict:
     command = config.get("command", "")
     
     # Визначаємо тип сервера
-    if command == "python3" or command == "python":
+    if command in {"python3", "python"}:
         result["type"] = "Python"
         result["status"] = "ok" if validate_python_server(name, config) else "error"
     elif command in ["npx", "bunx"]:
