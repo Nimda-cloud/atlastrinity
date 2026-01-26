@@ -726,10 +726,22 @@ class ToolDispatcher:
         if missing:
             error_msg = f"Missing required arguments: {', '.join(missing)}. Schema requires: {required}. Provided: {list(validated.keys())}"
             logger.error(f"[DISPATCHER] Validation failed for '{tool_name}': {error_msg}")
-            validated["__validation_error__"] = error_msg
-            return validated
+            # Try to auto-fill common missing arguments with sensible defaults
+            for req in missing:
+                if req == "query" and "question" in validated:
+                    validated[req] = validated["question"]
+                    logger.info(f"[DISPATCHER] Auto-filled '{req}' from 'question' for {tool_name}")
+                elif req == "prompt" and "query" in validated:
+                    validated[req] = validated["query"]
+                    logger.info(f"[DISPATCHER] Auto-filled '{req}' from 'query' for {tool_name}")
 
-        # Type conversion
+            # Re-check after auto-fill
+            missing = [r for r in required if r not in validated or validated[r] is None]
+            if missing:
+                validated["__validation_error__"] = error_msg
+                return validated
+
+        # Type conversion with improved error handling
         types_map = schema.get("types", {})
         for key, expected_type in types_map.items():
             if key in validated and validated[key] is not None:
@@ -738,11 +750,15 @@ class ToolDispatcher:
                     if expected_type == "str" and not isinstance(value, str):
                         validated[key] = str(value)
                     elif expected_type == "int" and not isinstance(value, int):
-                        validated[key] = int(float(value))
+                        # Handle float to int conversion carefully
+                        if isinstance(value, float):
+                            validated[key] = int(value)
+                        else:
+                            validated[key] = int(float(value))
                     elif expected_type == "float" and not isinstance(value, int | float):
                         validated[key] = float(value)
                     elif expected_type == "bool" and not isinstance(value, bool):
-                        validated[key] = str(value).lower() in ("true", "1", "yes")
+                        validated[key] = str(value).lower() in ("true", "1", "yes", "on")
                     elif expected_type == "list" and not isinstance(value, list):
                         if isinstance(value, str):
                             # Try to parse as JSON list
@@ -755,13 +771,28 @@ class ToolDispatcher:
                                 else:
                                     validated[key] = [value]
                             except json.JSONDecodeError:
-                                validated[key] = [value]
+                                # Try splitting by comma as fallback
+                                if "," in value:
+                                    validated[key] = [v.strip() for v in value.split(",")]
+                                else:
+                                    validated[key] = [value]
                         else:
                             validated[key] = [value]
+                    elif expected_type == "dict" and not isinstance(value, dict):
+                        if isinstance(value, str):
+                            import json
+
+                            try:
+                                validated[key] = json.loads(value)
+                            except json.JSONDecodeError:
+                                logger.warning(
+                                    f"[DISPATCHER] Could not parse dict from string for '{key}'"
+                                )
                 except (ValueError, TypeError) as e:
                     logger.error(
                         f"[DISPATCHER] Type conversion failed for '{key}' in tool '{tool_name}': {e}. Expected: {expected_type}, Got: {type(value).__name__}",
                     )
+                    # Don't fail validation on type conversion - let MCP server handle it
 
         return validated
 

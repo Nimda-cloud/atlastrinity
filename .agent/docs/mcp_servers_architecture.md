@@ -155,10 +155,10 @@ intent_detection:
   complex_task: [planning needed]
 ```
 
-### Phase 2: Tool Routing
+### Phase 2: Tool Routing & Validation
 **File:** `src/brain/tool_dispatcher.py`
 
-**Routing Logic:**
+**Enhanced Routing Logic:**
 ```
 User Request
     ↓
@@ -168,10 +168,20 @@ Synonym Resolution (tool_dispatcher.py)
     ↓
 Server Selection (tool_routing in behavior_config.yaml)
     ↓
-Tool Schema Lookup (mcp_registry.py → TOOL_SCHEMAS)
+Tool Schema Lookup (mcp_registry.py → TOOL_SCHEMAS with caching)
+    ↓
+Argument Validation & Auto-fill (NEW)
+    ↓
+Type Conversion (improved dict/list parsing)
     ↓
 Execute via MCP Manager
 ```
+
+**NEW: Argument Auto-fill:**
+- `query` → auto-filled from `question` if missing
+- `prompt` → auto-filled from `query` if missing
+- Improved list parsing: JSON, comma-separated fallback
+- Dict parsing from JSON strings
 
 **Example Routing:**
 ```python
@@ -188,23 +198,36 @@ tool_routing:
     priority_server: filesystem
 ```
 
-### Phase 3: Tool Execution
+### Phase 3: Tool Execution with Resilience
 **File:** `src/brain/mcp_manager.py`
 
-**Execution Flow:**
+**Enhanced Execution Flow:**
 ```
 Tool Call Request
     ↓
 Server Health Check
     ↓
+Performance Metrics Start (NEW)
+    ↓
 MCP Protocol Call (stdin/stdout)
     ↓
 Result Parsing
     ↓
-Error Handling (retry with backoff)
+Error Handling (improved retry logic)
+    ├─ Connection Errors → Exponential Backoff (max 2 retries)
+    ├─ Retry intervals: 0.5s, 1s
+    └─ Clean session reconnection
+    ↓
+Duration Tracking (log slow calls > 5s)
     ↓
 Return to Agent
 ```
+
+**NEW: Improved Error Handling:**
+- Exponential backoff for connection errors
+- Automatic session cleanup and reconnection
+- Enhanced error detection (EOF, Connection reset, etc.)
+- Detailed error context in responses
 
 ### Phase 4: Agent Processing
 
@@ -580,9 +603,16 @@ def resolve_server_for_action(action: str, context: dict) -> tuple[str, str]:
 - `TOOL_SCHEMAS` - Loaded from `src/brain/data/tool_schemas.json`
 
 **Provides:**
-- Tool parameter validation
+- Tool parameter validation (with caching)
 - Server capability discovery
 - Protocol documentation
+- Performance metrics and statistics
+
+**NEW Features:**
+- Cached tool-to-server lookups
+- Schema validation with `validate_tool_call()`
+- Cache statistics via `get_registry_stats()`
+- Manual cache clearing with `clear_caches()`
 
 #### 4. `src/brain/mcp_manager.py`
 **Key Functions:**
@@ -661,6 +691,54 @@ Result: [list of files]
 
 ---
 
+## Performance & Monitoring
+
+### Registry Performance
+**File:** `src/brain/mcp_registry.py`
+
+**NEW: Caching System:**
+- Tool lookup cache: `tool_name → server_name`
+- Schema cache with hit/miss tracking
+- Cache statistics via `get_registry_stats()`
+
+**Metrics Available:**
+```python
+{
+  "total_servers": 17,
+  "total_tools": 130+,
+  "cache_size": <active entries>,
+  "cache_hits": <count>,
+  "cache_misses": <count>,
+  "cache_hit_rate_pct": <percentage>,
+  "schemas_loaded": true,
+  "catalog_loaded": true
+}
+```
+
+**Utility Functions:**
+- `get_registry_stats()` - Performance metrics
+- `clear_caches()` - Reset all caches
+- `validate_tool_call(tool_name, args)` - Pre-validation
+
+### Tool Dispatcher Metrics
+**Coverage Tracking:**
+- Total tool calls
+- macOS-use coverage percentage
+- Target: 90% for native interactions
+
+### MCP Manager Monitoring
+**NEW: Call Duration Tracking:**
+- Logs slow tool calls (> 5 seconds)
+- Per-call metrics with timestamps
+- Connection retry statistics
+
+**Health Monitoring:**
+- Background health check loop (60s interval, configurable)
+- Automatic server restart on failure
+- Orphan process cleanup
+
+---
+
 ## Configuration Sync
 
 ### Sync Script
@@ -712,6 +790,55 @@ npm run config:sync -- --force  # Force overwrite existing configs
 - **Model Configuration:** `config/config.yaml.template` (models section)
 - **Behavior Rules:** `config/behavior_config.yaml.template`
 - **Vibe CLI:** `config/vibe_config.toml.template`
+
+---
+
+## Best Practices & Guidelines
+
+### Tool Argument Handling
+1. **Always validate required arguments** before tool execution
+2. **Use auto-fill for common synonyms** (query/question, prompt/query)
+3. **Provide clear error messages** with expected vs. provided arguments
+4. **Type conversion is automatic** - strings → int/float/bool/list/dict
+
+### Error Recovery Strategy
+1. **Connection errors** → Automatic retry with exponential backoff
+2. **Validation errors** → Auto-fill common missing args, then fail gracefully
+3. **Timeout errors** → Log slow calls, consider timeout adjustment
+4. **Server restart** → Automatic via health monitoring or manual trigger
+
+### Performance Optimization
+1. **Use caching** - Registry caches tool lookups for speed
+2. **Monitor metrics** - Check cache hit rates and slow calls
+3. **Lazy initialization** - Connect to servers only when needed
+4. **Batch operations** - Group related tool calls when possible
+
+### Monitoring & Debugging
+1. **Check registry stats** - `get_registry_stats()` for cache performance
+2. **Dispatcher metrics** - `get_coverage_stats()` for tool usage
+3. **MCP status** - `mcp_manager.get_status()` for server health
+4. **Log analysis** - Look for slow calls (> 5s) and connection errors
+
+### Configuration Management
+1. **Keep templates in sync** - Always update both template and active config
+2. **Test after changes** - Run `npm run lint:all` and `npm run format:write`
+3. **Version control** - Document changes in template file headers
+4. **Backup before sync** - Config sync creates backups automatically
+
+---
+
+## Changelog
+
+### Version 4.7 (2026-01-26)
+- **Added:** Argument auto-fill in tool_dispatcher (query/question, prompt/query)
+- **Added:** Improved type conversion (dict, list with comma fallback)
+- **Added:** Caching system in mcp_registry (tool lookups, schema access)
+- **Added:** Performance metrics tracking (cache hits, call duration)
+- **Added:** Enhanced retry logic with exponential backoff (0.5s, 1s)
+- **Added:** Utility functions (validate_tool_call, get_registry_stats, clear_caches)
+- **Improved:** Error handling with detailed context (server, tool, retry status)
+- **Improved:** Connection recovery with session cleanup
+- **Fixed:** Missing argument detection and auto-correction
 
 ---
 

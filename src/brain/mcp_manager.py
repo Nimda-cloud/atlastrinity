@@ -471,13 +471,33 @@ class MCPManager:
         tool_name: str,
         arguments: dict[str, Any] | None = None,
     ) -> Any:
-        """Call a tool on a specific server"""
+        """Call a tool on a specific server with improved error handling and metrics"""
+        # Metrics tracking
+        start_time = asyncio.get_event_loop().time()
+
         session = await self.get_session(server_name)
         if not session:
-            return {"error": f"Could not connect to server {server_name}"}
+            logger.error(f"[MCP] No session available for {server_name}")
+            return {
+                "error": f"Could not connect to server {server_name}",
+                "success": False,
+                "server": server_name,
+                "tool": tool_name,
+            }
 
         try:
+            # Validate tool exists on server before calling
+            logger.debug(
+                f"[MCP] Calling {server_name}.{tool_name} with args: {list((arguments or {}).keys())}"
+            )
             result = await session.call_tool(tool_name, arguments or {})
+
+            # Track successful call duration
+            duration = asyncio.get_event_loop().time() - start_time
+            if duration > 5.0:  # Log slow calls
+                logger.warning(
+                    f"[MCP] Slow tool call: {server_name}.{tool_name} took {duration:.2f}s"
+                )
 
             # Safety: Truncate large outputs to prevent OOM/Context overflow
             if hasattr(result, "content") and isinstance(result.content, list):
@@ -513,39 +533,58 @@ class MCPManager:
                 except Exception as config_err:
                     logger.error(f"[MCP] Failed to check vibe config: {config_err}")
 
-            # If connection died, try to reconnect once
-            if any(
-                kw in error_msg
-                for kw in [
-                    "Connection closed",
-                    "Broken pipe",
-                    "ClosedResourceError",
-                    "unhandled errors in a TaskGroup",
-                    "McpError: Connection closed",
-                ]
-            ):
+            # If connection died, try to reconnect with backoff
+            connection_errors = [
+                "Connection closed",
+                "Broken pipe",
+                "ClosedResourceError",
+                "unhandled errors in a TaskGroup",
+                "McpError: Connection closed",
+                "EOF occurred",
+                "Connection reset",
+            ]
+
+            if any(kw in error_msg for kw in connection_errors):
                 logger.warning(
-                    f"Connection lost to {server_name}, attempting reconnection (resiliency fix)..."
+                    f"[MCP] Connection lost to {server_name}, attempting reconnection..."
                 )
-                # Wait a small bit for OS to cleanup
-                await asyncio.sleep(1)
-                async with self._lock:
-                    if server_name in self.sessions:
-                        del self.sessions[server_name]
-                    if server_name in self._connection_tasks:
-                        task = self._connection_tasks.pop(server_name)
-                        task.cancel()
-                        self._close_events.pop(server_name, None)
-                        self._session_futures.pop(server_name, None)
 
-                session = await self.get_session(server_name)
-                if session:
+                # Try reconnection with exponential backoff (max 2 retries)
+                max_retries = 2
+                for retry in range(max_retries):
+                    wait_time = 0.5 * (2**retry)  # 0.5s, 1s
+                    await asyncio.sleep(wait_time)
+
+                    # Clean up old connection
+                    async with self._lock:
+                        if server_name in self.sessions:
+                            del self.sessions[server_name]
+                        if server_name in self._connection_tasks:
+                            task = self._connection_tasks.pop(server_name)
+                            task.cancel()
+                            self._close_events.pop(server_name, None)
+                            self._session_futures.pop(server_name, None)
+
                     try:
-                        return await session.call_tool(tool_name, arguments or {})
+                        session = await self.get_session(server_name)
+                        if session:
+                            logger.info(f"[MCP] Reconnected to {server_name} on retry {retry + 1}")
+                            result = await session.call_tool(tool_name, arguments or {})
+                            return result
                     except Exception as retry_e:
-                        return {"error": f"Retry failed: {retry_e!s}"}
+                        logger.warning(
+                            f"[MCP] Retry {retry + 1} failed for {server_name}: {retry_e}"
+                        )
+                        if retry == max_retries - 1:
+                            return {
+                                "error": f"All retries failed: {retry_e!s}",
+                                "success": False,
+                                "server": server_name,
+                                "tool": tool_name,
+                                "retries_exhausted": True,
+                            }
 
-            return {"error": error_msg}
+            return {"error": error_msg, "success": False, "server": server_name, "tool": tool_name}
 
     async def dispatch_tool(
         self,
