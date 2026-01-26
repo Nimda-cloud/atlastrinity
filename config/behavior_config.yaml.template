@@ -466,27 +466,41 @@ tool_routing:
       - devtools
       - lint
       - linter
-      - check
-      - inspect
-      - inspector
-      - validate
-      - health
       - ruff
       - oxlint
       - knip
       - pyrefly
+      - check
+      - validate
+      - health
+      - mcp_health
+      - inspector
+      - diagram
+      - architecture
+      - update_diagram
+      - auto_diagram
     priority_server: devtools
     fallback_server: null
     tool_mapping:
       lint: devtools_lint_python
-      linter: devtools_lint_python
-      ruff: devtools_lint_python
-      oxlint: devtools_lint_js
-      js_lint: devtools_lint_js
-      inspect: devtools_launch_inspector
-      inspector: devtools_launch_inspector
-      health: devtools_check_mcp_health
       check: devtools_check_mcp_health
+      validate: devtools_validate_config
+      update_diagram: devtools_update_architecture_diagrams
+      architecture: devtools_update_architecture_diagrams
+    routing_rules:
+      - pattern: 'lint.*python'
+        server: devtools
+        tool: devtools_lint_python
+      - pattern: 'lint.*js'
+        server: devtools
+        tool: devtools_lint_js
+      - pattern: 'update.*diagram'
+        server: devtools
+        tool: devtools_update_architecture_diagrams
+      - pattern: 'architecture.*update'
+        server: devtools
+        tool: devtools_update_architecture_diagrams
+
   # Thinking & Reasoning
   thinking:
     synonyms:

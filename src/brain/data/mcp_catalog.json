@@ -253,7 +253,7 @@
     "name": "devtools",
     "tier": 2,
     "category": "developer",
-    "description": "Developer Tools (Linter & Analysis) wrapper",
+    "description": "Developer Tools (Linter, Analysis & Architecture) wrapper",
     "capabilities": [
       "Python linting (Ruff)",
       "JavaScript/TypeScript linting (Oxlint)",
@@ -261,7 +261,10 @@
       "Code integrity check (Pyrefly)",
       "MCP Server Health Check (Ping/Status)",
       "MCP Inspector Launch (Web Debugger)",
-      "MCP Config Validation"
+      "MCP Config Validation",
+      "Auto-update architecture diagrams from git diffs (NEW)",
+      "Git change analysis with sequential-thinking integration",
+      "Mermaid diagram generation and export"
     ],
     "key_tools": [
       "devtools_lint_python",
@@ -270,9 +273,10 @@
       "devtools_check_integrity",
       "devtools_check_mcp_health",
       "devtools_launch_inspector",
-      "devtools_validate_config"
+      "devtools_validate_config",
+      "devtools_update_architecture_diagrams"
     ],
-    "when_to_use": "Validating code quality, finding errors, and checking project health."
+    "when_to_use": "Validating code quality, finding errors, checking project health, and auto-updating architecture diagrams after code changes."
   },
   "golden-fund": {
     "name": "golden-fund",

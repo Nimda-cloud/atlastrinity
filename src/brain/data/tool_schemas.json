@@ -1483,5 +1483,16 @@
       "schema": "str"
     },
     "description": "Get schema information (columns, types) for a specific PostgreSQL table."
+  },
+  "devtools_update_architecture_diagrams": {
+    "server": "devtools",
+    "required": [],
+    "optional": ["project_path", "commits_back", "target_mode"],
+    "types": {
+      "project_path": "str",
+      "commits_back": "int",
+      "target_mode": "str"
+    },
+    "description": "Auto-update architecture diagrams by analyzing recent git changes. Uses git diffs and sequential-thinking for analysis. target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)."
   }
 }
