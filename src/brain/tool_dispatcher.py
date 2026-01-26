@@ -525,13 +525,16 @@ class ToolDispatcher:
             validated_args = self._validate_args(resolved_tool, normalized_args)
             if validated_args.get("__validation_error__"):
                 error_msg = validated_args.pop("__validation_error__")
-                logger.warning(
-                    f"[DISPATCHER] Argument validation failed for {resolved_tool}: {error_msg}",
+                logger.error(
+                    f"[DISPATCHER] Argument validation failed for {server}.{resolved_tool}: {error_msg}. Args: {normalized_args}",
                 )
                 return {
                     "success": False,
                     "error": f"Invalid arguments for '{resolved_tool}': {error_msg}",
                     "validation_error": True,
+                    "server": server,
+                    "tool": resolved_tool,
+                    "provided_args": list(normalized_args.keys()),
                 }
 
             # 7. Track metrics
@@ -541,10 +544,23 @@ class ToolDispatcher:
 
             # 8. Metrics & Final Dispatch via MCPManager
             logger.info(
-                f"[DISPATCHER] Calling {server}.{resolved_tool} with {list(validated_args.keys())}",
+                f"[DISPATCHER] Calling {server}.{resolved_tool} with args: {list(validated_args.keys())}",
             )
 
-            result = await self.mcp_manager.call_tool(server, resolved_tool, validated_args)
+            try:
+                result = await self.mcp_manager.call_tool(server, resolved_tool, validated_args)
+            except Exception as e:
+                logger.error(
+                    f"[DISPATCHER] MCP call failed for {server}.{resolved_tool}: {e}",
+                    exc_info=True,
+                )
+                return {
+                    "success": False,
+                    "error": f"MCP call failed: {str(e)}",
+                    "server": server,
+                    "tool": resolved_tool,
+                    "exception_type": type(e).__name__,
+                }
 
             # 9. Check for "Tool not found" errors from MCP and provide guidance
             if isinstance(result, dict) and result.get("error"):
@@ -557,17 +573,38 @@ class ToolDispatcher:
                         f"Tool '{resolved_tool}' may not exist on server '{server}'. Check available tools with list_tools."
                     )
                     result["tool_not_found"] = True
+                    result["server"] = server
+                    result["tool"] = resolved_tool
+                elif "bad request" in error_msg.lower() or "400" in error_msg:
+                    logger.error(
+                        f"[DISPATCHER] Bad request for {server}.{resolved_tool}. Error: {error_msg}. Args: {list(validated_args.keys())}",
+                    )
+                    result["bad_request"] = True
+                    result["server"] = server
+                    result["tool"] = resolved_tool
+                    result["provided_args"] = list(validated_args.keys())
                 else:
                     # Log all tool errors for debugging
                     logger.error(
-                        f"[DISPATCHER] Tool execution failed: {server}.{resolved_tool}. Error: {error_msg}",
+                        f"[DISPATCHER] Tool execution failed: {server}.{resolved_tool}. Error: {error_msg}. Args: {list(validated_args.keys())}",
                     )
+                    result["server"] = server
+                    result["tool"] = resolved_tool
 
             return result
 
         except Exception as e:
-            logger.error(f"[DISPATCHER] Dispatch failed: {e}", exc_info=True)
-            return {"success": False, "error": str(e)}
+            logger.error(
+                f"[DISPATCHER] Dispatch failed for tool '{tool_name}': {e}",
+                exc_info=True,
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "exception_type": type(e).__name__,
+                "tool_name": tool_name,
+                "args_keys": list(args.keys()) if isinstance(args, dict) else [],
+            }
 
     def _validate_realm_tool_compatibility(
         self, server: str, tool_name: str, args: dict[str, Any]
@@ -676,6 +713,7 @@ class ToolDispatcher:
         schema = get_tool_schema(tool_name)
         if not schema:
             # No schema found - pass through without validation
+            logger.debug(f"[DISPATCHER] No schema found for tool '{tool_name}', skipping validation")
             return args if isinstance(args, dict) else {}
 
         validated = dict(args) if isinstance(args, dict) else {}
@@ -684,7 +722,9 @@ class ToolDispatcher:
         required = schema.get("required", [])
         missing = [r for r in required if r not in validated or validated[r] is None]
         if missing:
-            validated["__validation_error__"] = f"Missing required arguments: {', '.join(missing)}"
+            error_msg = f"Missing required arguments: {', '.join(missing)}. Schema requires: {required}. Provided: {list(validated.keys())}"
+            logger.error(f"[DISPATCHER] Validation failed for '{tool_name}': {error_msg}")
+            validated["__validation_error__"] = error_msg
             return validated
 
         # Type conversion
@@ -717,7 +757,9 @@ class ToolDispatcher:
                         else:
                             validated[key] = [value]
                 except (ValueError, TypeError) as e:
-                    logger.warning(f"[DISPATCHER] Type conversion failed for {key}: {e}")
+                    logger.error(
+                        f"[DISPATCHER] Type conversion failed for '{key}' in tool '{tool_name}': {e}. Expected: {expected_type}, Got: {type(value).__name__}",
+                    )
 
         return validated
 

@@ -1327,11 +1327,16 @@ class Trinity:
                         + 60.0,
                     )
                     if step_result and step_result.success:
+                        logger.info(f"[ORCHESTRATOR] Step {step_id} completed successfully")
                         break
                     if step_result:
-                        last_error = step_result.error
+                        last_error = step_result.error or "Step failed without error message"
+                        logger.warning(
+                            f"[ORCHESTRATOR] Step {step_id} failed. Error: {last_error}. Tool: {step_result.tool_call.get('name') if step_result.tool_call else 'N/A'}"
+                        )
                     else:
-                        last_error = "Unknown execution error (no result)"
+                        last_error = "Unknown execution error (no result returned)"
+                        logger.error(f"[ORCHESTRATOR] Step {step_id} returned no result")
 
                     db_step_id = self.state.get("db_step_id")
                     await self._log(
@@ -1339,8 +1344,19 @@ class Trinity:
                         "warning",
                     )
 
+                except asyncio.TimeoutError:
+                    last_error = f"Step execution timeout after {config.get('orchestrator', {}).get('task_timeout', 1200.0)}s"
+                    logger.error(f"[ORCHESTRATOR] Step {step_id} timed out on attempt {attempt}")
+                    await self._log(
+                        f"Step {step_id} Attempt {attempt} timed out: {last_error}",
+                        "error",
+                    )
                 except Exception as e:
                     last_error = f"{type(e).__name__}: {e!s}"
+                    logger.error(
+                        f"[ORCHESTRATOR] Step {step_id} crashed on attempt {attempt}: {last_error}",
+                        exc_info=True,
+                    )
                     await self._log(
                         f"Step {step_id} Attempt {attempt} crashed: {last_error}",
                         "error",

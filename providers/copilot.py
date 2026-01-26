@@ -423,13 +423,15 @@ class CopilotLLM(BaseChatModel):
 
                 if response.status_code == 400:
                     error_detail = response.text
-                    print(f"[COPILOT] Async 400 error. Content: {error_detail[:500]}", flush=True)
-                    print("[COPILOT] Retrying with gpt-4o...", flush=True)
+                    print(f"[COPILOT] Async 400 error detected. Status: {response.status_code}", flush=True)
+                    print(f"[COPILOT] Error details: {error_detail[:500]}", flush=True)
+                    print("[COPILOT] Attempting fallback to gpt-4o without vision...", flush=True)
 
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
-                    if "Copilot-Vision-Request" in headers_fb:
-                        headers_fb.pop("Copilot-Vision-Request")
+                    # Remove vision-related headers
+                    headers_fb.pop("Copilot-Vision-Request", None)
+                    headers_fb.pop("X-Request-Id", None)
 
                     payload_fb = payload.copy()
                     if "messages" in payload_fb:
@@ -437,36 +439,48 @@ class CopilotLLM(BaseChatModel):
                         for msg in payload_fb["messages"]:
                             content = msg.get("content")
                             if isinstance(content, list):
-                                text_only = " ".join(
-                                    [
-                                        item.get("text", "")
-                                        for item in content
-                                        if isinstance(item, dict) and item.get("type") == "text"
-                                    ],
-                                )
+                                # Extract only text content, remove images
+                                text_parts = []
+                                for item in content:
+                                    if isinstance(item, dict):
+                                        if item.get("type") == "text":
+                                            text_parts.append(item.get("text", ""))
+                                        elif item.get("type") == "image_url":
+                                            text_parts.append("[Image content removed for compatibility]")
+                                text_only = " ".join(text_parts)
                                 cleaned_messages.append(
-                                    {**msg, "content": text_only or "[Image removed for fallback]"},
+                                    {**msg, "content": text_only or "[Content processed for fallback]"},
                                 )
                             else:
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    payload_fb["model"] = "gpt-4o"  # Using official stable model
+                    # Use stable model for fallback
+                    payload_fb["model"] = "gpt-4o"
+                    # Reduce temperature for more reliable fallback
+                    payload_fb["temperature"] = min(payload_fb.get("temperature", 0.7), 0.5)
 
-                    retry_response = await _do_post(
-                        client,
-                        f"{api_endpoint}/chat/completions",
-                        headers_fb,
-                        payload_fb,
-                    )
-
-                    if retry_response.status_code != 200:
-                        print(
-                            f"[COPILOT] Fallback failed. Status: {retry_response.status_code}, Body: {retry_response.text}",
-                            flush=True,
+                    try:
+                        retry_response = await _do_post(
+                            client,
+                            f"{api_endpoint}/chat/completions",
+                            headers_fb,
+                            payload_fb,
                         )
-                    retry_response.raise_for_status()
-                    return self._process_json_result(retry_response.json(), messages)
+
+                        if retry_response.status_code != 200:
+                            print(
+                                f"[COPILOT] Fallback failed. Status: {retry_response.status_code}, Body: {retry_response.text[:500]}",
+                                flush=True,
+                            )
+                            retry_response.raise_for_status()
+                        
+                        print("[COPILOT] Fallback successful with gpt-4o", flush=True)
+                        return self._process_json_result(retry_response.json(), messages)
+                    except Exception as fallback_error:
+                        print(f"[COPILOT] Fallback also failed: {fallback_error}", flush=True)
+                        # Re-raise original error if fallback fails
+                        raise
 
                 response.raise_for_status()
                 data = response.json()
@@ -564,10 +578,13 @@ class CopilotLLM(BaseChatModel):
         except requests.exceptions.HTTPError as e:
             # Check for Vision error (400) and try fallback with different model
             if hasattr(e, "response") and e.response is not None and e.response.status_code == 400:
-                print("[COPILOT] 400 Error intercepted. Retrying without Vision...", flush=True)
+                print(f"[COPILOT] 400 Error intercepted. Status: {e.response.status_code}", flush=True)
+                print(f"[COPILOT] Error details: {e.response.text[:500]}", flush=True)
+                print("[COPILOT] Retrying without Vision...", flush=True)
                 # Retry without vision header AND remove image content from payload
                 try:
                     headers.pop("Copilot-Vision-Request", None)
+                    headers.pop("X-Request-Id", None)
 
                     # CRITICAL: Remove image content from messages - API can't handle it without Vision header
                     if "messages" in payload:
@@ -580,6 +597,8 @@ class CopilotLLM(BaseChatModel):
                                     if isinstance(item, dict):
                                         if item.get("type") == "text":
                                             text_parts.append(item.get("text", ""))
+                                        elif item.get("type") == "image_url":
+                                            text_parts.append("[Image content removed for compatibility]")
                                         elif item.get("type") != "image_url":
                                             text_parts.append(str(item))
                                     elif isinstance(item, str):
@@ -589,7 +608,7 @@ class CopilotLLM(BaseChatModel):
                                 msg_copy["content"] = (
                                     " ".join(text_parts)
                                     if text_parts
-                                    else "[Screenshot was analyzed]"
+                                    else "[Content processed for fallback]"
                                 )
                                 cleaned_messages.append(msg_copy)
                             else:
@@ -598,6 +617,8 @@ class CopilotLLM(BaseChatModel):
 
                     # Use GPT-4o as fallback (most stable)
                     payload["model"] = "gpt-4o"
+                    # Reduce temperature for more reliable fallback
+                    payload["temperature"] = min(payload.get("temperature", 0.7), 0.5)
 
                     @retry(
                         stop=stop_after_attempt(2),
@@ -616,7 +637,13 @@ class CopilotLLM(BaseChatModel):
                         )
 
                     retry_response = _post_retry()
+                    if retry_response.status_code != 200:
+                        print(
+                            f"[COPILOT] Fallback failed. Status: {retry_response.status_code}, Body: {retry_response.text[:500]}",
+                            flush=True,
+                        )
                     retry_response.raise_for_status()
+                    print("[COPILOT] Fallback successful with gpt-4o", flush=True)
                     data = retry_response.json()
                     if not data.get("choices"):
                         return ChatResult(
