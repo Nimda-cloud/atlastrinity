@@ -117,21 +117,12 @@ rm -rf dist/ release/ dist_venv/ .vite/
 echo "✅ Build artifacts видалено"
 
 echo ""
-echo "📦 Крок 5/8: Видалення Swift компіляції та бінарників..."
+echo "📦 Крок 5/8: Видалення Swift компіляції..."
 if [ -d "vendor/mcp-server-macos-use/.build" ]; then
     rm -rf vendor/mcp-server-macos-use/.build
-    echo "✅ Swift .build видалено"
+    echo "✅ Swift .build видалено (вихідний код залишається)"
 else
     echo "ℹ️  Swift .build не існує"
-fi
-
-# Also remove vendor directory to force fresh clone
-if [ -d "vendor/mcp-server-macos-use" ]; then
-    echo "ℹ️  Видаляємо vendor/mcp-server-macos-use для свіжого клонування..."
-    rm -rf vendor/mcp-server-macos-use
-    echo "✅ vendor/mcp-server-macos-use видалено"
-else
-    echo "ℹ️  vendor/mcp-server-macos-use не існує"
 fi
 
 echo ""
@@ -233,7 +224,7 @@ echo "  ✅ Відновлення баз даних з backups/"
 echo "  ✅ Створення .venv"
 echo "  ✅ Встановлення Python пакетів (включаючи pandas, numpy, matplotlib)"
 echo "  ✅ Встановлення NPM пакетів"
-echo "  ✅ Автоматичне клонування та компіляція Swift macos-use"
+echo "  ✅ Компіляція Swift MCP сервера macos-use (40 tools)"
 echo "  ✅ Завантаження моделей (Whisper, TTS)"
 echo "  ✅ Ініціалізація баз даних"
 echo "  ✅ Налаштування Golden Fund Knowledge Base"
