@@ -286,6 +286,11 @@ class ToolDispatcher:
         "set_clipboard": "macos-use_set_clipboard",
         "clipboard_get": "macos-use_get_clipboard",
         "get_clipboard": "macos-use_get_clipboard",
+        # Direct mappings for behavior engine
+        "macos-use_get_clipboard": "macos-use_get_clipboard",
+        "macos-use_set_clipboard": "macos-use_set_clipboard",
+        # Screenshot tools (note: no analyze_screen tool exists)
+        "take_screenshot": "macos-use_take_screenshot",
         # Notes tools
         "create_note": "macos-use_notes_create_note",
         "notes_create": "macos-use_notes_create_note",
