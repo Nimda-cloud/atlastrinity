@@ -1,0 +1,7 @@
+# Auto-generated exports
+*.png
+*.svg
+*.pdf
+
+# Keep folder
+!.gitignore
