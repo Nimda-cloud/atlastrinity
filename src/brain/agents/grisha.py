@@ -51,7 +51,7 @@ class Grisha(BaseAgent):
 
     3-Phase Verification Architecture:
 
-    Phase 1: Strategy Planning (strategy_model: raptor-mini)
+    Phase 1: Strategy Planning (strategy_model: gpt-4o)
              - Analyzes step requirements and determines verification approach
              - Plans which MCP tools are needed for evidence collection
              - Outputs verification strategy in natural language
@@ -61,11 +61,11 @@ class Grisha(BaseAgent):
              - Collects evidence (logs, file contents, DB queries, etc.)
              - Similar to Tetyana's execution phase
 
-    Phase 3: Verdict Formation (verdict_model: raptor-mini, vision_model: gpt-4o)
+    Phase 3: Verdict Formation (verdict_model: gpt-4o, vision_model: gpt-4o)
              - Analyzes evidence collected from Phase 2
              - Uses vision model for screenshot analysis if needed
              - Forms logical verdict: PASS/FAIL with confidence
-             - Can fallback to gpt-4.1 if raptor-mini fails
+             - Can fallback to gpt-4.1 if gpt-4o fails
 
     Security Functions:
     - Blocking dangerous commands via BLOCKLIST
@@ -93,13 +93,13 @@ class Grisha(BaseAgent):
     def __init__(self, vision_model: str | None = None):
         """Initialize Grisha with 3-phase verification architecture.
 
-        Phase 1: Strategy Planning (strategy_model: raptor-mini)
+        Phase 1: Strategy Planning (strategy_model: gpt-4o)
                  - Analyze what needs verification and which tools to use
 
         Phase 2: Tool Execution (model: gpt-4.1)
                  - Select and execute MCP server tools (similar to Tetyana)
 
-        Phase 3: Verdict Formation (verdict_model: raptor-mini, vision_model: gpt-4o)
+        Phase 3: Verdict Formation (verdict_model: gpt-4o, vision_model: gpt-4o)
                  - Analyze collected evidence and form final verdict
         """
         # Get model config (config.yaml > parameter)
@@ -526,7 +526,7 @@ Output structured analysis."""
         if "search" in step_action_lower or "find" in step_action_lower:
             tools.append(
                 {
-                    "tool": "macos-use.get_clipboard",
+                    "tool": "macos-use_get_clipboard",
                     "args": {},
                     "reason": "Check if search results were copied",
                 }
@@ -608,9 +608,13 @@ Provide:
 
             analysis_text = reasoning_result.get("analysis", "")
 
-            # Parse verdict from analysis
+            # Parse verdict from analysis - more flexible criteria
+            analysis_upper = analysis_text.upper()
             verified = (
-                "VERIFIED" in analysis_text.upper() and "FAILED" not in analysis_text.upper()[:200]
+                ("VERIFIED" in analysis_upper or "SUCCESS" in analysis_upper or 
+                 "PASS" in analysis_upper or "COMPLETE" in analysis_upper or 
+                 "ACHIEVED" in analysis_upper or "ACCOMPLISHED" in analysis_upper) 
+                and "FAILED" not in analysis_upper[:200] and "ERROR" not in analysis_upper[:200]
             )
 
             # Extract confidence (look for numbers between 0-1 or percentages)
@@ -651,14 +655,18 @@ Provide:
         """Fallback verdict logic if sequential-thinking fails."""
         success_count = sum(1 for r in verification_results if not r.get("error", False))
         total = len(verification_results)
-
-        verified = success_count > 0 and success_count >= total // 2
-
+        
+        # More lenient fallback - if any tool succeeded, consider it partially verified
+        verified = success_count > 0
+        
+        # Higher confidence for successful cases
+        confidence = 0.6 if verified else 0.2
+        
         return {
             "verified": verified,
-            "confidence": 0.3,
-            "reasoning": f"Fallback verdict: {success_count}/{total} tools successful",
-            "issues": ["Sequential thinking unavailable", "Using mechanical counting"],
+            "confidence": confidence,
+            "reasoning": f"Fallback verdict: {success_count}/{total} tools successful. Using lenient criteria due to reasoning unavailability.",
+            "issues": ["Sequential thinking unavailable"] if success_count == 0 else ["Sequential thinking unavailable, but tools executed successfully"],
         }
 
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:

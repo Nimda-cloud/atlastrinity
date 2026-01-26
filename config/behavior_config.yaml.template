@@ -1889,10 +1889,9 @@ software_development:
       - pattern: 'setup.*project'
         agent: atlas
         workflow: project_creation
-      vibe_tool: vibe_smart_plan
-      
-      # When to consult
-      consult_triggers:
+    
+    # When to consult
+    consult_triggers:
         - new_component
         - major_refactoring
         - performance_critical
