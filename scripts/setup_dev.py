@@ -699,12 +699,69 @@ def sync_configs():
         else:
             print_warning("mcp_servers.json.template missing, skipped overwrite")
 
-        # Copy .env if not exists
+        # Sync .env: Local -> Global (ALWAYS sync secrets to global)
         env_src = PROJECT_ROOT / ".env"
         env_dst = CONFIG_ROOT / ".env"
-        if env_src.exists() and not env_dst.exists():
-            shutil.copy2(env_src, env_dst)
-            print_success(f"Copied .env -> {env_dst}")
+
+        if env_src.exists():
+            if not env_dst.exists():
+                # First time - copy completely
+                shutil.copy2(env_src, env_dst)
+                print_success(f"Copied .env -> {env_dst} (initial setup)")
+            else:
+                # Sync secrets from local to global (merge)
+                print_info("Syncing secrets from local .env to global .env...")
+                try:
+                    # Read both files
+                    local_secrets = {}
+                    with open(env_src, encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith("#") and "=" in line:
+                                key, value = line.split("=", 1)
+                                local_secrets[key.strip()] = value.strip()
+
+                    # Read global
+                    global_secrets = {}
+                    with open(env_dst, encoding="utf-8") as f:
+                        global_lines = f.readlines()
+
+                    # Parse global
+                    for line in global_lines:
+                        stripped = line.strip()
+                        if stripped and not stripped.startswith("#") and "=" in stripped:
+                            key, _ = stripped.split("=", 1)
+                            global_secrets[key.strip()] = line  # Keep original line
+
+                    # Merge: update global with local values
+                    updated = False
+                    for key, value in local_secrets.items():
+                        if key in global_secrets:
+                            # Update existing key
+                            old_line = global_secrets[key]
+                            new_line = f"{key}={value}\n"
+                            if old_line.strip() != new_line.strip():
+                                for i, line in enumerate(global_lines):
+                                    if line.strip().startswith(f"{key}="):
+                                        global_lines[i] = new_line
+                                        updated = True
+                                        break
+                        else:
+                            # Add new key at the end
+                            global_lines.append(f"{key}={value}\n")
+                            updated = True
+
+                    if updated:
+                        with open(env_dst, "w", encoding="utf-8") as f:
+                            f.writelines(global_lines)
+                        print_success("Synced secrets local -> global .env")
+                    else:
+                        print_success("Global .env already up to date")
+
+                except Exception as e:
+                    print_warning(f"Could not sync .env: {e}")
+        else:
+            print_warning(f"Local .env not found at {env_src}")
 
         # Copy behavior_config.yaml template (Overwrite)
         behavior_yaml_src = PROJECT_ROOT / "config" / "behavior_config.yaml.template"

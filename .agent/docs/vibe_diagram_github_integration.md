@@ -88,12 +88,17 @@ debugging:
       fallback_to_cli: true
       token_source: ${paths.github.token_env_var}
       operations:
-        read_files: true
-        search_code: true
-        list_commits: true
-        create_branch: false  # Manual approval
-        create_pr: false
-        push_commits: false
+        read_files: true      # Automatic
+        search_code: true     # Automatic
+        list_commits: true    # Automatic
+        create_branch: true   # Automatic (agent-based approval)
+        create_pr: true       # Automatic (Grisha/Atlas verify)
+        push_commits: true    # Automatic (agent-based approval)
+      require_agent_approval:
+        enabled: true
+        grisha_verifies_atlas: true   # Grisha перевіряє Atlas
+        atlas_verifies_tetyana: true  # Atlas перевіряє Tetyana
+        user_approval_only_for: []    # Користувач НЕ бере участь
 ```
 
 #### Vibe Escalation Policy
@@ -120,14 +125,28 @@ vibe_escalation:
 
 ### Для AtlasTrinity (internal)
 ```bash
-# .env в корені проекту
+# ~/.config/atlastrinity/.env (GLOBAL - єдине джерело правди)
 GITHUB_TOKEN=ghp_your_atlastrinity_token_here
 ```
 
 **Доступ:**
+- **PRIMARY**: Global config `~/.config/atlastrinity/.env`
 - Vibe читає через `os.environ.get('GITHUB_TOKEN')`
 - GitHub MCP використовує той самий токен
 - devtools використовує для remote операцій
+- Setup/sync автоматично копіює з локального `.env` в global
+
+**Sync workflow:**
+```bash
+# 1. Користувач створює/оновлює локальний .env
+echo "GITHUB_TOKEN=ghp_xxx" >> .env
+
+# 2. Setup автоматично синхронізує в global
+npm run setup  # або python3 scripts/setup_dev.py
+
+# 3. Система читає з global
+git_manager.py → ~/.config/atlastrinity/.env
+```
 
 ### Для зовнішніх проектів
 ```bash
@@ -403,9 +422,11 @@ def _get_github_token_from_env(project_path: Path) -> str | None:
 | **Search GitHub code** | ✅ via MCP | ✅ | ❌ | ❌ No |
 | **Generate fix** | ✅ | ❌ | ❌ | ❌ No |
 | **Update diagram** | ❌ triggers | ❌ | ✅ | ❌ No |
-| **Commit to GitHub** | ❌ triggers | ✅ | ❌ | ✅ **YES** |
-| **Create PR** | ❌ triggers | ✅ | ❌ | ✅ **YES** |
-| **Push changes** | ❌ triggers | ✅ | ❌ | ✅ **YES** |
+| **Commit to GitHub** | ❌ triggers | ✅ | ❌ | ✅ **Agent-based** (Grisha/Atlas) |
+| **Create PR** | ❌ triggers | ✅ | ❌ | ✅ **Agent-based** (Grisha verifies) |
+| **Push changes** | ❌ triggers | ✅ | ❌ | ✅ **Agent-based** (Atlas verifies) |
+
+**Note:** Користувач НЕ бере участь в автоматичних процесах після запуску. Агенти підтверджують роботу один одного.
 
 ---
 

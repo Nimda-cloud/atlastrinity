@@ -156,18 +156,46 @@ def setup_github_remote(
 
 
 def _get_github_token_from_env(project_path: Path) -> str | None:
-    """Try to read GITHUB_TOKEN from .env file."""
-    env_file = project_path / ".env"
+    """Read GITHUB_TOKEN from global .env (~/.config/atlastrinity/.env).
 
-    if env_file.exists():
-        try:
-            content = env_file.read_text()
-            for line in content.split("\n"):
-                if line.startswith("GITHUB_TOKEN="):
-                    token = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    return token if token else None
-        except Exception:
-            pass
+    Priority:
+    1. Global config .env (~/.config/atlastrinity/.env) - PRIMARY SOURCE
+    2. System environment variable (GITHUB_TOKEN)
+    3. External project .env (project_path/.env) - for external projects only
+
+    Note: AtlasTrinity uses ONLY global config, external projects can have their own.
+    """
+    from pathlib import Path as PathlibPath
+
+    # 1. Check if this is AtlasTrinity internal (has src/brain/)
+    is_internal = (project_path / "src" / "brain").exists()
+
+    if is_internal:
+        # Internal AtlasTrinity - use ONLY global .env
+        global_env = PathlibPath.home() / ".config" / "atlastrinity" / ".env"
+        if global_env.exists():
+            try:
+                content = global_env.read_text()
+                for line in content.split("\n"):
+                    if line.startswith("GITHUB_TOKEN="):
+                        token = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if token:
+                            return token
+            except Exception:
+                pass
+    else:
+        # External project - check project .env first, then global
+        project_env = project_path / ".env"
+        if project_env.exists():
+            try:
+                content = project_env.read_text()
+                for line in content.split("\n"):
+                    if line.startswith("GITHUB_TOKEN="):
+                        token = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if token:
+                            return token
+            except Exception:
+                pass
 
     # Fallback to environment variable
     return os.environ.get("GITHUB_TOKEN")

@@ -995,8 +995,12 @@ advanced:
           github_token: ${paths.github.token_env_var}
         post_action:
           update_diagram: true
-          commit_changes: false  # Manual approval required
-          use_github_mcp: true  # Use GitHub MCP for repo operations
+          commit_changes: true  # Automatic with agent approval
+          use_github_mcp: true
+          agent_approval:
+            enabled: true
+            grisha_must_verify: true  # Grisha перевіряє перед commit
+            user_approval: false  # Користувач не бере участь в автоматичних процесах
     
     # Cooldown to prevent spam
     cooldown_seconds: 30
@@ -1400,7 +1404,8 @@ paths:
   # GitHub integration
   github:
     token_env_var: GITHUB_TOKEN  # Environment variable name
-    token_file: ${PROJECT_ROOT}/.env  # Path to .env with GITHUB_TOKEN
+    token_file: ${CONFIG_ROOT}/.env  # Global .env (~/.config/atlastrinity/.env)
+    token_file_local: ${PROJECT_ROOT}/.env  # Local .env (для sync тільки)
     repository: Nimda-cloud/atlastrinity  # Current repo for self-healing
     external_repos_base: null  # External projects manage their own
   
@@ -1743,14 +1748,20 @@ software_development:
         fallback_to_cli: true  # Fallback to git CLI if MCP unavailable
         token_source: ${paths.github.token_env_var}
         operations:
-          read_files: true
-          search_code: true
-          list_commits: true
-          create_branch: false  # Requires approval
-          create_pr: false  # Requires approval
-          push_commits: false  # Requires approval
-        auto_commit_fixes: false  # Require manual approval
-        auto_create_issues: false  # Require manual approval
+          read_files: true      # Automatic
+          search_code: true     # Automatic
+          list_commits: true    # Automatic
+          create_branch: true   # Automatic (agent-based approval)
+          create_pr: true       # Automatic (agent-based approval if Grisha/Atlas verify)
+          push_commits: true    # Automatic (agent-based approval)
+        auto_commit_fixes: true  # Automatic with agent verification
+        auto_create_issues: true  # Automatic
+        # Agent-based approval (not user)
+        require_agent_approval:
+          enabled: true
+          grisha_verifies_atlas: true   # Grisha перевіряє роботу Atlas
+          atlas_verifies_tetyana: true  # Atlas перевіряє роботу Tetyana
+          user_approval_only_for: []    # Порожній список = користувач не бере участь
         
       complexity_indicators:
           - multiple_failure_attempts
