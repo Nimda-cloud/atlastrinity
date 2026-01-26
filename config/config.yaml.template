@@ -7,18 +7,31 @@
 # Change defaults here to switch models globally
 
 models:
-  # Default models for different purposes
+  # =============================================================================
+  # AVAILABLE COPILOT MODELS (ONLY THESE ARE VALID):
+  # - gpt-4.1         (Primary model, balanced performance)
+  # - gpt-4o          (Vision/multimodal, most stable for retry)
+  # - gpt-5-mini      (Fast, lightweight)
+  # - grok-mini-fast-1 (Very fast inference)
+  # - raptor-mini     (Specialized deep reasoning)
+  # 
+  # VIBE CLI ONLY:
+  # - devstral-2      (Mistral model, ONLY for Vibe binary, NOT for agents)
+  # =============================================================================
+  
+  # Default models for different purposes (ALL from Copilot provider)
   default: gpt-4.1                    # Default LLM для всіх agents
   vision: gpt-4o                      # Vision/multimodal tasks
   reasoning: raptor-mini              # Specialized deep reasoning (sequential-thinking)
   code_analysis: gpt-4.1              # Code review and analysis
   consolidation: gpt-4.1              # Memory consolidation (nightly)
   
-  # Vibe binary defaults (external CLI tool)
-  vibe_default: devstral-2           # Recommended: devstral-2 for code tasks
+  # Vibe binary defaults (external CLI tool - Mistral provider)
+  vibe_default: devstral-2           # Mistral model for Vibe CLI ONLY (not used by agents)
   
-  # Fallbacks (used when primary unavailable)
-  fallback: gpt-4.1
+  # Fallback models (used when primary unavailable or on error retry)
+  fallback: gpt-4.1                  # General fallback (Copilot)
+  error_retry: gpt-4o                # Stable model for error recovery/retry (Copilot)
 
 # ============================================================================
 # BEHAVIOR ENGINE
@@ -50,24 +63,36 @@ voice:
 
 agents:
   atlas:
-    # model: inherited from models.default (gpt-4.1)
-    deep_model: raptor-mini          # Deep chat model for complex logic
+    model: gpt-4.1                   # Standard model (inherited from models.default if empty)
+    deep_model: gpt-4.1              # Deep chat model for philosophical conversations
     temperature: 0.7
     max_tokens: 2000                 # Standard chat/task mode
     max_tokens_deep: 12000           # Deep persona mode (increased from 8000)
 
   tetyana:
-    # model, reasoning_model, vision_model: inherited from defaults
+    model: gpt-4.1                   # Execution model (inherited from models.default if empty)
+    reasoning_model: raptor-mini     # Tool selection reasoning (inherited from models.reasoning if empty)
+    vision_model: gpt-4o             # Vision tasks (inherited from models.vision if empty)
     temperature: 0.5
     max_tokens: 2000
 
   grisha:
-    # vision_model, strategy_model: inherited from defaults
+    # Three-Phase Verification Architecture:
+    # Phase 1: Strategy planning (what to verify, which tools)
+    strategy_model: raptor-mini      # Deep reasoning for verification strategy
+    
+    # Phase 2: Tool selection & execution (MCP server interaction)
+    model: gpt-4.1                   # Execution model for MCP tool calls (similar to Tetyana)
+    
+    # Phase 3: Result analysis & verdict
+    vision_model: gpt-4o             # Vision/multimodal verification (if screenshots needed)
+    verdict_model: raptor-mini       # Final verdict reasoning (can use gpt-4.1 if raptor fails)
+    
+    # General settings
     temperature: 0.3
     max_tokens: 1500
     
-    # Two-Phase Verification Sequential-Thinking (NEW)
-    verification_reasoning_model: raptor-mini  # Model for logical verdict analysis
+    # Sequential-Thinking Verification Settings
     verification_temperature: 0.2          # Low temp for precise reasoning
     verification_max_tokens: 4000          # Sufficient for deep analysis
 
