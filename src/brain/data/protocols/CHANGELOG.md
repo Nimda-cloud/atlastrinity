@@ -1,6 +1,26 @@
 # Protocols Changelog
 
-## 2026-01-26 - Protocol Consolidation & Updates
+## 2026-01-26 - System Monitoring Integration
+
+### Added
+- **system_monitoring_protocol.md**: NEW - Comprehensive system monitoring and verification protocol
+  - Integration with new macOS-use monitoring tools
+  - Pre/post-action state verification
+  - Enhanced Grisha verification with system state evidence
+  - Real-time monitoring patterns and matrices
+
+### Updated
+- **task_protocol.txt**: Enhanced with system monitoring integration
+  - Added SYSTEM MONITORING section with pre/post-action verification
+  - Monitoring patterns for all system interactions
+  - MONITORING-DRIVEN execution decisions
+
+- **self-healing-protocol.md**: Added Phase 5 - System State Verification
+  - Pre-action state capture with monitoring tools
+  - Post-action verification with state comparison
+  - Configuration for system monitoring thresholds
+
+### Previous Updates (2026-01-26 - Protocol Consolidation)
 
 ### Moved
 - All agent protocols consolidated in `src/brain/data/protocols/`
