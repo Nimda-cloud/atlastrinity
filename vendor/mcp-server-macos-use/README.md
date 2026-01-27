@@ -13,25 +13,44 @@ https://github.com/user-attachments/assets/b43622a3-3d20-4026-b02f-e9add06afe2b
 
 The server exposes the following tools via the `CallTool` MCP method:
 
+### Application Control
 1.  **`macos-use_open_application_and_traverse`**
     *   **Description:** Opens or activates a specified application and then traverses its accessibility tree.
     *   **Parameters:**
         *   `identifier` (String, Required): The application's name, bundle ID, or file path.
 
-2.  **`macos-use_click_and_traverse`**
+### System Monitoring
+2.  **`macos-use_list_running_apps`**
+    *   **Description:** Returns a list of all currently running applications with their PIDs, bundle IDs, and window information.
+    *   **Parameters:** None
+    *   **Returns:** JSON array of running applications with metadata
+
+3.  **`macos-use_list_browser_tabs`**
+    *   **Description:** Returns a list of open tabs in specified browser with titles and URLs.
+    *   **Parameters:**
+        *   `browser` (String, Optional): Browser name (chrome, safari, firefox). If not specified, checks all browsers.
+    *   **Returns:** JSON array of browser tabs
+
+4.  **`macos-use_list_all_windows`**
+    *   **Description:** Returns a list of all open windows across all applications with titles and positions.
+    *   **Parameters:** None
+    *   **Returns:** JSON array of all windows with metadata
+
+### UI Automation
+5.  **`macos-use_click_and_traverse`**
     *   **Description:** Simulates a mouse click at specific coordinates within the window of the target application (identified by PID) and then traverses its accessibility tree.
     *   **Parameters:**
         *   `pid` (Number, Required): The Process ID (PID) of the target application.
         *   `x` (Number, Required): The X-coordinate for the click (relative to the window/screen, depending on SDK behavior).
         *   `y` (Number, Required): The Y-coordinate for the click.
 
-3.  **`macos-use_type_and_traverse`**
+6.  **`macos-use_type_and_traverse`**
     *   **Description:** Simulates typing text into the target application (identified by PID) and then traverses its accessibility tree.
     *   **Parameters:**
         *   `pid` (Number, Required): The Process ID (PID) of the target application.
         *   `text` (String, Required): The text to be typed.
 
-4.  **`macos-use_press_key_and_traverse`**
+7.  **`macos-use_press_key_and_traverse`**
     *   **Description:** Simulates pressing a specific keyboard key (e.g., 'Enter', 'Tab', 'a', 'B') with optional modifier keys held down, targeting the application specified by PID, and then traverses its accessibility tree.
     *   **Parameters:**
         *   `pid` (Number, Required): The Process ID (PID) of the target application.
@@ -94,3 +113,14 @@ Discord: m13v_
 ## Plans
 
 Happy to tailor the server for your needs, feel free to open an issue or reach out
+
+## Recent Updates
+
+### Version 1.3.0
+- Added **System Monitoring** tools:
+  - `macos-use_list_running_apps` - Lists all running applications with PIDs and metadata
+  - `macos-use_list_browser_tabs` - Lists open browser tabs with titles and URLs  
+  - `macos-use_list_all_windows` - Lists all open windows with positions
+- Enhanced **Vision/OCR** capabilities with `macos-use_analyze_screen`
+- Total tools increased from 39 to 42
+- Improved system state monitoring for better verification capabilities
