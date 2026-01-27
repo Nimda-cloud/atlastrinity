@@ -462,6 +462,29 @@
     "optional": [],
     "description": "List all available native macOS tools and schemas"
   },
+  "macos-use_list_running_apps": {
+    "server": "macos-use",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "List all running applications with PIDs and metadata"
+  },
+  "macos-use_list_browser_tabs": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["browser"],
+    "types": {
+      "browser": "str"
+    },
+    "description": "List open browser tabs with titles and URLs"
+  },
+  "macos-use_list_all_windows": {
+    "server": "macos-use",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "List all open windows with positions and metadata"
+  },
   "macos-use_notes_create_note": {
     "server": "macos-use",
     "required": ["body"],

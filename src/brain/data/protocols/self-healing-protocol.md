@@ -543,8 +543,56 @@ User involvement: ZERO
 
 ---
 
+## Phase 5: System State Verification (NEW)
+
+**Agent:** Tetyana + Grisha  
+**Tools:** System monitoring tools
+
+### 5.1 Pre-Action State Capture
+
+```python
+# Capture system state before action
+def capture_system_state():
+    return {
+        "running_apps": await mcp_manager.dispatch_tool('macos-use_list_running_apps', {}),
+        "browser_tabs": await mcp_manager.dispatch_tool('macos-use_list_browser_tabs', {}),
+        "all_windows": await mcp_manager.dispatch_tool('macos-use_list_all_windows', {})
+    }
+```
+
+### 5.2 Post-Action Verification
+
+```python
+# Verify expected state changes
+def verify_state_change(pre_state, post_state, expected_changes):
+    verification_results = {}
+    
+    for change_type, expected in expected_changes.items():
+        if change_type == "app_launched":
+            verification_results[change_type] = verify_app_launch(pre_state, post_state, expected)
+        elif change_type == "browser_tabs_opened":
+            verification_results[change_type] = verify_browser_tabs(pre_state, post_state, expected)
+        elif change_type == "windows_changed":
+            verification_results[change_type] = verify_windows(pre_state, post_state, expected)
+    
+    return verification_results
+```
+
+**Configuration:**
+```yaml
+# behavior_config.yaml.template
+debugging:
+  system_monitoring:
+    enabled: true
+    pre_action_capture: true
+    post_action_verification: true
+    verification_threshold: 95%
+```
+
+---
+
 **Status:** ✅ ACTIVE - Protocol fully integrated in behavior_config v4.8.0  
-**Last Updated:** 2026-01-26  
-**Configuration:** `config/behavior_config.yaml.template` (debugging.vibe_debugging + vibe_escalation)  
+**Last Updated:** 2026-01-26 (Added System Monitoring)  
+**Configuration:** `config/behavior_config.yaml.template` (debugging.vibe_debugging + vibe_escalation + system_monitoring)  
 **Location:** `src/brain/data/protocols/self-healing-protocol.md`  
 **Next Review:** After first 10 self-healing incidents
