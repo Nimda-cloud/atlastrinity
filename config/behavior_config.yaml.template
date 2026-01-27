@@ -306,6 +306,50 @@ tool_routing:
       browser_navigate: puppeteer_navigate
       navigate: puppeteer_navigate
 
+  # Vision/OCR analysis
+  vision:
+    synonyms:
+      - macos-use_analyze_screen
+      - analyze_screen
+      - ocr
+      - vision
+      - screen_analysis
+      - text_recognition
+    priority_server: macos-use
+    fallback_server: null
+    tool_mapping:
+      analyze_screen: macos-use_analyze_screen
+      ocr: macos-use_analyze_screen
+      vision: macos-use_analyze_screen
+
+  # System monitoring
+  system_monitor:
+    synonyms:
+      - macos-use_list_running_apps
+      - list_running_apps
+      - running_apps
+      - list_apps
+      - macos-use_list_browser_tabs
+      - list_browser_tabs
+      - browser_tabs
+      - tabs
+      - macos-use_list_all_windows
+      - list_windows
+      - all_windows
+      - windows
+    priority_server: macos-use
+    fallback_server: null
+    tool_mapping:
+      list_running_apps: macos-use_list_running_apps
+      running_apps: macos-use_list_running_apps
+      list_apps: macos-use_list_running_apps
+      list_browser_tabs: macos-use_list_browser_tabs
+      browser_tabs: macos-use_list_browser_tabs
+      tabs: macos-use_list_browser_tabs
+      list_windows: macos-use_list_all_windows
+      all_windows: macos-use_list_all_windows
+      windows: macos-use_list_all_windows
+
   # Terminal/Command execution
   terminal:
     synonyms:
