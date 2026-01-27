@@ -36,6 +36,27 @@
 # - .agent/workflows/integrity.md (integrity checks)
 # =============================================================================
 
+tool_routing:
+  # macOS automation
+  macos_use:
+    synonyms:
+      - macos-use_get_clipboard
+      - macos-use_set_clipboard
+      - macos-use_take_screenshot
+      - get_clipboard
+      - set_clipboard
+      - take_screenshot
+      - screenshot
+      - clipboard_get
+      - clipboard_set
+    priority_server: macos-use
+    fallback_server: null
+    tool_mapping:
+      get_clipboard: macos-use_get_clipboard
+      set_clipboard: macos-use_set_clipboard
+      take_screenshot: macos-use_take_screenshot
+      screenshot: macos-use_take_screenshot
+
 patterns:
   adaptive_behavior:
     web_task_fallback:
@@ -244,6 +265,26 @@ intent_detection:
 # =============================================================================
 
 tool_routing:
+  # macOS automation
+  macos_use:
+    synonyms:
+      - macos-use_get_clipboard
+      - macos-use_set_clipboard
+      - macos-use_take_screenshot
+      - get_clipboard
+      - set_clipboard
+      - take_screenshot
+      - screenshot
+      - clipboard_get
+      - clipboard_set
+    priority_server: macos-use
+    fallback_server: null
+    tool_mapping:
+      get_clipboard: macos-use_get_clipboard
+      set_clipboard: macos-use_set_clipboard
+      take_screenshot: macos-use_take_screenshot
+      screenshot: macos-use_take_screenshot
+
   # Terminal/Command execution
   terminal:
     synonyms:
@@ -614,7 +655,7 @@ tool_routing:
         tool: ingest_dataset
 
   # macOS-specific operations
-  macos_use:
+  macos_use_actions:
     priority_actions:
       - bash
       - zsh
