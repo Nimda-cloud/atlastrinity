@@ -1069,6 +1069,42 @@ func setupAndStartServer() async throws -> Server {
         inputSchema: finderMoveToTrashSchema
     )
 
+    // *** NEW: List Running Applications ***
+    let listAppsSchema: Value = .object([
+        "type": .string("object"), "properties": .object([:]),
+    ])
+    let listAppsTool = Tool(
+        name: "macos-use_list_running_apps",
+        description: "Returns a list of all currently running applications with their PIDs, bundle IDs, and window information.",
+        inputSchema: listAppsSchema
+    )
+
+    // *** NEW: List Browser Tabs ***
+    let listTabsSchema: Value = .object([
+        "type": .string("object"), 
+        "properties": .object([
+            "browser": .object([
+                "type": .string("string"),
+                "description": "Browser name (chrome, safari, firefox). If not specified, checks all browsers."
+            ])
+        ])
+    ])
+    let listTabsTool = Tool(
+        name: "macos-use_list_browser_tabs",
+        description: "Returns a list of open tabs in specified browser with titles and URLs.",
+        inputSchema: listTabsSchema
+    )
+
+    // *** NEW: List All Windows ***
+    let listWindowsSchema: Value = .object([
+        "type": .string("object"), "properties": .object([:]),
+    ])
+    let listWindowsTool = Tool(
+        name: "macos-use_list_all_windows",
+        description: "Returns a list of all open windows across all applications with titles and positions.",
+        inputSchema: listWindowsSchema
+    )
+
     // *** NEW: Dynamic Help ***
     let dynamicHelpSchema: Value = .object([
         "type": .string("object"), "properties": .object([:]),
@@ -1091,7 +1127,7 @@ func setupAndStartServer() async throws -> Server {
         spotlightTool, notificationTool, notesListFoldersTool, notesCreateTool, notesGetTool,
         mailSendTool, mailReadTool,
         finderListFilesTool, finderGetSelectionTool, finderOpenPathTool, finderMoveToTrashTool,
-        dynamicHelpTool,
+        listAppsTool, listTabsTool, listWindowsTool, dynamicHelpTool,
     ]
     fputs(
         "log: setupAndStartServer: defined \(allTools.count) tools: \(allTools.map { $0.name })\n",
@@ -1585,6 +1621,139 @@ func setupAndStartServer() async throws -> Server {
                     content: [
                         .text(success ? "Moved to trash: \(path)" : "Error: \(error ?? "Unknown")")
                     ], isError: !success)
+
+            // --- List Running Applications Handler ---
+            case listAppsTool.name:
+                let runningApps = NSWorkspace.shared.runningApplications
+                var appsList: [[String: String]] = []
+                
+                for app in runningApps {
+                    var appInfo: [String: String] = [:]
+                    appInfo["pid"] = String(app.processIdentifier)
+                    appInfo["bundleIdentifier"] = app.bundleIdentifier ?? "unknown"
+                    appInfo["localizedName"] = app.localizedName ?? "unknown"
+                    appInfo["bundleURL"] = app.bundleURL?.path ?? "unknown"
+                    appInfo["activationPolicy"] = String(app.activationPolicy.rawValue)
+                    
+                    appsList.append(appInfo)
+                }
+                
+                guard let jsonString = serializeToJsonString(appsList) else {
+                    return .init(content: [.text("Failed to serialize running apps list")], isError: true)
+                }
+                return .init(content: [.text(jsonString)], isError: false)
+
+            // --- List Browser Tabs Handler ---
+            case listTabsTool.name:
+                let browser = (params.arguments?["browser"] as? String)?.lowercased()
+                var allTabs: [[String: String]] = []
+                
+                // Use AppleScript to get browser tabs
+                let safariScript = """
+                tell application "Safari"
+                    if (count of windows) > 0 then
+                        set tabList to {}
+                        repeat with w in windows
+                            repeat with t in tabs of w
+                                set tabInfo to {title:name of t, url:URL of t}
+                                set end of tabList to tabInfo
+                            end repeat
+                        end repeat
+                        return my listToString(tabList)
+                    else
+                        return "No windows open"
+                    end if
+                end tell
+                
+                on listToString(lst)
+                    set AppleScript's text item delimiters to "\\n"
+                    set lstString to lst as string
+                    set AppleScript's text item delimiters to ""
+                    return lstString
+                end listToString
+                """
+                
+                let chromeScript = """
+                tell application "Google Chrome"
+                    if (count of windows) > 0 then
+                        set tabList to {}
+                        repeat with w in windows
+                            repeat with t in tabs of w
+                                set tabInfo to {title:title of t, url:URL of t}
+                                set end of tabList to tabInfo
+                            end repeat
+                        end repeat
+                        return my listToString(tabList)
+                    else
+                        return "No windows open"
+                    end if
+                end tell
+                
+                on listToString(lst)
+                    set AppleScript's text item delimiters to "\\n"
+                    set lstString to lst as string
+                    set AppleScript's text item delimiters to ""
+                    return lstString
+                end listToString
+                """
+                
+                var scripts: [(String, String)] = []
+                if browser == nil || browser == "safari" {
+                    scripts.append(("Safari", safariScript))
+                }
+                if browser == nil || browser == "chrome" {
+                    scripts.append(("Chrome", chromeScript))
+                }
+                
+                for (browserName, script) in scripts {
+                    let task = Process()
+                    task.launchPath = "/usr/bin/osascript"
+                    task.arguments = ["-e", script]
+                    
+                    let pipe = Pipe()
+                    task.standardOutput = pipe
+                    task.launch()
+                    task.waitUntilExit()
+                    
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    if let output = String(data: data, encoding: .utf8) {
+                        if !output.contains("No windows") && !output.contains("Error") {
+                            allTabs.append([
+                                "browser": browserName,
+                                "tabs": output
+                            ])
+                        }
+                    }
+                }
+                
+                guard let jsonString = serializeToJsonString(allTabs) else {
+                    return .init(content: [.text("Failed to serialize browser tabs list")], isError: true)
+                }
+                return .init(content: [.text(jsonString)], isError: false)
+
+            // --- List All Windows Handler ---
+            case listWindowsTool.name:
+                let windowList = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID)
+                var windows: [[String: String]] = []
+                
+                if let windowInfoList = windowList as? [[String: Any]] {
+                    for windowInfo in windowInfoList {
+                        var window: [String: String] = [:]
+                        
+                        window["name"] = (windowInfo[kCGWindowName as String] as? String) ?? ""
+                        window["ownerName"] = (windowInfo[kCGWindowOwnerName as String] as? String) ?? ""
+                        window["bounds"] = String(describing: windowInfo[kCGWindowBounds as String] ?? "")
+                        window["layer"] = String(describing: windowInfo[kCGWindowLayer as String] ?? 0)
+                        window["id"] = String(describing: windowInfo[kCGWindowNumber as String] ?? 0)
+                        
+                        windows.append(window)
+                    }
+                }
+                
+                guard let jsonString = serializeToJsonString(windows) else {
+                    return .init(content: [.text("Failed to serialize windows list")], isError: true)
+                }
+                return .init(content: [.text(jsonString)], isError: false)
 
             // --- Dynamic Help Handler ---
             case dynamicHelpTool.name:
