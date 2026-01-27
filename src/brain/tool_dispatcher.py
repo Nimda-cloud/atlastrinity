@@ -302,6 +302,16 @@ class ToolDispatcher:
         "analyze_screen": "macos-use_analyze_screen",
         "ocr": "macos-use_analyze_screen",
         "vision": "macos-use_analyze_screen",
+        # System monitoring tools
+        "list_running_apps": "macos-use_list_running_apps",
+        "running_apps": "macos-use_list_running_apps",
+        "list_apps": "macos-use_list_running_apps",
+        "list_browser_tabs": "macos-use_list_browser_tabs",
+        "browser_tabs": "macos-use_list_browser_tabs",
+        "tabs": "macos-use_list_browser_tabs",
+        "list_windows": "macos-use_list_all_windows",
+        "all_windows": "macos-use_list_all_windows",
+        "windows": "macos-use_list_all_windows",
         # Notes tools
         "create_note": "macos-use_notes_create_note",
         "notes_create": "macos-use_notes_create_note",
