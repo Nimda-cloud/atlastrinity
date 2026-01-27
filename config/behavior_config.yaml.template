@@ -285,6 +285,27 @@ tool_routing:
       take_screenshot: macos-use_take_screenshot
       screenshot: macos-use_take_screenshot
 
+  # Browser automation
+  browser:
+    synonyms:
+      - launch_browser
+      - open_browser
+      - browser_navigate
+      - navigate
+      - puppeteer_navigate
+      - browser_click
+      - browser_type
+      - browser_scroll
+      - screenshot_page
+      - get_page_content
+    priority_server: puppeteer
+    fallback_server: null
+    tool_mapping:
+      launch_browser: puppeteer_navigate
+      open_browser: puppeteer_navigate
+      browser_navigate: puppeteer_navigate
+      navigate: puppeteer_navigate
+
   # Terminal/Command execution
   terminal:
     synonyms:
@@ -366,31 +387,6 @@ tool_routing:
         tool: write_file
 
   # Browser/Web automation
-  browser:
-    synonyms:
-      - browser
-      - puppeteer
-      - navigate
-      - google
-      - bing
-      - web
-      - web_search
-      - internet_search
-      - online_search
-    priority_server: puppeteer
-    fallback_server: macos-use
-    tool_mapping:
-      browser: puppeteer_navigate
-      puppeteer: puppeteer_navigate
-      navigate: puppeteer_navigate
-    routing_rules:
-      - pattern: 'navigate.*'
-        server: puppeteer
-        tool: puppeteer_navigate
-      - pattern: 'search.*'
-        server: duckduckgo-search
-        tool: duckduckgo_search
-
   # Search engines
   search:
     synonyms:
