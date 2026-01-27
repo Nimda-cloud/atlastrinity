@@ -292,6 +292,11 @@ class ToolDispatcher:
         # Screenshot tools (note: no analyze_screen tool exists)
         "take_screenshot": "macos-use_take_screenshot",
         "screenshot": "macos-use_take_screenshot",
+        # Browser automation
+        "launch_browser": "puppeteer_navigate",
+        "open_browser": "puppeteer_navigate",
+        "browser_navigate": "puppeteer_navigate",
+        "navigate": "puppeteer_navigate",
         # Notes tools
         "create_note": "macos-use_notes_create_note",
         "notes_create": "macos-use_notes_create_note",
