@@ -297,6 +297,11 @@ class ToolDispatcher:
         "open_browser": "puppeteer_navigate",
         "browser_navigate": "puppeteer_navigate",
         "navigate": "puppeteer_navigate",
+        # Vision/OCR tools
+        "macos-use_analyze_screen": "macos-use_analyze_screen",
+        "analyze_screen": "macos-use_analyze_screen",
+        "ocr": "macos-use_analyze_screen",
+        "vision": "macos-use_analyze_screen",
         # Notes tools
         "create_note": "macos-use_notes_create_note",
         "notes_create": "macos-use_notes_create_note",
@@ -420,8 +425,6 @@ class ToolDispatcher:
         "build": "No 'build' tool exists. Use execute_command('npm run build') or similar.",
         "deploy": "No 'deploy' tool exists. Use execute_command with deployment scripts.",
         "run": "Use execute_command for running arbitrary commands.",
-        "macos-use_analyze_screen": "No 'macos-use_analyze_screen' tool exists. Use take_screenshot + analyze_screenshot for screen analysis.",
-        "analyze_screen": "No 'analyze_screen' tool exists. Use take_screenshot + analyze_screenshot for screen analysis.",
     }
 
     async def resolve_and_dispatch(
