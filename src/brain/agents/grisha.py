@@ -632,20 +632,23 @@ Provide:
                 )
                 return self._fallback_verdict(verification_results)
 
-            # Parse verdict from analysis - more flexible criteria
+            # Parse verdict from analysis - STRICTOR criteria
             analysis_upper = analysis_text.upper()
-            verified = (
-                (
-                    "VERIFIED" in analysis_upper
-                    or "SUCCESS" in analysis_upper
-                    or "PASS" in analysis_upper
-                    or "COMPLETE" in analysis_upper
-                    or "ACHIEVED" in analysis_upper
-                    or "ACCOMPLISHED" in analysis_upper
-                )
-                and "FAILED" not in analysis_upper[:200]
-                and "ERROR" not in analysis_upper[:200]
-            )
+            
+            # Check for strong failure indicators anywhere in the text
+            has_failure_indicators = any(word in analysis_upper for word in ["FAILED", "FAILURE", "ERROR", "INCORRECT", "MISSING", "NOT FOUND"])
+            
+            # Must have a success indicator AND NO strong failure indicators (or success must clearly outweigh failure)
+            # We look for success indicators in the reasoning synthesis (usually at the end or beginning)
+            has_success_indicators = any(word in analysis_upper for word in ["VERIFIED", "SUCCESS", "PASS", "COMPLETE", "ACHIEVED", "ACCOMPLISHED"])
+            
+            # If both are present, we err on the side of caution or look for "VERDICT: VERIFIED"
+            if "VERDICT: VERIFIED" in analysis_upper:
+                verified = True
+            elif "VERDICT: FAILED" in analysis_upper:
+                verified = False
+            else:
+                verified = has_success_indicators and not has_failure_indicators
 
             # Extract confidence (look for numbers between 0-1 or percentages)
             import re
@@ -683,23 +686,47 @@ Provide:
             return self._fallback_verdict(verification_results)
 
     def _fallback_verdict(self, verification_results: list[dict]) -> dict[str, Any]:
-        """Fallback verdict logic if sequential-thinking fails."""
-        success_count = sum(1 for r in verification_results if not r.get("error", False))
+        """Strict fallback verdict logic if sequential-thinking fails."""
+        # A tool is considered successful only if it returned valid data and no error
+        actual_successes = []
+        for r in verification_results:
+            success = not r.get("error", False)
+            result_val = str(r.get("result", "")).lower()
+            
+            # Even if 'success' is True, if result contains failure markers or is empty for info tools, it's a failure
+            if success:
+                if "error:" in result_val or "failed to" in result_val or "not found" in result_val:
+                    success = False
+                elif not result_val.strip() and r.get("tool", "").startswith(("macos-use.read", "vibe.vibe_check")):
+                    # Empty results for read/check tools are suspicious
+                    success = False
+            
+            if success:
+                actual_successes.append(r)
+
         total = len(verification_results)
+        success_count = len(actual_successes)
 
-        # Even more lenient fallback - if any tool succeeded, consider it verified
-        verified = success_count > 0
+        # CRITICAL CHANGE: Fallback is now STRICT. 
+        # Verified only if ALL tools succeeded (or at least no critical tool failed)
+        verified = success_count == total and total > 0
 
-        # Higher confidence for successful cases
-        confidence = 0.8 if verified else 0.4
+        # Confidence is lower because we are using fallback logic
+        confidence = 0.6 if verified else 0.2
+
+        reasoning = f"STRICT fallback verdict: {success_count}/{total} tools passed validation. "
+        if not verified:
+            reasoning += "Marking as FAILED due to incomplete evidence or tool errors."
+        else:
+            reasoning += "Using cautious verification due to reasoning unavailability."
 
         return {
             "verified": verified,
             "confidence": confidence,
-            "reasoning": f"Lenient fallback verdict: {success_count}/{total} tools successful. Using tolerant criteria due to network or reasoning issues.",
-            "issues": ["Sequential thinking unavailable"]
-            if success_count == 0
-            else ["Sequential thinking unavailable, but tools executed successfully"],
+            "reasoning": reasoning,
+            "issues": ["Sequential thinking unavailable", "Strict verification applied"]
+            if not verified
+            else ["Sequential thinking unavailable"],
         }
 
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
