@@ -527,10 +527,12 @@ Output structured analysis."""
             or "save" in step_action_lower
             or "create" in step_action_lower
         ):
+            # Use dynamic path based on actual home directory
+            project_root = os.path.expanduser("~/Documents/GitHub/atlastrinity")
             tools.append(
                 {
-                    "tool": "macos-use.list_directory",
-                    "args": {"path": "/Users/hawk/Documents/GitHub/atlastrinity"},
+                    "tool": "macos-use_finder_list_files",
+                    "args": {"path": project_root},
                     "reason": "Check if files were created",
                 }
             )
