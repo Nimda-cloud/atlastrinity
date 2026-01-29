@@ -408,6 +408,8 @@ class ToolDispatcher:
         # Discovery
         "list_tools": "macos-use_list_tools_dynamic",
         "discovery": "macos-use_list_tools_dynamic",
+        # Generic FS mapping for macos-use
+        "list_directory": "macos-use_finder_list_files",
     }
 
     MACOS_USE_PRIORITY = {
@@ -538,12 +540,20 @@ class ToolDispatcher:
                         if explicit_server:
                             break
 
-            # 5. Intelligent Routing with macOS-use Priority
-            server, resolved_tool, normalized_args = self._intelligent_routing(
-                tool_name,
-                args,
-                explicit_server,
-            )
+            # 5. Handle explicit server FIRST to avoid synonym hijacking
+            if explicit_server:
+                # Prioritize explicit server/realm if specified
+                server, resolved_tool, normalized_args = self._resolve_tool_and_args(
+                    tool_name,
+                    args,
+                    explicit_server,
+                )
+            else:
+                # 6. Intelligent Routing with macOS-use Priority
+                server, resolved_tool, normalized_args = self._intelligent_routing(
+                    tool_name,
+                    args,
+                )
 
             # Special case: System tools handled internally
             if server in {"_trinity_native", "system"}:
@@ -582,6 +592,14 @@ class ToolDispatcher:
                     "compatibility_error": True,
                 }
 
+            # 7. Apply central command wrapping for terminal tools
+            if server == "macos-use" and resolved_tool == "execute_command":
+                cmd = normalized_args.get("command") or normalized_args.get("cmd")
+                cwd = normalized_args.get("cwd") or normalized_args.get("path")
+                if cwd and cmd and str(cmd).strip() and not str(cmd).startswith("cd "):
+                    normalized_args["command"] = f"cd {cwd} && {cmd}"
+                    logger.info(f"[DISPATCHER] Centralized wrapping for execute_command with cwd: {cwd}")
+
             # 7. Validate and normalize arguments before calling MCP
             validated_args = self._validate_args(resolved_tool, normalized_args)
             if validated_args.get("__validation_error__"):
@@ -598,12 +616,12 @@ class ToolDispatcher:
                     "provided_args": list(normalized_args.keys()),
                 }
 
-            # 7. Track metrics
+            # 8. Track metrics
             self._total_calls += 1
             if server == "macos-use":
                 self._macos_use_calls += 1
 
-            # 8. Metrics & Final Dispatch via MCPManager
+            # 9. Metrics & Final Dispatch via MCPManager
             logger.info(
                 f"[DISPATCHER] Calling {server}.{resolved_tool} with args: {list(validated_args.keys())}",
             )
@@ -898,7 +916,6 @@ class ToolDispatcher:
         self,
         tool_name: str,
         args: dict[str, Any],
-        explicit_server: str | None = None,
     ) -> tuple[str | None, str, dict[str, Any]]:
         """Intelligent tier-based routing with macOS-use priority.
         Now delegates to BehaviorEngine for config-driven routing.
@@ -914,7 +931,6 @@ class ToolDispatcher:
             server, resolved_tool, normalized_args = behavior_engine.route_tool(
                 tool_name,
                 args,
-                explicit_server,
             )
 
             if server and server != resolved_tool:
@@ -928,7 +944,7 @@ class ToolDispatcher:
             )
 
         # Fallback: Use registry-based resolution
-        return self._resolve_tool_and_args(tool_name, args, explicit_server)
+        return self._resolve_tool_and_args(tool_name, args)
 
     def get_coverage_stats(self) -> dict[str, Any]:
         """Get macOS-use coverage statistics."""
@@ -949,12 +965,36 @@ class ToolDispatcher:
         explicit_server: str | None = None,
     ) -> tuple[str | None, str, dict[str, Any]]:
         """Resolves tool name to canonical form and normalizes arguments."""
+        # --- STRICT SERVER PRIORITY ---
+        if explicit_server == "macos-use":
+            return self._handle_macos_use(tool_name, args)
+        if explicit_server == "filesystem":
+            return self._handle_filesystem(tool_name, args)
+        if explicit_server == "terminal":
+            return self._handle_terminal(tool_name, args)
+        if explicit_server == "vibe":
+            return self._handle_vibe(tool_name, args)
+        if explicit_server == "puppeteer" or explicit_server == "browser":
+            return self._handle_browser(tool_name, args)
+
+        # --- NOTES ROUTING (Redirect to macos-use) ---
+        if explicit_server == "notes" or (not explicit_server and any(tool_name.startswith(p) for p in ["notes_", "note_"])):
+            return self._handle_macos_use(tool_name, args)
+
+        # --- MACOS-USE ROUTING ---
+        if (
+            tool_name.startswith("macos-use")
+            or tool_name.startswith("macos_use_")
+            or tool_name in self.MACOS_MAP
+        ):
+            return self._handle_macos_use(tool_name, args)
+
         # --- TERMINAL ROUTING ---
-        if tool_name in self.TERMINAL_SYNONYMS or explicit_server == "terminal":
+        if tool_name in self.TERMINAL_SYNONYMS:
             return self._handle_terminal(tool_name, args)
 
         # --- FILESYSTEM ROUTING ---
-        if tool_name in self.FILESYSTEM_SYNONYMS or explicit_server == "filesystem":
+        if tool_name in self.FILESYSTEM_SYNONYMS:
             return self._handle_filesystem(tool_name, args)
 
         # --- BROWSER ROUTING ---
@@ -970,22 +1010,50 @@ class ToolDispatcher:
         if tool_name in self.VIBE_SYNONYMS or explicit_server == "vibe":
             return self._handle_vibe(tool_name, args)
 
-        # --- NOTES ROUTING (Redirect to macos-use) ---
-        if explicit_server == "notes" or any(tool_name.startswith(p) for p in ["notes_", "note_"]):
-            return self._handle_macos_use(tool_name, args)
-
-        # --- MACOS-USE ROUTING ---
-        if (
-            tool_name.startswith("macos-use")
-            or tool_name.startswith("macos_use_")
-            or tool_name in self.MACOS_MAP
-            or explicit_server == "macos-use"
-        ):
-            return self._handle_macos_use(tool_name, args)
-
         # --- SEQUENTIAL THINKING ---
         if tool_name in ["sequential-thinking", "sequentialthinking", "think"]:
             return "sequential-thinking", "sequentialthinking", args
+
+        # --- DEVTOOLS ROUTING ---
+        if tool_name in self.DEVTOOLS_SYNONYMS or explicit_server == "devtools":
+            # Map generic terms to specific tools
+            if tool_name in ["lint", "linter", "ruff"]:
+                return "devtools", "devtools_lint_python", args
+            if tool_name in ["oxlint", "js_lint"]:
+                return "devtools", "devtools_lint_js", args
+            if tool_name in ["inspect", "inspector"]:
+                return "devtools", "devtools_launch_inspector", args
+            if tool_name in ["health", "check"]:
+                # Check 'check_code' vs 'health_check'
+                if "mcp" in str(args):
+                    return "devtools", "devtools_check_mcp_health", args
+                # Default generic 'check' might be ambiguous, but let's assume health if mcp mentioned
+                return "devtools", "devtools_check_mcp_health", args
+
+            return "devtools", tool_name, args
+
+        # --- CONTEXT7 ROUTING ---
+        if tool_name in self.CONTEXT7_SYNONYMS or explicit_server == "context7":
+            # Map generic "docs" or "search" to c7_search
+            if tool_name in ["docs", "documentation", "lookup", "library"]:
+                return "context7", "c7_search", args
+            return "context7", tool_name, args
+
+        # --- GOLDEN FUND ROUTING ---
+        if tool_name in self.GOLDEN_FUND_SYNONYMS or explicit_server in [
+            "golden-fund",
+            "golden_fund",
+        ]:
+            if tool_name in ["ingest", "ingestion", "etl"]:
+                return "golden-fund", "ingest_dataset", args
+            if tool_name in ["probe", "deep_search", "explore"]:
+                return "golden-fund", "probe_entity", args
+            if tool_name in ["vector_search", "semantic_search", "kb_search", "search_kb"]:
+                # Assume semantic mode for generic searches
+                args["mode"] = args.get("mode", "semantic")
+                return "golden-fund", "search_golden_fund", args
+
+            return "golden-fund", tool_name, args
 
         # --- DEVTOOLS ROUTING ---
         if tool_name in self.DEVTOOLS_SYNONYMS or explicit_server == "devtools":
