@@ -1,0 +1,1 @@
+Detailed report including outputs of `list_directory`, `read_file`, and `xcodebuild` commands.
