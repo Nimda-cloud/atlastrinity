@@ -707,51 +707,93 @@ def install_deps():
     return True
 
 
+    print_info("All configurations are in ~/.config/atlastrinity/")
+        print_info("Edit configs there directly (no sync needed)")
+        return True
+    except Exception as e:
+        print_error(f"Config setup error: {e}")
+        return False
+
+
+def process_template(src_path: Path, dst_path: Path):
+    """Copies template to destination with variable substitution."""
+    try:
+        if not src_path.exists():
+            print_warning(f"Template missing: {src_path}")
+            return False
+            
+        with open(src_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Define substitutions
+        replacements = {
+            "${PROJECT_ROOT}": str(PROJECT_ROOT),
+            "${HOME}": str(Path.home()),
+            "${CONFIG_ROOT}": str(CONFIG_ROOT),
+            "${PYTHONPATH}": str(PROJECT_ROOT),  # Often same as project root for imports
+            "${GITHUB_TOKEN}": os.getenv("GITHUB_TOKEN", "${GITHUB_TOKEN}") # Keep if not set
+        }
+
+        # Replace known variables
+        for key, value in replacements.items():
+            content = content.replace(key, value)
+
+        # Write to destination
+        with open(dst_path, "w", encoding="utf-8") as f:
+            f.write(content)
+            
+        print_success(f"Processed & Synced: {dst_path.name}")
+        return True
+    except Exception as e:
+        print_error(f"Failed to process template {src_path.name}: {e}")
+        return False
+
+
 def sync_configs():
-    """Copies template configs to global folder if they don't exist (first-time setup only)."""
+    """Copies template configs to global folder with variable expansion."""
     print_step("Setting up global configurations...")
 
     try:
-        # Force overwrite: copy templates to global configs
-        config_yaml_src = PROJECT_ROOT / "config" / "config.yaml.template"
-        config_yaml_dst = CONFIG_ROOT / "config.yaml"
+        # Define mappings (Source -> Destination)
+        configs = [
+            (
+                PROJECT_ROOT / "config" / "config.yaml.template",
+                CONFIG_ROOT / "config.yaml"
+            ),
+            (
+                PROJECT_ROOT / "config" / "mcp_servers.json.template",
+                CONFIG_ROOT / "mcp" / "config.json"
+            ),
+            (
+                PROJECT_ROOT / "config" / "behavior_config.yaml.template",
+                CONFIG_ROOT / "behavior_config.yaml"
+            ),
+            (
+                PROJECT_ROOT / "config" / "vibe_config.toml.template",
+                CONFIG_ROOT / "vibe_config.toml"
+            ),
+            (
+                PROJECT_ROOT / "config" / "monitoring_config.yaml.template",
+                CONFIG_ROOT / "monitoring_config.yaml"
+            )
+        ]
 
-        mcp_json_src = PROJECT_ROOT / "config" / "mcp_servers.json.template"
-        mcp_json_dst = CONFIG_ROOT / "mcp" / "config.json"
-
-        # Copy config.yaml template (Overwrite)
-        if config_yaml_src.exists():
-            shutil.copy2(config_yaml_src, config_yaml_dst)
-            print_success("Overwrote config.yaml from template")
-        else:
-            # Fallback: create minimal config
-            try:
-                import yaml
-
-                defaults = {
-                    "agents": {
-                        "atlas": {"model": "", "temperature": 0.7},
-                        "tetyana": {"model": "", "temperature": 0.5},
-                        "grisha": {"vision_model": "", "temperature": 0.3},
-                    },
-                    "mcp": {},
-                    "logging": {"level": "INFO"},
-                }
-                with open(config_yaml_dst, "w", encoding="utf-8") as f:
-                    # Use dynamic lookup to satisfy Pyrefly and Ruff
-                    yml_dump = getattr(yaml, "dum" + "p")
-                    yml_dump(defaults, f, allow_unicode=True)
-                print_success("Created default config.yaml (Template missing)")
-            except ImportError:
-                print_warning("yaml module not found, could not create default config.yaml")
-
-        # Copy MCP config.json (Overwrite)
+        # Process standard configs (Force Overwrite logic simplified for setup)
         DIRS["mcp"].mkdir(parents=True, exist_ok=True)
-        if mcp_json_src.exists():
-            shutil.copy2(mcp_json_src, mcp_json_dst)
-            print_success("FORCED SYNC: Overwrote mcp/config.json from project template")
-        else:
-            print_warning("mcp_servers.json.template missing, skipped overwrite")
+        
+        for src, dst in configs:
+            process_template(src, dst)
+            
+        # Agent profiles (mkdir agents first)
+        agents_dir = CONFIG_ROOT / "vibe" / "agents"
+        agents_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Example: if we had agent templates in config/agents/*.template
+        agent_templates_dir = PROJECT_ROOT / "config" / "agents"
+        if agent_templates_dir.exists():
+            for tpl in agent_templates_dir.glob("*.template"):
+                dst_name = tpl.stem # removes .template extension, e.g. auto-approve.toml
+                process_template(tpl, agents_dir / dst_name)
 
         # Sync .env: Local -> Global (ALWAYS sync secrets to global)
         env_src = PROJECT_ROOT / ".env"
@@ -817,35 +859,6 @@ def sync_configs():
         else:
             print_warning(f"Local .env not found at {env_src}")
 
-        # Copy behavior_config.yaml template (Overwrite)
-        behavior_yaml_src = PROJECT_ROOT / "config" / "behavior_config.yaml.template"
-        behavior_yaml_dst = CONFIG_ROOT / "behavior_config.yaml"
-        if behavior_yaml_src.exists():
-            shutil.copy2(behavior_yaml_src, behavior_yaml_dst)
-            print_success("FORCED SYNC: Overwrote behavior_config.yaml from project template")
-        else:
-            print_warning("behavior_config.yaml.template missing in config/, skipped overwrite")
-
-        # Copy vibe_config.toml template (Overwrite)
-        vibe_toml_src = PROJECT_ROOT / "config" / "vibe_config.toml.template"
-        vibe_toml_dst = CONFIG_ROOT / "vibe_config.toml"
-        if vibe_toml_src.exists():
-            shutil.copy2(vibe_toml_src, vibe_toml_dst)
-            print_success("FORCED SYNC: Overwrote vibe_config.toml from project template")
-        else:
-            print_warning("vibe_config.toml.template missing in config/, skipped overwrite")
-
-        # Copy monitoring_config.yaml template (Overwrite)
-        monitoring_yaml_src = PROJECT_ROOT / "config" / "monitoring_config.yaml.template"
-        monitoring_yaml_dst = CONFIG_ROOT / "monitoring_config.yaml"
-        if monitoring_yaml_src.exists():
-            shutil.copy2(monitoring_yaml_src, monitoring_yaml_dst)
-            print_success("FORCED SYNC: Overwrote monitoring_config.yaml from project template")
-        else:
-            print_warning("monitoring_config.yaml.template missing in config/, skipped overwrite")
-
-        print_info("All configurations are in ~/.config/atlastrinity/")
-        print_info("Edit configs there directly (no sync needed)")
         return True
     except Exception as e:
         print_error(f"Config setup error: {e}")
