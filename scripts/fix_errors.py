@@ -22,7 +22,9 @@ def fix_tool_routing():
     print("🔧 Fixing tool routing issues...")
 
     # Check tool_dispatcher.py for correct mappings
-    dispatcher_file = "/Users/hawk/Documents/GitHub/atlastrinity/src/brain/tool_dispatcher.py"
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    dispatcher_file = os.path.join(PROJECT_ROOT, "src/brain/tool_dispatcher.py")
     if os.path.exists(dispatcher_file):
         with open(dispatcher_file) as f:
             content = f.read()
@@ -50,11 +52,15 @@ def fix_vibe_check_db():
     """Fix vibe_check_db SQL errors"""
     print("🔧 Checking vibe_check_db SQL issues...")
 
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    CONFIG_DIR = os.path.join(HOME, ".config/atlastrinity")
+    
     # Find database file
     db_paths = [
-        os.path.expanduser("~/.config/atlastrinity/atlastrinity.db"),
-        os.path.expanduser("~/.config/atlastrinity/database.db"),
-        "/Users/hawk/Documents/GitHub/atlastrinity/data/atlastrinity.db",
+        os.path.join(CONFIG_DIR, "atlastrinity.db"),
+        os.path.join(CONFIG_DIR, "database.db"),
+        os.path.join(PROJECT_ROOT, "data/atlastrinity.db"),
     ]
 
     db_file = None
@@ -101,7 +107,9 @@ def fix_macos_use_tools():
     print("🔧 Checking macos-use server...")
 
     # Check if binary exists
-    binary_path = "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    binary_path = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use")
     if os.path.exists(binary_path):
         print("✅ macos-use binary exists")
 
@@ -122,9 +130,7 @@ def fix_macos_use_tools():
         print("❌ macos-use binary not found")
         print("🔨 Building macos-use...")
 
-        build_script = (
-            "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/build.sh"
-        )
+        build_script = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/build.sh")
         if os.path.exists(build_script):
             import subprocess
 

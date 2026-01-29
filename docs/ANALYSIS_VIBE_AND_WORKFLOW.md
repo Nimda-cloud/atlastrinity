@@ -33,14 +33,14 @@ Step 4: "Implement the calculator's logic in Swift" → macos-use_type_and_trave
 
 ### Поточний стан
 
-**Файл**: `@/Users/hawk/Documents/GitHub/atlastrinity/src/brain/data/protocols/sdlc_protocol.txt`
+**Файл**: `@/src/brain/data/protocols/sdlc_protocol.txt`
 
 **Інтеграція**:
 - ✅ Підтягується в промпти Atlas, Tetyana, Grisha
 - ✅ Використовується через `AgentPrompts.SDLC_PROTOCOL`
 - ✅ Atlas динамічно вибирає між `SDLC_PROTOCOL` та `TASK_PROTOCOL` на основі intent
 
-**Код інтеграції** (`@/Users/hawk/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py:846-854`):
+**Код інтеграції** (`@/src/brain/agents/atlas.py:846-854`):
 ```python
 intent = enriched_request.get("intent", "task")
 
@@ -72,7 +72,7 @@ PHASE 3: INCREMENTAL IMPLEMENTATION
 
 ### Виправлення реалізоване
 
-**Нова версія** (`@/Users/hawk/Documents/GitHub/atlastrinity/src/brain/data/protocols/sdlc_protocol.txt:19-26`):
+**Нова версія** (`@/src/brain/data/protocols/sdlc_protocol.txt:19-26`):
 ```
 - **MANDATORY: ALL CODE GENERATION MUST USE VIBE MCP**:
   * Use `vibe_implement_feature(goal="...", context_files=[...])` for new features/modules
@@ -113,7 +113,7 @@ PHASE 3: INCREMENTAL IMPLEMENTATION
 2. **Tetyana інтерпретувала як UI задачу** - "implement logic" → "type code in Xcode"
 3. **SDLC протокол не забороняв** GUI симуляцію для коду
 
-**Tetyana промпт** (`@/Users/hawk/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py:39-43`):
+**Tetyana промпт** (`@/src/brain/prompts/tetyana.py:39-43`):
 ```
 CRITICAL: COMPILATION/BUILD TASKS: ... you MUST use `execute_command`
 ```
