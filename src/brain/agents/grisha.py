@@ -595,44 +595,43 @@ Output structured analysis."""
             ]
         )
 
-        query = f"""LOGICAL VERIFICATION VERDICT:
+        query = f"""ЛОГІЧНИЙ ВЕРДИКТ ВЕРИФІКАЦІЇ:
 
-Step {step_id}: {step_action}
+Крок {step_id}: {step_action}
 
-VERIFICATION PURPOSE (from Phase 1):
-{goal_analysis.get("verification_purpose", "Unknown")}
+МЕТА ВЕРИФІКАЦІЇ (з Фази 1):
+{goal_analysis.get("verification_purpose", "Невідомо")}
 
-SUCCESS CRITERIA:
-{goal_analysis.get("success_criteria", "Unknown")}
+КРИТЕРІЇ УСПІХУ:
+{goal_analysis.get("success_criteria", "Невідомо")}
 
-COLLECTED EVIDENCE ({len(verification_results)} tools executed):
+ЗІБРАНІ ДОКАЗИ ({len(verification_results)} виконаних інструментів):
 {results_summary}
 
-OVERALL GOAL: {goal_context}
+ЗАГАЛЬНА МЕТА: {goal_context}
 
-TASK: Analyze this evidence LOGICALLY and form a verdict.
+ЗАВДАННЯ: Проаналізуй ці докази ЛОГІЧНО та сформуй вердикт.
 
-CRITICAL INSTRUCTIONS:
-1. **LOGICAL ANALYSIS**: Don't count successes mechanically. Analyze MEANING.
-2. **SINGLE SUCCESS RULE**: Even if only 1 tool out of 10 returned data, if that data PROVES the goal was achieved, the step is VERIFIED.
-3. **EMPTY RESULTS**: For info-gathering tasks, empty results = failure. For action tasks, check if action was performed.
-4. **ROOT CAUSE**: If verification fails, identify the EXACT reason (tool routing issue, empty data, wrong tool used, etc.).
-5. **ANALYSIS vs ACTION TASKS**: 
-   - For ANALYSIS tasks (analyze, review, research, investigate), DB trace of tool execution is sufficient proof
-   - For ACTION tasks (create, build, modify), verify actual artifacts/changes
-   - If step action contains "analyze", "review", "research" and DB shows tools were executed, consider VERIFIED
+КРИТИЧНІ ІНСТРУКЦІЇ:
+1. **ЛОГІЧНИЙ АНАЛІЗ**: Не рахуй успіхи механічно. Аналізуй ЗМІСТ.
+2. **ПРАВИЛО ОДНОГО УСПІХУ**: Навіть якщо лише 1 інструмент з 10 повернув дані, але ці дані ПІДТВЕРДЖУЮТЬ виконання цілі, крок вважається ВЕРИФІКОВАНИМ.
+3. **ПОРОЖНІ РЕЗУЛЬТАТИ**: Для інформаційних завдань порожній результат = провал. Для завдань-дій перевір, чи була виконана дія.
+4. **ПРИЧИНА ПРОВАЛУ**: Якщо верифікація не вдалася, вкажіть ТОЧНУ причину (проблема маршрутизації, порожні дані, не той інструмент тощо).
+5. **АНАЛІЗ vs ДІЯ**:
+   - Для АНАЛІТИЧНИХ завдань (аналіз, перегляд, дослідження) трейс виконання в БД є достатнім доказом.
+   - Для завдань-ДІЙ (створення, зміна, збірка) перевіряй реальні артефакти або зміни.
 
-ANTI-LOOP DIRECTIVE:
-- Think ONCE about evidence quality
-- Think ONCE about verdict reasoning
-- DO NOT repeat the same analysis
-- Each thought MUST cover a DIFFERENT aspect
+АНТИ-ЦИКЛОВА ДИРЕКТИВА:
+- Подумай ОДИН РАЗ про якість доказів.
+- Подумай ОДИН РАЗ про обґрунтування вердикту.
+- НЕ ПОВТОРЮЙ однаковий аналіз.
+- Кожна думка має охоплювати ІНШИЙ аспект.
 
-Provide:
-- **VERDICT**: VERIFIED or FAILED
-- **CONFIDENCE**: 0.0-1.0
-- **REASONING**: Detailed logical explanation
-- **ISSUES**: Specific problems found (if any)"""
+Надай відповідь у форматі:
+- **ВЕРДИКТ**: ПІДТВЕРДЖЕНО або ПРОВАЛЕНО
+- **ВПЕВНЕНІСТЬ**: 0.0-1.0
+- **ОБҐРУНТУВАННЯ**: (Детальний аналіз УКРАЇНСЬКОЮ мовою)
+- **ПРОБЛЕМИ**: (Список проблем УКРАЇНСЬКОЮ або 'Не виявлено')"""
 
         logger.info(f"[GRISHA] Phase 2: Forming logical verdict for step {step_id}...")
 
@@ -646,62 +645,42 @@ Provide:
             analysis_text = reasoning_result.get("analysis", "")
 
             # Check for network/timeout errors in the analysis
-            if (
-                "timeout" in analysis_text.lower()
-                or "connection" in analysis_text.lower()
-                or "network" in analysis_text.lower()
-                or "api.github.com" in analysis_text.lower()
-            ):
-                logger.warning(
-                    "[GRISHA] Network error detected in analysis, using lenient fallback"
-                )
+            if any(term in analysis_text.lower() for term in ["timeout", "connection", "network", "api.github.com"]):
+                logger.warning("[GRISHA] Network error detected in analysis, using fallback")
                 return self._fallback_verdict(verification_results)
 
-            # Parse verdict from analysis - STRICTOR criteria
+            # Parse verdict from analysis
             analysis_upper = analysis_text.upper()
             
-            # Check for strong failure indicators anywhere in the text
-            has_failure_indicators = any(word in analysis_upper for word in ["FAILED", "FAILURE", "ERROR", "INCORRECT", "MISSING", "NOT FOUND"])
-            
-            # Must have a success indicator AND NO strong failure indicators (or success must clearly outweigh failure)
-            # We look for success indicators in the reasoning synthesis (usually at the end or beginning)
-            has_success_indicators = any(word in analysis_upper for word in ["VERIFIED", "SUCCESS", "PASS", "COMPLETE", "ACHIEVED", "ACCOMPLISHED"])
-            
-            # If both are present, we err on the side of caution or look for "VERDICT: VERIFIED"
-            if "VERDICT: VERIFIED" in analysis_upper:
-                verified = True
-            elif "VERDICT: FAILED" in analysis_upper:
-                verified = False
-            else:
-                verified = has_success_indicators and not has_failure_indicators
+            verified = "ВЕРДИКТ: ПІДТВЕРДЖЕНО" in analysis_upper
+            if not verified and "ВЕРДИКТ: ПРОВАЛЕНО" not in analysis_upper:
+                # Fallback to keyword search if exact format missing
+                verified = any(word in analysis_upper for word in ["ПІДТВЕРДЖЕНО", "УСПІШНО", "VERIFIED", "SUCCESS"])
+                if any(word in analysis_upper for word in ["ПРОВАЛЕНО", "FAILED", "ERROR", "НЕ ЗНАЙДЕНО"]):
+                    verified = False
 
-            # Extract confidence (look for numbers between 0-1 or percentages)
+            # Extract confidence
             import re
+            confidence_match = re.search(r"(?:ВПЕВНЕНІСТЬ|confidence)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE)
+            confidence = float(confidence_match.group(1)) if confidence_match else (0.8 if verified else 0.2)
+            if confidence > 1.0: confidence /= 100.0
 
-            confidence_match = re.search(
-                r"confidence[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE
-            )
-            if confidence_match:
-                confidence = float(confidence_match.group(1))
-                if confidence > 1.0:
-                    confidence = confidence / 100.0
-            else:
-                # More lenient default confidence
-                confidence = 0.7 if verified else 0.3
+            # Extract Ukrainian reasoning
+            reasoning_match = re.search(r"ОБҐРУНТУВАННЯ[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
+            ukrainian_reasoning = reasoning_match.group(1).strip() if reasoning_match else analysis_text
 
             # Extract issues
-            issues = []
-            if "empty result" in analysis_text.lower():
-                issues.append("Empty results detected")
-            if "tool routing" in analysis_text.lower():
-                issues.append("Tool routing issues")
-            if not verified:
-                issues.append("Verification criteria not met")
+            issues_match = re.search(r"ПРОБЛЕМИ[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
+            issues_text = issues_match.group(1).strip() if issues_match else ("Verification criteria not met" if not verified else "")
+            
+            issues = [i.strip() for i in issues_text.split("\n") if i.strip() and i.strip() != "Не виявлено"]
+            if not verified and not issues:
+                issues.append("Критерії верифікації не виконані")
 
             return {
                 "verified": verified,
                 "confidence": confidence,
-                "reasoning": analysis_text,
+                "reasoning": ukrainian_reasoning,
                 "issues": issues,
                 "full_analysis": analysis_text,
             }
@@ -999,12 +978,27 @@ Provide:
         )
 
     def _generate_voice_message(self, verdict: dict, step: dict) -> str:
-        """Generate Ukrainian voice message based on verdict."""
+        """Generate detailed Ukrainian voice message based on verdict."""
+        step_id = step.get('id', 'невідомий')
+        reasoning = verdict.get("reasoning", "")
+        
         if verdict.get("verified"):
-            return f"Крок {step.get('id')} підтверджено. Впевненість: {int(verdict.get('confidence', 0) * 100)}%."
+            msg = f"Крок {step_id} успішно верифіковано. "
+            if reasoning and len(reasoning) < 200:
+                msg += f"Деталі: {reasoning}"
+            return msg
         else:
-            issues_text = ", ".join(verdict.get("issues", ["невідома причина"]))
-            return f"Крок {step.get('id')} не пройшов верифікацію. Причина: {issues_text}."
+            issues = verdict.get("issues", [])
+            issues_text = "; ".join(issues) if issues else "критерії не виконані"
+            
+            msg = f"Крок {step_id} не пройшов перевірку. "
+            msg += f"Виявлені проблеми: {issues_text}. "
+            
+            # Add snippet of reasoning if it's informative
+            if reasoning and "пр" not in reasoning.lower()[:10]: # avoid repeating "проблеми"
+                 msg += f"Аналіз: {reasoning[:200]}..."
+            
+            return msg
 
     async def analyze_failure(
         self,
