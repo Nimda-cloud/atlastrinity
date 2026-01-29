@@ -142,6 +142,34 @@ ALLOWED_SUBCOMMANDS = {
 BLOCKED_SUBCOMMANDS = {"tui", "agent-chat", "self-healing-status", "self-healing-scan"}
 
 # =============================================================================
+# PLATFORM & DEVELOPMENT GUIDELINES
+# =============================================================================
+
+MACOS_DEVELOPMENT_GUIDELINES = """
+MACOS DEVELOPMENT DOCTRINE:
+- TARGET: macOS 13.0+ (Ventura).
+- FRAMEWORK: SwiftUI (macOS specialized).
+- UI MODIFIERS: Avoid iOS-specific modifiers like .navigationBarItems or .navigationBarTitle. Use .toolbar, .navigationTitle, and .navigationSubtitle.
+- COLORS: Use platform-agnostic Color.secondary, Color.primary, or NSColor-linked colors. Avoid Color(.systemBackground) (iOS).
+- CONCURRENCY: Strictly use @MainActor for SwiftUI Views and ViewModels.
+- NETWORKING: Use Foundation URLSession or low-level Network.framework for macOS.
+"""
+
+DYNAMIC_VERIFICATION_PROTOCOL = """
+DYNAMIC VERIFICATION PROTOCOL:
+1. IDENTIFY Project Type:
+   - .swift / Package.swift -> Swift Project
+   - .py / requirements.txt -> Python Project
+   - .js, .ts / package.json -> Node.js Project
+2. EXECUTE Build/Check:
+   - Swift: Run 'swift build' in the project root.
+   - Python: Run 'python -m py_compile <file>' and 'ruff check <file>'.
+   - Node.js: Run 'npm run build' or 'tsc'.
+3. ANALYZE Output:
+   - If exit code != 0, READ the error log, ANALYZE the message, and FIX it in the next iteration.
+"""
+
+# =============================================================================
 # GLOBAL STATE
 # =============================================================================
 
@@ -886,12 +914,14 @@ async def vibe_analyze_error(
                 "PHASE 1 - DIAGNOSE:",
                 "  1.1. Perform Root Cause Analysis (RCA) - identify the EXACT cause",
                 "  1.2. Explain WHY this error occurred (not just what happened)",
-                "  1.3. Check if this is related to configuration, code, or environment",
+                "  1.3. Check if this is related to configuration, codebase, or environment limits (macOS vs iOS)",
+                f"  1.4. Apply guidelines from: {MACOS_DEVELOPMENT_GUIDELINES}",
                 "",
                 "PHASE 2 - FIX:",
                 "  2.1. Create a fix strategy with clear rationale",
                 "  2.2. Execute the fix (edit code, run commands as needed)",
                 "  2.3. Ensure the fix addresses the ROOT CAUSE, not symptoms",
+                f"  2.4. Follow DYNAMIC VERIFICATION: {DYNAMIC_VERIFICATION_PROTOCOL}",
                 "",
                 "PHASE 3 - VERIFY:",
                 "  3.1. Verify the fix works by running appropriate checks",
@@ -1007,11 +1037,11 @@ QUALITY REQUIREMENTS:
 ITERATIVE IMPROVEMENT PROTOCOL:
 After initial implementation, follow this loop (max {max_iterations} iterations):
 
-1. RUN VERIFICATION:
-   - Syntax check: python -m py_compile <file>
-   - Lint check: {code_style} check <file> (if applicable)
+1. RUN DYNAMIC VERIFICATION:
+   - {DYNAMIC_VERIFICATION_PROTOCOL}
    
 2. SELF-REVIEW:
+   - Verify compliance with: {MACOS_DEVELOPMENT_GUIDELINES}
    - Check for edge cases not handled
    - Verify error messages are helpful
    - Ensure code is readable and maintainable
