@@ -707,12 +707,7 @@ def install_deps():
     return True
 
 
-    print_info("All configurations are in ~/.config/atlastrinity/")
-        print_info("Edit configs there directly (no sync needed)")
-        return True
-    except Exception as e:
-        print_error(f"Config setup error: {e}")
-        return False
+
 
 
 def process_template(src_path: Path, dst_path: Path):
@@ -722,7 +717,7 @@ def process_template(src_path: Path, dst_path: Path):
             print_warning(f"Template missing: {src_path}")
             return False
             
-        with open(src_path, "r", encoding="utf-8") as f:
+        with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
         # Define substitutions

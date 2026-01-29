@@ -2,8 +2,8 @@
 """Standalone script to verify database tables and counts during setup"""
 
 import asyncio
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add src to path
@@ -13,7 +13,6 @@ from sqlalchemy import func, select
 
 from src.brain.db.manager import db_manager
 from src.brain.db.schema import Base
-from src.brain.config import Config
 
 
 async def verify_database_tables():
@@ -44,11 +43,14 @@ async def verify_redis():
     """Simple Redis ping check using redis-py"""
     print("\n[DB CHECK] Verifying Redis...")
     try:
-        import redis.asyncio as redis
+        from typing import Any, cast
+
+        from redis.asyncio import from_url
         # Default fallback if env not set, though Config should handle it
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        if await client.ping():
+        client = cast(Any, from_url(redis_url, encoding="utf-8", decode_responses=True))
+        is_alive = await client.ping()
+        if is_alive:
             print("[DB]   - Redis PING: PONG (Connection Successful)")
         else:
             print("[DB]   - Redis PING Failed")
@@ -78,7 +80,7 @@ async def verify_chromadb():
         # Just try to instantiate client
         client = chromadb.PersistentClient(path=str(db_path))
         collections = client.list_collections()
-        print(f"[DB]   - ChromaDB Client Initialized")
+        print("[DB]   - ChromaDB Client Initialized")
         print(f"[DB]   - Collections found: {len(collections)}")
         for col in collections:
             print(f"[DB]     * {col.name} (count: {col.count()})")
