@@ -22,6 +22,7 @@
       "args": [
         "@modelcontextprotocol/server-filesystem",
         "${HOME}",
+        "${PROJECT_ROOT}",
         "/tmp",
         "/private/tmp"
       ],
