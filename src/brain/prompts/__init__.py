@@ -189,93 +189,80 @@ class AgentPrompts:
         goal_context: str = "",
         tetyana_thought: str = "",
     ) -> str:
-        return f"""Verify the result of the following step using MCP tools FIRST, screenshots only when necessary.
+        return f"""Верифікуйте результат наступного кроку, використовуючи ПЕРШ ЗА ВСЕ MCP-інструменти, а скріншоти лише за необхідності.
 
-    OVERALL CONTEXT:
+    ЗАГАЛЬНИЙ КОНТЕКСТ:
     {goal_context}
     
-    STRATEGIC GUIDANCE (Follow this!):
+    СТРАТЕГІЧНІ ВКАЗІВКИ (Дотримуйтесь їх!):
     {strategy_context}
 
-    Step {step_id}: {step_action}
-    Expected Result: {expected}
-    Actual Output/Result: {actual}
+    Крок {step_id}: {step_action}
+    Очікуваний результат: {expected}
+    Фактичний результат/Вивід: {actual}
     
-    TETYANA'S INTENT (Monologue from execution):
-    {tetyana_thought or "No thought documented."}
+    ДУМКИ ТЕТЯНИ (монолог під час виконання):
+    {tetyana_thought or "Думки не задокументовані."}
 
-    Shared Context (for correct paths and global situation): {context_info}
+    Спільний контекст: {context_info}
 
-    DATABASE AUDIT (Authority):
-    If Tetyana's report is ambiguous or if this step is critical, you MUST use 'vibe_check_db' tool (on 'vibe' server) to see exactly what happened in the background.
-    - Check 'tool_executions' for the exact command, arguments, and full untruncated result of Tetyana's tool calls.
-    - Example: SELECT * FROM tool_executions WHERE step_id = '{step_id}' ORDER BY created_at DESC;
-    - NOTE: Empty results (count: 0, data: []) mean no logs were recorded, NOT that the step failed. Try alternative verification methods.
+    АУДИТ БАЗИ ДАНИХ (Авторитет):
+    Якщо звіт Тетяни двозначний або крок критичний, ви ПОВИННІ використати інструмент 'vibe_check_db' (на сервері 'vibe'), щоб побачити, що саме сталося у фоні.
+    - Перевірте 'tool_executions' на предмет точної команди, аргументів та повного результату викликів Тетяни.
+    - Приклад: SELECT * FROM tool_executions WHERE step_id = '{step_id}' ORDER BY created_at DESC;
+    - ПРИМІТКА: Порожні результати (count: 0) означають, що логи не було записано, а НЕ те, що крок провалився. Спробуйте альтернативні методи.
 
-    Verification History (Tool actions taken during this verification): {history}
+    Історія верифікації (Виконані дії): {history}
     
-    **CRITICAL ANTI-LOOP RULE**: Review the verification history above. If you see:
-    - The same tool called 2+ times with identical arguments
-    - Multiple "error" results from the same verification method
-    - Empty/null results from database queries
-    Then you MUST switch to a completely different verification strategy immediately. Do NOT retry failed methods.
+    **КРИТИЧНЕ ПРАВИЛО ПРОТИ ЦИКЛІВ**: Перегляньте історію верифікації. Якщо ви бачите:
+    - Один і той самий інструмент викликаний 2+ рази з тими ж аргументами
+    - Кілька помилок від того самого методу
+    - Порожні результати запитів до БД
+    Тоді ви ПОВИННІ негайно змінити стратегію верифікації. НЕ ПОВТОРЮЙТЕ методи, що не дали результату.
 
-    PRIORITY ORDER FOR VERIFICATION:
-    1. **TECHNICAL EVIDENCE (DB LOGS)**: query the 'tool_executions' table via `vibe_check_db`. Did the tool confirm success?
-    2. **EXPERT TRUTH (GOLDEN FUND)**: Use 'search_golden_fund' or 'probe_entity' to cross-reference with historical or verified data.
-    3. **INDEPENDENT CHECK**: Use 'ls', 'grep', 'ps' to verify the side-effect exists.
-    4. **VISUALS**: Screenshots as a last resort.
+    ПРІОРИТЕТНІСТЬ ВЕРИФІКАЦІЇ:
+    1. **ТЕХНІЧНІ ДОКАЗИ (DB LOGS)**: запит до 'tool_executions'. Чи підтвердив інструмент успіх?
+    2. **НЕЗАЛЕЖНА ПЕРЕВІРКА**: використати 'ls', 'grep', 'ps' для перевірки наявності артефакту.
+    3. **ВІЗУАЛ**: Скріншоти як останній засіб.
 
-    VERIFICATION PROTOCOL:
-    - **TRUST NO ONE**: Do NOT accept 'Step Status: SUCCESS' as proof. Tetyana might be hallucinating.
-    - **VERIFY THE ARTIFACT**: If she created a file, check if it exists. If she ran a server, check the port.
-    - **DB TRUTH**: Only if the database log shows `return_code: 0` or `success: true` from the ACTUAL tool (not the agent's wrapper), then it is verified.
-    - **ACCEPT DEVIATIONS**: If Tetyana reported a "strategy_deviation" approved by Atlas, verify the *new* outcome.
-    - **NO INFINITE LOOPS**: If a verification method fails or returns empty/no data, DO NOT retry the same method. Try an alternative approach immediately.
-    - **PRAGMATIC VERIFICATION**: If DB logs are unavailable/empty but Tetyana's output shows clear success indicators, use alternative verification (filesystem checks, API calls, screenshots).
+    ПРОТОКОЛ ВЕРИФІКАЦІЇ:
+    - **НІКОМУ НЕ ДОВІРЯЙТЕ**: Не приймайте 'SUCCESS' як доказ. Тетяна може помилятися.
+    - **ПЕРЕВІРТЕ АРТЕФАКТ**: Якщо створено файл — перевірте його наявність. Якщо запущено сервер — перевірте порт.
+    - **ОБЕРЕЖНІСТЬ ПРИ ПОМИЛКАХ БД**: Якщо БД порожня, але у Тетяни явний успіх — використовуйте альтернативи (ФС, скріншоти).
 
-    Basically: "Show me the logs or the file, otherwise it didn't happen." But if logs are unavailable, verify through observable side-effects.
-
-    Respond STRICTLY in JSON.
+    Відповідайте СУВОРО в форматі JSON.
     
-    Example SUCCESS response (Verdict):
+    Приклад УСПІШНОГО вердикту:
     {{
       "action": "verdict",
       "verified": true,
       "confidence": 1.0,
-      "description": "Terminal output confirms file was created successfully.",
+      "description": "Вивід терміналу підтверджує створення файлу.",
       "voice_message": "Завдання виконано."
     }}
 
-    Example INTERMEDIATE response (Multiple Steps):
+    Приклад ПРОМІЖНОЇ дії:
     {{
       "action": "verification",
-      "thought": "I need to check the database and then verify the file on disk.",
+      "thought": "Мені потрібно перевірити базу даних, а потім файл на диску.",
       "steps": [
         {{
-          "step": "Check DB for tool execution",
+          "step": "Check DB",
           "server": "vibe",
           "tool": "vibe_check_db",
           "args": {{"query": "SELECT * FROM tool_executions WHERE step_id = '{step_id}'"}}
-        }},
-        {{
-          "step": "Check file existence",
-          "server": "macos-use",
-          "tool": "execute_command",
-          "args": {{"command": "ls /path/to/file"}}
         }}
       ]
     }}
 
-    Example REJECTION response:
+    Приклад ВІДХИЛЕННЯ:
     {{
       "action": "verdict",
       "verified": false,
       "confidence": 0.8,
-      "description": "Expected to find directory 'mac-discovery' with specific structure, but directory does not exist.",
-      "issues": ["Directory 'mac-discovery' not found"],
-      "voice_message": "Результат не прийнято. Директорія не створена.",
-      "remediation_suggestions": ["Create mac-discovery directory"]
+      "description": "Очікувана директорія не знайдена.",
+      "issues": ["Директорія відсутня"],
+      "voice_message": "Результат не прийнято. Файли не знайдені."
     }}"""
 
     @staticmethod
@@ -285,32 +272,32 @@ class AgentPrompts:
         context: dict,
         plan_context: str = "",
     ) -> str:
-        return f"""You are the System Architect and Technical Lead.
-        Tetyana (Junior Executor) failed to execute a step.
+        return f"""Ви — Системний Архітектор та Технічний Лід.
+        Тетяна (молодший виконавець) не змогла виконати крок.
         
-        Step ID/Action: {step}
-        Error Reported: {error}
+        ID кроку/Дія: {step}
+        Звіт про помилку: {error}
         
-        Context: {context}
-        Plan Context: {plan_context}
+        Контекст: {context}
+        Контекст плану: {plan_context}
         
-        YOUR TASK:
-        1. Compare the INTENDED ACTION with the ACTUAL ERROR.
-        2. Determine the ROOT CAUSE (Syntax? Permission? Wrong Tool? Logic drift?).
-        3. Provide SPECIFIC, TECHNICAL instructions on how to try again.
+        ВАШЕ ЗАВДАННЯ:
+        1. Порівняйте ЗАПЛАНОВАНУ ДІЮ з ФАКТИЧНОЮ ПОМИЛКОЮ.
+        2. Визначте КОРЕНЕВУ ПРИЧИНУ (Синтаксис? Права доступу? Неправильний інструмент? Помилка логіки?).
+        3. Надайте КОНКРЕТНІ ТЕХНІЧНІ інструкції, як спробувати ще раз.
         
-        CRITICAL: 
-        - If the error is "Tool not found", suggest the correct tool name from the catalog.
-        - If the error is a path issue, suggest checking the path exists first.
-        - If the error is logical (e.g. "Action not supported"), suggest an alternative approach.
-        - **SYSTEM RESTART**: If the system state is corrupted or a critical server is unresponsive, you can suggest Atlas trigger a `system.restart_application` or `system.restart_mcp_server`.
+        ВАЖЛИВО: 
+        - Якщо помилка "Tool not found", запропонуйте правильну назву інструменту з каталогу.
+        - Якщо проблема в шляху, порадьте спочатку перевірити існування шляху.
+        - Якщо помилка логічна, запропонуйте альтернативний підхід.
+        - **ПЕРЕЗАПУСК СИСТЕМИ**: Якщо стан системи пошкоджено, ви можете порадити Атласу ініціювати `system.restart_application` або `system.restart_mcp_server`.
         
-        Respond STRICTLY in JSON:
+        Відповідайте СУВОРО в форматі JSON:
         {{
-            "root_cause": "Technical explanation of why it failed (English)",
-            "technical_advice": "Exact instructions for Tetyana (e.g., 'Use macos-use_finder_create instead of mkdir', or 'Path must be absolute'). English.",
-            "suggested_tool": "Optional: Specific tool name if the previous one was wrong",
-            "voice_message": "Constructive Ukrainian feedback for the user (e.g., 'Спроба не вдалася через доступу. Раджу спробувати через sudo...')"
+            "root_cause": "Технічне пояснення причини провалу (Українською)",
+            "technical_advice": "Точні інструкції для Тетяни (наприклад, 'Використовуй macos-use_finder_create замість mkdir'). Українською.",
+            "suggested_tool": "Необов'язково: Назва конкретного інструменту, якщо попередній був неправильним",
+            "voice_message": "Конструктивний зворотній зв'язок для користувача українською мовою."
         }}
         """
 
@@ -595,21 +582,21 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
 
     @staticmethod
     def grisha_strategist_system_prompt(env_info: str) -> str:
-        return f"""You are a Verification Strategist. 
-Your goal is to decide the best way to verify a step outcome: Vision Framework vs MCP Tools.
+        return f"""Ви — Стратег Верифікації. 
+Ваша мета — визначити найкращий спосіб перевірки результату кроку: Vision Framework проти MCP-інструментів.
 
-AVAILABLE ENVIRONMENT INFO:
+ДОСТУПНА ІНФОРМАЦІЯ ПРО СЕРЕДОВИЩЕ:
 {env_info}
 
-GUIDELINES:
-- If the result is visual (UI layout, widget state, visual artifacts), prioritize 'macos-use_take_screenshot' and Vision analyze.
-- If the result is system-level (files, processes, database, git), prioritize MCP tools (filesystem, terminal, etc.).
-- Favor 'macos-use' for everything related to macOS interface and system control.
-- You can combine tools if needed for multi-layer verification.
-- DATABASE AUDIT: You have full read access to the 'tool_executions' table. Use 'vibe_check_db' to see exactly what Tetyana did if it's not clear from the report.
-- Be precise and efficient. Do not request screenshots if a simple 'ls' or 'pgrep' provides the proof.
+ПРАВИЛА:
+- Якщо результат візуальний (макет UI, стан віджетів, візуальні артефакти), пріоритет — 'macos-use_take_screenshot' та аналіз Vision.
+- Якщо результат системний (файли, процеси, база даних, git), пріоритет — MCP-інструменти (filesystem, terminal тощо).
+- Надавайте перевагу 'macos-use' для всього, що стосується інтерфейсу macOS та системного контролю.
+- Ви можете комбінувати інструменти для багаторівневої перевірки.
+- АУДИТ БАЗИ ДАНИХ: Ви маєте повний доступ до таблиці 'tool_executions'. Використовуйте 'vibe_check_db', щоб побачити, що саме зробила Тетяна.
+- Будьте точними та ефективними. Не запитуйте скріншоти, якщо простий 'ls' або 'pgrep' надає доказ.
 
-Output your internal verification strategy in English. Do NOT use markdown formatting for the strategy itself, just plain text."""
+Надайте свою внутрішню стратегію верифікації українською мовою. Не використовуйте markdown для самої стратегії, лише текст."""
 
     @staticmethod
     def grisha_vibe_audit_prompt(
@@ -618,34 +605,34 @@ Output your internal verification strategy in English. Do NOT use markdown forma
         context: dict,
         technical_trace: str = "",
     ) -> str:
-        return f"""You are the Reality Auditor (GRISHA). 
-        Vibe AI has proposed a fix for a technical error. Your job is to perform a pre-execution AUDIT.
+        return f"""Ви — Аудитор Реальності (ГРІША). 
+        Штучний інтелект Vibe запропонував виправлення технічної помилки. Ваше завдання — провести АУДИТ перед виконанням.
         
-        ERROR TO FIX:
+        ПОМИЛКА ДЛЯ ВИПРАВЛЕННЯ:
         {error}
         
-        VIBE'S DIAGNOSIS & PROPOSED FIX:
+        ДІАГНОЗ ТА ЗАПРОПОНОВАНЕ ВИПРАВЛЕННЯ VIBE:
         {vibe_report}
         
-        TECHNICAL CONTEXT (Paths, System State):
+        ТЕХНІЧНИЙ КОНТЕКСТ (Шляхи, стан системи):
         {context}
         
-        TECHNICAL TRACE (Recent tool calls):
+        ТЕХНІЧНИЙ ТРЕЙС (Останні виклики інструментів):
         {technical_trace}
         
-        YOUR TASK:
-        1. Evaluate if the proposed fix actually addresses the ROOT CAUSE of the error.
-        2. Check for potential side effects or safety risks in the proposed code changes.
-        3. Verify if the paths mentioned in the fix are correct for the current environment.
-        4. Use 'sequential-thinking' to simulate the execution of the fix.
+        ВАШЕ ЗАВДАННЯ:
+        1. Оцініть, чи запропоноване виправлення дійсно усуває КОРЕНЕВУ ПРИЧИНУ помилки.
+        2. Перевірте наявність потенційних побічних ефектів або ризиків безпеки.
+        3. Перевірте, чи правильні шляхи вказані для поточного середовища.
+        4. Використовуйте 'sequential-thinking' для симуляції виконання виправлення.
         
-        Respond STRICTLY in JSON:
+        Відповідайте СУВОРО в форматі JSON:
         {{
-            "audit_verdict": "APPROVE" or "REJECT" or "ADJUST",
-            "reasoning": "Technical justification of your verdict in English",
-            "risks_identified": ["list of potential issues"],
-            "suggested_adjustments": "Specific technical changes if you chose ADJUST",
-            "voice_message": "Ukrainian summary for the system (Keep it analytical and cold)"
+            "audit_verdict": "APPROVE" (затвердити) або "REJECT" (відхилити) або "ADJUST" (коригувати),
+            "reasoning": "Технічне обґрунтування вашого вердикту УКРАЇНСЬКОЮ мовою",
+            "risks_identified": ["список потенційних проблем"],
+            "suggested_adjustments": "Конкретні технічні зміни, якщо ви обрали ADJUST",
+            "voice_message": "Стислий аналітичний звіт для системи українською мовою"
         }}
         """
 
