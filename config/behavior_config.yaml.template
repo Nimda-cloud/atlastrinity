@@ -699,6 +699,58 @@ tool_routing:
         server: golden-fund
         tool: ingest_dataset
 
+  # XcodeBuild - iOS/macOS Development Automation
+  xcodebuild:
+    synonyms:
+      - xcodebuild
+      - xcode
+      - ios_development
+      - macos_development
+      - build_project
+      - run_tests
+      - simulator
+      - ios_simulator
+      - device_deployment
+      - code_coverage
+      - archive_project
+      - swift_package
+      - xcode_logs
+      - xcode_build
+      - ios_app
+      - macos_app
+    priority_server: xcodebuild
+    fallback_server: macos-use
+    tool_mapping:
+      build_project: xcodebuild_build_project
+      run_tests: xcodebuild_run_tests
+      list_simulators: xcodebuild_list_simulators
+      boot_simulator: xcodebuild_boot_simulator
+      install_app: xcodebuild_install_app
+      launch_app: xcodebuild_launch_app
+      analyze_logs: xcodebuild_analyze_logs
+      get_coverage: xcodebuild_get_coverage
+      archive_project: xcodebuild_archive_project
+      clean_build: xcodebuild_clean_build
+    routing_rules:
+      - pattern: 'build.*project.*'
+        server: xcodebuild
+        tool: xcodebuild_build_project
+      - pattern: 'run.*tests.*'
+        server: xcodebuild
+        tool: xcodebuild_run_tests
+      - pattern: '.*simulator.*'
+        server: xcodebuild
+        tool: xcodebuild_list_simulators
+      - pattern: 'archive.*'
+        server: xcodebuild
+        tool: xcodebuild_archive_project
+      - pattern: 'analyze.*logs.*'
+        server: xcodebuild
+        tool: xcodebuild_analyze_logs
+      - pattern: 'coverage.*'
+        server: xcodebuild
+        tool: xcodebuild_get_coverage
+
 # =============================================================================
 # TASK CLASSIFICATION
 # =============================================================================
@@ -756,6 +808,12 @@ task_classification:
     keywords: [github, repository, issue, pr]
     recommended_servers: [github, macos-use]
     priority: tier2
+
+  ios_development_tasks:
+    keywords: [xcode, ios, macos, simulator, build, xcodeproj, xcworkspace, swift, swiftui, objective-c, cocoapods, carthage, spm, testflight, app_store]
+    recommended_servers: [xcodebuild, macos-use]
+    priority: tier2
+    description: iOS/macOS app development, building, testing, and deployment
 
   voice_tasks:
     keywords: [voice, audio, transcribe, stt, speech]
