@@ -119,17 +119,16 @@ PREVIOUS THOUGHTS:
 STEP {i}/{total_thoughts}:
 Generate the next logical thought to analyze this problem. 
 - Focus on root causes, technical details, and specific actionable solutions.
-- If this is the final thought, provide a summary and recommendation.
+- **INTERNAL REASONING**: Always reason in ENGLISH for technical precision.
+- **FINAL RECOMMENDATION**: If this is the final thought (Step {total_thoughts}), provide the summary/recommendation in the SAME LANGUAGE as the TASK (e.g., Ukrainian).
 - Output ONLY the raw thought text. Do not wrap in JSON or Markdown blocks.
-- **LANGUAGE**: You MUST provide your thoughts in the SAME LANGUAGE as the TASK described above. (e.g., if TASK is in Ukrainian, respond in Ukrainian).
-- **IMPORTANT**: If your task requires real-time data (weather, news, system stats), check AGENT CAPABILITIES. 
-- If 'Web search' or 'duckduckgo' is listed, you DO have access to real-time data. 
+- **IMPORTANT**: If your task requires real-time data, check AGENT CAPABILITIES. 
 - Never say "I don't have access" if the tools are listed.
 """
                 response = await thinker_llm.ainvoke(
                     [
                         SystemMessage(
-                            content="You are a Sequential Thinking Engine. Output thoughts in the same language as the task.",
+                            content="You are a Sequential Thinking Engine. Reason in English, but provide final conclusions in the task language.",
                         ),
                         HumanMessage(content=prompt),
                     ],
