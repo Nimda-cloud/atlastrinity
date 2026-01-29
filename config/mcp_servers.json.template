@@ -51,6 +51,22 @@
       ]
     },
     "_comment_tier2": "=== TIER 2: HIGH PRIORITY (Рекомендовані) ===",
+    "xcodebuild": {
+      "command": "node",
+      "args": [
+        "${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"
+      ],
+      "connect_timeout": 120,
+      "description": "Xcode Build & Test Automation (iOS/macOS development): Build projects, run tests, manage simulators, analyze build logs, code coverage, device deployment. Critical for Atlas planning and iOS/macOS development workflows.",
+      "disabled": false,
+      "tier": 2,
+      "agents": [
+        "atlas",
+        "tetyana",
+        "grisha"
+      ],
+      "note": "Requires: macOS 14.5+, Xcode 16.x+ (full, not just Command Line Tools), Node.js 18.x+. Provides 94+ tools across 14 workflows for comprehensive iOS/macOS development."
+    },
     "chrome-devtools": {
       "command": "bunx",
       "args": [
@@ -290,14 +306,15 @@
     }
   },
   "_metadata": {
-    "version": "4.6",
-    "last_updated": "2026-01-25",
+    "version": "4.7",
+    "last_updated": "2026-01-28",
     "description": "Synced MCP configuration for AtlasTrinity - matches mcp_registry.py and data/ JSONs",
-    "active_servers": 16,
-    "total_servers": 17,
+    "active_servers": 17,
+    "total_servers": 18,
     "notes": [
       "Servers with 'disabled': true are not loaded by default",
-      "Tier 1-2 servers load at startup, Tier 3-4 on-demand"
+      "Tier 1-2 servers load at startup, Tier 3-4 on-demand",
+      "XcodeBuildMCP added for iOS/macOS development automation"
     ]
   }
 }

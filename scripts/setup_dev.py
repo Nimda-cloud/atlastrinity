@@ -432,6 +432,76 @@ def build_swift_mcp():
         return False
 
 
+def setup_xcodebuild_mcp():
+    """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
+    print_step("Налаштування XcodeBuildMCP (Xcode automation)...")
+    xcode_mcp_path = PROJECT_ROOT / "vendor" / "XcodeBuildMCP"
+    
+    # Check if Xcode is installed (not just Command Line Tools)
+    try:
+        result = subprocess.run(
+            ["xcodebuild", "-version"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode != 0:
+            print_warning("Повний Xcode не встановлено (тільки Command Line Tools)")
+            print_info("XcodeBuildMCP потребує повний Xcode 16.x+ для роботи")
+            print_info("Встановіть Xcode з Mac App Store для iOS/macOS розробки")
+            print_info("Пропускаємо встановлення XcodeBuildMCP...")
+            return False
+    except FileNotFoundError:
+        print_warning("xcodebuild не знайдено")
+        print_info("Пропускаємо встановлення XcodeBuildMCP...")
+        return False
+    
+    # Clone if not exists
+    if not xcode_mcp_path.exists():
+        print_info("Клонування XcodeBuildMCP з GitHub...")
+        try:
+            subprocess.run(
+                ["git", "clone", "https://github.com/cameroncooke/XcodeBuildMCP.git", str(xcode_mcp_path)],
+                check=True,
+                cwd=PROJECT_ROOT
+            )
+            print_success("XcodeBuildMCP клоновано")
+        except subprocess.CalledProcessError as e:
+            print_error(f"Помилка клонування: {e}")
+            return False
+    else:
+        print_success("XcodeBuildMCP вже існує")
+    
+    # Check if already built
+    built_binary = xcode_mcp_path / ".smithery" / "stdio" / "index.cjs"
+    if built_binary.exists():
+        print_success("XcodeBuildMCP вже зібрано")
+        return True
+    
+    # Install dependencies
+    print_info("Встановлення npm залежностей для XcodeBuildMCP...")
+    try:
+        subprocess.run(["npm", "install"], cwd=xcode_mcp_path, check=True, capture_output=True)
+        print_success("Залежності встановлено")
+    except subprocess.CalledProcessError as e:
+        print_error(f"Помилка встановлення залежностей: {e}")
+        return False
+    
+    # Build
+    print_info("Збірка XcodeBuildMCP (це може зайняти ~30 сек)...")
+    try:
+        subprocess.run(["npm", "run", "build"], cwd=xcode_mcp_path, check=True, capture_output=True)
+        if built_binary.exists():
+            print_success(f"XcodeBuildMCP зібрано: {built_binary}")
+            return True
+        else:
+            print_error("Бінарний файл не знайдено після збірки")
+            return False
+    except subprocess.CalledProcessError as e:
+        print_error(f"Помилка збірки: {e}")
+        return False
+
+
 def check_venv():
     """Налаштовує Python virtual environment"""
     print_step("Налаштування Python venv...")
@@ -1129,6 +1199,7 @@ def main():
     asyncio.run(verify_database_tables())
 
     build_swift_mcp()
+    setup_xcodebuild_mcp()
 
     # Ensure all binaries are executable
     print_step("Налаштування прав доступу для бінарних файлів...")

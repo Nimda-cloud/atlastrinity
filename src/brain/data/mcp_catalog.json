@@ -358,6 +358,39 @@
     "when_to_use": "When performing data analysis on CSV/Excel/JSON files, generating statistics, creating charts, cleaning data, or running pandas operations.",
     "priority_note": "For knowledge base storage and semantic search, use 'golden-fund' instead. For raw file operations, use 'filesystem'."
   },
+  "xcodebuild": {
+    "name": "xcodebuild",
+    "tier": 2,
+    "category": "developer",
+    "description": "Xcode Build & Test Automation - Full iOS/macOS development lifecycle management",
+    "capabilities": [
+      "Build Xcode projects with custom schemes and configurations",
+      "Run unit and UI tests with granular control",
+      "Manage iOS simulators (list, boot, shutdown, install apps)",
+      "Deploy apps to physical devices",
+      "Generate code coverage reports",
+      "Analyze build logs and diagnose compilation errors",
+      "Archive and export IPA files",
+      "Manage provisioning profiles and certificates",
+      "Run static analysis and linting",
+      "Capture simulator screenshots",
+      "Stream build/test output in real-time"
+    ],
+    "key_tools": [
+      "xcodebuild_build_project",
+      "xcodebuild_run_tests",
+      "xcodebuild_list_simulators",
+      "xcodebuild_boot_simulator",
+      "xcodebuild_install_app",
+      "xcodebuild_launch_app",
+      "xcodebuild_analyze_logs",
+      "xcodebuild_get_coverage",
+      "xcodebuild_archive_project",
+      "xcodebuild_clean_build"
+    ],
+    "when_to_use": "iOS/macOS app development, building Xcode projects, running tests, managing simulators, deploying to devices. Critical for Atlas when planning iOS development workflows.",
+    "priority_note": "Requires: macOS 14.5+, Xcode 16.x+, Node.js 18.x+. For general macOS automation use 'macos-use', for Xcode-specific tasks use 'xcodebuild'."
+  },
   "postgres": {
     "name": "postgres",
     "tier": 3,

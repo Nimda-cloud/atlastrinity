@@ -1527,5 +1527,123 @@
       "init_git": "bool"
     },
     "description": "Universal architecture diagram generator for ANY project type (Python, Node.js, Rust, Go, etc.). Analyzes project structure, initializes git if needed, configures GitHub remote, and generates/updates diagrams dynamically. target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)."
+  },
+  "xcodebuild_build_project": {
+    "server": "xcodebuild",
+    "required": ["project_path"],
+    "optional": ["scheme", "configuration", "destination", "sdk", "clean"],
+    "types": {
+      "project_path": "str",
+      "scheme": "str",
+      "configuration": "str",
+      "destination": "str",
+      "sdk": "str",
+      "clean": "bool"
+    },
+    "description": "Build an Xcode project with specified scheme and configuration. Supports .xcodeproj and .xcworkspace."
+  },
+  "xcodebuild_run_tests": {
+    "server": "xcodebuild",
+    "required": ["project_path"],
+    "optional": ["scheme", "destination", "test_plan", "only_testing", "skip_testing", "parallel"],
+    "types": {
+      "project_path": "str",
+      "scheme": "str",
+      "destination": "str",
+      "test_plan": "str",
+      "only_testing": "list",
+      "skip_testing": "list",
+      "parallel": "bool"
+    },
+    "description": "Run unit and UI tests with granular control over which tests to execute."
+  },
+  "xcodebuild_list_simulators": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": ["platform", "available_only"],
+    "types": {
+      "platform": "str",
+      "available_only": "bool"
+    },
+    "description": "List all available iOS/tvOS/watchOS simulators with their IDs and states."
+  },
+  "xcodebuild_boot_simulator": {
+    "server": "xcodebuild",
+    "required": ["simulator_id"],
+    "optional": ["wait_for_boot"],
+    "types": {
+      "simulator_id": "str",
+      "wait_for_boot": "bool"
+    },
+    "description": "Boot a simulator by ID. Optionally wait until fully booted."
+  },
+  "xcodebuild_install_app": {
+    "server": "xcodebuild",
+    "required": ["app_path", "simulator_id"],
+    "optional": [],
+    "types": {
+      "app_path": "str",
+      "simulator_id": "str"
+    },
+    "description": "Install an .app bundle to a running simulator."
+  },
+  "xcodebuild_launch_app": {
+    "server": "xcodebuild",
+    "required": ["bundle_id", "simulator_id"],
+    "optional": ["wait_for_debugger", "args"],
+    "types": {
+      "bundle_id": "str",
+      "simulator_id": "str",
+      "wait_for_debugger": "bool",
+      "args": "list"
+    },
+    "description": "Launch an installed app on a simulator by bundle identifier."
+  },
+  "xcodebuild_analyze_logs": {
+    "server": "xcodebuild",
+    "required": ["log_path"],
+    "optional": ["error_only", "warning_only", "format"],
+    "types": {
+      "log_path": "str",
+      "error_only": "bool",
+      "warning_only": "bool",
+      "format": "str"
+    },
+    "description": "Analyze Xcode build logs to extract errors, warnings, and insights."
+  },
+  "xcodebuild_get_coverage": {
+    "server": "xcodebuild",
+    "required": ["result_bundle_path"],
+    "optional": ["format", "target"],
+    "types": {
+      "result_bundle_path": "str",
+      "format": "str",
+      "target": "str"
+    },
+    "description": "Generate code coverage report from test results bundle."
+  },
+  "xcodebuild_archive_project": {
+    "server": "xcodebuild",
+    "required": ["project_path", "scheme"],
+    "optional": ["archive_path", "export_options", "export_path"],
+    "types": {
+      "project_path": "str",
+      "scheme": "str",
+      "archive_path": "str",
+      "export_options": "dict",
+      "export_path": "str"
+    },
+    "description": "Archive and export an Xcode project for distribution (IPA, app bundle)."
+  },
+  "xcodebuild_clean_build": {
+    "server": "xcodebuild",
+    "required": ["project_path"],
+    "optional": ["scheme", "configuration"],
+    "types": {
+      "project_path": "str",
+      "scheme": "str",
+      "configuration": "str"
+    },
+    "description": "Clean build folder and derived data for a project."
   }
 }
