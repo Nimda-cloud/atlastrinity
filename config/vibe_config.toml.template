@@ -18,7 +18,7 @@
 
 # Active model alias (from models list below)
 # This is the default model used when no explicit model is specified
-active_model = "devstral-2"  # SET THIS: e.g., "devstral-2", "gpt-4o", etc.
+active_model = "codestral-latest"  # SET THIS: e.g., "devstral-2", "gpt-4o", etc.
 
 # System prompt ID (loads from ~/.vibe/prompts/{id}.md)
 # Set to a custom ID to override the default Vibe system prompt
@@ -116,9 +116,9 @@ backend = "generic"
 # Define your models below. Example configurations:
 #
 [[models]]
-name = "devstral-2"             # Devstral-2 model from Mistral AI
+name = "codestral-latest"             # Codestral model from Mistral AI
 provider = "mistral"
-alias = "devstral-2"            # User requested alias
+alias = "codestral-latest"            # User requested alias
 temperature = 0.0
 input_price = 1.0               # Lower price
 output_price = 3.0
