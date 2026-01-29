@@ -116,7 +116,7 @@ backend = "generic"
 # Define your models below. Example configurations:
 #
 [[models]]
-name = "codestral-latest"       # Often referred to as Devstral/Codestral
+name = "devstral-2"             # Devstral-2 model from Mistral AI
 provider = "mistral"
 alias = "devstral-2"            # User requested alias
 temperature = 0.0

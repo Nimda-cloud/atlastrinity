@@ -330,7 +330,14 @@ CRITICAL CLASSIFICATION RULES:
 3. 'recall' - User asking to REMEMBER, REMIND, or RETRIEVE information about past tasks/conversations. **IMPORTANT**: If the user asks to "repeat", "redo", or "run again" a previous task, it is NOT recall, it is 'task' or 'development'.
 4. 'status' - User asking about CURRENT STATE or STATUS of the system.
 5. 'task' - Direct instructions to DO/EXECUTE something (open app, move file, system control, complex automation, file CREATION/MODIFICATION). **REPEATING** a previous non-development task also falls here. REQUIRES TRINITY (Tetyana/Grisha).
-6. 'development' - Requests to BUILD, or WRITE software/code. **REPEATING** a previous development task also falls here. REQUIRES TRINITY/VIBE.
+6. 'development' - Requests to BUILD, CREATE, IMPLEMENT, or WRITE software/code/programs/applications. **REPEATING** a previous development task also falls here. REQUIRES TRINITY/VIBE.
+
+SOFTWARE DEVELOPMENT AUTO-DETECTION:
+If the user request contains ANY of these keywords or patterns, classify as 'development':
+- Keywords (English): "create app", "build app", "write program", "implement feature", "develop software", "create library", "build API", "code a", "program a", "create calculator", "build game", "write script" (when referring to application development, not shell scripts), "compile", "package app", "create dmg", "build executable"
+- Keywords (Ukrainian): "створи програму", "створи калькулятор", "створи застосунок", "розроби", "напиши програму", "зроби додаток", "скомпілюй", "створи пакет", "створи dmg"
+- Patterns: Requests to create .app, .dmg, .exe, executable files, or any software projects
+- Technologies: Mentions of Swift, Xcode projects, Python apps, Node.js apps, React apps (not just code snippets)
 
 DEEP PERSONA TRIGGER (SEMANTIC ESSENCE):
 If the user touches on "Essence" themes, set 'use_deep_persona' to true.
@@ -465,6 +472,19 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
 
         - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1. This ensures Tetyana has the latest technical schemas before execution.
         - **DEVIATION AUTHORITY**: Explicitly instruct Tetyana that she is authorized to deviate from this plan if she discovers a more optimal path.
+        
+        **CRITICAL: CODE IMPLEMENTATION STEPS MUST USE VIBE MCP**:
+        For ANY step that involves WRITING, GENERATING, or IMPLEMENTING code/software:
+        - You MUST set "realm": "vibe" in the step JSON
+        - You MUST specify one of these tools in the action description:
+          * "vibe_implement_feature" - for new features/modules/applications
+          * "vibe_prompt" - for code snippets, refactoring, or debugging
+          * "vibe_code_review" - before critical changes
+        - NEVER plan steps that write code via GUI simulation (typing in Xcode/VSCode/IDEs)
+        - NEVER plan steps that write code via text editor manipulation
+        - Example CORRECT step: {{"id": 2, "realm": "vibe", "action": "Use vibe_implement_feature to create Swift calculator with UI and logic", ...}}
+        - Example WRONG step: {{"id": 2, "realm": "macos-use", "action": "Type Swift code into Xcode", ...}}
+        
         Steps should be atomic and logical.
         """
 
