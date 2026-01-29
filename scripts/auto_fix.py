@@ -14,45 +14,44 @@ from pathlib import Path
 def fix_vibe_rate_limit():
     """Fix Vibe rate limiting issues"""
     print("🔧 Fixing Vibe rate limiting...")
-    
+
     vibe_config = os.path.expanduser("~/.config/atlastrinity/vibe_config.yaml")
     if not os.path.exists(vibe_config):
         print("⚠️ Vibe config not found, creating default...")
         default_config = {
-            "rate_limit": {
-                "requests_per_minute": 60,
-                "burst_size": 10,
-                "retry_delay": 10
-            },
-            "timeout": {
-                "default": 60,
-                "long_running": 3600
-            }
+            "rate_limit": {"requests_per_minute": 60, "burst_size": 10, "retry_delay": 10},
+            "timeout": {"default": 60, "long_running": 3600},
         }
-        
+
         import yaml
-        with open(vibe_config, 'w') as f:
+
+        with open(vibe_config, "w") as f:
             yaml.dump(default_config, f, default_flow_style=False)
         print("✅ Created default Vibe config")
     else:
         print("✅ Vibe config exists")
 
+
 def fix_macos_use_tools():
     """Fix missing macos-use tools"""
     print("🔧 Checking macos-use tools...")
-    
+
     # Check if binary exists
     binary_path = "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
     if not os.path.exists(binary_path):
         print("❌ macos-use binary not found")
         print("🔨 Building macos-use...")
-        
-        build_script = "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/build.sh"
+
+        build_script = (
+            "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/build.sh"
+        )
         if os.path.exists(build_script):
             import subprocess
+
             try:
-                result = subprocess.run(["bash", build_script], 
-                                      capture_output=True, text=True, timeout=300)
+                result = subprocess.run(
+                    ["bash", build_script], capture_output=True, text=True, timeout=300
+                )
                 if result.returncode == 0:
                     print("✅ macos-use built successfully")
                 else:
@@ -64,13 +63,15 @@ def fix_macos_use_tools():
     else:
         print("✅ macos-use binary exists")
 
+
 def fix_database_permissions():
     """Fix database file permissions"""
     print("🔧 Fixing database permissions...")
-    
+
     db_dir = os.path.expanduser("~/.config/atlastrinity")
     if os.path.exists(db_dir):
         import subprocess
+
         try:
             subprocess.run(["chmod", "-R", "755", db_dir], check=True)
             print("✅ Database permissions fixed")
@@ -79,10 +80,11 @@ def fix_database_permissions():
     else:
         print("❌ Database directory not found")
 
+
 def fix_log_rotation():
     """Fix log rotation to prevent oversized logs"""
     print("🔧 Setting up log rotation...")
-    
+
     logs_dir = os.path.expanduser("~/.config/atlastrinity/logs")
     if os.path.exists(logs_dir):
         brain_log = os.path.join(logs_dir, "brain.log")
@@ -102,32 +104,50 @@ def fix_log_rotation():
     else:
         print("⚠️ Logs directory not found")
 
+
 def fix_memory_usage():
     """Fix high memory usage issues"""
     print("🔧 Checking memory usage...")
-    
+
     try:
         import psutil
+
         memory = psutil.virtual_memory()
         if memory.percent > 85:
             print(f"⚠️ High memory usage: {memory.percent}%")
-            
+
             # Clear Python cache
             import subprocess
+
             try:
-                subprocess.run(["find", "/Users/hawk/Documents/GitHub/atlastrinity", 
-                              "-name", "__pycache__", "-type", "d", "-exec", "rm", "-rf", "{}", "+"], 
-                              check=False)
+                subprocess.run(
+                    [
+                        "find",
+                        "/Users/hawk/Documents/GitHub/atlastrinity",
+                        "-name",
+                        "__pycache__",
+                        "-type",
+                        "d",
+                        "-exec",
+                        "rm",
+                        "-rf",
+                        "{}",
+                        "+",
+                    ],
+                    check=False,
+                )
                 print("✅ Cleared Python cache")
             except:
                 pass
-                
+
             # Clear node_modules cache if needed
             node_modules = "/Users/hawk/Documents/GitHub/atlastrinity/node_modules"
             if os.path.exists(node_modules):
-                cache_size = sum(os.path.getsize(os.path.join(dirpath, filename)) 
-                               for dirpath, dirnames, filenames in os.walk(node_modules) 
-                               for filename in filenames) / (1024 * 1024)
+                cache_size = sum(
+                    os.path.getsize(os.path.join(dirpath, filename))
+                    for dirpath, dirnames, filenames in os.walk(node_modules)
+                    for filename in filenames
+                ) / (1024 * 1024)
                 if cache_size > 1000:  # If node_modules > 1GB
                     print(f"⚠️ Large node_modules: {cache_size:.1f}MB")
                     print("💡 Consider running 'npm ci' to clean up")
@@ -138,24 +158,31 @@ def fix_memory_usage():
     except Exception as e:
         print(f"❌ Memory check failed: {e}")
 
+
 def fix_git_permissions():
     """Fix git repository permissions"""
     print("🔧 Fixing git permissions...")
-    
+
     git_dir = "/Users/hawk/Documents/GitHub/atlastrinity/.git"
     if os.path.exists(git_dir):
         import subprocess
+
         try:
             # Fix git hooks permissions
             hooks_dir = os.path.join(git_dir, "hooks")
             if os.path.exists(hooks_dir):
-                subprocess.run(["chmod", "+x", os.path.join(hooks_dir, "*")], 
-                              shell=True, check=False)
+                subprocess.run(
+                    ["chmod", "+x", os.path.join(hooks_dir, "*")], shell=True, check=False
+                )
                 print("✅ Git hooks permissions fixed")
-            
+
             # Check git remote
-            result = subprocess.run(["git", "remote", "-v"], 
-                                  capture_output=True, text=True, cwd="/Users/hawk/Documents/GitHub/atlastrinity")
+            result = subprocess.run(
+                ["git", "remote", "-v"],
+                capture_output=True,
+                text=True,
+                cwd="/Users/hawk/Documents/GitHub/atlastrinity",
+            )
             if "origin" in result.stdout:
                 print("✅ Git remote configured")
             else:
@@ -165,13 +192,14 @@ def fix_git_permissions():
     else:
         print("⚠️ Not a git repository")
 
+
 def main():
     """Run all auto-fixes"""
     print("🔧 AtlasTrinity Auto-Fix Script")
     print("=" * 40)
     print(f"Timestamp: {datetime.now().isoformat()}")
     print()
-    
+
     fixes = [
         ("Vibe Rate Limiting", fix_vibe_rate_limit),
         ("macOS Tools", fix_macos_use_tools),
@@ -180,7 +208,7 @@ def main():
         ("Memory Usage", fix_memory_usage),
         ("Git Permissions", fix_git_permissions),
     ]
-    
+
     for name, fix_func in fixes:
         try:
             print(f"🔄 {name}...")
@@ -189,9 +217,10 @@ def main():
         except Exception as e:
             print(f"❌ {name} failed: {e}")
             print()
-    
+
     print("🎉 Auto-fix completed!")
     print("💡 Run 'python3 scripts/system_health_check.py' to verify fixes")
+
 
 if __name__ == "__main__":
     main()

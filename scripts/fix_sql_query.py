@@ -9,9 +9,9 @@ import sqlite3
 
 def fix_vibe_check_query():
     """Fix the UNION ALL query in vibe_check_db"""
-    
+
     db_path = os.path.expanduser("~/.config/atlastrinity/atlastrinity.db")
-    
+
     # Test the corrected query
     corrected_query = """
     SELECT * FROM (
@@ -45,23 +45,24 @@ def fix_vibe_check_query():
     ORDER BY order_field DESC 
     LIMIT 50
     """
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # Test the corrected query
         cursor.execute(corrected_query)
         results = cursor.fetchall()
-        
+
         print(f"✅ Corrected query works! Found {len(results)} results")
-        
+
         conn.close()
         return corrected_query
-        
+
     except Exception as e:
         print(f"❌ Query failed: {e}")
         return None
+
 
 if __name__ == "__main__":
     fix_vibe_check_query()

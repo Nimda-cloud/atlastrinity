@@ -10,7 +10,7 @@ import sqlite3
 
 def create_vibe_check_db_patch():
     """Create a patch file for vibe_check_db"""
-    
+
     patch_content = """
 # Patch for vibe_check_db SQL UNION ALL ORDER BY issue
 
@@ -95,20 +95,21 @@ LIMIT 50
 3. Used `NULLS LAST` to handle NULL values properly
 4. Wrapped in subquery to allow ORDER BY on computed column
 """
-    
+
     # Write patch to file
     patch_file = "/Users/hawk/Documents/GitHub/atlastrinity/docs/sql_patch.md"
-    with open(patch_file, 'w') as f:
+    with open(patch_file, "w") as f:
         f.write(patch_content)
-    
+
     print(f"✅ SQL patch created: {patch_file}")
     return patch_file
 
+
 def test_fixed_query():
     """Test the fixed SQL query"""
-    
+
     db_path = os.path.expanduser("~/.config/atlastrinity/atlastrinity.db")
-    
+
     fixed_query = """
     SELECT * FROM (
         SELECT 
@@ -141,28 +142,29 @@ def test_fixed_query():
     ORDER BY order_field DESC NULLS LAST
     LIMIT 50
     """
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute(fixed_query)
         results = cursor.fetchall()
-        
+
         print(f"✅ Fixed query works! Found {len(results)} results")
-        
+
         # Show sample results
         if results:
             print("\nSample results:")
             for i, row in enumerate(results[:3]):
-                print(f"  {i+1}. {row[0]} - {row[4]}")
-        
+                print(f"  {i + 1}. {row[0]} - {row[4]}")
+
         conn.close()
         return True
-        
+
     except Exception as e:
         print(f"❌ Fixed query failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     create_vibe_check_db_patch()

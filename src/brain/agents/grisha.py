@@ -604,22 +604,32 @@ Provide:
                 return self._fallback_verdict(verification_results)
 
             analysis_text = reasoning_result.get("analysis", "")
-            
+
             # Check for network/timeout errors in the analysis
-            if ("timeout" in analysis_text.lower() or 
-                "connection" in analysis_text.lower() or 
-                "network" in analysis_text.lower() or
-                "api.github.com" in analysis_text.lower()):
-                logger.warning("[GRISHA] Network error detected in analysis, using lenient fallback")
+            if (
+                "timeout" in analysis_text.lower()
+                or "connection" in analysis_text.lower()
+                or "network" in analysis_text.lower()
+                or "api.github.com" in analysis_text.lower()
+            ):
+                logger.warning(
+                    "[GRISHA] Network error detected in analysis, using lenient fallback"
+                )
                 return self._fallback_verdict(verification_results)
 
             # Parse verdict from analysis - more flexible criteria
             analysis_upper = analysis_text.upper()
             verified = (
-                ("VERIFIED" in analysis_upper or "SUCCESS" in analysis_upper or 
-                 "PASS" in analysis_upper or "COMPLETE" in analysis_upper or 
-                 "ACHIEVED" in analysis_upper or "ACCOMPLISHED" in analysis_upper) 
-                and "FAILED" not in analysis_upper[:200] and "ERROR" not in analysis_upper[:200]
+                (
+                    "VERIFIED" in analysis_upper
+                    or "SUCCESS" in analysis_upper
+                    or "PASS" in analysis_upper
+                    or "COMPLETE" in analysis_upper
+                    or "ACHIEVED" in analysis_upper
+                    or "ACCOMPLISHED" in analysis_upper
+                )
+                and "FAILED" not in analysis_upper[:200]
+                and "ERROR" not in analysis_upper[:200]
             )
 
             # Extract confidence (look for numbers between 0-1 or percentages)
@@ -661,18 +671,20 @@ Provide:
         """Fallback verdict logic if sequential-thinking fails."""
         success_count = sum(1 for r in verification_results if not r.get("error", False))
         total = len(verification_results)
-        
+
         # Even more lenient fallback - if any tool succeeded, consider it verified
         verified = success_count > 0
-        
+
         # Higher confidence for successful cases
         confidence = 0.8 if verified else 0.4
-        
+
         return {
             "verified": verified,
             "confidence": confidence,
             "reasoning": f"Lenient fallback verdict: {success_count}/{total} tools successful. Using tolerant criteria due to network or reasoning issues.",
-            "issues": ["Sequential thinking unavailable"] if success_count == 0 else ["Sequential thinking unavailable, but tools executed successfully"],
+            "issues": ["Sequential thinking unavailable"]
+            if success_count == 0
+            else ["Sequential thinking unavailable, but tools executed successfully"],
         }
 
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
