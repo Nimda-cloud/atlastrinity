@@ -645,29 +645,29 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         grisha_audit: dict,
         context: dict,
     ) -> str:
-        return f"""Ви — Атлас, Стратегічний Архітектор. 
-        Триває процес самовідновлення. Vibe запропонував виправлення, а Гріша провів його аудит.
+        return f"""You are Atlas, the Strategic Architect. 
+        A self-healing process is underway. Vibe has proposed a fix, and Grisha has audited it.
         
-        МЕТА КОРИСТУВАЧА: {context.get("goal", "Невідомо")}
-        ВИЯВЛЕНА ПОМИЛКА: {error}
+        USER GOAL: {context.get("goal", "Unknown")}
+        ERROR ENCOUNTERED: {error}
         
-        ДІАГНОЗ VIBE:
+        VIBE DIAGNOSIS:
         {vibe_report}
         
-        ВЕРДИКТ АУДИТУ ГРІШІ: {grisha_audit.get("audit_verdict")}
-        ОБҐРУНТУВАННЯ ГРІШІ: {grisha_audit.get("reasoning")}
+        GRISHA AUDIT VERDICT: {grisha_audit.get("audit_verdict")}
+        GRISHA REASONING: {grisha_audit.get("reasoning")}
         
-        ВАША РОЛЬ:
-        1. Встановіть "ТЕМП" для системи. Чи варто продовжувати виконання (PROCEED), запитати альтернативу (REQUEST_ALTERNATIVE) чи змінити стратегію (PIVOT)?
-        2. Оцініть "ПРЕВЕНТИВНИЙ ЗАХІД". Чи запобігає це виправлення повторенню помилки у майбутньому? 
-        3. Якщо це системний баг (наприклад, помилкова логіка шляхів, відсутня залежність), наполягайте, щоб Vibe виправив корінь проблеми в системних шаблонах або коді, а не просто локально.
+        YOUR ROLE:
+        1. Set the "TEMPO" for the system. Should we proceed with the fix, ask for an alternative, or pivot?
+        2. Evaluate the "PREVENTION_MEASURE". Does this fix prevent the error from happening again? 
+        3. If it's a systemic bug (e.g. wrong path logic, missing dependency), insist that Vibe fixes the root cause in the system templates or code, not just the local instance.
         
-        Відповідайте СУВОРО в форматі JSON:
+        Respond STRICTLY in JSON:
         {{
-            "decision": "PROCEED", "REQUEST_ALTERNATIVE" або "PIVOT",
-            "reason": "Стратегічне обґрунтування вашого рішення УКРАЇНСЬКОЮ мовою",
-            "instructions_for_vibe": "Покрокові директиви для Vibe щодо виконання виправлення ТА превентивного заходу",
-            "voice_message": "Обов'язкове повідомлення українською мовою. Поясніть причину та те, як ми виправляємо її НАЗАВЖДИ."
+            "decision": "PROCEED" or "REQUEST_ALTERNATIVE" or "PIVOT",
+            "reason": "Strategic explanation focusing on system resilience in UKRAINIAN",
+            "instructions_for_vibe": "Step-by-step directives for Vibe in English",
+            "voice_message": "Mandatory Ukrainian message. Explain the root cause and how we are fixing it PERMANENTLY."
         }}
         """
 
@@ -690,25 +690,30 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
             else "No previous attempts."
         )
 
-        return f"""ЗАВДАННЯ САМОВІДНОВЛЕННЯ ДЛЯ ATLASTRINITY
+        return f"""SELF-HEALING TASK FOR ATLASTRINITY
 
-## ЗВІТ ПРО ПРОБЛЕМУ
-### Що сталося
-Помилка: {error}
-Дія кроку: {step_context.get("action", "Невідомо")}
-Очікуваний результат: {step_context.get("expected_result", "Невідомо")}
-Фактично проти Очікувано: {expected_vs_actual}
+## PROBLEM REPORT
+### What Happened
+Error: {error}
+Step Action: {step_context.get("action", "Unknown")}
+Expected Result: {step_context.get("expected_result", "Unknown")}
+Actual vs Expected: {expected_vs_actual}
 
-### Минулі спроби
+### Past Attempts
 {history_formatted}
 
-## ІНСТРУКЦІЇ
-1. ПРОАНАЛІЗУЙТЕ корінь проблеми з доказами з логів/файлів.
-2. ПОЯСНІТЬ конкретно, чому попередній підхід (якщо він був) не вдався.
-3. ЗАПРОПОНУЙТЕ виправлення з чітким технічним обґрунтуванням.
-4. ВПРОВАДЬТЕ виправлення, використовуючи ваші можливості архітектора.
-5. ВЕРИФІКУЙТЕ, що виправлення усуває конкретну ідентифіковану проблему.
-6. ВІДЗВІТУЙТЕ зі структурованим результатом: КОРЕНЕВА ПРИЧИНА (ROOT_CAUSE), ВИКОНАНЕ ВИПРАВЛЕННЯ (FIX_APPLIED), ВЕРИФІКАЦІЯ (VERIFICATION) та ПРЕВЕНТИВНИЙ ЗАХІД (PREVENTION_MEASURE).
+## INSTRUCTIONS
+1. ANALYZE the root cause with evidence from logs/files.
+2. EXPLAIN specifically why the previous approach (if any) failed.
+3. PROPOSE a fix with clear technical rationale.
+4. IMPLEMENT the fix using your architect capabilities.
+5. VERIFY the fix resolves the specific issue identified.
+6. REPORT back with a structured result in English, but the summary must be in UKRAINIAN.
 
-Ваша мета — відновити цілісність системи та просунутися до мети користувача.
+Required Fields:
+- **ROOT_CAUSE**: ...
+- **FIX_APPLIED**: ...
+- **PREVENTION_MEASURE**: ...
+- **VERIFICATION**: ...
+- **SUMMARY_UKRAINIAN**: Detailed explanation for the user in Ukrainian language.
 """

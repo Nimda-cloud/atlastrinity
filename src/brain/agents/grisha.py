@@ -177,33 +177,33 @@ class Grisha(BaseAgent):
         else:
             result_str = str(result)[:2000]
 
-        reasoning_query = f"""ГЛИБОКИЙ АНАЛІЗ ВАЛІДАЦІЇ (Багаторівневий)
+        reasoning_query = f"""DEEP MULTI-LAYER VALIDATION ANALYSIS
+        
+STEP ACTION: {step_action}
+EXPECTED RESULT: {expected}
+ACTUAL RESULT: {result_str}
+GLOBAL GOAL: {goal_context}
 
-ДІЯ КРОКУ: {step_action}
-ОЧІКУВАНИЙ РЕЗУЛЬТАТ: {expected}
-ФАКТИЧНИЙ РЕЗУЛЬТАТ: {result_str}
-ЗАГАЛЬНА МЕТА: {goal_context}
+Perform a 4-LAYER validation analysis:
 
-Проведи 4-РІВНЕВИЙ аналіз валідації:
+LAYER 1 - TECHNICAL PRECISION:
+- Did the tool execute correctly?
+- Are there any error indicators in the output?
+- Does the output format match expectations?
 
-РІВЕНЬ 1 - ТЕХНІЧНА ТОЧНІСТЬ:
-- Чи правильно спрацював інструмент?
-- Чи є в результаті індикатори помилок?
-- Чи відповідає формат виводу очікуванням?
+LAYER 2 - SEMANTIC CORRECTNESS:
+- Does the result semantically match the expected outcome?
+- Are there any hidden failures (empty data, partial results)?
 
-РІВЕНЬ 2 - СЕМАНТИЧНА КОРЕКТНІСТЬ:
-- Чи семантично відповідає результат очікуваному наслідку?
-- Чи є приховані провали (порожні дані, часткові результати)?
+LAYER 3 - GOAL ALIGNMENT:
+- Does this result advance the global goal?
+- Are there side effects that might hinder future steps?
 
-РІВЕНЬ 3 - ВІДПОВІДНІСТЬ МЕТІ:
-- Чи просуває цей результат виконання загальної мети?
-- Чи є побічні ефекти, що можуть зашкодити наступним крокам?
+LAYER 4 - SYSTEM STATE INTEGRITY:
+- Did the system state change as expected?
+- Is this change persistent?
 
-РІВЕНЬ 4 - ЦІЛІСНІСТЬ СТАНУ СИСТЕМИ:
-- Чи змінився стан системи так, як очікувалося?
-- Чи є ця зміна стійкою?
-
-Сформуй висновок українською мовою.
+Formulate your conclusion in English for technical accuracy, but ensure the user-facing output is ready for Ukrainian localization.
 """
 
         reasoning = await self.use_sequential_thinking(reasoning_query, total_thoughts=4)
@@ -970,7 +970,7 @@ class Grisha(BaseAgent):
             step_id=step_id,
             verified=verdict.get("verified", False),
             confidence=verdict.get("confidence", 0.0),
-            description=verdict.get("reasoning", "Verification completed"),
+            description=verdict.get("reasoning", "Перевірку завершено"),
             issues=verdict.get("issues", []),
             voice_message=self._generate_voice_message(verdict, step),
         )
@@ -1014,23 +1014,24 @@ class Grisha(BaseAgent):
 
         # Use universal sequential thinking capability
         reasoning = await self.use_sequential_thinking(
-            f"""ГЛИБОКИЙ КРИМІНАЛІСТИЧНИЙ АНАЛІЗ ТЕХНІЧНОГО ПРОВАЛУ:
+            f"""DEEP FORENSIC ANALYSIS OF TECHNICAL FAILURE:
 
-КРОК: {json.dumps(step, default=str)}
-ПОМИЛКА: {error}
-КОНТЕКСТ: {str(context_data)[:1000]}
+STEP: {json.dumps(step, default=str)}
+ERROR: {error}
+CONTEXT: {str(context_data)[:1000]}
 
-ЗАВДАННЯ:
-1. **КЛАСИФІКАЦІЯ**: Визнач, чи це проблема ЗАВДАННЯ (дані користувача, зовнішні файли) чи СИСТЕМНА помилка AtlasTrinity (баг у коді, конфігурації, шляхах).
-2. **КОРЕНЕВА ПРИЧИНА (Root Cause)**: Чому це сталося насправді? Не просто опис помилки, а логічний ланцюжок.
-3. **ТЕХНІЧНА ПОРАДА**: Що Тетяна чи Vibe мають зробити прямо зараз, щоб виправити це?
-4. **СТРАТЕГІЯ ЗАПОБІГАННЯ**: Як змінити систему (короткотерміново чи довготерміново), щоб ця проблема НЕ ПОВТОРИЛАСЯ?
+TASKS:
+1. **CLASSIFICATION**: Determine if this is a TASK problem (user data, external files) or a SYSTEM error (bug in code, configuration, paths).
+2. **ROOT CAUSE**: Why did this happen? Provide a logical chain of evidence.
+3. **RECOVERY ADVICE**: What should Tetyana or Vibe do right now to fix this?
+4. **PREVENTION STRATEGY**: How to adjust the system long-term to prevent recurrence?
 
-Надішли звіт українською мовою у форматі:
-- **ТИП**: (Системна / Завдання)
-- **КОРЕНЕВА ПРИЧИНА**: ...
-- **ПОРАДА ДЛЯ ВИПРАВЛЕННЯ**: ...
-- **ПРЕВЕНТИВНІ ЗАХОДИ**: (Що змінити в собі, щоб не повторювати)""",
+Provide report in the following format:
+- **TYPE**: (System / Task)
+- **ROOT CAUSE**: ...
+- **FIX ADVICE**: ...
+- **PREVENTION**: ...
+- **SUMMARY_UKRAINIAN**: (Detailed explanation for the user in Ukrainian language)""",
             total_thoughts=3,
         )
 
@@ -1043,10 +1044,11 @@ class Grisha(BaseAgent):
             match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
             return match.group(1).strip() if match else default
 
-        error_type = extract_field(r"\*\*ТИП\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Невідомо")
-        root_cause = extract_field(r"\*\*КОРЕНЕВА ПРИЧИНА\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Потрібен глибокий аналіз")
-        technical_advice = extract_field(r"\*\*ПОРАДА ДЛЯ ВИПРАВЛЕННЯ\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Дотримуйтесь стандартних протоколів")
-        prevention = extract_field(r"\*\*ПРЕВЕНТИВНІ ЗАХОДИ\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Аналіз превенції триває")
+        error_type = extract_field(r"\*\*TYPE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Unknown")
+        root_cause = extract_field(r"\*\*ROOT CAUSE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Investigation required")
+        technical_advice = extract_field(r"\*\*FIX ADVICE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Follow standard recovery procedures")
+        prevention = extract_field(r"\*\*PREVENTION\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Continuity analysis ongoing")
+        summary_uk = extract_field(r"\*\*SUMMARY_UKRAINIAN\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Аналіз провалу завершено. Потрібне виправлення.")
 
         return {
             "step_id": step_id,
@@ -1058,7 +1060,7 @@ class Grisha(BaseAgent):
                 "full_reasoning": analysis_text,
             },
             "feedback_text": f"GRISHA FORENSIC REPORT:\n{analysis_text}",
-            "voice_message": f"Я провів криміналістичний аналіз. Тип помилки: {error_type}. Коренева причина: {root_cause[:100]}...",
+            "voice_message": summary_uk,
         }
 
     async def _save_rejection_report(
@@ -1602,7 +1604,7 @@ class Grisha(BaseAgent):
             logger.error(f"[GRISHA] Vibe audit failed: {e}")
             return {
                 "audit_verdict": "REJECT",
-                "reasoning": f"Audit failed due to technical error: {e!s}",
+                "reasoning": f"Аудит не вдався через технічну помилку: {e!s}",
                 "voice_message": "Я не зміг перевірити запропоноване виправлення через технічну помилку.",
             }
 
