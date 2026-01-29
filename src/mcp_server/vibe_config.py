@@ -6,8 +6,9 @@ Supports providers, models, agents, tool permissions, and MCP integration.
 Based on official Mistral Vibe documentation:
 https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
+
 Author: AtlasTrinity Team
-Date: 2026-01-20
+Date: 2026-01-29
 """
 
 from __future__ import annotations
@@ -426,47 +427,52 @@ class VibeConfig(BaseModel):
                 for k, v in data["tools"].items()
             }
 
-        # Variable substitution helper
-        def _substitute(text: str) -> str:
-            if not isinstance(text, str):
-                return text
-            
-            # Project Root
-            if "${PROJECT_ROOT}" in text:
-                try:
-                    from src.brain.config import PROJECT_ROOT
-                    text = text.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
-                except ImportError:
-                    cwd = Path.cwd()
-                    if (cwd / "src").exists():
-                            text = text.replace("${PROJECT_ROOT}", str(cwd))
-            
-            # Home
-            if "${HOME}" in text:
-                text = text.replace("${HOME}", str(Path.home()))
-                
-            # Config Root
-            if "${CONFIG_ROOT}" in text:
-                text = text.replace("${CONFIG_ROOT}", str(Path.home() / ".config" / "atlastrinity"))
-                
-            return text
-
         # Apply substitution to path fields
         path_fields = ["vibe_home", "agents_dir", "prompts_dir", "workspace"]
         for field in path_fields:
             if field in data and isinstance(data[field], str):
-                data[field] = _substitute(data[field])
+                data[field] = cls.expand_vars(data[field])
 
         if "mcp_servers" in data:
             for server in data["mcp_servers"]:
                 if "command" in server:
-                    server["command"] = _substitute(server["command"])
+                    server["command"] = cls.expand_vars(server["command"])
                 if "args" in server and isinstance(server["args"], list):
-                    server["args"] = [_substitute(arg) for arg in server["args"]]
+                    server["args"] = [cls.expand_vars(arg) for arg in server["args"]]
 
             data["mcp_servers"] = [McpServerConfig(**s) for s in data["mcp_servers"]]
 
         return cls(**data)
+
+    @staticmethod
+    def expand_vars(text: str) -> str:
+        """Substitute ${VAR} placeholders in strings."""
+        if not isinstance(text, str):
+            return text
+
+        # Resolve PROJECT_ROOT robustly (since we are in src/mcp_server)
+        project_root = Path(__file__).parent.parent.parent
+
+        # 1. Standard placeholders
+        replacements = {
+            "${PROJECT_ROOT}": str(project_root),
+            "${HOME}": str(Path.home()),
+            "${CONFIG_ROOT}": str(Path.home() / ".config" / "atlastrinity"),
+        }
+
+        for key, val in replacements.items():
+            if key in text:
+                text = text.replace(key, val)
+        
+        # 2. Environment variables fallback
+        # Find all ${VAR} patterns that weren't replaced
+        for match in re.finditer(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}", text):
+            var_name = match.group(1)
+            # Only replace if we have it in env
+            if var_name in os.environ:
+                text = text.replace(f"${{{var_name}}}", os.environ[var_name])
+
+        return text
 
     def to_cli_args(
         self,

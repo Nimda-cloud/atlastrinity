@@ -47,13 +47,33 @@ from .vibe_config import (
 # SETUP: Logging, Configuration, Constants
 # =============================================================================
 
+# ANSI escape code pattern for stripping colors
+ANSI_ESCAPE: Pattern = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+# Default config root (fallback if config_loader fails)
+DEFAULT_CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
+
+# TUI artifacts to filter out from logs
+SPAM_TRIGGERS = [
+    "Welcome to",
+    "│",
+    "╭",
+    "╮",
+    "╰",
+    "─",
+    "──",
+    "[2K",
+    "[1A",
+    "Press Enter",
+    "↵",
+]
+
 logger = logging.getLogger("vibe_mcp")
 logger.setLevel(logging.DEBUG)
 
 # Setup file and stream handlers
 try:
-    config_root = Path.home() / ".config" / "atlastrinity"
-    log_dir = config_root / "logs"
+    log_dir = DEFAULT_CONFIG_ROOT / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # File handler
@@ -79,7 +99,8 @@ try:
     from .config_loader import CONFIG_ROOT, PROJECT_ROOT, get_config_value
 
     VIBE_BINARY = get_config_value("mcp.vibe", "binary", "vibe")
-    DEFAULT_TIMEOUT_S = float(get_config_value("mcp.vibe", "timeout_s", 600))
+    # Timeout is now controlled by vibe_config.toml (eff_timeout logic)
+    DEFAULT_TIMEOUT_S = 600.0
     MAX_OUTPUT_CHARS = int(get_config_value("mcp.vibe", "max_output_chars", 500000))
     VIBE_WORKSPACE = get_config_value("mcp.vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
     VIBE_CONFIG_FILE = get_config_value("mcp.vibe", "config_file", None)
@@ -114,8 +135,6 @@ DATABASE_URL = get_config_value(
     f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
 )
 
-# ANSI escape code pattern for stripping colors
-ANSI_ESCAPE: Pattern = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 # Allowed subcommands (CLI-only, no TUI)
 ALLOWED_SUBCOMMANDS = {
@@ -189,6 +208,51 @@ def get_vibe_config() -> VibeConfig:
     return _vibe_config
 
 
+def sync_vibe_configuration() -> None:
+    """Sync active vibe_config.toml to VIBE_HOME/config.toml."""
+    try:
+        # Load config to resolve paths
+        config = get_vibe_config()
+        
+        # Determine VIBE_HOME from config or env
+        vibe_home = Path(config.vibe_home) if config.vibe_home else Path(os.getenv("VIBE_HOME", str(Path.home() / ".vibe")))
+        vibe_home_config = vibe_home / "config.toml"
+        
+        # Determine Source Config (the one we are loading)
+        source_config_path = Path(VIBE_CONFIG_FILE) if VIBE_CONFIG_FILE else DEFAULT_CONFIG_ROOT / "vibe_config.toml"
+        
+        if not source_config_path.exists():
+            logger.warning(f"Source config not found at {source_config_path}, skipping sync")
+            return
+            
+        # Ensure VIBE_HOME and subdirectories exist
+        vibe_home.mkdir(parents=True, exist_ok=True)
+        (vibe_home / "prompts").mkdir(exist_ok=True)
+        (vibe_home / "agents").mkdir(exist_ok=True)
+        
+        # Check if sync is needed
+        should_sync = False
+        if not vibe_home_config.exists():
+            should_sync = True
+            logger.info("VIBE_HOME config missing, will create")
+        else:
+            # Simple size/mtime check or content hash could go here
+            # For now, we trust the source is authoritative if modified recently
+            try:
+                if source_config_path.stat().st_mtime > vibe_home_config.stat().st_mtime:
+                    should_sync = True
+                    logger.info("Source config is newer, syncing...")
+            except OSError:
+                should_sync = True
+
+        if should_sync:
+            shutil.copy2(source_config_path, vibe_home_config)
+            logger.info(f"Synced Vibe config to: {vibe_home_config}")
+            
+    except Exception as e:
+        logger.error(f"Failed to sync Vibe configuration: {e}")
+
+
 def reload_vibe_config() -> VibeConfig:
     """Force reload the Vibe configuration."""
     global _vibe_config
@@ -208,6 +272,9 @@ logger.info(
     f"Workspace: {VIBE_WORKSPACE} | "
     f"Timeout: {DEFAULT_TIMEOUT_S}s",
 )
+
+# Perform startup sync
+sync_vibe_configuration()
 
 
 # =============================================================================
@@ -428,20 +495,7 @@ async def run_vibe_subprocess(
                             pass
 
                         # Regular log line - filter out TUI spam
-                        spam_triggers = [
-                            "Welcome to",
-                            "│",
-                            "╭",
-                            "╮",
-                            "╰",
-                            "─",
-                            "──",
-                            "[2K",
-                            "[1A",
-                            "Press Enter",
-                            "↵",
-                        ]
-                        if any(t in line for t in spam_triggers):
+                        if any(t in line for t in SPAM_TRIGGERS):
                             return
 
                         # Живий стрім для UI
