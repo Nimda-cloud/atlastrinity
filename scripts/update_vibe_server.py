@@ -10,15 +10,15 @@ from datetime import datetime
 
 def update_vibe_server():
     """Update Vibe server with SQL fixes"""
-    
+
     # Create a backup of the current vibe_server.py
     vibe_server_path = "/Users/hawk/Documents/GitHub/atlastrinity/src/mcp_server/vibe_server.py"
     backup_path = f"{vibe_server_path}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
+
     if os.path.exists(vibe_server_path):
         shutil.copy2(vibe_server_path, backup_path)
         print(f"✅ Backup created: {backup_path}")
-    
+
     # Add SQL validation function to vibe_server.py
     sql_validation_code = '''
 def validate_union_all_query(query: str) -> str:
@@ -73,12 +73,12 @@ def validate_union_all_query(query: str) -> str:
     return query
 
 '''
-    
+
     # Read the current vibe_server.py
     try:
         with open(vibe_server_path) as f:
             content = f.read()
-        
+
         # Check if validation function already exists
         if "def validate_union_all_query" not in content:
             # Add the validation function after imports
@@ -86,26 +86,27 @@ def validate_union_all_query(query: str) -> str:
             if import_end != -1:
                 insert_pos = content.find("\n", import_end) + 1
                 content = content[:insert_pos] + sql_validation_code + "\n" + content[insert_pos:]
-                
+
                 # Write the updated content
-                with open(vibe_server_path, 'w') as f:
+                with open(vibe_server_path, "w") as f:
                     f.write(content)
-                
+
                 print("✅ SQL validation function added to vibe_server.py")
             else:
                 print("❌ Could not find import section in vibe_server.py")
         else:
             print("✅ SQL validation function already exists")
-            
+
     except Exception as e:
         print(f"❌ Failed to update vibe_server.py: {e}")
         return False
-    
+
     return True
+
 
 def create_vibe_readme():
     """Create README for Vibe SQL fixes"""
-    
+
     readme_content = """# Vibe Server SQL Fixes
 
 ## Problem
@@ -130,16 +131,17 @@ Run the test script to verify fixes:
 python3 scripts/fix_vibe_sql.py
 ```
 """
-    
+
     readme_path = "/Users/hawk/Documents/GitHub/atlastrinity/docs/vibe_sql_fixes.md"
-    with open(readme_path, 'w') as f:
+    with open(readme_path, "w") as f:
         f.write(readme_content)
-    
+
     print(f"✅ Vibe SQL fixes README created: {readme_path}")
+
 
 if __name__ == "__main__":
     print("🔧 Updating Vibe server with SQL fixes...")
-    
+
     if update_vibe_server():
         create_vibe_readme()
         print("🎉 Vibe server updated successfully!")

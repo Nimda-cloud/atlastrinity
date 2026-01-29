@@ -12,7 +12,7 @@ from brain.tool_dispatcher import ToolDispatcher
 
 async def benchmark():
     print("🚀 Starting Atlas Benchmark...")
-    
+
     # 1. Test macOS Tool (Standard Execution)
     print("\n[TEST 1] macOS System Time...")
     res = await mcp_manager.call_tool("macos-use", "macos-use_get_time")
@@ -39,23 +39,31 @@ async def benchmark():
 
     # 4. Test Sequential Thinking - FIXED ARGS
     print("\n[TEST 4] Sequential Thinking (Logic chain)...")
-    res = await mcp_manager.call_tool('sequential-thinking', 'sequentialthinking', {
-        "thought": "I need to verify that the model is correctly processing tool schemas.",
-        "thoughtNumber": 1,
-        "totalThoughts": 2,
-        "nextThoughtNeeded": True
-    })
+    res = await mcp_manager.call_tool(
+        "sequential-thinking",
+        "sequentialthinking",
+        {
+            "thought": "I need to verify that the model is correctly processing tool schemas.",
+            "thoughtNumber": 1,
+            "totalThoughts": 2,
+            "nextThoughtNeeded": True,
+        },
+    )
     print(f"Result: {res}")
 
     # 5. Agent Coordination (The Strength Test)
     print("\n[TEST 5] Complex Coordination (Search + Note)...")
     # Simulate a coordinated task: Find something and write it down.
     # We'll use the already verified tools to simulate the process.
-    await mcp_manager.call_tool('filesystem', 'read_file', {"path": f"{PROJECT_ROOT}/package.json"})
-    note_res = await mcp_manager.call_tool('macos-use', 'macos-use_send_notification', {
-        "title": "Benchmark Success",
-        "message": f"Model handled tool coordination perfectly at {__import__('datetime').datetime.now()}"
-    })
+    await mcp_manager.call_tool("filesystem", "read_file", {"path": f"{PROJECT_ROOT}/package.json"})
+    note_res = await mcp_manager.call_tool(
+        "macos-use",
+        "macos-use_send_notification",
+        {
+            "title": "Benchmark Success",
+            "message": f"Model handled tool coordination perfectly at {__import__('datetime').datetime.now()}",
+        },
+    )
     print(f"Coordination Result: {note_res}")
 
     print("\n✅ Benchmark Complete!")

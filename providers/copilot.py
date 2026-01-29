@@ -445,7 +445,7 @@ class CopilotLLM(BaseChatModel):
                             )
                     except:
                         pass
-                    
+
                     print("[COPILOT] Attempting fallback to configured model...", flush=True)
 
                     # Use a fallback model from environment or default to a config value
@@ -502,7 +502,7 @@ class CopilotLLM(BaseChatModel):
                                 flush=True,
                             )
                         retry_response.raise_for_status()
-                        
+
                         print("[COPILOT] Fallback successful with configured model", flush=True)
                         return self._process_json_result(retry_response.json(), messages)
                     except Exception as fallback_error:
@@ -619,7 +619,7 @@ class CopilotLLM(BaseChatModel):
                         print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
                 except:
                     pass
-                
+
                 print("[COPILOT] Retrying with configured model...", flush=True)
                 # Retry without vision header AND remove image content from payload
                 try:

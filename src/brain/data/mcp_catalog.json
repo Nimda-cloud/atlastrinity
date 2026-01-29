@@ -376,7 +376,7 @@
     ],
     "key_tools": [
       "postgres_query",
-      "postgres_execute", 
+      "postgres_execute",
       "postgres_schema_alter",
       "postgres_list_tables",
       "postgres_describe_table",

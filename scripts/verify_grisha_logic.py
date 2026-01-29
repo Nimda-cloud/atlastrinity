@@ -16,7 +16,7 @@ async def test_strategy_planning():
     print("  Phase 2: Tool execution via MCP")
     print("  Phase 3: _form_logical_verdict (verdict formation)")
     print("\n[INFO] To test Grisha, use the full verify_step() method instead.")
-    
+
     # Original test code commented out - method no longer exists
     # context = {"cwd": os.path.expanduser("~"), "os": "macOS"}
     # task_action = "Remove the application Rectangle.app from /Applications"

@@ -289,19 +289,16 @@ class ToolDispatcher:
         # Direct mappings for behavior engine
         "macos-use_get_clipboard": "macos-use_get_clipboard",
         "macos-use_set_clipboard": "macos-use_set_clipboard",
-        # Screenshot tools (note: no analyze_screen tool exists)
+        "macos-use_analyze_screen": "macos-use_analyze_screen",
+        # Screenshot tools
         "take_screenshot": "macos-use_take_screenshot",
-        "screenshot": "macos-use_take_screenshot",
         # Browser automation
         "launch_browser": "puppeteer_navigate",
         "open_browser": "puppeteer_navigate",
         "browser_navigate": "puppeteer_navigate",
         "navigate": "puppeteer_navigate",
         # Vision/OCR tools
-        "macos-use_analyze_screen": "macos-use_analyze_screen",
         "analyze_screen": "macos-use_analyze_screen",
-        "ocr": "macos-use_analyze_screen",
-        "vision": "macos-use_analyze_screen",
         # System monitoring tools
         "list_running_apps": "macos-use_list_running_apps",
         "running_apps": "macos-use_list_running_apps",

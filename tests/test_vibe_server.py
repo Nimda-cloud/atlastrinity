@@ -158,7 +158,9 @@ class TestVibeConfig:
 
         config = VibeConfig(
             models=[
-                ModelConfig(name="model-placeholder", provider="openrouter", alias="gpt4", temperature=0.3),
+                ModelConfig(
+                    name="model-placeholder", provider="openrouter", alias="gpt4", temperature=0.3
+                ),
             ],
         )
 
