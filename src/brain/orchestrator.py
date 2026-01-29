@@ -1731,10 +1731,9 @@ class Trinity:
                                     result=f"Grisha відхилив виправлення Vibe {rejection_count} разів. Виявлено: {grisha_audit.get('reasoning', 'Unknown')}",
                                 )
                                 break  # Exit retry loop
-                        else:
+                        elif hasattr(self, '_rejection_cycles') and step_id in self._rejection_cycles:
                             # Reset counter on approval
-                            if hasattr(self, '_rejection_cycles') and step_id in self._rejection_cycles:
-                                del self._rejection_cycles[step_id]
+                            del self._rejection_cycles[step_id]
                         
                         healing_decision = await self.atlas.evaluate_healing_strategy(
                             str(last_error),

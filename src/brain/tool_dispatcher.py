@@ -974,7 +974,7 @@ class ToolDispatcher:
             return self._handle_terminal(tool_name, args)
         if explicit_server == "vibe":
             return self._handle_vibe(tool_name, args)
-        if explicit_server == "puppeteer" or explicit_server == "browser":
+        if explicit_server in {"puppeteer", "browser"}:
             return self._handle_browser(tool_name, args)
 
         # --- NOTES ROUTING (Redirect to macos-use) ---
