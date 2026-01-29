@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 """Standalone script to verify database tables and counts during setup"""
 
 import asyncio
 import sys
+import os
 from pathlib import Path
 
 # Add src to path
@@ -12,10 +13,12 @@ from sqlalchemy import func, select
 
 from src.brain.db.manager import db_manager
 from src.brain.db.schema import Base
+from src.brain.config import Config
 
 
 async def verify_database_tables():
     """Detailed verification of database tables and counts"""
+    print("\n[DB CHECK] Verifying SQL Tables...")
     try:
         await db_manager.initialize()
 
@@ -27,17 +30,77 @@ async def verify_database_tables():
                     stmt = select(func.count()).select_from(table)
                     res = await session.execute(stmt)
                     count = res.scalar()
-                    print(f"[DB] Table '{table_name}': {count} records")
+                    print(f"[DB]   - Table '{table_name}': {count} records")
                 except Exception as e:
                     print(f"[DB] WARNING: Could not verify table '{table_name}': {e}")
 
         await db_manager.close()
-        return True
     except Exception as e:
         print(f"[DB] ERROR during table verification: {e}")
         return False
+    return True
 
+async def verify_redis():
+    """Simple Redis ping check using redis-py"""
+    print("\n[DB CHECK] Verifying Redis...")
+    try:
+        import redis.asyncio as redis
+        # Default fallback if env not set, though Config should handle it
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        if await client.ping():
+            print("[DB]   - Redis PING: PONG (Connection Successful)")
+        else:
+            print("[DB]   - Redis PING Failed")
+        await client.aclose()
+        return True
+    except ImportError:
+        print("[DB] WARNING: redis-py not installed. Skipping check.")
+    except Exception as e:
+        print(f"[DB] Redis Error: {e}")
+        # Not blocking setup usually, but good to know
+        return True 
+
+async def verify_chromadb():
+    """Verify ChromaDB client initialization and collection listing"""
+    print("\n[DB CHECK] Verifying ChromaDB (Vector Store)...")
+    try:
+        import chromadb
+        from chromadb.config import Settings
+        
+        # Determine path from config or default
+        # Assuming typical path: ~/.config/atlastrinity/memory
+        db_path = Path.home() / ".config" / "atlastrinity" / "memory" / "chroma"
+        if not db_path.exists():
+             print(f"[DB]   - ChromaDB path {db_path} does not exist yet (Normal for fresh install).")
+             return True
+             
+        # Just try to instantiate client
+        client = chromadb.PersistentClient(path=str(db_path))
+        collections = client.list_collections()
+        print(f"[DB]   - ChromaDB Client Initialized")
+        print(f"[DB]   - Collections found: {len(collections)}")
+        for col in collections:
+            print(f"[DB]     * {col.name} (count: {col.count()})")
+            
+        return True
+    except ImportError:
+        print("[DB] WARNING: chromadb not installed. Skipping check.")
+    except Exception as e:
+        print(f"[DB] ChromaDB Error: {e}")
+        return False
+    return True
+
+async def main_check():
+    sql_ok = await verify_database_tables()
+    redis_ok = await verify_redis()
+    chroma_ok = verify_chromadb() # Sync function usually for chroma client init, but wrapped if needed. 
+    # Actually client.list_collections might be blocking IO but acceptable for setup script
+    if asyncio.iscoroutine(chroma_ok):
+        chroma_ok = await chroma_ok
+        
+    return sql_ok and redis_ok and chroma_ok
 
 if __name__ == "__main__":
-    if not asyncio.run(verify_database_tables()):
+    if not asyncio.run(main_check()):
         sys.exit(1)
