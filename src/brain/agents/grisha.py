@@ -1016,33 +1016,51 @@ Output structured analysis."""
 
         # Use universal sequential thinking capability
         reasoning = await self.use_sequential_thinking(
-            f"Forensic analysis of technical failure.\nSTEP: {json.dumps(step, default=str)}\nERROR: {error}\nCONTEXT: {str(context_data)[:500]}\n\nTask: Identify ROOT CAUSE and provide specific TECHNICAL ADVICE for the fix.",
+            f"""ГЛИБОКИЙ КРИМІНАЛІСТИЧНИЙ АНАЛІЗ ТЕХНІЧНОГО ПРОВАЛУ:
+
+КРОК: {json.dumps(step, default=str)}
+ПОМИЛКА: {error}
+КОНТЕКСТ: {str(context_data)[:1000]}
+
+ЗАВДАННЯ:
+1. **КЛАСИФІКАЦІЯ**: Визнач, чи це проблема ЗАВДАННЯ (дані користувача, зовнішні файли) чи СИСТЕМНА помилка AtlasTrinity (баг у коді, конфігурації, шляхах).
+2. **КОРЕНЕВА ПРИЧИНА (Root Cause)**: Чому це сталося насправді? Не просто опис помилки, а логічний ланцюжок.
+3. **ТЕХНІЧНА ПОРАДА**: Що Тетяна чи Vibe мають зробити прямо зараз, щоб виправити це?
+4. **СТРАТЕГІЯ ЗАПОБІГАННЯ**: Як змінити систему (короткотерміново чи довготерміново), щоб ця проблема НЕ ПОВТОРИЛАСЯ?
+
+Надішли звіт українською мовою у форматі:
+- **ТИП**: (Системна / Завдання)
+- **КОРЕНЕВА ПРИЧИНА**: ...
+- **ПОРАДА ДЛЯ ВИПРАВЛЕННЯ**: ...
+- **ПРЕВЕНТИВНІ ЗАХОДИ**: (Що змінити в собі, щоб не повторювати)""",
             total_thoughts=3,
         )
 
         analysis_text = reasoning.get("analysis", "Deep analysis unavailable.")
 
-        # Try to extract a structured summary if possible (heuristic)
-        root_cause = "Complex failure (see details)"
-        technical_advice = "Review thinking process"
+        # Enhanced extraction for Ukrainian fields
+        import re
+        
+        def extract_field(pattern, text, default):
+            match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+            return match.group(1).strip() if match else default
 
-        if "root cause" in analysis_text.lower():
-            try:
-                parts = analysis_text.lower().split("root cause")
-                if len(parts) > 1:
-                    root_cause = parts[1].split("\n")[0].strip(": -")
-            except:
-                pass
+        error_type = extract_field(r"\*\*ТИП\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Невідомо")
+        root_cause = extract_field(r"\*\*КОРЕНЕВА ПРИЧИНА\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Потрібен глибокий аналіз")
+        technical_advice = extract_field(r"\*\*ПОРАДА ДЛЯ ВИПРАВЛЕННЯ\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Дотримуйтесь стандартних протоколів")
+        prevention = extract_field(r"\*\*ПРЕВЕНТИВНІ ЗАХОДИ\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Аналіз превенції триває")
 
         return {
             "step_id": step_id,
             "analysis": {
+                "type": error_type,
                 "root_cause": root_cause,
                 "technical_advice": technical_advice,
+                "prevention_strategy": prevention,
                 "full_reasoning": analysis_text,
             },
             "feedback_text": f"GRISHA FORENSIC REPORT:\n{analysis_text}",
-            "voice_message": "Я провів глибокий аналіз інциденту. Результати в звіті.",
+            "voice_message": f"Я провів криміналістичний аналіз. Тип помилки: {error_type}. Коренева причина: {root_cause[:100]}...",
         }
 
     async def _save_rejection_report(

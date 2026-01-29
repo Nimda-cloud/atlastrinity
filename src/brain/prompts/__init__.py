@@ -670,14 +670,16 @@ Output your internal verification strategy in English. Do NOT use markdown forma
         
         YOUR ROLE:
         1. Set the "TEMPO" for the system. Should we proceed with the fix, ask for an alternative, or pivot?
-        2. Ensure the fix aligns with the overall global goal and doesn't introduce technical debt.
+        2. Evaluate the "PREVENTION_MEASURE". Does this fix prevent the error from happening again? 
+        3. If it's a systemic bug (e.g. wrong path logic, missing dependency), insist that Vibe fixes the root cause in the system templates or code, not just the local instance.
+        4. Ensure the fix aligns with the overall global goal and builds system resilience.
         
         Respond STRICTLY in JSON:
         {{
             "decision": "PROCEED" or "REQUEST_ALTERNATIVE" or "PIVOT",
-            "reason": "Strategic explanation of your decision in English",
-            "instructions_for_vibe": "Specific directives for Vibe to execute the fix step-by-step",
-            "voice_message": "Mandatory Ukrainian message for the user. Set the tempo. Explain WHAT we found and HOW we are fixing it (Professional and authoritative)."
+            "reason": "Strategic explanation focusing on system resilience and goal alignment in English",
+            "instructions_for_vibe": "Step-by-step directives for Vibe to execute the fix AND the preventative measure (e.g., 'Update config template', 'Fix utility logic')",
+            "voice_message": "Mandatory Ukrainian message. Explain the root cause and how we are fixing it PERMANENTLY so it doesn't happen again."
         }}
         """
 
