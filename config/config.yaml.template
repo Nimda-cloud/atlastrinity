@@ -105,6 +105,7 @@ mcp:
     deny_write_paths: []
     allowed_paths:
       - ${HOME}
+      - ${PROJECT_ROOT}
       - /tmp
 
   sequential_thinking:
