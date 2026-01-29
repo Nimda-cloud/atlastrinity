@@ -1075,19 +1075,21 @@ func setupAndStartServer() async throws -> Server {
     ])
     let listAppsTool = Tool(
         name: "macos-use_list_running_apps",
-        description: "Returns a list of all currently running applications with their PIDs, bundle IDs, and window information.",
+        description:
+            "Returns a list of all currently running applications with their PIDs, bundle IDs, and window information.",
         inputSchema: listAppsSchema
     )
 
     // *** NEW: List Browser Tabs ***
     let listTabsSchema: Value = .object([
-        "type": .string("object"), 
+        "type": .string("object"),
         "properties": .object([
             "browser": .object([
                 "type": .string("string"),
-                "description": "Browser name (chrome, safari, firefox). If not specified, checks all browsers."
+                "description":
+                    "Browser name (chrome, safari, firefox). If not specified, checks all browsers.",
             ])
-        ])
+        ]),
     ])
     let listTabsTool = Tool(
         name: "macos-use_list_browser_tabs",
@@ -1101,7 +1103,8 @@ func setupAndStartServer() async throws -> Server {
     ])
     let listWindowsTool = Tool(
         name: "macos-use_list_all_windows",
-        description: "Returns a list of all open windows across all applications with titles and positions.",
+        description:
+            "Returns a list of all open windows across all applications with titles and positions.",
         inputSchema: listWindowsSchema
     )
 
@@ -1258,7 +1261,8 @@ func setupAndStartServer() async throws -> Server {
                         content: [.text("Invalid URL: \(urlString)")], isError: true)
                 }
 
-                let (resultText, isError): (String, Bool) = await withCheckedContinuation { continuation in
+                let (resultText, isError): (String, Bool) = await withCheckedContinuation {
+                    continuation in
                     let task = URLSession.shared.dataTask(with: url) { data, response, error in
                         var text = ""
                         var errorFound = false
@@ -1388,7 +1392,8 @@ func setupAndStartServer() async throws -> Server {
                         let predicate = eventStore.predicateForIncompleteReminders(
                             withDueDateStarting: nil, ending: nil, calendars: nil)
                         eventStore.fetchReminders(matching: predicate) { reminders in
-                            let text = reminders?.map { $0.title ?? "No Title" }.joined(separator: "\n")
+                            let text =
+                                reminders?.map { $0.title ?? "No Title" }.joined(separator: "\n")
                                 ?? "No reminders"
                             continuation.resume(returning: text)
                         }
@@ -1626,7 +1631,7 @@ func setupAndStartServer() async throws -> Server {
             case listAppsTool.name:
                 let runningApps = NSWorkspace.shared.runningApplications
                 var appsList: [[String: String]] = []
-                
+
                 for app in runningApps {
                     var appInfo: [String: String] = [:]
                     appInfo["pid"] = String(app.processIdentifier)
@@ -1634,12 +1639,13 @@ func setupAndStartServer() async throws -> Server {
                     appInfo["localizedName"] = app.localizedName ?? "unknown"
                     appInfo["bundleURL"] = app.bundleURL?.path ?? "unknown"
                     appInfo["activationPolicy"] = String(app.activationPolicy.rawValue)
-                    
+
                     appsList.append(appInfo)
                 }
-                
+
                 guard let jsonString = serializeToJsonString(appsList) else {
-                    return .init(content: [.text("Failed to serialize running apps list")], isError: true)
+                    return .init(
+                        content: [.text("Failed to serialize running apps list")], isError: true)
                 }
                 return .init(content: [.text(jsonString)], isError: false)
 
@@ -1647,56 +1653,56 @@ func setupAndStartServer() async throws -> Server {
             case listTabsTool.name:
                 let browser = (params.arguments?["browser"] as? String)?.lowercased()
                 var allTabs: [[String: String]] = []
-                
+
                 // Use AppleScript to get browser tabs
                 let safariScript = """
-                tell application "Safari"
-                    if (count of windows) > 0 then
-                        set tabList to {}
-                        repeat with w in windows
-                            repeat with t in tabs of w
-                                set tabInfo to {title:name of t, url:URL of t}
-                                set end of tabList to tabInfo
+                    tell application "Safari"
+                        if (count of windows) > 0 then
+                            set tabList to {}
+                            repeat with w in windows
+                                repeat with t in tabs of w
+                                    set tabInfo to {title:name of t, url:URL of t}
+                                    set end of tabList to tabInfo
+                                end repeat
                             end repeat
-                        end repeat
-                        return my listToString(tabList)
-                    else
-                        return "No windows open"
-                    end if
-                end tell
-                
-                on listToString(lst)
-                    set AppleScript's text item delimiters to "\\n"
-                    set lstString to lst as string
-                    set AppleScript's text item delimiters to ""
-                    return lstString
-                end listToString
-                """
-                
+                            return my listToString(tabList)
+                        else
+                            return "No windows open"
+                        end if
+                    end tell
+
+                    on listToString(lst)
+                        set AppleScript's text item delimiters to "\\n"
+                        set lstString to lst as string
+                        set AppleScript's text item delimiters to ""
+                        return lstString
+                    end listToString
+                    """
+
                 let chromeScript = """
-                tell application "Google Chrome"
-                    if (count of windows) > 0 then
-                        set tabList to {}
-                        repeat with w in windows
-                            repeat with t in tabs of w
-                                set tabInfo to {title:title of t, url:URL of t}
-                                set end of tabList to tabInfo
+                    tell application "Google Chrome"
+                        if (count of windows) > 0 then
+                            set tabList to {}
+                            repeat with w in windows
+                                repeat with t in tabs of w
+                                    set tabInfo to {title:title of t, url:URL of t}
+                                    set end of tabList to tabInfo
+                                end repeat
                             end repeat
-                        end repeat
-                        return my listToString(tabList)
-                    else
-                        return "No windows open"
-                    end if
-                end tell
-                
-                on listToString(lst)
-                    set AppleScript's text item delimiters to "\\n"
-                    set lstString to lst as string
-                    set AppleScript's text item delimiters to ""
-                    return lstString
-                end listToString
-                """
-                
+                            return my listToString(tabList)
+                        else
+                            return "No windows open"
+                        end if
+                    end tell
+
+                    on listToString(lst)
+                        set AppleScript's text item delimiters to "\\n"
+                        set lstString to lst as string
+                        set AppleScript's text item delimiters to ""
+                        return lstString
+                    end listToString
+                    """
+
                 var scripts: [(String, String)] = []
                 if browser == nil || browser == "safari" {
                     scripts.append(("Safari", safariScript))
@@ -1704,30 +1710,31 @@ func setupAndStartServer() async throws -> Server {
                 if browser == nil || browser == "chrome" {
                     scripts.append(("Chrome", chromeScript))
                 }
-                
+
                 for (browserName, script) in scripts {
                     let task = Process()
                     task.launchPath = "/usr/bin/osascript"
                     task.arguments = ["-e", script]
-                    
+
                     let pipe = Pipe()
                     task.standardOutput = pipe
                     task.launch()
                     task.waitUntilExit()
-                    
+
                     let data = pipe.fileHandleForReading.readDataToEndOfFile()
                     if let output = String(data: data, encoding: .utf8) {
                         if !output.contains("No windows") && !output.contains("Error") {
                             allTabs.append([
                                 "browser": browserName,
-                                "tabs": output
+                                "tabs": output,
                             ])
                         }
                     }
                 }
-                
+
                 guard let jsonString = serializeToJsonString(allTabs) else {
-                    return .init(content: [.text("Failed to serialize browser tabs list")], isError: true)
+                    return .init(
+                        content: [.text("Failed to serialize browser tabs list")], isError: true)
                 }
                 return .init(content: [.text(jsonString)], isError: false)
 
@@ -1735,36 +1742,74 @@ func setupAndStartServer() async throws -> Server {
             case listWindowsTool.name:
                 let windowList = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID)
                 var windows: [[String: String]] = []
-                
+
                 if let windowInfoList = windowList as? [[String: Any]] {
                     for windowInfo in windowInfoList {
                         var window: [String: String] = [:]
-                        
+
                         window["name"] = (windowInfo[kCGWindowName as String] as? String) ?? ""
-                        window["ownerName"] = (windowInfo[kCGWindowOwnerName as String] as? String) ?? ""
-                        window["bounds"] = String(describing: windowInfo[kCGWindowBounds as String] ?? "")
-                        window["layer"] = String(describing: windowInfo[kCGWindowLayer as String] ?? 0)
-                        window["id"] = String(describing: windowInfo[kCGWindowNumber as String] ?? 0)
-                        
+                        window["ownerName"] =
+                            (windowInfo[kCGWindowOwnerName as String] as? String) ?? ""
+                        window["bounds"] = String(
+                            describing: windowInfo[kCGWindowBounds as String] ?? "")
+                        window["layer"] = String(
+                            describing: windowInfo[kCGWindowLayer as String] ?? 0)
+                        window["id"] = String(
+                            describing: windowInfo[kCGWindowNumber as String] ?? 0)
+
                         windows.append(window)
                     }
                 }
-                
+
                 guard let jsonString = serializeToJsonString(windows) else {
-                    return .init(content: [.text("Failed to serialize windows list")], isError: true)
+                    return .init(
+                        content: [.text("Failed to serialize windows list")], isError: true)
                 }
                 return .init(content: [.text(jsonString)], isError: false)
 
             // --- Dynamic Help Handler ---
             case dynamicHelpTool.name:
-                // Manually construct JSON description of allTools
-                // In a perfect world, we'd use Encodable on Tool, but Tool struct is from library
-                // We will build a simple string representation
-                var helpText = "Available Tools:\n"
-                for tool in allTools {
-                    helpText += "- \(tool.name): \(tool.description ?? "No description")\n"
+                // Construct a dictionary representation for JSON serialization
+                let toolsList = allTools.map { tool -> [String: Any] in
+                    var dict: [String: Any] = [
+                        "name": tool.name,
+                        "description": tool.description ?? "",
+                    ]
+
+                    // Manually unwrap the inputSchema Value enum to a Dictionary
+                    if case .object(let properties) = tool.inputSchema {
+                        // This is a simplification; for a full generic Value -> JSON conversion
+                        // we would need a recursive helper.
+                        // For this specific purpose, we know our schemas are .object types with properties.
+                        // We will rely on a custom encoder or simplified manual mapping if deep serialization is tough.
+                        // However, keeping it simple: let's try to map the top-level structure.
+                        // Since `Value` is an enum in the MCP library, we might need a helper to serialize it.
+                        // Fortunately, we have `serializeToJsonString` which uses JSONEncoder.
+                        // But `Tool` isn't Encodable.
+                        // We will rely on re-serializing the Schema Value.
+                    }
+                    return dict
                 }
-                return CallTool.Result(content: [.text(helpText)])  // Simplified for now
+
+                // Better approach: Create a definable struct for JSON output
+                struct ToolDescription: Encodable {
+                    let name: String
+                    let description: String
+                    let inputSchema: Value  // Value is likely Encodable from MCP standard library
+                }
+
+                let validTools = allTools.map {
+                    ToolDescription(
+                        name: $0.name, description: $0.description ?? "",
+                        inputSchema: $0.inputSchema)
+                }
+
+                guard let jsonString = serializeToJsonString(validTools) else {
+                    return CallTool.Result(
+                        content: [.text("Failed to serialize tools list")], isError: true)
+                }
+
+                return CallTool.Result(content: [.text(jsonString)])
 
             // --- End Universal Handlers ---
 
