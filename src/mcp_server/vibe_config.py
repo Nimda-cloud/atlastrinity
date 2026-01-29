@@ -427,6 +427,40 @@ class VibeConfig(BaseModel):
             }
 
         if "mcp_servers" in data:
+            # Variable substitution for MCP args
+            def _substitute(text: str) -> str:
+                if not isinstance(text, str):
+                    return text
+                
+                # Project Root
+                if "${PROJECT_ROOT}" in text:
+                    # Try to resolve project root
+                    try:
+                        from src.brain.config import PROJECT_ROOT
+                        text = text.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+                    except ImportError:
+                        # Fallback to CWD or strict behavior? 
+                        # For now, let's look for marker file or use cwd
+                        cwd = Path.cwd()
+                        if (cwd / "src").exists():
+                             text = text.replace("${PROJECT_ROOT}", str(cwd))
+                
+                # Home
+                if "${HOME}" in text:
+                    text = text.replace("${HOME}", str(Path.home()))
+                    
+                # Config Root
+                if "${CONFIG_ROOT}" in text:
+                    text = text.replace("${CONFIG_ROOT}", str(Path.home() / ".config" / "atlastrinity"))
+                    
+                return text
+
+            for server in data["mcp_servers"]:
+                if "command" in server:
+                    server["command"] = _substitute(server["command"])
+                if "args" in server and isinstance(server["args"], list):
+                    server["args"] = [_substitute(arg) for arg in server["args"]]
+
             data["mcp_servers"] = [McpServerConfig(**s) for s in data["mcp_servers"]]
 
         return cls(**data)
