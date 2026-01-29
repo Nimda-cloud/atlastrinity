@@ -181,6 +181,20 @@ permission = "ask"
 # command = "uvx"
 # args = ["mcp-server-fetch"]
 
+# Xcode Build & Test server (iOS/macOS)
+[[mcp_servers]]
+name = "xcodebuild"
+transport = "stdio"
+command = "node"
+args = ["${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
+
+# DevTools (Linter & Analysis)
+[[mcp_servers]]
+name = "devtools"
+transport = "stdio"
+command = "python3"
+args = ["-m", "src.mcp_server.devtools_server"]
+
 # -----------------------------------------------------------------------------
 # PATHS (Optional)
 # -----------------------------------------------------------------------------
