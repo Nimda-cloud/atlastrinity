@@ -673,116 +673,6 @@ tool_routing:
         server: golden-fund
         tool: ingest_dataset
 
-  # macOS-specific operations
-  macos_use_actions:
-    priority_actions:
-      - bash
-      - zsh
-      - sh
-      - execute
-      - run
-      - cmd
-      - command
-      - git
-      - npm
-      - npx
-      - pip
-      - brew
-      - curl
-      - wget
-      - time
-      - clock
-      - date
-      - fetch
-      - url
-      - scrape
-      - volume
-      - brightness
-      - mute
-      - play
-      - pause
-      - calendar
-      - event
-      - reminder
-      - note
-      - mail
-      - email
-      - finder
-      - trash
-      - spotlight
-      - applescript
-      - osascript
-      - clipboard
-      - get_clipboard
-      - set_clipboard
-      - copy
-      - paste
-      - discovery
-      - list_tools
-      - list_tools_dynamic
-      - analyze_screen
-      - vision
-      - ocr
-      - screenshot
-      - take_screenshot
-      - notes_get
-      - notes_get_content
-    action_mapping:
-      # Tool discovery and inspection
-      macos-use_list_tools_dynamic: macos-use_list_tools_dynamic
-      list_tools_dynamic: macos-use_list_tools_dynamic
-      list_tools: macos-use_list_tools_dynamic
-      discovery: macos-use_list_tools_dynamic
-      
-      # Screen and UI analysis
-      macos-use_analyze_screen: macos-use_analyze_screen
-      analyze_screen: macos-use_analyze_screen
-      vision: macos-use_analyze_screen
-      ocr: macos-use_analyze_screen
-      macos-use_take_screenshot: macos-use_take_screenshot
-      screenshot: macos-use_take_screenshot
-      take_screenshot: macos-use_take_screenshot
-      
-      # Notes and content
-      macos-use_notes_get_content: macos-use_notes_get_content
-      notes_get: macos-use_notes_get_content
-      notes_get_content: macos-use_notes_get_content
-      
-      # UI interaction
-      click: macos-use_click_and_traverse
-      type: macos-use_type_and_traverse
-      write: macos-use_type_and_traverse
-      press: macos-use_press_key_and_traverse
-      hotkey: macos-use_press_key_and_traverse
-      refresh: macos-use_refresh_traversal
-      open: macos-use_open_application_and_traverse
-      launch: macos-use_open_application_and_traverse
-      scroll: macos-use_scroll_and_traverse
-      right_click: macos-use_right_click_and_traverse
-      double_click: macos-use_double_click_and_traverse
-      drag: macos-use_drag_and_drop_and_traverse
-      drop: macos-use_drag_and_drop_and_traverse
-      drag_and_drop: macos-use_drag_and_drop_and_traverse
-      
-      # Web and URL
-      fetch: macos-use_fetch_url
-      fetch_url: macos-use_fetch_url
-      
-      # System
-      time: macos-use_get_time
-      get_time: macos-use_get_time
-      notification: macos-use_send_notification
-      run_applescript: macos-use_run_applescript
-      applescript: macos-use_run_applescript
-      spotlight: macos-use_spotlight_search
-      spotlight_search: macos-use_spotlight_search
-      macos-use_set_clipboard: macos-use_set_clipboard
-      clipboard_set: macos-use_set_clipboard
-      set_clipboard: macos-use_set_clipboard
-      macos-use_get_clipboard: macos-use_get_clipboard
-      clipboard_get: macos-use_get_clipboard
-      get_clipboard: macos-use_get_clipboard
-
 # =============================================================================
 # TASK CLASSIFICATION
 # =============================================================================
@@ -1458,55 +1348,25 @@ workflow_stages:
 # =============================================================================
 # Centralized path management for all system components
 
+# =============================================================================
+# BEHAVIOR-SPECIFIC PATHS
+# =============================================================================
+# Paths specific to self-healing and behavioral workflows
+# Base system paths are defined in config.yaml:system section
+
 paths:
-  # Base directories
-  config_root: ${CONFIG_ROOT}        # Usually ~/.config/atlastrinity
-  project_root: ${PROJECT_ROOT}      # Project repository root
-  home: ${HOME}                      # User home directory
-  
-  # Application directories
-  logs: ${CONFIG_ROOT}/logs
-  memory: ${CONFIG_ROOT}/memory
-  screenshots: ${CONFIG_ROOT}/screenshots
-  workspace: ${CONFIG_ROOT}/workspace
-  vibe_workspace: ${CONFIG_ROOT}/vibe_workspace
-  
-  # Architecture diagrams (for self-healing and external projects)
+  # Architecture diagrams for self-healing workflows
   diagrams:
     internal_data: ${PROJECT_ROOT}/src/brain/data/architecture_diagrams
     internal_docs: ${PROJECT_ROOT}/.agent/docs
-    external_default: architecture_diagram.md  # Relative to project root
+    external_default: architecture_diagram.md
     exports_internal: ${PROJECT_ROOT}/src/brain/data/architecture_diagrams/exports
-    exports_external: diagrams  # Relative to project root
+    exports_external: diagrams
   
-  # GitHub integration
+  # GitHub integration for self-healing
   github:
-    token_env_var: GITHUB_TOKEN  # Environment variable name
-    token_file: ${CONFIG_ROOT}/.env  # Global .env (~/.config/atlastrinity/.env)
-    token_file_local: ${PROJECT_ROOT}/.env  # Local .env (для sync тільки)
-    repository: Nimda-cloud/atlastrinity  # Current repo for self-healing
-    external_repos_base: null  # External projects manage their own
-  
-  # Model directories
-  models:
-    tts: ${CONFIG_ROOT}/models/tts
-    stt: ${CONFIG_ROOT}/models/faster-whisper
-    
-  # MCP directories
-  mcp:
-    config: ${CONFIG_ROOT}/mcp
-    servers: ${PROJECT_ROOT}/vendor
-    
-  # Database paths configured in config.yaml: database_management section
-    
-  # Temporary and cache
-  temp: /tmp/atlastrinity
-  cache: ${CONFIG_ROOT}/cache
-  
-  # Backup directories
-  backups:
-    databases: ${PROJECT_ROOT}/backups/databases
-    configs: ${PROJECT_ROOT}/backups/configs
+    token_env_var: GITHUB_TOKEN
+    repository: Nimda-cloud/atlastrinity
 
 # =============================================================================
 # BEHAVIORAL PERSONA CONFIGURATION
@@ -2119,18 +1979,3 @@ output_processing:
         replacement: "" # Strip markdown
     min_length: 2
     max_length: 5000
-
-# ---------------------------------------------------------------------------
-# TOOL ROUTING FALLBACKS
-# ---------------------------------------------------------------------------
-tool_routing_fallbacks:
-  fetch: "macos-use_fetch_url"
-  fetch_url: "macos-use_fetch_url"
-  get_time: "macos-use_get_time"
-  screenshot: "macos-use_take_screenshot"
-  terminal: "execute_command"
-  search: "macos-use_spotlight_search"
-  notification: "macos-use_send_notification"
-  finder_list: "macos-use_finder_list_files"
-  sequentialthinking: "sequential-thinking_sequentialthinking"
-
