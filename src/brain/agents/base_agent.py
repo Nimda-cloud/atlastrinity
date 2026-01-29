@@ -121,6 +121,7 @@ Generate the next logical thought to analyze this problem.
 - Focus on root causes, technical details, and specific actionable solutions.
 - If this is the final thought, provide a summary and recommendation.
 - Output ONLY the raw thought text. Do not wrap in JSON or Markdown blocks.
+- **LANGUAGE**: You MUST provide your thoughts in the SAME LANGUAGE as the TASK described above. (e.g., if TASK is in Ukrainian, respond in Ukrainian).
 - **IMPORTANT**: If your task requires real-time data (weather, news, system stats), check AGENT CAPABILITIES. 
 - If 'Web search' or 'duckduckgo' is listed, you DO have access to real-time data. 
 - Never say "I don't have access" if the tools are listed.
@@ -128,7 +129,7 @@ Generate the next logical thought to analyze this problem.
                 response = await thinker_llm.ainvoke(
                     [
                         SystemMessage(
-                            content="You are a Sequential Thinking Engine. Output ONLY the raw thought text.",
+                            content="You are a Sequential Thinking Engine. Output thoughts in the same language as the task.",
                         ),
                         HumanMessage(content=prompt),
                     ],

@@ -177,33 +177,33 @@ class Grisha(BaseAgent):
         else:
             result_str = str(result)[:2000]
 
-        reasoning_query = f"""DEEP VALIDATION ANALYSIS (Multi-Layer)
+        reasoning_query = f"""ГЛИБОКИЙ АНАЛІЗ ВАЛІДАЦІЇ (Багаторівневий)
 
-STEP ACTION: {step_action}
-EXPECTED RESULT: {expected}
-ACTUAL RESULT: {result_str}
-GOAL CONTEXT: {goal_context}
+ДІЯ КРОКУ: {step_action}
+ОЧІКУВАНИЙ РЕЗУЛЬТАТ: {expected}
+ФАКТИЧНИЙ РЕЗУЛЬТАТ: {result_str}
+ЗАГАЛЬНА МЕТА: {goal_context}
 
-Perform 4-LAYER validation thinking:
+Проведи 4-РІВНЕВИЙ аналіз валідації:
 
-LAYER 1 - TECHNICAL ACCURACY:
-- Did the tool execute correctly?
-- Are there any error indicators in the result?
-- Does the output format match expectations?
+РІВЕНЬ 1 - ТЕХНІЧНА ТОЧНІСТЬ:
+- Чи правильно спрацював інструмент?
+- Чи є в результаті індикатори помилок?
+- Чи відповідає формат виводу очікуванням?
 
-LAYER 2 - SEMANTIC CORRECTNESS:
-- Does the result semantically match the expected outcome?
-- Are there hidden failures (empty data, partial results)?
+РІВЕНЬ 2 - СЕМАНТИЧНА КОРЕКТНІСТЬ:
+- Чи семантично відповідає результат очікуваному наслідку?
+- Чи є приховані провали (порожні дані, часткові результати)?
 
-LAYER 3 - GOAL ALIGNMENT:
-- Does this result advance the stated goal?
-- Are there side effects that could harm future steps?
+РІВЕНЬ 3 - ВІДПОВІДНІСТЬ МЕТІ:
+- Чи просуває цей результат виконання загальної мети?
+- Чи є побічні ефекти, що можуть зашкодити наступним крокам?
 
-LAYER 4 - SYSTEM STATE INTEGRITY:
-- Did the system state change as expected?
-- Is the change persistent or transient?
+РІВЕНЬ 4 - ЦІЛІСНІСТЬ СТАНУ СИСТЕМИ:
+- Чи змінився стан системи так, як очікувалося?
+- Чи є ця зміна стійкою?
 
-Synthesize findings into a comprehensive validation verdict.
+Сформуй висновок українською мовою.
 """
 
         reasoning = await self.use_sequential_thinking(reasoning_query, total_thoughts=4)
@@ -235,7 +235,7 @@ Synthesize findings into a comprehensive validation verdict.
             tc = getattr(result, "tool_call", None) or result.get("tool_call", {})
             if tc and tc.get("name"):
                 tool_layer["passed"] = True
-                tool_layer["evidence"] = f"Tool '{tc['name']}' was invoked"
+                tool_layer["evidence"] = f"Інструмент '{tc['name']}' був викликаний"
         layers.append(tool_layer)
 
         # Layer 2: Output Validation
@@ -245,7 +245,7 @@ Synthesize findings into a comprehensive validation verdict.
         )
         if result_str and len(result_str) > 0 and "error" not in result_str.lower():
             output_layer["passed"] = True
-            output_layer["evidence"] = f"Output received: {result_str[:200]}..."
+            output_layer["evidence"] = f"Отримано результат: {result_str[:200]}..."
         layers.append(output_layer)
 
         # Layer 3: State Verification (via DB trace)
@@ -254,16 +254,16 @@ Synthesize findings into a comprehensive validation verdict.
             trace = await self._fetch_execution_trace(str(step.get("id")))
             if "No DB records" not in trace:
                 state_layer["passed"] = True
-                state_layer["evidence"] = "Execution trace found in database"
+                state_layer["evidence"] = "Трейс виконання знайдено в базі даних"
         except Exception:
-            state_layer["evidence"] = "Could not verify state"
+            state_layer["evidence"] = "Не вдалося перевірити стан"
         layers.append(state_layer)
 
         # Layer 4: Goal Alignment (assume aligned unless proven otherwise)
         goal_layer = {
             "layer": "goal_alignment",
             "passed": True,
-            "evidence": "Step is part of approved plan",
+            "evidence": "Крок є частиною затвердженого плану",
         }
         layers.append(goal_layer)
 
@@ -448,24 +448,23 @@ Synthesize findings into a comprehensive validation verdict.
         expected_result = step.get("expected_result", "")
         step_id = step.get("id", "unknown")
 
-        query = f"""VERIFICATION GOAL ANALYSIS:
+        query = f"""АНАЛІЗ ЦІЛІ ВЕРИФІКАЦІЇ:
 
-Step {step_id}: {step_action}
-Expected Result: {expected_result}
-Overall Goal: {goal_context}
+Крок {step_id}: {step_action}
+Очікуваний результат: {expected_result}
+Загальна мета: {goal_context}
 
-TASK: Analyze this verification deeply:
+ЗАВДАННЯ: Проаналізуй цей крок верифікації глибоко:
 
-1. **PURPOSE**: What is the TRUE PURPOSE of this verification? What are we trying to confirm?
-2. **TOOL SELECTION**: Which MCP tools should I use to verify this? Consider:
-   - vibe_check_db (database audit of tool_executions)
-   - macos-use tools (execute_command, list_directory, read_file, get_clipboard)
-   - filesystem tools (if files were created)
-   Select 2-4 most relevant tools with clear reasoning.
-3. **SUCCESS CRITERIA**: What would constitute SUCCESSFUL verification? Be specific and logical.
-   Remember: Even if only 1 out of 10 tools returns data, that might be enough if it proves the goal.
+1. **МЕТА**: Яка СПРАВЖНЯ МЕТА цієї перевірки? Що саме ми намагаємося підтвердити фізично в системі?
+2. **ВИБІР ІНСТРУМЕНТІВ**: Які MCP-інструменти мені слід використати? Враховуй:
+   - vibe_check_db (аудит виконання інструментів у БД)
+   - macos-use (перевірка UI, скріншоти, OCR, буфер обміну)
+   - filesystem (якщо створювалися файли)
+   Обери 2-4 найбільш релевантних інструменти з чітким обґрунтуванням.
+3. **КРИТЕРІЇ УСПІХУ**: Що саме буде вважатися УСПІШНОЮ верифікацією? Будь логічним та конкретним.
 
-Output structured analysis."""
+Відповідь надай українською мовою."""
 
         logger.info(f"[GRISHA] Phase 1: Analyzing verification goal for step {step_id}...")
 
@@ -475,14 +474,14 @@ Output structured analysis."""
             if not reasoning_result.get("success"):
                 logger.warning("[GRISHA] Sequential thinking failed, using fallback strategy")
                 return {
-                    "verification_purpose": f"Verify that '{step_action}' was executed correctly",
+                    "verification_purpose": f"Перевірити, що '{step_action}' було виконано успішно",
                     "selected_tools": [
                         {
                             "tool": "vibe.vibe_check_db",
-                            "reason": "Check database for execution records",
+                            "reason": "Перевірити записи про виконання інструментів у БД",
                         },
                     ],
-                    "success_criteria": "Tool execution found in database with non-empty result",
+                    "success_criteria": "Запис про виконання знайдено та результат не містить критичних помилок",
                 }
 
             analysis_text = reasoning_result.get("analysis", "")
@@ -711,26 +710,25 @@ Output structured analysis."""
         total = len(verification_results)
         success_count = len(actual_successes)
 
-        # CRITICAL CHANGE: Fallback is now STRICT. 
         # Verified only if ALL tools succeeded (or at least no critical tool failed)
         verified = success_count == total and total > 0
 
         # Confidence is lower because we are using fallback logic
         confidence = 0.6 if verified else 0.2
 
-        reasoning = f"STRICT fallback verdict: {success_count}/{total} tools passed validation. "
+        reasoning = f"СУВОРИЙ вердикт (fallback): {success_count}/{total} інструментів пройшли валідацію. "
         if not verified:
-            reasoning += "Marking as FAILED due to incomplete evidence or tool errors."
+            reasoning += "Позначено як ПОМИЛКА через недостатню кількість доказів або помилки інструментів."
         else:
-            reasoning += "Using cautious verification due to reasoning unavailability."
+            reasoning += "Використання обережної верифікації через недоступність логічного аналізу."
 
         return {
             "verified": verified,
             "confidence": confidence,
             "reasoning": reasoning,
-            "issues": ["Sequential thinking unavailable", "Strict verification applied"]
+            "issues": ["Логічний аналіз недоступний", "Застосовано сувору верифікацію"]
             if not verified
-            else ["Sequential thinking unavailable"],
+            else ["Логічний аналіз недоступний"],
         }
 
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
@@ -1100,53 +1098,53 @@ Output structured analysis."""
             root_cause_section = ""
             if root_cause_analysis:
                 root_cause_section = f"""
-## Root Cause Analysis
+## Аналіз кореневої причини
 {root_cause_analysis}
 """
 
             fix_section = ""
             if suggested_fix:
                 fix_section = f"""
-## Suggested Fix
+## Рекомендоване виправлення
 {suggested_fix}
 """
 
             # Prepare detailed report text with enhanced structure
             report_text = f"""========================================
-GRISHA VERIFICATION REPORT - REJECTED
+ЗВІТ ПРО ВЕРИФІКАЦІЮ ГРІШІ - ВІДХИЛЕНО
 ========================================
 
-## Summary
-| Field | Value |
+## Резюме
+| Поле | Значення |
 |-------|-------|
-| Step ID | {step_id} |
-| Task ID | {task_id or "N/A"} |
-| Confidence | {verification.confidence:.2f} |
-| Screenshot Analyzed | {"Yes" if verification.screenshot_analyzed else "No"} |
-| Timestamp | {timestamp} |
+| ID кроку | {step_id} |
+| ID завдання | {task_id or "Н/A"} |
+| Впевненість | {verification.confidence:.2f} |
+| Аналіз скріншота | {"Так" if verification.screenshot_analyzed else "Ні"} |
+| Часова мітка | {timestamp} |
 
-## Step Details
-**Action:** {step.get("action", "N/A")}
-**Expected Result:** {step.get("expected_result", "N/A")}
+## Деталі кроку
+**Дія:** {step.get("action", "Н/A")}
+**Очікуваний результат:** {step.get("expected_result", "Н/A")}
 
-## Verification Result
-**Status:** ❌ REJECTED
+## Результат верифікації
+**Статус:** ❌ ВІДХИЛЕНО
 
-**Description:**
+**Опис:**
 {verification.description}
 
-## Issues Found
+## Виявлені проблеми
 {issues_formatted}
 {root_cause_section}{fix_section}{evidence_section}
 
-## Voice Message (Ukrainian)
+## Голосове повідомлення
 {verification.voice_message or "Верифікація не пройдена."}
 
-## For Recovery
-Use this report to:
-1. Understand WHAT failed (see Issues Found)
-2. Understand WHY it failed (see Root Cause if available)
-3. Know HOW to fix it (see Suggested Fix if available)
+## Для відновлення
+Використовуйте цей звіт щоб:
+1. Зрозуміти, ЩО саме не вдалося (див. Виявлені проблеми)
+2. Зрозуміти, ЧОМУ це сталося (див. Аналіз кореневої причини)
+3. Дізнатися, ЯК це виправити (див. Рекомендоване виправлення)
 
 ========================================
 """
