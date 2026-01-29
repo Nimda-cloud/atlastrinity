@@ -12,24 +12,24 @@
 
 ```yaml
 Provider: Mistral
-Model: devstral-2
+Model: codestral-latest
 Usage: ONLY for Vibe CLI tools
 Config: ~/.config/atlastrinity/vibe_config.toml
 ```
 
 **Rules:**
-- ✅ Vibe MUST use `devstral-2` (Mistral model)
+- ✅ Vibe MUST use `codestral-latest` (Mistral model)
 - ❌ Vibe NEVER uses Copilot models (gpt-4o, gpt-4.1, raptor-mini)
 - ✅ Exception: When Vibe calls general MCP tools (sequential-thinking, filesystem, github), those tools use their own configured models
 
 **Vibe Tools:**
 ```yaml
 vibe_tools:
-  - vibe_prompt           # devstral-2
-  - vibe_analyze_error    # devstral-2
-  - vibe_code_review      # devstral-2
-  - vibe_check_db         # devstral-2
-  - vibe_execute          # devstral-2
+  - vibe_prompt           # codestral-latest
+  - vibe_analyze_error    # codestral-latest
+  - vibe_code_review      # codestral-latest
+  - vibe_check_db         # codestral-latest
+  - vibe_execute          # codestral-latest
 ```
 
 ---
@@ -90,7 +90,7 @@ Usage:
 - ✅ Atlas - Complex reasoning tasks
 - ✅ Tetyana - Before tool execution (if needed)
 - ✅ Grisha - Verification strategy analysis
-- ✅ Vibe - Through MCP call (uses raptor-mini, NOT devstral-2)
+- ✅ Vibe - Through MCP call (uses raptor-mini, NOT codestral-latest)
 - ✅ devtools_update_diagrams - Architectural analysis (NEW)
 
 ---
@@ -101,11 +101,11 @@ Usage:
 
 ```mermaid
 flowchart LR
-    Error[Error Detected] --> Vibe[Vibe MCP<br/>devstral-2]
+    Error[Error Detected] --> Vibe[Vibe MCP<br/>codestral-latest]
     Vibe --> Analysis{Complex<br/>Analysis?}
     
     Analysis --> |YES| Sequential[Sequential Thinking MCP<br/>raptor-mini]
-    Analysis --> |NO| VibeFix[Vibe Direct Fix<br/>devstral-2]
+    Analysis --> |NO| VibeFix[Vibe Direct Fix<br/>codestral-latest]
     
     Sequential --> Context[Build Context]
     Context --> VibeFix
@@ -114,15 +114,15 @@ flowchart LR
 ```
 
 **Flow:**
-1. Error detected → Vibe escalation (devstral-2)
+1. Error detected → Vibe escalation (codestral-latest)
 2. Vibe decides: Need deep reasoning?
 3. If YES → Call sequential-thinking MCP (raptor-mini)
-4. Sequential-thinking returns analysis → Vibe uses it (devstral-2)
-5. Vibe generates fix (devstral-2)
+4. Sequential-thinking returns analysis → Vibe uses it (codestral-latest)
+5. Vibe generates fix (codestral-latest)
 
 **Code:**
 ```python
-# Vibe uses devstral-2
+# Vibe uses codestral-latest
 vibe_result = await manager.call_tool("vibe", "vibe_analyze_error", {...})
 
 # If complex, Vibe internally calls sequential-thinking (raptor-mini)
@@ -132,7 +132,7 @@ if needs_deep_reasoning:
         "thoughtNumber": 1,
         "totalThoughts": 3
     })
-    # Sequential-thinking uses raptor-mini (NOT devstral-2)
+    # Sequential-thinking uses raptor-mini (NOT codestral-latest)
 ```
 
 ---
@@ -187,7 +187,7 @@ flowchart TD
 
 | Component | Primary Model | Provider | Reasoning Model | Vision Model |
 |-----------|---------------|----------|-----------------|--------------|
-| **Vibe CLI** | devstral-2 | Mistral | - | - |
+| **Vibe CLI** | codestral-latest | Mistral | - | - |
 | **Atlas** | gpt-4.1 | Copilot | raptor-mini (via MCP) | - |
 | **Tetyana** | gpt-4.1 | Copilot | raptor-mini | gpt-4o |
 | **Grisha** | gpt-4.1 | Copilot | raptor-mini | gpt-4o |
@@ -201,7 +201,7 @@ flowchart TD
 ### 1. Vibe Configuration
 ```toml
 # ~/.config/atlastrinity/vibe_config.toml
-active_model = "devstral-2"  # ✅ MUST be Mistral
+active_model = "codestral-latest"  # ✅ MUST be Mistral
 # DO NOT change to gpt-4o or other Copilot models
 ```
 
@@ -212,7 +212,7 @@ models:
   default: gpt-4.1           # ✅ All agents
   vision: gpt-4o             # ✅ Vision tasks
   reasoning: raptor-mini     # ✅ Sequential-thinking
-  vibe_default: devstral-2   # ✅ Vibe CLI only (not used by agents)
+  vibe_default: codestral-latest   # ✅ Vibe CLI only (not used by agents)
 
 agents:
   atlas:
@@ -244,15 +244,15 @@ mcp:
 ## ✅ Validation Rules
 
 ### **MUST:**
-1. ✅ Vibe ALWAYS uses devstral-2
+1. ✅ Vibe ALWAYS uses codestral-latest
 2. ✅ Agents ALWAYS use Copilot models (gpt-4.1, gpt-4o, raptor-mini)
 3. ✅ Sequential-thinking MCP ALWAYS uses raptor-mini
-4. ✅ When Vibe calls sequential-thinking, it uses raptor-mini (not devstral-2)
+4. ✅ When Vibe calls sequential-thinking, it uses raptor-mini (not codestral-latest)
 
 ### **MUST NOT:**
 1. ❌ Vibe NEVER uses gpt-4o, gpt-4.1, or raptor-mini directly
-2. ❌ Agents NEVER use devstral-2
-3. ❌ Sequential-thinking NEVER uses devstral-2
+2. ❌ Agents NEVER use codestral-latest
+3. ❌ Sequential-thinking NEVER uses codestral-latest
 
 ### **EXCEPTIONS:**
 1. ✅ Vibe can call general MCP tools (filesystem, github, sequential-thinking)
@@ -263,7 +263,7 @@ mcp:
 
 ## 🎯 Why This Design?
 
-### **Vibe = Mistral devstral-2**
+### **Vibe = Mistral codestral-latest**
 - **Specialized:** Optimized for code analysis and self-healing
 - **Cost:** Mistral models are cost-effective for large codebases
 - **Performance:** Fast inference for error analysis
@@ -284,13 +284,13 @@ mcp:
 
 | Model | Provider | Cost/1M tokens | Use Case | Frequency |
 |-------|----------|----------------|----------|-----------|
-| devstral-2 | Mistral | $0.20 | Vibe error analysis | High (on errors) |
+| codestral-latest | Mistral | $0.20 | Vibe error analysis | High (on errors) |
 | gpt-4.1 | Copilot | $10.00 | Agent execution | High (daily tasks) |
 | gpt-4o | Copilot | $15.00 | Vision tasks | Medium (screenshots) |
 | raptor-mini | Copilot | $5.00 | Deep reasoning | Low (complex only) |
 
 **Strategy:**
-- Use devstral-2 (cheap) for high-frequency error analysis
+- Use codestral-latest (cheap) for high-frequency error analysis
 - Use raptor-mini (medium) for deep reasoning when needed
 - Use gpt-4o (expensive) only for vision tasks
 - Balance cost vs. performance
