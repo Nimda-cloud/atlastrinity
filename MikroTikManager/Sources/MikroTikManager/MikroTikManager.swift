@@ -15,12 +15,49 @@ class SSHManager: ObservableObject {
     private var errorPipe: Pipe?
     private var timer: Timer?
 
+    func ensureSSHKeyExists() -> String {
+        let fileManager = FileManager.default
+        let home = fileManager.homeDirectoryForCurrentUser
+        let sshDir = home.appendingPathComponent(".ssh")
+        let keyPath = sshDir.appendingPathComponent("atlastrinity_id_rsa")
+
+        if !fileManager.fileExists(atPath: keyPath.path) {
+            // Create directory if needed
+            try? fileManager.createDirectory(
+                at: sshDir, withIntermediateDirectories: true,
+                attributes: [FileAttributeKey.posixPermissions: 0o700])
+
+            // Generate Key
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh-keygen")
+            process.arguments = ["-t", "rsa", "-b", "4096", "-f", keyPath.path, "-N", ""]
+            try? process.run()
+            process.waitUntilExit()
+        }
+        return keyPath.path
+    }
+
     func connect(host: String, port: Int, username: String, password: String) {
         disconnect()
 
-        let command =
-            "sshpass -p '" + password + "' ssh -o StrictHostKeyChecking=no " + username + "@" + host
-            + " -p " + String(port)
+        // Ensure key exists
+        let identityFile = ensureSSHKeyExists()
+
+        // Use standard ssh command with IdentityFile.
+        // Note: sshpass is still useful for initial password auth if keys aren't set up on the router yet,
+        // but for this task we prioritize the identity file structure.
+        // If password is provided, we try to use it with sshpass, but also include the identity file option.
+        var command = ""
+        if !password.isEmpty {
+            command =
+                "sshpass -p '" + password + "' ssh -o StrictHostKeyChecking=no -i " + identityFile
+                + " " + username + "@" + host + " -p " + String(port)
+        } else {
+            // Key-only auth
+            command =
+                "ssh -o StrictHostKeyChecking=no -i " + identityFile + " " + username + "@" + host
+                + " -p " + String(port)
+        }
 
         task = Process()
         task?.executableURL = URL(fileURLWithPath: "/bin/bash")
@@ -32,6 +69,7 @@ class SSHManager: ObservableObject {
         task?.standardOutput = outputPipe
         task?.standardError = errorPipe
 
+        // ... (rest of handler setup matches original)
         let outputHandler = outputPipe?.fileHandleForReading
         let errorHandler = errorPipe?.fileHandleForReading
 
@@ -62,6 +100,7 @@ class SSHManager: ObservableObject {
             self.startReconnectionTimer(
                 host: host, port: port, username: username, password: password)
         } catch {
+            // Error handling
             self.errorMessage = "Failed to start SSH: " + error.localizedDescription
             self.isConnected = false
             self.connectionStatus = "Connection failed"
