@@ -1292,6 +1292,7 @@ def main():
         ("vibe", "Coding Agent & Self-Healing (Python)"),
         ("filesystem", "Файлові операції (Node)"),
         ("sequential-thinking", "Глибоке мислення (Node)"),
+        ("xcodebuild", "Xcode Build & Test Automation (Node)"),
         ("chrome-devtools", "Автоматизація Chrome (Node)"),
         ("puppeteer", "Веб-скрейпінг та пошук (Node)"),
         ("github", "Офіційний GitHub MCP (Node)"),
@@ -1303,7 +1304,6 @@ def main():
         ("redis", "Оглядовість кешу та сесій (Python)"),
         ("golden-fund", "Knowledge Base & Data Persistence (Python)"),
         ("data-analysis", "Pandas Data Analysis Engine (Python)"),
-        ("self-healing", "Автоматичне відновлення стану (System-wide)"),
     ]
 
     for srv_id, desc in mcp_info:
