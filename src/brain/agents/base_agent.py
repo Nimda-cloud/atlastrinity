@@ -78,11 +78,18 @@ class BaseAgent:
         agent_name = self.__class__.__name__.upper()
         logger.info(f"[{agent_name}] 🤔 Thinking deeply about: {task[:60]}...")
 
-        # 1. Get model from config (with fallback to models.reasoning or models.default)
-        model_name = config.get("mcp.sequential_thinking.model")
+        # 1. Get sequential thinking model from MCP config or global reasoning
+        model_name = (
+            config.get("mcp.sequential_thinking.model")
+            or config.get("models.reasoning")
+            or config.get("models.default")
+        )
 
-        if not model_name:
-            raise ValueError("[BASE_AGENT] Sequential thinking model not specified in config.yaml")
+        if not model_name or not model_name.strip():
+            raise ValueError(
+                "[BASE_AGENT] Sequential thinking model not configured. "
+                "Please set 'models.reasoning' or 'mcp.sequential_thinking.model' in config.yaml"
+            )
 
         # 2. Initialize dedicated thinker
         # We need to ensure providers is in path, usually it's there via agent init overrides

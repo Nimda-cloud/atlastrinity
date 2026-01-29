@@ -8,18 +8,19 @@
 
 models:
   # Default models for different purposes
-  # Set your preferred model names here (e.g., "gpt-4o", "claude-3.5-sonnet", etc.)
-  default: ""                          # Default LLM for agents - SET THIS
-  vision: ""                           # Vision/multimodal tasks - SET THIS
-  reasoning: ""                        # Specialized deep reasoning - SET THIS
-  code_analysis: ""                    # Code review and analysis - SET THIS
-  consolidation: ""                    # Memory consolidation - SET THIS
+  # Using gpt-4o as default for GitHub Copilot API
+  # You can change these to your preferred models (e.g., "claude-3.5-sonnet", "gpt-4o-mini", etc.)
+  default: "gpt-4o"                    # Default LLM for agents
+  vision: "gpt-4o"                     # Vision/multimodal tasks
+  reasoning: "gpt-4o"                  # Specialized deep reasoning
+  code_analysis: "gpt-4o"              # Code review and analysis
+  consolidation: "gpt-4o"              # Memory consolidation
   
   # Vibe binary defaults (external CLI tool)
-  vibe_default: ""                     # Native model for Vibe CLI - SET THIS
+  vibe_default: "gpt-4o"               # Native model for Vibe CLI
   
   # Fallbacks (used when primary unavailable)
-  fallback: ""                         # Fallback model - SET THIS
+  fallback: "gpt-4o"                   # Fallback model
   
   # Agents inherit from models.default unless overridden
 

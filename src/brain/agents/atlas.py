@@ -73,16 +73,22 @@ class Atlas(BaseAgent):
             self.llm = llm
             self.llm_deep = llm  # Use same LLM if provided externally
         else:
-            # Priority: 1. Constructor arg, 2. Config file
-            final_model = model_name or agent_config.get("model")
-            deep_model = agent_config.get(
-                "deep_model", agent_config.get("model")
-            )  # Fallback to standard model if deep not specified
+            # Priority: 1. Constructor arg, 2. Agent config, 3. Global default
+            final_model = model_name or agent_config.get("model") or config.get("models.default")
+            deep_model = (
+                agent_config.get("deep_model") 
+                or config.get("models.reasoning")
+                or final_model
+            )  # Fallback: deep_model -> reasoning -> final_model
 
-            if not final_model:
-                raise ValueError("[ATLAS] Model not specified in config.yaml or constructor")
-            if not deep_model:
-                raise ValueError("[ATLAS] Deep model not specified in config.yaml")
+            if not final_model or not final_model.strip():
+                raise ValueError(
+                    "[ATLAS] Model not configured. Please set 'models.default' or 'agents.atlas.model' in config.yaml"
+                )
+            if not deep_model or not deep_model.strip():
+                raise ValueError(
+                    "[ATLAS] Deep model not configured. Please set 'models.reasoning' or 'agents.atlas.deep_model' in config.yaml"
+                )
 
             # Token limits from config
             max_tokens_standard = agent_config.get("max_tokens", 2000)
