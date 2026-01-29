@@ -1,0 +1,23 @@
+# Plan agent configuration for Vibe
+system_prompt_id = "cli"
+
+# Empty list means all tools enabled
+enabled_tools = []
+
+[tools.bash]
+permission = "ask"
+
+[tools.write_file]
+permission = "ask"
+
+[tools.read_file]
+permission = "always"
+
+[tools.grep]
+permission = "always"
+
+[tools.search_replace]
+permission = "ask"
+
+[tools."*"]
+permission = "ask"
