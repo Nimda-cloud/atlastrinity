@@ -203,13 +203,13 @@ args = ["-c", "export PYTHONPATH=${PROJECT_ROOT} && ${PROJECT_ROOT}/.venv/bin/py
 # Override default paths. Use ${HOME}, ${CONFIG_ROOT}, ${PROJECT_ROOT} placeholders.
 
 # Custom VIBE_HOME directory (default: ~/.vibe)
-# vibe_home = "/path/to/custom/vibe/home"
+vibe_home = "${CONFIG_ROOT}/vibe"
 
 # Custom workspace directory for Vibe operations
 # workspace = "${CONFIG_ROOT}/vibe_workspace"
 
 # Custom agents directory (default: ~/.vibe/agents)
-# agents_dir = "${CONFIG_ROOT}/vibe/agents"
+agents_dir = "${CONFIG_ROOT}/vibe/agents"
 
 # Custom prompts directory (default: ~/.vibe/prompts)
-# prompts_dir = "${CONFIG_ROOT}/vibe/prompts"
+prompts_dir = "${CONFIG_ROOT}/vibe/prompts"
