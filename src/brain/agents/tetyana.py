@@ -557,50 +557,13 @@ IMPORTANT:
                     # The response should have been injected into message bus, but as a backup check
                     pass
 
-        # Refined consent detection
+        # Refined consent detection - LESS AGGRESSIVE
         step_action_lower = str(step.get("action", "")).lower()
-        user_keywords = [
-            "user",
-            "human",
-            "oleg",
-            "me",
-            "operator",
-            "owner",
-            "користувач",
-            "людин",
-            "олег",
-            "мені",
-        ]
-        technical_user_refs = [
-            "active user",
-            "system user",
-            "user home",
-            "user account",
-            "user directory",
-            "current user",
-            "username",
-        ]
-
-        # Heuristic to detect if action truly targets the HUMAN operator
-        is_human_targeted = any(u in step_action_lower for u in user_keywords)
-        if is_human_targeted:
-            for tr in technical_user_refs:
-                if tr in step_action_lower:
-                    is_human_targeted = False
-                    break
-
-        # Only trigger consent if we DON'T have a response yet
+        
+        # Only trigger consent if we DON'T have a response yet AND it's explicitly marked
         is_consent_request = (not provided_response) and (
-            (
-                any(kw in step_action_lower for kw in ["ask", "request", "await", "get", "confirm"])
-                and is_human_targeted
-                and not any(kw in step_action_lower for kw in ["technical", "data", "api"])
-            )
-            or ("consent" in step_action_lower)
-            or ("approval" in step_action_lower and is_human_targeted)
-            or ("confirmation" in step_action_lower and is_human_targeted)
-            or ("preferences" in step_action_lower and is_human_targeted)
-            or step.get("requires_consent", False) is True
+            step.get("requires_consent", False) is True
+            or step.get("requires_user_input", False) is True
         )
 
         if is_consent_request:

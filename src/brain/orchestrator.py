@@ -105,9 +105,9 @@ class Trinity:
     async def initialize(self):
         """Async initialization of system components via Config-Driven Workflow"""
         # Синхронізація shared_context з конфігурацією
-        from src.brain.context import shared_context
         from src.brain.config_loader import config
-        shared_context.sync_from_config(config)
+        from src.brain.context import shared_context
+        shared_context.sync_from_config(config.all)
         
         # Execute 'startup' workflow from behavior config
         # This replaces hardcoded service checks and state init
@@ -534,9 +534,10 @@ class Trinity:
     async def _update_task_metadata(self):
         """Оновлює metadata_blob в Task для збереження поточного рекурсивного контексту."""
         try:
-            from src.brain.db.manager import db_manager
-            from src.brain.context import shared_context
             from sqlalchemy import update
+
+            from src.brain.context import shared_context
+            from src.brain.db.manager import db_manager
 
             if (
                 not db_manager
@@ -1732,12 +1733,12 @@ class Trinity:
                     if alt_steps:
                         # CRITICAL: Перевірка максимальної глибини перед рекурсією
                         from src.brain.context import shared_context
-                        if shared_context.is_at_max_depth():
+                        if shared_context.is_at_max_depth(depth + 1):
                             logger.error(
-                                f"[ORCHESTRATOR] Max recursion depth {shared_context.max_recursive_depth} reached. Cannot create sub-plan for step {step_id}."
+                                f"[ORCHESTRATOR] Max recursion depth {shared_context.max_recursive_depth} would be exceeded at depth {depth + 1}. Cannot create sub-plan for step {step_id}."
                             )
                             raise Exception(
-                                f"Maximum recursion depth ({shared_context.max_recursive_depth}) exceeded. Cannot subdivide step {step_id} further."
+                                f"Maximum recursion depth ({shared_context.max_recursive_depth}) would be exceeded. Cannot subdivide step {step_id} further."
                             )
                         
                         # Рекурсивне виконання під-завдань

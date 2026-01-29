@@ -459,9 +459,19 @@ class VibeConfig(BaseModel):
         """
         args = ["-p", prompt, "--output", output_format]
 
-        # Agent profile
+        # Mode mapping to agent profiles
+        effective_mode = mode or self.default_mode
+        
+        # If explicit agent is provided, use it; otherwise map mode to agent profile
         if agent:
             args.extend(["--agent", agent])
+        elif effective_mode == AgentMode.AUTO_APPROVE:
+            args.extend(["--agent", "auto-approve"])
+        elif effective_mode == AgentMode.PLAN:
+            args.extend(["--agent", "plan"])
+        elif effective_mode == AgentMode.ACCEPT_EDITS:
+            args.extend(["--agent", "accept-edits"])
+        # Default mode doesn't need --agent (uses builtin default)
 
         # Model override - only if CLI supports it (handled via config heuristic)
         if model and model != "default":
@@ -469,14 +479,6 @@ class VibeConfig(BaseModel):
             # Removing because current CLI version does not recognize --model
             # args.extend(["--model", model])
             pass
-
-        # Mode
-        effective_mode = mode or self.default_mode
-        if effective_mode == AgentMode.AUTO_APPROVE:
-            args.append("--auto-approve")
-        elif effective_mode == AgentMode.PLAN:
-            args.append("--plan")
-        # Note: accept-edits is handled via tool permissions
 
         # Session resume
         if session_id:

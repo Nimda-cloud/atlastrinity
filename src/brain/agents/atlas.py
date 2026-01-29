@@ -1152,9 +1152,10 @@ CRITICAL PLANNING RULES:
         """Atlas reviews the execution results of Tetyana and Grisha.
         Determines if the goal was REALLY achieved and if the strategy is worth remembering.
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
         import os
         import re
+
+        from langchain_core.messages import HumanMessage, SystemMessage
 
         # ARTIFACT VERIFICATION: Extract claimed file paths from goal and results
         claimed_artifacts = self._extract_artifact_paths(goal, results)
@@ -1169,12 +1170,12 @@ CRITICAL PLANNING RULES:
         
         artifact_verification_note = ""
         if claimed_artifacts:
-            artifact_verification_note = f"\n\n=== ARTIFACT VERIFICATION ==="
+            artifact_verification_note = "\n\n=== ARTIFACT VERIFICATION ==="
             if verified_artifacts:
                 artifact_verification_note += f"\n✅ Verified ({len(verified_artifacts)}): {verified_artifacts[:3]}"
             if missing_artifacts:
                 artifact_verification_note += f"\n❌ Missing ({len(missing_artifacts)}): {missing_artifacts[:3]}"
-                artifact_verification_note += f"\n⚠️ CRITICAL: Goal claims creation but artifacts don't exist!"
+                artifact_verification_note += "\n⚠️ CRITICAL: Goal claims creation but artifacts don't exist!"
 
         # Prepare execution summary for LLM
         history = ""
