@@ -22,6 +22,7 @@ logger = logging.getLogger("verify_vibe")
 
 from src.brain.mcp_manager import MCPManager
 
+
 async def verify_vibe_capabilities():
     """Connect to Vibe and query its capabilities."""
     manager = MCPManager()
@@ -40,8 +41,7 @@ async def verify_vibe_capabilities():
         
     logger.info("✅ Connected to Vibe.")
     
-    # We don't need 'results' dict anymore
-    results = {"vibe": session}
+
     
     # Construct a prompt to ask Vibe about its tools
     prompt = """
