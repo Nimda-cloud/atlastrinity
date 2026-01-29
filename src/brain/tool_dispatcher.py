@@ -260,6 +260,46 @@ class ToolDispatcher:
         "excel_analysis",
     ]
 
+    XCODEBUILD_SYNONYMS = [
+        "xcodebuild",
+        "xcode",
+        "ios_development",
+        "ios-development",
+        "macos_development",
+        "macos-development",
+        "build_project",
+        "build-project",
+        "run_tests",
+        "run-tests",
+        "simulator",
+        "ios_simulator",
+        "ios-simulator",
+        "device_deployment",
+        "device-deployment",
+        "code_coverage",
+        "code-coverage",
+        "archive_project",
+        "archive-project",
+        "swift_package",
+        "swift-package",
+        "xcode_logs",
+        "xcode-logs",
+        "xcodeproj",
+        "xcworkspace",
+        "testflight",
+        "app_store",
+        "xcodebuild_build_project",
+        "xcodebuild_run_tests",
+        "xcodebuild_list_simulators",
+        "xcodebuild_boot_simulator",
+        "xcodebuild_install_app",
+        "xcodebuild_launch_app",
+        "xcodebuild_analyze_logs",
+        "xcodebuild_get_coverage",
+        "xcodebuild_archive_project",
+        "xcodebuild_clean_build",
+    ]
+
     MACOS_MAP = {
         "click": "macos-use_click_and_traverse",
         "type": "macos-use_type_and_traverse",
@@ -992,6 +1032,10 @@ class ToolDispatcher:
         if tool_name in self.DATA_ANALYSIS_SYNONYMS or explicit_server == "data-analysis":
             return self._handle_data_analysis(tool_name, args)
 
+        # --- XCODEBUILD ROUTING ---
+        if tool_name in self.XCODEBUILD_SYNONYMS or explicit_server == "xcodebuild":
+            return self._handle_xcodebuild(tool_name, args)
+
         # --- GIT LEGACY ROUTING ---
         if tool_name.startswith("git_") or explicit_server == "git":
             return self._handle_legacy_git(tool_name, args)
@@ -1083,6 +1127,56 @@ class ToolDispatcher:
             resolved_tool = "analyze_dataset"  # Default
 
         return "data-analysis", resolved_tool, args
+
+    def _handle_xcodebuild(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+    ) -> tuple[str, str, dict[str, Any]]:
+        """Maps XcodeBuildMCP synonyms to canonical xcodebuild tools."""
+        action = args.get("action") or tool_name
+
+        # Action mappings for common synonyms
+        mapping = {
+            "build_project": "xcodebuild_build_project",
+            "build-project": "xcodebuild_build_project",
+            "xcode": "xcodebuild_build_project",
+            "run_tests": "xcodebuild_run_tests",
+            "run-tests": "xcodebuild_run_tests",
+            "simulator": "xcodebuild_list_simulators",
+            "ios_simulator": "xcodebuild_list_simulators",
+            "ios-simulator": "xcodebuild_list_simulators",
+            "list_simulators": "xcodebuild_list_simulators",
+            "boot_simulator": "xcodebuild_boot_simulator",
+            "install_app": "xcodebuild_install_app",
+            "launch_app": "xcodebuild_launch_app",
+            "analyze_logs": "xcodebuild_analyze_logs",
+            "xcode_logs": "xcodebuild_analyze_logs",
+            "xcode-logs": "xcodebuild_analyze_logs",
+            "coverage": "xcodebuild_get_coverage",
+            "code_coverage": "xcodebuild_get_coverage",
+            "code-coverage": "xcodebuild_get_coverage",
+            "archive": "xcodebuild_archive_project",
+            "archive_project": "xcodebuild_archive_project",
+            "archive-project": "xcodebuild_archive_project",
+            "clean": "xcodebuild_clean_build",
+            "clean_build": "xcodebuild_clean_build",
+        }
+        resolved_tool = mapping.get(action, action)
+
+        # If tool name doesn't start with xcodebuild_, add prefix
+        if not resolved_tool.startswith("xcodebuild_") and resolved_tool in [
+            "build_project", "run_tests", "list_simulators", "boot_simulator",
+            "install_app", "launch_app", "analyze_logs", "get_coverage",
+            "archive_project", "clean_build"
+        ]:
+            resolved_tool = f"xcodebuild_{resolved_tool}"
+
+        # Default to build if generic xcodebuild call
+        if resolved_tool in ["xcodebuild", "xcode", "ios_development", "macos_development"]:
+            resolved_tool = "xcodebuild_build_project"
+
+        return "xcodebuild", resolved_tool, args
 
     def _handle_terminal(
         self,
