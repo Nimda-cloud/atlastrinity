@@ -107,26 +107,46 @@ class Tetyana(BaseAgent):
         # Get model config (config.yaml > parameter)
         agent_config = config.get_agent_config("tetyana")
 
-        # Main execution model
-        final_model = model_name or agent_config.get("model")
-        if not final_model:
-            raise ValueError("[TETYANA] Main model not specified in config.yaml or constructor")
+        # Main execution model - fallback to global default
+        final_model = model_name or agent_config.get("model") or config.get("models.default")
+        if not final_model or not final_model.strip():
+            raise ValueError(
+                "[TETYANA] Model not configured. Please set 'models.default' or 'agents.tetyana.model' in config.yaml"
+            )
 
         self.llm = CopilotLLM(model_name=final_model)
 
-        # Specialized models for Reasoning and Reflexion
-        reasoning_model = agent_config.get("reasoning_model")
-        reflexion_model = agent_config.get("reflexion_model")
+        # Specialized models for Reasoning and Reflexion - fallback to global or final_model
+        reasoning_model = (
+            agent_config.get("reasoning_model") 
+            or config.get("models.reasoning")
+            or final_model
+        )
+        reflexion_model = (
+            agent_config.get("reflexion_model")
+            or config.get("models.reasoning")
+            or final_model
+        )
 
-        if not reasoning_model or not reflexion_model:
-            raise ValueError("[TETYANA] Reasoning/Reflexion models not specified in config.yaml")
+        if not reasoning_model or not reasoning_model.strip():
+            raise ValueError(
+                "[TETYANA] Reasoning model not configured. Please set 'models.reasoning' or 'agents.tetyana.reasoning_model' in config.yaml"
+            )
+        if not reflexion_model or not reflexion_model.strip():
+            raise ValueError(
+                "[TETYANA] Reflexion model not configured. Please set 'models.reasoning' or 'agents.tetyana.reflexion_model' in config.yaml"
+            )
 
         self.reasoning_llm = CopilotLLM(model_name=reasoning_model)
         self.reflexion_llm = CopilotLLM(model_name=reflexion_model)
 
         # NEW: Vision model for complex GUI tasks (screenshot analysis)
-        vision_model = agent_config.get("vision_model")
-        if not vision_model:
+        vision_model = (
+            agent_config.get("vision_model")
+            or config.get("models.vision")
+            or final_model
+        )
+        if not vision_model or not vision_model.strip():
             # Fallback to main model if vision not explicitly set, but Main must exist
             vision_model = final_model
 

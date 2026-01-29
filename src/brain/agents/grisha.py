@@ -107,21 +107,36 @@ class Grisha(BaseAgent):
         security_config = config.get_security_config()
 
         # Phase 1: Strategy Planning Model
-        strategy_model = agent_config.get("strategy_model")
-        if not strategy_model:
-            raise ValueError("[GRISHA] Strategy model not specified in config.yaml")
+        strategy_model = (
+            agent_config.get("strategy_model")
+            or config.get("models.reasoning")
+            or config.get("models.default")
+        )
+        if not strategy_model or not strategy_model.strip():
+            raise ValueError(
+                "[GRISHA] Strategy model not configured. Please set 'models.reasoning' or 'agents.grisha.strategy_model' in config.yaml"
+            )
         self.strategist = CopilotLLM(model_name=strategy_model)
 
         # Phase 2: Execution Model (for MCP tool calls, like Tetyana)
-        execution_model = agent_config.get("model")
-        if not execution_model:
-            raise ValueError("[GRISHA] Execution model not specified in config.yaml")
+        execution_model = agent_config.get("model") or config.get("models.default")
+        if not execution_model or not execution_model.strip():
+            raise ValueError(
+                "[GRISHA] Execution model not configured. Please set 'models.default' or 'agents.grisha.model' in config.yaml"
+            )
         self.executor = CopilotLLM(model_name=execution_model)
 
         # Phase 3: Verdict & Vision Models
-        vision_model_name = vision_model or agent_config.get("vision_model")
-        if not vision_model_name:
-            raise ValueError("[GRISHA] Vision model not specified in config.yaml")
+        vision_model_name = (
+            vision_model 
+            or agent_config.get("vision_model")
+            or config.get("models.vision")
+            or execution_model
+        )
+        if not vision_model_name or not vision_model_name.strip():
+            raise ValueError(
+                "[GRISHA] Vision model not configured. Please set 'models.vision' or 'agents.grisha.vision_model' in config.yaml"
+            )
         self.llm = CopilotLLM(model_name=vision_model_name, vision_model_name=vision_model_name)
 
         verdict_model = agent_config.get(
