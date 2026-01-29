@@ -22,7 +22,8 @@
       "args": [
         "@modelcontextprotocol/server-filesystem",
         "${HOME}",
-        "/tmp"
+        "/tmp",
+        "/private/tmp"
       ],
       "description": "Official filesystem operations (pinned to @modelcontextprotocol/server-filesystem for reproducibility)",
       "disabled": false,

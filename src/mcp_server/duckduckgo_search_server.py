@@ -122,8 +122,7 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
     results: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     
-    # Try to find result__url pattern first (more reliable)
-    url_pattern = re.compile(r'class="result__url"[^>]*>([^<]+)', re.IGNORECASE)
+    # Extract from result__a class (title links) - more reliable
     title_pattern = re.compile(r'class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)', re.IGNORECASE)
     
     # Method 1: Extract from result__a class (title links)
