@@ -38,9 +38,6 @@ models:
   code_analysis: "gpt-4o"              # Code review and analysis
   consolidation: "gpt-4o"              # Memory consolidation
   
-  # Vibe binary defaults (external CLI tool)
-  vibe_default: "devstral-2"           # Native model for Vibe CLI
-  
   # Fallbacks (used when primary unavailable)
   fallback: "gpt-4o"                   # Fallback model
   
@@ -85,6 +82,8 @@ agents:
 # =============================================================================
 # MCP SERVER CONFIGURATION
 # =============================================================================
+# Feature Flags Only.
+# Detailed configuration (command, args, env) is in mcp_servers.json.
 
 mcp_enhanced:
   retry_attempts: 3
@@ -94,92 +93,49 @@ mcp:
   # === TIER 1: MUST-HAVE (Ядро системи) ===
   macos_use:
     enabled: true
-    permissions:
-      accessibility: true
-      screen_recording: true
 
   filesystem:
     enabled: true
-    deny_write_repo: true
-    repo_write_allowed_subdir: .atlastrinity_runtime
-    deny_write_paths: []
-    allowed_paths:
-      - ${HOME}
-      - ${PROJECT_ROOT}
-      - /tmp
 
   sequential_thinking:
     enabled: true
-    model: ""                         # Explicit model for deep reasoning - SET THIS
-    max_history_size: 1000
-    temperature: 0.2               # Precise reasoning
-    max_tokens: 4000               # Sufficient for complex analysis
-    
-    # Grisha Verification Usage
-    grisha_phase1_thoughts: 3      # Goal analysis (what to verify, which tools)
-    grisha_phase2_thoughts: 4      # Verdict formation (logical analysis of evidence)
+    # Model configuration for this tool is handled by agents definition
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
   vibe:
     enabled: true
-    binary: vibe
-    # Default model defined in vibe_config.toml 
-    workspace: ${CONFIG_ROOT}/vibe_workspace
-    timeout_s: 3600
-    max_output_chars: 500000
-    disallow_interactive: true
+    # Configuration is in vibe_config.toml
 
   memory:
     enabled: true
-    # Path configured in database_management.chromadb.path section below
-    collection_name: atlastrinity_memory
 
   graph:
     enabled: true
 
   redis:
     enabled: true
-    # URL configured in database_management.redis.url section below
 
   duckduckgo_search:
     enabled: true
 
   golden_fund:
     enabled: true
-    # Golden Fund Knowledge Base (8 tools): Semantic search, entity probing, 
-    # data ingestion, analysis storage, blob management
-    # Data stored in ~/.config/atlastrinity/data/golden_fund/
 
   data_analysis:
     enabled: true
-    # Pandas-based Data Analysis Engine (8 tools): read_metadata, analyze_dataset,
-    # generate_statistics, create_visualization, data_cleaning, data_aggregation,
-    # interpret_column_data, run_pandas_code
-    # Supports CSV, Excel, JSON, Parquet
 
   github:
     enabled: true
-    # Advanced GitHub API: Pull Requests, Issues, Search, Repository Management
-    # Requires GITHUB_TOKEN in your .env file
 
   whisper_stt:
     enabled: true
-    # Model and language configured in voice.stt section below
 
   devtools:
     enabled: true
-    # All tools enabled by default
-    ruff_enabled: true
-    oxlint_enabled: true
-    knip_enabled: true
-    pyrefly_enabled: true
-    inspector_enabled: true
-    health_check_enabled: true
 
   # === TIER 3: ADDITIONAL (Додаткові) ===
   puppeteer:
     enabled: true
-    headless: true
 
   # === TIER 4: SPECIALIZED (Спеціалізовані / Дебаг) ===
   chrome_devtools:
