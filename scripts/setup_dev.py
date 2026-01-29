@@ -597,13 +597,12 @@ def install_deps():
         )
         run_venv_cmd(["-m", "pip", "install", "protobuf==3.19.6"], check=True)
 
-    # Install main requirements
+        # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
         print_info("PIP install -r requirements.txt...")
-        subprocess.run(
+        run_venv_cmd(
             [
-                str(venv_python_bin),
                 "-m",
                 "pip",
                 "install",
@@ -616,9 +615,8 @@ def install_deps():
             capture_output=True,
         )
         # Install espnet and ukrainian-tts separately with no-build-isolation
-        subprocess.run(
+        run_venv_cmd(
             [
-                str(venv_python_bin),
                 "-m",
                 "pip",
                 "install",
@@ -629,9 +627,8 @@ def install_deps():
             check=True,
         )
         # Install ukrainian-tts from git (works with espnet 202301)
-        subprocess.run(
+        run_venv_cmd(
             [
-                str(venv_python_bin),
                 "-m",
                 "pip",
                 "install",
@@ -651,8 +648,8 @@ def install_deps():
         filtered_file = str(req_file) + ".filtered"
         with open(filtered_file, "w") as f:
             f.writelines(filtered_lines)
-        subprocess.run(
-            [str(venv_python_bin), "-m", "pip", "install", "--prefer-binary", "-r", filtered_file],
+        run_venv_cmd(
+            ["-m", "pip", "install", "--prefer-binary", "-r", filtered_file],
             check=True,
         )
         os.remove(filtered_file)
@@ -661,9 +658,8 @@ def install_deps():
     req_dev_file = PROJECT_ROOT / "requirements-dev.txt"
     if req_dev_file.exists():
         print_info("PIP install -r requirements-dev.txt...")
-        subprocess.run(
+        run_venv_cmd(
             [
-                str(venv_python_bin),
                 "-m",
                 "pip",
                 "install",
