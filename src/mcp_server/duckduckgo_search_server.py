@@ -100,48 +100,98 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
         logger.error(f"Request error: {e}")
         return []
 
-    # Minimal regex to find ALL links and their text
-    pattern = re.compile(
-        r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
-        re.IGNORECASE | re.DOTALL,
-    )
+    # Multiple patterns to match different DDG HTML layouts
+    patterns = [
+        # Pattern 1: result__url class (modern layout)
+        re.compile(
+            r'class="result__url"[^>]*href="([^"]+)"[^>]*>([^<]+)',
+            re.IGNORECASE | re.DOTALL,
+        ),
+        # Pattern 2: Standard anchor with result class
+        re.compile(
+            r'<a[^>]*class="[^"]*result[^"]*"[^>]*href="([^"]+)"[^>]*>([^<]*)',
+            re.IGNORECASE | re.DOTALL,
+        ),
+        # Pattern 3: Generic anchor tags (fallback)
+        re.compile(
+            r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ]
 
     results: list[dict[str, Any]] = []
-    for match in pattern.finditer(resp.text):
+    seen_urls: set[str] = set()
+    
+    # Try to find result__url pattern first (more reliable)
+    url_pattern = re.compile(r'class="result__url"[^>]*>([^<]+)', re.IGNORECASE)
+    title_pattern = re.compile(r'class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)', re.IGNORECASE)
+    
+    # Method 1: Extract from result__a class (title links)
+    for match in title_pattern.finditer(resp.text):
         href = html.unescape(match.group(1)).strip()
-
-        # Filter: Exclude internal DDG links and obvious junk
-        if any(x in href for x in ["duckduckgo.com/", "ad_redirect", "javascript:", "#"]):
-            if "duckduckgo.com/l/?" not in href:  # Keep result redirects if needed
-                continue
-
-        title_html = match.group(2)
-        title = html.unescape(re.sub(r"<.*?>", "", title_html)).strip()
-
+        title = html.unescape(match.group(2)).strip()
+        
         if not href or not title or len(title) < 2:
             continue
-
-        # Clean up DDG redirects if present
+            
+        # Skip internal DDG links
+        if any(x in href for x in ["duckduckgo.com/", "ad_redirect", "javascript:", "#"]):
+            if "duckduckgo.com/l/?uddg=" not in href:
+                continue
+        
+        # Clean up DDG redirects
         if "uddg=" in href:
-            # Extract real URL from the 'uddg' parameter
             match_real = re.search(r"uddg=([^&]+)", href)
             if match_real:
                 from urllib.parse import unquote
-
                 href = unquote(match_real.group(1))
-
+        
         if href.startswith("//"):
             href = "https:" + href
-        elif href.startswith("/"):
-            href = "https://duckduckgo.com" + href
-
-        # Filter out links that are likely UI elements (too short or generic)
-        if any(title.lower() == x for x in ["next", "previous", "images", "videos", "news"]):
-            continue
-
-        results.append({"title": title, "url": href})
-        if len(results) >= max_results:
-            break
+            
+        if href not in seen_urls and href.startswith("http"):
+            seen_urls.add(href)
+            results.append({"title": title, "url": href})
+            if len(results) >= max_results:
+                break
+    
+    # Method 2: Fallback to generic pattern if Method 1 fails
+    if len(results) < max_results:
+        for match in patterns[2].finditer(resp.text):
+            href = html.unescape(match.group(1)).strip()
+            
+            # Filter DDG internal links
+            if any(x in href for x in ["duckduckgo.com/", "ad_redirect", "javascript:"]):
+                if "uddg=" not in href:
+                    continue
+            
+            title_html = match.group(2)
+            title = html.unescape(re.sub(r"<.*?>", "", title_html)).strip()
+            
+            if not href or not title or len(title) < 2:
+                continue
+            
+            # Clean up DDG redirects
+            if "uddg=" in href:
+                match_real = re.search(r"uddg=([^&]+)", href)
+                if match_real:
+                    from urllib.parse import unquote
+                    href = unquote(match_real.group(1))
+            
+            if href.startswith("//"):
+                href = "https:" + href
+            elif href.startswith("/"):
+                href = "https://duckduckgo.com" + href
+            
+            # Filter UI elements
+            if any(title.lower() == x for x in ["next", "previous", "images", "videos", "news"]):
+                continue
+            
+            if href not in seen_urls and href.startswith("http"):
+                seen_urls.add(href)
+                results.append({"title": title, "url": href})
+                if len(results) >= max_results:
+                    break
 
     return results
 
