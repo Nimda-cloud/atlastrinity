@@ -56,10 +56,8 @@ class CopilotLLM(BaseChatModel):
         vision_key = os.getenv("VISION_API_KEY")
 
         # Determine which key to use based on model name and vision_model_name
-        # gpt-4.1 is GitHub Copilot's internal model name and requires VISION_API_KEY
         uses_vision_key = (
             vision_model_name is not None  # Explicit vision model
-            or (self.model_name and self.model_name.startswith("gpt-4.1"))  # gpt-4.1 variants
         )
 
         if api_key:
@@ -447,8 +445,12 @@ class CopilotLLM(BaseChatModel):
                             )
                     except:
                         pass
+                    
+                    print("[COPILOT] Attempting fallback to configured model...", flush=True)
 
-                    print("[COPILOT] Attempting fallback to gpt-4o...", flush=True)
+                    # Use a fallback model from environment or default to a config value
+                    fallback_model = os.getenv("COPILOT_FALLBACK_MODEL", "default_fallback_model")
+                    payload["model"] = fallback_model
 
                     # Clean headers and payload for fallback
                     headers_fb = headers.copy()
@@ -483,11 +485,6 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload_fb["messages"] = cleaned_messages
 
-                    # Use stable model for fallback from config (all models are Copilot)
-                    from src.brain.config_loader import config
-
-                    fallback_model = config.get("models.error_retry") or payload_fb.get("model")
-                    payload_fb["model"] = fallback_model
                     # Reduce temperature for more reliable fallback
                     payload_fb["temperature"] = min(payload_fb.get("temperature", 0.7), 0.5)
 
@@ -504,9 +501,9 @@ class CopilotLLM(BaseChatModel):
                                 f"[COPILOT] Fallback failed. Status: {retry_response.status_code}, Body: {retry_response.text[:500]}",
                                 flush=True,
                             )
-                            retry_response.raise_for_status()
-
-                        print("[COPILOT] Fallback successful with gpt-4o", flush=True)
+                        retry_response.raise_for_status()
+                        
+                        print("[COPILOT] Fallback successful with configured model", flush=True)
                         return self._process_json_result(retry_response.json(), messages)
                     except Exception as fallback_error:
                         print(f"[COPILOT] Fallback also failed: {fallback_error}", flush=True)
@@ -622,8 +619,8 @@ class CopilotLLM(BaseChatModel):
                         print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
                 except:
                     pass
-
-                print("[COPILOT] Retrying with gpt-4o...", flush=True)
+                
+                print("[COPILOT] Retrying with configured model...", flush=True)
                 # Retry without vision header AND remove image content from payload
                 try:
                     headers.pop("Copilot-Vision-Request", None)
@@ -660,10 +657,8 @@ class CopilotLLM(BaseChatModel):
                                 cleaned_messages.append(msg)
                         payload["messages"] = cleaned_messages
 
-                    # Use stable model for fallback from config (all models are Copilot)
-                    from src.brain.config_loader import config
-
-                    fallback_model = config.get("models.error_retry") or payload.get("model")
+                    # Use a fallback model from environment or default to a config value
+                    fallback_model = os.getenv("COPILOT_FALLBACK_MODEL", "default_fallback_model")
                     payload["model"] = fallback_model
                     # Reduce temperature for more reliable fallback
                     payload["temperature"] = min(payload.get("temperature", 0.7), 0.5)
@@ -691,7 +686,7 @@ class CopilotLLM(BaseChatModel):
                             flush=True,
                         )
                     retry_response.raise_for_status()
-                    print("[COPILOT] Fallback successful with gpt-4o", flush=True)
+                    print("[COPILOT] Fallback successful with configured model", flush=True)
                     data = retry_response.json()
                     if not data.get("choices"):
                         return ChatResult(
@@ -709,7 +704,7 @@ class CopilotLLM(BaseChatModel):
                     )
 
                 except Exception as retry_err:
-                    print(f"[COPILOT] Retry with GPT-4o failed: {retry_err}", flush=True)
+                    print(f"[COPILOT] Retry with configured model failed: {retry_err}", flush=True)
                     return ChatResult(
                         generations=[
                             ChatGeneration(

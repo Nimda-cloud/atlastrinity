@@ -3,7 +3,7 @@
 
 Role: Result verification via Vision, Security control
 Voice: Mykyta (male)
-Model: Configured in config.yaml (agents.grisha.vision_model)
+Model: Configured vision model
 """
 
 import os
@@ -333,10 +333,7 @@ Synthesize findings into a comprehensive validation verdict.
 
         # Check if vision model is powerful (from config)
         vision_model = (getattr(self.llm, "model_name", "") or "unknown").lower()
-        # Consider any model from config.models.vision as powerful
-        is_powerful = "vision" in vision_model or any(
-            x in vision_model for x in ("gpt-4", "claude", "sonnet")
-        )
+        is_powerful = "vision" in vision_model
 
         info = [
             f"Active MCP Realms: {', '.join(active_servers)}",
@@ -974,7 +971,7 @@ Provide:
                 "full_reasoning": analysis_text,
             },
             "feedback_text": f"GRISHA FORENSIC REPORT:\n{analysis_text}",
-            "voice_message": "Я провів глибокий аналіз інциденту. Результати в звіті.",
+            "voice_message": "Я провід глибокий аналіз інциденту. Результати в звіті.",
         }
 
     async def _save_rejection_report(

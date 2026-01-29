@@ -3,7 +3,7 @@
 
 Role: Strategic analysis, plan formulation, task delegation
 Voice: Dmytro (male)
-Model: Configured in config.yaml (models.default)
+Model: Configured model
 """
 
 import os
@@ -75,7 +75,7 @@ class Atlas(BaseAgent):
         else:
             # Priority: 1. Constructor arg, 2. Config file
             final_model = model_name or agent_config.get("model")
-            deep_model = agent_config.get("deep_model")
+            deep_model = agent_config.get("deep_model", agent_config.get("model"))  # Fallback to standard model if deep not specified
 
             if not final_model:
                 raise ValueError("[ATLAS] Model not specified in config.yaml or constructor")

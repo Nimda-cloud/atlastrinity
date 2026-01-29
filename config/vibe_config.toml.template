@@ -18,7 +18,7 @@
 
 # Active model alias (from models list below)
 # This is the default model used when no explicit model is specified
-active_model = "devstral-2"
+active_model = "devstral-2"  # Native default model for Vibe CLI as per requirement
 
 # System prompt ID (loads from ~/.vibe/prompts/{id}.md)
 # Set to a custom ID to override the default Vibe system prompt
@@ -113,27 +113,16 @@ backend = "generic"
 # Define available models with pricing and settings.
 # Each model needs: name (API ID), provider, alias, temperature
 
-
-
-
+# Vibe Native Model (devstral-2)
 [[models]]
 name = "devstral-2"
 provider = "mistral"
 alias = "devstral-2"
 temperature = 0.2
-input_price = 0.0   # Price per million input tokens (USD)
-output_price = 0.0  # Price per million output tokens (USD)
+input_price = 0.0
+output_price = 0.0
 
-# Copilot Models (GPT-4o)
-[[models]]
-name = "gpt-4o"
-provider = "copilot"
-alias = "gpt-4o"
-temperature = 0.3
-input_price = 5.0
-output_price = 15.0
-
-# Copilot Models (GPT-4.1)
+# Copilot Models (Placeholder for additional models)
 [[models]]
 name = "gpt-4.1"
 provider = "copilot"
@@ -142,27 +131,13 @@ temperature = 0.2
 input_price = 5.0
 output_price = 15.0
 
-
-
-
-
-# Example: GPT-4 via OpenRouter
-# [[models]]
-# name = "openai/gpt-4o"
-# provider = "openrouter"
-# alias = "gpt-4o"
-# temperature = 0.3
-# input_price = 2.5
-# output_price = 10.0
-
-# Example: Claude via OpenRouter
-# [[models]]
-# name = "anthropic/claude-3.5-sonnet"
-# provider = "openrouter"
-# alias = "claude-sonnet"
-# temperature = 0.3
-# input_price = 3.0
-# output_price = 15.0
+[[models]]
+name = "gpt-4o"
+provider = "copilot"
+alias = "gpt-4o"
+temperature = 0.3
+input_price = 5.0
+output_price = 15.0
 
 # -----------------------------------------------------------------------------
 # TOOL PERMISSION OVERRIDES

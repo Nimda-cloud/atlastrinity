@@ -14,7 +14,7 @@ def check_secrets() -> bool:
 
     # Important secrets - warn if missing
     important_secrets = {
-        "OPENAI_API_KEY": "OpenAI GPT models",
+        "OPENAI_API_KEY": "OpenAI models",
         "ANTHROPIC_API_KEY": "Claude models",
         "COPILOT_API_KEY": "GitHub Copilot integration",
     }
@@ -51,7 +51,7 @@ def check_secrets() -> bool:
         if os.getenv(secret):
             print(f"✅ {secret} found (optional)")
         else:
-            print("ℹ️  INFO: {secret} not set ({description})")
+            print(f"ℹ️  INFO: {secret} not set ({description})")
 
     # Report results
     print()
