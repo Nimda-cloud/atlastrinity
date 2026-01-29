@@ -16,6 +16,7 @@ class ErrorCategory(Enum):
     """Categories of errors requiring distinct recovery strategies"""
 
     TRANSIENT = "transient"  # Network blips, timeouts (Retry)
+    INFRASTRUCTURE = "infrastructure"  # API rate limits, service unavailability (Wait and Retry)
     LOGIC = "logic"  # Code bugs, syntax errors (Vibe Fix)
     STATE = "state"  # Corrupted session/environment (Restart)
     PERMISSION = "permission"  # Access denied (Ask User/Atlas)
@@ -42,13 +43,23 @@ class SmartErrorRouter:
     TRANSIENT_PATTERNS = [
         r"connection\s+(refused|reset|timeout)",
         r"timeout",
-        r"rate\s+limit",
         r"broken\s+pipe",
         r"network\s+error",
         r"socket\s+error",
+        r"temporary\s+failure",
+    ]
+
+    # Infrastructure: API limits, service issues (requires longer wait)
+    INFRASTRUCTURE_PATTERNS = [
+        r"rate\s+limit\s+exceeded",
+        r"mistral\s+api\s+rate\s+limit",
+        r"error_type.*RATE_LIMIT",
+        r"api\s+quota\s+exceeded",
+        r"too\s+many\s+requests",
+        r"429\s+too\s+many\s+requests",
         r"503\s+service\s+unavailable",
         r"502\s+bad\s+gateway",
-        r"temporary\s+failure",
+        r"api\s+is\s+unreachable",
     ]
 
     # Logic: requires code modification (Vibe)
@@ -106,7 +117,10 @@ class SmartErrorRouter:
 
         category = ErrorCategory.UNKNOWN
 
-        if any(re.search(p, error_str) for p in self.VERIFICATION_PATTERNS):
+        # Check infrastructure first (API rate limits should not be treated as transient)
+        if any(re.search(p, error_str) for p in self.INFRASTRUCTURE_PATTERNS):
+            category = ErrorCategory.INFRASTRUCTURE
+        elif any(re.search(p, error_str) for p in self.VERIFICATION_PATTERNS):
             category = ErrorCategory.VERIFICATION
         elif any(re.search(p, error_str) for p in self.TRANSIENT_PATTERNS):
             category = ErrorCategory.TRANSIENT
@@ -127,6 +141,23 @@ class SmartErrorRouter:
         category = self.classify(str(error))
 
         logger.info(f"[ROUTER] Error classified as: {category.value} (Attempt {attempt})")
+
+        if category == ErrorCategory.INFRASTRUCTURE:
+            # Infrastructure issues: wait longer, don't involve Vibe/Grisha
+            # These are external service issues, not code problems
+            if attempt <= 3:
+                return RecoveryStrategy(
+                    action="WAIT_AND_RETRY",
+                    backoff=60.0 * attempt,  # 60s, 120s, 180s
+                    max_retries=3,
+                    reason=f"API rate limit or service unavailability detected. Waiting {60 * attempt}s before retry.",
+                )
+            else:
+                # After 3 attempts, notify user
+                return RecoveryStrategy(
+                    action="ASK_USER",
+                    reason="Persistent API rate limiting after multiple retries. Manual intervention may be needed.",
+                )
 
         if category == ErrorCategory.TRANSIENT:
             # Patient Retry

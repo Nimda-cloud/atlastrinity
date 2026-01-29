@@ -369,7 +369,10 @@ async def run_vibe_subprocess(
         await emit_log("info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
 
     try:
-        MAX_RETRIES = 2
+        MAX_RETRIES = 5  # Increased from 2 to 5
+        # Exponential backoff delays: 30s, 60s, 120s, 240s, 480s
+        BACKOFF_DELAYS = [30, 60, 120, 240, 480]
+        
         for attempt in range(MAX_RETRIES):
             try:
                 full_argv = argv
@@ -529,17 +532,39 @@ async def run_vibe_subprocess(
                 stdout = "".join(c for c in stdout if c >= "\x20" or c in "\t\n\r")
                 stderr = "".join(c for c in stderr if c >= "\x20" or c in "\t\n\r")
 
-                # CHECK FOR RATE LIMIT
+                # CHECK FOR RATE LIMIT with exponential backoff
                 if "Rate limit exceeded" in stderr or "Rate limit exceeded" in stdout:
                     if attempt < MAX_RETRIES - 1:
-                        wait_time = (attempt + 1) * 10
-                        logger.warning(f"[VIBE] Rate limit detected. Retrying in {wait_time}s...")
+                        wait_time = BACKOFF_DELAYS[attempt]
+                        logger.warning(
+                            f"[VIBE] Rate limit detected (attempt {attempt + 1}/{MAX_RETRIES}). "
+                            f"Retrying in {wait_time}s..."
+                        )
                         await emit_log(
                             "warning",
-                            f"⚠️ [VIBE-LIVE] Перевищено ліміт запитів API. Повторна спроба через {wait_time}с...",
+                            f"⚠️ [VIBE-RATE-LIMIT] Перевищено ліміт запитів Mistral API. "
+                            f"Спроба {attempt + 1}/{MAX_RETRIES}. Очікування {wait_time}с...",
                         )
                         await asyncio.sleep(wait_time)
                         continue
+                    else:
+                        # All retries exhausted
+                        error_msg = (
+                            f"Mistral API rate limit exceeded after {MAX_RETRIES} attempts. "
+                            f"Total wait time: {sum(BACKOFF_DELAYS)}s. "
+                            "Please wait a few minutes before retrying or check your API quota."
+                        )
+                        logger.error(f"[VIBE] {error_msg}")
+                        await emit_log("error", f"❌ [VIBE-RATE-LIMIT] {error_msg}")
+                        return {
+                            "success": False,
+                            "error": error_msg,
+                            "error_type": "RATE_LIMIT",
+                            "returncode": 1,
+                            "stdout": truncate_output(stdout),
+                            "stderr": truncate_output(stderr),
+                            "command": argv,
+                        }
 
                 logger.info(f"[VIBE] Process completed with exit code: {process.returncode}")
 
