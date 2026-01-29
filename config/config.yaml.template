@@ -196,10 +196,32 @@ security:
 # =============================================================================
 # SYSTEM PATHS
 # =============================================================================
+# Centralized path management for all system components
 
 system:
+  # Base directories
+  config_root: ${CONFIG_ROOT}
+  project_root: ${PROJECT_ROOT}
+  home: ${HOME}
+  
+  # Application directories
   workspace_path: ${CONFIG_ROOT}/workspace
+  logs: ${CONFIG_ROOT}/logs
+  memory: ${CONFIG_ROOT}/memory
+  screenshots: ${CONFIG_ROOT}/screenshots
+  cache: ${CONFIG_ROOT}/cache
+  temp: /tmp/atlastrinity
+  
+  # Repository paths
   repository_path: ${PROJECT_ROOT}
+  backups: ${PROJECT_ROOT}/backups
+  
+  # Model directories
+  models:
+    tts: ${CONFIG_ROOT}/models/tts
+    stt: ${CONFIG_ROOT}/models/faster-whisper
+    stanza: ${CONFIG_ROOT}/models/stanza
+    huggingface: ${CONFIG_ROOT}/models/huggingface
 
 # =============================================================================
 # API CONFIGURATION
