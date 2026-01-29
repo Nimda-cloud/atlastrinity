@@ -187,7 +187,7 @@ permission = "ask"
 name = "xcodebuild"
 transport = "stdio"
 command = "/usr/local/bin/node"  # Verify node path
-args = ["${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
+args = ["/Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
 
 # DevTools (Linter & Analysis)
 # NOTE: Uses /bin/sh wrapper to safely set PYTHONPATH, ensuring module discovery works in CLI context
@@ -195,7 +195,7 @@ args = ["${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
 name = "devtools"
 transport = "stdio"
 command = "/bin/sh"
-args = ["-c", "export PYTHONPATH=${PROJECT_ROOT} && ${PROJECT_ROOT}/.venv/bin/python3 -m src.mcp_server.devtools_server"]
+args = ["-c", "export PYTHONPATH=/Users/dev/Documents/GitHub/atlastrinity && /Users/dev/Documents/GitHub/atlastrinity/.venv/bin/python3 -m src.mcp_server.devtools_server"]
 
 # -----------------------------------------------------------------------------
 # PATHS (Optional)

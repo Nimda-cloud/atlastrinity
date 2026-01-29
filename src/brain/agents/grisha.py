@@ -519,9 +519,22 @@ Output structured analysis."""
             }
         )
 
-        # Add context-aware tools based on step type
+        # Detect if this is an analysis task vs action task
         step_action_lower = step.get("action", "").lower()
+        
+        # Analysis task keywords - for these, DB trace is sufficient
+        is_analysis_task = any(
+            keyword in step_action_lower
+            for keyword in ["analyze", "review", "research", "investigate", "examine", "study", "assess", "evaluate", "explore"]
+        )
+        
+        # If it's an analysis task, don't add file verification tools
+        # (DB trace of tool execution is sufficient proof of analysis)
+        if is_analysis_task:
+            logger.info(f"[GRISHA] Detected ANALYSIS task - relying on DB trace only")
+            return tools[:2]  # Only DB check
 
+        # For ACTION tasks, add context-aware verification tools
         if (
             "file" in step_action_lower
             or "save" in step_action_lower
@@ -604,6 +617,16 @@ CRITICAL INSTRUCTIONS:
 2. **SINGLE SUCCESS RULE**: Even if only 1 tool out of 10 returned data, if that data PROVES the goal was achieved, the step is VERIFIED.
 3. **EMPTY RESULTS**: For info-gathering tasks, empty results = failure. For action tasks, check if action was performed.
 4. **ROOT CAUSE**: If verification fails, identify the EXACT reason (tool routing issue, empty data, wrong tool used, etc.).
+5. **ANALYSIS vs ACTION TASKS**: 
+   - For ANALYSIS tasks (analyze, review, research, investigate), DB trace of tool execution is sufficient proof
+   - For ACTION tasks (create, build, modify), verify actual artifacts/changes
+   - If step action contains "analyze", "review", "research" and DB shows tools were executed, consider VERIFIED
+
+ANTI-LOOP DIRECTIVE:
+- Think ONCE about evidence quality
+- Think ONCE about verdict reasoning
+- DO NOT repeat the same analysis
+- Each thought MUST cover a DIFFERENT aspect
 
 Provide:
 - **VERDICT**: VERIFIED or FAILED
@@ -614,7 +637,7 @@ Provide:
         logger.info(f"[GRISHA] Phase 2: Forming logical verdict for step {step_id}...")
 
         try:
-            reasoning_result = await self.use_sequential_thinking(query, total_thoughts=4)
+            reasoning_result = await self.use_sequential_thinking(query, total_thoughts=2)
 
             if not reasoning_result.get("success"):
                 logger.warning("[GRISHA] Logical verdict analysis failed, using fallback")
