@@ -117,12 +117,19 @@ rm -rf dist/ release/ dist_venv/ .vite/
 echo "✅ Build artifacts видалено"
 
 echo ""
-echo "📦 Крок 5/8: Видалення Swift компіляції..."
+echo "📦 Крок 5/8: Видалення Swift компіляції та XcodeBuildMCP..."
 if [ -d "vendor/mcp-server-macos-use/.build" ]; then
     rm -rf vendor/mcp-server-macos-use/.build
     echo "✅ Swift .build видалено (вихідний код залишається)"
 else
     echo "ℹ️  Swift .build не існує"
+fi
+
+if [ -d "vendor/XcodeBuildMCP" ]; then
+    rm -rf vendor/XcodeBuildMCP
+    echo "✅ XcodeBuildMCP видалено (буде перевстановлено при setup)"
+else
+    echo "ℹ️  XcodeBuildMCP не існує"
 fi
 
 echo ""

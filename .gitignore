@@ -60,6 +60,7 @@ data/chroma/
 DerivedData/
 
 **/vendor/mcp-server-macos-use/.build/
+vendor/XcodeBuildMCP/
 
 # Database Backups Strategy:
 # - Local databases in ~/.config/atlastrinity/ are never committed
