@@ -37,14 +37,14 @@ def fix_macos_use_tools():
     print("🔧 Checking macos-use tools...")
 
     # Check if binary exists
-    binary_path = "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    binary_path = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use")
     if not os.path.exists(binary_path):
         print("❌ macos-use binary not found")
         print("🔨 Building macos-use...")
 
-        build_script = (
-            "/Users/hawk/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/build.sh"
-        )
+        build_script = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/build.sh")
         if os.path.exists(build_script):
             import subprocess
 
@@ -120,10 +120,12 @@ def fix_memory_usage():
             import subprocess
 
             try:
+                HOME = os.path.expanduser("~")
+                PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
                 subprocess.run(
                     [
                         "find",
-                        "/Users/hawk/Documents/GitHub/atlastrinity",
+                        PROJECT_ROOT,
                         "-name",
                         "__pycache__",
                         "-type",
@@ -141,7 +143,7 @@ def fix_memory_usage():
                 pass
 
             # Clear node_modules cache if needed
-            node_modules = "/Users/hawk/Documents/GitHub/atlastrinity/node_modules"
+            node_modules = os.path.join(PROJECT_ROOT, "node_modules")
             if os.path.exists(node_modules):
                 cache_size = sum(
                     os.path.getsize(os.path.join(dirpath, filename))
@@ -163,7 +165,9 @@ def fix_git_permissions():
     """Fix git repository permissions"""
     print("🔧 Fixing git permissions...")
 
-    git_dir = "/Users/hawk/Documents/GitHub/atlastrinity/.git"
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    git_dir = os.path.join(PROJECT_ROOT, ".git")
     if os.path.exists(git_dir):
         import subprocess
 
@@ -181,7 +185,7 @@ def fix_git_permissions():
                 ["git", "remote", "-v"],
                 capture_output=True,
                 text=True,
-                cwd="/Users/hawk/Documents/GitHub/atlastrinity",
+                cwd=PROJECT_ROOT,
             )
             if "origin" in result.stdout:
                 print("✅ Git remote configured")

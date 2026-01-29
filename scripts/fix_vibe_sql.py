@@ -97,7 +97,9 @@ LIMIT 50
 """
 
     # Write patch to file
-    patch_file = "/Users/hawk/Documents/GitHub/atlastrinity/docs/sql_patch.md"
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    patch_file = os.path.join(PROJECT_ROOT, "docs/sql_patch.md")
     with open(patch_file, "w") as f:
         f.write(patch_content)
 

@@ -22,10 +22,16 @@ def reload_atlastrinity_config():
 
     # Clear any caches
     print("🧹 Clearing caches...")
+    
+    # Define paths dynamically
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    CONFIG_DIR = os.path.join(HOME, ".config/atlastrinity")
+    
     cache_dirs = [
-        "/Users/hawk/.config/atlastrinity/__pycache__",
-        "/Users/hawk/Documents/GitHub/atlastrinity/__pycache__",
-        "/Users/hawk/Documents/GitHub/atlastrinity/src/__pycache__",
+        os.path.join(CONFIG_DIR, "__pycache__"),
+        os.path.join(PROJECT_ROOT, "__pycache__"),
+        os.path.join(PROJECT_ROOT, "src/__pycache__"),
     ]
 
     for cache_dir in cache_dirs:
@@ -35,7 +41,7 @@ def reload_atlastrinity_config():
 
     # Verify configuration
     print("🔍 Verifying configuration...")
-    config_file = "/Users/hawk/.config/atlastrinity/behavior_config.yaml"
+    config_file = os.path.join(CONFIG_DIR, "behavior_config.yaml")
 
     if os.path.exists(config_file):
         with open(config_file) as f:

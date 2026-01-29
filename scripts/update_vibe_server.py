@@ -12,7 +12,10 @@ def update_vibe_server():
     """Update Vibe server with SQL fixes"""
 
     # Create a backup of the current vibe_server.py
-    vibe_server_path = "/Users/hawk/Documents/GitHub/atlastrinity/src/mcp_server/vibe_server.py"
+    # Create a backup of the current vibe_server.py
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    vibe_server_path = os.path.join(PROJECT_ROOT, "src/mcp_server/vibe_server.py")
     backup_path = f"{vibe_server_path}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     if os.path.exists(vibe_server_path):
@@ -132,7 +135,9 @@ python3 scripts/fix_vibe_sql.py
 ```
 """
 
-    readme_path = "/Users/hawk/Documents/GitHub/atlastrinity/docs/vibe_sql_fixes.md"
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+    readme_path = os.path.join(PROJECT_ROOT, "docs/vibe_sql_fixes.md")
     with open(readme_path, "w") as f:
         f.write(readme_content)
 
