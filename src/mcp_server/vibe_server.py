@@ -1712,9 +1712,11 @@ async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
 
 @server.tool()
 async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
-    """Execute a read-only SQL query against the AtlasTrinity database.
+    """Execute a read-only SQL SELECT query against the AtlasTrinity database.
 
-    Use this to inspect task execution history, tool results, and system state.
+    CRITICAL: This tool ONLY accepts valid SQL SELECT statements. 
+    Do NOT pass natural language goals, tasks, or questions here.
+    For AI assistance or general questions, use 'vibe_prompt' or 'vibe_ask'.
 
     SCHEMA:
     - sessions: id, started_at, ended_at
@@ -1724,7 +1726,7 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
     - logs: timestamp, level, source, message
 
     Args:
-        query: SQL SELECT query (SELECT queries only for safety)
+        query: A valid SQL SELECT statement.
 
     Returns:
         Query results as list of dictionaries
@@ -1734,12 +1736,31 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
 
     from src.brain.db.manager import db_manager
 
-    # Prevent destructive operations
-    forbidden = ["DROP", "DELETE", "UPDATE", "INSERT", "TRUNCATE", "ALTER"]
-    if any(f in query.upper() for f in forbidden):
+    # Basic SQL validation
+    clean_query = query.strip().upper()
+    
+    # 1. Reject natural language (heuristic: many words, no SQL-specific structure)
+    words = query.split()
+    if len(words) > 5 and not any(k in clean_query for k in ["SELECT", "FROM", "WHERE", "JOIN"]):
         return {
             "success": False,
-            "error": "Only SELECT queries are allowed for safety",
+            "error": "This tool requires a SQL query, not natural language. For tasks or questions, use 'vibe_prompt' or 'vibe_ask'.",
+            "hint": f"Your input looked like a goal: '{query[:50]}...'",
+        }
+
+    # 2. Enforce SELECT only
+    if not clean_query.startswith("SELECT"):
+        return {
+            "success": False,
+            "error": "Only SELECT queries are allowed for safety and read-only access.",
+        }
+
+    # 3. Prevent destructive operations
+    forbidden = ["DROP", "DELETE", "UPDATE", "INSERT", "TRUNCATE", "ALTER", "CREATE"]
+    if any(re.search(rf"\b{f}\b", clean_query) for f in forbidden):
+        return {
+            "success": False,
+            "error": f"Forbidden keyword detected in query. Only read-only SELECT is allowed.",
         }
 
     # Use central DB manager when available
