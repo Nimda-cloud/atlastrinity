@@ -513,22 +513,24 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         EXECUTION HISTORY:
         {history}
 
-        CRITICAL EVALUATION:
-        1. Did we achieve the actual goal?
-        2. Was the path efficient?
-        3. Is this a 'Golden Path' that should be a lesson for the future?
+        CRITICAL EVALUATION RULES:
+        1. **ARTIFACT VERIFICATION IS MANDATORY**: If the goal involves creating files (app, dmg, executable, document, etc.), check if ARTIFACT VERIFICATION shows these files exist. Tool success (✅) does NOT equal goal achievement if artifacts are missing.
+        2. **GUI SIMULATION IS NOT EXECUTION**: If steps show GUI clicks/typing in IDEs (Xcode, VSCode) for compilation/building, and no actual terminal commands (xcodebuild, make, etc.) were executed, the goal is NOT achieved even if tools returned success.
+        3. **Did we achieve the ACTUAL GOAL?** - Not "did tools run", but "did we produce the requested output"?
+        4. **Was the path efficient?** - Could this be done faster/better?
+        5. **Is this a 'Golden Path'?** - Only if it REALLY worked end-to-end with verified artifacts.
 
         Respond STRICTLY in JSON:
         {{
-            "quality_score": 0.0 to 1.0 (float),
-            "achieved": true/false,
-            "analysis": "Internal technical evaluation in ENGLISH (How did the tools perform?)",
-            "final_report": "DIRECT ANSWER to the user's GOAL in UKRAINIAN. 0% English words. (e.g., 'Я знайшов сім файлів...' OR 'Проект успішно зібрано.'). IF THE USER ASKED TO COUNT, YOU MUST PROVIDE THE COUNT HERE.",
+            "quality_score": 0.0 to 1.0 (float) - Base on ACTUAL achievement, not tool success flags,
+            "achieved": true/false - TRUE only if goal is verified complete with artifacts,
+            "analysis": "Internal technical evaluation in ENGLISH (How did the tools perform? Were artifacts verified?)",
+            "final_report": "DIRECT ANSWER to the user's GOAL in UKRAINIAN. 0% English words. (e.g., 'Я знайшов сім файлів...' OR 'Проект успішно зібрано.'). IF THE USER ASKED TO COUNT, YOU MUST PROVIDE THE COUNT HERE. If goal NOT achieved, explain what's missing.",
             "compressed_strategy": [
                 "Step 1 intent",
                 ...
             ],
-            "should_remember": true/false
+            "should_remember": true/false - FALSE if artifacts missing or goal not achieved
         }}
         """
 

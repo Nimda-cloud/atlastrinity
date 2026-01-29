@@ -1,4 +1,4 @@
-DATA PROCESSING PROTOCOL (v1.0)
+DATA PROCESSING PROTOCOL (v1.1)
 ==============================
 
 1. DATA INGESTION STANDARDS
@@ -7,19 +7,11 @@ DATA PROCESSING PROTOCOL (v1.0)
     - Always attempt to parse via Python (`pandas` or `openpyxl`) first.
     - Convert to JSON for internal logic to ensure LLM readability.
     - If file size exceeds 500KB, use chunked processing or summary extraction.
-3. HIGH-PRECISION INGESTION:
-   - PRIORITIZE `ingest_verified_dataset` for any structured data intended for long-term use.
-   - This ensures automated Quality Guard validation and Knowledge Graph registration.
-   - USE the results of `trace_data_chain` to enrich new ingestion records.
 
-4. PROMOTION & PERSISTENCE:
-   - Favor the 'global' namespace for universally valuable facts (business info, system configs).
-   - USE task-specific namespaces for ephemeral processing to prevent contamination.
-
-5. MACHINE-READABLE RULES (JSON):
 - SEMI-STRUCTURED (JSON, XML, YAML):
     - Validate schema before processing.
     - Use JSON for all inter-agent communication of datasets.
+
 - UNSTRUCTURED (PDF, DOCX):
     - PRIMARY: Use native system tools or Python libraries (`PyPDF2`, `python-docx`) for text extraction.
     - FALLBACK: Use OCR (`macos-use_analyze_screen`) if the file is an image-based PDF.
@@ -33,7 +25,18 @@ DATA PROCESSING PROTOCOL (v1.0)
     - Currency: Standard numeric format with explicit currency code (e.g., "1500.00 UAH").
     - Registry Identifiers: Trim whitespace and leading zeros only where safe (e.g., ЄДРПОУ should be exactly 8 digits).
 
-3. AGENT ROLES IN DATA PIPELINE
+3. HIGH-PRECISION INGESTION
+---------------------------
+- PRIORITIZE `ingest_verified_dataset` for any structured data intended for long-term use.
+- This ensures automated Quality Guard validation and Knowledge Graph registration.
+- USE the results of `trace_data_chain` to enrich new ingestion records.
+
+4. PROMOTION & PERSISTENCE
+--------------------------
+- Favor the 'global' namespace for universally valuable facts (business info, system configs).
+- USE task-specific namespaces for ephemeral processing to prevent contamination.
+
+5. AGENT ROLES IN DATA PIPELINE
 -------------------------------
 - TETYANA (Ingester): Responsible for initial parsing and cleaning. Must flag "Dirty Data" or "Format Mismatch".
 - ATLAS (Architect): Defines the schema for the resulting dataset and orchestrates where it belongs in the Vault.
