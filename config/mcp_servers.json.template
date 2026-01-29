@@ -39,10 +39,9 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ],
       "env": {
-        "MAX_HISTORY_SIZE": "1000",
-        "MODEL": "gpt-4o"
+        "MAX_HISTORY_SIZE": "1000"
       },
-      "description": "Dynamic problem-solving through thought sequences (Critical for Grisha)",
+      "description": "Dynamic problem-solving through thought sequences (Critical for Grisha). Model configured in config.yaml under mcp.sequential_thinking.model",
       "disabled": false,
       "tier": 1,
       "agents": [

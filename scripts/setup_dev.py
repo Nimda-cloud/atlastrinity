@@ -765,6 +765,15 @@ def sync_configs():
         else:
             print_warning("vibe_config.toml.template missing in config/, skipped overwrite")
 
+        # Copy monitoring_config.yaml template (Overwrite)
+        monitoring_yaml_src = PROJECT_ROOT / "config" / "monitoring_config.yaml.template"
+        monitoring_yaml_dst = CONFIG_ROOT / "monitoring_config.yaml"
+        if monitoring_yaml_src.exists():
+            shutil.copy2(monitoring_yaml_src, monitoring_yaml_dst)
+            print_success("FORCED SYNC: Overwrote monitoring_config.yaml from project template")
+        else:
+            print_warning("monitoring_config.yaml.template missing in config/, skipped overwrite")
+
         print_info("All configurations are in ~/.config/atlastrinity/")
         print_info("Edit configs there directly (no sync needed)")
         return True
