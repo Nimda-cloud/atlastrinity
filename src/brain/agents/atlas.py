@@ -1153,6 +1153,28 @@ CRITICAL PLANNING RULES:
         Determines if the goal was REALLY achieved and if the strategy is worth remembering.
         """
         from langchain_core.messages import HumanMessage, SystemMessage
+        import os
+        import re
+
+        # ARTIFACT VERIFICATION: Extract claimed file paths from goal and results
+        claimed_artifacts = self._extract_artifact_paths(goal, results)
+        missing_artifacts = []
+        verified_artifacts = []
+        
+        for artifact in claimed_artifacts:
+            if os.path.exists(artifact):
+                verified_artifacts.append(artifact)
+            else:
+                missing_artifacts.append(artifact)
+        
+        artifact_verification_note = ""
+        if claimed_artifacts:
+            artifact_verification_note = f"\n\n=== ARTIFACT VERIFICATION ==="
+            if verified_artifacts:
+                artifact_verification_note += f"\n✅ Verified ({len(verified_artifacts)}): {verified_artifacts[:3]}"
+            if missing_artifacts:
+                artifact_verification_note += f"\n❌ Missing ({len(missing_artifacts)}): {missing_artifacts[:3]}"
+                artifact_verification_note += f"\n⚠️ CRITICAL: Goal claims creation but artifacts don't exist!"
 
         # Prepare execution summary for LLM
         history = ""
@@ -1161,8 +1183,12 @@ CRITICAL PLANNING RULES:
             history += f"{i + 1}. [{res.get('step_id')}] {res.get('action')}: {status} {str(res.get('result'))[:2000]}\n"
             if res.get("error"):
                 history += f"   Error: {res.get('error')}\n"
+        
+        history += artifact_verification_note
 
         logger.info(f"[ATLAS] Deep Evaluating execution quality for goal: {goal[:50]}...")
+        if missing_artifacts:
+            logger.warning(f"[ATLAS] ⚠️ ARTIFACT VERIFICATION FAILED: {len(missing_artifacts)} missing files")
 
         # 1. Deep Reasoning Phase (Fact Extraction)
         reasoning_query = f"""Analyze this execution history and extract precise facts to answer the user's goal.
@@ -1170,6 +1196,7 @@ GOAL: {goal}
 HISTORY: {history}
 
 Extract specific numbers, names, and technical outcomes. If the user asked to count, find the count in the results.
+IMPORTANT: If ARTIFACT VERIFICATION shows missing files, the goal is NOT achieved regardless of step success flags.
 Output internal thoughts in English, then prepare a final report in UKRAINIAN with 0% English words."""
 
         try:
@@ -1205,6 +1232,13 @@ If the user asked to 'count', you MUST state the exact number found.
                 logger.warning("[ATLAS] Final report contains placeholders. Forcing fix.")
                 evaluation["final_report"] = evaluation["final_report"].split("[")[0].strip()
 
+            # OVERRIDE: If artifacts are missing, force achieved=False and lower score
+            if missing_artifacts and evaluation.get("achieved"):
+                logger.warning(f"[ATLAS] Overriding achieved=True -> False due to {len(missing_artifacts)} missing artifacts")
+                evaluation["achieved"] = False
+                evaluation["quality_score"] = min(evaluation.get("quality_score", 0), 0.3)
+                evaluation["analysis"] = f"ARTIFACT VERIFICATION FAILED: {evaluation.get('analysis', '')} Missing: {missing_artifacts[:2]}"
+            
             logger.info(f"[ATLAS] Evaluation complete. Score: {evaluation.get('quality_score', 0)}")
             return evaluation
         except Exception as e:
@@ -1256,6 +1290,41 @@ If the user asked to 'count', you MUST state the exact number found.
         except Exception as e:
             logger.error(f"[ATLAS] Failed to decide for user: {e}")
             return "Продовжуй виконання завдання згідно з планом."
+
+    def _extract_artifact_paths(self, goal: str, results: list[dict[str, Any]]) -> list[str]:
+        """Extract file paths that should have been created based on goal and execution results.
+        Returns list of absolute paths that were mentioned as outputs."""
+        import re
+        artifacts = []
+        
+        # Pattern to match file paths (ending with extensions or .app)
+        path_pattern = r'(?:/[^\s]+\.(?:app|dmg|pkg|zip|tar\.gz|swift|py|js|json|yaml|toml|md|txt|log))'
+        
+        # Search in goal
+        artifacts.extend(re.findall(path_pattern, goal, re.IGNORECASE))
+        
+        # Search in results
+        for res in results:
+            action = str(res.get("action", ""))
+            result = str(res.get("result", ""))
+            
+            # Look for creation/compilation mentions
+            if any(kw in action.lower() for kw in ["create", "compile", "build", "generate", "package", "install"]):
+                artifacts.extend(re.findall(path_pattern, action))
+                artifacts.extend(re.findall(path_pattern, result))
+            
+            # Check tool arguments for output paths
+            tool_call = res.get("tool_call", {})
+            if isinstance(tool_call, dict):
+                args = tool_call.get("args", {})
+                if isinstance(args, dict):
+                    for key in ["output", "destination", "path", "file", "target"]:
+                        val = args.get(key)
+                        if val and isinstance(val, str) and "/" in val:
+                            artifacts.extend(re.findall(path_pattern, val))
+        
+        # Deduplicate and return
+        return list(set(artifacts))
 
     def get_voice_message(self, action: str, **kwargs) -> str:
         """Generates dynamic TTS message."""

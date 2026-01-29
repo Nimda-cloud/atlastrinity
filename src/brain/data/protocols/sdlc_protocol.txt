@@ -16,8 +16,14 @@ PHASE 2: ARCHITECTURAL DESIGN
 PHASE 3: INCREMENTAL IMPLEMENTATION
 -----------------------------------
 - RULE: ONE MODULE PER STEP. Build, then verify.
-- RESEARCH: Use `context7` to verify library APIs (Pydantic, LangChain, etc.) BEFORE writing code to avoid hallucinations.
-- PATTERN: Skeleton -> Logic -> Error Handling -> Tests -> Verify.
+- **MANDATORY: ALL CODE GENERATION MUST USE VIBE MCP**:
+  * Use `vibe_implement_feature(goal="...", context_files=[...])` for new features/modules
+  * Use `vibe_prompt(prompt="...")` for code snippets, refactoring, or debugging
+  * NEVER manually write code via typing in IDEs or text editors
+  * NEVER use GUI simulation (clicks/typing) for code creation
+  * Vibe ensures quality, follows best practices, and provides self-healing
+- RESEARCH: Use `context7` to verify library APIs (Pydantic, LangChain, etc.) BEFORE invoking Vibe to avoid hallucinations.
+- PATTERN: Research (context7) -> Implement (Vibe) -> Verify (Grisha) -> Integrate.
 
 PHASE 4: INTEGRATION & TESTING
 ------------------------------
