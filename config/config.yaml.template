@@ -1,6 +1,28 @@
 # Синхронізовано: 2026-01-25 12:30:00 (v4.8 - Data Analysis + Golden Fund Integration)
 
 # =============================================================================
+# PROTOCOL DEFINITIONS
+# =============================================================================
+# Agent operational protocols define behavior rules for Atlas, Tetyana, Grisha.
+# Protocols are loaded from: src/brain/data/protocols/
+#
+# Available Protocols:
+# - data_protocol.txt          : Data processing and ingestion rules
+# - sdlc_protocol.txt          : Software development (MANDATORY Vibe MCP usage)
+# - search_protocol.txt        : Search strategies
+# - storage_protocol.txt       : Memory and storage management
+# - system_mastery_protocol.txt: System understanding
+# - task_protocol.txt          : Task execution doctrine
+# - voice_protocol.txt         : Voice communication (Ukrainian only)
+# - vibe_docs.txt              : Vibe MCP documentation
+# - create-new-program.md      : Project creation workflow
+# - self-healing-protocol.md   : Autonomous recovery
+# - system_monitoring_protocol.md: System state verification
+#
+# Protocols are loaded at startup via src/brain/mcp_registry.py
+# =============================================================================
+
+# =============================================================================
 # GLOBAL MODEL CONFIGURATION
 # =============================================================================
 # Single source of truth for all models used across the system
