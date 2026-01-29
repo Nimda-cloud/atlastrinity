@@ -206,7 +206,7 @@ command = "/usr/local/bin/node"  # Verify node path
 args = ["${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
 
 # DevTools (Linter & Analysis)
-# NOTE: Uses /bin/sh wrapper to set PYTHONPATH correctly for module imports
+# NOTE: Uses /bin/sh wrapper to safely set PYTHONPATH, ensuring module discovery works in CLI context
 [[mcp_servers]]
 name = "devtools"
 transport = "stdio"

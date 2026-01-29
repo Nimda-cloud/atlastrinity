@@ -231,6 +231,9 @@
         "-m",
         "src.mcp_server.devtools_server"
       ],
+      "env": {
+        "PYTHONPATH": "${PROJECT_ROOT}"
+      },
       "description": "Developer Tools (Linter & Analysis) wrapper (Ruff, Oxlint, Knip, Pyrefly, Inspector, Health).",
       "disabled": false,
       "tier": 2,
