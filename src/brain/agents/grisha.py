@@ -530,7 +530,7 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
         # If it's an analysis task, don't add file verification tools
         # (DB trace of tool execution is sufficient proof of analysis)
         if is_analysis_task:
-            logger.info(f"[GRISHA] Detected ANALYSIS task - relying on DB trace only")
+            logger.info("[GRISHA] Detected ANALYSIS task - relying on DB trace only")
             return tools[:2]  # Only DB check
 
         # For ACTION tasks, add context-aware verification tools
@@ -662,7 +662,8 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             import re
             confidence_match = re.search(r"(?:ВПЕВНЕНІСТЬ|confidence)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE)
             confidence = float(confidence_match.group(1)) if confidence_match else (0.8 if verified else 0.2)
-            if confidence > 1.0: confidence /= 100.0
+            if confidence > 1.0:
+                confidence /= 100.0
 
             # Extract Ukrainian reasoning
             reasoning_match = re.search(r"ОБҐРУНТУВАННЯ[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
