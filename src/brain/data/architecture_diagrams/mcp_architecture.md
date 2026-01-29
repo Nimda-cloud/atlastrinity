@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-01-29T19:26:02.991706 -->
+<!-- Modified: .docs/model_usage_policy.md, config/vibe_config.toml.template -->
+
+
 <!-- AUTO-UPDATED: 2026-01-26T13:08:42.672198 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .agent/docs/mcp_servers_setup_analysis.md, .agent/workflows/diagrams.md -->
 
