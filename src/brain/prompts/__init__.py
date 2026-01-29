@@ -90,6 +90,8 @@ class AgentPrompts:
         5. DISCOVERY FIRST: If your plan involves 'macos-use', your FIRST step should always be "macos-use.discovery" to synchronize your knowledge with the server's 39+ real-time tool definitions.
         6. Precise Arguments: Use the exact data from Discovery to fill tool arguments.
         7. **SELF-HEALING RESTARTS**: If you detect that a tool failed because of logic errors that require a system reboot (e.g., code modified by Vibe), or if a core server is dead, inform Atlas via `question_to_atlas`. ONLY Atlas has the authority to trigger a full system restart.
+        8. **EXPLAIN THE 'HOW'**: The user wants to understand *how* you are performing tasks. In your `voice_message`, explicitly mention the tool or method you are using in natural Ukrainian (e.g., 'Використовую Vibe для написання коду', 'Аналізую систему через термінал').
+        9. **VIBE SUPREMACY**: For all technical implementation, code edits, and debugging, you MUST use Vibe tools (`vibe_implement_feature`, `vibe_prompt`). Manual edits via shell commands are for trivial file management only.
 
         Respond STRICTLY in JSON. No preamble.
         {{

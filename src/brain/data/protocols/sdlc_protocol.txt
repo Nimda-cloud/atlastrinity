@@ -16,14 +16,14 @@ PHASE 2: ARCHITECTURAL DESIGN
 PHASE 3: INCREMENTAL IMPLEMENTATION
 -----------------------------------
 - RULE: ONE MODULE PER STEP. Build, then verify.
-- **MANDATORY: ALL CODE GENERATION MUST USE VIBE MCP**:
-  * Use `vibe_implement_feature(goal="...", context_files=[...])` for new features/modules
-  * Use `vibe_prompt(prompt="...")` for code snippets, refactoring, or debugging
-  * NEVER manually write code via typing in IDEs or text editors
-  * NEVER use GUI simulation (clicks/typing) for code creation
-  * Vibe ensures quality, follows best practices, and provides self-healing
+- **MANDATORY: VIBE SUPREMACY**:
+  * Use `vibe_implement_feature(goal="...", context_files=[...])` for all new features and complex modules.
+  * Use `vibe_prompt(prompt="...")` for analysis, debugging, and small code edits.
+  * NEVER manually edit files or use raw terminal commands for code creation if Vibe is available.
+  * Vibe provides full visibility and self-healing. Using it is the ONLY way to ensure system-wide consistency.
+- **SYSTEMIC FIXING**: When Vibe fixes a bug, it must also check if system templates (e.g., in `config/` or `templates/`) need updating to prevent the bug from returning after a system refresh.
 - RESEARCH: Use `context7` to verify library APIs (Pydantic, LangChain, etc.) BEFORE invoking Vibe to avoid hallucinations.
-- PATTERN: Research (context7) -> Implement (Vibe) -> Verify (Grisha) -> Integrate.
+- PATTERN: Research (context7) -> Analysis & Implementation (Vibe) -> Verify (Grisha) -> Integrate.
 
 PHASE 4: INTEGRATION & TESTING
 ------------------------------
