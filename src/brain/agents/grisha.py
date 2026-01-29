@@ -998,7 +998,7 @@ Provide:
                 "full_reasoning": analysis_text,
             },
             "feedback_text": f"GRISHA FORENSIC REPORT:\n{analysis_text}",
-            "voice_message": "Я провід глибокий аналіз інциденту. Результати в звіті.",
+            "voice_message": "Я провів глибокий аналіз інциденту. Результати в звіті.",
         }
 
     async def _save_rejection_report(

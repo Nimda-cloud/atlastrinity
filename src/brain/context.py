@@ -250,9 +250,15 @@ class SharedContext:
 
         return "\n".join(lines)
 
-    def is_at_max_depth(self) -> bool:
-        """Check if we've reached maximum recursion depth."""
-        return self.recursive_depth >= self.max_recursive_depth
+    def is_at_max_depth(self, proposed_depth: int | None = None) -> bool:
+        """Check if we've reached maximum recursion depth.
+        
+        Args:
+            proposed_depth: Optional depth level to check (e.g., depth+1 before entering recursion).
+                          If None, uses current recursive_depth.
+        """
+        check_depth = proposed_depth if proposed_depth is not None else self.recursive_depth
+        return check_depth >= self.max_recursive_depth
 
     def sync_from_config(self, config: dict) -> None:
         """Синхронізує max_recursive_depth з конфігурації orchestrator.max_recursion_depth"""
