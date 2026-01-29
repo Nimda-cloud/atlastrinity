@@ -660,9 +660,9 @@ def sync_configs():
 
                 defaults = {
                     "agents": {
-                        "atlas": {"model": "gpt-5-mini", "temperature": 0.7},
-                        "tetyana": {"model": "gpt-4o", "temperature": 0.5},
-                        "grisha": {"vision_model": "gpt-4o", "temperature": 0.3},
+                        "atlas": {"model": "", "temperature": 0.7},
+                        "tetyana": {"model": "", "temperature": 0.5},
+                        "grisha": {"vision_model": "", "temperature": 0.3},
                     },
                     "mcp": {},
                     "logging": {"level": "INFO"},

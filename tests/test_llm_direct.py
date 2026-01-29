@@ -17,7 +17,7 @@ except Exception as e:
 async def test_llm():
     try:
         print("Initializing CopilotLLM...")
-        llm = CopilotLLM(model_name="gpt-4o")
+        llm = CopilotLLM(model_name="")  # Model name should be set via configuration
         print("Invoking LLM...")
         res = await llm.ainvoke("Hi, repeat the word 'Success'")
         print(f"LLM Response: {res.content}")

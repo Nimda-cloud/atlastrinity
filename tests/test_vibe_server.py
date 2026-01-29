@@ -158,13 +158,13 @@ class TestVibeConfig:
 
         config = VibeConfig(
             models=[
-                ModelConfig(name="gpt-4o", provider="openrouter", alias="gpt4", temperature=0.3),
+                ModelConfig(name="model-placeholder", provider="openrouter", alias="gpt4", temperature=0.3),
             ],
         )
 
         model = config.get_model_by_alias("gpt4")
         assert model is not None
-        assert model.name == "gpt-4o"
+        assert model.name == "model-placeholder"
 
         # Non-existent
         assert config.get_model_by_alias("nonexistent") is None

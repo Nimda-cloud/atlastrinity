@@ -7,92 +7,54 @@
 # Change defaults here to switch models globally
 
 models:
-  # =============================================================================
-  # AVAILABLE COPILOT MODELS (ONLY THESE ARE VALID):
-  # - gpt-4.1         (Primary model, balanced performance)
-  # - gpt-4o          (Vision/multimodal, most stable for retry)
-  # - gpt-5-mini      (Fast, lightweight)
-  # - grok-mini-fast-1 (Very fast inference)
-  # - raptor-mini     (Specialized deep reasoning)
-  # 
-  # VIBE CLI ONLY:
-  # - devstral-2      (Mistral model, ONLY for Vibe binary, NOT for agents)
-  # =============================================================================
+  # Default models for different purposes
+  default: "gpt-4.1"                    # Default LLM for agents (Copilot custom)
+  vision: "gpt-4o"                      # Vision/multimodal tasks (Copilot custom)
+  reasoning: "raptor-mini"              # Specialized deep reasoning (Copilot custom)
+  code_analysis: "gpt-4.1"              # Code review and analysis (Copilot custom)
+  consolidation: "gpt-4.1"              # Memory consolidation (Copilot custom)
   
-  # Default models for different purposes (ALL from Copilot provider)
-  default: gpt-4.1                    # Default LLM для всіх agents
-  vision: gpt-4o                      # Vision/multimodal tasks
-  reasoning: gpt-4o              # Deep reasoning (replaced raptor-mini for stability)
-  code_analysis: gpt-4.1              # Code review and analysis
-  consolidation: gpt-4.1              # Memory consolidation (nightly)
+  # Vibe binary defaults (external CLI tool)
+  vibe_default: "devstral-2"           # Native model for Vibe CLI as per requirement
   
-  # Vibe binary defaults (external CLI tool - Mistral provider)
-  vibe_default: devstral-2           # Mistral model for Vibe CLI ONLY (not used by agents)
+  # Fallbacks (used when primary unavailable)
+  fallback: "gpt-4.1"                   # Fallback model (Copilot custom)
   
-  # Fallback models (used when primary unavailable or on error retry)
-  fallback: gpt-4.1                  # General fallback (Copilot)
-  error_retry: gpt-4o                # Stable model for error recovery/retry (Copilot)
-
-# ============================================================================
-# BEHAVIOR ENGINE
-# =============================================================================
-
-behavior:
-  config_file: behavior_config.yaml
-  hot_reload_enabled: true
-  cache_ttl_seconds: 1800
-
-# =============================================================================
-# VOICE CONFIGURATION
-# =============================================================================
-
-voice:
-  stt:
-    model: large-v3
-    device: auto
-    language: uk
-  tts:
-    engine: ukrainian-tts
-    device: cpu
-    enabled: true
-
-# =============================================================================
-# AGENT CONFIGURATION
-# =============================================================================
-# Agents inherit from models.default unless overridden
+  # Agents inherit from models.default unless overridden
 
 agents:
   atlas:
-    model: gpt-4.1                   # Standard model (inherited from models.default if empty)
-    deep_model: gpt-4.1              # Deep chat model for philosophical conversations
+    # model: inherited from models.default 
+    deep_model: ""          # Deep chat model for complex logic, set in your config.yaml
     temperature: 0.7
     max_tokens: 2000                 # Standard chat/task mode
     max_tokens_deep: 12000           # Deep persona mode (increased from 8000)
 
   tetyana:
-    model: gpt-4.1                   # Execution model (inherited from models.default if empty)
-    reasoning_model: gpt-4o       # Tool selection reasoning (replaced raptor-mini for stability)
-    vision_model: gpt-4o             # Vision tasks (inherited from models.vision if empty)
+    # model: inherited from models.default
+    reasoning_model: ""       # Tool selection reasoning, set in your config.yaml
+    vision_model: ""             # Vision tasks, set in your config.yaml
     temperature: 0.5
     max_tokens: 2000
 
   grisha:
     # Three-Phase Verification Architecture:
     # Phase 1: Strategy planning (what to verify, which tools)
-    strategy_model: gpt-4o        # Deep reasoning for verification strategy (replaced raptor-mini)
+    strategy_model: ""        # Deep reasoning for verification strategy, set in your config.yaml
     
     # Phase 2: Tool selection & execution (MCP server interaction)
-    model: gpt-4.1                   # Execution model for MCP tool calls (similar to Tetyana)
+    # model: inherited from models.default
     
     # Phase 3: Result analysis & verdict
-    vision_model: gpt-4o             # Vision/multimodal verification (if screenshots needed)
-    verdict_model: gpt-4o          # Final verdict reasoning (replaced raptor-mini for stability)
+    vision_model: ""             # Vision/multimodal verification, set in your config.yaml
+    verdict_model: ""          # Final verdict reasoning, set in your config.yaml
     
     # General settings
     temperature: 0.3
     max_tokens: 1500
     
-    # Sequential-Thinking Verification Settings
+    # Two-Phase Verification Sequential-Thinking (NEW)
+    verification_reasoning_model: ""  # Model for logical verdict analysis, set in your config.yaml
     verification_temperature: 0.2          # Low temp for precise reasoning
     verification_max_tokens: 4000          # Sufficient for deep analysis
 
@@ -123,7 +85,7 @@ mcp:
 
   sequential_thinking:
     enabled: true
-    model: gpt-4o                  # Explicit model for deep reasoning (replaced raptor-mini for stability)
+    model: ""             # Explicit model for deep reasoning, set in your config.yaml
     max_history_size: 1000
     temperature: 0.2               # Precise reasoning
     max_tokens: 4000               # Sufficient for complex analysis
@@ -136,7 +98,7 @@ mcp:
   vibe:
     enabled: true
     binary: vibe
-    # Default model defined in vibe_config.toml (devstral-2)
+    # Default model defined in vibe_config.toml 
     workspace: ${CONFIG_ROOT}/vibe_workspace
     timeout_s: 3600
     max_output_chars: 500000
@@ -177,7 +139,7 @@ mcp:
 
   whisper_stt:
     enabled: true
-    model: large-v3
+    model: large-v3                     # Whisper model as per requirement
     language: uk
 
   devtools:
@@ -444,3 +406,13 @@ database_management:
       encrypt_sensitive_fields: false # Encrypt API keys, tokens
       hash_passwords: true
       sanitize_logs: true            # Remove sensitive data from logs
+
+voice:
+  stt:
+    model: large-v3                     # Whisper model as per requirement
+    device: auto
+    language: uk
+  tts:
+    engine: ukrainian-tts               # TTS engine, models already downloaded in global folder
+    device: cpu
+    enabled: true

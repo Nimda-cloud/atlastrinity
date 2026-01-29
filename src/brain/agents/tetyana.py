@@ -3,7 +3,7 @@
 
 Role: macOS interaction, executing atomic plan steps
 Voice: Tetiana (female)
-Model: Configured in config.yaml (agents.tetyana.model)
+Model: Configured model
 """
 
 import asyncio
