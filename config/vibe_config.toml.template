@@ -18,7 +18,7 @@
 
 # Active model alias (from models list below)
 # This is the default model used when no explicit model is specified
-active_model = "mistral-large-latest"  # SET THIS: e.g., "devstral-2", "gpt-4o", etc.
+active_model = "devstral-2"  # SET THIS: e.g., "devstral-2", "gpt-4o", etc.
 
 # System prompt ID (loads from ~/.vibe/prompts/{id}.md)
 # Set to a custom ID to override the default Vibe system prompt
@@ -116,29 +116,13 @@ backend = "generic"
 # Define your models below. Example configurations:
 #
 [[models]]
-name = "mistral-large-latest"   # API model identifier
-provider = "mistral"            # Provider name from [[providers]] section
-alias = "mistral-large-latest"  # Friendly name for CLI usage
-temperature = 0.0
-input_price = 2.0               # Cost per 1M input tokens
-output_price = 6.0              # Cost per 1M output tokens
-
-# [[models]]
-# name = "your-model-id"        # API model identifier
-# provider = "mistral"           # Provider name from [[providers]] section
-
-[[models]]
 name = "codestral-latest"       # Often referred to as Devstral/Codestral
 provider = "mistral"
 alias = "devstral-2"            # User requested alias
 temperature = 0.0
 input_price = 1.0               # Lower price
 output_price = 3.0
-# alias = "your-alias"           # Friendly name for CLI usage
-# temperature = 0.2
-# input_price = 0.0             # Cost per 1M input tokens
-# output_price = 0.0            # Cost per 1M output tokens
-#
+
 # Add your models here - uncomment and configure as needed
 
 # -----------------------------------------------------------------------------
