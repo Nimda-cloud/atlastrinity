@@ -139,6 +139,9 @@ class DatabaseManager:
                                         or "BOOLEAN" in str(col_type).upper()
                                     ):
                                         default_val = " DEFAULT 0"
+                                    elif "JSON" in str(col_type).upper():
+                                        # JSON колонки отримують порожній об'єкт за замовчуванням
+                                        default_val = " DEFAULT '{}'"
 
                                 sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type} {nullable}{default_val};'
                                 connection.execute(text(sql))
