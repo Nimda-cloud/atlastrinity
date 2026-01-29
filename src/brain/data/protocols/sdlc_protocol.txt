@@ -28,6 +28,9 @@ PHASE 3: INCREMENTAL IMPLEMENTATION
 PHASE 4: INTEGRATION & TESTING
 ------------------------------
 - Ensure all components work together correctly. Use `requires_verification: true`.
+- **MANDATORY PLATFORM VERIFICATION**: Check code against the host OS (macOS 13+).
+- **DYNAMIC BUILD CHECK**: Always run project-specific build commands (e.g., `swift build`, `npm run build`) before declaring success.
+- **ERROR AUTO-FIX**: If a build fails, immediately analyze the error log and fix it iteratively (max 3-5 times) before reporting back.
 
 PHASE 5: DOCUMENTATION & HANDOVER
 ---------------------------------
