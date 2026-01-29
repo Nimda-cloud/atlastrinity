@@ -46,7 +46,7 @@ models:
 agents:
   atlas:
     # model: inherited from models.default 
-    deep_model: ""          # Deep chat model for complex logic, set in your config.yaml
+    deep_model: "gpt-4.1"          # Deep chat model for complex logic, set in your config.yaml
     temperature: 0.7
     max_tokens: 2000                 # Standard chat/task mode
     max_tokens_deep: 12000           # Deep persona mode (increased from 8000)
