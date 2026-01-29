@@ -139,9 +139,9 @@ class Grisha(BaseAgent):
             )
         self.llm = CopilotLLM(model_name=vision_model_name, vision_model_name=vision_model_name)
 
-        verdict_model = agent_config.get(
-            "verdict_model", strategy_model
-        )  # Fallback to strategy model
+        verdict_model = agent_config.get("verdict_model")
+        if not verdict_model or not verdict_model.strip():
+            verdict_model = strategy_model  # Fallback to strategy model
         self.verdict_llm = CopilotLLM(model_name=verdict_model)
 
         # General settings
