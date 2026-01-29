@@ -39,7 +39,7 @@ models:
   consolidation: "gpt-4o"              # Memory consolidation
   
   # Vibe binary defaults (external CLI tool)
-  vibe_default: "gpt-4o"               # Native model for Vibe CLI
+  vibe_default: "devstral-2"           # Native model for Vibe CLI
   
   # Fallbacks (used when primary unavailable)
   fallback: "gpt-4o"                   # Fallback model
