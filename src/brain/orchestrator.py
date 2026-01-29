@@ -1467,6 +1467,30 @@ class Trinity:
                         continue  # Continue loop to retry
                     # If max retries exhausted, flow down to fallback (or escalation)
 
+                elif strategy.action == "WAIT_AND_RETRY":
+                    # Infrastructure errors: API rate limits, service unavailability
+                    # Don't involve Vibe/Grisha - these are external issues
+                    if attempt < strategy.max_retries:
+                        await self._log(
+                            f"Infrastructure issue detected. {strategy.reason}. Waiting {strategy.backoff}s...",
+                            "orchestrator",
+                        )
+                        await asyncio.sleep(strategy.backoff)
+                        continue  # Continue loop to retry
+                    else:
+                        # After all retries exhausted, notify user
+                        await self._log(
+                            f"Persistent infrastructure issue: {strategy.reason}. User intervention needed.",
+                            "error",
+                        )
+                        step_result = StepResult(
+                            step_id=step_id,
+                            success=False,
+                            error="infrastructure_failure",
+                            result=f"API rate limit or service unavailability persisted after {attempt} attempts. {strategy.reason}",
+                        )
+                        break
+
                 elif strategy.action == "RESTART":
                     # Critical State Error
                     await self._log(
@@ -1676,7 +1700,42 @@ class Trinity:
                     vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
 
                     if vibe_text:
+                        # Track rejection cycles to prevent infinite loops
+                        rejection_count = getattr(self, '_rejection_cycles', {}).get(step_id, 0)
+                        
                         grisha_audit = await self.grisha.audit_vibe_fix(str(last_error), vibe_text)
+                        
+                        # Check if Grisha rejected again
+                        if grisha_audit.get("audit_verdict") == "REJECT":
+                            rejection_count += 1
+                            if not hasattr(self, '_rejection_cycles'):
+                                self._rejection_cycles = {}
+                            self._rejection_cycles[step_id] = rejection_count
+                            
+                            # Limit rejection cycles to 3
+                            if rejection_count >= 3:
+                                logger.warning(
+                                    f"[ORCHESTRATOR] Grisha rejected Vibe fix {rejection_count} times for step {step_id}. "
+                                    "Breaking cycle and escalating to user."
+                                )
+                                await self._log(
+                                    f"⚠️ Система застрягла після {rejection_count} відхилень Grisha для кроку {step_id}. "
+                                    "Потрібне втручання користувача.",
+                                    "error",
+                                )
+                                # Create a result that will trigger ASK_USER
+                                step_result = StepResult(
+                                    step_id=step_id,
+                                    success=False,
+                                    error="need_user_input",
+                                    result=f"Grisha відхилив виправлення Vibe {rejection_count} разів. Виявлено: {grisha_audit.get('reasoning', 'Unknown')}",
+                                )
+                                break  # Exit retry loop
+                        else:
+                            # Reset counter on approval
+                            if hasattr(self, '_rejection_cycles') and step_id in self._rejection_cycles:
+                                del self._rejection_cycles[step_id]
+                        
                         healing_decision = await self.atlas.evaluate_healing_strategy(
                             str(last_error),
                             vibe_text,
