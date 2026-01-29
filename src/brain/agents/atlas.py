@@ -227,7 +227,9 @@ class Atlas(BaseAgent):
 
             # Mapping for orchestrator: if intent is chat, map voice_response to initial_response
             # so the orchestrator can use the LLM's tailored greeting immediately.
-            if analysis.get("intent") == "chat" and analysis.get("voice_response"):
+            # CRITICAL: We skip this if use_deep_persona is True, to force the orchestrator 
+            # to call the full atlas.chat() which uses the complete system prompt.
+            if analysis.get("intent") == "chat" and analysis.get("voice_response") and not analysis.get("use_deep_persona"):
                 analysis["initial_response"] = analysis.get("voice_response")
 
             return analysis
