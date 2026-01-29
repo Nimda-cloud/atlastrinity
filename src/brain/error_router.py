@@ -192,13 +192,50 @@ class SmartErrorRouter:
             )
 
         if category == ErrorCategory.VERIFICATION:
-            # Verification failures indicate systemic issues with Grisha's logic or tool error detection
-            # Don't retry - escalate immediately for deep analysis
-            return RecoveryStrategy(
-                action="ATLAS_PLAN",
-                context_needed=True,
-                reason="Verification system failure detected. This indicates issues with Grisha's error detection logic, not the task itself. Escalating for diagnostic review.",
-            )
+            # ENHANCED: Distinguish between legitimate step failure vs verification system bug
+            error_str = str(error).lower()
+            
+            # Legitimate step failures (NOT verification system bugs):
+            legitimate_failure_indicators = [
+                "empty results detected",
+                "verification criteria not met",
+                "no design files found",
+                "artifact not found",
+                "expected result not achieved",
+                "tool execution found but result empty"
+            ]
+            
+            # True verification system bugs (require Atlas diagnostic):
+            system_bug_indicators = [
+                "grisha crashed",
+                "verification logic error",
+                "sequential thinking failed",
+                "tool routing loop",
+                "infinite verification recursion",
+                "verification timeout after"
+            ]
+            
+            # Check if this is a legitimate failure (step didn't produce expected result)
+            is_legitimate_failure = any(indicator in error_str for indicator in legitimate_failure_indicators)
+            is_system_bug = any(indicator in error_str for indicator in system_bug_indicators)
+            
+            if is_legitimate_failure and not is_system_bug:
+                # This is a REAL step failure, not a verification bug
+                # Let Tetyana retry with adjustments
+                logger.info("[ROUTER] Detected legitimate step failure (not verification bug)")
+                return RecoveryStrategy(
+                    action="RETRY",
+                    backoff=2.0,
+                    max_retries=2,
+                    reason="Step verification failed due to missing expected results. Retrying with adjusted approach.",
+                )
+            else:
+                # True verification system failure - escalate to Atlas
+                return RecoveryStrategy(
+                    action="ATLAS_PLAN",
+                    context_needed=True,
+                    reason="Verification system failure detected. This indicates issues with Grisha's error detection logic, not the task itself. Escalating for diagnostic review.",
+                )
 
         # Unknown / Default Fallback
         if attempt <= 2:
