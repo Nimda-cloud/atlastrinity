@@ -8,17 +8,18 @@
 
 models:
   # Default models for different purposes
-  default: "gpt-4.1"                    # Default LLM for agents (Copilot custom)
-  vision: "gpt-4o"                      # Vision/multimodal tasks (Copilot custom)
-  reasoning: "raptor-mini"              # Specialized deep reasoning (Copilot custom)
-  code_analysis: "gpt-4.1"              # Code review and analysis (Copilot custom)
-  consolidation: "gpt-4.1"              # Memory consolidation (Copilot custom)
+  # Set your preferred model names here (e.g., "gpt-4o", "claude-3.5-sonnet", etc.)
+  default: ""                          # Default LLM for agents - SET THIS
+  vision: ""                           # Vision/multimodal tasks - SET THIS
+  reasoning: ""                        # Specialized deep reasoning - SET THIS
+  code_analysis: ""                    # Code review and analysis - SET THIS
+  consolidation: ""                    # Memory consolidation - SET THIS
   
   # Vibe binary defaults (external CLI tool)
-  vibe_default: "devstral-2"           # Native model for Vibe CLI as per requirement
+  vibe_default: ""                     # Native model for Vibe CLI - SET THIS
   
   # Fallbacks (used when primary unavailable)
-  fallback: "gpt-4.1"                   # Fallback model (Copilot custom)
+  fallback: ""                         # Fallback model - SET THIS
   
   # Agents inherit from models.default unless overridden
 
@@ -85,7 +86,7 @@ mcp:
 
   sequential_thinking:
     enabled: true
-    model: ""             # Explicit model for deep reasoning, set in your config.yaml
+    model: ""                         # Explicit model for deep reasoning - SET THIS
     max_history_size: 1000
     temperature: 0.2               # Precise reasoning
     max_tokens: 4000               # Sufficient for complex analysis
@@ -106,7 +107,7 @@ mcp:
 
   memory:
     enabled: true
-    chroma_path: ${CONFIG_ROOT}/memory/chroma
+    # Path configured in database_management.chromadb.path section below
     collection_name: atlastrinity_memory
 
   graph:
@@ -114,7 +115,7 @@ mcp:
 
   redis:
     enabled: true
-    url: redis://localhost:6379/0
+    # URL configured in database_management.redis.url section below
 
   duckduckgo_search:
     enabled: true
@@ -139,8 +140,7 @@ mcp:
 
   whisper_stt:
     enabled: true
-    model: large-v3                     # Whisper model as per requirement
-    language: uk
+    # Model and language configured in voice.stt section below
 
   devtools:
     enabled: true
@@ -212,16 +212,12 @@ api:
 # =============================================================================
 # DATABASE CONFIGURATION
 # =============================================================================
-
-database:
-  url: sqlite+aiosqlite:///${CONFIG_ROOT}/atlastrinity.db
+# Database configuration moved to database_management section below for centralized management
 
 # =============================================================================
 # STATE MANAGEMENT
 # =============================================================================
-
-state:
-  redis_url: redis://localhost:6379/0
+# Redis URL configured in database_management.redis.url section below
 
 # =============================================================================
 # LOGGING CONFIGURATION
@@ -322,11 +318,10 @@ database_management:
       allow_delete: true
       require_confirmation_on_clear: true
       
-    # Backup settings
+    # Backup settings - uses parent backup_location from SQLite section
     backup:
       enabled: true
       auto_backup_frequency: weekly
-      backup_location: ${PROJECT_ROOT}/backups/databases/memory
       max_backups: 4
       
   # Redis (state management) configuration
@@ -409,10 +404,10 @@ database_management:
 
 voice:
   stt:
-    model: large-v3                     # Whisper model as per requirement
+    model: large-v3                     # Whisper model (large-v3, medium, small)
     device: auto
     language: uk
   tts:
-    engine: ukrainian-tts               # TTS engine, models already downloaded in global folder
+    engine: ukrainian-tts               # TTS engine
     device: cpu
     enabled: true

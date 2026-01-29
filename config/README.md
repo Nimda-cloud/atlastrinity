@@ -12,7 +12,7 @@ AtlasTrinity використовує централізовану систем�
 | `behavior_config.yaml.template` | Behavior Engine патерни, intent detection, tool routing | `~/.config/atlastrinity/behavior_config.yaml` |
 | `mcp_servers.json.template` | MCP серверна конфігурація (маршрутизація серверів) | `~/.config/atlastrinity/mcp/config.json` |
 | `vibe_config.toml.template` | Vibe MCP server конфігурація | `~/.config/atlastrinity/vibe_config.toml` |
-| `monitoring_config.yaml.template` | Monitoring та metrics (Prometheus, Grafana, OpenSearch) | `~/.config/atlastrinity/monitoring_config.yaml` |
+| `monitoring_config.yaml.template` | Prometheus, Grafana, OpenSearch, tracing | `~/.config/atlastrinity/monitoring_config.yaml` |
 
 ## Deployment Process
 

@@ -18,7 +18,7 @@
 
 # Active model alias (from models list below)
 # This is the default model used when no explicit model is specified
-active_model = "devstral-2"  # Native default model for Vibe CLI as per requirement
+active_model = ""  # SET THIS: e.g., "devstral-2", "gpt-4o", etc.
 
 # System prompt ID (loads from ~/.vibe/prompts/{id}.md)
 # Set to a custom ID to override the default Vibe system prompt
@@ -113,31 +113,17 @@ backend = "generic"
 # Define available models with pricing and settings.
 # Each model needs: name (API ID), provider, alias, temperature
 
-# Vibe Native Model (devstral-2)
-[[models]]
-name = "devstral-2"
-provider = "mistral"
-alias = "devstral-2"
-temperature = 0.2
-input_price = 0.0
-output_price = 0.0
-
-# Copilot Models (Placeholder for additional models)
-[[models]]
-name = "gpt-4.1"
-provider = "copilot"
-alias = "gpt-4.1"
-temperature = 0.2
-input_price = 5.0
-output_price = 15.0
-
-[[models]]
-name = "gpt-4o"
-provider = "copilot"
-alias = "gpt-4o"
-temperature = 0.3
-input_price = 5.0
-output_price = 15.0
+# Define your models below. Example configurations:
+#
+# [[models]]
+# name = "your-model-id"        # API model identifier
+# provider = "mistral"           # Provider name from [[providers]] section
+# alias = "your-alias"           # Friendly name for CLI usage
+# temperature = 0.2
+# input_price = 0.0             # Cost per 1M input tokens
+# output_price = 0.0            # Cost per 1M output tokens
+#
+# Add your models here - uncomment and configure as needed
 
 # -----------------------------------------------------------------------------
 # TOOL PERMISSION OVERRIDES
