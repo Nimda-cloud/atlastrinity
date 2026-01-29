@@ -104,6 +104,11 @@ class Trinity:
 
     async def initialize(self):
         """Async initialization of system components via Config-Driven Workflow"""
+        # Синхронізація shared_context з конфігурацією
+        from src.brain.context import shared_context
+        from src.brain.config_loader import config
+        shared_context.sync_from_config(config)
+        
         # Execute 'startup' workflow from behavior config
         # This replaces hardcoded service checks and state init
         context = {"orchestrator": self}
@@ -526,6 +531,38 @@ class Trinity:
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] Resume check failed: {e}")
 
+    async def _update_task_metadata(self):
+        """Оновлює metadata_blob в Task для збереження поточного рекурсивного контексту."""
+        try:
+            from src.brain.db.manager import db_manager
+            from src.brain.context import shared_context
+            from sqlalchemy import update
+
+            if (
+                not db_manager
+                or not getattr(db_manager, "available", False)
+                or not self.state.get("db_task_id")
+            ):
+                return
+
+            task_metadata = {
+                "goal_stack": shared_context.goal_stack.copy(),
+                "parent_goal": shared_context.parent_goal,
+                "recursive_depth": shared_context.recursive_depth,
+                "current_goal": shared_context.current_goal,
+            }
+
+            async with await db_manager.get_session() as db_sess:
+                await db_sess.execute(
+                    update(DBTask)
+                    .where(DBTask.id == self.state["db_task_id"])
+                    .values(metadata_blob=task_metadata)
+                )
+                await db_sess.commit()
+
+        except Exception as e:
+            logger.warning(f"[ORCHESTRATOR] Failed to update task metadata: {e}")
+
     async def _verify_db_ids(self):
         """Verify that restored DB IDs exist. If not, clear them."""
         try:
@@ -921,10 +958,19 @@ class Trinity:
                         and self.state.get("db_session_id")
                     ):
                         async with await db_manager.get_session() as db_sess:
+                            # Зберігаємо рекурсивний контекст з shared_context
+                            task_metadata = {
+                                "goal_stack": shared_context.goal_stack.copy(),
+                                "parent_goal": shared_context.parent_goal,
+                                "recursive_depth": shared_context.recursive_depth,
+                                "current_goal": shared_context.current_goal,
+                            }
+                            
                             new_task = DBTask(
                                 session_id=self.state["db_session_id"],
                                 goal=user_request,
                                 status="PENDING",
+                                metadata_blob=task_metadata,
                             )
                             db_sess.add(new_task)
                             await db_sess.commit()
@@ -1246,11 +1292,17 @@ class Trinity:
 
     async def _execute_steps_recursive(
         self,
-        steps: list[dict],
-        parent_prefix: str = "",
+        steps: list[dict[str, Any]],
+        parent_prefix: str | None = None,
         depth: int = 0,
     ) -> bool:
-        """Recursively executes a list of steps.
+        """Recursively execute steps with proper goal context management.
+        
+        IMPORTANT: This function manages the goal stack:
+        - push_goal at the START (entering sub-task)
+        - pop_goal at the END (leaving sub-task)
+        - Each recursive level represents a goal in the hierarchy
+        
         Supports hierarchical numbering (e.g. 3.1, 3.2) and deep recovery.
         """
         MAX_RECURSION_DEPTH = 5
@@ -1271,6 +1323,42 @@ class Trinity:
         # Track recursion metrics for analytics
         metrics_collector.record("recursion_depth", depth, tags={"parent": parent_prefix or "root"})
 
+        # PUSH GOAL: Входимо в під-завдання (рекурсивний рівень)
+        # Визначити ціль для цього рівня рекурсії
+        from src.brain.context import shared_context
+        
+        goal_pushed = False
+        if parent_prefix:
+            # Це під-завдання, створене для відновлення кроку parent_prefix
+            goal_description = f"Recovery sub-tasks for step {parent_prefix}"
+            try:
+                shared_context.push_goal(goal_description, total_steps=len(steps))
+                goal_pushed = True
+                logger.info(
+                    f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
+                )
+                
+                # Оновити metadata_blob в БД для збереження рекурсивного контексту
+                await self._update_task_metadata()
+                
+            except Exception as e:
+                logger.warning(f"Failed to push goal: {e}")
+        elif depth > 0:
+            # Це вкладений рівень (не повинно відбуватися без parent_prefix, але на всяк випадок)
+            goal_description = f"Sub-plan at depth {depth}"
+            try:
+                shared_context.push_goal(goal_description, total_steps=len(steps))
+                goal_pushed = True
+                logger.info(
+                    f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
+                )
+                
+                # Оновити metadata_blob в БД для збереження рекурсивного контексту
+                await self._update_task_metadata()
+                
+            except Exception as e:
+                logger.warning(f"Failed to push goal: {e}")
+
         for i, step in enumerate(steps):
             # Generate hierarchical ID: "1", "2" or "3.1", "3.2"
             if parent_prefix:
@@ -1283,11 +1371,10 @@ class Trinity:
 
             notifications.show_progress(i + 1, len(steps), f"[{step_id}] {step.get('action')}")
 
-            # Push step goal to context
+            # Update current step progress in shared context (не push_goal!)
             try:
                 from src.brain.context import shared_context
 
-                shared_context.push_goal(step.get("action", "Working..."), total_steps=len(steps))
                 shared_context.current_step_id = i + 1
             except (ImportError, NameError, AttributeError):
                 pass
@@ -1643,6 +1730,17 @@ class Trinity:
                     )
                     alt_steps = recovery.get("alternative_steps", [])
                     if alt_steps:
+                        # CRITICAL: Перевірка максимальної глибини перед рекурсією
+                        from src.brain.context import shared_context
+                        if shared_context.is_at_max_depth():
+                            logger.error(
+                                f"[ORCHESTRATOR] Max recursion depth {shared_context.max_recursive_depth} reached. Cannot create sub-plan for step {step_id}."
+                            )
+                            raise Exception(
+                                f"Maximum recursion depth ({shared_context.max_recursive_depth}) exceeded. Cannot subdivide step {step_id} further."
+                            )
+                        
+                        # Рекурсивне виконання під-завдань
                         await self._execute_steps_recursive(
                             alt_steps,
                             parent_prefix=step_id,
@@ -1657,12 +1755,21 @@ class Trinity:
                     )
 
             # End of retry loop for THIS step
-            try:
-                from src.brain.context import shared_context
+            # НЕ викликаємо pop_goal тут - він викликається тільки в кінці рекурсії
 
-                shared_context.pop_goal()
-            except:
-                pass
+        # POP GOAL: Виходимо з під-завдання (рекурсивний рівень)
+        if goal_pushed:
+            try:
+                completed_goal = shared_context.pop_goal()
+                logger.info(
+                    f"[ORCHESTRATOR] ✅ Completed recursive level {depth}: {completed_goal}"
+                )
+                
+                # Оновити metadata_blob в БД після виходу з рекурсії
+                await self._update_task_metadata()
+                
+            except Exception as e:
+                logger.warning(f"Failed to pop goal: {e}")
 
         return True
 

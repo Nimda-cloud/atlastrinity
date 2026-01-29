@@ -56,7 +56,7 @@ class SharedContext:
     parent_goal: str | None = None
     goal_stack: list[str] = field(default_factory=list)
     recursive_depth: int = 0
-    max_recursive_depth: int = 5
+    max_recursive_depth: int = field(default=5)  # Default 5, синхронізується з config при ініціалізації
     current_step_id: int | None = None
     total_steps: int = 0
     available_mcp_catalog: str = ""
@@ -253,6 +253,18 @@ class SharedContext:
     def is_at_max_depth(self) -> bool:
         """Check if we've reached maximum recursion depth."""
         return self.recursive_depth >= self.max_recursive_depth
+
+    def sync_from_config(self, config: dict) -> None:
+        """Синхронізує max_recursive_depth з конфігурації orchestrator.max_recursion_depth"""
+        try:
+            max_depth = config.get("orchestrator", {}).get("max_recursion_depth", 5)
+            if isinstance(max_depth, int) and 1 <= max_depth <= 10:
+                self.max_recursive_depth = max_depth
+                from .logger import logger
+                logger.info(f"[CONTEXT] max_recursive_depth set to {max_depth} from config")
+        except Exception as e:
+            from .logger import logger
+            logger.warning(f"[CONTEXT] Failed to sync max_recursive_depth from config: {e}")
 
 
 # Singleton instance - import this in other modules

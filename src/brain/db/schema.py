@@ -82,6 +82,9 @@ class Task(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    
+    # Рекурсивний контекст: goal_stack, parent_goal, recursive_depth, parent_task_id
+    metadata_blob: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
 
     session: Mapped["Session"] = relationship(back_populates="tasks")
     steps: Mapped[list["TaskStep"]] = relationship(
