@@ -1815,7 +1815,7 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
     if any(re.search(rf"\b{f}\b", clean_query) for f in forbidden):
         return {
             "success": False,
-            "error": f"Forbidden keyword detected in query. Only read-only SELECT is allowed.",
+            "error": "Forbidden keyword detected in query. Only read-only SELECT is allowed.",
         }
 
     # Use central DB manager when available

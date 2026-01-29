@@ -793,8 +793,6 @@ Provide:
         task_id: str | None = None,
     ) -> VerificationResult:
         """Verifies the result of step execution using Vision and MCP Tools"""
-        from langchain_core.messages import HumanMessage, SystemMessage
-
         from ..mcp_manager import mcp_manager
 
         step_id = step.get("id", 0)
