@@ -36,6 +36,32 @@
 # - .agent/workflows/integrity.md (integrity checks)
 # =============================================================================
 
+# =============================================================================
+# PROTOCOL DEFINITIONS
+# =============================================================================
+# Agent operational protocols are loaded from src/brain/data/protocols/
+# These protocols define behavior rules for Atlas, Tetyana, Grisha, and Vibe.
+#
+# Protocol Files (loaded via mcp_registry.py):
+# - data_protocol.txt         : Data processing, ingestion, hygiene rules
+# - sdlc_protocol.txt          : Software development lifecycle (MANDATORY Vibe usage)
+# - search_protocol.txt        : Search strategies and data extraction
+# - storage_protocol.txt       : Memory schemas and storage locations
+# - system_mastery_protocol.txt: System understanding and recursive analysis
+# - task_protocol.txt          : Task execution doctrine
+# - voice_protocol.txt         : Voice communication rules (Ukrainian only)
+# - vibe_docs.txt              : Vibe MCP server documentation
+# - create-new-program.md      : Project creation workflow
+# - self-healing-protocol.md   : Autonomous recovery procedures
+# - system_monitoring_protocol.md: System state verification
+#
+# Protocol Integration:
+# - Loaded at startup via src/brain/mcp_registry.py:load_registry()
+# - Injected into agent prompts via src/brain/prompts/ (ATLAS, TETYANA, GRISHA)
+# - Atlas uses SDLC_PROTOCOL for development tasks, TASK_PROTOCOL for others
+# - All agents receive VOICE_PROTOCOL, DATA_PROTOCOL, SEARCH_PROTOCOL
+# =============================================================================
+
 patterns:
   adaptive_behavior:
     web_task_fallback:
