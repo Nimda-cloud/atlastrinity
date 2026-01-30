@@ -10,7 +10,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from brain.mcp_manager import mcp_manager
 
 async def get_schemas():
-    for server in ['macos-use']:
+    for server in ['vibe']:
         print(f"=== SCHEMA FOR {server} ===")
         tools = await mcp_manager.list_tools(server)
         result = []
