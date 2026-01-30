@@ -45,7 +45,7 @@ const CONFIG_MAPPINGS = [
   },
   {
     template: path.join(PROJECT_ROOT, 'config', 'mcp_servers.json.template'),
-    destination: path.join(MCP_DIR, 'mcp_servers.json'),
+    destination: path.join(MCP_DIR, 'config.json'),
     description: 'MCP servers configuration',
   },
 ];

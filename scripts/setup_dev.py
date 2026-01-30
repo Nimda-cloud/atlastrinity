@@ -686,6 +686,7 @@ def install_deps():
             "@modelcontextprotocol/server-puppeteer",
             "@modelcontextprotocol/server-github",
             "@modelcontextprotocol/server-memory",
+            "@modelcontextprotocol/sdk",
             "@modelcontextprotocol/inspector",
         ]
         print_info("Updating critical MCP packages...")
@@ -1305,6 +1306,7 @@ def main():
         ("graph", "Візуалізація графу знань (Python)"),
         ("context7", "Документація бібліотек та API (Node)"),
         ("devtools", "Лінтер та аналіз коду (Python)"),
+        ("react-devtools", "React Introspection & Fiber Analysis (Node)"),
         ("redis", "Оглядовість кешу та сесій (Python)"),
         ("golden-fund", "Knowledge Base & Data Persistence (Python)"),
         ("data-analysis", "Pandas Data Analysis Engine (Python)"),
