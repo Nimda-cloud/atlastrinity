@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-01-30T12:20:32.673292",
+  "total_servers": 17,
+  "online": 17,
+  "offline": 0,
+  "degraded": 0,
+  "servers": {
+    "macos-use": {
+      "status": "online",
+      "tier": 1,
+      "tools_count": 42,
+      "response_time_ms": 41.9
+    },
+    "filesystem": {
+      "status": "online",
+      "tier": 1,
+      "tools_count": 14,
+      "response_time_ms": 700.3
+    },
+    "sequential-thinking": {
+      "status": "online",
+      "tier": 1,
+      "tools_count": 1,
+      "response_time_ms": 539.7
+    },
+    "xcodebuild": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 22,
+      "response_time_ms": 345.9
+    },
+    "chrome-devtools": {
+      "status": "online",
+      "tier": 4,
+      "tools_count": 26,
+      "response_time_ms": 306.8
+    },
+    "vibe": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 18,
+      "response_time_ms": 462.3
+    },
+    "memory": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 14,
+      "response_time_ms": 1141.4
+    },
+    "graph": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 4,
+      "response_time_ms": 1121.2
+    },
+    "puppeteer": {
+      "status": "online",
+      "tier": 3,
+      "tools_count": 7,
+      "response_time_ms": 738.6
+    },
+    "duckduckgo-search": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 4,
+      "response_time_ms": 411.8
+    },
+    "golden-fund": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 8,
+      "response_time_ms": 995.1
+    },
+    "context7": {
+      "status": "online",
+      "tier": 3,
+      "tools_count": 3,
+      "response_time_ms": 1086.9
+    },
+    "whisper-stt": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 2,
+      "response_time_ms": 408.3
+    },
+    "devtools": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 8,
+      "response_time_ms": 357.2
+    },
+    "github": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 26,
+      "response_time_ms": 664.2
+    },
+    "redis": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 8,
+      "response_time_ms": 435.8
+    },
+    "data-analysis": {
+      "status": "online",
+      "tier": 2,
+      "tools_count": 8,
+      "response_time_ms": 598.4
+    }
+  }
+}

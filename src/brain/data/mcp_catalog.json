@@ -192,7 +192,7 @@
     "category": "browser",
     "description": "Chrome DevTools Protocol for advanced browser automation",
     "capabilities": ["Low-level browser control", "Network monitoring", "Console log access"],
-    "key_tools": ["captureScreenshot", "console_logs", "network_requests"],
+    "key_tools": ["take_screenshot", "list_console_messages", "list_network_requests"],
     "when_to_use": "Advanced browser debugging or when puppeteer is insufficient."
   },
   "duckduckgo-search": {
@@ -229,8 +229,6 @@
       "list_pull_requests",
       "create_pull_request",
       "merge_pull_request",
-      "get_repository",
-      "list_branches",
       "create_branch"
     ],
     "when_to_use": "Accessing external code repositories, checking user status on GitHub."
@@ -328,7 +326,7 @@
       "Search for code examples and patterns",
       "Get version-specific API references"
     ],
-    "key_tools": ["c7_search", "c7_get_context", "c7_list_libraries"],
+    "key_tools": ["c7_search", "c7_query", "c7_info"],
     "when_to_use": "When you need to look up documentation, API references, or examples for external libraries."
   },
   "data-analysis": {
@@ -377,16 +375,16 @@
       "Stream build/test output in real-time"
     ],
     "key_tools": [
-      "xcodebuild_build_project",
-      "xcodebuild_run_tests",
-      "xcodebuild_list_simulators",
-      "xcodebuild_boot_simulator",
-      "xcodebuild_install_app",
-      "xcodebuild_launch_app",
-      "xcodebuild_analyze_logs",
-      "xcodebuild_get_coverage",
-      "xcodebuild_archive_project",
-      "xcodebuild_clean_build"
+      "build_sim",
+      "test_sim",
+      "list_sims",
+      "boot_sim",
+      "install_app_sim",
+      "launch_app_sim",
+      "launch_app_logs_sim",
+      "clean",
+      "discover_projs",
+      "screenshot"
     ],
     "when_to_use": "iOS/macOS app development, building Xcode projects, running tests, managing simulators, deploying to devices. Critical for Atlas when planning iOS development workflows.",
     "priority_note": "Requires: macOS 14.5+, Xcode 16.x+, Node.js 18.x+. For general macOS automation use 'macos-use', for Xcode-specific tasks use 'xcodebuild'."
