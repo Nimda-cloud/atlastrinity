@@ -41,6 +41,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [sttStatus, setSttStatus] = useState<string>(''); // Для показу статусу STT
+  const [isExpanded, setIsExpanded] = useState(false); // Track if textarea is expanded
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -53,11 +54,18 @@ const CommandLine: React.FC<CommandLineProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastSkippedChunkRef = useRef<Blob | null>(null); // Pre-buffer for context
 
-  // Auto-expand logic
+  // Auto-expand and shrink logic
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      // Temporarily set height to 'auto' to get the true scrollHeight
+      textareaRef.current.style.height = 'auto'; // Temporarily reset height to get accurate scrollHeight
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const newHeight = Math.min(scrollHeight, 200);
+      textareaRef.current.style.height = `${newHeight}px`;
+      
+      // Track if textarea is expanded (more than single line)
+      // 40px is roughly single line height
+      setIsExpanded(newHeight > 40 && input.length > 0);
     }
   }, [input]);
 
@@ -472,34 +480,36 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
   return (
     <div className="command-line-container font-mono">
-      <div className="flex items-baseline gap-2 pt-2 bg-transparent pb-0">
-        {/* Left Controls - Only TTS */}
-        <div className="flex items-center gap-1">
-          {/* TTS Toggle */}
-          <button
-            onClick={onToggleVoice}
-            className={`control-btn ${isVoiceEnabled ? 'active' : ''}`}
-            title="Toggle Voice (TTS)"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      <div className={`flex items-start gap-2 pt-2 bg-transparent pb-0 ${isExpanded ? 'items-start' : 'items-baseline'}`}>
+        {/* Left Controls - Only TTS (hidden when expanded) */}
+        {!isExpanded && (
+          <div className="flex items-center gap-1">
+            {/* TTS Toggle */}
+            <button
+              onClick={onToggleVoice}
+              className={`control-btn ${isVoiceEnabled ? 'active' : ''}`}
+              title="Toggle Voice (TTS)"
             >
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              {isVoiceEnabled ? (
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-              ) : (
-                <line x1="23" y1="9" x2="17" y2="15"></line>
-              )}
-            </svg>
-          </button>
-        </div>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                {isVoiceEnabled ? (
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                ) : (
+                  <line x1="23" y1="9" x2="17" y2="15"></line>
+                )}
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Input Field with STT Status */}
         <div className="flex-1 relative">
@@ -530,8 +540,35 @@ const CommandLine: React.FC<CommandLineProps> = ({
           </div>
         </div>
 
-        {/* Right Controls - Send and Mic */}
-        <div className="flex items-center gap-2">
+        {/* Right Controls - All buttons stacked vertically when expanded */}
+        <div className={`flex ${isExpanded ? 'flex-col gap-2' : 'items-center gap-2'}`}>
+          {/* TTS Toggle - moved to right when expanded */}
+          {isExpanded && (
+            <button
+              onClick={onToggleVoice}
+              className={`control-btn ${isVoiceEnabled ? 'active' : ''}`}
+              title="Toggle Voice (TTS)"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                {isVoiceEnabled ? (
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                ) : (
+                  <line x1="23" y1="9" x2="17" y2="15"></line>
+                )}
+              </svg>
+            </button>
+          )}
+
           {/* STT/Mic Button */}
           <button
             onClick={toggleListening}
