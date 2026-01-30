@@ -720,7 +720,8 @@ body {
   font-size: 11px;
   line-height: 1.4;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 12px;
   outline: none;
   min-height: 36px;
@@ -779,7 +780,8 @@ body {
   font-size: 11px;
   line-height: 1.4;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 12px;
   outline: none;
   min-height: 24px;
