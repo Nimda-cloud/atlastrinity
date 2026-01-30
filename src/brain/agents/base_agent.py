@@ -152,7 +152,7 @@ Generate the next logical thought to analyze this problem.
 
                 # Update context for next iteration
                 current_context += f"Thought {i}: {thought_content}\n"
-                full_analysis += f"\n[Thought {i}]: {thought_content[:800]}..."
+                full_analysis += f"\n[Thought {i}]: {thought_content[:5000]}..."
 
             logger.info(f"[{agent_name}] Reasoning complete using model {model_name}.")
             return {"success": True, "analysis": full_analysis}

@@ -643,11 +643,6 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
 
             analysis_text = reasoning_result.get("analysis", "")
 
-            # Check for network/timeout errors in the analysis
-            if any(term in analysis_text.lower() for term in ["timeout", "connection", "network", "api.github.com"]):
-                logger.warning("[GRISHA] Network error detected in analysis, using fallback")
-                return self._fallback_verdict(verification_results)
-
             # Parse verdict from analysis
             analysis_upper = analysis_text.upper()
             
