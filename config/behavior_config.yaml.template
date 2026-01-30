@@ -542,6 +542,28 @@ tool_routing:
         server: memory
         tool: add_observations
 
+  # Productivity (Notes, Calendar, Reminders)
+  productivity:
+    synonyms:
+      - notes
+      - note
+      - notes_get
+      - notes_create
+      - calendar
+      - reminder
+      - reminders
+    priority_server: macos-use
+    fallback_server: null
+    tool_mapping:
+      notes_get: macos-use_notes_get_content
+      notes_create: macos-use_notes_create_note
+      create_note: macos-use_notes_create_note
+      list_notes: macos-use_notes_list_folders
+      calendar_events: macos-use_calendar_events
+      create_event: macos-use_create_event
+      reminders: macos-use_reminders
+      create_reminder: macos-use_create_reminder
+
   # GitHub integration
   github:
     synonyms:
