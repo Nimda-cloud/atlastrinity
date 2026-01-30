@@ -797,9 +797,15 @@ task_classification:
     priority: tier1
 
   web_tasks:
-    keywords: [search, web, internet, google, find, browser, navigate, automation, scrape]
-    recommended_servers: [duckduckgo-search, puppeteer, macos-use]
+    keywords: [search, web, internet, google, find, browser, navigate, automation, scrape, react]
+    recommended_servers: [duckduckgo-search, puppeteer, macos-use, react-devtools]
     priority: tier2
+
+  react_tasks:
+    keywords: [react, fiber, component, props, hooks, state, redux, props]
+    recommended_servers: [react-devtools, chrome-devtools, vibe]
+    priority: tier2
+    description: Deep React introspection and debugging
 
   calendar_tasks:
     keywords: [calendar, event, meeting]
