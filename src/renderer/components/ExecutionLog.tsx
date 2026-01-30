@@ -86,8 +86,10 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
     if (isNearBottom() || filteredLogs.length <= 1 || (hasNewLogs && !userScrolledUp)) {
       // Use a small timeout to ensure DOM has rendered
       const timer = setTimeout(() => {
-        if (logsEndRef.current) {
-          logsEndRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
+        const container = scrollContainerRef.current;
+        if (container) {
+          // Use scrollTop directly for more reliable scrolling in Electron
+          container.scrollTop = container.scrollHeight;
         }
       }, 50);
       return () => clearTimeout(timer);

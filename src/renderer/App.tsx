@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import NeuralCore from './components/NeuralCore';
 import ExecutionLog from './components/ExecutionLog.tsx';
 import AgentStatus from './components/AgentStatus.tsx';
@@ -62,6 +62,66 @@ const App: React.FC = () => {
     net_down_unit: 'K/S',
   });
   const [isConnected, setIsConnected] = useState(false);
+
+  // Command dock auto-hide state
+  const [isDockVisible, setIsDockVisible] = useState(true);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const showTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-hide timers: 3 seconds delay for both show and hide
+  const DOCK_DELAY_MS = 3000;
+
+  // Handle hover zone enter - schedule showing dock
+  const handleHoverZoneEnter = useCallback(() => {
+    // Clear any pending hide timer
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+    // Schedule showing the dock after delay
+    if (!isDockVisible && !showTimerRef.current) {
+      showTimerRef.current = setTimeout(() => {
+        setIsDockVisible(true);
+        showTimerRef.current = null;
+      }, DOCK_DELAY_MS);
+    }
+  }, [isDockVisible]);
+
+  // Handle hover zone leave - schedule hiding dock if not focused
+  const handleHoverZoneLeave = useCallback(() => {
+    // Clear any pending show timer
+    if (showTimerRef.current) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
+    // Schedule hiding the dock after delay (only if input is not focused)
+    if (isDockVisible && !isInputFocused && !hideTimerRef.current) {
+      hideTimerRef.current = setTimeout(() => {
+        setIsDockVisible(false);
+        hideTimerRef.current = null;
+      }, DOCK_DELAY_MS);
+    }
+  }, [isDockVisible, isInputFocused]);
+
+  // When input gets focused, cancel hide timer and ensure dock stays visible
+  useEffect(() => {
+    if (isInputFocused) {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      setIsDockVisible(true);
+    }
+  }, [isInputFocused]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (showTimerRef.current) clearTimeout(showTimerRef.current);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
 
   // Add log entry
   const addLog = (agent: AgentName, message: string, type: LogEntry['type'] = 'info') => {
@@ -425,12 +485,24 @@ const App: React.FC = () => {
         <ChatPanel messages={chatMessages} />
       </aside>
 
-      <div className="command-dock command-dock-floating">
+      {/* Hover zone for auto-revealing command dock */}
+      <div
+        className="command-dock-hover-zone"
+        onMouseEnter={handleHoverZoneEnter}
+        onMouseLeave={handleHoverZoneLeave}
+      />
+
+      <div
+        className={`command-dock command-dock-floating ${isDockVisible ? 'visible' : 'hidden'}`}
+        onMouseEnter={handleHoverZoneEnter}
+        onMouseLeave={handleHoverZoneLeave}
+      >
         <CommandLine
           onCommand={handleCommand}
           isVoiceEnabled={isVoiceEnabled}
           onToggleVoice={() => setIsVoiceEnabled(!isVoiceEnabled)}
           isProcessing={['PLANNING', 'EXECUTING', 'VERIFYING', 'CHAT'].includes(systemState)}
+          onFocusChange={setIsInputFocused}
         />
       </div>
 

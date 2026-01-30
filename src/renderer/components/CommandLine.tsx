@@ -22,6 +22,7 @@ interface CommandLineProps {
   isVoiceEnabled?: boolean;
   onToggleVoice?: () => void;
   isProcessing?: boolean;
+  onFocusChange?: (focused: boolean) => void;
 }
 
 declare global {
@@ -35,6 +36,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
   isVoiceEnabled = true,
   onToggleVoice,
   isProcessing,
+  onFocusChange,
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -506,6 +508,8 @@ const CommandLine: React.FC<CommandLineProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => onFocusChange?.(true)}
+            onBlur={() => onFocusChange?.(false)}
             placeholder="ENTER_CORE_COMMAND..."
             className="command-textarea-extended"
             spellCheck={false}
