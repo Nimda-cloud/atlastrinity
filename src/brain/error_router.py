@@ -97,6 +97,16 @@ class SmartErrorRouter:
         r"403\s+forbidden",
     ]
 
+    # User Input: missing information or permission needed
+    USER_INPUT_PATTERNS = [
+        r"need_user_input",
+        r"help_pending",
+        r"user_input_received",
+        r"missing\s+information",
+        r"missing\s+data",
+        r"please\s+provide",
+    ]
+
     # Verification: Grisha's verification system detected issues
     VERIFICATION_PATTERNS = [
         r"grisha\s+rejected",
@@ -115,10 +125,9 @@ class SmartErrorRouter:
         if error_str in self._cache:
             return self._cache[error_str]
 
-        category = ErrorCategory.UNKNOWN
-
-        # Check infrastructure first (API rate limits should not be treated as transient)
-        if any(re.search(p, error_str) for p in self.INFRASTRUCTURE_PATTERNS):
+        if error_str in ["help_pending", "need_user_input", "user_input_received"]:
+            category = ErrorCategory.USER_INPUT
+        elif any(re.search(p, error_str) for p in self.INFRASTRUCTURE_PATTERNS):
             category = ErrorCategory.INFRASTRUCTURE
         elif any(re.search(p, error_str) for p in self.VERIFICATION_PATTERNS):
             category = ErrorCategory.VERIFICATION
@@ -130,9 +139,12 @@ class SmartErrorRouter:
             category = ErrorCategory.STATE
         elif any(re.search(p, error_str) for p in self.PERMISSION_PATTERNS):
             category = ErrorCategory.PERMISSION
-        elif "need_user_input" in error_str or "help_pending" in error_str:
+        elif any(re.search(p, error_str) for p in self.USER_INPUT_PATTERNS):
             category = ErrorCategory.USER_INPUT
+        else:
+            category = ErrorCategory.UNKNOWN
 
+        logger.debug(f"[ROUTER] Classified '{error_str[:50]}' as {category.value}")
         self._cache[error_str] = category
         return category
 
