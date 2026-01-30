@@ -458,16 +458,16 @@ const App: React.FC = () => {
                       <button
                         key={s.id}
                         onClick={() => handleRestoreSession(s.id)}
-                        className={`group p-3 border text-left transition-all duration-300 ${
+                        className={`group p-3 border text-left transition-all duration-300 backdrop-blur-sm ${
                           currentSessionId === s.id
-                            ? 'bg-white/10 border-white/30'
-                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                            ? 'bg-black/50 border-[#00e5ff]/60 shadow-[0_0_10px_rgba(0,229,255,0.2)]'
+                            : 'bg-black/40 border-[#00e5ff]/30 hover:bg-black/50 hover:border-[#00e5ff]/50 hover:shadow-[0_0_8px_rgba(0,229,255,0.15)]'
                         }`}
                       >
-                        <div className="text-[9px] text-white/80 font-medium mb-1 truncate group-hover:text-white transition-colors">
+                        <div className="text-[9px] text-[#00e5ff]/90 font-medium mb-1 truncate group-hover:text-[#00e5ff] transition-colors">
                           {s.theme}
                         </div>
-                        <div className="text-[7px] text-white/30 truncate font-mono">
+                        <div className="text-[7px] text-[#00e5ff]/50 truncate font-mono">
                           {new Date(s.saved_at).toLocaleString()}
                         </div>
                       </button>
