@@ -290,6 +290,7 @@ class AgentPrompts:
         
         IMPORTANT: 
         - If the error is "Tool not found", suggest the correct tool name from the catalog.
+        - **TOOL HONESTY**: Do NOT suggest hallucinated tool names like `terminal_command` or `shell_command`. The ONLY valid tool for shell execution is `macos-use.execute_command`.
         - If the issue is with a path, advise checking the path's existence first.
         - If the error is logical, suggest an alternative approach.
         - **SYSTEM RESTART**: If the system state is corrupted, you may advise Atlas to initiate `system.restart_application` or `system.restart_mcp_server`.
