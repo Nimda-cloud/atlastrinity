@@ -90,6 +90,15 @@ async function createWindow(): Promise<void> {
 
   // Load the app
   if (isDev) {
+    try {
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import('electron-devtools-installer');
+      installExtension(REACT_DEVELOPER_TOOLS)
+        .then((name) => console.log(`[ELECTRON] Added Extension: ${name}`))
+        .catch((err) => console.log('[ELECTRON] An error occurred while installing extension: ', err));
+    } catch (e) {
+      console.error('[ELECTRON] Failed to load devtools installer:', e);
+    }
+
     await mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
 

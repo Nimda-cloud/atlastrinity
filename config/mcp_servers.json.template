@@ -308,6 +308,20 @@
         "grisha"
       ],
       "note": "Disabled by default. Used for structured data querying when SQLite is insufficient."
+    },
+    "react-devtools": {
+      "command": "node",
+      "args": [
+        "${PROJECT_ROOT}/src/mcp_server/react_devtools_mcp.js"
+      ],
+      "description": "React-specific introspection tools (Fiber tree, Props, State). Enhances autonomous React development capabilities.",
+      "disabled": false,
+      "tier": 3,
+      "agents": [
+        "atlas",
+        "tetyana"
+      ],
+      "note": "Works in conjunction with chrome-devtools-mcp for browser interaction."
     }
   },
   "_metadata": {
