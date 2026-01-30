@@ -5,14 +5,21 @@ SEARCH PROTOCOL (v1.1)
    - Level 1: Quick Web Search (DuckDuckGo generic)
    - Level 2: Business Registry Search (YouControl, Opendatabot, Clarity)
    - Level 3: Open Data Portal Search (data.gov.ua)
-   - Level 4: Deep Web Extraction (Puppeteer/Navigation)
-   - Level 5: Technical Documentation & Library Search (context7)
+   - Level 4: Headless Browser Scraping (Puppeteer - default for speed)
+   - Level 5: Deep DOM/Protocol Interaction (Chrome-DevTools - for persistence, auth, and debugging)
+   - Level 6: Technical Documentation & Library Search (context7)
 
-2. EXECUTION GUIDELINES:
+2. BROWSER TOOL SELECTION:
+   - **duckduckgo-search**: Use for rapid factual lookups without navigating full pages.
+   - **puppeteer**: Use for standard web scraping, navigating SPAs, and basic interaction. Fastest browser option.
+   - **chrome-devtools**: Use for high-precision tasks: capturing console logs, monitoring network traffic, bypass attempts, or when extreme DOM stability is needed.
+   - **macos-use**: Use for NATIVE browser interactions (managing tabs, reading URLs) or when visual/GUI verification is the primary goal.
+
+3. EXECUTION GUIDELINES:
    - START with specialized tools (Level 2/3) for technical data (ЄДРПОУ, addresses, owners).
-   - PREFER macos-use_fetch_url for clean data extraction from registries.
-   - USE Puppeteer ONLY for interactive pages (clicks, forms, dynamic content).
-   - IF BLOCKED by robot detection, switch to DuckDuckGo/Fetch.
+   - PREFER macos-use_fetch_url for clean data extraction from articles/registries.
+   - USE Puppeteer/DevTools ONLY for interactive pages (clicks, forms, dynamic content).
+   - IF BLOCKED by robot detection, switch to Chrome-DevTools for more human-like emulation or use macos-use to manually guide.
 
 3. DATA RETENTION:
    - All found datasets (.csv, .xlsx, .json) MUST be saved to the workspace folder.

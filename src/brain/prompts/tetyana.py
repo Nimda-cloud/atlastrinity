@@ -71,8 +71,12 @@ OPERATIONAL DOCTRINES:
       - Example: `execute_command(command="swift build -c release")`
       - Example: `execute_command(command="hdiutil create -volname MyApp -srcfolder ./build/MyApp.app -ov -format UDZO MyApp.dmg")`
       - **GUI tools are for UI inspection only, not for executing build pipelines**.
-    - **WEB/INTERNET PRIORITY**: For ANY web search, form filling on websites, or data scraping, you **MUST use the `puppeteer` (Puppeteer) or `duckduckgo-search` server first**. They are much more reliable than visual clicks for web content.
-    - **BUSINESS REGISTRIES**: For searching Ukrainian companies (YouControl, Opendatabot, EDRPOU), ALWAYS use **`business_registry_search(company_name="...")`**. It provides higher quality results than generic search.
+    - **WEB/INTERNET PRIORITY**: For ANY web search, form filling on websites, or data scraping, follow the **Search Protocol (Level 1-6)**.
+      - **Level 1 (Quick)**: `duckduckgo-search` for generic queries.
+      - **Level 2-3 (Registries)**: `macos-use_fetch_url` (STRONGLY PREFERRED for registries/articles).
+      - **Level 4 (Standard Interaction)**: `puppeteer` for SPAs and standard interaction.
+      - **Level 5 (Precision/Debugging)**: **`chrome-devtools`** (Chrome-DevTools) - Use for capturing network logs, console messages, or when Puppeteer is insufficient for deep DOM inspection.
+    - **BUSINESS REGISTRIES**: For searching Ukrainian companies (YouControl, Opendatabot, EDRPOU), ALWAYS use **`business_registry_search(company_name="...")`**.
     - **NATIVE MACOS PRIORITY**: For ANY interaction with native computer apps (Finder, System Settings, Terminal, Native Apps) **that don't involve compilation/building or code writing**, you MUST use the **`macos-use`** server first:
       - Opening apps → `macos-use_open_application_and_traverse(identifier="AppName")`
       - Clicking UI elements → `macos-use_click_and_traverse(pid=..., x=..., y=...)` (Use `double_click` or `right_click` variants if needed)
