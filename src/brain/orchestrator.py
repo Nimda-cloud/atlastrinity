@@ -361,36 +361,42 @@ class Trinity:
         # 1. Clean up text for TTS using config rules
         import re
 
-        clean_text = text
+        processed_text = text
         for rule in voice_config.get("sanitization_rules", []):
             pattern = rule.get("pattern")
             replacement = rule.get("replacement", "")
             if pattern:
-                clean_text = re.sub(pattern, replacement, clean_text)
+                processed_text = re.sub(pattern, replacement, processed_text)
 
-        clean_text = clean_text.strip()
+        processed_text = processed_text.strip()
 
         # If text is empty or outside length limits, skip
         min_len = voice_config.get("min_length", 2)
         max_len = voice_config.get("max_length", 5000)
-        if not clean_text or len(clean_text) < min_len or len(clean_text) > max_len:
+        if not processed_text or len(processed_text) < min_len or len(processed_text) > max_len:
             return
 
-        print(f"[{agent_id.upper()}] Speaking: {clean_text}")
+        # 2. Prepare text via TTS engine (Sanitize + Translate if needed)
+        # This ensures Chat and Voice are 100% synchronized
+        final_text = await self.voice.prepare_speech_text(processed_text)
+        if not final_text:
+            return
 
-        # 2. Synchronize with UI chat log
+        print(f"[{agent_id.upper()}] Speaking: {final_text}")
+
+        # 3. Synchronize with UI chat log
         if hasattr(self, "state") and self.state is not None:
             if "messages" not in self.state:
                 self.state["messages"] = []
 
             # Avoid duplicate messages if this was already in the history (e.g. during resumption)
             # We only append if it's the latest message (real-time generated)
-            self.state["messages"].append(AIMessage(content=text, name=agent_id.upper()))
+            self.state["messages"].append(AIMessage(content=final_text, name=agent_id.upper()))
 
-        await self._log(text, source=agent_id, type="voice")
+        await self._log(final_text, source=agent_id, type="voice")
         try:
-            # Pass ORIGINAL text to voice, let engine handle it
-            await self.voice.speak(agent_id, text)
+            # Pass PREPARED text to voice
+            await self.voice.speak(agent_id, final_text)
         except asyncio.CancelledError:
             # Re-raise to allow the task cancellation to proceed
             raise

@@ -2083,5 +2083,7 @@ output_processing:
         replacement: " "
       - pattern: "[`*#_]"
         replacement: "" # Strip markdown
+      - pattern: "\\[Thought \\d+\\]:[\\s\\S]*?(?=FINAL RECOMMENDATION|Аналіз:|Analys|\\Z)"
+        replacement: "" # Strip internal reasoning
     min_length: 2
     max_length: 5000
