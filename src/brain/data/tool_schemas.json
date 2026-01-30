@@ -95,30 +95,43 @@
     },
     "description": "Retrieve raw data blob"
   },
-  "c7_search": {
+  "c7_query": {
     "server": "context7",
-    "required": ["query"],
-    "optional": ["library"],
+    "required": ["projectIdentifier", "query"],
+    "optional": ["format", "tokens"],
     "types": {
+      "projectIdentifier": "str",
       "query": "str",
-      "library": "str"
+      "format": "str",
+      "tokens": "int"
     },
-    "description": "Search for documentation and examples in supported libraries"
+    "description": "Query Context7 for library info"
   },
   "c7_get_context": {
     "server": "context7",
-    "required": ["query"],
+    "alias_for": "c7_query"
+  },
+  "c7_search": {
+    "server": "context7",
+    "required": ["term"],
     "optional": [],
     "types": {
-      "query": "str"
+      "term": "str"
     },
-    "description": "Get deep context and API references for a specific topic"
+    "description": "Search Context7 for projects"
+  },
+  "c7_info": {
+    "server": "context7",
+    "required": ["projectIdentifier"],
+    "optional": [],
+    "types": {
+      "projectIdentifier": "str"
+    },
+    "description": "Get metadata for a Context7 project"
   },
   "c7_list_libraries": {
     "server": "context7",
-    "required": [],
-    "optional": [],
-    "description": "List all libraries supported by Context7"
+    "alias_for": "c7_info"
   },
   "vibe_analyze_error": {
     "server": "vibe",
@@ -827,7 +840,7 @@
     },
     "description": "Fill an input field"
   },
-  "captureScreenshot": {
+  "take_screenshot": {
     "server": "chrome-devtools",
     "required": [],
     "optional": ["format", "quality", "clip", "fromSurface", "captureBeyondViewport"],
@@ -840,17 +853,29 @@
     },
     "description": "Capture the screenshot of the current page."
   },
-  "console_logs": {
+  "captureScreenshot": {
+    "server": "chrome-devtools",
+    "alias_for": "take_screenshot"
+  },
+  "list_console_messages": {
     "server": "chrome-devtools",
     "required": [],
     "optional": [],
     "description": "Get console logs"
   },
-  "network_requests": {
+  "console_logs": {
+    "server": "chrome-devtools",
+    "alias_for": "list_console_messages"
+  },
+  "list_network_requests": {
     "server": "chrome-devtools",
     "required": [],
     "optional": [],
     "description": "Get network requests"
+  },
+  "network_requests": {
+    "server": "chrome-devtools",
+    "alias_for": "list_network_requests"
   },
   "sequentialthinking": {
     "server": "sequential-thinking",
@@ -1528,7 +1553,7 @@
     },
     "description": "Universal architecture diagram generator for ANY project type (Python, Node.js, Rust, Go, etc.). Analyzes project structure, initializes git if needed, configures GitHub remote, and generates/updates diagrams dynamically. target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)."
   },
-  "xcodebuild_build_project": {
+  "build_sim": {
     "server": "xcodebuild",
     "required": ["project_path"],
     "optional": ["scheme", "configuration", "destination", "sdk", "clean"],
@@ -1540,9 +1565,13 @@
       "sdk": "str",
       "clean": "bool"
     },
-    "description": "Build an Xcode project with specified scheme and configuration. Supports .xcodeproj and .xcworkspace."
+    "description": "Build an Xcode project for simulator."
   },
-  "xcodebuild_run_tests": {
+  "xcodebuild_build_project": {
+    "server": "xcodebuild",
+    "alias_for": "build_sim"
+  },
+  "test_sim": {
     "server": "xcodebuild",
     "required": ["project_path"],
     "optional": ["scheme", "destination", "test_plan", "only_testing", "skip_testing", "parallel"],
@@ -1555,9 +1584,13 @@
       "skip_testing": "list",
       "parallel": "bool"
     },
-    "description": "Run unit and UI tests with granular control over which tests to execute."
+    "description": "Run unit and UI tests on simulator."
   },
-  "xcodebuild_list_simulators": {
+  "xcodebuild_run_tests": {
+    "server": "xcodebuild",
+    "alias_for": "test_sim"
+  },
+  "list_sims": {
     "server": "xcodebuild",
     "required": [],
     "optional": ["platform", "available_only"],
@@ -1565,9 +1598,13 @@
       "platform": "str",
       "available_only": "bool"
     },
-    "description": "List all available iOS/tvOS/watchOS simulators with their IDs and states."
+    "description": "List all available iOS/tvOS/watchOS simulators."
   },
-  "xcodebuild_boot_simulator": {
+  "xcodebuild_list_simulators": {
+    "server": "xcodebuild",
+    "alias_for": "list_sims"
+  },
+  "boot_sim": {
     "server": "xcodebuild",
     "required": ["simulator_id"],
     "optional": ["wait_for_boot"],
@@ -1575,9 +1612,13 @@
       "simulator_id": "str",
       "wait_for_boot": "bool"
     },
-    "description": "Boot a simulator by ID. Optionally wait until fully booted."
+    "description": "Boot a simulator by ID."
   },
-  "xcodebuild_install_app": {
+  "xcodebuild_boot_simulator": {
+    "server": "xcodebuild",
+    "alias_for": "boot_sim"
+  },
+  "install_app_sim": {
     "server": "xcodebuild",
     "required": ["app_path", "simulator_id"],
     "optional": [],
@@ -1587,7 +1628,11 @@
     },
     "description": "Install an .app bundle to a running simulator."
   },
-  "xcodebuild_launch_app": {
+  "xcodebuild_install_app": {
+    "server": "xcodebuild",
+    "alias_for": "install_app_sim"
+  },
+  "launch_app_sim": {
     "server": "xcodebuild",
     "required": ["bundle_id", "simulator_id"],
     "optional": ["wait_for_debugger", "args"],
@@ -1597,45 +1642,23 @@
       "wait_for_debugger": "bool",
       "args": "list"
     },
-    "description": "Launch an installed app on a simulator by bundle identifier."
+    "description": "Launch an installed app on a simulator."
+  },
+  "xcodebuild_launch_app": {
+    "server": "xcodebuild",
+    "alias_for": "launch_app_sim"
+  },
+  "launch_app_logs_sim": {
+    "server": "xcodebuild",
+    "required": ["bundle_id", "simulator_id"],
+    "optional": [],
+    "description": "Launch app and stream logs."
   },
   "xcodebuild_analyze_logs": {
     "server": "xcodebuild",
-    "required": ["log_path"],
-    "optional": ["error_only", "warning_only", "format"],
-    "types": {
-      "log_path": "str",
-      "error_only": "bool",
-      "warning_only": "bool",
-      "format": "str"
-    },
-    "description": "Analyze Xcode build logs to extract errors, warnings, and insights."
+    "alias_for": "launch_app_logs_sim"
   },
-  "xcodebuild_get_coverage": {
-    "server": "xcodebuild",
-    "required": ["result_bundle_path"],
-    "optional": ["format", "target"],
-    "types": {
-      "result_bundle_path": "str",
-      "format": "str",
-      "target": "str"
-    },
-    "description": "Generate code coverage report from test results bundle."
-  },
-  "xcodebuild_archive_project": {
-    "server": "xcodebuild",
-    "required": ["project_path", "scheme"],
-    "optional": ["archive_path", "export_options", "export_path"],
-    "types": {
-      "project_path": "str",
-      "scheme": "str",
-      "archive_path": "str",
-      "export_options": "dict",
-      "export_path": "str"
-    },
-    "description": "Archive and export an Xcode project for distribution (IPA, app bundle)."
-  },
-  "xcodebuild_clean_build": {
+  "clean": {
     "server": "xcodebuild",
     "required": ["project_path"],
     "optional": ["scheme", "configuration"],
@@ -1645,5 +1668,9 @@
       "configuration": "str"
     },
     "description": "Clean build folder and derived data for a project."
+  },
+  "xcodebuild_clean_build": {
+    "server": "xcodebuild",
+    "alias_for": "clean"
   }
 }
