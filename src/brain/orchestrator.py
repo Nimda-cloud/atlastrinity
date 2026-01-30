@@ -774,13 +774,30 @@ class Trinity:
                     and "db_session_id" not in self.state
                 ):
                     async with await db_manager.get_session() as db_sess:
-                        new_session = DBSession(started_at=datetime.now(UTC))
+                        new_session = DBSession(
+                            started_at=datetime.now(UTC),
+                            metadata_blob={"theme": self.state["_theme"]}
+                        )
                         db_sess.add(new_session)
                         await db_sess.commit()
                         self.state["db_session_id"] = str(new_session.id)
+                elif (
+                    db_manager
+                    and getattr(db_manager, "available", False)
+                    and self.state.get("db_session_id")
+                ):
+                    # Update theme in DB if it changed or was restored
+                    async with await db_manager.get_session() as db_sess:
+                        from sqlalchemy import update
+                        await db_sess.execute(
+                            update(DBSession)
+                            .where(DBSession.id == self.state["db_session_id"])
+                            .values(metadata_blob={"theme": self.state["_theme"]})
+                        )
+                        await db_sess.commit()
             except Exception as e:
-                logger.error(f"DB Session creation failed: {e}")
-                if "db_session_id" in self.state:
+                logger.error(f"DB Session creation/update failed: {e}")
+                if "db_session_id" not in self.state:
                     del self.state["db_session_id"]
 
         try:
@@ -1148,13 +1165,7 @@ class Trinity:
         # Pop Global Goal
         shared_context.pop_goal()
 
-        try:
-            from src.brain.state_manager import state_manager
-
-            if state_manager and getattr(state_manager, "available", False):
-                await state_manager.clear_session(session_id)
-        except (ImportError, NameError):
-            pass
+        # Removed clear_session(session_id) to keep session active in Redis history
 
         try:
             from src.brain.state_manager import state_manager
