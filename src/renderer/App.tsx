@@ -441,9 +441,35 @@ const App: React.FC = () => {
                 </h2>
                 <button
                   onClick={() => setIsHistoryOpen(false)}
-                  className="text-[#00e5ff]/50 hover:text-[#00e5ff] hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.8)] transition-colors text-xs"
+                  className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                    borderColor: 'rgba(0, 229, 255, 0.4)',
+                    boxShadow: '0 0 10px rgba(0, 229, 255, 0.1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#00e5ff';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.1)';
+                  }}
                 >
-                  ✕
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#00e5ff"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
                 </button>
               </div>
 
@@ -458,16 +484,45 @@ const App: React.FC = () => {
                       <button
                         key={s.id}
                         onClick={() => handleRestoreSession(s.id)}
-                        className={`group p-3 border text-left transition-all duration-300 backdrop-blur-sm ${
-                          currentSessionId === s.id
-                            ? 'bg-black/60 border-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.3)]'
-                            : 'bg-black/40 border-[#00e5ff]/40 hover:bg-black/60 hover:border-[#00e5ff] hover:shadow-[0_0_10px_rgba(0,229,255,0.2)]'
-                        }`}
+                        className="group p-3 border text-left transition-all duration-300 backdrop-blur-sm w-full relative overflow-hidden mb-3"
+                        style={{
+                          backgroundColor:
+                            currentSessionId === s.id ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
+                          borderColor:
+                            currentSessionId === s.id ? '#00e5ff' : 'rgba(0, 229, 255, 0.3)',
+                          boxShadow:
+                            currentSessionId === s.id
+                              ? '0 0 15px rgba(0, 229, 255, 0.25)'
+                              : 'none',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (currentSessionId !== s.id) {
+                            e.currentTarget.style.borderColor = '#00e5ff';
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+                            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.2)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (currentSessionId !== s.id) {
+                            e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.3)';
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }
+                        }}
                       >
-                        <div className="text-[9px] text-[#00e5ff] font-medium mb-1 truncate drop-shadow-[0_0_2px_rgba(0,229,255,0.5)]">
+                        <div
+                          className="text-[9px] font-medium mb-1 truncate"
+                          style={{
+                            color: '#00e5ff',
+                            textShadow: '0 0 5px rgba(0, 229, 255, 0.5)',
+                          }}
+                        >
                           {s.theme}
                         </div>
-                        <div className="text-[7px] text-[#00e5ff]/60 truncate font-mono">
+                        <div
+                          className="text-[7px] truncate font-mono"
+                          style={{ color: 'rgba(0, 229, 255, 0.6)' }}
+                        >
                           {new Date(s.saved_at).toLocaleString()}
                         </div>
                       </button>
@@ -477,8 +532,23 @@ const App: React.FC = () => {
               </div>
 
               <button
-                onClick={handleNewSession}
-                className="mt-6 w-full py-3 border border-[#00e5ff]/40 bg-black/40 hover:bg-[#00e5ff]/10 hover:border-[#00e5ff] hover:shadow-[0_0_20px_rgba(0,229,255,0.3)] text-[#00e5ff] text-[9px] uppercase tracking-[0.3em] font-bold transition-all backdrop-blur-sm"
+                className="mt-6 w-full py-3 border text-[9px] uppercase tracking-[0.3em] font-bold transition-all backdrop-blur-sm"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  borderColor: 'rgba(0, 229, 255, 0.4)',
+                  color: '#00e5ff',
+                  boxShadow: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#00e5ff';
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.1)';
+                  e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 229, 255, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
                 + New Session
               </button>
