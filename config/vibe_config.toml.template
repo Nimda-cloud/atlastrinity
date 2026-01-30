@@ -9,7 +9,28 @@
 # https://docs.mistral.ai/mistral-vibe/introduction/configuration
 #
 # Author: AtlasTrinity Team
-# Date: 2026-01-20
+# Date: 2026-01-30 (v3.0 - 18 tools)
+# =============================================================================
+#
+# AVAILABLE TOOLS (18 tools):
+#   - vibe_prompt             : PRIMARY interact with Vibe AI
+#   - vibe_analyze_error      : Deep error analysis / self-healing
+#   - vibe_implement_feature  : Deep coding / refactoring
+#   - vibe_code_review        : Request code review
+#   - vibe_smart_plan         : Generate execution plan
+#   - vibe_ask                : Quick read-only question
+#   - vibe_check_db           : SQL SELECT on AtlasTrinity DB
+#   - vibe_get_system_context : Current state retrieval
+#   - vibe_get_config         : View active config
+#   - vibe_configure_model    : Switch active model
+#   - vibe_set_mode           : plan/default/accept-edits/auto-approve
+#   - vibe_configure_provider : Runtime provider update
+#   - vibe_session_resume     : Continue previous session
+#   - vibe_execute_subcommand : Direct CLI subcommand access
+#   - vibe_list_sessions      : History & metrics
+#   - vibe_session_details    : Detailed session log
+#   - vibe_reload_config      : Reload disk config
+#   - vibe_which               : Vibe version & path info
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -182,15 +203,18 @@ permission = "ask"
 # args = ["mcp-server-fetch"]
 
 # Xcode Build & Test server (iOS/macOS)
-# NOTE: Vibe CLI requires ABSOLUTE paths. Replace ${PROJECT_ROOT} manually or via script.
+# NOTE: Vibe CLI requires ABSOLUTE paths in the 'args' list for MCP servers.
+# It does NOT expand environment variables like ${PROJECT_ROOT} automatically
+# unless wrapped in a shell.
 [[mcp_servers]]
 name = "xcodebuild"
 transport = "stdio"
-command = "/usr/local/bin/node"  # Verify node path
+command = "/usr/local/bin/node"  # Verify node path with 'which node'
 args = ["/Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
 
 # DevTools (Linter & Analysis)
-# NOTE: Uses /bin/sh wrapper to safely set PYTHONPATH, ensuring module discovery works in CLI context
+# NOTE: Uses /bin/sh wrapper to safely set PYTHONPATH, ensuring module discovery works in CLI context.
+# This is the recommended way to run Python MCP servers from Vibe for reliability.
 [[mcp_servers]]
 name = "devtools"
 transport = "stdio"
@@ -200,13 +224,14 @@ args = ["-c", "export PYTHONPATH=/Users/dev/Documents/GitHub/atlastrinity && /Us
 # -----------------------------------------------------------------------------
 # PATHS (Optional)
 # -----------------------------------------------------------------------------
-# Override default paths. Use ${HOME}, ${CONFIG_ROOT}, ${PROJECT_ROOT} placeholders.
+# Override default paths. Use ${HOME}, ${CONFIG_ROOT} placeholders.
+# NOTE: ${PROJECT_ROOT} is usually inferred from the CWD when running vibe.
 
 # Custom VIBE_HOME directory (default: ~/.vibe)
 vibe_home = "${CONFIG_ROOT}/vibe"
 
-# Custom workspace directory for Vibe operations
-# workspace = "${CONFIG_ROOT}/vibe_workspace"
+# Custom workspace directory for Vibe operations (logs, session files, etc.)
+workspace = "${CONFIG_ROOT}/vibe_workspace"
 
 # Custom agents directory (default: ~/.vibe/agents)
 agents_dir = "${CONFIG_ROOT}/vibe/agents"
