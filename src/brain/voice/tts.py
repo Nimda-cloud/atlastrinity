@@ -168,6 +168,27 @@ def sanitize_text_for_tts(text: str) -> str:
     text = re.sub(r"\s+([,.!?])", r"\1", text)
     text = re.sub(r"([,.!?])([^\s])", r"\1 \2", text)
 
+    # 7. Final Polish: Transliterate common English technical words if any remained
+    common_trans = {
+        r"\bjson\b": "джейсон",
+        r"\bpython\b": "пайтон",
+        r"\bcmd\b": "команда",
+        r"\btop\b": "топ",
+        r"\bapi\b": "апі",
+        r"\bui\b": "інтерфейс",
+        r"\bux\b": "користувацький досвід",
+        r"\bgit\b": "гіт",
+        r"\bpr\b": "піар",
+        r"\brev\b": "ревю",
+        r"\bvibe\b": "вайб",
+        r"\batlas\b": "атлас",
+        r"\btrinity\b": "трініті",
+        r"\bgrisha\b": "гріша",
+        r"\btetyana\b": "тетяна",
+    }
+    for pattern, replacement in common_trans.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
     return text.strip()
 
 
@@ -391,6 +412,7 @@ class VoiceManager:
         self._stop_event = asyncio.Event()
 
         self._current_process = None  # Track current subprocess
+        self._translator_llm = None  # Lazy loaded
 
     async def get_engine(self):
         if not self.enabled:
@@ -454,6 +476,56 @@ class VoiceManager:
             print(f"[TTS] Failed to initialize engine: {e}")
             self._tts = None
 
+    async def _get_translator(self):
+        """Lazy load a small/fast model for translation defense."""
+        if self._translator_llm is None:
+            import sys
+            from ..config import PROJECT_ROOT
+            if str(PROJECT_ROOT) not in sys.path:
+                sys.path.insert(0, str(PROJECT_ROOT))
+            
+            from providers.copilot import CopilotLLM
+            # Use default model for translation as it's usually fast enough
+            model = config.get("models.default", "gpt-4o")
+            self._translator_llm = CopilotLLM(model_name=model, max_tokens=1000, temperature=0.1)
+        return self._translator_llm
+
+    async def _translate_to_ukrainian(self, text: str) -> str:
+        """Translates English-heavy text to Ukrainian as a last defense."""
+        # Simple heuristic to detect if translation is needed
+        import re
+        english_words = re.findall(r'[a-zA-Z]{3,}', text)
+        # If more than 2 English words or significant portions are English
+        if len(english_words) < 2:
+            return text
+
+        logger.info(f"[TTS] 🔄 Translating English-heavy text to Ukrainian: {text[:50]}...")
+        llm = await self._get_translator()
+        
+        prompt = f"""Task: Translate the following text into HIGH-QUALITY natural Ukrainian.
+CRITICAL: ZERO English words. Localize technical terms, paths, and names.
+The tone should be professional and guardian-like.
+
+Text: {text}
+
+Ukrainian:"""
+        
+        try:
+            from langchain_core.messages import HumanMessage, SystemMessage
+            messages = [
+                SystemMessage(content="You are a professional Ukrainian translator. Zero English words allowed."),
+                HumanMessage(content=prompt)
+            ]
+            response = await llm.ainvoke(messages)
+            translated = str(response.content).strip().strip('"')
+            if translated:
+                logger.info(f"[TTS] ✅ Translation complete: {translated[:50]}...")
+                return translated
+        except Exception as e:
+            logger.warning(f"[TTS] Translation failed: {e}. Falling back to original text.")
+        
+        return text
+
     def stop(self):
         """Immediately stop current speech."""
         if self._stop_event:
@@ -492,6 +564,12 @@ class VoiceManager:
 
             # Clean text for better pronunciation
             text = sanitize_text_for_tts(text)
+            
+            # Check if translation is needed (force_ukrainian defense)
+            # We check if behavior config has this enabled
+            if config.get("voice.tts.force_ukrainian", True):
+                text = await self._translate_to_ukrainian(text)
+
             if not text:
                 return None
 
@@ -502,8 +580,8 @@ class VoiceManager:
 
             from ukrainian_tts.tts import Stress, Voices
 
-            config = AGENT_VOICES[agent_id]
-            voice_enum = getattr(Voices, config.voice_id).value
+            agent_conf = AGENT_VOICES[agent_id]
+            voice_enum = getattr(Voices, agent_conf.voice_id).value
 
             try:
                 import asyncio
@@ -559,7 +637,7 @@ class VoiceManager:
                 final_chunks = refined_chunks or [text]
 
                 print(
-                    f"[TTS] [{config.name}] Starting pipelined playback for {len(final_chunks)} chunks...",
+                    f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(final_chunks)} chunks...",
                 )
                 start_time = time.time()
 
@@ -578,7 +656,7 @@ class VoiceManager:
                 for idx in range(len(final_chunks)):
                     # Return if interrupted
                     if self._stop_event.is_set():
-                        print(f"[TTS] [{config.name}] 🛑 Sequence cancelled.")
+                        print(f"[TTS] [{agent_conf.name}] 🛑 Sequence cancelled.")
                         return "cancelled"
 
                     # Start generating next
@@ -590,7 +668,7 @@ class VoiceManager:
                         continue
 
                     print(
-                        f"[TTS] [{config.name}] 🔊 Speaking chunk {idx + 1}/{len(final_chunks)}: {final_chunks[idx][:50]}...",
+                        f"[TTS] [{agent_conf.name}] 🔊 Speaking chunk {idx + 1}/{len(final_chunks)}: {final_chunks[idx][:50]}...",
                     )
                     self.last_text = final_chunks[idx].strip().lower()
                     self.history.append(self.last_text)
@@ -605,12 +683,12 @@ class VoiceManager:
                         )
                         await self._current_process.communicate()
                     except asyncio.CancelledError:
-                        print(f"[TTS] [{config.name}] 🛑 Playback cancelled.")
+                        print(f"[TTS] [{agent_conf.name}] 🛑 Playback cancelled.")
                         if self._current_process:
                             self._current_process.terminate()
                         raise
                     except Exception as e:
-                        print(f"[TTS] [{config.name}] ⚠ Playback error: {e}")
+                        print(f"[TTS] [{agent_conf.name}] ⚠ Playback error: {e}")
                     finally:
                         self.is_speaking = False
                         self._current_process = None

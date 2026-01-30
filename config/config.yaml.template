@@ -413,3 +413,4 @@ voice:
     engine: ukrainian-tts               # TTS engine
     device: cpu
     enabled: true
+    force_ukrainian: true               # Forces translation of English text to Ukrainian
