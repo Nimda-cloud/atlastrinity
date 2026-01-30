@@ -233,12 +233,12 @@ const App: React.FC = () => {
     let interval: NodeJS.Timeout;
 
     // Delay initial connection attempts to allow Python server to start
-    // Reduced from 7000 to 2000 for better UX, relying on retry logic
+    // Increased from 2000 to 5000 for better stability
     const startupTimeout = setTimeout(() => {
       pollState();
       fetchSessions();
       interval = setInterval(pollState, 1500); // Polling every 1.5s
-    }, 2000);
+    }, 5000);
 
     return () => {
       clearTimeout(startupTimeout);
@@ -356,6 +356,18 @@ const App: React.FC = () => {
       <div className="pulsing-border bottom"></div>
       <div className="pulsing-border left"></div>
       <div className="pulsing-border right"></div>
+      
+      {/* Starting Overlay */}
+      {!isConnected && systemState === 'IDLE' && (
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/80 backdrop-blur-md">
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-16 h-16 border-t-2 border-r-2 border-[#00f2ff] rounded-full animate-spin"></div>
+            <div className="text-[10px] tracking-[0.5em] uppercase text-[#00f2ff]/60 animate-pulse">
+              Waiting for neural link...
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global Title Bar Controls (Positioned exactly near traffic lights) */}
       <div
