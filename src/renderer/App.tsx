@@ -433,15 +433,15 @@ const App: React.FC = () => {
 
         {/* Session History Sidebar Overlay */}
         {isHistoryOpen && (
-          <div className="absolute inset-0 z-50 bg-[#020202]/95 backdrop-blur-xl border-r border-white/5 animate-slide-in">
+          <div className="absolute inset-0 z-50 bg-[#020202]/95 backdrop-blur-xl border-r border-[#00e5ff]/20 animate-slide-in">
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold text-white/40">
+                <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold text-[#00e5ff] drop-shadow-[0_0_5px_rgba(0,229,255,0.5)]">
                   Session History
                 </h2>
                 <button
                   onClick={() => setIsHistoryOpen(false)}
-                  className="text-white/30 hover:text-white transition-colors text-xs"
+                  className="text-[#00e5ff]/50 hover:text-[#00e5ff] hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.8)] transition-colors text-xs"
                 >
                   ✕
                 </button>
@@ -449,7 +449,7 @@ const App: React.FC = () => {
 
               <div className="flex-1 overflow-y-auto scrollbar-thin pr-2">
                 {sessions.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-[8px] uppercase tracking-widest text-white/10 italic">
+                  <div className="h-full flex items-center justify-center text-[8px] uppercase tracking-widest text-[#00e5ff]/30 italic">
                     No history found
                   </div>
                 ) : (
@@ -460,14 +460,14 @@ const App: React.FC = () => {
                         onClick={() => handleRestoreSession(s.id)}
                         className={`group p-3 border text-left transition-all duration-300 backdrop-blur-sm ${
                           currentSessionId === s.id
-                            ? 'bg-black/50 border-[#00e5ff]/60 shadow-[0_0_10px_rgba(0,229,255,0.2)]'
-                            : 'bg-black/40 border-[#00e5ff]/30 hover:bg-black/50 hover:border-[#00e5ff]/50 hover:shadow-[0_0_8px_rgba(0,229,255,0.15)]'
+                            ? 'bg-black/60 border-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.3)]'
+                            : 'bg-black/40 border-[#00e5ff]/40 hover:bg-black/60 hover:border-[#00e5ff] hover:shadow-[0_0_10px_rgba(0,229,255,0.2)]'
                         }`}
                       >
-                        <div className="text-[9px] text-[#00e5ff]/90 font-medium mb-1 truncate group-hover:text-[#00e5ff] transition-colors">
+                        <div className="text-[9px] text-[#00e5ff] font-medium mb-1 truncate drop-shadow-[0_0_2px_rgba(0,229,255,0.5)]">
                           {s.theme}
                         </div>
-                        <div className="text-[7px] text-[#00e5ff]/50 truncate font-mono">
+                        <div className="text-[7px] text-[#00e5ff]/60 truncate font-mono">
                           {new Date(s.saved_at).toLocaleString()}
                         </div>
                       </button>
@@ -478,7 +478,7 @@ const App: React.FC = () => {
 
               <button
                 onClick={handleNewSession}
-                className="mt-6 w-full py-3 border border-white/20 bg-white/5 hover:bg-white/10 text-[9px] uppercase tracking-[0.3em] font-bold transition-all"
+                className="mt-6 w-full py-3 border border-[#00e5ff]/40 bg-black/40 hover:bg-[#00e5ff]/10 hover:border-[#00e5ff] hover:shadow-[0_0_20px_rgba(0,229,255,0.3)] text-[#00e5ff] text-[9px] uppercase tracking-[0.3em] font-bold transition-all backdrop-blur-sm"
               >
                 + New Session
               </button>
