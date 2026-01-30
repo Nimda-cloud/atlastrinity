@@ -141,11 +141,27 @@ class LogEntry(Base):
     __tablename__ = "logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str | None] = mapped_column(String(100), index=True, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     level: Mapped[str] = mapped_column(String(20))
     source: Mapped[str] = mapped_column(String(50))
     message: Mapped[str] = mapped_column(Text)
     metadata_blob: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
+
+class ChatMessage(Base):
+    """Stores full chat history for persistent session reconstruction"""
+
+    __tablename__ = "chat_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String(100), index=True)
+
+    role: Mapped[str] = mapped_column(String(20))  # human, ai, system
+    content: Mapped[str] = mapped_column(Text)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    metadata_blob: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
 
 
 # Knowledge Graph Nodes (Vertices)
