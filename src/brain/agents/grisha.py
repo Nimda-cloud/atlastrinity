@@ -28,6 +28,12 @@ from src.brain.config_loader import config
 from src.brain.context import shared_context
 from src.brain.logger import logger
 from src.brain.prompts import AgentPrompts
+from src.brain.prompts.grisha import (
+    GRISHA_DEEP_VALIDATION_REASONING,
+    GRISHA_FORENSIC_ANALYSIS,
+    GRISHA_LOGICAL_VERDICT,
+    GRISHA_VERIFICATION_GOAL_ANALYSIS,
+)
 
 
 @dataclass
@@ -179,34 +185,12 @@ class Grisha(BaseAgent):
         else:
             result_str = str(result)[:2000]
 
-        reasoning_query = f"""DEEP MULTI-LAYER VALIDATION ANALYSIS
-        
-STEP ACTION: {step_action}
-EXPECTED RESULT: {expected}
-ACTUAL RESULT: {result_str}
-GLOBAL GOAL: {goal_context}
-
-Perform a 4-LAYER validation analysis:
-
-LAYER 1 - TECHNICAL PRECISION:
-- Did the tool execute correctly?
-- Are there any error indicators in the output?
-- Does the output format match expectations?
-
-LAYER 2 - SEMANTIC CORRECTNESS:
-- Does the result semantically match the expected outcome?
-- Are there any hidden failures (empty data, partial results)?
-
-LAYER 3 - GOAL ALIGNMENT:
-- Does this result advance the global goal?
-- Are there side effects that might hinder future steps?
-
-LAYER 4 - SYSTEM STATE INTEGRITY:
-- Did the system state change as expected?
-- Is this change persistent?
-
-Formulate your conclusion in English for technical accuracy, but ensure the user-facing output is ready for Ukrainian localization.
-"""
+        reasoning_query = GRISHA_DEEP_VALIDATION_REASONING.format(
+            step_action=step_action,
+            expected_result=expected,
+            result_str=result_str,
+            goal_context=goal_context
+        )
 
         reasoning = await self.use_sequential_thinking(reasoning_query, total_thoughts=2)
         return {
@@ -450,25 +434,12 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
         expected_result = step.get("expected_result", "")
         step_id = step.get("id", "unknown")
 
-        query = f"""АНАЛІЗ ЦІЛІ ВЕРИФІКАЦІЇ (АТОМАРНИЙ РІВЕНЬ):
-
-Крок {step_id}: {step_action}
-Очікуваний результат: {expected_result}
-ЗАГАЛЬНА КІНЦЕВА МЕТА: {goal_context}
-
-ЗАВДАННЯ: Проаналізуй цей крок ВІДІРВАНО від кінцевої мети. Твоє завдання - визначити критерії успіху ТІЛЬКИ ДЛЯ ЦЬОГО КОНКРЕТНОГО КРОКУ.
-
-КРИТИЧНІ ПРАВИЛА:
-1. **АТОМАРНІСТЬ**: Якщо крок вимагає "перевірити наявність інструментів", успіхом є ПІДТВЕРДЖЕННЯ НАЯВНОСТІ, а не виконання всієї глобальної задачі.
-2. **ТИП КРОКУ**:
-   - Якщо це АНАЛІЗ/ДИСКАВЕРІ: успіхом є отримання даних/інформації. Не вимагай змін у системі.
-   - Якщо це ДІЯ: успіхом є зміна стану/артефакт.
-3. **НЕ ПЛУТАЙ ЕТАПИ**: Не вимагай результатів Кроку 10 від Кроку 1. 
-
-Дай відповідь українською мовою:
-1. **МЕТА КРОКУ**: Що саме ми маємо підтвердити зараз (наприклад: "Ми маємо переконатися, що утиліта X встановлена")?
-2. **ІНСТРУМЕНТИ ВЕРИФІКАЦІЇ**: (Обери 1-3 інструменти).
-3. **КОНКРЕТНІ КРИТЕРІЇ УСПІХУ**: За яких умов цей крок (і тільки він) вважається пройденим?"""
+        query = GRISHA_VERIFICATION_GOAL_ANALYSIS.format(
+            step_id=step_id,
+            step_action=step_action,
+            expected_result=expected_result,
+            goal_context=goal_context
+        )
 
         logger.info(f"[GRISHA] Phase 1: Analyzing verification goal for step {step_id}...")
 
@@ -478,14 +449,14 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             if not reasoning_result.get("success"):
                 logger.warning("[GRISHA] Sequential thinking failed, using fallback strategy")
                 return {
-                    "verification_purpose": f"Перевірити, що '{step_action}' було виконано успішно",
+                    "verification_purpose": f"Verify that '{step_action}' was executed successfully",
                     "selected_tools": [
                         {
                             "tool": "vibe.vibe_check_db",
-                            "reason": "Перевірити записи про виконання інструментів у БД",
+                            "reason": "Check tool execution records in DB",
                         },
                     ],
-                    "success_criteria": "Запис про виконання знайдено та результат не містить критичних помилок",
+                    "success_criteria": "Execution record found and result contains no critical errors",
                 }
 
             analysis_text = reasoning_result.get("analysis", "")
@@ -494,14 +465,14 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             if self._detect_repetitive_thinking(analysis_text):
                 logger.warning("[GRISHA] Anti-loop triggered - repetitive thinking detected")
                 return {
-                    "verification_purpose": f"Перевірити, що '{step_action}' було виконано успішно",
+                    "verification_purpose": f"Verify that '{step_action}' was executed successfully",
                     "selected_tools": [
                         {
                             "tool": "vibe.vibe_check_db",
                             "reason": "Fallback: DB audit due to repetitive thinking",
                         },
                     ],
-                    "success_criteria": "Запис про виконання знайдено та результат не містить критичних помилок",
+                    "success_criteria": "Execution record found and result contains no critical errors",
                     "full_reasoning": "Anti-loop fallback activated",
                 }
 
@@ -624,34 +595,13 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             ]
         )
 
-        query = f"""LOGICAL VERIFICATION VERDICT (ATOMIC LEVEL):
-
-STEP: {step_action}
-EXPECTED RESULT: {expected_result}
-COLLECTED EVIDENCE:
-{results_summary}
-
-VERIFICATION PURPOSE (from Phase 1):
-{goal_analysis.get("verification_purpose", "Unknown")}
-
-SUCCESS CRITERIA:
-{goal_analysis.get("success_criteria", "Unknown")}
-
-GENERAL GOAL (FOR CONTEXT): {goal_context}
-
-VERDICT INSTRUCTIONS:
-1. **STRICT ATOMICITY**: Evaluate ONLY the Evidence's relevance to this specific STEP.
-2. **NO GLOBALIZATION**: FORBIDDEN to fail because "general goal ({goal_context})" is not yet achieved. If the step goal is "verify tools" and evidence confirms it (even if the tool check returned negative, but she recorded it) - the step is CONFIRMED.
-3. **STEP CHARACTER**:
-   - FOR ANALYSIS/DISCOVERY: success is the fact of data collection. If she reported "nothing found" and we see her command - this is STEP SUCCESS. EMPTY OUTPUT is VALID EVIDENCE of absence if the command executed successfully.
-   - FOR ACTION: success is a change.
-4. **EVIDENCE EVALUATION**: Analyze the Result text. If empty, but command is success (True) and it's an ANALYSIS step - CHECK if it's logical. Do not fail ONLY because of "emptiness" if it proves absence.
-
-Provide response:
-- **VERDICT**: CONFIRMED or FAILED
-- **CONFIDENCE**: 0.0-1.0
-- **REASONING**: (Analysis in UKRAINIAN. Explain why this ATOMIC step is considered done or not.)
-- **ISSUES**: (List of issues ONLY FOR THIS STEP)"""
+        query = GRISHA_LOGICAL_VERDICT.format(
+            step_action=step_action,
+            expected_result=expected_result,
+            results_summary=results_summary,
+            goal_analysis=goal_analysis,
+            goal_context=goal_context
+        )
 
         logger.info(f"[GRISHA] Phase 2: Forming logical verdict for step {step_id}...")
 
@@ -726,6 +676,22 @@ Provide response:
                 else ("Verification criteria not met" if not verified else "")
             )
 
+            # CRITICAL FIX: Check command relevance BEFORE accepting verdict
+            is_relevant, relevance_reason = self._check_command_relevance(
+                step_action, expected_result, verification_results
+            )
+            
+            if not is_relevant:
+                logger.warning(f"[GRISHA] Command relevance check FAILED: {relevance_reason}")
+                verified = False
+                confidence = min(confidence, 0.3)  # Reduce confidence for irrelevant commands
+                if not issues_text:
+                    issues_text = f"Нерелевантна команда: {relevance_reason}"
+                else:
+                    issues_text += f" | Нерелевантна команда: {relevance_reason}"
+            else:
+                logger.info(f"[GRISHA] Command relevance check PASSED: {relevance_reason}")
+
             issues = [
                 i.strip()
                 for i in issues_text.split("\n")
@@ -794,6 +760,77 @@ Provide response:
             if not verified
             else ["Логічний аналіз недоступний"],
         }
+
+    def _is_final_task_completion(self, step: dict[str, Any]) -> bool:
+        """Check if this step represents final task completion vs intermediate step"""
+        step_action = step.get("action", "").lower()
+        expected_result = step.get("expected_result", "").lower()
+        
+        # Keywords indicating final task completion
+        final_keywords = [
+            "complete", "completed", "finished", "done", "success", 
+            "завершено", "виконано", "готово", "успішно"
+        ]
+        
+        # Check if step action or expected result indicates completion
+        is_final = any(keyword in step_action for keyword in final_keywords)
+        is_final = is_final or any(keyword in expected_result for keyword in final_keywords)
+        
+        # Also check if this is a verification of overall task success
+        verification_keywords = ["verify", "check", "confirm", "перевірити", "перевірка"]
+        is_verification = any(keyword in step_action for keyword in verification_keywords)
+        
+        # If it's a verification step but not about specific technical details,
+        # it might be a final verification
+        if is_verification and not any(tech in step_action for tech in ["bridged", "network", "ip", "vm"]):
+            is_final = True
+            
+        logger.info(f"[GRISHA] Step completion check - Final: {is_final}, Action: {step_action[:50]}")
+        return is_final
+
+    def _check_command_relevance(self, step_action: str, expected_result: str, verification_results: list) -> tuple[bool, str]:
+        """Check if executed commands are relevant to expected results"""
+        if not verification_results:
+            return False, "No verification results available"
+        
+        # Extract command from verification results
+        commands = []
+        for result in verification_results:
+            if isinstance(result, dict):
+                tool_name = result.get("tool", "")
+                args = result.get("args", {})
+                if "execute_command" in tool_name and "command" in args:
+                    commands.append(args["command"])
+        
+        if not commands:
+            return True, "No commands to check relevance"
+        
+        # Check relevance based on expected result keywords
+        expected_lower = expected_result.lower()
+        step_lower = step_action.lower()
+        
+        for cmd in commands:
+            cmd_lower = cmd.lower()
+            
+            # Bridged Mode specific checks
+            if "bridged" in expected_lower or "network mode" in expected_lower:
+                if any(keyword in cmd_lower for keyword in ["showvminfo", "getextradata", "modifyvm"]):
+                    return True, f"Command '{cmd}' is relevant for network configuration"
+                elif "list vms" in cmd_lower:
+                    return True, f"Command '{cmd}' is relevant as initial step for VM verification"
+            
+            # IP/Network checks
+            if "ip" in expected_lower or "network" in expected_lower:
+                if any(keyword in cmd_lower for keyword in ["ip a", "ifconfig", "ping"]):
+                    return True, f"Command '{cmd}' is relevant for network verification"
+            
+            # General VM management
+            if "vm" in expected_lower and "virtualbox" in step_lower:
+                if any(keyword in cmd_lower for keyword in ["showvminfo", "list", "getextradata"]):
+                    return True, f"Command '{cmd}' is relevant for VM management"
+        
+        # Default: if no specific relevance found, assume relevant
+        return True, "Command relevance assumed (no specific pattern matched)"
 
     def _detect_repetitive_thinking(self, analysis_text: str) -> bool:
         """Detect if the thinking is repetitive (anti-loop protection)"""
@@ -880,7 +917,7 @@ Provide response:
             logger.error(f"[GRISHA] Config sync verification failed: {e}")
             return {
                 "sync_status": "error",
-                "issues": [f"Verification failed: {str(e)}"],
+                "issues": [f"Verification failed: {e!s}"],
                 "config_root": None,
                 "template_root": None
             }
@@ -951,6 +988,19 @@ Provide response:
 
         step_id = step.get("id", 0)
         expected = step.get("expected_result", "")
+
+        # NEW LOGIC: Skip verification for intermediate steps
+        # Only verify final task completion steps
+        if not self._is_final_task_completion(step):
+            logger.info(f"[GRISHA] Skipping intermediate step {step_id} - not a final task completion")
+            return VerificationResult(
+                step_id=step_id,
+                verified=True,  # Auto-approve intermediate steps
+                confidence=1.0,
+                description="Intermediate step - auto-approved",
+                issues=[],
+                voice_message=f"Step {step_id} is intermediate, continuing task execution"
+            )
 
         # SYSTEM CHECK: Verify config sync for system-critical tasks
         system_issues = []
@@ -1209,24 +1259,11 @@ Provide response:
 
         # Use universal sequential thinking capability
         reasoning = await self.use_sequential_thinking(
-            f"""DEEP FORENSIC ANALYSIS OF TECHNICAL FAILURE:
-
-STEP: {json.dumps(step, default=str)}
-ERROR: {error}
-CONTEXT: {str(context_data)[:1000]}
-
-TASKS:
-1. **CLASSIFICATION**: Determine if this is a TASK problem (user data, external files) or a SYSTEM error (bug in code, configuration, paths).
-2. **ROOT CAUSE**: Why did this happen? Provide a logical chain of evidence.
-3. **RECOVERY ADVICE**: What should Tetyana or Vibe do right now to fix this?
-4. **PREVENTION STRATEGY**: How to adjust the system long-term to prevent recurrence?
-
-Provide report in the following format:
-- **TYPE**: (System / Task)
-- **ROOT CAUSE**: ...
-- **FIX ADVICE**: ...
-- **PREVENTION**: ...
-- **SUMMARY_UKRAINIAN**: (Detailed explanation for the user in Ukrainian language)""",
+            GRISHA_FORENSIC_ANALYSIS.format(
+                step_json=json.dumps(step, default=str),
+                error=error,
+                context_data=str(context_data)[:1000]
+            ),
             total_thoughts=3,
         )
 

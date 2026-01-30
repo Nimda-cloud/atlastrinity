@@ -226,8 +226,14 @@ const CommandLine: React.FC<CommandLineProps> = ({
           setSttStatus('❌ Помилка STT');
         }
       } catch (error) {
-        console.error('❌ Smart STT error:', error);
-        setSttStatus("❌ Помилка з'єднання");
+        // Suppress "Failed to fetch" errors to reduce console spam
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          // Silent fail for connection issues
+          setSttStatus("🔌 Підключення...");
+        } else {
+          console.error('❌ Smart STT error:', error);
+          setSttStatus("❌ Помилка з'єднання");
+        }
       }
     },
     [handleSTTResponse]
