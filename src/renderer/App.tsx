@@ -439,6 +439,43 @@ const App: React.FC = () => {
                 <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold text-[#00e5ff] drop-shadow-[0_0_5px_rgba(0,229,255,0.5)]">
                   Session History
                 </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      handleNewSession();
+                      setIsHistoryOpen(false);
+                    }}
+                    className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      borderColor: 'rgba(0, 229, 255, 0.4)',
+                      boxShadow: '0 0 10px rgba(0, 229, 255, 0.1)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#00e5ff';
+                      e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+                      e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.1)';
+                    }}
+                    title="New Session"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#00e5ff"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
                 <button
                   onClick={() => setIsHistoryOpen(false)}
                   className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
@@ -471,9 +508,16 @@ const App: React.FC = () => {
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
                 </button>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto scrollbar-thin pr-2">
+              <div className="flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <style>{`
+                  .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+                <div className="no-scrollbar h-full overflow-y-auto">
                 {sessions.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-[8px] uppercase tracking-widest text-[#00e5ff]/30 italic">
                     No history found
@@ -529,45 +573,7 @@ const App: React.FC = () => {
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="mt-4 flex justify-center w-full">
-                <button
-                  onClick={() => {
-                    handleNewSession();
-                    setIsHistoryOpen(false);
-                  }}
-                  className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                    borderColor: 'rgba(0, 229, 255, 0.4)',
-                    boxShadow: '0 0 10px rgba(0, 229, 255, 0.1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#00e5ff';
-                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
-                    e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.1)';
-                  }}
-                  title="New Session"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#00e5ff"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]"
-                  >
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                </button>
+                  </div>
               </div>
             </div>
           </div>
