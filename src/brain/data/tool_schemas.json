@@ -2,17 +2,13 @@
   "vibe_prompt": {
     "server": "vibe",
     "required": ["prompt"],
-    "optional": ["cwd", "timeout_s", "output_format", "auto_approve", "max_turns", "resume"],
+    "optional": ["cwd", "timeout_s"],
     "types": {
       "prompt": "str",
       "cwd": "str",
-      "timeout_s": "float",
-      "output_format": "str",
-      "auto_approve": "bool",
-      "max_turns": "int",
-      "resume": "str"
+      "timeout_s": "int"
     },
-    "description": "Run a general AI coding or analysis task with full TUI capabilities"
+    "description": "Powerful AI coding and debugging agent"
   },
   "search_golden_fund": {
     "server": "golden-fund",
@@ -137,7 +133,6 @@
     "server": "vibe",
     "required": ["error_message"],
     "optional": [
-      "context_files",
       "cwd",
       "timeout_s",
       "auto_fix",
@@ -146,7 +141,6 @@
     ],
     "types": {
       "error_message": "str",
-      "context_files": "list",
       "cwd": "str",
       "timeout_s": "float",
       "auto_fix": "bool",
@@ -158,10 +152,9 @@
   "vibe_implement_feature": {
     "server": "vibe",
     "required": ["goal"],
-    "optional": ["context_files", "constraints", "cwd", "timeout_s"],
+    "optional": ["constraints", "cwd", "timeout_s"],
     "types": {
       "goal": "str",
-      "context_files": "list",
       "constraints": "str",
       "cwd": "str",
       "timeout_s": "float"
@@ -170,11 +163,10 @@
   },
   "vibe_code_review": {
     "server": "vibe",
-    "required": ["files"],
-    "optional": ["focus", "cwd", "timeout_s"],
+    "required": ["file_path"],
+    "optional": ["cwd", "timeout_s"],
     "types": {
-      "files": "list",
-      "focus": "str",
+      "file_path": "str",
       "cwd": "str",
       "timeout_s": "float"
     },
@@ -182,10 +174,10 @@
   },
   "vibe_smart_plan": {
     "server": "vibe",
-    "required": ["goal"],
+    "required": ["objective"],
     "optional": ["cwd", "timeout_s"],
     "types": {
-      "goal": "str",
+      "objective": "str",
       "cwd": "str",
       "timeout_s": "float"
     },
@@ -216,17 +208,11 @@
   "vibe_list_sessions": {
     "server": "vibe",
     "required": [],
-    "optional": [],
-    "description": "List all active and historical Vibe sessions"
-  },
-  "vibe_session_details": {
-    "server": "vibe",
-    "required": ["session_id"],
-    "optional": [],
+    "optional": ["limit"],
     "types": {
-      "session_id": "str"
+      "limit": "int"
     },
-    "description": "Get detailed logs and status for a specific Vibe session"
+    "description": "List all active and historical Vibe sessions"
   },
   "vibe_which": {
     "server": "vibe",
@@ -261,51 +247,34 @@
   "macos-use_click_and_traverse": {
     "server": "macos-use",
     "required": ["x", "y"],
-    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
+    "optional": ["pid", "showAnimation", "animationDuration"],
     "types": {
       "pid": "int",
       "x": "float",
       "y": "float",
       "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "animationDuration": "float"
     },
     "description": "Click coordinates (x, y) and traverse tree"
   },
   "macos-use_type_and_traverse": {
     "server": "macos-use",
     "required": ["text"],
-    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
+    "optional": ["pid"],
     "types": {
       "pid": "int",
-      "text": "str",
-      "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "text": "str"
     },
     "description": "Type text and traverse tree"
   },
   "macos-use_press_key_and_traverse": {
     "server": "macos-use",
     "required": ["keyName"],
-    "optional": [
-      "pid",
-      "modifierFlags",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "optional": ["pid", "modifierFlags"],
     "types": {
       "pid": "int",
       "keyName": "str",
-      "modifierFlags": "list",
-      "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "modifierFlags": "list"
     },
     "description": "Press key (Return, Tab, Escape, etc.) with modifiers"
   },
@@ -321,69 +290,46 @@
   "macos-use_scroll_and_traverse": {
     "server": "macos-use",
     "required": ["direction"],
-    "optional": [
-      "pid",
-      "amount",
-      "showAnimation",
-      "animationDuration",
-      "traverseBefore",
-      "traverseAfter"
-    ],
+    "optional": ["pid", "amount"],
     "types": {
       "pid": "int",
       "direction": "str",
-      "amount": "float",
-      "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "amount": "float"
     },
     "description": "Scroll wheel action and traverse tree"
   },
   "macos-use_right_click_and_traverse": {
     "server": "macos-use",
     "required": ["x", "y"],
-    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
+    "optional": ["pid"],
     "types": {
       "pid": "int",
       "x": "float",
-      "y": "float",
-      "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "y": "float"
     },
     "description": "Right-click and traverse tree"
   },
   "macos-use_double_click_and_traverse": {
     "server": "macos-use",
     "required": ["x", "y"],
-    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
+    "optional": ["pid"],
     "types": {
       "pid": "int",
       "x": "float",
-      "y": "float",
-      "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "y": "float"
     },
     "description": "Double-click and traverse tree"
   },
   "macos-use_drag_and_drop_and_traverse": {
     "server": "macos-use",
     "required": ["startX", "startY", "endX", "endY"],
-    "optional": ["pid", "showAnimation", "animationDuration", "traverseBefore", "traverseAfter"],
+    "optional": ["pid"],
     "types": {
       "pid": "int",
       "startX": "float",
       "startY": "float",
       "endX": "float",
-      "endY": "float",
-      "showAnimation": "bool",
-      "animationDuration": "float",
-      "traverseBefore": "bool",
-      "traverseAfter": "bool"
+      "endY": "float"
     },
     "description": "Drag and drop action and traverse tree"
   },
@@ -812,14 +758,21 @@
   },
   "puppeteer_screenshot": {
     "server": "puppeteer",
-    "required": ["path"],
-    "optional": ["selector", "full_page"],
+    "required": ["name"],
+    "optional": [
+      "selector",
+      "width",
+      "height",
+      "encoded"
+    ],
     "types": {
-      "path": "str",
+      "name": "str",
       "selector": "str",
-      "full_page": "bool"
+      "width": "int",
+      "height": "int",
+      "encoded": "bool"
     },
-    "description": "Take a screenshot of the page"
+    "description": "Take a screenshot of the current page or a specific element."
   },
   "puppeteer_click": {
     "server": "puppeteer",
@@ -843,13 +796,10 @@
   "take_screenshot": {
     "server": "chrome-devtools",
     "required": [],
-    "optional": ["format", "quality", "clip", "fromSurface", "captureBeyondViewport"],
+    "optional": ["format", "quality"],
     "types": {
       "format": "str",
-      "quality": "int",
-      "clip": "dict",
-      "fromSurface": "bool",
-      "captureBeyondViewport": "bool"
+      "quality": "int"
     },
     "description": "Capture the screenshot of the current page."
   },
@@ -879,15 +829,20 @@
   },
   "sequentialthinking": {
     "server": "sequential-thinking",
-    "required": ["thought", "thoughtNumber", "totalThoughts"],
-    "optional": ["nextThoughtNeeded"],
+    "required": [
+      "thought",
+      "thoughtNumber",
+      "totalThoughts",
+      "nextThoughtNeeded"
+    ],
+    "optional": [],
     "types": {
       "thought": "str",
       "thoughtNumber": "int",
       "totalThoughts": "int",
       "nextThoughtNeeded": "bool"
     },
-    "description": "Multi-step sequential reasoning"
+    "description": "Perform step-by-step reasoning for complex tasks."
   },
   "macos-use_run_applescript": {
     "server": "macos-use",
@@ -900,202 +855,153 @@
   },
   "create_or_update_file": {
     "server": "github",
-    "description": "Create or update a file in a repository.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "repo": {
-          "type": "string"
-        },
-        "path": {
-          "type": "string"
-        },
-        "content": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        },
-        "sha": {
-          "type": "string",
-          "description": "Required when updating an existing file"
-        },
-        "branch": {
-          "type": "string"
-        }
-      },
-      "required": ["owner", "repo", "path", "content", "message"]
-    }
+    "required": [
+      "owner",
+      "repo",
+      "path",
+      "content",
+      "message",
+      "branch"
+    ],
+    "optional": [
+      "sha"
+    ],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "path": "str",
+      "content": "str",
+      "message": "str",
+      "branch": "str",
+      "sha": "str"
+    },
+    "description": "Create or update a single file in a GitHub repository."
   },
   "search_code": {
     "server": "github",
-    "description": "Search for code across GitHub.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "q": {
-          "type": "string",
-          "description": "The search query (e.g. 'filename:config.json')"
-        },
-        "page": {
-          "type": "integer"
-        },
-        "per_page": {
-          "type": "integer"
-        }
-      },
-      "required": ["q"]
-    }
+    "required": [
+      "q"
+    ],
+    "optional": [
+      "page",
+      "per_page"
+    ],
+    "types": {
+      "q": "str",
+      "page": "int",
+      "per_page": "int"
+    },
+    "description": "Search for code across GitHub."
   },
   "list_issues": {
     "server": "github",
-    "description": "List issues in a repository.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "repo": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string",
-          "enum": ["open", "closed", "all"]
-        },
-        "assignee": {
-          "type": "string"
-        }
-      },
-      "required": ["owner", "repo"]
-    }
+    "required": [
+      "owner",
+      "repo"
+    ],
+    "optional": [
+      "state"
+    ],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "state": "str"
+    },
+    "description": "List issues in a repository."
   },
   "create_issue": {
     "server": "github",
-    "description": "Create a new issue.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "repo": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        },
-        "assignees": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": ["owner", "repo", "title"]
-    }
+    "required": [
+      "owner",
+      "repo",
+      "title"
+    ],
+    "optional": [
+      "body",
+      "assignees"
+    ],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "title": "str",
+      "body": "str",
+      "assignees": "list"
+    },
+    "description": "Create a new issue."
   },
   "create_pull_request": {
     "server": "github",
-    "description": "Create a new pull request.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "repo": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "head": {
-          "type": "string",
-          "description": "The name of the branch where your changes are implemented."
-        },
-        "base": {
-          "type": "string",
-          "description": "The name of the branch you want the changes pulled into."
-        },
-        "body": {
-          "type": "string"
-        }
-      },
-      "required": ["owner", "repo", "title", "head", "base"]
-    }
+    "required": [
+      "owner",
+      "repo",
+      "title",
+      "head",
+      "base"
+    ],
+    "optional": [
+      "body"
+    ],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "title": "str",
+      "head": "str",
+      "base": "str",
+      "body": "str"
+    },
+    "description": "Create a new pull request."
   },
   "search_repositories": {
     "server": "github",
-    "description": "Search for repositories on GitHub.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "q": {
-          "type": "string",
-          "description": "The search query."
-        },
-        "page": {
-          "type": "integer"
-        },
-        "per_page": {
-          "type": "integer"
-        }
-      },
-      "required": ["q"]
-    }
+    "required": [
+      "query"
+    ],
+    "optional": [
+      "page",
+      "perPage"
+    ],
+    "types": {
+      "query": "str",
+      "page": "int",
+      "perPage": "int"
+    },
+    "description": "Search for repositories on GitHub."
   },
   "list_pull_requests": {
     "server": "github",
-    "description": "List pull requests in a repository.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "repo": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string",
-          "enum": ["open", "closed", "all"]
-        }
-      },
-      "required": ["owner", "repo"]
-    }
+    "required": [
+      "owner",
+      "repo"
+    ],
+    "optional": [
+      "state"
+    ],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "state": "str"
+    },
+    "description": "List pull requests in a repository."
   },
   "merge_pull_request": {
     "server": "github",
-    "description": "Merge a pull request.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "repo": {
-          "type": "string"
-        },
-        "pull_number": {
-          "type": "integer"
-        },
-        "commit_title": {
-          "type": "string"
-        },
-        "merge_method": {
-          "type": "string",
-          "enum": ["merge", "squash", "rebase"]
-        }
-      },
-      "required": ["owner", "repo", "pull_number"]
-    }
+    "required": [
+      "owner",
+      "repo",
+      "pull_number"
+    ],
+    "optional": [
+      "commit_title",
+      "merge_method"
+    ],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "pull_number": "int",
+      "commit_title": "str",
+      "merge_method": "str"
+    },
+    "description": "Merge a pull request."
   },
   "search_nodes": {
     "server": "memory",
@@ -1159,16 +1065,38 @@
   },
   "get_file_contents": {
     "server": "github",
-    "required": ["owner", "repo", "path"],
-    "optional": ["ref", "timeout_s"],
+    "required": [
+      "owner",
+      "repo",
+      "path"
+    ],
+    "optional": [
+      "branch"
+    ],
     "types": {
       "owner": "str",
       "repo": "str",
       "path": "str",
-      "ref": "str",
-      "timeout_s": "float"
+      "branch": "str"
     },
-    "description": "Fetch file contents from GitHub and return decoded text"
+    "description": "Fetch file contents from GitHub and return decoded text."
+  },
+  "create_branch": {
+    "server": "github",
+    "required": [
+      "owner",
+      "repo",
+      "branch",
+      "from_branch"
+    ],
+    "optional": [],
+    "types": {
+      "owner": "str",
+      "repo": "str",
+      "branch": "str",
+      "from_branch": "str"
+    },
+    "description": "Create a new branch in a repository."
   },
   "transcribe_audio": {
     "server": "whisper-stt",
@@ -1333,6 +1261,15 @@
     },
     "description": "Resume a previous Vibe session"
   },
+  "vibe_session_details": {
+    "server": "vibe",
+    "required": ["session_id_or_file"],
+    "optional": [],
+    "types": {
+      "session_id_or_file": "str"
+    },
+    "description": "Get detailed history and metrics for a specific Vibe session"
+  },
   "vibe_reload_config": {
     "server": "vibe",
     "required": [],
@@ -1448,14 +1385,16 @@
   "data_cleaning": {
     "server": "data-analysis",
     "required": ["data_source"],
-    "optional": ["cleaning_methods", "output_format", "handle_missing"],
+    "optional": [
+      "cleaning_methods",
+      "handle_missing"
+    ],
     "types": {
       "data_source": "str",
       "cleaning_methods": "list",
-      "output_format": "str",
       "handle_missing": "str"
     },
-    "description": "Clean and preprocess data (handle missing values, normalize, etc.)"
+    "description": "Clean and preprocess data."
   },
   "predictive_modeling": {
     "server": "data-analysis",
@@ -1541,7 +1480,8 @@
       "target_mode",
       "github_repo",
       "github_token",
-      "init_git"
+      "init_git",
+      "use_reasoning"
     ],
     "types": {
       "project_path": "str",
@@ -1549,23 +1489,19 @@
       "target_mode": "str",
       "github_repo": "str",
       "github_token": "str",
-      "init_git": "bool"
+      "init_git": "bool",
+      "use_reasoning": "bool"
     },
     "description": "Universal architecture diagram generator for ANY project type (Python, Node.js, Rust, Go, etc.). Analyzes project structure, initializes git if needed, configures GitHub remote, and generates/updates diagrams dynamically. target_mode: 'internal' (AtlasTrinity) or 'external' (other projects)."
   },
   "build_sim": {
     "server": "xcodebuild",
-    "required": ["project_path"],
-    "optional": ["scheme", "configuration", "destination", "sdk", "clean"],
+    "required": [],
+    "optional": ["extraArgs"],
     "types": {
-      "project_path": "str",
-      "scheme": "str",
-      "configuration": "str",
-      "destination": "str",
-      "sdk": "str",
-      "clean": "bool"
+      "extraArgs": "list"
     },
-    "description": "Build an Xcode project for simulator."
+    "description": "Build for iOS simulator using defaults."
   },
   "xcodebuild_build_project": {
     "server": "xcodebuild",
@@ -1573,18 +1509,13 @@
   },
   "test_sim": {
     "server": "xcodebuild",
-    "required": ["project_path"],
-    "optional": ["scheme", "destination", "test_plan", "only_testing", "skip_testing", "parallel"],
+    "required": [],
+    "optional": ["extraArgs", "testRunnerEnv"],
     "types": {
-      "project_path": "str",
-      "scheme": "str",
-      "destination": "str",
-      "test_plan": "str",
-      "only_testing": "list",
-      "skip_testing": "list",
-      "parallel": "bool"
+      "extraArgs": "list",
+      "testRunnerEnv": "dict"
     },
-    "description": "Run unit and UI tests on simulator."
+    "description": "Run tests on iOS simulator."
   },
   "xcodebuild_run_tests": {
     "server": "xcodebuild",
@@ -1593,12 +1524,11 @@
   "list_sims": {
     "server": "xcodebuild",
     "required": [],
-    "optional": ["platform", "available_only"],
+    "optional": ["enabled"],
     "types": {
-      "platform": "str",
-      "available_only": "bool"
+      "enabled": "bool"
     },
-    "description": "List all available iOS/tvOS/watchOS simulators."
+    "description": "List available iOS simulators."
   },
   "xcodebuild_list_simulators": {
     "server": "xcodebuild",
@@ -1606,13 +1536,10 @@
   },
   "boot_sim": {
     "server": "xcodebuild",
-    "required": ["simulator_id"],
-    "optional": ["wait_for_boot"],
-    "types": {
-      "simulator_id": "str",
-      "wait_for_boot": "bool"
-    },
-    "description": "Boot a simulator by ID."
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Boot the iOS simulator selected as default."
   },
   "xcodebuild_boot_simulator": {
     "server": "xcodebuild",
@@ -1620,13 +1547,12 @@
   },
   "install_app_sim": {
     "server": "xcodebuild",
-    "required": ["app_path", "simulator_id"],
+    "required": ["appPath"],
     "optional": [],
     "types": {
-      "app_path": "str",
-      "simulator_id": "str"
+      "appPath": "str"
     },
-    "description": "Install an .app bundle to a running simulator."
+    "description": "Install an app bundle on the simulator."
   },
   "xcodebuild_install_app": {
     "server": "xcodebuild",
@@ -1634,15 +1560,12 @@
   },
   "launch_app_sim": {
     "server": "xcodebuild",
-    "required": ["bundle_id", "simulator_id"],
-    "optional": ["wait_for_debugger", "args"],
+    "required": [],
+    "optional": ["args"],
     "types": {
-      "bundle_id": "str",
-      "simulator_id": "str",
-      "wait_for_debugger": "bool",
       "args": "list"
     },
-    "description": "Launch an installed app on a simulator."
+    "description": "Launch the default app on the simulator."
   },
   "xcodebuild_launch_app": {
     "server": "xcodebuild",
@@ -1650,8 +1573,11 @@
   },
   "launch_app_logs_sim": {
     "server": "xcodebuild",
-    "required": ["bundle_id", "simulator_id"],
-    "optional": [],
+    "required": [],
+    "optional": ["args"],
+    "types": {
+      "args": "list"
+    },
     "description": "Launch app and stream logs."
   },
   "xcodebuild_analyze_logs": {
@@ -1660,17 +1586,27 @@
   },
   "clean": {
     "server": "xcodebuild",
-    "required": ["project_path"],
-    "optional": ["scheme", "configuration"],
+    "required": [],
+    "optional": ["extraArgs", "platform"],
     "types": {
-      "project_path": "str",
-      "scheme": "str",
-      "configuration": "str"
+      "extraArgs": "list",
+      "platform": "str"
     },
-    "description": "Clean build folder and derived data for a project."
+    "description": "Clean build products."
   },
   "xcodebuild_clean_build": {
     "server": "xcodebuild",
     "alias_for": "clean"
+  },
+  "discover_projs": {
+    "server": "xcodebuild",
+    "required": ["workspaceRoot"],
+    "optional": ["scanPath", "maxDepth"],
+    "types": {
+      "workspaceRoot": "str",
+      "scanPath": "str",
+      "maxDepth": "int"
+    },
+    "description": "Find Xcode project and workspace files."
   }
 }
