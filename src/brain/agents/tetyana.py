@@ -635,7 +635,8 @@ IMPORTANT:
         # Skip reasoning LLM for well-defined, simple tools
         # Skip reasoning LLM for well-defined, simple tools
         # We KEEP "terminal" here for speed, but tools like "git" or "macos-use" benefit from reasoning (coordinates, args)
-        SKIP_REASONING_TOOLS = ["terminal", "filesystem", "time", "fetch"]
+        # REMOVED: "terminal" - Systemic fix to force reasoning for shell commands to prevent Empty Proof failures
+        SKIP_REASONING_TOOLS = ["filesystem", "time", "fetch"]
         TRANSIENT_ERRORS = [
             "Connection refused",
             "timeout",
@@ -993,6 +994,22 @@ IMPORTANT:
 
         # --- PHASE 2: TOOL EXECUTION ---
         tool_result = await self._execute_tool(tool_call)
+
+        # --- PHASE 2.5: AGENTIC EVIDENCE VERIFICATION ---
+        # "Empty Proof" Detector: If success=True but output is empty, it MIGHT be a failure.
+        # We don't hardcode "fail", we just flag it to trigger Reflexion.
+        output_data = tool_result.get("output", "") or tool_result.get("result", "")
+        if (
+            tool_result.get("success")
+            and not output_data.strip()
+            # We assume most useful tools return SOMETHING. Even mkdir returns nothing but we can verify it.
+            # We let the Reflexion Loop decide if empty is okay.
+        ):
+             logger.warning(f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering Reflexion...")
+             # We treat this as a "Soft Failure" to force the agent to think: "Is this okay?"
+             tool_result["success"] = False
+             tool_result["error"] = "SUSPICIOUS_RESULT: Tool executed successfully (Exit Code 0) but returned NO OUTPUT. Verify if this step requires evidence (logs, text, files) for Grisha. If output is expected, this is a FAILURE."
+             # Logic: If the agent looks at this error and thinks "Wait, mkdir SHOULD be empty", it can force success in the next loop or use a verification tool.
 
         # --- PHASE 3: TECHNICAL REFLEXION (if failed) ---
         # OPTIMIZATION: Skip LLM reflexion for transient errors
