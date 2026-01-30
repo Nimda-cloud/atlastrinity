@@ -130,7 +130,7 @@ class SmartErrorRouter:
             category = ErrorCategory.STATE
         elif any(re.search(p, error_str) for p in self.PERMISSION_PATTERNS):
             category = ErrorCategory.PERMISSION
-        elif "need_user_input" in error_str:
+        elif "need_user_input" in error_str or "help_pending" in error_str:
             category = ErrorCategory.USER_INPUT
 
         self._cache[error_str] = category
@@ -153,10 +153,11 @@ class SmartErrorRouter:
                     reason=f"API rate limit or service unavailability detected. Waiting {60 * attempt}s before retry.",
                 )
             else:
-                # After 3 attempts, notify user
+                # After 3 attempts, escalate to Atlas for a deeper infrastructure diagnostic
                 return RecoveryStrategy(
-                    action="ASK_USER",
-                    reason="Persistent API rate limiting after multiple retries. Manual intervention may be needed.",
+                    action="ATLAS_PLAN",
+                    context_needed=True,
+                    reason="Persistent API rate limiting or service issue. Requesting Atlas to optimize request pattern or find alternative provider.",
                 )
 
         if category == ErrorCategory.TRANSIENT:
@@ -188,7 +189,17 @@ class SmartErrorRouter:
 
         if category == ErrorCategory.PERMISSION:
             return RecoveryStrategy(
-                action="ASK_USER", reason="Permission denied. Creating manual request."
+                action="ATLAS_PLAN", 
+                context_needed=True,
+                reason="Permission denied. Escalate to Atlas for reconnaissance or credential verification."
+            )
+
+        if category == ErrorCategory.USER_INPUT:
+            # If we are stuck on help_pending/need_user_input, trigger strategic discovery
+            return RecoveryStrategy(
+                action="ATLAS_PLAN",
+                context_needed=True,
+                reason="Missing information or assistance required. Atlas will now trigger a discovery substep to find the required data autonomously."
             )
 
         if category == ErrorCategory.VERIFICATION:
@@ -243,11 +254,11 @@ class SmartErrorRouter:
                 action="RETRY", backoff=1.0, reason="Unknown error. Trying again."
             )
         else:
-            # If 2 simple retries failed, assume it's complex and ask Vibe/Atlas
+            # Persistent unknown error: extreme autonomy mode triggers strategic planning
             return RecoveryStrategy(
                 action="ATLAS_PLAN",
                 context_needed=True,
-                reason="Persistent unknown error. Escalating to Atlas.",
+                reason="Persistent unknown error. Escalating for strategic re-evaluation and discovery.",
             )
 
 
