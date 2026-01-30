@@ -990,7 +990,9 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             
             # Add snippet of reasoning if it's informative
             if reasoning and "пр" not in reasoning.lower()[:10]: # avoid repeating "проблеми"
-                 msg += f"Аналіз: {reasoning[:200]}..."
+                msg += f"Аналіз: {reasoning[:1000]}"
+                if len(reasoning) > 1000:
+                    msg += "..."
             
             return msg
 

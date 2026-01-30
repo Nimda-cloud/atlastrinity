@@ -89,11 +89,11 @@ def sanitize_text_for_tts(text: str) -> str:
     """
     import re
 
-    # 1. Remove URLs (unpronounceable)
-    text = re.sub(r"http[s]?://\S+", "", text)
-
-    # 2. Remove markdown links [text](url) -> text
+    # 1. Remove markdown links [text](url) -> text
     text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
+
+    # 2. Remove URLs (unpronounceable)
+    text = re.sub(r"http[s]?://\S+", "", text)
 
     # 3. Remove code blocks and inline code
     text = re.sub(r"```[\s\S]*?```", "", text)
@@ -480,6 +480,7 @@ class VoiceManager:
         """Lazy load a small/fast model for translation defense."""
         if self._translator_llm is None:
             import sys
+
             from ..config import PROJECT_ROOT
             if str(PROJECT_ROOT) not in sys.path:
                 sys.path.insert(0, str(PROJECT_ROOT))
@@ -490,7 +491,7 @@ class VoiceManager:
             self._translator_llm = CopilotLLM(model_name=model, max_tokens=1000, temperature=0.1)
         return self._translator_llm
 
-    async def _translate_to_ukrainian(self, text: str) -> str:
+    async def translate_to_ukrainian(self, text: str) -> str:
         """Translates English-heavy text to Ukrainian as a last defense."""
         # Simple heuristic to detect if translation is needed
         import re
@@ -524,6 +525,22 @@ Ukrainian:"""
         except Exception as e:
             logger.warning(f"[TTS] Translation failed: {e}. Falling back to original text.")
         
+        return text
+
+    async def prepare_speech_text(self, text: str) -> str:
+        """Prepares text for speech: sanitizes and translates if needed.
+        This method is exposed so the Orchestrator can log exactly what will be spoken.
+        """
+        if not text:
+            return ""
+
+        # 1. Sanitize
+        text = sanitize_text_for_tts(text)
+        
+        # 2. Translate if needed (force_ukrainian defense)
+        if config.get("voice.tts.force_ukrainian", True):
+            text = await self.translate_to_ukrainian(text)
+            
         return text
 
     def stop(self):
@@ -562,13 +579,9 @@ Ukrainian:"""
                 print(f"[TTS] [{agent_id.upper()}] (Text-only): {text}")
                 return None
 
-            # Clean text for better pronunciation
-            text = sanitize_text_for_tts(text)
-            
-            # Check if translation is needed (force_ukrainian defense)
-            # We check if behavior config has this enabled
-            if config.get("voice.tts.force_ukrainian", True):
-                text = await self._translate_to_ukrainian(text)
+            # Prepare text (sanitize + translate)
+            # This logic is now centralized in prepare_speech_text
+            text = await self.prepare_speech_text(text)
 
             if not text:
                 return None
