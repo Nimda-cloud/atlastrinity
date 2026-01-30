@@ -142,17 +142,18 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden font-mono relative min-h-0">
-      <div style={{ height: '32px' }} /> {/* Spacer for title bar area */}
+    <div className="flex-1 flex flex-col h-full overflow-hidden font-mono relative min-h-0" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0 }}>
+      <div style={{ height: '32px', flexShrink: 0 }} /> {/* Spacer for title bar area */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden p-1 scrollbar-thin min-h-0"
-        style={{ overscrollBehavior: 'contain', paddingBottom: '120px' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin min-h-0"
+        style={{ overscrollBehavior: 'contain', paddingBottom: '120px', overflowY: 'auto', overflowX: 'hidden', flex: '1 1 0%', minHeight: 0, paddingRight: 0 }}
       >
         {filteredLogs.map((log) => (
           <div
             key={log.id}
-            className="flex flex-col mb-2 animate-fade-in group hover:bg-white/5 px-1 py-1 rounded transition-colors"
+            className="flex flex-col mb-2 animate-fade-in group hover:bg-white/5 rounded transition-colors"
+            style={{ padding: '4px 4px 4px 8px', marginRight: '2px' }}
           >
             <div className="flex items-center mb-1">
               <div className="flex items-center gap-4 filter grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-40 transition-all duration-500">
