@@ -69,8 +69,8 @@ const App: React.FC = () => {
   const showTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-hide timers: 3 seconds delay for both show and hide
-  const DOCK_DELAY_MS = 3000;
+  // Auto-hide timers: 1 second delay for both show and hide
+  const DOCK_DELAY_MS = 1000;
 
   // Handle hover zone enter - schedule showing dock
   const handleHoverZoneEnter = useCallback(() => {
@@ -122,6 +122,7 @@ const App: React.FC = () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, []);
+
 
   // Add log entry
   const addLog = (agent: AgentName, message: string, type: LogEntry['type'] = 'info') => {
