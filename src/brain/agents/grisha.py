@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.abspath(root))
 
 import base64
 import json
+import os
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
@@ -206,7 +208,7 @@ LAYER 4 - SYSTEM STATE INTEGRITY:
 Formulate your conclusion in English for technical accuracy, but ensure the user-facing output is ready for Ukrainian localization.
 """
 
-        reasoning = await self.use_sequential_thinking(reasoning_query, total_thoughts=4)
+        reasoning = await self.use_sequential_thinking(reasoning_query, total_thoughts=2)
         return {
             "deep_analysis": reasoning.get("analysis", ""),
             "confidence_boost": 0.1 if reasoning.get("success") else 0.0,
@@ -487,6 +489,21 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
                 }
 
             analysis_text = reasoning_result.get("analysis", "")
+            
+            # ANTI-LOOP DETECTION: Check for repetitive patterns
+            if self._detect_repetitive_thinking(analysis_text):
+                logger.warning("[GRISHA] Anti-loop triggered - repetitive thinking detected")
+                return {
+                    "verification_purpose": f"Перевірити, що '{step_action}' було виконано успішно",
+                    "selected_tools": [
+                        {
+                            "tool": "vibe.vibe_check_db",
+                            "reason": "Fallback: DB audit due to repetitive thinking",
+                        },
+                    ],
+                    "success_criteria": "Запис про виконання знайдено та результат не містить критичних помилок",
+                    "full_reasoning": "Anti-loop fallback activated",
+                }
 
             # Parse the analysis (simple extraction, can be improved)
             return {
@@ -778,6 +795,96 @@ Provide response:
             else ["Логічний аналіз недоступний"],
         }
 
+    def _detect_repetitive_thinking(self, analysis_text: str) -> bool:
+        """Detect if the thinking is repetitive (anti-loop protection)"""
+        if not analysis_text or len(analysis_text) < 100:
+            return False
+            
+        # Split into sentences/lines
+        lines = [line.strip() for line in analysis_text.split('\n') if line.strip()]
+        if len(lines) < 3:
+            return False
+            
+        # Check for repeated patterns
+        unique_lines = set(lines)
+        repetition_ratio = 1 - (len(unique_lines) / len(lines))
+        
+        # If more than 50% of lines are duplicates, consider it repetitive
+        if repetition_ratio > 0.5:
+            return True
+            
+        # Check for repeated key phrases
+        phrases = analysis_text.split('.')
+        unique_phrases = set([p.strip() for p in phrases if p.strip()])
+        phrase_repetition = 1 - (len(unique_phrases) / len(phrases))
+        
+        return phrase_repetition > 0.6
+
+    async def _verify_config_sync(self) -> dict[str, Any]:
+        """Verify if config templates are synchronized with global config folder"""
+        try:
+            config_root = os.path.join(os.path.expanduser("~"), ".config", "atlastrinity")
+            project_config_dir = os.path.join(root, "config")
+            
+            sync_issues = []
+            
+            # Check key config files
+            config_files = [
+                ("config.yaml", "config.yaml.template"),
+                ("behavior_config.yaml", "behavior_config.yaml.template"),
+                ("vibe_config.toml", "vibe_config.toml.template"),
+            ]
+            
+            for config_file, template_file in config_files:
+                config_path = os.path.join(config_root, config_file)
+                template_path = os.path.join(project_config_dir, template_file)
+                
+                if not os.path.exists(config_path):
+                    sync_issues.append(f"Missing config: {config_file}")
+                    continue
+                    
+                if not os.path.exists(template_path):
+                    sync_issues.append(f"Missing template: {template_file}")
+                    continue
+                
+                # Simple modification time check
+                config_mtime = os.path.getmtime(config_path)
+                template_mtime = os.path.getmtime(template_path)
+                
+                if template_mtime > config_mtime:
+                    sync_issues.append(f"Template newer than config: {config_file}")
+            
+            # Try to run sync script to check
+            try:
+                sync_script = os.path.join(root, "scripts", "sync_config_templates.js")
+                if os.path.exists(sync_script):
+                    result = subprocess.run(
+                        ["node", sync_script, "--dry-run"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if result.returncode != 0:
+                        sync_issues.append("Config sync script failed")
+            except Exception as e:
+                logger.warning(f"[GRISHA] Config sync check failed: {e}")
+            
+            return {
+                "sync_status": "ok" if not sync_issues else "issues_found",
+                "issues": sync_issues,
+                "config_root": config_root,
+                "template_root": project_config_dir
+            }
+            
+        except Exception as e:
+            logger.error(f"[GRISHA] Config sync verification failed: {e}")
+            return {
+                "sync_status": "error",
+                "issues": [f"Verification failed: {str(e)}"],
+                "config_root": None,
+                "template_root": None
+            }
+
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
         """Fetches the raw tool execution logs from the database for a given step.
         This serves as the 'single source of truth' for verification.
@@ -844,6 +951,14 @@ Provide response:
 
         step_id = step.get("id", 0)
         expected = step.get("expected_result", "")
+
+        # SYSTEM CHECK: Verify config sync for system-critical tasks
+        system_issues = []
+        if step_id == 1 or "system" in step.get("action", "").lower():
+            config_sync = await self._verify_config_sync()
+            if config_sync["sync_status"] != "ok":
+                system_issues.extend(config_sync["issues"])
+                logger.warning(f"[GRISHA] Config sync issues detected: {config_sync['issues']}")
 
         # PRIORITY: Use MCP tools first, screenshots only when explicitly needed
         # Only take screenshot if explicitly requested or if visual verification is clearly needed
@@ -1013,12 +1128,19 @@ Provide response:
         logger.info(f"[GRISHA] Reasoning: {verdict.get('reasoning', 'N/A')[:300]}...")
 
         # Return structured verification result
+        all_issues = verdict.get("issues", [])
+        
+        # Add system issues if any
+        if system_issues:
+            all_issues.extend([f"Config sync: {issue}" for issue in system_issues])
+            logger.warning(f"[GRISHA] Adding {len(system_issues)} system issues to verification result")
+        
         result_obj = VerificationResult(
             step_id=step_id,
-            verified=verdict.get("verified", False),
+            verified=verdict.get("verified", False) and not system_issues,  # Fail if system issues
             confidence=verdict.get("confidence", 0.0),
             description=verdict.get("reasoning", "Перевірку завершено"),
-            issues=verdict.get("issues", []),
+            issues=all_issues,
             voice_message=self._generate_voice_message(verdict, step),
         )
 
