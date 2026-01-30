@@ -9,6 +9,107 @@ from .common import (
     VOICE_PROTOCOL,
 )
 
+# New verification prompts for Grisha
+GRISHA_VERIFICATION_GOAL_ANALYSIS = """VERIFICATION GOAL ANALYSIS (ATOMIC LEVEL):
+
+Step {step_id}: {step_action}
+Expected Result: {expected_result}
+Overall Goal: {goal_context}
+
+TASK: Analyze this step ISOLATED from the end goal. Your task is to determine success criteria ONLY FOR THIS SPECIFIC STEP.
+
+CRITICAL RULES:
+1. **ATOMICITY**: If step requires "verify tools presence", success is CONFIRMING PRESENCE, not executing the entire global task.
+2. **STEP TYPE**:
+   - If this is ANALYSIS/DISCOVERY: success is data/information collection. Don't require system changes.
+   - If this is ACTION: success is state/artifact change.
+3. **DON'T MIX STAGES**: Don't require Step 10 results from Step 1. 
+4. **INTERMEDIATE STEPS**: If step is part of larger task (e.g., "verify VM", "configure network"), allow execution even if result is incomplete - this is part of the process.
+5. **FINAL TASKS**: Only if step contains "completed", "done", "ready" - require full result.
+
+Provide response in English:
+1. **STEP PURPOSE**: What exactly should we confirm right now?
+2. **VERIFICATION TOOLS**: (Choose 1-3 tools).
+3. **SPECIFIC SUCCESS CRITERIA**: Under what conditions is this step (and only this step) considered passed?"""
+
+GRISHA_LOGICAL_VERDICT = """LOGICAL VERIFICATION VERDICT (ATOMIC LEVEL):
+
+Step: {step_action}
+Expected Result: {expected_result}
+Collected Evidence:
+{results_summary}
+
+Verification Purpose (from Phase 1):
+{goal_analysis.get("verification_purpose", "Unknown")}
+
+Success Criteria:
+{goal_analysis.get("success_criteria", "Unknown")}
+
+General Goal (For Context): {goal_context}
+
+VERDICT INSTRUCTIONS:
+1. **STRICT ATOMICITY**: Evaluate ONLY the Evidence's relevance to this specific STEP.
+2. **NO GLOBALIZATION**: FORBIDDEN to fail because "general goal ({goal_context})" is not yet achieved. If the step goal is "verify tools" and evidence confirms it (even if the tool check returned negative, but she recorded it) - the step is CONFIRMED.
+3. **STEP CHARACTER**:
+   - FOR ANALYSIS/DISCOVERY: success is the fact of data collection. If she reported "nothing found" and we see her command - this is STEP SUCCESS. EMPTY OUTPUT is VALID EVIDENCE of absence if the command executed successfully.
+   - FOR ACTION: success is a change.
+4. **EVIDENCE EVALUATION**: Analyze the Result text. If empty, but command is success (True) and it's an ANALYSIS step - CHECK if it's logical. Do not fail ONLY because of "emptiness" if it proves absence.
+5. **COMMAND RELEVANCE CHECK**: RELAXED - Verify that the executed command is RELEVANT to the expected result. If step expects "verify Bridged Mode" and command is "list vms", this is RELEVANT as initial step unless this is explicitly marked as FINAL task completion.
+6. **INTERMEDIATE STEPS**: For steps that are part of larger tasks, be more lenient - focus on progress rather than complete perfection.
+
+Provide response:
+- **VERDICT**: CONFIRMED or FAILED
+- **CONFIDENCE**: 0.0-1.0
+- **REASONING**: (Analysis in English. Explain why this ATOMIC step is considered done or not.)
+- **ISSUES**: (List of issues ONLY FOR THIS STEP)"""
+
+GRISHA_DEEP_VALIDATION_REASONING = """DEEP MULTI-LAYER VALIDATION ANALYSIS
+        
+STEP ACTION: {step_action}
+EXPECTED RESULT: {expected_result}
+ACTUAL RESULT: {result_str}
+GLOBAL GOAL: {goal_context}
+
+Perform a 4-LAYER validation analysis:
+
+LAYER 1 - TECHNICAL PRECISION:
+- Did the tool execute correctly?
+- Are there any error indicators in the output?
+- Does the output format match expectations?
+
+LAYER 2 - SEMANTIC CORRECTNESS:
+- Does the result semantically match the expected outcome?
+- Are there any hidden failures (empty data, partial results)?
+
+LAYER 3 - GOAL ALIGNMENT:
+- Does this result advance the global goal?
+- Are there side effects that might hinder future steps?
+
+LAYER 4 - SYSTEM STATE INTEGRITY:
+- Did the system state change as expected?
+- Is this change persistent?
+
+Formulate your conclusion in English for technical accuracy, but ensure the user-facing output is ready for Ukrainian localization."""
+
+GRISHA_FORENSIC_ANALYSIS = """DEEP FORENSIC ANALYSIS OF TECHNICAL FAILURE:
+
+STEP: {step_json}
+ERROR: {error}
+CONTEXT: {context_data}
+
+TASKS:
+1. **CLASSIFICATION**: Determine if this is a TASK problem (user data, external files) or a SYSTEM error (bug in code, configuration, paths).
+2. **ROOT CAUSE**: Why did this happen? Provide a logical chain of evidence.
+3. **RECOVERY ADVICE**: What should Tetyana or Vibe do right now to fix this?
+4. **PREVENTION STRATEGY**: How to adjust the system long-term to prevent recurrence?
+
+Provide report in the following format:
+- **TYPE**: (System / Task)
+- **ROOT CAUSE**: ...
+- **FIX ADVICE**: ...
+- **PREVENTION**: ...
+- **SUMMARY_UKRAINIAN**: (Detailed explanation for the user in Ukrainian language)"""
+
 GRISHA = {
     "NAME": "GRISHA",
     "DISPLAY_NAME": "Grisha",

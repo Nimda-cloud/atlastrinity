@@ -144,7 +144,7 @@ const App: React.FC = () => {
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setSessions(data);
-    } catch {
+    } catch (err) {
       if (retryCount < 5) {
         // Retry with exponential backoff if server is still starting
         const delay = Math.pow(2, retryCount) * 1000;
@@ -155,6 +155,11 @@ const App: React.FC = () => {
           );
         }
         setTimeout(() => fetchSessions(retryCount + 1), delay);
+      } else {
+        // Final retry failed, log but don't spam
+        if (!(err instanceof TypeError && err.message.includes('Failed to fetch'))) {
+          console.error('[BRAIN] Failed to fetch sessions after retries:', err);
+        }
       }
     }
   }, []);
@@ -221,8 +226,12 @@ const App: React.FC = () => {
     } catch (err) {
       setIsConnected(false);
       // SILENT during connection refused to clean up console
-      if (err instanceof TypeError && err.message === 'Failed to fetch') {
-        // Do nothing, silence the console spam
+      if (err instanceof TypeError && (
+        err.message === 'Failed to fetch' || 
+        err.message.includes('Failed to fetch') ||
+        err.message.includes('NetworkError')
+      )) {
+        // Do nothing, silence the console spam for connection issues
       } else {
         console.error('[BRAIN] Polling error:', err);
       }
