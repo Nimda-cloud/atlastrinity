@@ -5,6 +5,7 @@ LangGraph-based state machine that coordinates Agents (Atlas, Tetyana, Grisha)
 import ast
 import asyncio
 import json
+import uuid
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, TypedDict, cast
@@ -17,8 +18,6 @@ try:
 except ImportError:
     pass
 
-import uuid
-
 from src.brain.agents import Atlas, Grisha, Tetyana
 from src.brain.agents.tetyana import StepResult
 from src.brain.behavior_engine import workflow_engine
@@ -27,10 +26,9 @@ from src.brain.config_loader import config
 from src.brain.consolidation import consolidation_module
 from src.brain.context import shared_context
 from src.brain.db.manager import db_manager
-from src.brain.db.schema import ChatMessage
+from src.brain.db.schema import ChatMessage, RecoveryAttempt
 from src.brain.db.schema import ConversationSummary as DBConvSummary
 from src.brain.db.schema import LogEntry as DBLog
-from src.brain.db.schema import RecoveryAttempt
 from src.brain.db.schema import Session as DBSession
 from src.brain.db.schema import Task as DBTask
 from src.brain.db.schema import TaskStep as DBStep
@@ -280,7 +278,7 @@ class Trinity:
                 db_messages = chat_info.scalars().all()
 
                 # Reconstruct LangChain messages
-                reconstructed_messages = []
+                reconstructed_messages: list[BaseMessage] = []
                 for m in db_messages:
                     if m.role == "human":
                         reconstructed_messages.append(HumanMessage(content=m.content))
