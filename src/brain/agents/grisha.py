@@ -638,13 +638,19 @@ Provide response:
             analysis_text = reasoning_result.get("analysis", "")
             analysis_upper = analysis_text.upper()
 
-            verified = "VERDICT: CONFIRMED" in analysis_upper or "ВЕРДИКТ: ПІДТВЕРДЖЕНО" in analysis_upper
-            if not verified and ("VERDICT: FAILED" in analysis_upper or "ВЕРДИКТ: ПРОВАЛЕНО" in analysis_upper):
-                verified = False
-            elif not verified:
-                # Fallback to keyword search if exact format missing
-                verified = any(word in analysis_upper for word in ["CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
-                if any(word in analysis_upper for word in ["FAILED", "ERROR", "ПРОВАЛЕНО"]):
+            # Parse verdict using regex for specific headers
+            import re
+            verdict_match = re.search(r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)", analysis_text, re.IGNORECASE)
+            
+            if verdict_match:
+                verdict_val = verdict_match.group(1).upper()
+                verified = any(word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
+            else:
+                # Fallback to keyword search ONLY IF exact format missing (be careful with global search)
+                # We prioritize the first few lines for the verdict
+                header_text = analysis_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
+                verified = any(word in header_text for word in ["CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
+                if not verified and any(word in header_text for word in ["FAILED", "ERROR", "ПРОВАЛЕНО"]):
                     verified = False
 
             # Extract confidence
