@@ -422,5 +422,20 @@
       "Production deployment required"
     ],
     "current_alternative": "vibe_check_db (SQLite) + DatabaseManager (internal API)"
+  },
+  "react-devtools": {
+    "name": "react-devtools",
+    "tier": 3,
+    "category": "developer",
+    "description": "React-specific introspection tools (Fiber tree, Props, State)",
+    "capabilities": [
+      "Inspect React component hierarchy (Fiber tree)",
+      "View component props, state, and hooks",
+      "Trace React renderers and versions",
+      "Identify stale or unmounted components"
+    ],
+    "key_tools": ["react_get_introspection_script"],
+    "when_to_use": "Autonomous React development, debugging UI state, analyzing component hierarchy, and fixing React-specific bugs.",
+    "priority_note": "Works in conjunction with chrome-devtools-mcp. Use for DEEP React introspection that standard DOM tools cannot provide."
   }
 }
