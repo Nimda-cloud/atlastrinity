@@ -436,14 +436,11 @@ def setup_xcodebuild_mcp():
     """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
     print_step("Налаштування XcodeBuildMCP (Xcode automation)...")
     xcode_mcp_path = PROJECT_ROOT / "vendor" / "XcodeBuildMCP"
-    
+
     # Check if Xcode is installed (not just Command Line Tools)
     try:
         result = subprocess.run(
-            ["xcodebuild", "-version"],
-            capture_output=True,
-            text=True,
-            check=False
+            ["xcodebuild", "-version"], capture_output=True, text=True, check=False
         )
         if result.returncode != 0:
             print_warning("Повний Xcode не встановлено (тільки Command Line Tools)")
@@ -455,15 +452,20 @@ def setup_xcodebuild_mcp():
         print_warning("xcodebuild не знайдено")
         print_info("Пропускаємо встановлення XcodeBuildMCP...")
         return False
-    
+
     # Clone if not exists
     if not xcode_mcp_path.exists():
         print_info("Клонування XcodeBuildMCP з GitHub...")
         try:
             subprocess.run(
-                ["git", "clone", "https://github.com/cameroncooke/XcodeBuildMCP.git", str(xcode_mcp_path)],
+                [
+                    "git",
+                    "clone",
+                    "https://github.com/cameroncooke/XcodeBuildMCP.git",
+                    str(xcode_mcp_path),
+                ],
                 check=True,
-                cwd=PROJECT_ROOT
+                cwd=PROJECT_ROOT,
             )
             print_success("XcodeBuildMCP клоновано")
         except subprocess.CalledProcessError as e:
@@ -471,13 +473,13 @@ def setup_xcodebuild_mcp():
             return False
     else:
         print_success("XcodeBuildMCP вже існує")
-    
+
     # Check if already built
     built_binary = xcode_mcp_path / ".smithery" / "stdio" / "index.cjs"
     if built_binary.exists():
         print_success("XcodeBuildMCP вже зібрано")
         return True
-    
+
     # Install dependencies
     print_info("Встановлення npm залежностей для XcodeBuildMCP...")
     try:
@@ -486,7 +488,7 @@ def setup_xcodebuild_mcp():
     except subprocess.CalledProcessError as e:
         print_error(f"Помилка встановлення залежностей: {e}")
         return False
-    
+
     # Build
     print_info("Збірка XcodeBuildMCP (це може зайняти ~30 сек)...")
     try:
@@ -696,15 +698,23 @@ def install_deps():
             capture_output=True,
             check=True,
         )
-        print_success("NPM та MCP пакети встановлено")
+
+        # Check local MCP servers
+        print_info("Checking local MCP servers...")
+        local_mcp = PROJECT_ROOT / "src" / "mcp_server" / "react_devtools_mcp.js"
+        if local_mcp.exists():
+            # Ensure it is executable
+            os.chmod(local_mcp, 0o755)
+            print_success("react-devtools-mcp found and prepared")
+        else:
+            print_warning("react-devtools-mcp script not found at src/mcp_server/")
+
+        print_success("NPM та MCP пакети налаштовано")
     else:
         print_error("NPM не знайдено!")
         return False
 
     return True
-
-
-
 
 
 def process_template(src_path: Path, dst_path: Path):
@@ -713,7 +723,7 @@ def process_template(src_path: Path, dst_path: Path):
         if not src_path.exists():
             print_warning(f"Template missing: {src_path}")
             return False
-            
+
         with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
@@ -723,7 +733,7 @@ def process_template(src_path: Path, dst_path: Path):
             "${HOME}": str(Path.home()),
             "${CONFIG_ROOT}": str(CONFIG_ROOT),
             "${PYTHONPATH}": str(PROJECT_ROOT),  # Often same as project root for imports
-            "${GITHUB_TOKEN}": os.getenv("GITHUB_TOKEN", "${GITHUB_TOKEN}") # Keep if not set
+            "${GITHUB_TOKEN}": os.getenv("GITHUB_TOKEN", "${GITHUB_TOKEN}"),  # Keep if not set
         }
 
         # Replace known variables
@@ -733,7 +743,7 @@ def process_template(src_path: Path, dst_path: Path):
         # Write to destination
         with open(dst_path, "w", encoding="utf-8") as f:
             f.write(content)
-            
+
         print_success(f"Processed & Synced: {dst_path.name}")
         return True
     except Exception as e:
@@ -748,43 +758,40 @@ def sync_configs():
     try:
         # Define mappings (Source -> Destination)
         configs = [
-            (
-                PROJECT_ROOT / "config" / "config.yaml.template",
-                CONFIG_ROOT / "config.yaml"
-            ),
+            (PROJECT_ROOT / "config" / "config.yaml.template", CONFIG_ROOT / "config.yaml"),
             (
                 PROJECT_ROOT / "config" / "mcp_servers.json.template",
-                CONFIG_ROOT / "mcp" / "config.json"
+                CONFIG_ROOT / "mcp" / "config.json",
             ),
             (
                 PROJECT_ROOT / "config" / "behavior_config.yaml.template",
-                CONFIG_ROOT / "behavior_config.yaml"
+                CONFIG_ROOT / "behavior_config.yaml",
             ),
             (
                 PROJECT_ROOT / "config" / "vibe_config.toml.template",
-                CONFIG_ROOT / "vibe_config.toml"
+                CONFIG_ROOT / "vibe_config.toml",
             ),
             (
                 PROJECT_ROOT / "config" / "monitoring_config.yaml.template",
-                CONFIG_ROOT / "monitoring_config.yaml"
-            )
+                CONFIG_ROOT / "monitoring_config.yaml",
+            ),
         ]
 
         # Process standard configs (Force Overwrite logic simplified for setup)
         DIRS["mcp"].mkdir(parents=True, exist_ok=True)
-        
+
         for src, dst in configs:
             process_template(src, dst)
-            
+
         # Agent profiles (mkdir agents first)
         agents_dir = CONFIG_ROOT / "vibe" / "agents"
         agents_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Example: if we had agent templates in config/agents/*.template
         agent_templates_dir = PROJECT_ROOT / "config" / "agents"
         if agent_templates_dir.exists():
             for tpl in agent_templates_dir.glob("*.template"):
-                dst_name = tpl.stem # removes .template extension, e.g. auto-approve.toml
+                dst_name = tpl.stem  # removes .template extension, e.g. auto-approve.toml
                 process_template(tpl, agents_dir / dst_name)
 
         # Sync .env: Local -> Global (ALWAYS sync secrets to global)
@@ -1290,7 +1297,6 @@ def main():
     print("  2. Запустіть систему: npm run dev")
     print()
 
-    print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else 17}):")
     mcp_info = [
         ("memory", "Граф знань & Long-term Memory (Python)"),
         ("macos-use", "Нативний контроль macOS + Термінал (Swift)"),
@@ -1312,9 +1318,13 @@ def main():
         ("data-analysis", "Pandas Data Analysis Engine (Python)"),
     ]
 
-    for srv_id, desc in mcp_info:
-        status = " (Активен)" if srv_id in enabled_servers else ""
-        print(f"  - {srv_id}: {desc}{status}")
+    print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else len(mcp_info)}):")
+    for s_id, s_desc in mcp_info:
+        # Check if actually enabled in config
+        status = ""
+        if enabled_servers and s_id not in enabled_servers:
+            status = f" {Colors.WARNING}(disabled){Colors.ENDC}"
+        print(f"  - {s_id}: {s_desc}{status}")
 
     print("  - MCP Inspector: Дебаг MCP серверів (npx @modelcontextprotocol/inspector)")
     print("=" * 60 + "\n")

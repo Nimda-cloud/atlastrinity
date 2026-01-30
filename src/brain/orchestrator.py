@@ -107,8 +107,9 @@ class Trinity:
         # Синхронізація shared_context з конфігурацією
         from src.brain.config_loader import config
         from src.brain.context import shared_context
+
         shared_context.sync_from_config(config.all)
-        
+
         # Execute 'startup' workflow from behavior config
         # This replaces hardcoded service checks and state init
         context = {"orchestrator": self}
@@ -972,7 +973,7 @@ class Trinity:
                                 "recursive_depth": shared_context.recursive_depth,
                                 "current_goal": shared_context.current_goal,
                             }
-                            
+
                             new_task = DBTask(
                                 session_id=self.state["db_session_id"],
                                 goal=user_request,
@@ -991,10 +992,12 @@ class Trinity:
                                     "goal": user_request,
                                     "timestamp": datetime.now(UTC).isoformat(),
                                     "steps_count": len(plan.steps),
-                                    "parent_task_id": str(new_task.parent_task_id) if new_task.parent_task_id else None,
+                                    "parent_task_id": str(new_task.parent_task_id)
+                                    if new_task.parent_task_id
+                                    else None,
                                 },
                             )
-                            
+
                             if new_task.parent_task_id:
                                 await knowledge_graph.add_edge(
                                     source_id=f"task:{new_task.parent_task_id}",
@@ -1313,12 +1316,12 @@ class Trinity:
         depth: int = 0,
     ) -> bool:
         """Recursively execute steps with proper goal context management.
-        
+
         IMPORTANT: This function manages the goal stack:
         - push_goal at the START (entering sub-task)
         - pop_goal at the END (leaving sub-task)
         - Each recursive level represents a goal in the hierarchy
-        
+
         Supports hierarchical numbering (e.g. 3.1, 3.2) and deep recovery.
         """
         MAX_RECURSION_DEPTH = 5
@@ -1342,7 +1345,7 @@ class Trinity:
         # PUSH GOAL: Входимо в під-завдання (рекурсивний рівень)
         # Визначити ціль для цього рівня рекурсії
         from src.brain.context import shared_context
-        
+
         goal_pushed = False
         if parent_prefix:
             # Це під-завдання, створене для відновлення кроку parent_prefix
@@ -1353,10 +1356,10 @@ class Trinity:
                 logger.info(
                     f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
                 )
-                
+
                 # Оновити metadata_blob в БД для збереження рекурсивного контексту
                 await self._update_task_metadata()
-                
+
             except Exception as e:
                 logger.warning(f"Failed to push goal: {e}")
         elif depth > 0:
@@ -1368,10 +1371,10 @@ class Trinity:
                 logger.info(
                     f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
                 )
-                
+
                 # Оновити metadata_blob в БД для збереження рекурсивного контексту
                 await self._update_task_metadata()
-                
+
             except Exception as e:
                 logger.warning(f"Failed to push goal: {e}")
 
@@ -1560,7 +1563,10 @@ class Trinity:
                     # Proceed to VIBE logic below...
 
                 elif strategy.action == "ATLAS_PLAN":
-                    await self._log(f"Strategic Recovery: {strategy.reason}. Escalating to Atlas for plan update...", "orchestrator")
+                    await self._log(
+                        f"Strategic Recovery: {strategy.reason}. Escalating to Atlas for plan update...",
+                        "orchestrator",
+                    )
                     try:
                         # Request a strategic pivot from Atlas
                         replan_query = f"RECOVERY STRATEGY NEEDED. Goal: {self.state.get('current_goal')}. Step {step_id} failed with error: {last_error}."
@@ -1568,16 +1574,19 @@ class Trinity:
                         enriched = {
                             "enriched_request": replan_query,
                             "intent": "task",
-                            "complexity": "medium"
+                            "complexity": "medium",
                         }
                         new_plan = await self.atlas.create_plan(enriched)
-                        
-                        if new_plan and hasattr(new_plan, 'steps') and new_plan.steps:
-                            await self._log(f"Atlas provided a recovery sub-plan with {len(new_plan.steps)} steps. Inserting...", "orchestrator")
+
+                        if new_plan and hasattr(new_plan, "steps") and new_plan.steps:
+                            await self._log(
+                                f"Atlas provided a recovery sub-plan with {len(new_plan.steps)} steps. Inserting...",
+                                "orchestrator",
+                            )
                             # Insert these steps into the current list to be executed next
                             for offset, s in enumerate(new_plan.steps):
                                 steps.insert(i + 1 + offset, s)
-                            continue # Move to the next step (which is now the first recovery step)
+                            continue  # Move to the next step (which is now the first recovery step)
                     except Exception as e:
                         logger.error(f"Atlas re-planning failed: {e}")
 
@@ -1739,17 +1748,17 @@ class Trinity:
 
                     if vibe_text:
                         # Track rejection cycles to prevent infinite loops
-                        rejection_count = getattr(self, '_rejection_cycles', {}).get(step_id, 0)
-                        
+                        rejection_count = getattr(self, "_rejection_cycles", {}).get(step_id, 0)
+
                         grisha_audit = await self.grisha.audit_vibe_fix(str(last_error), vibe_text)
-                        
+
                         # Check if Grisha rejected again
                         if grisha_audit.get("audit_verdict") == "REJECT":
                             rejection_count += 1
-                            if not hasattr(self, '_rejection_cycles'):
+                            if not hasattr(self, "_rejection_cycles"):
                                 self._rejection_cycles = {}
                             self._rejection_cycles[step_id] = rejection_count
-                            
+
                             # Limit rejection cycles to 3
                             if rejection_count >= 3:
                                 logger.warning(
@@ -1769,10 +1778,12 @@ class Trinity:
                                     result=f"Grisha відхилив виправлення Vibe {rejection_count} разів. Виявлено: {grisha_audit.get('reasoning', 'Unknown')}",
                                 )
                                 break  # Exit retry loop
-                        elif hasattr(self, '_rejection_cycles') and step_id in self._rejection_cycles:
+                        elif (
+                            hasattr(self, "_rejection_cycles") and step_id in self._rejection_cycles
+                        ):
                             # Reset counter on approval
                             del self._rejection_cycles[step_id]
-                        
+
                         healing_decision = await self.atlas.evaluate_healing_strategy(
                             str(last_error),
                             vibe_text,
@@ -1829,6 +1840,7 @@ class Trinity:
                     if alt_steps:
                         # CRITICAL: Перевірка максимальної глибини перед рекурсією
                         from src.brain.context import shared_context
+
                         if shared_context.is_at_max_depth(depth + 1):
                             logger.error(
                                 f"[ORCHESTRATOR] Max recursion depth {shared_context.max_recursive_depth} would be exceeded at depth {depth + 1}. Cannot create sub-plan for step {step_id}."
@@ -1836,7 +1848,7 @@ class Trinity:
                             raise Exception(
                                 f"Maximum recursion depth ({shared_context.max_recursive_depth}) would be exceeded. Cannot subdivide step {step_id} further."
                             )
-                        
+
                         # Рекурсивне виконання під-завдань
                         await self._execute_steps_recursive(
                             alt_steps,
@@ -1861,10 +1873,10 @@ class Trinity:
                 logger.info(
                     f"[ORCHESTRATOR] ✅ Completed recursive level {depth}: {completed_goal}"
                 )
-                
+
                 # Оновити metadata_blob в БД після виходу з рекурсії
                 await self._update_task_metadata()
-                
+
             except Exception as e:
                 logger.warning(f"Failed to pop goal: {e}")
 
@@ -2242,11 +2254,11 @@ class Trinity:
                     history_results = self.state.get("step_results")
                     if not isinstance(history_results, list):
                         history_results = []
-                    
+
                     help_resp = await self.atlas.help_tetyana(
                         str(step.get("id") or step_id),
                         str(result.result or ""),
-                        history=history_results
+                        history=history_results,
                     )
 
                     # Extract voice message or reason from Atlas response
@@ -2261,12 +2273,12 @@ class Trinity:
                         voice_msg = str(help_resp)
 
                     await self._speak("atlas", voice_msg)
-                    
+
                     # NEW: Support hierarchical recovery via alternative_steps
                     alt_steps = None
                     if isinstance(help_resp, dict):
                         alt_steps = help_resp.get("alternative_steps")
-                    
+
                     if alt_steps and isinstance(alt_steps, list):
                         await self._log(
                             f"Atlas provided {len(alt_steps)} alternative steps. Executing recovery sub-plan...",
@@ -2274,23 +2286,18 @@ class Trinity:
                         )
                         # Execute the sub-steps recursively
                         success = await self._execute_steps_recursive(
-                            alt_steps,
-                            parent_prefix=str(step.get("id") or step_id),
-                            depth=depth + 1
+                            alt_steps, parent_prefix=str(step.get("id") or step_id), depth=depth + 1
                         )
                         if success:
                             await self._log(
                                 f"Recovery sub-plan for {step_id} completed successfully. Retrying original step with new context.",
-                                "orchestrator"
+                                "orchestrator",
                             )
-                            # We don't return success yet, we want to retry the original step 
+                            # We don't return success yet, we want to retry the original step
                             # now that we (hopefully) have the missing info in context.
                         else:
-                            await self._log(
-                                f"Recovery sub-plan for {step_id} failed.",
-                                "error"
-                            )
-                    
+                            await self._log(f"Recovery sub-plan for {step_id} failed.", "error")
+
                     # Re-run the step with Atlas's guidance as bus feedback
                     await message_bus.send(
                         AgentMsg(

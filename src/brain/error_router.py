@@ -201,9 +201,9 @@ class SmartErrorRouter:
 
         if category == ErrorCategory.PERMISSION:
             return RecoveryStrategy(
-                action="ATLAS_PLAN", 
+                action="ATLAS_PLAN",
                 context_needed=True,
-                reason="Permission denied. Escalate to Atlas for reconnaissance or credential verification."
+                reason="Permission denied. Escalate to Atlas for reconnaissance or credential verification.",
             )
 
         if category == ErrorCategory.USER_INPUT:
@@ -211,13 +211,13 @@ class SmartErrorRouter:
             return RecoveryStrategy(
                 action="ATLAS_PLAN",
                 context_needed=True,
-                reason="Missing information or assistance required. Atlas will now trigger a discovery substep to find the required data autonomously."
+                reason="Missing information or assistance required. Atlas will now trigger a discovery substep to find the required data autonomously.",
             )
 
         if category == ErrorCategory.VERIFICATION:
             # ENHANCED: Distinguish between legitimate step failure vs verification system bug
             error_str = str(error).lower()
-            
+
             # Legitimate step failures (NOT verification system bugs):
             legitimate_failure_indicators = [
                 "empty results detected",
@@ -225,9 +225,9 @@ class SmartErrorRouter:
                 "no design files found",
                 "artifact not found",
                 "expected result not achieved",
-                "tool execution found but result empty"
+                "tool execution found but result empty",
             ]
-            
+
             # True verification system bugs (require Atlas diagnostic):
             system_bug_indicators = [
                 "grisha crashed",
@@ -235,13 +235,15 @@ class SmartErrorRouter:
                 "sequential thinking failed",
                 "tool routing loop",
                 "infinite verification recursion",
-                "verification timeout after"
+                "verification timeout after",
             ]
-            
+
             # Check if this is a legitimate failure (step didn't produce expected result)
-            is_legitimate_failure = any(indicator in error_str for indicator in legitimate_failure_indicators)
+            is_legitimate_failure = any(
+                indicator in error_str for indicator in legitimate_failure_indicators
+            )
             is_system_bug = any(indicator in error_str for indicator in system_bug_indicators)
-            
+
             if is_legitimate_failure and not is_system_bug:
                 # This is a REAL step failure, not a verification bug
                 # Let Tetyana retry with adjustments

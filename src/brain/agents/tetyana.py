@@ -118,14 +118,10 @@ class Tetyana(BaseAgent):
 
         # Specialized models for Reasoning and Reflexion - fallback to global or final_model
         reasoning_model = (
-            agent_config.get("reasoning_model") 
-            or config.get("models.reasoning")
-            or final_model
+            agent_config.get("reasoning_model") or config.get("models.reasoning") or final_model
         )
         reflexion_model = (
-            agent_config.get("reflexion_model")
-            or config.get("models.reasoning")
-            or final_model
+            agent_config.get("reflexion_model") or config.get("models.reasoning") or final_model
         )
 
         if not reasoning_model or not reasoning_model.strip():
@@ -142,9 +138,7 @@ class Tetyana(BaseAgent):
 
         # NEW: Vision model for complex GUI tasks (screenshot analysis)
         vision_model = (
-            agent_config.get("vision_model")
-            or config.get("models.vision")
-            or final_model
+            agent_config.get("vision_model") or config.get("models.vision") or final_model
         )
         if not vision_model or not vision_model.strip():
             # Fallback to main model if vision not explicitly set, but Main must exist
@@ -559,7 +553,7 @@ IMPORTANT:
 
         # Refined consent detection - LESS AGGRESSIVE
         step_action_lower = str(step.get("action", "")).lower()
-        
+
         # Only trigger consent if we DON'T have a response yet AND it's explicitly marked
         is_consent_request = (not provided_response) and (
             step.get("requires_consent", False) is True
@@ -1000,16 +994,19 @@ IMPORTANT:
         # We don't hardcode "fail", we just flag it to trigger Reflexion.
         output_data = tool_result.get("output", "") or tool_result.get("result", "")
         if (
-            tool_result.get("success")
-            and not output_data.strip()
+            tool_result.get("success") and not output_data.strip()
             # We assume most useful tools return SOMETHING. Even mkdir returns nothing but we can verify it.
             # We let the Reflexion Loop decide if empty is okay.
         ):
-             logger.warning(f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering Reflexion...")
-             # We treat this as a "Soft Failure" to force the agent to think: "Is this okay?"
-             tool_result["success"] = False
-             tool_result["error"] = "SUSPICIOUS_RESULT: Tool executed successfully (Exit Code 0) but returned NO OUTPUT. Verify if this step requires evidence (logs, text, files) for Grisha. If output is expected, this is a FAILURE."
-             # Logic: If the agent looks at this error and thinks "Wait, mkdir SHOULD be empty", it can force success in the next loop or use a verification tool.
+            logger.warning(
+                f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering Reflexion..."
+            )
+            # We treat this as a "Soft Failure" to force the agent to think: "Is this okay?"
+            tool_result["success"] = False
+            tool_result["error"] = (
+                "SUSPICIOUS_RESULT: Tool executed successfully (Exit Code 0) but returned NO OUTPUT. Verify if this step requires evidence (logs, text, files) for Grisha. If output is expected, this is a FAILURE."
+            )
+            # Logic: If the agent looks at this error and thinks "Wait, mkdir SHOULD be empty", it can force success in the next loop or use a verification tool.
 
         # --- PHASE 3: TECHNICAL REFLEXION (if failed) ---
         # OPTIMIZATION: Skip LLM reflexion for transient errors

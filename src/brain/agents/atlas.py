@@ -76,9 +76,7 @@ class Atlas(BaseAgent):
             # Priority: 1. Constructor arg, 2. Agent config, 3. Global default
             final_model = model_name or agent_config.get("model") or config.get("models.default")
             deep_model = (
-                agent_config.get("deep_model") 
-                or config.get("models.reasoning")
-                or final_model
+                agent_config.get("deep_model") or config.get("models.reasoning") or final_model
             )  # Fallback: deep_model -> reasoning -> final_model
 
             if not final_model or not final_model.strip():
@@ -227,9 +225,13 @@ class Atlas(BaseAgent):
 
             # Mapping for orchestrator: if intent is chat, map voice_response to initial_response
             # so the orchestrator can use the LLM's tailored greeting immediately.
-            # CRITICAL: We skip this if use_deep_persona is True, to force the orchestrator 
+            # CRITICAL: We skip this if use_deep_persona is True, to force the orchestrator
             # to call the full atlas.chat() which uses the complete system prompt.
-            if analysis.get("intent") == "chat" and analysis.get("voice_response") and not analysis.get("use_deep_persona"):
+            if (
+                analysis.get("intent") == "chat"
+                and analysis.get("voice_response")
+                and not analysis.get("use_deep_persona")
+            ):
                 analysis["initial_response"] = analysis.get("voice_response")
 
             return analysis
@@ -1034,7 +1036,9 @@ CRITICAL PLANNING RULES:
 
         return None
 
-    async def help_tetyana(self, step_id: str, error: str, history: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    async def help_tetyana(
+        self, step_id: str, error: str, history: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """Helps Tetyana when she is stuck, using shared context and Grisha's feedback for better solutions"""
         from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -1170,21 +1174,27 @@ CRITICAL PLANNING RULES:
         claimed_artifacts = self._extract_artifact_paths(goal, results)
         missing_artifacts = []
         verified_artifacts = []
-        
+
         for artifact in claimed_artifacts:
             if os.path.exists(artifact):
                 verified_artifacts.append(artifact)
             else:
                 missing_artifacts.append(artifact)
-        
+
         artifact_verification_note = ""
         if claimed_artifacts:
             artifact_verification_note = "\n\n=== ARTIFACT VERIFICATION ==="
             if verified_artifacts:
-                artifact_verification_note += f"\n✅ Verified ({len(verified_artifacts)}): {verified_artifacts[:3]}"
+                artifact_verification_note += (
+                    f"\n✅ Verified ({len(verified_artifacts)}): {verified_artifacts[:3]}"
+                )
             if missing_artifacts:
-                artifact_verification_note += f"\n❌ Missing ({len(missing_artifacts)}): {missing_artifacts[:3]}"
-                artifact_verification_note += "\n⚠️ CRITICAL: Goal claims creation but artifacts don't exist!"
+                artifact_verification_note += (
+                    f"\n❌ Missing ({len(missing_artifacts)}): {missing_artifacts[:3]}"
+                )
+                artifact_verification_note += (
+                    "\n⚠️ CRITICAL: Goal claims creation but artifacts don't exist!"
+                )
 
         # Prepare execution summary for LLM
         history = ""
@@ -1193,12 +1203,14 @@ CRITICAL PLANNING RULES:
             history += f"{i + 1}. [{res.get('step_id')}] {res.get('action')}: {status} {str(res.get('result'))[:2000]}\n"
             if res.get("error"):
                 history += f"   Error: {res.get('error')}\n"
-        
+
         history += artifact_verification_note
 
         logger.info(f"[ATLAS] Deep Evaluating execution quality for goal: {goal[:50]}...")
         if missing_artifacts:
-            logger.warning(f"[ATLAS] ⚠️ ARTIFACT VERIFICATION FAILED: {len(missing_artifacts)} missing files")
+            logger.warning(
+                f"[ATLAS] ⚠️ ARTIFACT VERIFICATION FAILED: {len(missing_artifacts)} missing files"
+            )
 
         # 1. Deep Reasoning Phase (Fact Extraction)
         reasoning_query = f"""Analyze this execution history and extract precise facts to answer the user's goal.
@@ -1244,11 +1256,15 @@ If the user asked to 'count', you MUST state the exact number found.
 
             # OVERRIDE: If artifacts are missing, force achieved=False and lower score
             if missing_artifacts and evaluation.get("achieved"):
-                logger.warning(f"[ATLAS] Overriding achieved=True -> False due to {len(missing_artifacts)} missing artifacts")
+                logger.warning(
+                    f"[ATLAS] Overriding achieved=True -> False due to {len(missing_artifacts)} missing artifacts"
+                )
                 evaluation["achieved"] = False
                 evaluation["quality_score"] = min(evaluation.get("quality_score", 0), 0.3)
-                evaluation["analysis"] = f"ARTIFACT VERIFICATION FAILED: {evaluation.get('analysis', '')} Missing: {missing_artifacts[:2]}"
-            
+                evaluation["analysis"] = (
+                    f"ARTIFACT VERIFICATION FAILED: {evaluation.get('analysis', '')} Missing: {missing_artifacts[:2]}"
+                )
+
             logger.info(f"[ATLAS] Evaluation complete. Score: {evaluation.get('quality_score', 0)}")
             return evaluation
         except Exception as e:
@@ -1305,24 +1321,30 @@ If the user asked to 'count', you MUST state the exact number found.
         """Extract file paths that should have been created based on goal and execution results.
         Returns list of absolute paths that were mentioned as outputs."""
         import re
+
         artifacts = []
-        
+
         # Pattern to match file paths (ending with extensions or .app)
-        path_pattern = r'(?:/[^\s]+\.(?:app|dmg|pkg|zip|tar\.gz|swift|py|js|json|yaml|toml|md|txt|log))'
-        
+        path_pattern = (
+            r"(?:/[^\s]+\.(?:app|dmg|pkg|zip|tar\.gz|swift|py|js|json|yaml|toml|md|txt|log))"
+        )
+
         # Search in goal
         artifacts.extend(re.findall(path_pattern, goal, re.IGNORECASE))
-        
+
         # Search in results
         for res in results:
             action = str(res.get("action", ""))
             result = str(res.get("result", ""))
-            
+
             # Look for creation/compilation mentions
-            if any(kw in action.lower() for kw in ["create", "compile", "build", "generate", "package", "install"]):
+            if any(
+                kw in action.lower()
+                for kw in ["create", "compile", "build", "generate", "package", "install"]
+            ):
                 artifacts.extend(re.findall(path_pattern, action))
                 artifacts.extend(re.findall(path_pattern, result))
-            
+
             # Check tool arguments for output paths
             tool_call = res.get("tool_call", {})
             if isinstance(tool_call, dict):
@@ -1332,7 +1354,7 @@ If the user asked to 'count', you MUST state the exact number found.
                         val = args.get(key)
                         if val and isinstance(val, str) and "/" in val:
                             artifacts.extend(re.findall(path_pattern, val))
-        
+
         # Deduplicate and return
         return list(set(artifacts))
 

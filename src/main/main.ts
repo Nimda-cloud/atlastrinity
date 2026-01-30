@@ -274,7 +274,7 @@ app.whenReady().then(async () => {
   if (isDev) {
     try {
       const installerModule: any = await import('electron-devtools-installer');
-      
+
       // Handle the various ways the library can be exported
       let installExtension = installerModule.default;
       if (typeof installExtension !== 'function') {

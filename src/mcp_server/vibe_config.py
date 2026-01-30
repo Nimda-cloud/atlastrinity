@@ -463,7 +463,7 @@ class VibeConfig(BaseModel):
         for key, val in replacements.items():
             if key in text:
                 text = text.replace(key, val)
-        
+
         # 2. Environment variables fallback
         # Find all ${VAR} patterns that weren't replaced
         for match in re.finditer(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}", text):
@@ -504,7 +504,7 @@ class VibeConfig(BaseModel):
 
         # Mode mapping to agent profiles
         effective_mode = mode or self.default_mode
-        
+
         # If explicit agent is provided, use it; otherwise map mode to agent profile
         if agent:
             args.extend(["--agent", agent])
