@@ -142,12 +142,29 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden font-mono relative min-h-0" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0 }}>
+    <div
+      className="flex-1 flex flex-col h-full overflow-hidden font-mono relative min-h-0"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        overflow: 'hidden',
+        minHeight: 0,
+      }}
+    >
       <div style={{ height: '32px', flexShrink: 0 }} /> {/* Spacer for title bar area */}
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin min-h-0"
-        style={{ overscrollBehavior: 'contain', paddingBottom: '120px', overflowY: 'auto', overflowX: 'hidden', flex: '1 1 0%', minHeight: 0, paddingRight: 0 }}
+        style={{
+          overscrollBehavior: 'contain',
+          paddingBottom: '120px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          flex: '1 1 0%',
+          minHeight: 0,
+          paddingRight: 0,
+        }}
       >
         {filteredLogs.map((log) => (
           <div

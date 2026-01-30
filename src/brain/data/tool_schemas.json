@@ -132,13 +132,7 @@
   "vibe_analyze_error": {
     "server": "vibe",
     "required": ["error_message"],
-    "optional": [
-      "cwd",
-      "timeout_s",
-      "auto_fix",
-      "log_context",
-      "recovery_history"
-    ],
+    "optional": ["cwd", "timeout_s", "auto_fix", "log_context", "recovery_history"],
     "types": {
       "error_message": "str",
       "cwd": "str",
@@ -759,12 +753,7 @@
   "puppeteer_screenshot": {
     "server": "puppeteer",
     "required": ["name"],
-    "optional": [
-      "selector",
-      "width",
-      "height",
-      "encoded"
-    ],
+    "optional": ["selector", "width", "height", "encoded"],
     "types": {
       "name": "str",
       "selector": "str",
@@ -829,12 +818,7 @@
   },
   "sequentialthinking": {
     "server": "sequential-thinking",
-    "required": [
-      "thought",
-      "thoughtNumber",
-      "totalThoughts",
-      "nextThoughtNeeded"
-    ],
+    "required": ["thought", "thoughtNumber", "totalThoughts", "nextThoughtNeeded"],
     "optional": [],
     "types": {
       "thought": "str",
@@ -855,17 +839,8 @@
   },
   "create_or_update_file": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "path",
-      "content",
-      "message",
-      "branch"
-    ],
-    "optional": [
-      "sha"
-    ],
+    "required": ["owner", "repo", "path", "content", "message", "branch"],
+    "optional": ["sha"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -879,13 +854,8 @@
   },
   "search_code": {
     "server": "github",
-    "required": [
-      "q"
-    ],
-    "optional": [
-      "page",
-      "per_page"
-    ],
+    "required": ["q"],
+    "optional": ["page", "per_page"],
     "types": {
       "q": "str",
       "page": "int",
@@ -895,13 +865,8 @@
   },
   "list_issues": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo"
-    ],
-    "optional": [
-      "state"
-    ],
+    "required": ["owner", "repo"],
+    "optional": ["state"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -911,15 +876,8 @@
   },
   "create_issue": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "title"
-    ],
-    "optional": [
-      "body",
-      "assignees"
-    ],
+    "required": ["owner", "repo", "title"],
+    "optional": ["body", "assignees"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -931,16 +889,8 @@
   },
   "create_pull_request": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "title",
-      "head",
-      "base"
-    ],
-    "optional": [
-      "body"
-    ],
+    "required": ["owner", "repo", "title", "head", "base"],
+    "optional": ["body"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -953,13 +903,8 @@
   },
   "search_repositories": {
     "server": "github",
-    "required": [
-      "query"
-    ],
-    "optional": [
-      "page",
-      "perPage"
-    ],
+    "required": ["query"],
+    "optional": ["page", "perPage"],
     "types": {
       "query": "str",
       "page": "int",
@@ -969,13 +914,8 @@
   },
   "list_pull_requests": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo"
-    ],
-    "optional": [
-      "state"
-    ],
+    "required": ["owner", "repo"],
+    "optional": ["state"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -985,15 +925,8 @@
   },
   "merge_pull_request": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "pull_number"
-    ],
-    "optional": [
-      "commit_title",
-      "merge_method"
-    ],
+    "required": ["owner", "repo", "pull_number"],
+    "optional": ["commit_title", "merge_method"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -1065,14 +998,8 @@
   },
   "get_file_contents": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "path"
-    ],
-    "optional": [
-      "branch"
-    ],
+    "required": ["owner", "repo", "path"],
+    "optional": ["branch"],
     "types": {
       "owner": "str",
       "repo": "str",
@@ -1083,12 +1010,7 @@
   },
   "create_branch": {
     "server": "github",
-    "required": [
-      "owner",
-      "repo",
-      "branch",
-      "from_branch"
-    ],
+    "required": ["owner", "repo", "branch", "from_branch"],
     "optional": [],
     "types": {
       "owner": "str",
@@ -1385,10 +1307,7 @@
   "data_cleaning": {
     "server": "data-analysis",
     "required": ["data_source"],
-    "optional": [
-      "cleaning_methods",
-      "handle_missing"
-    ],
+    "optional": ["cleaning_methods", "handle_missing"],
     "types": {
       "data_source": "str",
       "cleaning_methods": "list",

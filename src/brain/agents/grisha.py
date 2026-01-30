@@ -128,7 +128,7 @@ class Grisha(BaseAgent):
 
         # Phase 3: Verdict & Vision Models
         vision_model_name = (
-            vision_model 
+            vision_model
             or agent_config.get("vision_model")
             or config.get("models.vision")
             or execution_model
@@ -522,13 +522,23 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
 
         # Detect if this is an analysis task vs action task
         step_action_lower = step.get("action", "").lower()
-        
+
         # Analysis task keywords - for these, DB trace is sufficient
         is_analysis_task = any(
             keyword in step_action_lower
-            for keyword in ["analyze", "review", "research", "investigate", "examine", "study", "assess", "evaluate", "explore"]
+            for keyword in [
+                "analyze",
+                "review",
+                "research",
+                "investigate",
+                "examine",
+                "study",
+                "assess",
+                "evaluate",
+                "explore",
+            ]
         )
-        
+
         # If it's an analysis task, don't add file verification tools
         # (DB trace of tool execution is sufficient proof of analysis)
         if is_analysis_task:
@@ -640,35 +650,70 @@ Provide response:
 
             # Parse verdict using regex for specific headers
             import re
-            verdict_match = re.search(r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)", analysis_text, re.IGNORECASE)
-            
+
+            verdict_match = re.search(
+                r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)",
+                analysis_text,
+                re.IGNORECASE,
+            )
+
             if verdict_match:
                 verdict_val = verdict_match.group(1).upper()
-                verified = any(word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
+                verified = any(
+                    word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"]
+                )
             else:
                 # Fallback to keyword search ONLY IF exact format missing (be careful with global search)
                 # We prioritize the first few lines for the verdict
                 header_text = analysis_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
-                verified = any(word in header_text for word in ["CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
-                if not verified and any(word in header_text for word in ["FAILED", "ERROR", "ПРОВАЛЕНО"]):
+                verified = any(
+                    word in header_text
+                    for word in ["CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО"]
+                )
+                if not verified and any(
+                    word in header_text for word in ["FAILED", "ERROR", "ПРОВАЛЕНО"]
+                ):
                     verified = False
 
             # Extract confidence
             import re
-            confidence_match = re.search(r"(?:CONFIDENCE|ВПЕВНЕНІСТЬ)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE)
-            confidence = float(confidence_match.group(1)) if confidence_match else (0.8 if verified else 0.2)
+
+            confidence_match = re.search(
+                r"(?:CONFIDENCE|ВПЕВНЕНІСТЬ)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE
+            )
+            confidence = (
+                float(confidence_match.group(1)) if confidence_match else (0.8 if verified else 0.2)
+            )
             if confidence > 1.0:
                 confidence /= 100.0
 
             # Extract Ukrainian reasoning
-            reasoning_match = re.search(r"(?:REASONING|ОБҐРУНТУВАННЯ)[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
-            ukrainian_reasoning = reasoning_match.group(1).strip() if reasoning_match else analysis_text
+            reasoning_match = re.search(
+                r"(?:REASONING|ОБҐРУНТУВАННЯ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
+                analysis_text,
+                re.DOTALL | re.IGNORECASE,
+            )
+            ukrainian_reasoning = (
+                reasoning_match.group(1).strip() if reasoning_match else analysis_text
+            )
 
             # Extract issues
-            issues_match = re.search(r"(?:ISSUES|ПРОБЛЕМИ)[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
-            issues_text = issues_match.group(1).strip() if issues_match else ("Verification criteria not met" if not verified else "")
-            
-            issues = [i.strip() for i in issues_text.split("\n") if i.strip() and i.strip() not in ["None", "Не виявлено"]]
+            issues_match = re.search(
+                r"(?:ISSUES|ПРОБЛЕМИ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
+                analysis_text,
+                re.DOTALL | re.IGNORECASE,
+            )
+            issues_text = (
+                issues_match.group(1).strip()
+                if issues_match
+                else ("Verification criteria not met" if not verified else "")
+            )
+
+            issues = [
+                i.strip()
+                for i in issues_text.split("\n")
+                if i.strip() and i.strip() not in ["None", "Не виявлено"]
+            ]
             if not verified and not issues:
                 issues.append("Verification criteria not met")
 
@@ -691,15 +736,17 @@ Provide response:
         for r in verification_results:
             success = not r.get("error", False)
             result_val = str(r.get("result", "")).lower()
-            
+
             # Even if 'success' is True, if result contains failure markers or is empty for info tools, it's a failure
             if success:
                 if "error:" in result_val or "failed to" in result_val or "not found" in result_val:
                     success = False
-                elif not result_val.strip() and r.get("tool", "").startswith(("macos-use.read", "vibe.vibe_check")):
+                elif not result_val.strip() and r.get("tool", "").startswith(
+                    ("macos-use.read", "vibe.vibe_check")
+                ):
                     # Empty results for read/check tools are suspicious
                     success = False
-            
+
             if success:
                 actual_successes.append(r)
 
@@ -712,9 +759,13 @@ Provide response:
         # Confidence is lower because we are using fallback logic
         confidence = 0.6 if verified else 0.2
 
-        reasoning = f"СУВОРИЙ вердикт (fallback): {success_count}/{total} інструментів пройшли валідацію. "
+        reasoning = (
+            f"СУВОРИЙ вердикт (fallback): {success_count}/{total} інструментів пройшли валідацію. "
+        )
         if not verified:
-            reasoning += "Позначено як ПОМИЛКА через недостатню кількість доказів або помилки інструментів."
+            reasoning += (
+                "Позначено як ПОМИЛКА через недостатню кількість доказів або помилки інструментів."
+            )
         else:
             reasoning += "Використання обережної верифікації через недоступність логічного аналізу."
 
@@ -973,7 +1024,9 @@ Provide response:
 
         # CRITICAL FIX: Persist rejection report so Tetyana can "hear" it
         if not result_obj.verified:
-            logger.info(f"[GRISHA] Step {step_id} failed. Saving detailed rejection report for Tetyana...")
+            logger.info(
+                f"[GRISHA] Step {step_id} failed. Saving detailed rejection report for Tetyana..."
+            )
             try:
                 await self._save_rejection_report(
                     step_id=str(step_id),
@@ -983,10 +1036,10 @@ Provide response:
                     root_cause_analysis=goal_analysis.get("full_reasoning"),
                     suggested_fix=None,  # Or parse from reasoning if possible
                     verification_evidence=[
-                        f"Tool: {res.get('tool')}, Result: {str(res.get('result', ''))[:200]}..." 
+                        f"Tool: {res.get('tool')}, Result: {str(res.get('result', ''))[:200]}..."
                         for res in verification_results
                         if isinstance(res, dict)
-                    ]
+                    ],
                 )
             except Exception as save_err:
                 logger.error(f"[GRISHA] Failed to save rejection report: {save_err}")
@@ -995,9 +1048,9 @@ Provide response:
 
     def _generate_voice_message(self, verdict: dict, step: dict) -> str:
         """Generate detailed Ukrainian voice message based on verdict."""
-        step_id = step.get('id', 'невідомий')
+        step_id = step.get("id", "невідомий")
         reasoning = verdict.get("reasoning", "")
-        
+
         if verdict.get("verified"):
             msg = f"Крок {step_id} успішно верифіковано. "
             if reasoning and len(reasoning) < 200:
@@ -1006,16 +1059,16 @@ Provide response:
         else:
             issues = verdict.get("issues", [])
             issues_text = "; ".join(issues) if issues else "критерії не виконані"
-            
+
             msg = f"Крок {step_id} не пройшов перевірку. "
             msg += f"Виявлені проблеми: {issues_text}. "
-            
+
             # Add snippet of reasoning if it's informative
-            if reasoning and "пр" not in reasoning.lower()[:10]: # avoid repeating "проблеми"
+            if reasoning and "пр" not in reasoning.lower()[:10]:  # avoid repeating "проблеми"
                 msg += f"Аналіз: {reasoning[:1000]}"
                 if len(reasoning) > 1000:
                     msg += "..."
-            
+
             return msg
 
     async def analyze_failure(
@@ -1059,16 +1112,32 @@ Provide report in the following format:
 
         # Enhanced extraction for Ukrainian fields
         import re
-        
+
         def extract_field(pattern, text, default):
             match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
             return match.group(1).strip() if match else default
 
-        error_type = extract_field(r"\*\*TYPE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Unknown")
-        root_cause = extract_field(r"\*\*ROOT CAUSE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Investigation required")
-        technical_advice = extract_field(r"\*\*FIX ADVICE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Follow standard recovery procedures")
-        prevention = extract_field(r"\*\*PREVENTION\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Continuity analysis ongoing")
-        summary_uk = extract_field(r"\*\*SUMMARY_UKRAINIAN\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Аналіз провалу завершено. Потрібне виправлення.")
+        error_type = extract_field(
+            r"\*\*TYPE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Unknown"
+        )
+        root_cause = extract_field(
+            r"\*\*ROOT CAUSE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, "Investigation required"
+        )
+        technical_advice = extract_field(
+            r"\*\*FIX ADVICE\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)",
+            analysis_text,
+            "Follow standard recovery procedures",
+        )
+        prevention = extract_field(
+            r"\*\*PREVENTION\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)",
+            analysis_text,
+            "Continuity analysis ongoing",
+        )
+        summary_uk = extract_field(
+            r"\*\*SUMMARY_UKRAINIAN\*\*[:\s]*(.*?)(?=\n- \*\*|\Z)",
+            analysis_text,
+            "Аналіз провалу завершено. Потрібне виправлення.",
+        )
 
         return {
             "step_id": step_id,

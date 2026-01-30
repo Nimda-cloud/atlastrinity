@@ -598,7 +598,9 @@ class ToolDispatcher:
                 cwd = normalized_args.get("cwd") or normalized_args.get("path")
                 if cwd and cmd and str(cmd).strip() and not str(cmd).startswith("cd "):
                     normalized_args["command"] = f"cd {cwd} && {cmd}"
-                    logger.info(f"[DISPATCHER] Centralized wrapping for execute_command with cwd: {cwd}")
+                    logger.info(
+                        f"[DISPATCHER] Centralized wrapping for execute_command with cwd: {cwd}"
+                    )
 
             # 7. Validate and normalize arguments before calling MCP
             validated_args = self._validate_args(resolved_tool, normalized_args)
@@ -978,7 +980,9 @@ class ToolDispatcher:
             return self._handle_browser(tool_name, args)
 
         # --- NOTES ROUTING (Redirect to macos-use) ---
-        if explicit_server == "notes" or (not explicit_server and any(tool_name.startswith(p) for p in ["notes_", "note_"])):
+        if explicit_server == "notes" or (
+            not explicit_server and any(tool_name.startswith(p) for p in ["notes_", "note_"])
+        ):
             return self._handle_macos_use(tool_name, args)
 
         # --- MACOS-USE ROUTING ---
@@ -1234,9 +1238,16 @@ class ToolDispatcher:
 
         # If tool name doesn't start with xcodebuild_, add prefix
         if not resolved_tool.startswith("xcodebuild_") and resolved_tool in [
-            "build_project", "run_tests", "list_simulators", "boot_simulator",
-            "install_app", "launch_app", "analyze_logs", "get_coverage",
-            "archive_project", "clean_build"
+            "build_project",
+            "run_tests",
+            "list_simulators",
+            "boot_simulator",
+            "install_app",
+            "launch_app",
+            "analyze_logs",
+            "get_coverage",
+            "archive_project",
+            "clean_build",
         ]:
             resolved_tool = f"xcodebuild_{resolved_tool}"
 

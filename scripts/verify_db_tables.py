@@ -39,6 +39,7 @@ async def verify_database_tables():
         return False
     return True
 
+
 async def verify_redis():
     """Simple Redis ping check using redis-py"""
     print("\n[DB CHECK] Verifying Redis...")
@@ -46,6 +47,7 @@ async def verify_redis():
         from typing import Any, cast
 
         from redis.asyncio import from_url
+
         # Default fallback if env not set, though Config should handle it
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         client = cast(Any, from_url(redis_url, encoding="utf-8", decode_responses=True))
@@ -61,7 +63,8 @@ async def verify_redis():
     except Exception as e:
         print(f"[DB] Redis Error: {e}")
         # Not blocking setup usually, but good to know
-        return True 
+        return True
+
 
 async def verify_chromadb():
     """Verify ChromaDB client initialization and collection listing"""
@@ -69,14 +72,16 @@ async def verify_chromadb():
     try:
         import chromadb
         from chromadb.config import Settings
-        
+
         # Determine path from config or default
         # Assuming typical path: ~/.config/atlastrinity/memory
         db_path = Path.home() / ".config" / "atlastrinity" / "memory" / "chroma"
         if not db_path.exists():
-             print(f"[DB]   - ChromaDB path {db_path} does not exist yet (Normal for fresh install).")
-             return True
-             
+            print(
+                f"[DB]   - ChromaDB path {db_path} does not exist yet (Normal for fresh install)."
+            )
+            return True
+
         # Just try to instantiate client
         client = chromadb.PersistentClient(path=str(db_path))
         collections = client.list_collections()
@@ -84,7 +89,7 @@ async def verify_chromadb():
         print(f"[DB]   - Collections found: {len(collections)}")
         for col in collections:
             print(f"[DB]     * {col.name} (count: {col.count()})")
-            
+
         return True
     except ImportError:
         print("[DB] WARNING: chromadb not installed. Skipping check.")
@@ -93,15 +98,19 @@ async def verify_chromadb():
         return False
     return True
 
+
 async def main_check():
     sql_ok = await verify_database_tables()
     redis_ok = await verify_redis()
-    chroma_ok = verify_chromadb() # Sync function usually for chroma client init, but wrapped if needed. 
+    chroma_ok = (
+        verify_chromadb()
+    )  # Sync function usually for chroma client init, but wrapped if needed.
     # Actually client.list_collections might be blocking IO but acceptable for setup script
     if asyncio.iscoroutine(chroma_ok):
         chroma_ok = await chroma_ok
-        
+
     return sql_ok and redis_ok and chroma_ok
+
 
 if __name__ == "__main__":
     if not asyncio.run(main_check()):

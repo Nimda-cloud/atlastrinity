@@ -114,20 +114,38 @@ const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col font-mono h-full overflow-hidden relative min-h-0" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0 }}>
+    <div
+      className="flex-1 flex flex-col font-mono h-full overflow-hidden relative min-h-0"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        overflow: 'hidden',
+        minHeight: 0,
+      }}
+    >
       <div style={{ height: '32px', flexShrink: 0 }} /> {/* Spacer for title bar area */}
       {/* Main Chat Stream */}
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin min-h-0"
-        style={{ overscrollBehavior: 'contain', overflowY: 'auto', overflowX: 'hidden', flex: '1 1 0%', minHeight: 0 }}
+        style={{
+          overscrollBehavior: 'contain',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          flex: '1 1 0%',
+          minHeight: 0,
+        }}
       >
         {filteredMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center opacity-10 italic text-[9px] tracking-[0.5em] uppercase">
             Waiting for neural link...
           </div>
         ) : (
-          <div className="flex flex-col gap-2 py-1 pb-32 px-4" style={{ paddingLeft: '16px', paddingRight: '16px' }}>
+          <div
+            className="flex flex-col gap-2 py-1 pb-32 px-4"
+            style={{ paddingLeft: '16px', paddingRight: '16px' }}
+          >
             {filteredMessages.map((msg) => (
               <div key={msg.id} className="animate-fade-in group mb-3">
                 <div className="flex items-center mb-1.5">

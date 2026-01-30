@@ -22,12 +22,12 @@ def reload_atlastrinity_config():
 
     # Clear any caches
     print("🧹 Clearing caches...")
-    
+
     # Define paths dynamically
     HOME = os.path.expanduser("~")
     PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
     CONFIG_DIR = os.path.join(HOME, ".config/atlastrinity")
-    
+
     cache_dirs = [
         os.path.join(CONFIG_DIR, "__pycache__"),
         os.path.join(PROJECT_ROOT, "__pycache__"),

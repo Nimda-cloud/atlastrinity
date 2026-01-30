@@ -55,7 +55,7 @@ def fix_vibe_check_db():
     HOME = os.path.expanduser("~")
     PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
     CONFIG_DIR = os.path.join(HOME, ".config/atlastrinity")
-    
+
     # Find database file
     db_paths = [
         os.path.join(CONFIG_DIR, "atlastrinity.db"),
@@ -109,7 +109,9 @@ def fix_macos_use_tools():
     # Check if binary exists
     HOME = os.path.expanduser("~")
     PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
-    binary_path = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use")
+    binary_path = os.path.join(
+        PROJECT_ROOT, "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
+    )
     if os.path.exists(binary_path):
         print("✅ macos-use binary exists")
 

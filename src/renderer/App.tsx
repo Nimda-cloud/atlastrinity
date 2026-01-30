@@ -356,7 +356,7 @@ const App: React.FC = () => {
       <div className="pulsing-border bottom"></div>
       <div className="pulsing-border left"></div>
       <div className="pulsing-border right"></div>
-      
+
       {/* Starting Overlay */}
       {!isConnected && systemState === 'IDLE' && (
         <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/80 backdrop-blur-md">

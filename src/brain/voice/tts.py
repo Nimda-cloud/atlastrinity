@@ -482,10 +482,12 @@ class VoiceManager:
             import sys
 
             from ..config import PROJECT_ROOT
+
             if str(PROJECT_ROOT) not in sys.path:
                 sys.path.insert(0, str(PROJECT_ROOT))
-            
+
             from providers.copilot import CopilotLLM
+
             # Use default model for translation as it's usually fast enough
             model = config.get("models.default", "gpt-4o")
             self._translator_llm = CopilotLLM(model_name=model, max_tokens=1000, temperature=0.1)
@@ -495,14 +497,15 @@ class VoiceManager:
         """Translates English-heavy text to Ukrainian as a last defense."""
         # Simple heuristic to detect if translation is needed
         import re
-        english_words = re.findall(r'[a-zA-Z]{3,}', text)
+
+        english_words = re.findall(r"[a-zA-Z]{3,}", text)
         # If more than 2 English words or significant portions are English
         if len(english_words) < 2:
             return text
 
         logger.info(f"[TTS] 🔄 Translating English-heavy text to Ukrainian: {text[:50]}...")
         llm = await self._get_translator()
-        
+
         prompt = f"""Task: Translate the following text into HIGH-QUALITY natural Ukrainian.
 CRITICAL: ZERO English words. Localize technical terms, paths, and names.
 The tone should be professional and guardian-like.
@@ -510,12 +513,15 @@ The tone should be professional and guardian-like.
 Text: {text}
 
 Ukrainian:"""
-        
+
         try:
             from langchain_core.messages import HumanMessage, SystemMessage
+
             messages = [
-                SystemMessage(content="You are a professional Ukrainian translator. Zero English words allowed."),
-                HumanMessage(content=prompt)
+                SystemMessage(
+                    content="You are a professional Ukrainian translator. Zero English words allowed."
+                ),
+                HumanMessage(content=prompt),
             ]
             response = await llm.ainvoke(messages)
             translated = str(response.content).strip().strip('"')
@@ -524,7 +530,7 @@ Ukrainian:"""
                 return translated
         except Exception as e:
             logger.warning(f"[TTS] Translation failed: {e}. Falling back to original text.")
-        
+
         return text
 
     async def prepare_speech_text(self, text: str) -> str:
@@ -536,11 +542,11 @@ Ukrainian:"""
 
         # 1. Sanitize
         text = sanitize_text_for_tts(text)
-        
+
         # 2. Translate if needed (force_ukrainian defense)
         if config.get("voice.tts.force_ukrainian", True):
             text = await self.translate_to_ukrainian(text)
-            
+
         return text
 
     def stop(self):

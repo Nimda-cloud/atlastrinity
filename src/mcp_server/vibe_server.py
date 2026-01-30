@@ -213,23 +213,29 @@ def sync_vibe_configuration() -> None:
     try:
         # Load config to resolve paths
         config = get_vibe_config()
-        
+
         # Determine VIBE_HOME from config or env
-        vibe_home = Path(config.vibe_home) if config.vibe_home else Path(os.getenv("VIBE_HOME", str(Path.home() / ".vibe")))
+        vibe_home = (
+            Path(config.vibe_home)
+            if config.vibe_home
+            else Path(os.getenv("VIBE_HOME", str(Path.home() / ".vibe")))
+        )
         vibe_home_config = vibe_home / "config.toml"
-        
+
         # Determine Source Config (the one we are loading)
-        source_config_path = Path(VIBE_CONFIG_FILE) if VIBE_CONFIG_FILE else DEFAULT_CONFIG_ROOT / "vibe_config.toml"
-        
+        source_config_path = (
+            Path(VIBE_CONFIG_FILE) if VIBE_CONFIG_FILE else DEFAULT_CONFIG_ROOT / "vibe_config.toml"
+        )
+
         if not source_config_path.exists():
             logger.warning(f"Source config not found at {source_config_path}, skipping sync")
             return
-            
+
         # Ensure VIBE_HOME and subdirectories exist
         vibe_home.mkdir(parents=True, exist_ok=True)
         (vibe_home / "prompts").mkdir(exist_ok=True)
         (vibe_home / "agents").mkdir(exist_ok=True)
-        
+
         # Check if sync is needed
         should_sync = False
         if not vibe_home_config.exists():
@@ -248,7 +254,7 @@ def sync_vibe_configuration() -> None:
         if should_sync:
             shutil.copy2(source_config_path, vibe_home_config)
             logger.info(f"Synced Vibe config to: {vibe_home_config}")
-            
+
     except Exception as e:
         logger.error(f"Failed to sync Vibe configuration: {e}")
 
@@ -439,7 +445,7 @@ async def run_vibe_subprocess(
         MAX_RETRIES = 5  # Increased from 2 to 5
         # Exponential backoff delays: 30s, 60s, 120s, 240s, 480s
         BACKOFF_DELAYS = [30, 60, 120, 240, 480]
-        
+
         for attempt in range(MAX_RETRIES):
             try:
                 full_argv = argv
@@ -1838,7 +1844,7 @@ async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
 async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
     """Execute a read-only SQL SELECT query against the AtlasTrinity database.
 
-    CRITICAL: This tool ONLY accepts valid SQL SELECT statements. 
+    CRITICAL: This tool ONLY accepts valid SQL SELECT statements.
     Do NOT pass natural language goals, tasks, or questions here.
     For AI assistance or general questions, use 'vibe_prompt' or 'vibe_ask'.
 
@@ -1862,7 +1868,7 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
 
     # Basic SQL validation
     clean_query = query.strip().upper()
-    
+
     # 1. Reject natural language (heuristic: many words, no SQL-specific structure)
     words = query.split()
     if len(words) > 5 and not any(k in clean_query for k in ["SELECT", "FROM", "WHERE", "JOIN"]):
