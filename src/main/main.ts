@@ -90,15 +90,6 @@ async function createWindow(): Promise<void> {
 
   // Load the app
   if (isDev) {
-    try {
-      const { installExtension, REACT_DEVELOPER_TOOLS } = await import('electron-devtools-installer');
-      installExtension(REACT_DEVELOPER_TOOLS)
-        .then((name: any) => console.log(`[ELECTRON] Added Extension: ${name}`))
-        .catch((err: any) => console.log('[ELECTRON] An error occurred while installing extension: ', err));
-    } catch (e) {
-      console.error('[ELECTRON] Failed to load devtools installer:', e);
-    }
-
     // Delay loading in dev mode to allow Python server to start
     console.log('[ELECTRON] Waiting for backend to initialize (5s)...');
     setTimeout(async () => {
@@ -107,10 +98,6 @@ async function createWindow(): Promise<void> {
         mainWindow.webContents.openDevTools();
       }
     }, 5000);
-
-    // В dev режимі Python сервер запускається через npm run dev:brain
-    // НЕ запускаємо тут, щоб уникнути конфлікту на порту 8000
-    // startPythonServerDev();
   } else {
     await mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
@@ -283,7 +270,37 @@ ipcMain.handle('request-accessibility', async () => {
 });
 
 // App lifecycle
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  if (isDev) {
+    try {
+      const installerModule: any = await import('electron-devtools-installer');
+      
+      // Handle the various ways the library can be exported
+      let installExtension = installerModule.default;
+      if (typeof installExtension !== 'function') {
+        installExtension = installerModule.installExtension;
+      }
+      if (typeof installExtension !== 'function') {
+        installExtension = installerModule;
+      }
+
+      const { REACT_DEVELOPER_TOOLS } = installerModule;
+
+      if (typeof installExtension === 'function') {
+        const name = await installExtension(REACT_DEVELOPER_TOOLS, {
+          loadExtensionOptions: { allowFileAccess: true },
+          forceDownload: true,
+        });
+        console.log(`[ELECTRON] Added Extension: ${name}`);
+      } else {
+        console.error('[ELECTRON] Could not find installExtension function');
+      }
+    } catch (e) {
+      console.error('[ELECTRON] Failed to install extensions:', e);
+    }
+  }
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   // В development режимі завжди закриваємо додаток (включно з macOS)
