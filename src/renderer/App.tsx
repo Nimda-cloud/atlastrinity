@@ -433,7 +433,10 @@ const App: React.FC = () => {
 
         {/* Session History Sidebar Overlay */}
         {isHistoryOpen && (
-          <div className="absolute inset-0 z-50 bg-black backdrop-blur-xl border-r border-[#00e5ff]/20 animate-slide-in">
+          <div
+            className="absolute inset-0 z-50 backdrop-blur-xl border-r border-[#00e5ff]/20 animate-slide-in"
+            style={{ backgroundColor: '#000000' }}
+          >
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-[10px] tracking-[0.4em] uppercase font-bold text-[#00e5ff] drop-shadow-[0_0_5px_rgba(0,229,255,0.5)]">
