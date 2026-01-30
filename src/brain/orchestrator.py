@@ -972,6 +972,7 @@ class Trinity:
                                 goal=user_request,
                                 status="PENDING",
                                 metadata_blob=task_metadata,
+                                parent_task_id=self.state.get("parent_task_id"),
                             )
                             db_sess.add(new_task)
                             await db_sess.commit()
@@ -984,8 +985,16 @@ class Trinity:
                                     "goal": user_request,
                                     "timestamp": datetime.now(UTC).isoformat(),
                                     "steps_count": len(plan.steps),
+                                    "parent_task_id": str(new_task.parent_task_id) if new_task.parent_task_id else None,
                                 },
                             )
+                            
+                            if new_task.parent_task_id:
+                                await knowledge_graph.add_edge(
+                                    source_id=f"task:{new_task.parent_task_id}",
+                                    target_id=f"task:{new_task.id}",
+                                    relation="SUBTASK",
+                                )
                 except Exception as e:
                     logger.error(f"DB Task creation failed: {e}")
 
@@ -1410,6 +1419,7 @@ class Trinity:
                             step,
                             step_id,
                             attempt=attempt,
+                            depth=depth,
                         ),
                         timeout=float(config.get("orchestrator", {}).get("task_timeout", 1200.0))
                         + 60.0,
@@ -1543,7 +1553,29 @@ class Trinity:
                     )
                     # Proceed to VIBE logic below...
 
-                # ... fall through to existing Vibe/Atlas recovery logic if action is VIBE_HEAL or ATLAS_PLAN ...
+                elif strategy.action == "ATLAS_PLAN":
+                    await self._log(f"Strategic Recovery: {strategy.reason}. Escalating to Atlas for plan update...", "orchestrator")
+                    try:
+                        # Request a strategic pivot from Atlas
+                        replan_query = f"RECOVERY STRATEGY NEEDED. Goal: {self.state.get('current_goal')}. Step {step_id} failed with error: {last_error}."
+                        # Create an enriched request for Atlas.create_plan
+                        enriched = {
+                            "enriched_request": replan_query,
+                            "intent": "task",
+                            "complexity": "medium"
+                        }
+                        new_plan = await self.atlas.create_plan(enriched)
+                        
+                        if new_plan and hasattr(new_plan, 'steps') and new_plan.steps:
+                            await self._log(f"Atlas provided a recovery sub-plan with {len(new_plan.steps)} steps. Inserting...", "orchestrator")
+                            # Insert these steps into the current list to be executed next
+                            for offset, s in enumerate(new_plan.steps):
+                                steps.insert(i + 1 + offset, s)
+                            continue # Move to the next step (which is now the first recovery step)
+                    except Exception as e:
+                        logger.error(f"Atlas re-planning failed: {e}")
+
+                # ... fall through to existing Vibe/Atlas recovery logic if action is VIBE_HEAL ...
 
                 # RECOVERY LOGIC (Legacy + Vibe Integration)
                 validate_with_grisha = bool(
@@ -1838,6 +1870,7 @@ class Trinity:
         step: dict[str, Any],
         step_id: str,
         attempt: int = 1,
+        depth: int = 0,
     ) -> StepResult:
         """Atomic execution logic with recursion and dynamic temperature"""
         # Starting message logic
@@ -2200,9 +2233,14 @@ class Trinity:
                         "orchestrator",
                     )
                     # Atlas help logic
+                    history_results = self.state.get("step_results")
+                    if not isinstance(history_results, list):
+                        history_results = []
+                    
                     help_resp = await self.atlas.help_tetyana(
                         str(step.get("id") or step_id),
                         str(result.result or ""),
+                        history=history_results
                     )
 
                     # Extract voice message or reason from Atlas response
@@ -2217,8 +2255,37 @@ class Trinity:
                         voice_msg = str(help_resp)
 
                     await self._speak("atlas", voice_msg)
+                    
+                    # NEW: Support hierarchical recovery via alternative_steps
+                    alt_steps = None
+                    if isinstance(help_resp, dict):
+                        alt_steps = help_resp.get("alternative_steps")
+                    
+                    if alt_steps and isinstance(alt_steps, list):
+                        await self._log(
+                            f"Atlas provided {len(alt_steps)} alternative steps. Executing recovery sub-plan...",
+                            "orchestrator",
+                        )
+                        # Execute the sub-steps recursively
+                        success = await self._execute_steps_recursive(
+                            alt_steps,
+                            parent_prefix=str(step.get("id") or step_id),
+                            depth=depth + 1
+                        )
+                        if success:
+                            await self._log(
+                                f"Recovery sub-plan for {step_id} completed successfully. Retrying original step with new context.",
+                                "orchestrator"
+                            )
+                            # We don't return success yet, we want to retry the original step 
+                            # now that we (hopefully) have the missing info in context.
+                        else:
+                            await self._log(
+                                f"Recovery sub-plan for {step_id} failed.",
+                                "error"
+                            )
+                    
                     # Re-run the step with Atlas's guidance as bus feedback
-
                     await message_bus.send(
                         AgentMsg(
                             from_agent="atlas",

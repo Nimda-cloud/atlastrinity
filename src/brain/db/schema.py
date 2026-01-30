@@ -85,12 +85,17 @@ class Task(Base):
     
     # Рекурсивний контекст: goal_stack, parent_goal, recursive_depth, parent_task_id
     metadata_blob: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
+    
+    parent_task_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tasks.id"), nullable=True)
 
     session: Mapped["Session"] = relationship(back_populates="tasks")
     steps: Mapped[list["TaskStep"]] = relationship(
         back_populates="task",
         cascade="all, delete-orphan",
     )
+    
+    # Hierarchical support
+    parent_task: Mapped["Task | None"] = relationship("Task", remote_side=[id], backref="sub_tasks")
 
 
 class TaskStep(Base):

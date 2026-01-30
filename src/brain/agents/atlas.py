@@ -1034,7 +1034,7 @@ CRITICAL PLANNING RULES:
 
         return None
 
-    async def help_tetyana(self, step_id: str, error: str) -> dict[str, Any]:
+    async def help_tetyana(self, step_id: str, error: str, history: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         """Helps Tetyana when she is stuck, using shared context and Grisha's feedback for better solutions"""
         from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -1047,11 +1047,18 @@ CRITICAL PLANNING RULES:
         if grisha_report:
             grisha_feedback = f"\n\nGRISHA'S DETAILED FEEDBACK:\n{grisha_report}\n"
 
+        # Include recent history if provided to help Atlas see previous tool outputs
+        history_str = ""
+        if history:
+            history_str = "\n\nRECENT EXECUTION HISTORY (Tool results):\n" + "\n".join(
+                [f"- Step {h.get('step_id')}: {str(h.get('result'))[:500]}" for h in history[-5:]]
+            )
+
         prompt = AgentPrompts.atlas_help_tetyana_prompt(
             int(step_id)
             if isinstance(step_id, str) and step_id.isdigit()
             else (int(step_id) if isinstance(step_id, int | float) else 0),
-            error,
+            f"{error}\n{history_str}",
             grisha_feedback,
             context_info,
             self.current_plan.steps if self.current_plan else [],
