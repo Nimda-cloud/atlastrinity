@@ -99,8 +99,14 @@ async function createWindow(): Promise<void> {
       console.error('[ELECTRON] Failed to load devtools installer:', e);
     }
 
-    await mainWindow.loadURL('http://localhost:3000');
-    mainWindow.webContents.openDevTools();
+    // Delay loading in dev mode to allow Python server to start
+    console.log('[ELECTRON] Waiting for backend to initialize (5s)...');
+    setTimeout(async () => {
+      if (mainWindow) {
+        await mainWindow.loadURL('http://localhost:3000');
+        mainWindow.webContents.openDevTools();
+      }
+    }, 5000);
 
     // В dev режимі Python сервер запускається через npm run dev:brain
     // НЕ запускаємо тут, щоб уникнути конфлікту на порту 8000
