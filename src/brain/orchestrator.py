@@ -27,6 +27,7 @@ from src.brain.config_loader import config
 from src.brain.consolidation import consolidation_module
 from src.brain.context import shared_context
 from src.brain.db.manager import db_manager
+from src.brain.db.schema import ChatMessage
 from src.brain.db.schema import ConversationSummary as DBConvSummary
 from src.brain.db.schema import LogEntry as DBLog
 from src.brain.db.schema import RecoveryAttempt
@@ -245,7 +246,7 @@ class Trinity:
         return {"status": "success", "session_id": self.current_session_id}
 
     async def load_session(self, session_id: str):
-        """Load a specific session from Redis"""
+        """Load a specific session from Redis, or reconstruct from DB if missing"""
         if not state_manager.available:
             return {"status": "error", "message": "Persistence unavailable"}
 
@@ -253,9 +254,74 @@ class Trinity:
         if saved_state:
             self.state = saved_state
             self.current_session_id = session_id
-            await self._log(f"Сесія {session_id} відновлена", "system")
+            await self._log(f"Сесія {session_id} відновлена з пам'яті", "system")
             return {"status": "success"}
-        return {"status": "error", "message": "Session not found"}
+
+        # Attempt DB Reconstruction
+        try:
+            from sqlalchemy import select
+            async with await db_manager.get_session() as db_sess:
+                # 1. Fetch Session Theme
+                sess_info = await db_sess.execute(
+                    select(DBSession).where(DBSession.id == session_id)
+                )
+                db_sess_obj = sess_info.scalar()
+                if not db_sess_obj:
+                    # Try searching by string ID in metadata or logs if UUID fails
+                    # But session_id here should be the ID
+                    return {"status": "error", "message": "Session not found in DB"}
+
+                # 2. Fetch Chat History
+                chat_info = await db_sess.execute(
+                    select(ChatMessage)
+                    .where(ChatMessage.session_id == str(session_id))
+                    .order_by(ChatMessage.created_at.asc())
+                )
+                db_messages = chat_info.scalars().all()
+
+                # Reconstruct LangChain messages
+                reconstructed_messages = []
+                for m in db_messages:
+                    if m.role == "human":
+                        reconstructed_messages.append(HumanMessage(content=m.content))
+                    elif m.role == "ai":
+                        agent = m.metadata_blob.get("agent", "ATLAS") if m.metadata_blob else "ATLAS"
+                        reconstructed_messages.append(AIMessage(content=m.content, name=agent))
+
+                # 3. Fetch Logs (Optional but nice)
+                log_info = await db_sess.execute(
+                    select(DBLog)
+                    .where(DBLog.session_id == str(session_id))
+                    .order_by(DBLog.timestamp.asc())
+                )
+                db_logs = log_info.scalars().all()
+                reconstructed_logs = []
+                for l in db_logs:
+                    reconstructed_logs.append({
+                        "id": f"db-log-{l.id}",
+                        "timestamp": l.timestamp.timestamp(),
+                        "agent": l.source.upper(),
+                        "message": l.message,
+                        "type": l.metadata_blob.get("type", "info") if l.metadata_blob else "info"
+                    })
+
+                # Initial Fresh State
+                self.state = {
+                    "messages": reconstructed_messages,
+                    "system_state": SystemState.IDLE.value,
+                    "current_plan": None,
+                    "step_results": [],
+                    "error": None,
+                    "logs": reconstructed_logs,
+                    "_theme": db_sess_obj.metadata_blob.get("theme", "Restored Session")
+                }
+                self.current_session_id = session_id
+                await self._log(f"Сесія {session_id} відновлена з бази даних", "system")
+                return {"status": "success"}
+
+        except Exception as e:
+            logger.error(f"Failed to reconstruct session from DB: {e}")
+            return {"status": "error", "message": f"DB Reconstruction failed: {e}"}
 
     def _build_graph(self):
         """Builds LangGraph dynamically from orchestration_flow config."""
@@ -393,6 +459,7 @@ class Trinity:
             # Avoid duplicate messages if this was already in the history (e.g. during resumption)
             # We only append if it's the latest message (real-time generated)
             self.state["messages"].append(AIMessage(content=final_text, name=agent_id.upper()))
+            asyncio.create_task(self._save_chat_message("ai", final_text, agent_id))
 
         await self._log(final_text, source=agent_id, type="voice")
         try:
@@ -444,6 +511,7 @@ class Trinity:
                 try:
                     async with await db_manager.get_session() as session:
                         entry = DBLog(
+                            session_id=self.current_session_id,
                             level=type.upper(),
                             source=source,
                             message=text_str,
@@ -475,6 +543,24 @@ class Trinity:
                     asyncio.create_task(state_manager.publish_event("logs", entry))
                 except Exception as e:
                     logger.warning(f"Failed to publish log to Redis: {e}")
+
+    async def _save_chat_message(self, role: str, content: str, agent_id: str | None = None):
+        """Persist a chat message to the DB for history reconstruction"""
+        if not db_manager.available or not self.current_session_id:
+            return
+
+        try:
+            async with await db_manager.get_session() as session:
+                msg = ChatMessage(
+                    session_id=self.current_session_id,
+                    role=role,
+                    content=str(content),
+                    metadata_blob={"agent": agent_id.upper() if agent_id else None}
+                )
+                session.add(msg)
+                await session.commit()
+        except Exception as e:
+            logger.error(f"[DB] ChatMessage storage failed: {e}")
 
     async def _resume_after_restart(self):
         """Check if we are recovering from a restart and resume state"""
@@ -761,6 +847,7 @@ class Trinity:
 
             # Append the new user message
             self.state["messages"].append(HumanMessage(content=user_request))
+            asyncio.create_task(self._save_chat_message("human", user_request))
             self.state["system_state"] = SystemState.PLANNING.value
             self.state["error"] = None
 
