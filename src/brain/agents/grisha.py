@@ -962,7 +962,7 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
         logger.info(f"[GRISHA] Reasoning: {verdict.get('reasoning', 'N/A')[:300]}...")
 
         # Return structured verification result
-        return VerificationResult(
+        result_obj = VerificationResult(
             step_id=step_id,
             verified=verdict.get("verified", False),
             confidence=verdict.get("confidence", 0.0),
@@ -970,6 +970,28 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             issues=verdict.get("issues", []),
             voice_message=self._generate_voice_message(verdict, step),
         )
+
+        # CRITICAL FIX: Persist rejection report so Tetyana can "hear" it
+        if not result_obj.verified:
+            logger.info(f"[GRISHA] Step {step_id} failed. Saving detailed rejection report for Tetyana...")
+            try:
+                await self._save_rejection_report(
+                    step_id=str(step_id),
+                    step=step,
+                    verification=result_obj,
+                    task_id=task_id,
+                    root_cause_analysis=goal_analysis.get("full_reasoning"),
+                    suggested_fix=None,  # Or parse from reasoning if possible
+                    verification_evidence=[
+                        f"Tool: {res.get('tool')}, Result: {str(res.get('result', ''))[:200]}..." 
+                        for res in verification_results
+                        if isinstance(res, dict)
+                    ]
+                )
+            except Exception as save_err:
+                logger.error(f"[GRISHA] Failed to save rejection report: {save_err}")
+
+        return result_obj
 
     def _generate_voice_message(self, verdict: dict, step: dict) -> str:
         """Generate detailed Ukrainian voice message based on verdict."""
