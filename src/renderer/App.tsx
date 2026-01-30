@@ -531,27 +531,44 @@ const App: React.FC = () => {
                 )}
               </div>
 
-              <button
-                className="mt-6 w-full py-3 border text-[9px] uppercase tracking-[0.3em] font-bold transition-all backdrop-blur-sm"
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  borderColor: 'rgba(0, 229, 255, 0.4)',
-                  color: '#00e5ff',
-                  boxShadow: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#00e5ff';
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.1)';
-                  e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 229, 255, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                + New Session
-              </button>
+              <div className="mt-4 flex justify-center w-full">
+                <button
+                  onClick={() => {
+                    handleNewSession();
+                    setIsHistoryOpen(false);
+                  }}
+                  className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                    borderColor: 'rgba(0, 229, 255, 0.4)',
+                    boxShadow: '0 0 10px rgba(0, 229, 255, 0.1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#00e5ff';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.1)';
+                  }}
+                  title="New Session"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#00e5ff"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         )}
