@@ -776,6 +776,15 @@ async def vibe_prompt(
             "returncode": -2,
         }
 
+    # Validate output_format to avoid CLI errors (only text, json, streaming supported)
+    valid_formats = {"text", "json", "streaming"}
+    if output_format not in valid_formats:
+        logger.warning(
+            f"[VIBE] Invalid output_format '{output_format}' requested. "
+            f"Falling back to 'streaming'. valid_formats={valid_formats}"
+        )
+        output_format = "streaming"
+
     final_prompt, prompt_file_to_clean = handle_long_prompt(prompt, eff_cwd)
 
     try:
