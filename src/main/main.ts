@@ -4,10 +4,14 @@
 
 import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import * as fs from 'fs';
 import * as os from 'os';
 import { spawn, ChildProcess, execSync } from 'child_process';
-import { checkPermissions, requestPermissions } from './permissions';
+import { checkPermissions, requestPermissions } from './permissions.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 

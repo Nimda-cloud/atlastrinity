@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Autonomous Recursive Agentic System for macOS",
   "main": "dist/main/main.js",
+  "type": "module",
   "scripts": {
     "setup": "python3 scripts/setup_dev.py",
     "fresh-install": "./scripts/fresh_install.sh",
