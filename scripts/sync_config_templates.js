@@ -9,9 +9,13 @@
  * preserving user modifications while updating structure.
  */
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const CONFIG_ROOT = path.join(os.homedir(), '.config', 'atlastrinity');
