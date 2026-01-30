@@ -2061,7 +2061,7 @@ class Trinity:
                             None  # Clear it so it won't be spoken again at the end of node
                         )
 
-                    timeout_val = float(config.get("orchestrator.user_input_timeout", 60.0))
+                    timeout_val = float(config.get("orchestrator.user_input_timeout", 12.0))
                     await self._log(
                         f"User input needed for step {step_id}. Waiting {timeout_val} seconds...",
                         "orchestrator",
