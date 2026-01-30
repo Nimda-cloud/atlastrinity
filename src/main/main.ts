@@ -273,27 +273,33 @@ ipcMain.handle('request-accessibility', async () => {
 app.whenReady().then(async () => {
   if (isDev) {
     try {
-      const installerModule: any = await import('electron-devtools-installer');
+      console.log('[ELECTRON] Attempting to install extensions...');
+      // Dynamic import to handle ESM/CJS interop for electron-devtools-installer
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const installerModule = (await import('electron-devtools-installer')) as any;
 
-      // Handle the various ways the library can be exported
-      let installExtension = installerModule.default;
-      if (typeof installExtension !== 'function') {
-        installExtension = installerModule.installExtension;
-      }
-      if (typeof installExtension !== 'function') {
-        installExtension = installerModule;
-      }
+      // Determine the installation function
+      const installExtension =
+        installerModule.default?.default ||
+        installerModule.default ||
+        installerModule.installExtension;
 
-      const { REACT_DEVELOPER_TOOLS } = installerModule;
+      // Determine the extension ID
+      const REACT_DEVELOPER_TOOLS =
+        installerModule.REACT_DEVELOPER_TOOLS || installerModule.default?.REACT_DEVELOPER_TOOLS;
 
-      if (typeof installExtension === 'function') {
+      if (typeof installExtension === 'function' && REACT_DEVELOPER_TOOLS) {
+        console.log('[ELECTRON] Installing React DevTools...');
         const name = await installExtension(REACT_DEVELOPER_TOOLS, {
           loadExtensionOptions: { allowFileAccess: true },
-          forceDownload: true,
+          forceDownload: false,
         });
         console.log(`[ELECTRON] Added Extension: ${name}`);
       } else {
-        console.error('[ELECTRON] Could not find installExtension function');
+        console.error('[ELECTRON] Failed to load extension installer or ID.', {
+          hasInstallFunction: typeof installExtension === 'function',
+          hasRDTId: !!REACT_DEVELOPER_TOOLS,
+        });
       }
     } catch (e) {
       console.error('[ELECTRON] Failed to install extensions:', e);

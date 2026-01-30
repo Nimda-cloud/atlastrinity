@@ -1318,7 +1318,9 @@ def main():
         ("data-analysis", "Pandas Data Analysis Engine (Python)"),
     ]
 
-    print_info(f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else len(mcp_info)}):")
+    print_info(
+        f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else len(mcp_info)}):"
+    )
     for s_id, s_desc in mcp_info:
         # Check if actually enabled in config
         status = ""
