@@ -39,7 +39,7 @@ interface SystemMetrics {
   net_down_unit: string;
 }
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'http://localhost:8000';
 
 const App: React.FC = () => {
   const [systemState, setSystemState] = useState<SystemState>('IDLE');
