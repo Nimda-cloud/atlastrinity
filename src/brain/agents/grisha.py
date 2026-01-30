@@ -597,34 +597,34 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
             ]
         )
 
-        query = f"""ЛОГІЧНИЙ ВЕРДИКТ ВЕРИФІКАЦІЇ (АТОМАРНИЙ РІВЕНЬ):
+        query = f"""LOGICAL VERIFICATION VERDICT (ATOMIC LEVEL):
 
-КРОК: {step_action}
-ОЧІКУВАНИЙ РЕЗУЛЬТАТ: {expected_result}
-ЗІБРАНІ ДОКАЗИ:
+STEP: {step_action}
+EXPECTED RESULT: {expected_result}
+COLLECTED EVIDENCE:
 {results_summary}
 
-МЕТА ВЕРИФІКАЦІЇ (з Фази 1):
-{goal_analysis.get("verification_purpose", "Невідомо")}
+VERIFICATION PURPOSE (from Phase 1):
+{goal_analysis.get("verification_purpose", "Unknown")}
 
-КРИТЕРІЇ УСПІХУ:
-{goal_analysis.get("success_criteria", "Невідомо")}
+SUCCESS CRITERIA:
+{goal_analysis.get("success_criteria", "Unknown")}
 
-ЗАГАЛЬНА МЕТА (ДЛЯ КОНТЕКСТУ): {goal_context}
+GENERAL GOAL (FOR CONTEXT): {goal_context}
 
-ІНСТРУКЦІЯ ДЛЯ ВЕРДИКТУ:
-1. **СУВОРА АТОМАРНІСТЬ**: Оцінюй ТІЛЬКИ відповідність Доказів до цього конкретного КРОКУ.
-2. **ЗАБОРОНА ГЛОБАЛІЗАЦІЇ**: ЗАБОРОНЕНО ставити ПРОВАЛЕНО тільки тому, що "загальна мета ({{goal_context}})" ще не досягнута. Якщо мета кроку - це "перевірити інструменти", і докази підтверджують, що Тетяна їх перевірила (навіть якщо результат перевірки негативний, але вона його зафіксувала) - крок може бути ПІДТВЕРДЖЕНО як виконаний.
-3. **ХАРАКТЕР КРОКУ**:
-   - ДЛЯ АНАЛІЗУ/ДИСКАВЕРІ: успіхом є сам факт збору даних. Якщо Тетяна доповіла "ключів немає", і ми бачимо її команду - це УСПІХ КРОКУ (вона дізналася стан).
-   - ДЛЯ ДІЇ: успіхом є зміна.
-4. **ОЦІНКА ДОКАЗІВ**: Якщо у доказах є текст виводу (Result), аналізуй його. Якщо тексту немає, але Тетяна впевнено рапортує успіх у трейсі - довіряй, якщо немає явних суперечностей.
+VERDICT INSTRUCTIONS:
+1. **STRICT ATOMICITY**: Evaluate ONLY the Evidence's relevance to this specific STEP.
+2. **NO GLOBALIZATION**: FORBIDDEN to fail because "general goal ({goal_context})" is not yet achieved. If the step goal is "verify tools" and evidence confirms it (even if the tool check returned negative, but she recorded it) - the step is CONFIRMED.
+3. **STEP CHARACTER**:
+   - FOR ANALYSIS/DISCOVERY: success is the fact of data collection. If she reported "nothing found" and we see her command - this is STEP SUCCESS. EMPTY OUTPUT is VALID EVIDENCE of absence if the command executed successfully.
+   - FOR ACTION: success is a change.
+4. **EVIDENCE EVALUATION**: Analyze the Result text. If empty, but command is success (True) and it's an ANALYSIS step - CHECK if it's logical. Do not fail ONLY because of "emptiness" if it proves absence.
 
-Надай відповідь:
-- **ВЕРДИКТ**: ПІДТВЕРДЖЕНО або ПРОВАЛЕНО
-- **ВПЕВНЕНІСТЬ**: 0.0-1.0
-- **ОБҐРУНТУВАННЯ**: (Аналіз УКРАЇНСЬКОЮ. Поясни, чому цей АТОМАРНИЙ крок вважається виконаним або ні.)
-- **ПРОБЛЕМИ**: (Список проблем ТІЛЬКИ ДЛЯ ЦЬОГО КРОКУ)"""
+Provide response:
+- **VERDICT**: CONFIRMED or FAILED
+- **CONFIDENCE**: 0.0-1.0
+- **REASONING**: (Analysis in UKRAINIAN. Explain why this ATOMIC step is considered done or not.)
+- **ISSUES**: (List of issues ONLY FOR THIS STEP)"""
 
         logger.info(f"[GRISHA] Phase 2: Forming logical verdict for step {step_id}...")
 
@@ -636,35 +636,35 @@ Formulate your conclusion in English for technical accuracy, but ensure the user
                 return self._fallback_verdict(verification_results)
 
             analysis_text = reasoning_result.get("analysis", "")
-
-            # Parse verdict from analysis
             analysis_upper = analysis_text.upper()
-            
-            verified = "ВЕРДИКТ: ПІДТВЕРДЖЕНО" in analysis_upper
-            if not verified and "ВЕРДИКТ: ПРОВАЛЕНО" not in analysis_upper:
+
+            verified = "VERDICT: CONFIRMED" in analysis_upper or "ВЕРДИКТ: ПІДТВЕРДЖЕНО" in analysis_upper
+            if not verified and ("VERDICT: FAILED" in analysis_upper or "ВЕРДИКТ: ПРОВАЛЕНО" in analysis_upper):
+                verified = False
+            elif not verified:
                 # Fallback to keyword search if exact format missing
-                verified = any(word in analysis_upper for word in ["ПІДТВЕРДЖЕНО", "УСПІШНО", "VERIFIED", "SUCCESS"])
-                if any(word in analysis_upper for word in ["ПРОВАЛЕНО", "FAILED", "ERROR", "НЕ ЗНАЙДЕНО"]):
+                verified = any(word in analysis_upper for word in ["CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
+                if any(word in analysis_upper for word in ["FAILED", "ERROR", "ПРОВАЛЕНО"]):
                     verified = False
 
             # Extract confidence
             import re
-            confidence_match = re.search(r"(?:ВПЕВНЕНІСТЬ|confidence)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE)
+            confidence_match = re.search(r"(?:CONFIDENCE|ВПЕВНЕНІСТЬ)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE)
             confidence = float(confidence_match.group(1)) if confidence_match else (0.8 if verified else 0.2)
             if confidence > 1.0:
                 confidence /= 100.0
 
             # Extract Ukrainian reasoning
-            reasoning_match = re.search(r"ОБҐРУНТУВАННЯ[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
+            reasoning_match = re.search(r"(?:REASONING|ОБҐРУНТУВАННЯ)[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
             ukrainian_reasoning = reasoning_match.group(1).strip() if reasoning_match else analysis_text
 
             # Extract issues
-            issues_match = re.search(r"ПРОБЛЕМИ[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
+            issues_match = re.search(r"(?:ISSUES|ПРОБЛЕМИ)[:\s]*(.*?)(?=\n- \*\*|\Z)", analysis_text, re.DOTALL | re.IGNORECASE)
             issues_text = issues_match.group(1).strip() if issues_match else ("Verification criteria not met" if not verified else "")
             
-            issues = [i.strip() for i in issues_text.split("\n") if i.strip() and i.strip() != "Не виявлено"]
+            issues = [i.strip() for i in issues_text.split("\n") if i.strip() and i.strip() not in ["None", "Не виявлено"]]
             if not verified and not issues:
-                issues.append("Критерії верифікації не виконані")
+                issues.append("Verification criteria not met")
 
             return {
                 "verified": verified,
