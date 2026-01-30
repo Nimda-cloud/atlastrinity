@@ -413,7 +413,7 @@ body {
   border-top: none;
 }
 
-/* Scrollbar */
+/* Scrollbar - Auto-hide with fade effect */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -424,13 +424,23 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 163, 255, 0.15);
+  background: transparent;
   border-radius: 3px;
-  transition: background 0.2s ease;
+  transition: background 0.3s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
+/* Show scrollbar on container hover */
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 163, 255, 0.15);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 163, 255, 0.4);
+}
+
+/* During active scrolling - stronger visibility */
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 163, 255, 0.5);
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -441,7 +451,7 @@ body {
 
 .app-container {
   display: grid;
-  grid-template-columns: 350px 1fr 350px;
+  grid-template-columns: 388px 1fr 388px;
   grid-template-rows: 1fr auto;
   height: 100vh;
   padding: 32px 20px 12px 20px;
@@ -623,6 +633,23 @@ body {
   font-weight: bold;
 }
 
+/* Overflow Utilities - Critical for scrolling */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.overflow-x-hidden {
+  overflow-x: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
 /* Auto-expanding Command Line Styles */
 .command-line-container {
   display: flex;
@@ -646,7 +673,7 @@ body {
   position: fixed;
   right: 20px;
   bottom: 32px;
-  width: calc(350px - 20px);
+  width: calc(388px - 20px);
   max-width: calc(100vw - 40px);
   z-index: 100;
   box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.4);
@@ -671,7 +698,7 @@ body {
   position: fixed;
   right: 20px;
   bottom: 0;
-  width: calc(350px - 20px);
+  width: calc(388px - 20px);
   height: 60px;
   z-index: 99;
   pointer-events: auto;
