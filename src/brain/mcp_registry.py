@@ -26,6 +26,7 @@ SDLC_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "sdlc_protocol.txt")
 TASK_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "task_protocol.txt")
 DATA_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "data_protocol.txt")
 SYSTEM_MASTERY_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "system_mastery_protocol.txt")
+HACKING_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "hacking_sysadmin_protocol.md")
 
 # Global variables to store loaded data
 SERVER_CATALOG: dict[str, dict[str, Any]] = {}
@@ -38,6 +39,7 @@ SDLC_PROTOCOL: str = ""
 TASK_PROTOCOL: str = ""
 DATA_PROTOCOL: str = ""
 SYSTEM_MASTERY_PROTOCOL: str = ""
+HACKING_PROTOCOL: str = ""
 
 # Cache for frequently accessed data
 _tool_lookup_cache: dict[str, str | None] = {}  # tool_name -> server_name
@@ -57,7 +59,8 @@ def load_registry():
         SDLC_PROTOCOL, \
         TASK_PROTOCOL, \
         DATA_PROTOCOL, \
-        SYSTEM_MASTERY_PROTOCOL
+        SYSTEM_MASTERY_PROTOCOL, \
+        HACKING_PROTOCOL
 
     try:
         # Load Catalog
@@ -127,6 +130,13 @@ def load_registry():
                 SYSTEM_MASTERY_PROTOCOL = f.read()
         else:
             SYSTEM_MASTERY_PROTOCOL = "System mastery protocol not found."
+
+        # Load Hacking Protocol
+        if os.path.exists(HACKING_PROTOCOL_PATH):
+            with open(HACKING_PROTOCOL_PATH, encoding="utf-8") as f:
+                HACKING_PROTOCOL = f.read()
+        else:
+            HACKING_PROTOCOL = "Hacking & Sysadmin protocol not found."
 
     except Exception as e:
         print(f"[Here be Dragons] Error loading MCP registry: {e}")

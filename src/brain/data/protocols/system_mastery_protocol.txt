@@ -26,9 +26,11 @@ SYSTEM MASTERY & RECURSIVE ANALYSIS (v1.0)
    - If you learn something critical about the system that isn't documented, use Vibe to update the relevant `.md` or `.txt` protocol.
    - Codify your technical "revelations" into the long-term memory via the `memory` server.
 
-5. EXTERNAL KNOWLEDGE:
-   - For library-specific questions (Pydantic, LangChain, etc.), use the `context7` tools to fetch official documentation.
-   - Always prioritize official docs over your internal training data if a version mismatch is suspected.
+5. EXTERNAL KNOWLEDGE (CONTEXT7 SUPREMACY):
+   - For library-specific questions (Pydantic, LangChain, etc.), you MUST use the `context7` tools (`c7_search`, `c7_query`) to fetch official documentation.
+   - **PREREQUISITE RULE**: If a task involves a library not in your immediate local context, the FIRST step of the plan MUST be a `c7_query` for its documentation.
+   - Always prioritize official docs from `context7` over your internal training data if a version mismatch is suspected.
+   - For code generation (Vibe), include library documentation as context to ensure correct syntax.
 
 6. VERIFICATION STANDARDS (GRISHA):
    - **MANDATORY VISION**: If a task touches the GUI (Browser, App Install, System Settings), you MUST use Vision tools (screenshot, analyze_screen). Blind verification is FORBIDDEN.
