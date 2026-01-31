@@ -34,6 +34,7 @@ from src.brain.prompts.grisha import (
     GRISHA_LOGICAL_VERDICT,
     GRISHA_PLAN_VERIFICATION_PROMPT,
     GRISHA_VERIFICATION_GOAL_ANALYSIS,
+    GRISHA_FIX_PLAN_PROMPT,
 )
 
 
@@ -47,6 +48,7 @@ class VerificationResult:
     description: str
     issues: list
     voice_message: str = ""
+    fixed_plan: Any = None
     timestamp: datetime | None = None
     screenshot_analyzed: bool = False
 
@@ -805,6 +807,7 @@ class Grisha(BaseAgent):
         self,
         plan: Any,
         user_request: str,
+        fix_if_rejected: bool = False,
     ) -> VerificationResult:
         """Verifies the entire execution plan using SEQUENTIAL THINKING SIMULATION.
 
@@ -936,6 +939,34 @@ class Grisha(BaseAgent):
             else:
                 voice_msg = f"План потребує доопрацювання. {summary_ukrainian}"
 
+            fixed_plan = None
+            if not approved and fix_if_rejected:
+                logger.info("[GRISHA] Falling back to Architecture Override. Re-constructing plan...")
+                
+                fix_query = GRISHA_FIX_PLAN_PROMPT.format(
+                    user_request=user_request,
+                    failed_plan_text=plan_steps_text,
+                    audit_feedback=feedback_to_atlas
+                )
+                
+                fix_result = await self.use_sequential_thinking(fix_query, total_thoughts=3)
+                if fix_result.get("success"):
+                    try:
+                        # Extract JSON from thinking block if model wrapped it in markdown
+                        raw_json = fix_result.get("analysis", "")
+                        if "```json" in raw_json:
+                            raw_json = raw_json.split("```json")[1].split("```")[0].strip()
+                        elif "```" in raw_json:
+                            raw_json = raw_json.split("```")[1].split("```")[0].strip()
+                        
+                        plan_data = json.loads(raw_json)
+                        # We need TaskPlan class for orchestrator
+                        from src.brain.agents.atlas import TaskPlan
+                        fixed_plan = TaskPlan(**plan_data)
+                        logger.info("[GRISHA] Successfully reconstructed plan via Architect Override.")
+                    except Exception as e:
+                        logger.error(f"[GRISHA] Failed to parse reconstructed plan: {e}")
+
             return VerificationResult(
                 step_id="plan_init",
                 verified=approved,
@@ -943,6 +974,7 @@ class Grisha(BaseAgent):
                 description=f"SIMULATION REPORT:\n{feedback_to_atlas or 'Plan is sound.'}",
                 issues=issues,
                 voice_message=voice_msg,
+                fixed_plan=fixed_plan,
             )
 
         except Exception as e:
