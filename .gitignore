@@ -24,6 +24,7 @@ trinity.db
 *.pyo
 *.egg-info/
 .eggs/
+requirements.txt.filtered
 
 # Logs
 logs/
