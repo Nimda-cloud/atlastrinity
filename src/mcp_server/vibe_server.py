@@ -332,7 +332,7 @@ def resolve_vibe_binary() -> str | None:
     # Search PATH
     found = shutil.which(VIBE_BINARY)
     if found:
-        return found
+        return cast(str, found)
 
     logger.warning(f"Vibe binary '{VIBE_BINARY}' not found")
     return None
