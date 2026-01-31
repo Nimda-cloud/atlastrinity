@@ -427,15 +427,19 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
 
     @staticmethod
     def atlas_simulation_prompt(task_text: str, memory_context: str) -> str:
-        return f"""Think deeply as a Strategic Architect about: {task_text}
+        return f"""TASK: STRATEGIC ARCHITECTURE SIMULATION (DRY-RUN)
+        Objective: {task_text}
+        
         {memory_context}
 
-        Analyze:
-        1. Underlying logic of the task.
-        2. Sequence of apps/tools needed.
-        3. Potential technical barriers on macOS.
+        SIMULATION DOCTRINE:
+        You must mentally execute the task before planning.
+        1. **PATHWAY ANALYSIS**: Identify every app, API, and tool required. 
+        2. **DATA DEPENDENCY**: For every step, ask: "Do I have the IPs, tokens, or file paths?" If Step 3 needs an IP found in Step 1, highlight this chain.
+        3. **BOTTLENECK IDENTIFICATION**: Find macOS-specific barriers (permissions, SIP, hardware limits).
+        4. **SEQUENTIAL LOGIC**: Ensure the plan isn't a list of isolated tasks, but a continuous flow.
 
-        Respond in English with a technical strategy.
+        OUTPUT: Provide a technical strategy in English, detailing the prerequisites for each phase.
         """
 
     @staticmethod

@@ -827,21 +827,23 @@ Standalone Query:"""
         simulation_prompt = AgentPrompts.atlas_simulation_prompt(task_text, memory_context)
 
         try:
-            sim_resp = await self.llm.ainvoke(
-                [
-                    SystemMessage(
-                        content="You are a Strategic Architect. Think technically and deeply in English.",
-                    ),
-                    HumanMessage(content=simulation_prompt),
-                ],
+            # Mandate Deep Reasoning for the Strategic Simulation
+            reasoning = await self.use_sequential_thinking(
+                simulation_prompt,
+                total_thoughts=3,  # Deeper dry-run
+                capabilities="Full system access (read), memory, and strategic logic."
             )
-            simulation_result = cast(
-                "str",
-                sim_resp.content if hasattr(sim_resp, "content") else str(sim_resp),
-            )
+            
+            if reasoning.get("success"):
+                simulation_result = reasoning.get("analysis", "Strategy simulation complete.")
+                logger.info("[ATLAS] Deep Strategy Simulation successful.")
+            else:
+                logger.warning(f"[ATLAS] Deep Thinking failed: {reasoning.get('error')}")
+                simulation_result = "Standard execution strategy fallback."
+                
         except Exception as e:
-            logger.warning(f"[ATLAS] Deep Thinking failed: {e}")
-            simulation_result = "Standard execution strategy."
+            logger.warning(f"[ATLAS] Deep Thinking process crashed: {e}")
+            simulation_result = "Strategy formulation error. Proceeding with heuristic fallback."
 
         # 2. PLAN FORMULATION
         intent = enriched_request.get("intent", "task")
