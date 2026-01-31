@@ -599,7 +599,8 @@ class Grisha(BaseAgent):
             step_action=step_action,
             expected_result=expected_result,
             results_summary=results_summary,
-            goal_analysis=goal_analysis,
+            verification_purpose=goal_analysis.get("verification_purpose", "Unknown"),
+            success_criteria=goal_analysis.get("success_criteria", "Unknown"),
             goal_context=goal_context,
         )
 
