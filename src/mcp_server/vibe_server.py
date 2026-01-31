@@ -98,10 +98,10 @@ logger.addHandler(sh)
 try:
     from .config_loader import CONFIG_ROOT, PROJECT_ROOT, get_config_value
 
-    VIBE_BINARY = get_config_value("mcp.vibe", "binary", "vibe")
+    VIBE_BINARY: str = get_config_value("mcp.vibe", "binary", "vibe")
     # Timeout is now controlled by vibe_config.toml (eff_timeout logic)
-    DEFAULT_TIMEOUT_S = 600.0
-    MAX_OUTPUT_CHARS = int(get_config_value("mcp.vibe", "max_output_chars", 500000))
+    DEFAULT_TIMEOUT_S: float = 600.0
+    MAX_OUTPUT_CHARS: int = int(get_config_value("mcp.vibe", "max_output_chars", 500000))
     VIBE_WORKSPACE = get_config_value("mcp.vibe", "workspace", str(CONFIG_ROOT / "vibe_workspace"))
     VIBE_CONFIG_FILE = get_config_value("mcp.vibe", "config_file", None)
     AGENT_MODEL_OVERRIDE = get_config_value("agents.tetyana", "model", None)
@@ -327,12 +327,12 @@ def resolve_vibe_binary() -> str | None:
 
     # Try absolute path from config
     if os.path.isabs(VIBE_BINARY) and os.path.exists(VIBE_BINARY):
-        return cast(str, VIBE_BINARY)
+        return VIBE_BINARY
 
     # Search PATH
     found = shutil.which(VIBE_BINARY)
     if found:
-        return cast(str, found)
+        return found
 
     logger.warning(f"Vibe binary '{VIBE_BINARY}' not found")
     return None
