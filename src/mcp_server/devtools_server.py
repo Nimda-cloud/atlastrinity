@@ -430,6 +430,81 @@ def mcp_inspector_get_schema(server_name: str, tool_name: str) -> dict[str, Any]
 
 
 @server.tool()
+def devtools_run_mcp_sandbox(
+    server_name: str | None = None,
+    all_servers: bool = False,
+    chain_length: int = 1,
+    autofix: bool = False,
+) -> dict[str, Any]:
+    """Run MCP sandbox tests with LLM-generated realistic scenarios.
+    
+    This tool tests ALL MCP tools (including destructive ones) in a safe
+    isolated sandbox environment. It generates realistic test scenarios
+    using LLM and can chain multiple tools together for natural testing flows.
+    
+    Args:
+        server_name: Specific server to test (e.g., 'filesystem', 'memory')
+        all_servers: Test all enabled MCP servers
+        chain_length: Number of tools to chain in each scenario (1-5)
+        autofix: Automatically attempt to fix failures via Vibe MCP
+    
+    Returns:
+        Dict with test results including passed/failed counts and details.
+    """
+    script_path = PROJECT_ROOT / "scripts" / "mcp_sandbox.py"
+    
+    if not script_path.exists():
+        return {"error": f"Sandbox script not found at {script_path}"}
+    
+    # Build command
+    cmd = [str(VENV_PYTHON), str(script_path), "--json"]
+    
+    if server_name:
+        cmd.extend(["--server", server_name])
+    elif all_servers:
+        cmd.append("--all")
+    else:
+        return {"error": "Must specify either server_name or all_servers=True"}
+    
+    if chain_length > 1:
+        cmd.extend(["--chain", str(min(5, max(1, chain_length)))])
+    
+    if autofix:
+        cmd.append("--autofix")
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minute timeout for full test
+            check=False,
+        )
+        
+        stdout = result.stdout.strip()
+        if not stdout:
+            return {
+                "error": "Sandbox returned empty output",
+                "stderr": result.stderr,
+                "returncode": result.returncode,
+            }
+        
+        try:
+            data = json.loads(stdout)
+            return cast(dict[str, Any], data)
+        except json.JSONDecodeError:
+            return {
+                "error": "Failed to parse sandbox JSON output",
+                "raw_output": stdout[:500],
+                "stderr": result.stderr,
+            }
+    
+    except subprocess.TimeoutExpired:
+        return {"error": "Sandbox test timed out (>5 minutes)"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@server.tool()
 def devtools_validate_config() -> dict[str, Any]:
     """Validate the syntax and basic structure of the local MCP configuration file."""
     config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"

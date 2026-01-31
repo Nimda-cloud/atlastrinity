@@ -1639,5 +1639,17 @@
       "tool_name": "str"
     },
     "description": "Get the JSON input schema for a specific tool on an MCP server."
+  },
+  "devtools_run_mcp_sandbox": {
+    "server": "devtools",
+    "required": [],
+    "optional": ["server_name", "all_servers", "chain_length", "autofix"],
+    "types": {
+      "server_name": "str",
+      "all_servers": "bool",
+      "chain_length": "int",
+      "autofix": "bool"
+    },
+    "description": "Run MCP sandbox tests with LLM-generated scenarios. Tests ALL tools (including destructive) in safe isolation."
   }
 }

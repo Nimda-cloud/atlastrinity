@@ -189,6 +189,191 @@ def analyze_server(server_name: str, tool_schemas: dict, verbose: bool = False) 
     return report
 
 
+async def live_verify_tool(
+    server_name: str,
+    tool_name: str,
+    tool_schema: dict,
+    tool_description: str,
+) -> dict:
+    """Use LLM to generate realistic arguments and test the tool.
+    
+    This is the 'живе тестування' - the LLM reasons about what arguments
+    to use, executes the tool, and analyzes whether the result is correct.
+    """
+    from providers.copilot import CopilotLLM
+    
+    result = {
+        "tool": tool_name,
+        "status": "unknown",
+        "llm_reasoning": "",
+        "generated_args": {},
+        "tool_output": None,
+        "llm_verdict": "",
+    }
+    
+    # Build prompt for LLM to generate test arguments
+    schema_json = json.dumps(tool_schema, indent=2, ensure_ascii=False)
+    
+    generate_prompt = f"""You are testing MCP tool '{tool_name}' on server '{server_name}'.
+
+Tool description: {tool_description}
+
+Tool input schema:
+{schema_json}
+
+Your task:
+1. Generate REALISTIC test arguments that will work on a macOS system.
+2. Use safe, read-only values where possible (e.g., existing paths like ~/.zshrc or /tmp).
+3. Return ONLY valid JSON object with the arguments. No explanation.
+
+Example for read_file: {{"path": "/Users/dev/.zshrc"}}
+Example for list_directory: {{"path": "/tmp"}}
+
+Generate arguments for '{tool_name}':"""
+
+    try:
+        llm = CopilotLLM(model_name="gpt-4.1")
+        
+        # Step 1: Generate arguments
+        gen_response = await llm.ainvoke(generate_prompt)
+        gen_text = gen_response.content if hasattr(gen_response, 'content') else str(gen_response)
+        
+        result["llm_reasoning"] = f"Generated args: {str(gen_text)[:200]}"
+        
+        # Parse generated arguments
+        try:
+            # Clean up response - extract JSON
+            if isinstance(gen_text, list):
+                gen_text = gen_text[0] if gen_text else ""
+            gen_text = str(gen_text).strip()
+            if gen_text.startswith("```"):
+                gen_text = gen_text.split("```")[1]
+                if gen_text.startswith("json"):
+                    gen_text = gen_text[4:]
+            generated_args = json.loads(gen_text.strip())
+            result["generated_args"] = generated_args
+        except json.JSONDecodeError:
+            result["status"] = "parse_error"
+            result["llm_verdict"] = f"Could not parse LLM response as JSON: {gen_text[:100]}"
+            return result
+        
+        # Step 2: Call the tool via inspector
+        extra_args = ["--tool-name", tool_name]
+        for key, value in generated_args.items():
+            if isinstance(value, (dict, list)):
+                extra_args.extend(["--tool-arg", f"{key}={json.dumps(value)}"])
+            else:
+                extra_args.extend(["--tool-arg", f"{key}={value}"])
+        
+        call_result = run_inspector_cmd(server_name, "tools/call", extra_args)
+        result["tool_output"] = call_result
+        
+        if call_result.get("error"):
+            result["status"] = "call_error"
+            result["llm_verdict"] = f"Tool call failed: {call_result['error']}"
+            return result
+        
+        # Step 3: LLM analyzes if result is valid
+        tool_output_str = json.dumps(call_result, indent=2, ensure_ascii=False)[:1000]
+        
+        analyze_prompt = f"""You tested MCP tool '{tool_name}' with args: {json.dumps(generated_args)}
+
+Tool output:
+{tool_output_str}
+
+Analyze:
+1. Did the tool execute successfully (no errors)?
+2. Is the output reasonable for the given arguments?
+3. Any warnings or issues?
+
+Respond with ONE word: PASS or FAIL, followed by a brief explanation (max 50 words)."""
+
+        analyze_response = await llm.ainvoke(analyze_prompt)
+        verdict = analyze_response.content if hasattr(analyze_response, 'content') else str(analyze_response)
+        
+        if isinstance(verdict, list):
+            verdict = verdict[0] if verdict else ""
+        verdict = str(verdict)
+        
+        result["llm_verdict"] = verdict.strip()
+        result["status"] = "pass" if verdict.strip().upper().startswith("PASS") else "fail"
+        
+        return result
+        
+    except Exception as e:
+        result["status"] = "exception"
+        result["llm_verdict"] = f"Exception during live test: {str(e)[:100]}"
+        return result
+
+
+async def live_verify_server(server_name: str, max_tools: int = 5) -> dict:
+    """Perform LLM-driven live verification of a server's tools.
+    
+    Args:
+        server_name: Name of the MCP server to test
+        max_tools: Maximum number of tools to test (to limit API calls)
+    
+    Returns:
+        Dict with server name, tool results, and summary
+    """
+    report = {
+        "server": server_name,
+        "mode": "live_verification",
+        "tools_tested": 0,
+        "passed": 0,
+        "failed": 0,
+        "results": [],
+        "timestamp": datetime.now().isoformat(),
+    }
+    
+    # Get tools list
+    tools_result = run_inspector_cmd(server_name, "tools/list")
+    if tools_result.get("error"):
+        report["error"] = tools_result["error"]
+        return report
+    
+    tools_data = tools_result.get("data", {})
+    tools_list = tools_data.get("tools", tools_data) if isinstance(tools_data, dict) else tools_data
+    
+    if not isinstance(tools_list, list):
+        report["error"] = "Could not parse tools list"
+        return report
+    
+    # Filter to read-only tools for safety
+    safe_tools = []
+    for tool in tools_list:
+        if isinstance(tool, dict):
+            annotations = tool.get("annotations", {})
+            # Prefer read-only tools
+            if annotations.get("readOnlyHint", False):
+                safe_tools.insert(0, tool)
+            else:
+                safe_tools.append(tool)
+    
+    # Test up to max_tools
+    tools_to_test = safe_tools[:max_tools]
+    
+    for tool in tools_to_test:
+        tool_name = tool.get("name", "unknown")
+        tool_desc = tool.get("description", "")
+        tool_schema = tool.get("inputSchema", {})
+        
+        print(f"    {Colors.DIM}Testing {tool_name}...{Colors.ENDC}", end=" ", flush=True)
+        
+        test_result = await live_verify_tool(server_name, tool_name, tool_schema, tool_desc)
+        report["results"].append(test_result)
+        report["tools_tested"] += 1
+        
+        if test_result["status"] == "pass":
+            report["passed"] += 1
+            print(f"{Colors.GREEN}PASS{Colors.ENDC}")
+        else:
+            report["failed"] += 1
+            print(f"{Colors.RED}FAIL{Colors.ENDC} - {test_result['llm_verdict'][:50]}")
+    
+    return report
+
+
 async def auto_fix_issues(issues: list[dict]) -> dict:
     """Attempt to auto-fix issues using Vibe MCP."""
     from brain.mcp_manager import mcp_manager
@@ -265,12 +450,56 @@ def print_human_report(reports: list[dict], total_time: float):
     print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
 
 
+def print_live_report(reports: list[dict], total_time: float):
+    """Print human-readable live verification report."""
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  🧪 MCP Live Verification Report (LLM-driven){Colors.ENDC}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
+    
+    total_passed = sum(r.get("passed", 0) for r in reports)
+    total_failed = sum(r.get("failed", 0) for r in reports)
+    total_tested = sum(r.get("tools_tested", 0) for r in reports)
+    
+    for report in reports:
+        server = report["server"]
+        passed = report.get("passed", 0)
+        failed = report.get("failed", 0)
+        tested = report.get("tools_tested", 0)
+        
+        if failed == 0 and tested > 0:
+            icon = f"{Colors.GREEN}✓{Colors.ENDC}"
+        elif passed > failed:
+            icon = f"{Colors.YELLOW}⚠{Colors.ENDC}"
+        else:
+            icon = f"{Colors.RED}✗{Colors.ENDC}"
+        
+        print(f"  {icon} {server:<22} Tested:{tested:>3}  {Colors.GREEN}Pass:{passed}{Colors.ENDC}  {Colors.RED}Fail:{failed}{Colors.ENDC}")
+        
+        # Show individual results
+        for result in report.get("results", []):
+            tool = result.get("tool", "?")
+            status = result.get("status", "?")
+            verdict = result.get("llm_verdict", "")[:60]
+            
+            if status == "pass":
+                print(f"      {Colors.GREEN}✓ {tool}{Colors.ENDC}")
+            else:
+                print(f"      {Colors.RED}✗ {tool}: {verdict}{Colors.ENDC}")
+    
+    print(f"\n  {'-' * 66}")
+    print(f"  {Colors.BOLD}Total:{Colors.ENDC} {total_tested} tools tested, {Colors.GREEN}{total_passed} passed{Colors.ENDC}, {Colors.RED}{total_failed} failed{Colors.ENDC}")
+    print(f"  {Colors.BOLD}Analysis time:{Colors.ENDC} {total_time:.1f}s")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="MCP Self-Analysis Tool")
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
     parser.add_argument("--autofix", action="store_true", help="Attempt auto-fix via Vibe MCP")
     parser.add_argument("--server", type=str, help="Analyze specific server only")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--live", action="store_true", help="LLM-driven live verification (tests each tool with generated args)")
+    parser.add_argument("--max-tools", type=int, default=5, help="Max tools to test per server in --live mode (default: 5)")
     args = parser.parse_args()
     
     import time
@@ -298,7 +527,38 @@ def main():
         if not name.startswith("_") and not cfg.get("disabled", False)
     ]
     
-    # Run analysis
+    # Live verification mode
+    if args.live:
+        print(f"{Colors.BOLD}{Colors.CYAN}🧪 Starting LLM-driven live verification...{Colors.ENDC}\n")
+        
+        async def run_live():
+            reports = []
+            for server_name in active_servers:
+                print(f"{Colors.BOLD}▶ {server_name}{Colors.ENDC}")
+                report = await live_verify_server(server_name, max_tools=args.max_tools)
+                reports.append(report)
+            return reports
+        
+        reports = asyncio.run(run_live())
+        total_time = time.time() - start_time
+        
+        if args.json:
+            output = {
+                "mode": "live_verification",
+                "timestamp": datetime.now().isoformat(),
+                "analysis_time_seconds": round(total_time, 2),
+                "total_servers": len(reports),
+                "total_passed": sum(r.get("passed", 0) for r in reports),
+                "total_failed": sum(r.get("failed", 0) for r in reports),
+                "reports": reports,
+            }
+            print(json.dumps(output, indent=2))
+        else:
+            print_live_report(reports, total_time)
+        
+        return
+    
+    # Standard analysis mode
     reports = []
     for server_name in active_servers:
         if not args.json:
@@ -347,3 +607,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
