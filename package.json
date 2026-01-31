@@ -10,6 +10,8 @@
     "clean": "./scripts/clean-cache.sh",
     "clean:full": "python3 scripts/clear_experience_fixed.py",
     "clean:memory": "python3 scripts/clear_experience_fixed.py",
+    "clean:gold": "python3 scripts/clean_golden.py",
+    "backup:gold": "python3 scripts/backup_golden.py",
     "config:sync": "node scripts/sync_config_templates.js",
     "dev": "npm run clean && concurrently \"npm run dev:brain\" \"npm run dev:electron\" \"npm run dev:renderer\" --kill-others",
     "dev:electron": "tsc -p tsconfig.main.json && NODE_ENV=development electron .",

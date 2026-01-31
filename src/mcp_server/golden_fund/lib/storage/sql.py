@@ -14,7 +14,7 @@ logger = logging.getLogger("golden_fund.storage.sql")
 class SQLStorage:
     def __init__(self, db_path: Optional[Path] = None):
         if db_path is None:
-            # Default location
+            # Default location: global config directory
             config_root = Path.home() / ".config" / "atlastrinity"
             self.db_dir = config_root / "data" / "golden_fund"
             self.db_path = self.db_dir / "golden.db"

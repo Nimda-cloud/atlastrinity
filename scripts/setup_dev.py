@@ -239,6 +239,55 @@ def ensure_database():
         print_info("Переконайтесь, що aiosqlite встановлено: pip install aiosqlite")
 
 
+def verify_golden_fund():
+    """Verify Golden Fund database and restore from backup if needed."""
+    print_step("Перевірка Golden Fund (Backup & Restore)...")
+
+    # Paths
+    config_db_dir = CONFIG_ROOT / "data" / "golden_fund"
+    config_db_path = config_db_dir / "golden.db"
+    
+    backup_repo_dir = PROJECT_ROOT / "backups" / "databases" / "golden_fund"
+    backup_db_path = backup_repo_dir / "golden.db"
+
+    # Ensure config directory exists
+    config_db_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. Restore from backup if fresh install or missing
+    if not config_db_path.exists():
+        if backup_db_path.exists():
+            print_info(f"Відновлення Golden Fund з бекапу: {backup_db_path} -> {config_db_path}")
+            try:
+                shutil.copy2(backup_db_path, config_db_path)
+                print_success("Базу даних відновлено з репозиторію")
+            except Exception as e:
+                print_error(f"Не вдалося відновити базу даних: {e}")
+        else:
+            print_info("Бекап не знайдено. Буде створено нову базу даних.")
+    
+    # 2. Check Tables (Verify Integrity)
+    import sqlite3
+    try:
+        # We can't use the SQLStorage class directly easily here without import setup, so raw check
+        with sqlite3.connect(config_db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = [row[0] for row in cursor.fetchall()]
+
+            required_tables = ["datasets_metadata"]
+            missing = [t for t in required_tables if t not in tables]
+
+            if missing:
+                print_warning(f"Відсутні таблиці в Golden Fund: {missing}")
+                # Ideally we would trigger re-init here, but the server handles that on startup
+                print_info("Сервер Golden Fund створить необхідні таблиці при запуску.")
+            else:
+                print_success(f"Golden Fund перевірено: {len(tables)} таблиць знайдено")
+                
+    except Exception as e:
+        print_warning(f"Не вдалося перевірити структуру Golden Fund: {e}")
+
+
 def _brew_formula_installed(formula: str) -> bool:
     rc = subprocess.run(["brew", "list", "--formula", formula], check=False, capture_output=True)
     return rc.returncode == 0

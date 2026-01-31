@@ -137,7 +137,7 @@ def clear_chroma_files():
 
     chroma_paths = [
         CONFIG_ROOT / "memory" / "chroma",
-        project_root / "data" / "golden_fund" / "chroma_db",
+        # project_root / "data" / "golden_fund" / "chroma_db", # Excluded: managed by clean:gold
     ]
 
     for chroma_path in chroma_paths:
