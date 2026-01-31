@@ -862,24 +862,49 @@ class Grisha(BaseAgent):
                 if len(parts) > 1:
                     feedback_to_atlas = parts[1].split("SUMMARY_UKRAINIAN:")[0].strip()
 
-            # Merge Gap Analysis with Feedback
-            if gap_analysis and gap_analysis not in feedback_to_atlas:
-                feedback_to_atlas = f"STRATEGIC GAP ANALYSIS:\n{gap_analysis}\n\nINSTRUCTIONS:\n{feedback_to_atlas}"
+            established_goal = ""
+            if "ESTABLISHED GOAL:" in analysis_text:
+                parts = analysis_text.split("ESTABLISHED GOAL:")
+                if len(parts) > 1:
+                    established_goal = parts[1].split("SIMULATION LOG")[0].strip()
+
+            core_problems = ""
+            if "CORE PROBLEMS:" in analysis_text:
+                parts = analysis_text.split("CORE PROBLEMS:")
+                if len(parts) > 1:
+                    core_problems = parts[1].split("STRATEGIC GAP ANALYSIS:")[0].strip()
+
+            # Merge sections for Atlas feedback
+            atlas_feedback_parts = []
+            if established_goal:
+                atlas_feedback_parts.append(f"ESTABLISHED GOAL:\n{established_goal}")
+            if core_problems:
+                atlas_feedback_parts.append(f"CORE PROBLEMS:\n{core_problems}")
+            if gap_analysis:
+                atlas_feedback_parts.append(f"STRATEGIC GAP ANALYSIS:\n{gap_analysis}")
+            if feedback_to_atlas:
+                atlas_feedback_parts.append(f"INSTRUCTIONS:\n{feedback_to_atlas}")
+            
+            feedback_to_atlas = "\n\n".join(atlas_feedback_parts)
 
             summary_ukrainian = ""
             if "SUMMARY_UKRAINIAN:" in analysis_text:
                 summary_ukrainian = analysis_text.split("SUMMARY_UKRAINIAN:")[-1].strip()
             
             issues = []
-            if "SIMULATION LOG" in analysis_text:
+            if "CORE PROBLEMS:" in analysis_text:
+                # Use Core Problems as the primary source of issues for Atlas and Orchestrator
+                issues_block = core_problems
+                issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+            elif "SIMULATION LOG" in analysis_text:
                 parts = analysis_text.split("SIMULATION LOG")
                 if len(parts) > 1:
-                    issues_block = parts[1].split("FEEDBACK TO ATLAS:")[0].strip()
+                    issues_block = parts[1].split("CORE PROBLEMS:")[0].strip()
                     raw_issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
                     
                     # INTELLIGENT SUMMARIZATION: If more than 3 cascading failures, collapse them
-                    root_blockers = [i for i in raw_issues if "Cascading Failure" not in i]
-                    cascading = [i for i in raw_issues if "Cascading Failure" in i]
+                    root_blockers = [i for i in raw_issues if "Cascading Failure" not in i and "Blocked by" not in i]
+                    cascading = [i for i in raw_issues if "Cascading Failure" in i or "Blocked by" in i]
                     
                     issues = root_blockers
                     if len(cascading) > 3:
@@ -896,12 +921,9 @@ class Grisha(BaseAgent):
             )
             
             # If rejected or has feedback to atlas, we treat it as a FAILURE unless Oleg overrides
-            # (But even with Oleg, if there's feedback to Atlas, we want Atlas to fix it)
             approved = is_approved and not is_rejected
 
             if oleg_mentioned and not approved:
-                # We only override if it's NOT a technical blocker found in the simulation
-                # (Model will indicate this in its feedback/issues)
                 if not feedback_to_atlas and not issues:
                     logger.info("[GRISHA] Policy rejection. Overriding for Creator.")
                     approved = True
@@ -912,13 +934,13 @@ class Grisha(BaseAgent):
             if approved:
                 voice_msg = "План схвалено. Симуляція успішна."
             else:
-                voice_msg = f"План потребує доопрацювання. {summary_ukrainian[:100]}"
+                voice_msg = f"План потребує доопрацювання. {summary_ukrainian}"
 
             return VerificationResult(
                 step_id="plan_init",
                 verified=approved,
                 confidence=1.0 if (approved and oleg_mentioned) else 0.8,
-                description=f"SIMULATION REPORT: {feedback_to_atlas or 'Plan is sound.'}",
+                description=f"SIMULATION REPORT:\n{feedback_to_atlas or 'Plan is sound.'}",
                 issues=issues,
                 voice_message=voice_msg,
             )

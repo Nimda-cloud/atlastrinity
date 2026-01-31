@@ -116,6 +116,7 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         USER REQUEST: {user_request}
 
         PROPOSED PLAN:
+Proposed plan from Atlas is:
         {plan_steps_text}
 
         YOUR MISSION (SIMULATION DOCTRINE):
@@ -126,34 +127,38 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         Do not stop at the first blocker. Even if Step 1 is broken (Root Blocker), mentally hypothesize its success to AUDIT Step 2, 3, and so on. Your goal is to identify ALL logical flaws, missing data, and structural gaps in the ENTIRE plan during this single simulation. Provide Atlas with a complete punch-list of fixes so he doesn't have to re-plan multiple times.
 
         ANALYSIS PROTOCOL:
-        1. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
-        2. **DEPENDENCY DISCOVERY**: If data is missing, mark it as a BLOCKER.
-        3. **SEQUENTIAL CHAIN SENSITIVITY (CRITICAL)**: 
-           - **Root vs. Cascade**: Distinguish between a "Root Blocker" and a "Cascading Failure".
-           - **Conditional Viability**: Assume root blockers can be fixed via discovery and check subsequent logic.
-        4. **STRATEGIC GAP ANALYSIS (USER-CENTRIC)**: 
-           - After the dry run, ask yourself: "What did the user ULTIMATELY want to see?"
-           - "What is the primary technical bridge missing between our current state and that vision?"
-           - Provide Atlas with the 'Final Piece of the Puzzle' needed to make the plan complete.
+        1. **ESTABLISHED GOAL FORMULATION**: First, define what the user ULTIMATELY wants in technical terms.
+        2. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
+        3. **DEPENDENCY DISCOVERY**: If data is missing (e.g., no step for IP discovery, no tools check), mark it as a BLOCKER.
+        4. **COMPREHENSIVE AUDIT (MANDATORY)**: You MUST list ALL problems across all steps. Do not yield until every step is audited.
+        5. **STRATEGIC GAP ANALYSIS (USER-CENTRIC)**: 
+           - What is the primary technical bridge missing between our current state and the final vision?
 
         OUTPUT FORMAT (FINAL THOUGHT):
         
         VERDICT: [APPROVE | REJECT]
         CONFIDENCE: [0.0 - 1.0]
+
+        ESTABLISHED GOAL:
+        [Clear formulation of the end-state based on user message]
         
         SIMULATION LOG (Questions/Blockers per step):
         - [Step 1]: (Root Blocker? Or logic error?)
-        - [Step 2-N]: (Report "Cascading Failure" if blocked by previous steps. IMPORTANT: If multiple steps are blocked by the same root cause, you MAY summarize them, e.g., "[Steps 2-10]: Cascading Failure due to Step 1 blocker.")
+        - [Step 2-N]: (List ALL issues. If multiple steps are blocked by one root cause, say: "[Steps X-Y]: Blocked by Step Z missing IP.")
         ...
 
+        CORE PROBLEMS:
+        - [Problem 1]: ...
+        - [Problem 2]: ... (List EVERYTHING that needs to be fixed to reach the goal)
+
         STRATEGIC GAP ANALYSIS:
-        [Answer the questions: What does the user want? What's the missing bridge? How do we reach the finish line?]
+        [Answer: What is the missing bridge? How do we reach the finish line?]
         
         FEEDBACK TO ATLAS:
-        [Concise instruction on what steps to add or modify, in English. DO NOT repeat the Gap Analysis here, focus on actionable changes.]
+        [COMPREHENSIVE instruction on what steps to add or modify. List ALL necessary fixes here.]
         
         SUMMARY_UKRAINIAN:
-        [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal.]
+        [Detailed explanation for the user in Ukrainian. List all blockers and the path to the final goal clearly.]
         """
 
 GRISHA = {
