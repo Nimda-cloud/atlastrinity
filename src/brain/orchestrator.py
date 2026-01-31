@@ -1088,7 +1088,10 @@ class Trinity:
                         
                         if not verification_result.verified:
                             prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
-                            msg = f"{prefix}{verification_result.issues[0] if verification_result.issues else 'Невідома причина'}"
+                            
+                            # Join all issues for comprehensive feedback
+                            all_issues_str = "; ".join(verification_result.issues) if verification_result.issues else "Невідома причина"
+                            msg = f"{prefix}{all_issues_str}"
                             
                             voice_msg = verification_result.voice_message or msg
                             if attempt > 0 and voice_msg.startswith("План потребує доопрацювання."):
