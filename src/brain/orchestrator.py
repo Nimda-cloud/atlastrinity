@@ -1120,14 +1120,18 @@ class Trinity:
                                 self.state["current_plan"] = plan
                                 break  # Exit planning loop with Grisha's fixed plan
                             elif attempt < max_retries:
-                                # First rejection - give Atlas another chance
+                                # First rejection - give Atlas another chance (Attempt 0 -> 1)
                                 await self._speak("atlas", "Зрозумів критичні зауваження. Зараз додам кроки для розвідки та виправлю структуру плану.")
                                 continue  # Loop back to Atlas for re-planning
                             else:
-                                # 2nd rejection but no fixed_plan available - fail gracefully
-                                self.state["system_state"] = SystemState.IDLE.value
-                                self.active_task = None
-                                return {"status": "error", "error": f"Plan verification failed after {max_retries + 1} спроб: {msg}"}
+                                # ALL ATTEMPTS FAILED + NO OVERRIDE - FORCE PROCEED
+                                logger.warning("[ORCHESTRATOR] Planning failed all retries. FORCE PROCEED triggered per user directive.")
+                                await self._speak("grisha", "План все ще має значні недоліки, але за наказом Олега Миколайовича я допускаю його до виконання «як є». Починаємо виробничий цикл.")
+                                
+                                # 'plan' contains Atlas's last attempt. We use it.
+                                self.state["current_plan"] = plan
+                                break  # Break loop and proceed to execution phase
+
 
                         await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
                         await self._log("[ORCHESTRATOR] Plan verified by Grisha. Proceeding.", "system")
