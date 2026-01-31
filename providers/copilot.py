@@ -305,9 +305,14 @@ class CopilotLLM(BaseChatModel):
             role = "user"
             if isinstance(m, SystemMessage):
                 role = "system"
-                system_content = m.content + (
-                    "\n\n" + tool_instructions if tool_instructions else ""
-                )
+                if isinstance(m.content, str):
+                    system_content = m.content + (
+                        "\n\n" + tool_instructions if tool_instructions else ""
+                    )
+                else:
+                    system_content = str(m.content) + (
+                        "\n\n" + tool_instructions if tool_instructions else ""
+                    )
                 continue
             if isinstance(m, AIMessage):
                 role = "assistant"
@@ -366,9 +371,9 @@ class CopilotLLM(BaseChatModel):
                 new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
                 # modern PIL uses Resampling.LANCZOS
                 try:
-                    resampling = Image.Resampling.LANCZOS
+                    resampling = Image.Resampling.LANCZOS  # type: ignore
                 except AttributeError:
-                    resampling = Image.LANCZOS
+                    resampling = Image.LANCZOS  # type: ignore
                 img = img.resize(new_size, resampling)
 
             if img.mode in ("RGBA", "P"):

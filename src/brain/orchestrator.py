@@ -16,7 +16,7 @@ from langgraph.graph import END, StateGraph
 try:
     from langgraph.graph.message import add_messages
 except ImportError:
-    def add_messages(left: list, right: list) -> list:
+    def add_messages(left: Any, right: Any) -> Any:  # type: ignore
         return left + right
 
 from src.brain.agents import Atlas, Grisha, Tetyana
@@ -532,7 +532,7 @@ class Trinity:
             # Basic log format for API
             import time
 
-            entry = {
+            log_entry = {
                 "id": f"log-{len(self.state.get('logs') or [])}-{time.time()}",
                 "timestamp": time.time(),
                 "agent": source.upper(),
@@ -541,12 +541,12 @@ class Trinity:
             }
             if "logs" not in self.state:
                 self.state["logs"] = []
-            self.state["logs"].append(entry)
+            self.state["logs"].append(log_entry)
 
             # 3. Publish to Redis for real-time UI updates
             if state_manager.available:
                 try:
-                    asyncio.create_task(state_manager.publish_event("logs", entry))
+                    asyncio.create_task(state_manager.publish_event("logs", log_entry))
                 except Exception as e:
                     logger.warning(f"Failed to publish log to Redis: {e}")
 

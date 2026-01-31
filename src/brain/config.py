@@ -1,19 +1,13 @@
 import os
 import platform
 from pathlib import Path
+from typing import Any
 
 try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover
 
-    def load_dotenv(
-        dotenv_path=None,
-        stream=None,
-        verbose=False,
-        override=False,
-        interpolate=True,
-        encoding=None,
-    ):
+    def load_dotenv(*args: Any, **kwargs: Any) -> bool:
         return False
 
 
