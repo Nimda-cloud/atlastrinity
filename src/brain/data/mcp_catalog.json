@@ -285,7 +285,11 @@
       "devtools_check_mcp_health",
       "devtools_launch_inspector",
       "devtools_validate_config",
-      "devtools_update_architecture_diagrams"
+      "devtools_update_architecture_diagrams",
+      "devtools_check_security",
+      "devtools_check_complexity",
+      "devtools_check_types_python",
+      "devtools_check_types_ts"
     ],
     "when_to_use": "Validating code quality, finding errors, checking project health, and auto-updating architecture diagrams after code changes."
   },
