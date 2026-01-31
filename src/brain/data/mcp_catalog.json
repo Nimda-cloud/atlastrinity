@@ -273,10 +273,10 @@
       "MCP Server Health Check (Ping/Status)",
       "MCP Inspector Launch (Web Debugger)",
       "MCP Inspector CLI (Headless tool/resource/prompt inspection)",
+      "MCP Testing Sandbox (Isolated LLM-driven testing of ALL tools)",
       "MCP Config Validation",
       "Auto-update architecture diagrams from git diffs",
-      "Git change analysis with sequential-thinking integration",
-      "Mermaid diagram generation and export",
+      "Git change analysis and Mermaid diagram generation",
       "Security auditing (Bandit, Safety, detect-secrets)",
       "Complexity analysis (Xenon)",
       "Type checking (MyPy, tsc)"
@@ -289,6 +289,7 @@
       "devtools_check_mcp_health",
       "devtools_launch_inspector",
       "devtools_validate_config",
+      "devtools_run_mcp_sandbox",
       "devtools_update_architecture_diagrams",
       "devtools_check_security",
       "devtools_check_complexity",
@@ -302,8 +303,8 @@
       "mcp_inspector_get_prompt",
       "mcp_inspector_get_schema"
     ],
-    "when_to_use": "Validating code quality, finding errors, checking project health, auto-updating architecture diagrams, and deep MCP server inspection/testing via CLI.",
-    "priority_note": "Use mcp_inspector_* tools for headless MCP debugging and verification. These are essential for Atlas self-analysis and Vibe-based auto-repair."
+    "when_to_use": "Validating code quality, project health, auto-updating diagrams, and deep MCP server inspection/testing. Critical for agent-led system maintenance.",
+    "priority_note": "Use 'mcp_inspector_*' for discovery and 'devtools_run_mcp_sandbox' for full operational verification of MCP tools in safe isolation. Powered by CopilotLLM (Atlas/Grisha/Tetyana context)."
   },
   "golden-fund": {
     "name": "golden-fund",
