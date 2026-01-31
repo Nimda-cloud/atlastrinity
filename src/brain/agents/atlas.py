@@ -505,26 +505,15 @@ class Atlas(BaseAgent):
         messages.append(HumanMessage(content=user_request))
         return messages
 
-    async def chat(
+    async def _determine_chat_parameters(
         self,
         user_request: str,
-        history: list[Any] | None = None,
-        use_deep_persona: bool = False,
-        intent: str = "chat",
-        on_preamble: Callable[[str, str], Any] | None = None,
-        llm_instance: Any | None = None,
-    ) -> str:
-        """Omni-Knowledge Chat Mode.
-        Integrates Graph Memory, Vector Memory, and System Context for deep awareness.
-        """
-        import time
-
-        from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
-
+        history: list[Any] | None,
+        use_deep_persona: bool,
+    ) -> tuple[dict[str, Any], bool, bool, str]:
+        """Classify intent and determine persona/context requirements."""
         from ..behavior_engine import behavior_engine
-        from ..mcp_manager import mcp_manager
 
-        # Use BehaviorEngine for intent classification
         classification = behavior_engine.classify_intent(user_request, context={})
         intent = classification.get("intent", "solo_task")
         is_simple_chat = classification.get("type") == "simple_chat"
@@ -538,9 +527,7 @@ class Atlas(BaseAgent):
         if not use_deep_persona and (
             classification.get("requires_semantic_verification") or "атлас" in user_request.lower()
         ):
-            logger.info(
-                f"[ATLAS CHAT] Triggering Semantic Essence Analysis for: {user_request[:30]}..."
-            )
+            logger.info(f"[ATLAS CHAT] Triggering Semantic Essence Analysis for: {user_request[:30]}...")
             analysis = await self.analyze_request(user_request, history=history)
             if analysis.get("use_deep_persona"):
                 use_deep_persona = True
@@ -566,18 +553,15 @@ class Atlas(BaseAgent):
             resolved_query = await self._resolve_query_context(user_request, history)
             logger.info(f"[ATLAS CHAT] Resolved '{user_request}' -> '{resolved_query}'")
 
-        # 2. Parallel Data Fetching: Graph, Vector, and Tools
-        graph_context, vector_context, available_tools_info = await self._gather_context_for_chat(
-            intent, should_fetch_context, resolved_query, use_deep_persona
-        )
+        return classification, use_deep_persona, should_fetch_context, resolved_query
 
-        # D. System Context (Always fast)
-        try:
-            ctx_snapshot = shared_context.to_dict()
-            system_status = f"Project: {ctx_snapshot.get('project_root', 'Unknown')}\nVars: {ctx_snapshot.get('variables', {})}"
-        except Exception:
-            system_status = "Active."
-
+    async def _handle_chat_deep_reasoning(
+        self,
+        user_request: str,
+        is_simple_chat: bool,
+        intent: str,
+    ) -> str:
+        """Trigger deep reasoning for complex chat queries."""
         # E. DEEP THINKING: Trigger only for complex queries in the first turn
         analysis_context = ""
         is_complex = len(user_request.split()) > 7 or any(
@@ -600,6 +584,24 @@ class Atlas(BaseAgent):
             )
             if reasoning.get("success"):
                 analysis_context = f"\nDEEP ANALYSIS:\n{reasoning.get('analysis')}\n"
+        return analysis_context
+
+    def _generate_chat_system_prompt(
+        self,
+        user_request: str,
+        intent: str,
+        graph_context: str,
+        vector_context: str,
+        available_tools_info: list[dict[str, Any]],
+        use_deep_persona: bool,
+    ) -> str:
+        """Construct the core system prompt based on intent and available data."""
+        # D. System Context (Always fast)
+        try:
+            ctx_snapshot = shared_context.to_dict()
+            system_status = f"Project: {ctx_snapshot.get('project_root', 'Unknown')}\nVars: {ctx_snapshot.get('variables', {})}"
+        except Exception:
+            system_status = "Active."
 
         # 2. Generate Super Prompt
         agent_capabilities = (
@@ -631,137 +633,143 @@ class Atlas(BaseAgent):
                 agent_capabilities=agent_capabilities,
                 use_deep_persona=use_deep_persona,
             )
+        return system_prompt_text
 
-        messages = self._construct_chat_messages(
-            user_request,
-            system_prompt_text,
-            use_deep_persona,
-            history,
-            analysis_context,
-        )
+    async def _handle_chat_preamble(
+        self,
+        response: Any,
+        on_preamble: Callable[[str, str], Any] | None,
+    ) -> None:
+        """Process and speak the preamble if present in LLM response."""
+        preamble = str(response.content).strip()
+        if preamble and len(preamble) > 2:
+            logger.info(f"[ATLAS CHAT] Preamble detected: {preamble}")
+            if on_preamble:
+                if asyncio.iscoroutinefunction(on_preamble):
+                    asyncio.create_task(on_preamble("atlas", preamble))
+                elif callable(on_preamble):
+                    on_preamble("atlas", preamble)
 
-        # Ensure correct type for LLM call
-        final_messages: list[BaseMessage] = list(messages)
+    async def _process_chat_tool_calls(
+        self,
+        tool_calls: list[dict[str, Any]],
+        final_messages: list[BaseMessage],
+    ) -> bool:
+        """Execute tool calls and append results to messages."""
+        from langchain_core.messages import ToolMessage
 
-        # 3. Select LLM instance based on deep persona mode
-        # Deep persona uses llm_deep with larger max_tokens (8000 vs 2000)
-        base_llm = self.llm_deep if use_deep_persona else self.llm
+        from ..mcp_manager import mcp_manager
+        tool_executed = False
+        for tool_call in tool_calls:
+            logical_name = tool_call.get("name")
+            if not logical_name:
+                continue
+            tool_executed = True
+            logger.info(f"[ATLAS CHAT] Executing: {logical_name}")
+            try:
+                result = await mcp_manager.dispatch_tool(logical_name, tool_call.get("args", {}))
+            except Exception as err:
+                logger.error(f"[ATLAS CHAT] Tool call failed: {err}")
+                result = {"error": str(err)}
+            final_messages.append(ToolMessage(content=str(result)[:5000], tool_call_id=tool_call.get("id", "chat_call")))
+        return tool_executed
 
-        # 4. Tool Binding (Only if tools available)
-        llm_instance = (
-            base_llm.bind_tools(available_tools_info) if available_tools_info else base_llm
-        )
+    def _apply_chat_audit_logic(
+        self,
+        intent: str,
+        tool_executed: bool,
+        current_turn: int,
+        final_messages: list[BaseMessage],
+    ) -> None:
+        """Apply verification logic for solo tasks after tool execution."""
+        from langchain_core.messages import SystemMessage
+        if intent != "solo_task":
+            return
+        if tool_executed:
+            final_messages.append(SystemMessage(content="INTERNAL AUDIT: Review retrieved data. Does it answer fully? If missing (e.g. snippet too short), use more tools. Don't stop until complete."))
+        elif current_turn == 0:
+            final_messages.append(SystemMessage(content="STRICT DIRECTIVE: You announced tools but did NOT call any. You MUST use tools NOW."))
 
-        MAX_CHAT_TURNS = 5
+    async def _execute_chat_turns(
+        self,
+        final_messages: list[BaseMessage],
+        llm_instance: Any,
+        user_request: str,
+        intent: str,
+        on_preamble: Callable[[str, str], Any] | None,
+        available_tools_info: bool,
+    ) -> str:
+        """Execute the multi-turn chat loop with tool handling and verification."""
+        from src.brain.state_manager import state_manager
         current_turn = 0
+        MAX_CHAT_TURNS = 5
 
         while current_turn < MAX_CHAT_TURNS:
             response = await llm_instance.ainvoke(final_messages)
 
-            # 4. Handle tool calls or final answer
             if not getattr(response, "tool_calls", None):
-                # This is a final textual answer or the model didn't call tools
                 await self._memorize_chat_interaction(user_request, cast("str", response.content))
                 return cast("str", response.content)
 
-            # 5. Model requested tools. Extract 'final_answer' (preamble) if present.
-            # In our protocol, the model puts immediate feedback in 'content' or 'final_answer'.
-            preamble = str(response.content).strip()
+            await self._handle_chat_preamble(response, on_preamble)
 
-            # If there's a preamble, use the callback to speak it NOW
-            if preamble and len(preamble) > 2:
-                logger.info(f"[ATLAS CHAT] Preamble detected: {preamble}")
-                if on_preamble:
-                    # Execute callback (usually Trinity._speak)
-                    if asyncio.iscoroutinefunction(on_preamble) or callable(on_preamble):
-                        if asyncio.iscoroutinefunction(on_preamble):
-                            asyncio.create_task(on_preamble("atlas", preamble))
-                        else:
-                            on_preamble("atlas", preamble)
+            if state_manager and state_manager.available:
+                asyncio.create_task(state_manager.publish_event("logs", {"source": "atlas", "type": "thinking", "content": "Analyzing data..."}))
 
-            # Emit a 'thinking' event to the UI
-            try:
-                from ..state_manager import state_manager
-
-                if state_manager and state_manager.available:
-                    asyncio.create_task(
-                        state_manager.publish_event(
-                            "logs",
-                            {
-                                "source": "atlas",
-                                "type": "thinking",
-                                "content": "Analyzing and fetching data...",
-                            },
-                        ),
-                    )
-            except Exception:
-                pass
-
-            # Add to history.
-            # DYNAMIC FILTERING: If the response has tool_calls, we might want to
-            # suppress the 'content' for the NEXT turn to prevent preamble repetition.
-            # However, for Turn 1 -> Turn 2, the model needs to see it already spoke.
-            # We add a Turn Continuity hint instead of stripping.
-            messages.append(response)
-
+            final_messages.append(response)
             if current_turn == 0:
-                messages.append(
-                    SystemMessage(
-                        content="CONTINUITY HINT: You have accessed the tools. Now, SYNTHESIZE the findings into a natural, engaging answer. Do NOT repeat 'I have found' or 'Checking'. Just tell the story of the data. End with a relevant question.",
-                    ),
-                )
+                final_messages.append(SystemMessage(content="CONTINUITY HINT: Synthesize findings. End with a question."))
 
-            # Process Tool Calls
-            tool_executed = False
-            for tool_call in response.tool_calls:
-                logical_tool_name = tool_call.get("name")
-                args = tool_call.get("args", {})
-
-                if logical_tool_name:
-                    tool_executed = True
-                    logger.info(f"[ATLAS CHAT] Executing: {logical_tool_name}")
-                    try:
-                        # Use intelligent dispatch (handles server resolution & args)
-                        result = await mcp_manager.dispatch_tool(logical_tool_name, args)
-                        logger.info(f"[ATLAS CHAT] Tool result: {str(result)[:200]}...")
-                    except Exception as tool_err:
-                        logger.error(f"[ATLAS CHAT] Tool call failed: {tool_err}")
-                        result = {"error": str(tool_err)}
-
-                    messages.append(
-                        ToolMessage(
-                            content=str(result)[:5000],
-                            tool_call_id=tool_call.get("id", "chat_call"),
-                        ),
-                    )
-
-            # ARCHITECTURAL IMPROVEMENT: VERIFICATION PHASE (Self-Audit)
-            if intent == "solo_task" and tool_executed:
-                # Add a 'Grisha-style' internal audit turn
-                messages.append(
-                    SystemMessage(
-                        content="INTERNAL AUDIT: Review the data retrieved above. Does it fully answer the Creator's request? If data is missing (e.g., snippet too short), use another tool (like fetch_url) immediately. Do NOT stop until the answer is complete. You have ONE more chance to get it right.",
-                    ),
-                )
-            elif intent == "solo_task" and not tool_executed and current_turn == 0:
-                # Model failed to call tools despite prompt instructions. Force it.
-                messages.append(
-                    SystemMessage(
-                        content="STRICT DIRECTIVE: You announced you would check data but did NOT call any tools. You MUST use a search or fetch tool NOW. An empty answer is a failure of loyalty.",
-                    ),
-                )
-
+            tool_executed = await self._process_chat_tool_calls(response.tool_calls, final_messages)
+            self._apply_chat_audit_logic(intent, tool_executed, current_turn, final_messages)
             current_turn += 1
 
-        # ARCHITECTURAL IMPROVEMENT: ESCALATION SIGNAL
-        # If we reached the turn limit and haven't satisfied the request, signal the orchestrator.
-        if intent == "solo_task":
-            logger.warning(
-                "[ATLAS] Solo research reached turn limit. Signaling escalation to Trinity flow."
-            )
+        return "Chat turn limit reached. Please refine your request."
+
+    async def chat(
+        self,
+        user_request: str,
+        history: list[Any] | None = None,
+        on_preamble: Callable[[str, str], Any] | None = None,
+        use_deep_persona: bool = False,
+        intent: str | None = None,
+    ) -> str:
+        """EntryPoint for Chat: Contextual multi-turn reasoning and interaction."""
+        # 1. Determine parameters and fetch context
+        classification, use_deep_persona_resolved, should_fetch, resolved_query = await self._determine_chat_parameters(
+            user_request, history, use_deep_persona
+        )
+        if intent is None:
+            intent = classification.get("intent", "solo_task")
+        is_simple_chat = classification.get("type") == "simple_chat"
+
+        # 2. Parallel context gathering
+        graph_ctx, vector_ctx, tools_info = await self._gather_context_for_chat(
+            intent, should_fetch, resolved_query, use_deep_persona_resolved
+        )
+
+        # 3. Handle Deep Reasoning if necessary
+        analysis_context = await self._handle_chat_deep_reasoning(user_request, is_simple_chat, intent)
+
+        # 4. Generate system prompt
+        system_prompt = self._generate_chat_system_prompt(
+            user_request, intent, graph_ctx, vector_ctx, tools_info, use_deep_persona_resolved
+        )
+
+        # 5. Build messages
+        final_messages = self._construct_chat_messages(
+            user_request, system_prompt, use_deep_persona_resolved, history, f"{graph_ctx}\n{vector_ctx}\n{analysis_context}"
+        )
+
+        # 6. Execute Turns
+        result = await self._execute_chat_turns(
+            final_messages, self.llm, user_request, intent, on_preamble, bool(tools_info)
+        )
+        if result == "__ESCALATE__":
+            logger.warning("[ATLAS] Solo research reached turn limit. Signaling escalation.")
             return "__ESCALATE__"
 
-        fallback_msg = "Я виконав кілька кроків пошуку, але мені потрібно більше часу для повного аналізу. Що саме вас цікавить найбільше?"
+        fallback_msg = "Я виконав кілька кроків пошуку, але мені потрібно більше часу. Що саме вас цікавить найбільше?"
         await self._memorize_chat_interaction(user_request, fallback_msg)
         return fallback_msg
 

@@ -241,94 +241,76 @@ Respond in JSON:
                 "goal_chain": goal_chain,
             }
 
-    async def get_grisha_feedback(self, step_id: int) -> str | None:
-        """Retrieve Grisha's detailed rejection report from notes or memory"""
-        from ..logger import logger
+    def _extract_note_content(self, notes_result: dict[str, Any]) -> str | None:
+        """Extract note content from various possible structures in notes_result."""
+        if not isinstance(notes_result, dict) or not notes_result.get("success"):
+            return None
+
+        # Try direct content field
+        note_content = notes_result.get("content") or notes_result.get("body")
+
+        # Try from notes list
+        if not note_content and notes_result.get("notes"):
+            notes = notes_result.get("notes", [])
+            if isinstance(notes, list) and len(notes) > 0:
+                first_note = notes[0]
+                if isinstance(first_note, dict):
+                    note_content = first_note.get("content") or first_note.get("body")
+                elif isinstance(first_note, str):
+                    note_content = first_note
+        return note_content
+
+    async def _fetch_feedback_from_notes(self, step_id: int) -> str | None:
+        """Attempt to retrieve feedback from macos-use notes."""
         from ..mcp_manager import mcp_manager
-
-        # Try macos-use notes first (faster)
         try:
-            result = await mcp_manager.dispatch_tool(
-                "notes_get",
-                {"name": f"Grisha Rejection Step {step_id}"},
-            )
-
-            # Normalize notes search result to a plain dict when possible
+            result = await mcp_manager.dispatch_tool("notes_get", {"name": f"Grisha Rejection Step {step_id}"})
             notes_result = None
-            try:
-                if isinstance(result, dict):
-                    notes_result = result
-                elif hasattr(result, "structuredContent") and isinstance(
-                    result.structuredContent,
-                    dict,
-                ):
-                    notes_result = result.structuredContent.get("result", {})
-                elif (
-                    hasattr(result, "content")
-                    and len(result.content) > 0
-                    and hasattr(result.content[0], "text")
-                ):
-                    import json as _json
+            if isinstance(result, dict):
+                notes_result = result
+            elif hasattr(result, "structuredContent") and isinstance(result.structuredContent, dict):
+                notes_result = result.structuredContent.get("result", {})
+            elif hasattr(result, "content") and len(result.content) > 0 and hasattr(result.content[0], "text"):
+                import json as _json
+                try:
+                    notes_result = _json.loads(result.content[0].text)
+                except Exception:
+                    pass
 
-                    try:
-                        notes_result = _json.loads(result.content[0].text)
-                    except Exception:
-                        notes_result = None
-            except Exception:
-                notes_result = None
-
-            if isinstance(notes_result, dict) and notes_result.get("success"):
-                # Extract note content from various possible structures
-                note_content = None
-
-                # Try direct content field
-                note_content = notes_result.get("content") or notes_result.get("body")
-
-                # Try from notes list
-                if not note_content and notes_result.get("notes"):
-                    notes = notes_result.get("notes", [])
-                    if isinstance(notes, list) and len(notes) > 0:
-                        first_note = notes[0]
-                        if isinstance(first_note, dict):
-                            note_content = first_note.get("content") or first_note.get("body")
-                        elif isinstance(first_note, str):
-                            note_content = first_note
-
-                if note_content:
-                    logger.info(
-                        f"[TETYANA] Retrieved Grisha's feedback from notes for step {step_id}",
-                    )
-                    return note_content
+            if notes_result:
+                content = self._extract_note_content(notes_result)
+                if content:
+                    logger.info(f"[TETYANA] Retrieved Grisha's feedback from notes for step {step_id}")
+                    return content
         except Exception as e:
             logger.warning(f"[TETYANA] Could not retrieve from notes: {e}")
+        return None
 
-        # Fallback to memory
+    async def _fetch_feedback_from_memory(self, step_id: int) -> str | None:
+        """Attempt to retrieve feedback from memory nodes."""
+        from ..mcp_manager import mcp_manager
         try:
-            result = await mcp_manager.call_tool(
-                "memory",
-                "search_nodes",
-                {"query": f"grisha_rejection_step_{step_id}"},
-            )
-
+            result = await mcp_manager.call_tool("memory", "search_nodes", {"query": f"grisha_rejection_step_{step_id}"})
             if result and hasattr(result, "content"):
                 for item in result.content:
                     if hasattr(item, "text"):
-                        logger.info(
-                            f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}",
-                        )
+                        logger.info(f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}")
                         return cast(str, item.text)
             elif isinstance(result, dict) and "entities" in result:
                 entities = result["entities"]
                 if entities and len(entities) > 0:
-                    logger.info(
-                        f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}",
-                    )
+                    logger.info(f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}")
                     return cast(str, entities[0].get("observations", [""])[0])
-
         except Exception as e:
-            logger.warning(f"[TETYANA] Could not retrieve Grisha's feedback: {e}")
-
+            logger.warning(f"[TETYANA] Could not retrieve from memory: {e}")
         return None
+
+    async def get_grisha_feedback(self, step_id: int) -> str | None:
+        """Retrieve Grisha's detailed rejection report from notes or memory"""
+        content = await self._fetch_feedback_from_notes(step_id)
+        if content:
+            return content
+        return await self._fetch_feedback_from_memory(step_id)
 
     async def _take_screenshot_for_vision(self, pid: int | None = None) -> str | None:
         """Take screenshot for Vision analysis, optionally focusing on specific app."""
@@ -687,63 +669,20 @@ IMPORTANT:
             return "execute_command"
         return None
 
-    async def _determine_tool_action(
-        self,
-        step: dict[str, Any],
-        target_server: str,
-        attempt: int,
-        grisha_feedback: str,
-        vision_result: dict[str, Any] | None,
-        provided_response: str | None,
-    ) -> tuple[dict[str, Any], dict[str, Any], StepResult | None]:
-        """Determines the tool action using reasoning or fast path.
-        Returns (tool_call, monologue, blocking_StepResult)"""
-        from langchain_core.messages import HumanMessage, SystemMessage
-
+    async def _get_detailed_server_context(self, target_server: str) -> str:
+        """Fetch detailed tool specifications for a specific server."""
         from ..context import shared_context
-        from ..logger import logger
         from ..mcp_manager import mcp_manager
-        from ..message_bus import AgentMsg, MessageType, message_bus
-        from ..prompts import AgentPrompts
 
-        # SMART GATE: Check if we can skip reasoning (FAST PATH)
-        SKIP_REASONING_TOOLS = ["filesystem", "time", "fetch"]
-
-        skip_reasoning = (
-            attempt == 1
-            and not grisha_feedback
-            and target_server in SKIP_REASONING_TOOLS
-            and step.get("tool")
-            and step.get("args")
-            and not step.get("requires_vision")
-        )
-
-        tool_call: dict[str, Any] = {}
-        monologue: dict[str, Any] = {}
-
-        if skip_reasoning:
-            # Direct execution path
-            logger.info(
-                f"[TETYANA] FAST PATH: Skipping reasoning for simple tool '{target_server}'",
-            )
-            tool_call = {
-                "name": step.get("tool"),
-                "args": step.get("args", {}),
-                "server": target_server,
-            }
-            monologue = {
-                "thought": f"Executing simple tool '{target_server}' via FAST PATH.",
-            }
-        else:
-            # Full reasoning path
-            configured_servers = mcp_manager.config.get("mcpServers", {})
-            if (
-                target_server
-                and isinstance(target_server, str)
-                and target_server in configured_servers
-                and not target_server.startswith("_")
-            ):
-                logger.info(f"[TETYANA] Dynamically inspecting server: {target_server}")
+        configured_servers = mcp_manager.config.get("mcpServers", {})
+        if (
+            target_server
+            and isinstance(target_server, str)
+            and target_server in configured_servers
+            and not target_server.startswith("_")
+        ):
+            logger.info(f"[TETYANA] Dynamically inspecting server: {target_server}")
+            try:
                 tools = await mcp_manager.list_tools(target_server)
                 import json
 
@@ -753,346 +692,274 @@ IMPORTANT:
                     desc = getattr(t, "description", "")
                     schema = getattr(t, "inputSchema", {})
                     tools_summary += f"- {name}: {desc}\n  Schema: {json.dumps(schema, ensure_ascii=False)}\n"
-            else:
-                tools_summary = getattr(
-                    shared_context,
-                    "available_tools_summary",
-                    "List available tools using list_tools if needed.",
-                )
-
-            previous_results = step.get("previous_results")
-            context_data = shared_context.to_dict()
-
-            reasoning_prompt = AgentPrompts.tetyana_reasoning_prompt(
-                str(step),
-                context_data,
-                tools_summary=tools_summary,
-                feedback=grisha_feedback,
-                previous_results=cast("list[Any]", previous_results),
-                goal_context=shared_context.get_goal_context(),
-                bus_messages=cast("list[Any]", step.get("bus_messages")),
-                full_plan=step.get("full_plan", ""),
-            )
-
-            try:
-                reasoning_resp = await self.reasoning_llm.ainvoke(
-                    [
-                        SystemMessage(
-                            content="You are a Technical Executor. Think technically in English about tools and arguments.",
-                        ),
-                        HumanMessage(content=reasoning_prompt),
-                    ],
-                )
-                monologue = self._parse_response(cast("str", reasoning_resp.content))
-                logger.info(
-                    f"[TETYANA] Thought (English): {monologue.get('thought', 'No thought')[:200]}...",
-                )
-
-                # Check for proactive help request
-                if monologue.get("question_to_atlas"):
-                    question = monologue["question_to_atlas"]
-                    logger.info(f"[TETYANA] Proactive help request to Atlas: {question}")
-
-                    msg = AgentMsg(
-                        from_agent="tetyana",
-                        to_agent="atlas",
-                        message_type=MessageType.HELP_REQUEST,
-                        payload={"question": question, "step_id": step.get("id")},
-                        step_id=step.get("id"),
-                    )
-                    await message_bus.send(msg)
-
-                    error_result = StepResult(
-                        step_id=step.get("id", self.current_step),
-                        success=False,
-                        result=f"Blocked on Atlas: {question}",
-                        voice_message=monologue.get("voice_message")
-                        or f"У мене питання до Атласу: {question}",
-                        error="proactive_help_requested",
-                        thought=monologue.get("thought"),
-                    )
-                    return {}, {}, error_result
-
-                proposed = monologue.get("proposed_action")
-                if isinstance(proposed, dict):
-                    tool_call = {
-                        "name": proposed.get("tool")
-                        or proposed.get("name")
-                        or step.get("tool")
-                        or "",
-                        "args": proposed.get("args") or {},
-                        "server": proposed.get("server") or target_server,
-                    }
-                else:
-                    tool_call = (
-                        cast(dict[str, Any], proposed)
-                        or cast(dict[str, Any], step.get("tool_call"))
-                        or {
-                            "name": step.get("tool") or "",
-                            "args": step.get("args")
-                            or {"action": step.get("action"), "path": step.get("path")},
-                        }
-                    )
-
-                if not tool_call.get("name"):
-                    inferred_name = step.get("tool") or step.get("server") or step.get("realm")
-                    if not inferred_name:
-                        inferred_name = self._infer_tool_from_action(
-                            str(step.get("action", "")),
-                        )
-                    if inferred_name:
-                        tool_call["name"] = inferred_name
-                        logger.info(
-                            f"[TETYANA] Inferred tool name from step metadata: {inferred_name}",
-                        )
-                    else:
-                        logger.warning(
-                            "[TETYANA] LLM monologue missing 'proposed_action'. Could not infer tool name.",
-                        )
-
-                # VISION OVERRIDE: If Vision found the element with high confidence, use its suggestion
-                if (
-                    vision_result
-                    and vision_result.get("found")
-                    and vision_result.get("suggested_action")
-                ):
-                    suggested = vision_result["suggested_action"]
-                    # Merge Vision's coordinates into tool_call args
-                    if suggested.get("args"):
-                        if not isinstance(tool_call.get("args"), dict):
-                            tool_call["args"] = {}
-                        # Update with Vision-provided coordinates
-                        for key in ["x", "y", "pid"]:
-                            if key in suggested["args"] and suggested["args"][key] is not None:
-                                tool_call["args"][key] = suggested["args"][key]
-                                logger.info(
-                                    f"[TETYANA] Vision override: {key}={suggested['args'][key]}",
-                                )
-                        # If Vision suggests a specific tool, consider using it
-                        if suggested.get("tool") and "click" in suggested["tool"].lower():
-                            # Remove arguments that might belong to the previous planned tool (e.g. Puppeteer)
-                            # but are incompatible with the new macos-use tool.
-                            incompatible_keys = [
-                                "url",
-                                "launchOptions",
-                                "allowDangerous",
-                                "wait_for",
-                            ]
-                            if isinstance(tool_call.get("args"), dict):
-                                for ik in incompatible_keys:
-                                    if ik in tool_call["args"]:
-                                        del tool_call["args"][ik]
-                                        logger.info(
-                                            f"[TETYANA] Vision override: removed incompatible arg '{ik}'",
-                                        )
-
-                            tool_call["name"] = suggested["tool"]
-                            tool_call["server"] = "macos-use"
-                            logger.info(f"[TETYANA] Vision override: tool={suggested['tool']}")
+                return tools_summary
             except Exception as e:
-                logger.warning(f"[TETYANA] Internal Monologue failed: {e}")
-                tool_call = {
-                    "name": step.get("tool"),
-                    "args": {"action": step.get("action"), "path": step.get("path")},
-                }
+                logger.warning(f"[TETYANA] Failed to list tools for {target_server}: {e}")
+
+        return getattr(
+            shared_context,
+            "available_tools_summary",
+            "List available tools using list_tools if needed.",
+        )
+
+    def _apply_vision_overrides(
+        self,
+        tool_call: dict[str, Any],
+        vision_result: dict[str, Any] | None,
+    ) -> None:
+        """Update tool_call with Vision-provided coordinates and overrides."""
+        if not (
+            vision_result
+            and vision_result.get("found")
+            and vision_result.get("suggested_action")
+        ):
+            return
+
+        suggested = vision_result["suggested_action"]
+        # Merge Vision's coordinates into tool_call args
+        if suggested.get("args"):
+            if not isinstance(tool_call.get("args"), dict):
+                tool_call["args"] = {}
+            # Update with Vision-provided coordinates
+            for key in ["x", "y", "pid"]:
+                val = suggested["args"].get(key)
+                if val is not None:
+                    tool_call["args"][key] = val
+                    logger.info(f"[TETYANA] Vision override: {key}={val}")
+
+            # If Vision suggests a specific tool, consider using it
+            if suggested.get("tool") and "click" in suggested["tool"].lower():
+                # Remove arguments that might belong to the previous planned tool (e.g. Puppeteer)
+                # but are incompatible with the new macos-use tool.
+                incompatible_keys = ["url", "launchOptions", "allowDangerous", "wait_for"]
+                if isinstance(tool_call.get("args"), dict):
+                    for ik in incompatible_keys:
+                        if ik in tool_call["args"]:
+                            del tool_call["args"][ik]
+                            logger.info(
+                                f"[TETYANA] Vision override: removed incompatible arg '{ik}'",
+                            )
+
+                tool_call["name"] = suggested["tool"]
+                tool_call["server"] = "macos-use"
+                logger.info(f"[TETYANA] Vision override: tool={suggested['tool']}")
+
+    async def _handle_proactive_help_request(
+        self,
+        monologue: dict[str, Any],
+        step: dict[str, Any],
+    ) -> StepResult | None:
+        """Process question to Atlas if present in monologue."""
+        from ..message_bus import AgentMsg, MessageType, message_bus
+
+        question = monologue.get("question_to_atlas")
+        if not question:
+            return None
+
+        logger.info(f"[TETYANA] Proactive help request to Atlas: {question}")
+        msg = AgentMsg(
+            from_agent="tetyana",
+            to_agent="atlas",
+            message_type=MessageType.HELP_REQUEST,
+            payload={"question": question, "step_id": step.get("id")},
+            step_id=step.get("id"),
+        )
+        await message_bus.send(msg)
+
+        return StepResult(
+            step_id=step.get("id", self.current_step),
+            success=False,
+            result=f"Blocked on Atlas: {question}",
+            voice_message=monologue.get("voice_message")
+            or f"У мене питання до Атласу: {question}",
+            error="proactive_help_requested",
+            thought=monologue.get("thought"),
+        )
+
+    async def _run_reasoning_llm(self, prompt: str) -> dict[str, Any]:
+        """Execute reasoning LLM and parse monologue."""
+        from langchain_core.messages import HumanMessage, SystemMessage
+        try:
+            resp = await self.reasoning_llm.ainvoke([
+                SystemMessage(content="You are a Technical Executor. Think technically in English about tools and arguments."),
+                HumanMessage(content=prompt),
+            ])
+            return self._parse_response(cast("str", resp.content))
+        except Exception as e:
+            logger.warning(f"[TETYANA] Internal Monologue failed: {e}")
+            return {}
+
+    def _map_proposed_to_tool_call(
+        self,
+        proposed: Any,
+        step: dict[str, Any],
+        target_server: str,
+    ) -> dict[str, Any]:
+        """Map LLM's proposed action to a canonical tool call structure."""
+        if isinstance(proposed, dict):
+            return {
+                "name": proposed.get("tool") or proposed.get("name") or step.get("tool") or "",
+                "args": proposed.get("args") or {},
+                "server": proposed.get("server") or target_server,
+            }
+
+        # Fallback to step-defined tool or inferred tool
+        base_call = cast(dict[str, Any], proposed) or cast(dict[str, Any], step.get("tool_call"))
+        if base_call:
+            return base_call
+
+        name = step.get("tool") or ""
+        args = step.get("args") or {"action": step.get("action"), "path": step.get("path")}
+        return {"name": name, "args": args}
+
+    async def _check_fast_path(self, step: dict[str, Any], target_server: str, attempt: int, grisha_feedback: str) -> tuple[dict[str, Any], dict[str, Any]] | None:
+        """Check if the tool qualifies for fast-path execution (skipping reasoning)."""
+        SKIP_REASONING_TOOLS = ["filesystem", "time", "fetch"]
+        if (attempt == 1 and not grisha_feedback and target_server in SKIP_REASONING_TOOLS
+                and step.get("tool") and step.get("args") and not step.get("requires_vision")):
+            logger.info(f"[TETYANA] FAST PATH: Skipping reasoning for '{target_server}'")
+            return {
+                "name": step.get("tool"), "args": step.get("args", {}), "server": target_server,
+            }, {"thought": f"Executing simple tool '{target_server}' via FAST PATH."}
+        return None
+
+    def _finalize_tool_call_normalization(self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str) -> None:
+        """Apply final overrides, server info, and normalization to tool_call."""
+        if not tool_call.get("name"):
+            name = (step.get("tool") or step.get("server") or step.get("realm")
+                    or self._infer_tool_from_action(str(step.get("action", ""))))
+            if name:
+                tool_call["name"] = name
 
         if target_server and "server" not in tool_call:
             tool_call["server"] = target_server
 
-        # Attach step id to args when available so wrappers can collect artifacts
-        try:
-            if isinstance(tool_call.get("args"), dict):
-                tool_call["args"]["step_id"] = step.get("id")
-        except Exception:
-            pass
+        if isinstance(tool_call.get("args"), dict):
+            tool_call["args"]["step_id"] = step.get("id")
+            if (str(tool_call.get("name", "")).lower().startswith("macos-use") or tool_call.get("server") == "macos-use"):
+                if not tool_call["args"].get("pid") and self._current_pid:
+                    tool_call["args"]["pid"] = self._current_pid
 
-        # --- AUTO-FILL PID FOR MACOS-USE TOOLS ---
-        # If this is a macos-use tool and pid is missing, use tracked _current_pid
-        tool_name_lower = str(tool_call.get("name", "")).lower()
-        tool_server = tool_call.get("server", "")
-        if tool_name_lower.startswith("macos-use") or tool_server == "macos-use":
-            args = tool_call.get("args", {})
-            if isinstance(args, dict) and not args.get("pid") and self._current_pid:
-                if isinstance(tool_call, dict):
-                    tool_args = tool_call.setdefault("args", {})
-                    if isinstance(tool_args, dict):
-                        tool_args["pid"] = self._current_pid
-                        logger.info(
-                            f"[TETYANA] Auto-filled pid from tracked state: {self._current_pid}",
-                        )
+    async def _determine_tool_action(
+        self,
+        step: dict[str, Any],
+        target_server: str,
+        attempt: int,
+        grisha_feedback: str,
+        vision_result: dict[str, Any] | None,
+        provided_response: str | None,
+    ) -> tuple[dict[str, Any], dict[str, Any], StepResult | None]:
+        """Determines the tool action using reasoning or fast path."""
+        from ..prompts import AgentPrompts
+        # 1. Check Fast Path
+        fast_path = await self._check_fast_path(step, target_server, attempt, grisha_feedback)
+        if fast_path:
+            return fast_path[0], fast_path[1], None
+
+        # 2. Run LLM Reasoning
+        tools_summary = await self._get_detailed_server_context(target_server)
+        prompt = AgentPrompts.tetyana_reasoning_prompt(
+            str(step), shared_context.to_dict(), tools_summary=tools_summary,
+            feedback=grisha_feedback, previous_results=cast("list[Any]", step.get("previous_results")),
+            goal_context=shared_context.get_goal_context(), bus_messages=cast("list[Any]", step.get("bus_messages")),
+            full_plan=step.get("full_plan", ""),
+        )
+
+        monologue = await self._run_reasoning_llm(prompt)
+        if not monologue:
+            return {"name": step.get("tool"), "args": {"action": step.get("action")}}, {}, None
+
+        # 3. Handle Proactive Help
+        help_result = await self._handle_proactive_help_request(monologue, step)
+        if help_result:
+            return {}, {}, help_result
+
+        # 4. Map Action and Finalize
+        tool_call = self._map_proposed_to_tool_call(monologue.get("proposed_action"), step, target_server)
+        self._apply_vision_overrides(tool_call, vision_result)
+        self._finalize_tool_call_normalization(tool_call, step, target_server)
+
         return tool_call, monologue, None
 
-    async def execute_step(self, step: dict[str, Any], attempt: int = 1) -> StepResult:
-        """Executes a single plan step with Advanced Reasoning:
-        1. Internal Monologue (Thinking before acting) - SKIPPED for simple tools
-        2. Tool Execution
-        3. Technical Reflexion (Self-correction on failure) - SKIPPED for transient errors
-        """
-
-        from ..context import shared_context
-        from ..logger import logger
-        from ..mcp_manager import mcp_manager
-        from ..state_manager import state_manager
-
-        self.attempt_count = attempt
-
-        # Get step_id early for logging
-        step_id = step.get("id", self.current_step)
-
-        # 1. Check for provided response (Consent/Input)
+    async def _get_provided_response(self, step: dict[str, Any]) -> str | None:
+        """Detect any user response or autonomous decision from bus_messages or previous_results."""
         provided_response = None
         if "bus_messages" in step:
             for bm in step["bus_messages"]:
                 payload = bm.get("payload", {})
                 if "user_response" in payload:
                     provided_response = payload["user_response"]
-                    logger.info(
-                        f"[TETYANA] Found provided response in bus_messages: {provided_response}",
-                    )
-                    break
+                    logger.info(f"[TETYANA] Found provided response: {provided_response}")
+                    return str(provided_response)
 
-        # If not in bus_messages, check previous_results for Atlas's autonomous decision
-        if not provided_response and "previous_results" in step:
+        # Check previous_results for Atlas's autonomous decision as fallback
+        if "previous_results" in step:
             for pr in reversed(step["previous_results"]):
-                if (
-                    pr.get("error") == "autonomous_decision_made"
-                    or pr.get("error") == "user_input_received"
-                ):
-                    # The response should have been injected into message bus, but as a backup check
+                if pr.get("error") in ["autonomous_decision_made", "user_input_received"]:
+                    # Injected via message bus usually, but here for safety
                     pass
+        return None
 
-        # 2. Consent Check
-        consent_block = await self._check_consent_requirements(
-            step, provided_response, step_id
-        )
-        if consent_block:
-            return consent_block
+    async def _validate_step_alignment(self, step: dict[str, Any], attempt: int) -> None:
+        """Validate step aligns with global goal and apply suggested deviations."""
+        from ..context import shared_context
 
-        if provided_response:
-            logger.info(f"[TETYANA] Proceeding with provided response: {provided_response}")
-            # We let the reasoning LLM know we have this response via 'bus_messages' which is already in the prompt
+        if attempt != 1:
+            return
 
-        # --- OPTIMIZATION: SMART REASONING GATE ---
-        # Skip reasoning LLM for well-defined, simple tools
-        # Skip reasoning LLM for well-defined, simple tools
-        # We KEEP "terminal" here for speed, but tools like "git" or "macos-use" benefit from reasoning (coordinates, args)
-        # REMOVED: "terminal" - Systemic fix to force reasoning for shell commands to prevent Empty Proof failures
-        TRANSIENT_ERRORS = [
-            "Connection refused",
-            "timeout",
-            "rate limit",
-            "Broken pipe",
-            "Connection reset",
-        ]
-
-        # --- PHASE 0: DYNAMIC INSPECTION ---
-        actual_step_id = step.get("id", self.current_step)
-        logger.info(f"[TETYANA] Executing step {actual_step_id}...")
-        # Populate tools summary if empty
-        if not shared_context.available_tools_summary:
-            logger.info("[TETYANA] Fetching fresh MCP catalog for context...")
-            shared_context.available_tools_summary = await mcp_manager.get_mcp_catalog()
-
-        # --- PHASE 0.3: GOAL ALIGNMENT VALIDATION ---
-        # Validate step aligns with global goal (supports recursive goal checking)
         global_goal = shared_context.get_goal_context() or step.get("full_plan", "")
-        if global_goal and attempt == 1:  # Only validate on first attempt
-            alignment = await self._validate_goal_alignment(step, global_goal)
+        if not global_goal or attempt != 1:
+            return
 
-            if not alignment.get("aligned") and alignment.get("deviation_suggested"):
-                alt = alignment.get("suggested_alternative")
-                logger.warning(
-                    f"[TETYANA] Step misaligned with goal. Confidence: {alignment.get('confidence')}. "
-                    f"Alternative: {alt}",
-                )
-                # If agent autonomously decides deviation is better, modify step
-                if alignment.get("confidence", 0) < 0.3 and alt:
-                    logger.info(
-                        "[TETYANA] Autonomous deviation decision: using alternative approach",
-                    )
-                    step["action"] = alt
-                    step["deviation_applied"] = True
-                    step["original_action"] = step.get("action", "")
-
-        # 3. Vision Analysis
-        vision_result, vision_block = await self._perform_vision_analysis_if_needed(
-            step,
-            attempt,
-        )
-        if vision_block:
-            return vision_block
-
-        # 4. Grisha Feedback
-        grisha_feedback = await self._fetch_grisha_feedback(
-            step,
-            attempt,
-            cast("int", step.get("id")),
-        )
-
-        if grisha_feedback:
-            logger.info(
-                f"[TETYANA] Improving execution with Grisha's feedback: {grisha_feedback[:100]}...",
+        alignment = await self._validate_goal_alignment(step, global_goal)
+        if not alignment.get("aligned") and alignment.get("deviation_suggested"):
+            alt = alignment.get("suggested_alternative")
+            logger.warning(
+                f"[TETYANA] Step misaligned. Confidence: {alignment.get('confidence')}. Alternative: {alt}"
             )
+            # Apply autonomous deviation if confidence is low enough for the current path
+            if alignment.get("confidence", 0) < 0.3 and alt:
+                logger.info("[TETYANA] Autonomous deviation: using alternative approach")
+                step["action"] = alt
+                step["deviation_applied"] = True
+                step["original_action"] = step.get("action", "")
 
-        target_server = str(step.get("realm") or step.get("tool") or step.get("server") or "macos-use")
-        # Normalize generic 'browser' realm to macos-use to leverage native automation
-        if target_server == "browser":
-            target_server = "macos-use"
-
-        # 5. Determine Action (Reasoning)
-        tool_call, monologue, action_block = await self._determine_tool_action(
-            step,
-            target_server,
-            attempt,
-            grisha_feedback,
-            vision_result,
-            provided_response,
-        )
-        if action_block:
-            return action_block
-
-        # --- PHASE 2: TOOL EXECUTION ---
-        tool_result = await self._execute_tool(tool_call)
-
-        # --- PHASE 2.5: AGENTIC EVIDENCE VERIFICATION ---
-        # "Empty Proof" Detector: If success=True but output is empty, it MIGHT be a failure.
-        # We only flag it for informative tools that MUST return data.
+    def _verify_agentic_evidence(
+        self,
+        tool_result: dict[str, Any],
+        tool_call: dict[str, Any],
+    ) -> None:
+        """'Empty Proof' Detector: Flags success=True with empty output as soft failure for investigation."""
         output_data = tool_result.get("output", "") or tool_result.get("result", "")
-        is_empty = not str(output_data).strip()
+        if not tool_result.get("success") or str(output_data).strip():
+            return
 
-        # Tools that are EXPECTED to return data
-        data_intensive_tools = [
-            "read_file",
-            "search",
-            "list_directory",
-            "execute_command",
-            "vibe_prompt",
-        ]
+        data_intensive_tools = ["read_file", "search", "list_directory", "execute_command", "vibe_prompt"]
         current_tool_name = str(tool_call.get("name", "")).lower()
 
-        if (
-            tool_result.get("success")
-            and is_empty
-            and any(t in current_tool_name for t in data_intensive_tools)
-        ):
+        if any(t in current_tool_name for t in data_intensive_tools):
             logger.warning(
-                f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering soft-failure Reflexion..."
+                f"[TETYANA] Tool '{current_tool_name}' returned SUCCESS but EMPTY output. Soft-failure Reflexion triggered."
             )
-            # We treat this as a "Soft Failure" to force the agent to think: "Is this okay?"
             tool_result["success"] = False
             tool_result["error"] = (
-                f"SUSPICIOUS_RESULT: Tool '{current_tool_name}' returned NO OUTPUT despite being a data-source. "
-                "If this is expected (e.g. empty directory, successful but silent command), explain it in thought. "
-                "Otherwise, it is a FAILURE requiring a different approach."
+                f"SUSPICIOUS_RESULT: Tool '{current_tool_name}' returned NO OUTPUT. "
+                "Explain if this is expected, otherwise provide a different approach."
             )
-        elif tool_result.get("success") and is_empty:
-            # For other tools (mkdir, write_file, etc.), empty is fine but we note it
-            logger.info(
-                f"[TETYANA] Tool '{current_tool_name}' returned silent success (empty output)."
-            )
+        else:
+            logger.info(f"[TETYANA] Tool '{current_tool_name}' returned silent success (empty output).")
 
-        # --- PHASE 3: TECHNICAL REFLEXION (if failed) ---
-        # OPTIMIZATION: Skip LLM reflexion for transient errors
+    async def _perform_technical_reflexion(
+        self,
+        step: dict[str, Any],
+        tool_call: dict[str, Any],
+        tool_result: dict[str, Any],
+    ) -> StepResult | None:
+        """Perform technical reflexion with retries, deep reasoning, and VIBE healing."""
+        from ..context import shared_context
+        from ..prompts import AgentPrompts
+
+        TRANSIENT_ERRORS = ["Connection refused", "timeout", "rate limit", "Broken pipe", "Connection reset"]
         max_self_fixes = 3
         fix_count = 0
 
@@ -1100,123 +967,82 @@ IMPORTANT:
             fix_count += 1
             error_msg = tool_result.get("error", "Unknown error")
 
-            # Check for transient errors - simple retry without LLM
-            is_transient = any(err.lower() in error_msg.lower() for err in TRANSIENT_ERRORS)
-
-            if is_transient:
-                logger.info(
-                    f"[TETYANA] Transient error detected. Quick retry {fix_count}/{max_self_fixes}...",
-                )
-                await asyncio.sleep(1.0 * fix_count)  # Simple backoff
-                tool_result = await self._execute_tool(tool_call)
+            # 1. Transient Retry
+            if any(err.lower() in error_msg.lower() for err in TRANSIENT_ERRORS):
+                logger.info(f"[TETYANA] Transient error. Retry {fix_count}/{max_self_fixes}...")
+                await asyncio.sleep(1.0 * fix_count)
+                tool_result.update(await self._execute_tool(tool_call))
                 if tool_result.get("success"):
-                    logger.info("[TETYANA] Quick retry SUCCESS!")
-                    break
+                    return None
                 continue
 
-            # Full reflexion for logic/permission errors
-            logger.info(
-                f"[TETYANA] Step failed. Reflexion Attempt {fix_count}/{max_self_fixes}. Error: {error_msg}",
-            )
-
-            # DEEP REASONING: Before trying blind Vibe fixes or giving up, let's THINK deeply.
+            # 2. Deep Sequential Reasoning for persistent failures
             if fix_count >= 2:
-                logger.info("[TETYANA] Recurring failures. Engaging Deep Sequential Reasoning...")
+                logger.info("[TETYANA] persistent failures. Engaging Deep Reasoning...")
                 reasoning = await self.use_sequential_thinking(
-                    f"I consistently fail to execute '{step.get('action')}' with args '{step.get('args')}'. Recent error: {error_msg}. Analyze root cause and propose a STRUCTURAL DEVIATION if possible.",
+                    f"I fail to execute '{step.get('action')}'. Error: {error_msg}. Propose DEVIATION if needed.",
                     total_thoughts=3,
                 )
-
-                # Heuristic check for deviation proposal
                 analysis_text = reasoning.get("analysis", "").lower()
-                if (
-                    "deviation" in analysis_text
-                    or "alternative approach" in analysis_text
-                    or "skip this step" in analysis_text
-                ):
-                    logger.info("[TETYANA] Deep Reasoning suggests a DEVIATION. Escalating...")
-                    # Return a special result that Orchestrator can interpret as a request to deviate
+                if any(kw in analysis_text for kw in ["deviation", "alternative approach", "skip this step"]):
                     return StepResult(
                         step_id=step.get("id", self.current_step),
-                        success=False,  # Technically failed the original step
+                        success=False,
                         result=f"DEVIATION PROPOSED: {reasoning.get('analysis')}",
                         is_deviation=True,
-                        deviation_info={
-                            "analysis": reasoning.get("analysis"),
-                            "proposal": analysis_text[:500],
-                        },
+                        deviation_info={"analysis": reasoning.get("analysis"), "proposal": analysis_text[:500]},
                     )
 
-            # ULTIMATE FIX: Invoke VIBE for deep healing on final attempts
+            # 3. VIBE healing as ultimate fix
             if fix_count == max_self_fixes:
-                logger.info(
-                    "[TETYANA] Reflexion limit reached. Invoking VIBE for ultimate self-healing...",
-                )
-                v_res_raw = await self._call_mcp_direct(
-                    "vibe",
-                    "vibe_analyze_error",
-                    {"error_message": error_msg, "auto_fix": True},
-                )
-                # Convert CallToolResult to dict using existing formatter
+                logger.info("[TETYANA] Invoking VIBE for ultimate healing...")
+                v_res_raw = await self._call_mcp_direct("vibe", "vibe_analyze_error", {"error_message": error_msg, "auto_fix": True})
                 v_res = self._format_mcp_result(v_res_raw) if v_res_raw else {}
-
-                # Check if vibe fixed it
                 if v_res.get("success"):
-                    logger.info(
-                        "[TETYANA] VIBE self-healing reported SUCCESS. Retrying original tool...",
-                    )
-                    tool_result = await self._execute_tool(tool_call)
+                    tool_result.update(await self._execute_tool(tool_call))
                     if tool_result.get("success"):
-                        break
-                else:
-                    logger.warning(f"[TETYANA] VIBE self-healing failed: {v_res.get('error')}")
+                        return None
 
+            # 4. Standard Reflexion Prompt
             try:
-                tools_summary = (
-                    hasattr(shared_context, "available_tools_summary")
-                    and shared_context.available_tools_summary
-                ) or ""
+                tools_summary = getattr(shared_context, "available_tools_summary", "")
                 reflexion_prompt = AgentPrompts.tetyana_reflexion_prompt(
-                    str(step),
-                    error_msg,
-                    [r.to_dict() for r in self.results[-5:]],
-                    tools_summary=tools_summary,
+                    str(step), error_msg, [r.to_dict() for r in self.results[-5:]], tools_summary=tools_summary
                 )
-
-                reflexion_resp = await self.reflexion_llm.ainvoke(
-                    [
-                        SystemMessage(
-                            content="You are a Technical Debugger. Analyze the tool error in English and suggest a fix.",
-                        ),
-                        HumanMessage(content=reflexion_prompt),
-                    ],
-                )
-
+                reflexion_resp = await self.reflexion_llm.ainvoke([
+                    SystemMessage(content="You are a Technical Debugger. Analyze error and suggest fix."),
+                    HumanMessage(content=reflexion_prompt),
+                ])
                 reflexion = self._parse_response(cast("str", reflexion_resp.content))
-
                 if reflexion.get("requires_atlas"):
-                    logger.info("[TETYANA] Reflexion determined Atlas intervention is required.")
                     break
-
                 fix_action = reflexion.get("fix_attempt")
                 if not fix_action:
                     break
-
-                logger.info(f"[TETYANA] Attempting autonomous fix: {fix_action.get('tool')}")
-                tool_result = await self._execute_tool(fix_action)
-
+                logger.info(f"[TETYANA] Attempting fix: {fix_action.get('tool')}")
+                tool_result.update(await self._execute_tool(fix_action))
                 if tool_result.get("success"):
-                    logger.info("[TETYANA] Autonomous fix SUCCESS!")
-                    break
-            except Exception as re:
-                logger.error(f"[TETYANA] Reflexion failed: {re}")
+                    return None
+            except Exception as e:
+                logger.error(f"[TETYANA] Reflexion failed: {e}")
                 break
 
-        final_voice_msg: str | None = cast(str | None, tool_result.get("voice_message")) or (
+        return None
+
+    def _finalize_step_result(
+        self,
+        step: dict[str, Any],
+        tool_call: dict[str, Any],
+        tool_result: dict[str, Any],
+        monologue: dict[str, Any],
+        vision_result: dict[str, Any] | None,
+        attempt: int,
+    ) -> StepResult:
+        """Construct the final StepResult and update state."""
+        final_voice_msg = cast(str | None, tool_result.get("voice_message")) or (
             cast(str | None, monologue.get("voice_message")) if attempt == 1 else None
         )
 
-        # Fallback if no specific voice message from LLM/Tool
         if not final_voice_msg and attempt == 1:
             final_voice_msg = self.get_voice_message(
                 "completed" if tool_result.get("success") else "failed",
@@ -1228,8 +1054,7 @@ IMPORTANT:
             step_id=step.get("id", self.current_step),
             success=tool_result.get("success", False),
             result=tool_result.get("output", ""),
-            screenshot_path=tool_result.get("screenshot_path")
-            or (vision_result.get("screenshot_path") if vision_result else None),
+            screenshot_path=tool_result.get("screenshot_path") or (vision_result.get("screenshot_path") if vision_result else None),
             voice_message=final_voice_msg,
             error=tool_result.get("error"),
             tool_call=tool_call,
@@ -1237,13 +1062,59 @@ IMPORTANT:
         )
 
         self.results.append(res)
-
         # Update current step counter
-        step_id = step.get("id", 0)
         try:
-            self.current_step = int(step_id) + 1
+            self.current_step = int(step.get("id", 0)) + 1
         except Exception:
             self.current_step += 1
+
+        return res
+
+    async def execute_step(self, step: dict[str, Any], attempt: int = 1) -> StepResult:
+        """Executes a single plan step with Advanced Reasoning."""
+        from ..state_manager import state_manager
+
+        self.attempt_count = attempt
+        step_id = step.get("id", self.current_step)
+
+        # 1. Detect Response & Check Consent
+        provided_response = await self._get_provided_response(step)
+        consent_block = await self._check_consent_requirements(step, provided_response, step_id)
+        if consent_block:
+            return consent_block
+
+        # 2. Dynamic Inspection & Goal Alignment
+        await self._validate_step_alignment(step, attempt)
+
+        # 3. Vision & Grisha Feedback
+        vision_result, vision_block = await self._perform_vision_analysis_if_needed(step, attempt)
+        if vision_block:
+            return vision_block
+
+        grisha_feedback = await self._fetch_grisha_feedback(step, attempt, cast("int", step.get("id")))
+
+        # 4. Determine Action & Reasoning
+        target_server = str(step.get("realm") or step.get("tool") or step.get("server") or "macos-use")
+        if target_server == "browser":
+            target_server = "macos-use"
+
+        tool_call, monologue, action_block = await self._determine_tool_action(
+            step, target_server, attempt, grisha_feedback, vision_result, provided_response
+        )
+        if action_block:
+            return action_block
+
+        # 5. Tool Execution & Output Verification
+        tool_result = await self._execute_tool(tool_call)
+        self._verify_agentic_evidence(tool_result, tool_call)
+
+        # 6. Technical Reflexion (if failed)
+        reflexion_result = await self._perform_technical_reflexion(step, tool_call, tool_result)
+        if reflexion_result:
+            return reflexion_result
+
+        # 7. Finalize and Update State
+        res = self._finalize_step_result(step, tool_call, tool_result, monologue, vision_result, attempt)
 
         if state_manager.available:
             try:
@@ -1253,89 +1124,70 @@ IMPORTANT:
 
         return res
 
+    def _fix_hallucinated_args(self, args: Any) -> Any:
+        """Fix common LLM argument hallucinations (e.g., new_path -> path)."""
+        if not isinstance(args, dict):
+            return args
+        if "new_path" in args and "path" not in args:
+            args["path"] = args.pop("new_path")
+            logger.info("[TETYANA] Fixed hallucinated argument: new_path -> path")
+        if "cmd" in args and "command" not in args:
+            args["command"] = args.pop("cmd")
+            logger.info("[TETYANA] Fixed hallucinated argument: cmd -> command")
+        return args
+
+    def _normalize_tool_result(self, result: Any, tool_name: str) -> dict[str, Any]:
+        """Normalize various MCP result formats into a standard success/error structure."""
+        if hasattr(result, "model_dump"):
+            result = result.model_dump()
+        elif hasattr(result, "dict"):
+            result = result.dict()
+        elif not isinstance(result, dict):
+            result = {"content": [{"type": "text", "text": str(result)}], "isError": False}
+
+        if not isinstance(result, dict):
+            return {"success": False, "error": "Invalid result type"}
+
+        if "isError" in result:
+            result["success"] = not result["isError"]
+        if "success" not in result:
+            result["success"] = "error" not in result
+
+        if not result.get("success"):
+            self._log_dispatcher_errors(result, tool_name)
+            if "error" not in result:
+                content_text = ""
+                if "content" in result and isinstance(result["content"], list):
+                    for item in result["content"]:
+                        if isinstance(item, dict) and item.get("type") == "text":
+                            content_text += item.get("text", "")
+                result["error"] = content_text or "Unknown tool execution error"
+        return cast(dict[str, Any], result)
+
+    def _log_dispatcher_errors(self, result: dict[str, Any], tool_name: str) -> None:
+        """Log specific error types from the dispatcher."""
+        error_msg = result.get("error", "")
+        if result.get("validation_error"):
+            logger.error(f"[TETYANA] Validation error for {tool_name}: {error_msg}")
+        elif result.get("bad_request"):
+            logger.error(f"[TETYANA] Bad request for {tool_name}: {error_msg}")
+        elif result.get("tool_not_found"):
+            logger.error(f"[TETYANA] Tool not found: {result.get('server')}.{result.get('tool')}")
+        elif result.get("compatibility_error"):
+            logger.error(f"[TETYANA] Compatibility error for {tool_name}: {error_msg}")
+
     async def _execute_tool(self, tool_call: dict[str, Any]) -> dict[str, Any]:
         """Executes the tool call via unified Dispatcher"""
         from ..mcp_manager import mcp_manager
-
-        # Ensure dispatcher knows about current PID
         mcp_manager.dispatcher.set_pid(self._current_pid)
 
-        tool_name = tool_call.get("name") or tool_call.get("tool")
-        args = tool_call.get("args") or tool_call.get("arguments") or {}
-
-        # DEFENSIVE MAPPING: Fix common LLM hallucinations
-        if isinstance(args, dict):
-            # 1. new_path -> path (common in read_file/write_file)
-            if "new_path" in args and "path" not in args:
-                args["path"] = args.pop("new_path")
-                logger.info("[TETYANA] Fixed hallucinated argument: new_path -> path")
-
-            # 2. cmd -> command
-            if "cmd" in args and "command" not in args:
-                args["command"] = args.pop("cmd")
-                logger.info("[TETYANA] Fixed hallucinated argument: cmd -> command")
-
+        tool_name = str(tool_call.get("name") or tool_call.get("tool") or "")
+        args = self._fix_hallucinated_args(tool_call.get("args") or tool_call.get("arguments") or {})
         explicit_server = tool_call.get("server")
 
         try:
-            # Use unified dispatch_tool
             result = await mcp_manager.dispatch_tool(tool_name, args, explicit_server)
-
-            # Normalize Pydantic object to dict
-            if hasattr(result, "model_dump"):
-                result = result.model_dump()
-            elif hasattr(result, "dict"):  # Fallback for older Pydantic
-                result = result.dict()
-            elif not isinstance(result, dict):
-                # Handle unexpected types (list, primitive)
-                result = {"content": [{"type": "text", "text": str(result)}], "isError": False}
-
-            # Normalize success/error flags
-            # MCP SDK uses 'isError' (bool), we use 'success' (bool) and 'error' (str)
-            if isinstance(result, dict):
-                if "isError" in result:
-                    result["success"] = not result["isError"]
-
-                # Ensure 'success' key exists
-                if "success" not in result:
-                    # Assume success if no error field
-                    result["success"] = "error" not in result
-
-                # Enhanced error handling for dispatcher errors
-                if not result.get("success"):
-                    error_msg = result.get("error", "")
-
-                    # Check for specific error types from dispatcher
-                    if result.get("validation_error"):
-                        logger.error(
-                            f"[TETYANA] Validation error for {tool_name}: {error_msg}. "
-                            f"Server: {result.get('server')}, Provided args: {result.get('provided_args')}"
-                        )
-                    elif result.get("bad_request"):
-                        logger.error(
-                            f"[TETYANA] Bad request for {tool_name}: {error_msg}. "
-                            f"Server: {result.get('server')}, Args: {result.get('provided_args')}"
-                        )
-                    elif result.get("tool_not_found"):
-                        logger.error(
-                            f"[TETYANA] Tool not found: {result.get('server')}.{result.get('tool')}. "
-                            f"Suggestion: {result.get('suggestion')}"
-                        )
-                    elif result.get("compatibility_error"):
-                        logger.error(f"[TETYANA] Compatibility error for {tool_name}: {error_msg}")
-
-                    # If failed, ensure 'error' field exists for feedback loop
-                    if "error" not in result:
-                        # Extract error from content if possible
-                        content_text = ""
-                        if "content" in result and isinstance(result["content"], list):
-                            for item in result["content"]:
-                                if isinstance(item, dict) and item.get("type") == "text":
-                                    content_text += item.get("text", "")
-                        result["error"] = content_text or "Unknown tool execution error"
-
-            return cast(dict[str, Any], result)
-
+            return self._normalize_tool_result(result, tool_name)
         except Exception as e:
             logger.error(f"[TETYANA] Tool execution failed: {e}")
             return {"success": False, "error": str(e)}
@@ -1369,423 +1221,295 @@ IMPORTANT:
         res = await mcp_manager.call_tool("macos-use", "execute_command", args)
         return self._format_mcp_result(res)
 
-    async def _perform_gui_action(self, args: dict[str, Any]) -> dict[str, Any]:
-        """Performs GUI interaction (click, type, hotkey, search_app) using pyautogui"""
-        try:
-            from ..mcp_manager import mcp_manager
+    async def _gui_click(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Perform a click action using macos-use tool."""
+        from ..mcp_manager import mcp_manager
+        x, y = args.get("x", 0), args.get("y", 0)
+        pid = int(args.get("pid", 0))
+        res = await mcp_manager.call_tool(
+            "macos-use", "macos-use_click_and_traverse", {"pid": pid, "x": float(x), "y": float(y)}
+        )
+        return self._format_mcp_result(res)
 
-            action = args.get("action", "")
+    async def _gui_type(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Perform a type action using macos-use tool."""
+        from ..mcp_manager import mcp_manager
+        text = args.get("text", "")
+        pid = int(args.get("pid", 0))
+        res = await mcp_manager.call_tool(
+            "macos-use", "macos-use_type_and_traverse", {"pid": pid, "text": text}
+        )
+        return self._format_mcp_result(res)
 
-            if action == "click":
-                x, y = args.get("x", 0), args.get("y", 0)
-                pid = int(args.get("pid", 0))
-                res = await mcp_manager.call_tool(
-                    "macos-use",
-                    "macos-use_click_and_traverse",
-                    {"pid": pid, "x": float(x), "y": float(y)},
-                )
-                return self._format_mcp_result(res)
-
-            elif action == "type":
-                text = args.get("text", "")
-                pid = int(args.get("pid", 0))
-                res = await mcp_manager.call_tool(
-                    "macos-use",
-                    "macos-use_type_and_traverse",
-                    {"pid": pid, "text": text},
-                )
-                return self._format_mcp_result(res)
-
-            elif action == "hotkey":
-                keys = args.get("keys", [])
-                pid = int(args.get("pid", 0))
-
-                # Mapper for Swift SDK keys
-                modifiers = []
-                key_name = ""
-
-                modifier_map = {
-                    "cmd": "Command",
-                    "command": "Command",
-                    "shift": "Shift",
-                    "ctrl": "Control",
-                    "control": "Control",
-                    "opt": "Option",
-                    "option": "Option",
-                    "alt": "Option",
-                    "fn": "Function",
-                }
-
-                for k in keys:
-                    lower_k = k.lower()
-                    if lower_k in modifier_map:
-                        modifiers.append(modifier_map[lower_k])
-                    else:
-                        # Key Map
-                        key_map = {
-                            "enter": "Return",
-                            "return": "Return",
-                            "esc": "Escape",
-                            "escape": "Escape",
-                            "space": "Space",
-                            "tab": "Tab",
-                            "up": "ArrowUp",
-                            "down": "ArrowDown",
-                            "left": "ArrowLeft",
-                            "right": "ArrowRight",
-                            "delete": "Delete",
-                            "backspace": "Delete",
-                            "home": "Home",
-                            "end": "End",
-                            "pageup": "PageUp",
-                            "pagedown": "PageDown",
-                            "f1": "F1",
-                            "f2": "F2",
-                            "f3": "F3",
-                            "f4": "F4",
-                            "f5": "F5",
-                            "f6": "F6",
-                            "f7": "F7",
-                            "f8": "F8",
-                            "f9": "F9",
-                            "f10": "F10",
-                            "f11": "F11",
-                            "f12": "F12",
-                        }
-                        key_name = key_map.get(lower_k, k)  # Default to raw key (e.g. "a", "1")
-
-                if not key_name and not modifiers:
-                    return {"success": False, "error": "Invalid hotkey definition"}
-
-                # If only modifiers, we can't really "press" a key in this API, needs a key
-                if not key_name:
-                    # Fallback or error? Let's error for now
-                    return {"success": False, "error": "No non-modifier key specified"}
-
-                res = await mcp_manager.call_tool(
-                    "macos-use",
-                    "macos-use_press_key_and_traverse",
-                    {"pid": pid, "keyName": key_name, "modifierFlags": modifiers},
-                )
-                return self._format_mcp_result(res)
-
-            elif action in {"wait", "sleep"}:
-                duration = float(args.get("duration", 1.0))
-                time.sleep(duration)
-                return {"success": True, "output": f"Waited for {duration} seconds"}
-
-            elif action == "search_app":
-                app_name = args.get("app_name", "") or args.get("text", "")
-                import subprocess
-
-                # 0. Try robust macos-use_open_application_and_traverse first
-                # This gives us the PID and Accessibility Tree, which is superior to just opening
-                try:
-                    logger.info(
-                        f"[TETYANA] Attempting to open '{app_name}' via macos-use native tool...",
-                    )
-                    res = await mcp_manager.call_tool(
-                        "macos-use",
-                        "macos-use_open_application_and_traverse",
-                        {"identifier": app_name},
-                    )
-                    # Helper to check if MCP call was actually successful
-                    formatted = self._format_mcp_result(res)
-                    if formatted.get("success") and not formatted.get("error"):
-                        logger.info(f"[TETYANA] Successfully opened '{app_name}' via macos-use.")
-                        return formatted
-                    else:
-                        logger.warning(
-                            f"[TETYANA] macos-use open failed, falling back to legacy: {formatted.get('error')}",
-                        )
-                except Exception as e:
-                    logger.warning(f"[TETYANA] macos-use open exception: {e}")
-
-                # 1. Try 'open -a'
-                try:
-                    if app_name.lower() in ["calculator", "калькулятор"]:
-                        app_name = "Calculator"
-                    subprocess.run(["open", "-a", app_name], check=True, capture_output=True)
-                    return {"success": True, "output": f"Launched app: {app_name}"}
-                except Exception:
-                    pass
-
-                # 2. Spotlight fallback
-                # Try to force English layout (ABC/U.S./English)
-                switch_script = """
-                tell application "System Events"
-                    try
-                        tell process "SystemUIServer"
-                            set input_menu to (menu bar items of menu bar 1 whose description is "text input")
-                            if (count of input_menu) > 0 then
-                                click item 1 of input_menu
-                                delay 0.2
-                                set menu_items to menu 1 of item 1 of input_menu
-                                repeat with mi in menu_items
-                                    set mname to name of mi
-                                    if mname is "ABC" or mname is "U.S." or mname is "English" or mname is "British" then
-                                        click mi
-                                        exit repeat
-                                    end if
-                                end repeat
-                            end if
-                        end tell
-                    on error err
-                        log err
-                    end try
-                end tell
-                """
-                subprocess.run(["osascript", "-e", switch_script], check=False, capture_output=True)
-
-                # Open Spotlight (Command+Space)
-                subprocess.run(
-                    [
-                        "osascript",
-                        "-e",
-                        'tell application "System Events" to key code 49 using {command down}',
-                    ],
-                    check=True,
-                )
-                time.sleep(1.0)  # Wait for Spotlight to appear
-
-                # Copy app name to clipboard
-                process = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
-                process.communicate(input=app_name.encode("utf-8"))
-
-                # Clear search field (Cmd+A, Backspace)
-                subprocess.run(
-                    [
-                        "osascript",
-                        "-e",
-                        'tell application "System Events" to key code 0 using {command down}',
-                    ],
-                    check=True,
-                )
-                time.sleep(0.2)
-                subprocess.run(
-                    [
-                        "osascript",
-                        "-e",
-                        'tell application "System Events" to key code 51',
-                    ],
-                    check=True,
-                )
-                time.sleep(0.2)
-
-                # Paste using Command+V (Key code 9)
-                subprocess.run(
-                    [
-                        "osascript",
-                        "-e",
-                        'tell application "System Events" to key code 9 using {command down}',
-                    ],
-                    check=True,
-                )
-                time.sleep(0.5)
-                # Press Enter (Key code 36)
-                subprocess.run(
-                    [
-                        "osascript",
-                        "-e",
-                        'tell application "System Events" to key code 36',
-                    ],
-                    check=True,
-                )
-                return {
-                    "success": True,
-                    "output": f"Launched app via Spotlight (Clipboard Paste): {app_name}",
-                }
+    async def _gui_hotkey(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Perform a hotkey action with modifier mapping."""
+        from ..mcp_manager import mcp_manager
+        keys = args.get("keys", [])
+        pid = int(args.get("pid", 0))
+        modifier_map = {
+            "cmd": "Command", "command": "Command", "shift": "Shift",
+            "ctrl": "Control", "control": "Control", "opt": "Option",
+            "option": "Option", "alt": "Option", "fn": "Function",
+        }
+        key_map = {
+            "enter": "Return", "return": "Return", "esc": "Escape", "escape": "Escape",
+            "space": "Space", "tab": "Tab", "up": "ArrowUp", "down": "ArrowDown",
+            "left": "ArrowLeft", "right": "ArrowRight", "delete": "Delete", "backspace": "Delete",
+            "home": "Home", "end": "End", "pageup": "PageUp", "pagedown": "PageDown",
+            "f1": "F1", "f2": "F2", "f3": "F3", "f4": "F4", "f5": "F5", "f6": "F6",
+            "f7": "F7", "f8": "F8", "f9": "F9", "f10": "F10", "f11": "F11", "f12": "F12",
+        }
+        modifiers, key_name = [], ""
+        for k in keys:
+            lower_k = k.lower()
+            if lower_k in modifier_map:
+                modifiers.append(modifier_map[lower_k])
             else:
-                return {"success": False, "error": f"Unknown GUI action: {action}"}
+                key_name = key_map.get(lower_k, k)
 
+        if not key_name:
+            return {"success": False, "error": "No non-modifier key specified"}
+        res = await mcp_manager.call_tool(
+            "macos-use", "macos-use_press_key_and_traverse",
+            {"pid": pid, "keyName": key_name, "modifierFlags": modifiers}
+        )
+        return self._format_mcp_result(res)
+
+    async def _gui_search_app(self, app_name: str) -> dict[str, Any]:
+        """Launch an application using macos-use or fallback to Spotlight."""
+        import subprocess
+
+        from ..logger import logger
+        from ..mcp_manager import mcp_manager
+        try:
+            res = await mcp_manager.call_tool(
+                "macos-use", "macos-use_open_application_and_traverse", {"identifier": app_name}
+            )
+            formatted = self._format_mcp_result(res)
+            if formatted.get("success") and not formatted.get("error"):
+                logger.info(f"[TETYANA] Successfully opened '{app_name}' via macos-use.")
+                return formatted
+            else:
+                logger.warning(
+                    f"[TETYANA] macos-use open failed, falling back to legacy: {formatted.get('error')}",
+                )
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            logger.warning(f"[TETYANA] macos-use open exception: {e}")
 
-    async def _browser_action(self, args: dict[str, Any]) -> dict[str, Any]:
-        """Browser action via Puppeteer MCP
+        try:
+            name = "Calculator" if app_name.lower() in ["calculator", "калькулятор"] else app_name
+            subprocess.run(["open", "-a", name], check=True, capture_output=True)
+            return {"success": True, "output": f"Launched app: {name}"}
+        except Exception:
+            pass
 
-        Additionally collects verification artifacts (HTML, screenshot, small evaluations)
-        and persists them to disk/notes/memory so that Grisha can verify actions.
+        return await self._gui_spotlight_fallback(app_name)
+
+    async def _gui_spotlight_fallback(self, app_name: str) -> dict[str, Any]:
+        """Last resort: use Spotlight searching via UI keystrokes."""
+        import subprocess
+        # Simplified Spotlight flow
+        # Try to force English layout (ABC/U.S./English)
+        switch_script = """
+        tell application "System Events"
+            try
+                tell process "SystemUIServer"
+                    set input_menu to (menu bar items of menu bar 1 whose description is "text input")
+                    if (count of input_menu) > 0 then
+                        click item 1 of input_menu
+                        delay 0.2
+                        set menu_items to menu 1 of item 1 of input_menu
+                        repeat with mi in menu_items
+                            set mname to name of mi
+                            if mname is "ABC" or mname is "U.S." or mname is "English" or mname is "British" then
+                                click mi
+                                exit repeat
+                            end if
+                        end repeat
+                    end if
+                end tell
+            on error err
+                log err
+            end try
+        end tell
         """
+        subprocess.run(["osascript", "-e", switch_script], check=False, capture_output=True)
+
+        subprocess.run(["osascript", "-e", 'tell application "System Events" to key code 49 using {command down}'], check=True)
+        time.sleep(1.0)
+        # Clear search field (Cmd+A, Backspace)
+        subprocess.run(
+            [
+                "osascript",
+                "-e",
+                'tell application "System Events" to key code 0 using {command down}',
+            ],
+            check=True,
+        )
+        time.sleep(0.2)
+        subprocess.run(
+            [
+                "osascript",
+                "-e",
+                'tell application "System Events" to key code 51',
+            ],
+            check=True,
+        )
+        time.sleep(0.2)
+        # Paste and Enter
+        subprocess.run(["pbcopy"], input=app_name.encode("utf-8"), check=True)
+        subprocess.run(["osascript", "-e", 'tell application "System Events" to key code 9 using {command down}'], check=True) # Cmd+V
+        time.sleep(0.5)
+        subprocess.run(["osascript", "-e", 'tell application "System Events" to key code 36'], check=True) # Enter
+        return {"success": True, "output": f"Attempted Spotlight launch for {app_name}"}
+
+    async def _perform_gui_action(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Performs GUI interaction (click, type, hotkey, search_app)."""
+        import asyncio
+        action = args.get("action", "")
+
+        if action == "click":
+            return await self._gui_click(args)
+        if action == "type":
+            return await self._gui_type(args)
+        if action == "hotkey":
+            return await self._gui_hotkey(args)
+        if action in {"wait", "sleep"}:
+            duration = float(args.get("duration", 1.0))
+            await asyncio.sleep(duration)
+            return {"success": True, "output": f"Waited for {duration}s"}
+        if action == "search_app":
+            return await self._gui_search_app(args.get("app_name", "") or args.get("text", ""))
+        return {"success": False, "error": f"Unknown GUI action: {action}"}
+
+    async def _save_browser_artifacts(
+        self,
+        step_id: Any,
+        html_text: str | None = None,
+        title_text: str | None = None,
+        screenshot_b64: str | None = None,
+    ) -> bool:
+        """Save artifact files and register in notes/memory for Grisha's verification."""
         import base64
         import time as _time
 
         from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR
+        from ..logger import logger
         from ..mcp_manager import mcp_manager
 
+        try:
+            ts = _time.strftime("%Y%m%d_%H%M%S")
+            artifacts = []
+
+            if html_text:
+                html_file = WORKSPACE_DIR / f"grisha_step_{step_id}_{ts}.html"
+                html_file.parent.mkdir(parents=True, exist_ok=True)
+                html_file.write_text(html_text, encoding="utf-8")
+                artifacts.append(str(html_file))
+                logger.info(f"[TETYANA] Saved HTML artifact: {html_file}")
+
+            if screenshot_b64:
+                SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+                img_file = SCREENSHOTS_DIR / f"grisha_step_{step_id}_{ts}.png"
+                with open(img_file, "wb") as f:
+                    f.write(base64.b64decode(screenshot_b64))
+                artifacts.append(str(img_file))
+                logger.info(f"[TETYANA] Saved screenshot artifact: {img_file}")
+
+            note_content = self._construct_artifact_note(step_id, ts, artifacts, title_text, html_text)
+            await self._register_artifacts(step_id, ts, artifacts, note_content)
+            return True
+        except Exception as e:
+            logger.warning(f"[TETYANA] _save_artifacts exception: {e}")
+            return False
+
+    def _construct_artifact_note(self, step_id: Any, ts: str, artifacts: list[str], title_text: str | None, html_text: str | None) -> str:
+        """Build the text content for the verification artifact note."""
+        snippet = f"Title: {title_text}\n\n" if title_text else ""
+        if html_text:
+            snippet += f"HTML Snippet:\n{(html_text[:1000] + '...') if len(html_text) > 1000 else html_text}\n\n"
+
+        detected = []
+        if html_text:
+            keywords = ["phone", "sms", "verification", "код", "телефон"]
+            low = html_text.lower()
+            detected = [kw for kw in keywords if kw in low]
+
+        note_content = (
+            f"Artifacts for step {step_id} saved at {ts}.\n\nFiles:\n"
+            + ("\n".join(artifacts) if artifacts else "(no binary files captured)")
+            + f"\n\n{snippet}"
+        )
+        if detected:
+            note_content += f"Detected keywords in HTML: {', '.join(detected)}\n"
+        return note_content
+
+    async def _register_artifacts(self, step_id: Any, ts: str, artifacts: list[str], note_content: str) -> None:
+        """Register artifacts in notes and memory."""
+        from ..logger import logger
+        from ..mcp_manager import mcp_manager
+        note_title = f"Grisha Artifact - Step {step_id} @ {ts}"
+        try:
+            await mcp_manager.dispatch_tool("notes_create", {"body": f"# {note_title}\n\n{note_content}"})
+            logger.info(f"[TETYANA] Created verification artifact note for step {step_id}")
+        except Exception as e:
+            logger.warning(f"[TETYANA] Failed to create artifact note: {e}")
+
+        try:
+            await mcp_manager.call_tool("memory", "create_entities", {
+                "entities": [{"name": f"grisha_artifact_step_{step_id}", "entityType": "artifact", "observations": artifacts}]
+            })
+            logger.info(f"[TETYANA] Created memory artifact for step {step_id}")
+        except Exception as e:
+            logger.warning(f"[TETYANA] Failed to create memory artifact: {e}")
+
+    async def _capture_browser_state(self, step_id: Any) -> tuple[str | None, str | None, str | None]:
+        """Collect title, HTML, and screenshot from the current browser page."""
+        await asyncio.sleep(1.5)
+        logger.info(f"[TETYANA] Collecting browser artifacts for step {step_id}...")
+
+        title_text, html_text, screenshot_b64 = None, None, None
+        try:
+            # Title
+            t_res = await mcp_manager.call_tool("puppeteer", "puppeteer_evaluate", {"script": "document.title"})
+            if hasattr(t_res, "content") and t_res.content and hasattr(t_res.content[0], "text"):
+                title_text = t_res.content[0].text
+
+            # HTML
+            h_res = await mcp_manager.call_tool("puppeteer", "puppeteer_evaluate", {"script": "document.documentElement.outerHTML"})
+            if hasattr(h_res, "content") and h_res.content and hasattr(h_res.content[0], "text"):
+                html_text = h_res.content[0].text
+
+            # Screenshot
+            s_res = await mcp_manager.call_tool("puppeteer", "puppeteer_screenshot", {"name": f"grisha_step_{step_id}", "encoded": True})
+            if hasattr(s_res, "content"):
+                for c in s_res.content:
+                    if getattr(c, "type", "") == "image" and hasattr(c, "data"):
+                        screenshot_b64 = c.data
+                        break
+                    if hasattr(c, "text") and c.text:
+                        txt = c.text.strip()
+                        if txt.startswith("iVBOR"):
+                            screenshot_b64 = txt
+                            break
+        except Exception as e:
+            logger.warning(f"[TETYANA] Browser capture failed: {e}")
+        return title_text, html_text, screenshot_b64
+
+    async def _browser_action(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Browser action via Puppeteer MCP with verification artifacts."""
+        import asyncio  # Added import
+
+        from ..mcp_manager import mcp_manager
         action = args.get("action", "")
         step_id = args.get("step_id")
 
-        # Helper: save artifact files and register in notes/memory
-        async def _save_artifacts(
-            html_text: str | None = None,
-            title_text: str | None = None,
-            screenshot_b64: str | None = None,
-        ):
-            try:
-                # from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR
-                from ..logger import logger
-
-                # from ..mcp_manager import mcp_manager
-
-                ts = _time.strftime("%Y%m%d_%H%M%S")
-                artifacts = []
-
-                if html_text:
-                    html_file = WORKSPACE_DIR / f"grisha_step_{step_id}_{ts}.html"
-                    html_file.parent.mkdir(parents=True, exist_ok=True)
-                    html_file.write_text(html_text, encoding="utf-8")
-                    artifacts.append(str(html_file))
-                    logger.info(f"[TETYANA] Saved HTML artifact: {html_file}")
-
-                if screenshot_b64:
-                    SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
-                    img_file = SCREENSHOTS_DIR / f"grisha_step_{step_id}_{ts}.png"
-                    with open(img_file, "wb") as f:
-                        f.write(base64.b64decode(screenshot_b64))
-                    artifacts.append(str(img_file))
-                    logger.info(f"[TETYANA] Saved screenshot artifact: {img_file}")
-
-                # Create a note linking artifacts and include short HTML/title snippet and keyword checks
-                note_title = f"Grisha Artifact - Step {step_id} @ {ts}"
-                snippet = ""
-                if title_text:
-                    snippet += f"Title: {title_text}\n\n"
-                if html_text:
-                    snippet += f"HTML Snippet:\n{(html_text[:1000] + '...') if len(html_text) > 1000 else html_text}\n\n"
-
-                # Keyword search in HTML snippet
-                detected = []
-                if html_text:
-                    keywords = ["phone", "sms", "verification", "код", "телефон"]
-                    low = html_text.lower()
-                    for kw in keywords:
-                        if kw in low:
-                            detected.append(kw)
-
-                note_content = (
-                    f"Artifacts for step {step_id} saved at {ts}.\n\nFiles:\n"
-                    + ("\n".join(artifacts) if artifacts else "(no binary files captured)")
-                    + "\n\n"
-                    + snippet
-                )
-                if detected:
-                    note_content += f"Detected keywords in HTML: {', '.join(detected)}\n"
-
-                try:
-                    await mcp_manager.dispatch_tool(
-                        "notes_create",
-                        {"body": f"# {note_title}\n\n{note_content}"},
-                    )
-                    logger.info(f"[TETYANA] Created verification artifact note for step {step_id}")
-                except Exception as e:
-                    logger.warning(f"[TETYANA] Failed to create artifact note: {e}")
-
-                # Create memory entity for easy search
-                try:
-                    await mcp_manager.call_tool(
-                        "memory",
-                        "create_entities",
-                        {
-                            "entities": [
-                                {
-                                    "name": f"grisha_artifact_step_{step_id}",
-                                    "entityType": "artifact",
-                                    "observations": artifacts,
-                                },
-                            ],
-                        },
-                    )
-                    logger.info(f"[TETYANA] Created memory artifact for step {step_id}")
-                except Exception as e:
-                    logger.warning(f"[TETYANA] Failed to create memory artifact: {e}")
-
-                return True
-            except Exception as e:
-                from ..logger import logger
-
-                logger.warning(f"[TETYANA] _save_artifacts exception: {e}")
-
         if action in {"navigate", "open"}:
-            res = await mcp_manager.call_tool(
-                "puppeteer",
-                "puppeteer_navigate",
-                {"url": args.get("url", "")},
-            )
-
-            # Try to collect artifacts (title, html, screenshot)
-            try:
-                # small delay to allow navigation/rendering
-                await asyncio.sleep(1.5)
-                from ..logger import logger
-
-                logger.info(f"[TETYANA] Collecting browser artifacts for step {step_id}...")
-
-                # Document title
-                title_res = await mcp_manager.call_tool(
-                    "puppeteer",
-                    "puppeteer_evaluate",
-                    {"script": "document.title"},
-                )
-                title_text = None
-                if (
-                    hasattr(title_res, "content")
-                    and len(title_res.content) > 0
-                    and hasattr(title_res.content[0], "text")
-                ):
-                    title_text = title_res.content[0].text
-
-                # Page HTML
-                html_res = await mcp_manager.call_tool(
-                    "puppeteer",
-                    "puppeteer_evaluate",
-                    {"script": "document.documentElement.outerHTML"},
-                )
-                html_text = None
-                if (
-                    hasattr(html_res, "content")
-                    and len(html_res.content) > 0
-                    and hasattr(html_res.content[0], "text")
-                ):
-                    # The evaluation may return a JSON wrapper, try to extract raw
-                    html_text = html_res.content[0].text
-
-                # Screenshot (base64)
-                shot_res = await mcp_manager.call_tool(
-                    "puppeteer",
-                    "puppeteer_screenshot",
-                    {"name": f"grisha_step_{step_id}", "encoded": True},
-                )
-                screenshot_b64 = None
-                if hasattr(shot_res, "content"):
-                    for c in shot_res.content:
-                        if getattr(c, "type", "") == "image" and hasattr(c, "data"):
-                            screenshot_b64 = c.data
-                            break
-                        if hasattr(c, "text") and c.text:
-                            txt = c.text.strip()
-                            # plain base64 or data URI
-                            if txt.startswith("iVBOR"):
-                                screenshot_b64 = txt
-                                break
-                            if "base64," in txt:
-                                try:
-                                    screenshot_b64 = txt.split("base64,", 1)[1]
-                                    break
-                                except Exception:
-                                    pass
-
-                await _save_artifacts(
-                    html_text=html_text,
-                    title_text=title_text,
-                    screenshot_b64=screenshot_b64,
-                )
-            except Exception as e:
-                from ..logger import logger
-
-                logger.warning(f"[TETYANA] Failed to collect browser artifacts: {e}")
-
+            res = await mcp_manager.call_tool("puppeteer", "puppeteer_navigate", {"url": args.get("url", "")})
+            title, html, shot = await self._capture_browser_state(step_id)
+            await self._save_browser_artifacts(step_id, html, title, shot)
             return self._format_mcp_result(res)
+
         elif action == "click":
             res = await mcp_manager.call_tool(
                 "puppeteer",
@@ -1944,179 +1668,91 @@ IMPORTANT:
 
         return {"success": True, "output": output or "Success (No output)"}
 
-    def get_voice_message(self, action: str, **kwargs) -> str:
-        """Generates context-aware TTS message dynamically."""
-        # 1. Use LLM-provided message if available (Highest Priority)
-        voice_msg = kwargs.get("voice_message")
-        if voice_msg and len(voice_msg) > 5:
-            return cast(str, voice_msg)
-
-        # 2. Dynamic generation based on context
-        step_id = kwargs.get("step", 1)
-        desc = kwargs.get("description", "")
-        error = kwargs.get("error", "")
-
-        # Extract "essence" of description (first 5-7 words usually contain the verb and object)
+    def _extract_voice_essence(self, desc: str) -> str:
+        """Extract the 'essence' of a description using regex."""
         import re
+        if len(desc) <= 60:
+            return desc.lower()
+        match = re.search(r"^(.{10,50})[.;,]", desc)
+        return (match.group(1) if match else desc[:50] + "...").lower()
 
-        essence = desc
-        if len(desc) > 60:
-            # Take start, cut at punctuation or reasonable length
-            match = re.search(r"^(.{10,50})[.;,]", desc)
-            if match:
-                essence = match.group(1)
-            else:
-                essence = desc[:50] + "..."
-
-        # Translate commonly used technical prefixes and terms
-        essence = essence.lower()
-
-        # 1. Action Mapping (Verbs)
+    def _apply_voice_translations(self, essence: str) -> str:
+        """Map English verbs and nouns to Ukrainian equivalents."""
         translations = {
-            "create": "Створюю",
-            "update": "Оновлюю",
-            "check": "Перевіряю",
-            "install": "Встановлюю",
-            "run": "Запускаю",
-            "execute": "Виконую",
-            "call": "Викликаю",
-            "search": "Шукаю",
-            "list": "Переглядаю",
-            "read": "Читаю",
-            "write": "Записую",
-            "delete": "Видаляю",
-            "find": "Шукаю",
-            "open": "Відкриваю",
-            "take": "Роблю",
-            "analyze": "Аналізую",
-            "confirm": "Підтверджую",
-            "verify": "Верифікую",
+            "create": "Створюю", "update": "Оновлюю", "check": "Перевіряю",
+            "install": "Встановлюю", "run": "Запускаю", "execute": "Виконую",
+            "call": "Викликаю", "search": "Шукаю", "list": "Переглядаю",
+            "read": "Читаю", "write": "Записую", "delete": "Видаляю",
+            "find": "Шукаю", "open": "Відкриваю", "take": "Роблю",
+            "analyze": "Аналізую", "confirm": "Підтверджую", "verify": "Верифікую",
         }
-
         for eng, ukr in translations.items():
             if essence.startswith(eng):
                 essence = essence.replace(eng, ukr, 1)
                 break
 
-        # 2. Key Object Mapping (Nouns)
         vocabulary = {
-            "filesystem": "файлову систему",
-            "directory": "папку",
-            "directories": "папки",
-            "folder": "папку",
-            "folders": "папки",
-            "file": "файл",
-            "files": "файли",
-            "desktop": "робочий стіл",
-            "allowed": "дозволені",
-            "terminal": "термінал",
-            "screenshot": "знімок екрана",
-            "screen": "екран",
-            "notes": "нотатки",
-            "note": "нотатку",
-            "calendar": "календар",
-            "reminder": "нагадування",
-            "reminders": "нагадування",
-            "mail": "пошту",
-            "email": "пошту",
-            "notification": "сповіщення",
-            "element": "елемент",
-            "elements": "елементи",
-            "application": "програму",
-            "apps": "програми",
-            "browser": "браузер",
-            "path": "шлях",
-            "contents": "вміст",
-            "confirm": "підтвердити",
-            "resolve": "визначити",
-            "expand": "розгорнути",
-            "home": "домашній",
-            "canonical": "канонічний",
-            "active": "активного",
-            "task": "завдання",
-            "plan": "план",
-            "steps": "кроки",
-            "step": "крок",
-            "all": "усі",
-            "including": "включаючи",
-            "hidden": "приховані",
-            "items": "елементи",
-            "item": "елемент",
-            "total": "загальну",
-            "number": "кількість",
-            "count": "підрахувати",
-            "and": "та",
-            "with": "з",
-            "for": "для",
-            "in": "в",
-            "on": "на",
-            "to": "до",
-            "of": " ",
-            "the": " ",
-            "a": " ",
-            "an": " ",
-            "list": "список",
-            "listed": "перелічені",
-            "reading": "читаю",
-            "writing": "записую",
-            "user": "користувача",
+            "filesystem": "файлову систему", "directory": "папку", "directories": "папки",
+            "folder": "папку", "folders": "папки", "file": "файл", "files": "файли",
+            "desktop": "робочий стіл", "terminal": "термінал", "screenshot": "знімок екрана",
+            "screen": "екран", "notes": "нотатки", "note": "нотатку", "calendar": "календар",
+            "reminder": "нагадування", "reminders": "нагадування", "mail": "пошту",
+            "email": "пошту", "notification": "сповіщення", "application": "програму",
+            "apps": "програми", "browser": "браузер", "path": "шлях", "contents": "вміст",
+            "task": "завдання", "plan": "план", "steps": "кроки", "step": "крок",
+            "items": "елементи", "item": "елемент", "and": "та", "with": "з", "for": "для",
+            "in": "в", "on": "на", "to": "до", "of": " ", "the": " ", "a": " ", "an": " ",
+            "user": "користувача", "reading": "читаю", "writing": "записую",
         }
 
         words = essence.split()
-        translated_words = []
+        translated = []
         for word in words:
-            clean_word = word.strip(".,()[]{}'\"$").lower()
-            if clean_word in vocabulary:
-                val = vocabulary[clean_word]
+            clean = word.strip(".,()[]{}'\"$").lower()
+            if clean in vocabulary:
+                val = vocabulary[clean]
                 if val.strip():
-                    translated_words.append(val)
-            elif clean_word in ["$home", "home"]:
-                translated_words.append("домашню папку")
-            elif len(clean_word) > 1 and all(c in "0123456789abcdefABCDEF-/" for c in clean_word):
-                # Skip UUIDs, paths or hex ids which sound bad in TTS
-                continue
-            else:
-                translated_words.append(word)
+                    translated.append(val)
+            elif clean in ["$home", "home"]:
+                translated.append("домашню папку")
+            elif not (len(clean) > 1 and all(c in "0123456789abcdefABCDEF-/" for c in clean)):
+                translated.append(word)
+        return " ".join(translated)
 
-        essence = " ".join(translated_words)
-
-        # SECONDARY FILTER: REMOVE ANY WORDS THAT STILL CONTAIN ENGLISH CHARACTERS
-        # This prevents technical jargon like "vibe_server" or "json" from leaking into TTS.
+    def _clean_voice_essence(self, essence: str, action: str) -> str:
+        """Filter Latin characters and apply final cleanup."""
         import re
-
-        # Filter words that contain any Latin characters, unless they are numbers
+        # Remove words with Latin characters
         essence = " ".join([w for w in essence.split() if not re.search(r"[a-zA-Z]", w)])
+        essence = essence.replace("json", "дані").replace("api", "інтерфейс").replace("mcp", "система")
 
-        # Generic technical term replacement if they appear as standalone words
-        essence = (
-            essence.replace("json", "дані").replace("api", "інтерфейс").replace("mcp", "система")
-        )
-
-        # If essence becomes empty after filtering, use a generic fallback based on action
         if not essence.strip():
-            if action == "starting":
-                essence = "виконую заплановану дію"
-            elif action == "completed":
-                essence = "дію завершено"
-            else:
-                essence = "поточний етап"
+            fallbacks = {"starting": "виконую заплановану дію", "completed": "дію завершено"}
+            essence = fallbacks.get(action, "поточний етап")
+        return re.sub(r"\s+", " ", essence).strip()
 
-        # Clean up punctuation and spacing
-        essence = re.sub(r"\s+", " ", essence).strip()
+    def get_voice_message(self, action: str, **kwargs) -> str:
+        """Generates context-aware TTS message dynamically."""
+        voice_msg = kwargs.get("voice_message")
+        if voice_msg and len(voice_msg) > 5:
+            return cast(str, voice_msg)
 
-        # Construct message based on state
+        step_id = kwargs.get("step", 1)
+        desc = kwargs.get("description", "")
+        error = kwargs.get("error", "")
+
+        essence = self._extract_voice_essence(desc)
+        essence = self._apply_voice_translations(essence)
+        essence = self._clean_voice_essence(essence, action)
+
         if action == "completed":
             return f"Крок {step_id}: {essence} — виконано."
-        elif action == "failed":
-            err_essence = "Помилка."
-            if error:
-                # Clean error message
-                err_clean = str(error).split("\n")[0][:50]
-                err_essence = f"Помилка: {err_clean}"
-            return f"У кроці {step_id} не вдалося {essence}. {err_essence}"
-        elif action == "starting":
+        if action == "failed":
+            err_clean = str(error).split("\n")[0][:50] if error else "Помилка."
+            return f"У кроці {step_id} не вдалося {essence}. Помилка: {err_clean}"
+        if action == "starting":
             return f"Розпочинаю крок {step_id}: {essence}."
-        elif action == "asking_verification":
+        if action == "asking_verification":
             return f"Крок {step_id} завершено. Гріша, верифікуй."
 
         return f"Статус кроку {step_id}: {action}."
