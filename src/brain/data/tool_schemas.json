@@ -1570,5 +1570,74 @@
     "required": [],
     "optional": [],
     "description": "Run deep type checking for TypeScript (tsc --noEmit)."
+  },
+  "mcp_inspector_list_tools": {
+    "server": "devtools",
+    "required": ["server_name"],
+    "optional": [],
+    "types": {
+      "server_name": "str"
+    },
+    "description": "List all tools available on a specified MCP server via Inspector CLI."
+  },
+  "mcp_inspector_call_tool": {
+    "server": "devtools",
+    "required": ["server_name", "tool_name"],
+    "optional": ["args"],
+    "types": {
+      "server_name": "str",
+      "tool_name": "str",
+      "args": "dict"
+    },
+    "description": "Call a specific tool on an MCP server via Inspector CLI with JSON arguments."
+  },
+  "mcp_inspector_list_resources": {
+    "server": "devtools",
+    "required": ["server_name"],
+    "optional": [],
+    "types": {
+      "server_name": "str"
+    },
+    "description": "List all resources available on a specified MCP server via Inspector CLI."
+  },
+  "mcp_inspector_read_resource": {
+    "server": "devtools",
+    "required": ["server_name", "uri"],
+    "optional": [],
+    "types": {
+      "server_name": "str",
+      "uri": "str"
+    },
+    "description": "Read a specific resource from an MCP server by URI via Inspector CLI."
+  },
+  "mcp_inspector_list_prompts": {
+    "server": "devtools",
+    "required": ["server_name"],
+    "optional": [],
+    "types": {
+      "server_name": "str"
+    },
+    "description": "List all prompts available on a specified MCP server via Inspector CLI."
+  },
+  "mcp_inspector_get_prompt": {
+    "server": "devtools",
+    "required": ["server_name", "prompt_name"],
+    "optional": ["args"],
+    "types": {
+      "server_name": "str",
+      "prompt_name": "str",
+      "args": "dict"
+    },
+    "description": "Get a specific prompt from an MCP server with optional arguments via Inspector CLI."
+  },
+  "mcp_inspector_get_schema": {
+    "server": "devtools",
+    "required": ["server_name", "tool_name"],
+    "optional": [],
+    "types": {
+      "server_name": "str",
+      "tool_name": "str"
+    },
+    "description": "Get the JSON input schema for a specific tool on an MCP server."
   }
 }

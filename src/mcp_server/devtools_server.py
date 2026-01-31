@@ -167,6 +167,268 @@ def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
         return {"error": str(e)}
 
 
+# =============================================================================
+# MCP Inspector CLI Tools - Headless verification without UI
+# =============================================================================
+
+
+def _get_inspector_server_cmd(server_name: str) -> tuple[list[str], dict[str, str]] | dict[str, Any]:
+    """Build the inspector CLI command for a given server.
+
+    Returns tuple (cmd_parts, env) on success, or error dict on failure.
+    """
+    config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
+    if not config_path.exists():
+        return {"error": "MCP Configuration not found", "path": str(config_path)}
+
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+
+        server_config = config.get("mcpServers", {}).get(server_name)
+        if not server_config:
+            return {"error": f"Server '{server_name}' not found in configuration."}
+
+        command = server_config.get("command")
+        args = server_config.get("args", [])
+        env_vars = server_config.get("env", {})
+
+        # Build base command parts (will be joined with inspector args)
+        # Resolve common variables
+        resolved_args = []
+        for arg in args:
+            arg = arg.replace("${HOME}", str(Path.home()))
+            arg = arg.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+            resolved_args.append(arg)
+
+        resolved_command = command.replace("${HOME}", str(Path.home()))
+        resolved_command = resolved_command.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+
+        # Base inspector + server command
+        server_cmd = [resolved_command, *resolved_args]
+
+        # Prepare environment
+        env = os.environ.copy()
+        for k, v in env_vars.items():
+            val = v.replace("${GITHUB_TOKEN}", env.get("GITHUB_TOKEN", ""))
+            val = val.replace("${HOME}", str(Path.home()))
+            val = val.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+            env[k] = val
+
+        return (server_cmd, env)
+
+    except Exception as e:
+        return {"error": f"Failed to load config: {e}"}
+
+
+def _run_inspector_cli(
+    server_name: str,
+    method: str,
+    extra_args: list[str] | None = None,
+    timeout: float = 30.0,
+) -> dict[str, Any]:
+    """Run MCP Inspector CLI with specified method and return parsed JSON result."""
+    result = _get_inspector_server_cmd(server_name)
+    if isinstance(result, dict):
+        return result  # Error dict
+
+    server_cmd, env = result
+
+    # Build full inspector command
+    inspector_cmd = [
+        "npx",
+        "@modelcontextprotocol/inspector",
+        "--cli",
+        *server_cmd,
+        "--method",
+        method,
+    ]
+
+    if extra_args:
+        inspector_cmd.extend(extra_args)
+
+    try:
+        proc_result = subprocess.run(
+            inspector_cmd,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=timeout,
+            check=False,
+        )
+
+        stdout = proc_result.stdout.strip()
+        stderr = proc_result.stderr.strip()
+
+        if proc_result.returncode != 0:
+            return {
+                "success": False,
+                "error": stderr or f"Exit code {proc_result.returncode}",
+                "stdout": stdout,
+            }
+
+        if not stdout:
+            return {"success": True, "data": None, "note": "Empty response"}
+
+        try:
+            data = json.loads(stdout)
+            return {"success": True, "data": data}
+        except json.JSONDecodeError:
+            # Return raw output if not JSON
+            return {"success": True, "raw_output": stdout}
+
+    except subprocess.TimeoutExpired:
+        return {"error": f"Timeout after {timeout}s"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@server.tool()
+def mcp_inspector_list_tools(server_name: str) -> dict[str, Any]:
+    """List all tools available on a specified MCP server via Inspector CLI.
+
+    Args:
+        server_name: Name of the MCP server (e.g., 'filesystem', 'memory', 'vibe').
+
+    Returns:
+        Dict with 'success' and 'data' (list of tools with names and schemas).
+    """
+    return _run_inspector_cli(server_name, "tools/list")
+
+
+@server.tool()
+def mcp_inspector_call_tool(
+    server_name: str,
+    tool_name: str,
+    args: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Call a specific tool on an MCP server via Inspector CLI.
+
+    Args:
+        server_name: Name of the MCP server.
+        tool_name: Name of the tool to call.
+        args: Optional dictionary of arguments to pass to the tool.
+
+    Returns:
+        Dict with 'success' and 'data' (tool execution result).
+    """
+    extra_args = ["--tool-name", tool_name]
+
+    if args:
+        for key, value in args.items():
+            if isinstance(value, (dict, list)):
+                extra_args.extend(["--tool-arg", f"{key}={json.dumps(value)}"])
+            else:
+                extra_args.extend(["--tool-arg", f"{key}={value}"])
+
+    return _run_inspector_cli(server_name, "tools/call", extra_args)
+
+
+@server.tool()
+def mcp_inspector_list_resources(server_name: str) -> dict[str, Any]:
+    """List all resources available on a specified MCP server via Inspector CLI.
+
+    Args:
+        server_name: Name of the MCP server.
+
+    Returns:
+        Dict with 'success' and 'data' (list of resources with URIs and descriptions).
+    """
+    return _run_inspector_cli(server_name, "resources/list")
+
+
+@server.tool()
+def mcp_inspector_read_resource(server_name: str, uri: str) -> dict[str, Any]:
+    """Read a specific resource from an MCP server via Inspector CLI.
+
+    Args:
+        server_name: Name of the MCP server.
+        uri: URI of the resource to read.
+
+    Returns:
+        Dict with 'success' and 'data' (resource contents).
+    """
+    extra_args = ["--uri", uri]
+    return _run_inspector_cli(server_name, "resources/read", extra_args)
+
+
+@server.tool()
+def mcp_inspector_list_prompts(server_name: str) -> dict[str, Any]:
+    """List all prompts available on a specified MCP server via Inspector CLI.
+
+    Args:
+        server_name: Name of the MCP server.
+
+    Returns:
+        Dict with 'success' and 'data' (list of prompts with names and descriptions).
+    """
+    return _run_inspector_cli(server_name, "prompts/list")
+
+
+@server.tool()
+def mcp_inspector_get_prompt(
+    server_name: str,
+    prompt_name: str,
+    args: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Get a specific prompt from an MCP server via Inspector CLI.
+
+    Args:
+        server_name: Name of the MCP server.
+        prompt_name: Name of the prompt to retrieve.
+        args: Optional dictionary of arguments to pass to the prompt.
+
+    Returns:
+        Dict with 'success' and 'data' (prompt content with messages).
+    """
+    extra_args = ["--prompt-name", prompt_name]
+
+    if args:
+        for key, value in args.items():
+            extra_args.extend(["--prompt-args", f"{key}={value}"])
+
+    return _run_inspector_cli(server_name, "prompts/get", extra_args)
+
+
+@server.tool()
+def mcp_inspector_get_schema(server_name: str, tool_name: str) -> dict[str, Any]:
+    """Get the JSON schema for a specific tool on an MCP server.
+
+    Args:
+        server_name: Name of the MCP server.
+        tool_name: Name of the tool to get schema for.
+
+    Returns:
+        Dict with 'success' and 'schema' (input schema for the tool).
+    """
+    # First list all tools, then extract the specific one
+    result = _run_inspector_cli(server_name, "tools/list")
+
+    if not result.get("success"):
+        return result
+
+    data = result.get("data")
+    if not data:
+        return {"error": "No tools data returned"}
+
+    # Handle different response formats
+    tools_list = data.get("tools", data) if isinstance(data, dict) else data
+
+    if not isinstance(tools_list, list):
+        return {"error": "Unexpected tools format", "raw": data}
+
+    for tool in tools_list:
+        if isinstance(tool, dict) and tool.get("name") == tool_name:
+            return {
+                "success": True,
+                "tool_name": tool_name,
+                "schema": tool.get("inputSchema", tool.get("schema", {})),
+                "description": tool.get("description", ""),
+            }
+
+    return {"error": f"Tool '{tool_name}' not found on server '{server_name}'"}
+
+
 @server.tool()
 def devtools_validate_config() -> dict[str, Any]:
     """Validate the syntax and basic structure of the local MCP configuration file."""

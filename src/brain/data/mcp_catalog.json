@@ -264,7 +264,7 @@
     "name": "devtools",
     "tier": 2,
     "category": "developer",
-    "description": "Developer Tools (Linter, Analysis & Architecture) wrapper",
+    "description": "Developer Tools (Linter, Analysis, Architecture & MCP Inspector CLI) wrapper",
     "capabilities": [
       "Python linting (Ruff)",
       "JavaScript/TypeScript linting (Oxlint)",
@@ -272,10 +272,14 @@
       "Code integrity check (Pyrefly)",
       "MCP Server Health Check (Ping/Status)",
       "MCP Inspector Launch (Web Debugger)",
+      "MCP Inspector CLI (Headless tool/resource/prompt inspection)",
       "MCP Config Validation",
-      "Auto-update architecture diagrams from git diffs (NEW)",
+      "Auto-update architecture diagrams from git diffs",
       "Git change analysis with sequential-thinking integration",
-      "Mermaid diagram generation and export"
+      "Mermaid diagram generation and export",
+      "Security auditing (Bandit, Safety, detect-secrets)",
+      "Complexity analysis (Xenon)",
+      "Type checking (MyPy, tsc)"
     ],
     "key_tools": [
       "devtools_lint_python",
@@ -289,9 +293,17 @@
       "devtools_check_security",
       "devtools_check_complexity",
       "devtools_check_types_python",
-      "devtools_check_types_ts"
+      "devtools_check_types_ts",
+      "mcp_inspector_list_tools",
+      "mcp_inspector_call_tool",
+      "mcp_inspector_list_resources",
+      "mcp_inspector_read_resource",
+      "mcp_inspector_list_prompts",
+      "mcp_inspector_get_prompt",
+      "mcp_inspector_get_schema"
     ],
-    "when_to_use": "Validating code quality, finding errors, checking project health, and auto-updating architecture diagrams after code changes."
+    "when_to_use": "Validating code quality, finding errors, checking project health, auto-updating architecture diagrams, and deep MCP server inspection/testing via CLI.",
+    "priority_note": "Use mcp_inspector_* tools for headless MCP debugging and verification. These are essential for Atlas self-analysis and Vibe-based auto-repair."
   },
   "golden-fund": {
     "name": "golden-fund",
