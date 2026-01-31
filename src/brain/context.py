@@ -63,6 +63,9 @@ class SharedContext:
     total_steps: int = 0
     available_mcp_catalog: str = ""
 
+    # Critical Discoveries - persists important values across recursive levels
+    critical_discoveries: dict[str, str] = field(default_factory=dict)
+
     def __post_init__(self):
         # Detect if application is packaged (binary/app mode)
         import sys
@@ -275,6 +278,44 @@ class SharedContext:
             from .logger import logger
 
             logger.warning(f"[CONTEXT] Failed to sync max_recursive_depth from config: {e}")
+
+    # --- Critical Discoveries API ---
+    def store_discovery(self, key: str, value: str, category: str = "general") -> None:
+        """Store a critical discovery for cross-step access.
+        
+        Args:
+            key: Unique identifier (e.g., 'mikrotik_ip', 'kali_ssh_key')
+            value: The discovered value
+            category: Category for grouping (ip_address, ssh_key_path, mac_address, general)
+        """
+        full_key = f"{category}:{key}" if category != "general" else key
+        self.critical_discoveries[full_key] = value
+        from .logger import logger
+        logger.info(f"[CONTEXT] Stored discovery: {full_key}={value[:50]}...")
+
+    def get_discovery(self, key: str, category: str = "general") -> str | None:
+        """Retrieve a stored discovery."""
+        full_key = f"{category}:{key}" if category != "general" else key
+        return self.critical_discoveries.get(full_key)
+
+    def get_all_discoveries(self, category: str | None = None) -> dict[str, str]:
+        """Get all discoveries, optionally filtered by category."""
+        if category is None:
+            return self.critical_discoveries.copy()
+        return {k: v for k, v in self.critical_discoveries.items() if k.startswith(f"{category}:")}
+
+    def get_discoveries_summary(self) -> str:
+        """Get formatted summary for injection into agent prompts."""
+        if not self.critical_discoveries:
+            return ""
+        lines = ["📦 CRITICAL DISCOVERIES (use these values directly):"]
+        for k, v in self.critical_discoveries.items():
+            lines.append(f"  • {k}: {v}")
+        return "\n".join(lines)
+
+    def clear_discoveries(self) -> None:
+        """Clear all discoveries (e.g., when starting a new task)."""
+        self.critical_discoveries.clear()
 
 
 # Singleton instance - import this in other modules
