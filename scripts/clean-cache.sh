@@ -11,6 +11,10 @@ find . -type f -name "*.pyc" -delete 2>/dev/null
 find . -type f -name "*.pyo" -delete 2>/dev/null
 find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null
 
+# Очищення Linter та Test кешів
+echo "  • Очищення linter та test кешів (.ruff, .pytest, .pyrefly)..."
+rm -rf .ruff_cache .pytest_cache .pyrefly_cache .mypy_cache 2>/dev/null
+
 # Очищення Node кешу
 echo "  • Очищення Node node_modules/.cache..."
 rm -rf node_modules/.cache 2>/dev/null
@@ -19,9 +23,21 @@ rm -rf node_modules/.cache 2>/dev/null
 echo "  • Очищення Vite кешу..."
 rm -rf .vite 2>/dev/null
 
+# Очищення логів
+echo "  • Очищення логів..."
+rm -rf logs/* 2>/dev/null
+
 # Очищення Electron cache
 echo "  • Очищення Electron кешу..."
 rm -rf ~/Library/Caches/atlastrinity* 2>/dev/null
+
+# Очищення локального кешу в .config
+echo "  • Очищення локального кешу конфігурації..."
+rm -rf ~/.config/atlastrinity/cache/* 2>/dev/null
+
+# Очищення Redis
+echo "  • Очищення Redis (flushall)..."
+redis-cli flushall 2>/dev/null || echo "    (Redis не знайдено або не запущено)"
 
 # Очищення білдів
 echo "  • Очищення дистрибутивів та білд-інфо..."
@@ -32,7 +48,7 @@ rm -f *.tsbuildinfo 2>/dev/null
 # Очищення зображень STT/TTT
 
 # Вбивство завислих процесів
-echo "  • Вбивство завислих процесів (port 8000, MCP servers)..."
+echo "  • Вбивство завислих процесів (port 8000, 8088, MCP servers)..."
 # Вбиваємо все на порту 8000/8088 (brain.server)
 lsof -ti :8000 -ti :8088 | xargs kill -9 2>/dev/null || true
 # Вбиваємо основні MCP сервери за маскою
