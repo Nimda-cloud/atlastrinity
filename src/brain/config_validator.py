@@ -11,7 +11,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -122,7 +122,7 @@ class ConfigValidator:
         expected = type_map.get(expected_type)
         if expected is None:
             return True
-        return isinstance(value, expected)
+        return isinstance(value, expected) if isinstance(expected, (type, tuple)) else True
 
     def _check_range(self, value: Any, range_tuple: tuple) -> bool:
         """Check if numeric value is within range."""
@@ -312,7 +312,7 @@ class ConfigValidator:
                 current_path = f"{server_path}.{key}"
 
                 if key not in server_config:
-                    if spec.get("_required"):
+                    if cast(dict[str, Any], spec).get("_required"):
                         issues.append(
                             ValidationIssue(
                                 level="error",
@@ -323,7 +323,7 @@ class ConfigValidator:
                     continue
 
                 value = server_config.get(key)
-                expected_type = spec.get("_type")
+                expected_type = cast(dict[str, Any], spec).get("_type")
 
                 if (
                     expected_type
@@ -340,15 +340,15 @@ class ConfigValidator:
                     )
 
                 if (
-                    "_range" in spec
-                    and isinstance(spec.get("_range"), tuple)
-                    and not self._check_range(value, spec["_range"])
+                    "_range" in cast(dict[str, Any], spec)
+                    and isinstance(cast(dict[str, Any], spec).get("_range"), tuple)
+                    and not self._check_range(value, cast(dict[str, Any], spec)["_range"])
                 ):
                     issues.append(
                         ValidationIssue(
                             level="warning",
                             path=current_path,
-                            message=f"Value {value} outside range {spec['_range']}",
+                            message=f"Value {value} outside range {cast(dict[str, Any], spec)['_range']}",
                             value=value,
                         ),
                     )
