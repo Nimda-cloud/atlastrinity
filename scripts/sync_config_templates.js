@@ -44,6 +44,11 @@ const CONFIG_MAPPINGS = [
     destination: path.join(MCP_DIR, 'config.json'),
     description: 'MCP servers configuration',
   },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'prometheus.yml.template'),
+    destination: path.join(CONFIG_ROOT, 'prometheus.yml'),
+    description: 'Prometheus metrics configuration',
+  },
 ];
 
 function ensureDirectoryExists(dirPath) {

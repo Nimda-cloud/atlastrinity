@@ -29,7 +29,9 @@ MAPPINGS: Dict[str, str] = {
     "config.yaml.template": "config.yaml",
     "behavior_config.yaml.template": "behavior_config.yaml",
     "vibe_config.toml.template": "vibe_config.toml",
+
     "mcp_servers.json.template": "mcp/config.json",
+    "prometheus.yml.template": "prometheus.yml",
 }
 
 def process_template(src_path: Path, dst_path: Path):
