@@ -1968,7 +1968,7 @@ class Grisha(BaseAgent):
                         )
                         if res.returncode == 0 and os.path.exists(path):
                             with Image.open(path) as img:
-                                display_imgs.append(img.copy())
+                                display_imgs.append(img.copy())  # type: ignore[arg-type]
                             consecutive_failures = 0
                         else:
                             consecutive_failures += 1
@@ -2004,7 +2004,7 @@ class Grisha(BaseAgent):
                     max_h = max(img.height for img in display_imgs)
                     desktop_canvas = Image.new("RGB", (total_w, max_h), (0, 0, 0))
                     x_off = 0
-                    for img in display_imgs:
+                    for img in display_imgs:  # type: ignore[arg-type]
                         desktop_canvas.paste(img, (x_off, 0))  # type: ignore[arg-type]
                         x_off += img.width
 

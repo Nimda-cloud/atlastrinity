@@ -13,12 +13,17 @@ logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("golden_fund.transformer")
 
 # Import validation module for integration
+DataValidator: type[Any] | None = None
+ValidationResult: type[Any] | None = None
+
 try:
-    from .validation import DataValidator, ValidationResult
+    from .validation import DataValidator as ImportedDataValidator
+    from .validation import ValidationResult as ImportedValidationResult
+    DataValidator = ImportedDataValidator
+    ValidationResult = ImportedValidationResult
 except ImportError:
     # Fallback for when validation module is not available
-    DataValidator: type[Any] | None = None
-    ValidationResult: type[Any] | None = None
+    pass
 
 
 class TransformResult:
