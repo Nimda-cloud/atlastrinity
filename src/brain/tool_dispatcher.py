@@ -672,7 +672,7 @@ class ToolDispatcher:
                     result["server"] = server
                     result["tool"] = resolved_tool
 
-            return result
+            return cast(dict[str, Any], result)
 
         except Exception as e:
             logger.error(
