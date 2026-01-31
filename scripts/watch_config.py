@@ -63,7 +63,7 @@ def process_template(src_path: Path, dst_path: Path):
         # Smart write: only overwrite if content is actually different
         if dst_path.exists():
             try:
-                with open(dst_path, "r", encoding="utf-8") as f:
+                with open(dst_path, encoding="utf-8") as f:
                     if f.read() == content:
                         return # Content is identical, skip write
             except Exception:
