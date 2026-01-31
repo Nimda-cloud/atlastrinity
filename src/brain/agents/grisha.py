@@ -30,11 +30,11 @@ from src.brain.logger import logger
 from src.brain.prompts import AgentPrompts
 from src.brain.prompts.grisha import (
     GRISHA_DEEP_VALIDATION_REASONING,
+    GRISHA_FIX_PLAN_PROMPT,
     GRISHA_FORENSIC_ANALYSIS,
     GRISHA_LOGICAL_VERDICT,
     GRISHA_PLAN_VERIFICATION_PROMPT,
     GRISHA_VERIFICATION_GOAL_ANALYSIS,
-    GRISHA_FIX_PLAN_PROMPT,
 )
 
 
