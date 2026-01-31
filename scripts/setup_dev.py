@@ -12,13 +12,13 @@ import argparse
 import asyncio
 import json
 import os
-from pathlib import Path
 import platform
 import select
 import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 
 # Кольори для консолі
