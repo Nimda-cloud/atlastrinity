@@ -362,7 +362,7 @@ class MCPManager:
                 return None
             try:
                 session = await asyncio.wait_for(fut, timeout=connect_timeout)
-                return session
+                return cast("ClientSession | None", session)
             except Exception as e:
                 logger.error(f"Existing connection for {server_name} failed to initialize: {e}")
                 return None
@@ -459,7 +459,7 @@ class MCPManager:
 
         try:
             session = await asyncio.wait_for(session_future, timeout=connect_timeout)
-            return session
+            return cast("ClientSession | None", session)
         except Exception as e:
             # If we couldn't initialize, ask runner to exit and await it
             logger.error(f"Failed to connect to {server_name}: {type(e).__name__}: {e}")

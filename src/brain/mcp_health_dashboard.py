@@ -10,7 +10,7 @@ Centralized health monitoring for all MCP servers with:
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from .logger import logger
 
@@ -96,13 +96,13 @@ class MCPHealthDashboard:
         """Get tier level for a server from config."""
         config = self.mcp_manager.config.get("mcpServers", {})
         server_config = config.get(server_name, {})
-        return server_config.get("tier", 4)  # Default to Tier 4
+        return cast(int, server_config.get("tier", 4))  # Default to Tier 4
 
     def _get_server_description(self, server_name: str) -> str:
         """Get description for a server from config."""
         config = self.mcp_manager.config.get("mcpServers", {})
         server_config = config.get(server_name, {})
-        return server_config.get("description", "")
+        return cast(str, server_config.get("description", ""))
 
     async def _check_single_server(self, server_name: str) -> ServerStatus:
         """Check health of a single server.

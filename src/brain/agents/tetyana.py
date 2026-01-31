@@ -8,6 +8,7 @@ Model: Configured model
 
 import asyncio
 import os
+from typing import Any, cast
 
 # Robust path handling for both Dev and Production (Packaged)
 import sys
@@ -319,14 +320,14 @@ Respond in JSON:
                         logger.info(
                             f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}",
                         )
-                        return item.text
+                        return cast(str, item.text)
             elif isinstance(result, dict) and "entities" in result:
                 entities = result["entities"]
                 if entities and len(entities) > 0:
                     logger.info(
                         f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}",
                     )
-                    return entities[0].get("observations", [""])[0]
+                    return cast(str, entities[0].get("observations", [""])[0])
 
         except Exception as e:
             logger.warning(f"[TETYANA] Could not retrieve Grisha's feedback: {e}")
@@ -860,8 +861,8 @@ IMPORTANT:
                     }
                 else:
                     tool_call = (
-                        proposed
-                        or step.get("tool_call")
+                        cast(dict[str, Any], proposed)
+                        or cast(dict[str, Any], step.get("tool_call"))
                         or {
                             "name": step.get("tool") or "",
                             "args": step.get("args")
@@ -1137,8 +1138,8 @@ IMPORTANT:
                 logger.error(f"[TETYANA] Reflexion failed: {re}")
                 break
 
-        voice_msg = tool_result.get("voice_message") or (
-            monologue.get("voice_message") if attempt == 1 else None
+        voice_msg = cast(str | None, tool_result.get("voice_message")) or (
+            cast(str | None, monologue.get("voice_message")) if attempt == 1 else None
         )
 
         # Fallback if no specific voice message from LLM/Tool
@@ -1269,7 +1270,7 @@ IMPORTANT:
         from ..mcp_manager import mcp_manager
 
         try:
-            return await mcp_manager.dispatch_tool(tool, args, server)
+            return cast(dict[str, Any], await mcp_manager.dispatch_tool(tool, args, server))
         except Exception as e:
             logger.error(f"[TETYANA] Unified call failed for {server}.{tool}: {e}")
             return {"success": False, "error": str(e)}
@@ -1874,7 +1875,7 @@ IMPORTANT:
         # 1. Use LLM-provided message if available (Highest Priority)
         voice_msg = kwargs.get("voice_message")
         if voice_msg and len(voice_msg) > 5:
-            return voice_msg
+            return cast(str, voice_msg)
 
         # 2. Dynamic generation based on context
         step_id = kwargs.get("step", 1)

@@ -4,7 +4,7 @@ This module provides common functionality used by Atlas, Tetyana, and Grisha age
 """
 
 import json
-from typing import Any
+from typing import Any, cast
 
 
 class BaseAgent:
@@ -24,13 +24,13 @@ class BaseAgent:
             start = content.find("{")
             end = content.rfind("}") + 1
             if start >= 0 and end > start:
-                return json.loads(content[start:end])
+                return cast(dict[str, Any], json.loads(content[start:end]))
         except json.JSONDecodeError:
             pass
 
         # 2. Fuzzy YAML-like parsing (handles LLM responses like "verified: true\nconfidence: 0.9")
         try:
-            data = {}
+            data: dict[str, Any] = {}
             for line in content.strip().split("\n"):
                 if ":" in line:
                     key, value = line.split(":", 1)
@@ -134,9 +134,8 @@ Generate the next logical thought to analyze this problem.
                         HumanMessage(content=prompt),
                     ],
                 )
-                thought_content = (
-                    response.content if hasattr(response, "content") else str(response)
-                )
+                content_raw = response.content if hasattr(response, "content") else str(response)
+                thought_content = content_raw if isinstance(content_raw, str) else str(content_raw)
 
                 # 4. Record thought via MCP tool (records history)
                 logger.debug(f"[{agent_name}] Thought cycle {i}: {thought_content[:100]}...")
