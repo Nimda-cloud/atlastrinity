@@ -218,13 +218,34 @@ def check_system_tools():
         print_info("Встановіть Xcode або Command Line Tools: xcode-select --install")
 
     # 4. Check for Full Xcode (for XcodeBuildMCP)
+    xcode_app = Path("/Applications/Xcode.app")
     if shutil.which("xcodebuild"):
         result = subprocess.run(["xcodebuild", "-version"], capture_output=True, text=True, check=False)
         if result.returncode == 0:
             print_success("Повний Xcode знайдено")
+        elif xcode_app.exists():
+            print_warning("Знайдено тільки Command Line Tools, але Xcode.app існує!")
+            print(f"{Colors.BOLD}Бажаєте переключитись на повний Xcode? (sudo xcode-select -s /Applications/Xcode.app){Colors.ENDC}")
+            print(f"Натисніть {Colors.BOLD}Enter{Colors.ENDC} протягом 5 секунд для підтвердження...")
+            
+            # Timed input
+            rlist, _, _ = select.select([sys.stdin], [], [], 5)
+            if rlist:
+                sys.stdin.readline() # consume input
+                try:
+                    print_info("Запуск sudo xcode-select...")
+                    subprocess.run(["sudo", "xcode-select", "-s", "/Applications/Xcode.app"], check=True)
+                    print_success("Переключено на повний Xcode")
+                except Exception as e:
+                    print_error(f"Не вдалося переключитись: {e}")
+            else:
+                print_info("Переключення скасовано (тайм-аут)")
         else:
             print_warning("Знайдено тільки Command Line Tools (повний Xcode відсутній)")
             print_info("XcodeBuildMCP буде пропущено при налаштуванні.")
+    elif xcode_app.exists():
+        print_warning("Xcode.app знайдено, але не активовано!")
+        # Similar logic here if needed, but shutil.which would usually find it if app exists and is linked properly
     else:
         print_warning("Xcode не знайдено")
         print_info("XcodeBuildMCP буде пропущено при налаштуванні.")
