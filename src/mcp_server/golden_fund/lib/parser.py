@@ -10,8 +10,12 @@ from .formats import CSVParser, JSONParser, ParseResult, XMLParser
 
 
 class DataParser:
-    def __init__(self):
-        self._parsers = {"json": JSONParser(), "csv": CSVParser(), "xml": XMLParser()}
+    def __init__(self) -> None:
+        self._parsers: dict[str, JSONParser | CSVParser | XMLParser] = {
+            "json": JSONParser(),
+            "csv": CSVParser(),
+            "xml": XMLParser(),
+        }
 
     def parse(self, file_path: str | Path, format_hint: str | None = None) -> ParseResult:
         file_path = Path(file_path)
