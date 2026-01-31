@@ -434,11 +434,11 @@ monitoring:
     logging_format: json
     log_level: info
     
-  # OpenSearch configuration
+  # Storage configuration (Defaults to SQLite for standalone binary)
+  # OpenSearch is optional for advanced server-based setups
   opensearch:
-    enabled: true
-    # Connection settings (would be configured in production)
-    hosts: []
+    enabled: false 
+    hosts: ["http://localhost:9200"]
     index_prefix: "atlastrinity"
     
   # OpenTelemetry tracing configuration
