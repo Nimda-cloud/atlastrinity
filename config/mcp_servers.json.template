@@ -235,7 +235,7 @@
       "env": {
         "PYTHONPATH": "${PROJECT_ROOT}"
       },
-      "description": "Developer Tools (Linter & Analysis) wrapper (Ruff, Oxlint, Knip, Pyrefly, Inspector, Health).",
+      "description": "Developer Tools (Linter, Analysis, MCP Inspector CLI & Sandbox) wrapper (Ruff, Oxlint, Knip, Pyrefly, Inspector, Health, Sandbox). PRIMARY for system self-analysis and tool verification.",
       "disabled": false,
       "tier": 2,
       "agents": [
@@ -325,8 +325,8 @@
     }
   },
   "_metadata": {
-    "version": "4.7",
-    "last_updated": "2026-01-28",
+    "version": "4.8",
+    "last_updated": "2026-01-31",
     "description": "Synced MCP configuration for AtlasTrinity - matches mcp_registry.py and data/ JSONs",
     "active_servers": 17,
     "total_servers": 18,
