@@ -40,10 +40,10 @@ Collected Evidence:
 {results_summary}
 
 Verification Purpose (from Phase 1):
-{goal_analysis.get("verification_purpose", "Unknown")}
+{verification_purpose}
 
 Success Criteria:
-{goal_analysis.get("success_criteria", "Unknown")}
+{success_criteria}
 
 General Goal (For Context): {goal_context}
 
