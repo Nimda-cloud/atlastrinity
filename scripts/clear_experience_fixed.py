@@ -6,10 +6,10 @@ This script properly clears cached data, memory, and temporary files.
 """
 
 import asyncio
-import sys
+import os
 import shutil
 import subprocess
-import os
+import sys
 from pathlib import Path
 
 # Add project root to sys.path
@@ -17,9 +17,10 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from sqlalchemy import text
+
+from src.brain.config import CONFIG_ROOT
 from src.brain.db.manager import db_manager
 from src.brain.memory import long_term_memory
-from src.brain.config import CONFIG_ROOT
 
 
 def kill_processes():
