@@ -991,22 +991,28 @@ IMPORTANT:
 
         # --- PHASE 2.5: AGENTIC EVIDENCE VERIFICATION ---
         # "Empty Proof" Detector: If success=True but output is empty, it MIGHT be a failure.
-        # We don't hardcode "fail", we just flag it to trigger Reflexion.
+        # We only flag it for informative tools that MUST return data.
         output_data = tool_result.get("output", "") or tool_result.get("result", "")
-        if (
-            tool_result.get("success") and not output_data.strip()
-            # We assume most useful tools return SOMETHING. Even mkdir returns nothing but we can verify it.
-            # We let the Reflexion Loop decide if empty is okay.
-        ):
+        is_empty = not str(output_data).strip()
+        
+        # Tools that are EXPECTED to return data
+        data_intensive_tools = ["read_file", "search", "list_directory", "execute_command", "vibe_prompt"]
+        current_tool_name = str(tool_call.get("name", "")).lower()
+        
+        if tool_result.get("success") and is_empty and any(t in current_tool_name for t in data_intensive_tools):
             logger.warning(
-                f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering Reflexion..."
+                f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering soft-failure Reflexion..."
             )
             # We treat this as a "Soft Failure" to force the agent to think: "Is this okay?"
             tool_result["success"] = False
             tool_result["error"] = (
-                "SUSPICIOUS_RESULT: Tool executed successfully (Exit Code 0) but returned NO OUTPUT. Verify if this step requires evidence (logs, text, files) for Grisha. If output is expected, this is a FAILURE."
+                f"SUSPICIOUS_RESULT: Tool '{current_tool_name}' returned NO OUTPUT despite being a data-source. "
+                "If this is expected (e.g. empty directory, successful but silent command), explain it in thought. "
+                "Otherwise, it is a FAILURE requiring a different approach."
             )
-            # Logic: If the agent looks at this error and thinks "Wait, mkdir SHOULD be empty", it can force success in the next loop or use a verification tool.
+        elif tool_result.get("success") and is_empty:
+             # For other tools (mkdir, write_file, etc.), empty is fine but we note it
+             logger.info(f"[TETYANA] Tool '{current_tool_name}' returned silent success (empty output).")
 
         # --- PHASE 3: TECHNICAL REFLEXION (if failed) ---
         # OPTIMIZATION: Skip LLM reflexion for transient errors
@@ -1179,6 +1185,19 @@ IMPORTANT:
 
         tool_name = tool_call.get("name") or tool_call.get("tool")
         args = tool_call.get("args") or tool_call.get("arguments") or {}
+        
+        # DEFENSIVE MAPPING: Fix common LLM hallucinations
+        if isinstance(args, dict):
+            # 1. new_path -> path (common in read_file/write_file)
+            if "new_path" in args and "path" not in args:
+                args["path"] = args.pop("new_path")
+                logger.info("[TETYANA] Fixed hallucinated argument: new_path -> path")
+            
+            # 2. cmd -> command
+            if "cmd" in args and "command" not in args:
+                args["command"] = args.pop("cmd")
+                logger.info("[TETYANA] Fixed hallucinated argument: cmd -> command")
+
         explicit_server = tool_call.get("server")
 
         try:

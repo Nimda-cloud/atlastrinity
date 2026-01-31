@@ -83,7 +83,7 @@ class AgentPrompts:
 
         Your task is to choose the BEST tool and arguments.
         CRITICAL RULES:
-        1. Follow the 'Schema' provided for each tool EXACTLY.
+        1. Follow the 'Schema' provided for each tool EXACTLY. Arguments MUST match the names in the schema (e.g., if schema says 'path', do NOT use 'new_path').
         2. ADHERE STRICTLY to the plan sequence above. Do not skip or reorder steps.
         3. If there is feedback from Grisha or other agents above, ADAPT your strategy to address their concerns.
         4. If you are unsure or need clarification from Atlas to proceed, use the "question_to_atlas" field.
@@ -110,6 +110,7 @@ class AgentPrompts:
         TOOL SELECTION GUIDE:
         - Shell commands: "macos-use.execute_command" with {{"command": "..."}}.
         - Create folders: "macos-use.execute_command" with {{"command": "mkdir -p /path"}}.
+        - Read file: "filesystem.read_file" with {{"path": "/absolute/path/to/file"}}.
         - Open Finder at a path: "macos-use.macos-use_finder_open_path" with {{"path": "~/Desktop"}}.
         - List files in Finder: "macos-use.macos-use_finder_list_files".
         - Move to trash: "macos-use.macos-use_finder_move_to_trash" with {{"path": "..."}}.
