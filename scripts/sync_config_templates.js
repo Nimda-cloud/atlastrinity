@@ -38,6 +38,21 @@ const CONFIG_MAPPINGS = [
     destination: path.join(CONFIG_ROOT, 'vibe_config.toml'),
     description: 'Vibe CLI configuration',
   },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe', 'agents', 'accept-edits.toml.template'),
+    destination: path.join(CONFIG_ROOT, 'vibe', 'agents', 'accept-edits.toml'),
+    description: 'Vibe Agent: Accept Edits',
+  },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe', 'agents', 'auto-approve.toml.template'),
+    destination: path.join(CONFIG_ROOT, 'vibe', 'agents', 'auto-approve.toml'),
+    description: 'Vibe Agent: Auto Approve',
+  },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe', 'agents', 'plan.toml.template'),
+    destination: path.join(CONFIG_ROOT, 'vibe', 'agents', 'plan.toml'),
+    description: 'Vibe Agent: Plan',
+  },
 
   {
     template: path.join(PROJECT_ROOT, 'config', 'mcp_servers.json.template'),

@@ -1,8 +1,7 @@
 # Plan agent configuration for Vibe
-system_prompt_id = "cli"
+# Conservative mode for planning and exploration
 
-# Empty list means all tools enabled
-enabled_tools = []
+system_prompt_id = "cli"
 
 [tools.bash]
 permission = "ask"
@@ -10,14 +9,14 @@ permission = "ask"
 [tools.write_file]
 permission = "ask"
 
+[tools.search_replace]
+permission = "ask"
+
 [tools.read_file]
 permission = "always"
 
 [tools.grep]
 permission = "always"
-
-[tools.search_replace]
-permission = "ask"
 
 [tools."*"]
 permission = "ask"
