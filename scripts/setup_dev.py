@@ -215,6 +215,19 @@ def check_system_tools():
 
     if "swift" in missing:
         print_error("Swift необхідний для компіляції macos-use MCP серверу!")
+        print_info("Встановіть Xcode або Command Line Tools: xcode-select --install")
+
+    # 4. Check for Full Xcode (for XcodeBuildMCP)
+    if shutil.which("xcodebuild"):
+        result = subprocess.run(["xcodebuild", "-version"], capture_output=True, text=True, check=False)
+        if result.returncode == 0:
+            print_success("Повний Xcode знайдено")
+        else:
+            print_warning("Знайдено тільки Command Line Tools (повний Xcode відсутній)")
+            print_info("XcodeBuildMCP буде пропущено при налаштуванні.")
+    else:
+        print_warning("Xcode не знайдено")
+        print_info("XcodeBuildMCP буде пропущено при налаштуванні.")
 
     return "brew" not in missing  # Brew є обов'язковим
 
