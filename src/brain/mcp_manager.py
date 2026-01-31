@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -68,7 +69,7 @@ class MCPManager:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.sessions: dict[str, ClientSession] = {}
         # Per-server connection tasks and control structures
         self._connection_tasks: dict[str, asyncio.Task] = {}
@@ -81,7 +82,7 @@ class MCPManager:
 
         self.config = self._load_config()
         self._lock = asyncio.Lock()
-        self._log_callbacks = []
+        self._log_callbacks: list[Callable[[str, str, str], Any]] = []
 
         # Unified tool dispatching
         from .tool_dispatcher import ToolDispatcher

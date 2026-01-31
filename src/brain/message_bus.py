@@ -70,7 +70,7 @@ class MessageBus:
     - Read tracking for message acknowledgment
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._queue: dict[str, list[AgentMsg]] = {
             "atlas": [],
             "tetyana": [],

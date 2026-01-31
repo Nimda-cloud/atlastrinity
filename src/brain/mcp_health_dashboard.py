@@ -72,7 +72,7 @@ class MCPHealthDashboard:
     - Server categorization by tier and status
     """
 
-    def __init__(self, mcp_manager=None):
+    def __init__(self, mcp_manager=None) -> None:
         """Initialize dashboard.
 
         Args:

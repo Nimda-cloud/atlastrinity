@@ -22,7 +22,7 @@ class NotificationManager:
     - Show progress updates
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.pending_decisions: list[dict] = []
         self.notification_history: list[dict] = []
 

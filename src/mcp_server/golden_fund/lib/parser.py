@@ -26,4 +26,4 @@ class DataParser:
         if not parser:
             return ParseResult(False, error=f"No parser for format: {format_hint}")
 
-        return cast(ParseResult, parser.parse(file_path))
+        return parser.parse(file_path)
