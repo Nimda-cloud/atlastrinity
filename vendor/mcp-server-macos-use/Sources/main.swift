@@ -1769,29 +1769,7 @@ func setupAndStartServer() async throws -> Server {
 
             // --- Dynamic Help Handler ---
             case dynamicHelpTool.name:
-                // Construct a dictionary representation for JSON serialization
-                let toolsList = allTools.map { tool -> [String: Any] in
-                    var dict: [String: Any] = [
-                        "name": tool.name,
-                        "description": tool.description ?? "",
-                    ]
-
-                    // Manually unwrap the inputSchema Value enum to a Dictionary
-                    if case .object(let properties) = tool.inputSchema {
-                        // This is a simplification; for a full generic Value -> JSON conversion
-                        // we would need a recursive helper.
-                        // For this specific purpose, we know our schemas are .object types with properties.
-                        // We will rely on a custom encoder or simplified manual mapping if deep serialization is tough.
-                        // However, keeping it simple: let's try to map the top-level structure.
-                        // Since `Value` is an enum in the MCP library, we might need a helper to serialize it.
-                        // Fortunately, we have `serializeToJsonString` which uses JSONEncoder.
-                        // But `Tool` isn't Encodable.
-                        // We will rely on re-serializing the Schema Value.
-                    }
-                    return dict
-                }
-
-                // Better approach: Create a definable struct for JSON output
+                // Create a definable struct for JSON output
                 struct ToolDescription: Encodable {
                     let name: String
                     let description: String
