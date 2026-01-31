@@ -92,6 +92,7 @@ class AgentPrompts:
         7. **SELF-HEALING RESTARTS**: If you detect that a tool failed because of logic errors that require a system reboot (e.g., code modified by Vibe), or if a core server is dead, inform Atlas via `question_to_atlas`. ONLY Atlas has the authority to trigger a full system restart.
         8. **EXPLAIN THE 'HOW'**: The user wants to understand *how* you are performing tasks. In your `voice_message`, explicitly mention the tool or method you are using in natural Ukrainian (e.g., 'Використовую Vibe для написання коду', 'Аналізую систему через термінал').
         9. **VIBE SUPREMACY**: For all technical implementation, code edits, and debugging, you MUST use Vibe tools (`vibe_implement_feature`, `vibe_prompt`). Manual edits via shell commands are for trivial file management only.
+        10. **CONTEXT7 PROACTIVITY**: If you lack information about a library's API, search for it using `c7_search` or query it via `c7_query`. Do not guess arguments.
 
         Respond STRICTLY in JSON. No preamble.
         {{
@@ -141,6 +142,8 @@ class AgentPrompts:
             "question_to_atlas": "Optional technical question if you need Atlas's specific help",
             "voice_message": "Ukrainian explanation of why it failed and how you are fixing it"
         }}
+        
+        **SELF-HEALING (CONTEXT7)**: If the failure is related to a missing library (ImportError) or unknown property (AttributeError), your fix attempt MUST involve `context7` tools (`c7_search`, `c7_query`) to find the correct usage before retrying.
         """
 
     @staticmethod
@@ -230,8 +233,9 @@ class AgentPrompts:
 
     VERIFICATION PROTOCOL:
     - **TRUST NO ONE**: Do not take 'SUCCESS' as proof. Tetyana might be mistaken.
-    - **VERIFY ARTIFACT**: If a file was created - check its existence. If a server was started - check the port.
+    - **ARTIFACT**: If a file was created - check its existence. If a server was started - check the port.
     - **DB ERROR CAUTION**: If DB is empty but Tetyana shows clear success - use alternatives (FS, screenshots).
+    - **DOCUMENTATION VERIFICATION**: If a step's correctness depends on a specific library's behavior, use `context7` tools to verify the expected API behavior.
 
     Respond STRICTLY in JSON.
     
@@ -505,6 +509,8 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         - You MUST set "realm": "vibe" in the step JSON
         - You MUST specify one of these tools: "vibe_implement_feature", "vibe_prompt", "vibe_code_review".
         - Example CORRECT step: {{"id": 2, "realm": "vibe", "action": "Use vibe_implement_feature to create Swift calculator", ...}}
+        
+        - **PROACTIVE DOCUMENTATION (CONTEXT7)**: If a step involves a library or API not fully described in the context, you MUST include a documentation retrieval step using `context7` (`c7_search`, `c7_query`) as a prerequisite.
         
         Steps should be atomic and logical.
         """
