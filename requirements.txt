@@ -86,5 +86,7 @@ safety>=3.0.0
 xenon>=0.9.0
 detect-secrets>=1.5.0
 mypy>=1.10.0
+types-requests>=2.31.0
+types-PyYAML>=6.0.0
 ruff>=0.4.0
 pyrefly>=0.50.0
