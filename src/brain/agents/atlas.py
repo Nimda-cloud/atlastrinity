@@ -910,7 +910,8 @@ CRITICAL PLANNING RULES:
         # ENSURE VOICE_ACTION INTEGRITY: Post-process steps to guarantee Ukrainian descriptions
         steps = plan_data.get("steps", [])
         import re
-
+        
+        fixed_count = 0
         for step in steps:
             # If voice_action is missing or contains English, force a generic Ukrainian description
             va = step.get("voice_action", "")
@@ -930,7 +931,10 @@ CRITICAL PLANNING RULES:
                 else:
                     va = "Переходжу до наступного етапу завдання"
                 step["voice_action"] = va
-                logger.warning(f"[ATLAS] Fixed missing/English voice_action in step: {va}")
+                fixed_count += 1
+        
+        if fixed_count > 0:
+            logger.info(f"[ATLAS] Standardized {fixed_count} steps with missing/English voice_action.")
 
         # META-PLANNING FALLBACK: If planner failed to generate steps, force reasoning
         if not steps:

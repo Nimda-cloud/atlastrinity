@@ -140,14 +140,14 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         
         SIMULATION LOG (Questions/Blockers per step):
         - [Step 1]: (Root Blocker? Or logic error?)
-        - [Step 2-N]: (Report "Cascading Failure" if blocked by previous steps, or highlight new unique issues.)
+        - [Step 2-N]: (Report "Cascading Failure" if blocked by previous steps. IMPORTANT: If multiple steps are blocked by the same root cause, you MAY summarize them, e.g., "[Steps 2-10]: Cascading Failure due to Step 1 blocker.")
         ...
 
         STRATEGIC GAP ANALYSIS:
         [Answer the questions: What does the user want? What's the missing bridge? How do we reach the finish line?]
         
         FEEDBACK TO ATLAS:
-        [Instruction on what steps to add or modify, in English. Incorporate the Gap Analysis.]
+        [Concise instruction on what steps to add or modify, in English. DO NOT repeat the Gap Analysis here, focus on actionable changes.]
         
         SUMMARY_UKRAINIAN:
         [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal.]
