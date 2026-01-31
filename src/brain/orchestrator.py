@@ -786,612 +786,303 @@ class Trinity:
             "metrics": metrics_collector.get_metrics(),
         }
 
+    async def _planning_loop(self, analysis, user_request, is_subtask, history):
+        """Handle the planning and verification loop."""
+        max_retries = 1
+        plan = None
+        
+        async def keep_alive_logging():
+            import time
+            while True:
+                await asyncio.sleep(15)
+                await self._log("Atlas is thinking... (Planning logic flow)", "system")
+
+        for attempt in range(max_retries + 1):
+            if attempt > 0:
+                await self._log(f"🔄 Спроба перепланування {attempt}/{max_retries}...", "system")
+                analysis["simulation_result"] = getattr(self, "_last_verification_report", None)
+                analysis["failed_plan"] = plan
+
+            planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
+            logger_task = asyncio.create_task(keep_alive_logging())
+            try:
+                plan = await asyncio.wait_for(
+                    planning_task,
+                    timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
+                )
+            finally:
+                logger_task.cancel()
+
+            if not plan or not plan.steps:
+                await self._handle_no_steps_plan(user_request, history)
+                return None
+
+            self.state["current_plan"] = plan
+
+            if not is_subtask:
+                verified_plan = await self._verify_plan_with_grisha(plan, user_request, attempt, max_retries)
+                if verified_plan:
+                    plan = verified_plan
+                    break
+                elif attempt < max_retries:
+                    continue
+                else:
+                    break
+            break
+        return plan
+
+    async def _handle_no_steps_plan(self, user_request, history):
+        """Handle case where Atlas generates no steps."""
+        msg = self.atlas.get_voice_message("no_steps")
+        await self._speak("atlas", msg)
+        fallback_chat = await self.atlas.chat(user_request, history=history, use_deep_persona=True)
+        await self._speak("atlas", fallback_chat)
+
+    async def _verify_plan_with_grisha(self, plan, user_request, attempt, max_retries):
+        """Verify plan using Grisha and handle rejections."""
+        self.state["system_state"] = SystemState.VERIFYING.value
+        try:
+            res = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=(attempt >= 1))
+            self._last_verification_report = res.description
+            
+            if res.verified:
+                await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
+                return plan
+
+            prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
+            issues = "; ".join(res.issues) if res.issues else "Невідома причина"
+            await self._speak("grisha", res.voice_message or f"{prefix}{issues}")
+            
+            if attempt >= max_retries and res.fixed_plan:
+                await self._speak("grisha", "Я переписав план самостійно.")
+                return res.fixed_plan
+            
+            if attempt == max_retries:
+                logger.warning("[ORCHESTRATOR] Planning failed. FORCE PROCEED.")
+                await self._speak("grisha", "План має недоліки, але ми починаємо за наказом.")
+                return plan
+            return None
+        finally:
+            self.state["system_state"] = SystemState.PLANNING.value
+
+    async def _create_db_task(self, user_request, plan):
+        """Create DB task and knowledge graph node."""
+        try:
+            from src.brain.db.manager import db_manager
+            if not (db_manager and getattr(db_manager, "available", False) and self.state.get("db_session_id")):
+                return
+
+            async with await db_manager.get_session() as db_sess:
+                new_task = DBTask(
+                    session_id=self.state["db_session_id"],
+                    goal=user_request,
+                    status="PENDING",
+                    metadata_blob={
+                        "goal_stack": shared_context.goal_stack.copy(),
+                        "parent_goal": shared_context.parent_goal,
+                        "recursive_depth": shared_context.recursive_depth,
+                    },
+                    parent_task_id=self.state.get("parent_task_id"),
+                )
+                db_sess.add(new_task)
+                await db_sess.commit()
+                self.state["db_task_id"] = str(new_task.id)
+
+                await knowledge_graph.add_node(
+                    node_type="TASK",
+                    node_id=f"task:{new_task.id}",
+                    attributes={"goal": user_request, "steps_count": len(plan.steps)}
+                )
+        except Exception as e:
+            logger.error(f"DB Task creation failed: {e}")
+
     async def run(self, user_request: str) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
         from src.brain.context import shared_context
-        self.stop()  # Stop any current speech and task when a new request arrives
+        self.stop()
         self.active_task = asyncio.current_task()
         start_time = asyncio.get_event_loop().time()
         session_id = self.current_session_id
 
-        # 0. Platform Insurance Check
         if not IS_MACOS:
-            await self._log(
-                f"WARNING: Running on {PLATFORM_NAME}. AtlasTrinity is optimized for macOS. Some tools may fail.",
-                "system",
-                type="warning",
-            )
-        is_subtask = (
-            hasattr(self, "state")
-            and self.state is not None
-            and hasattr(self, "_in_subtask")
-            and self._in_subtask
-        )
+            await self._log(f"WARNING: Running on {PLATFORM_NAME}.", "system", type="warning")
 
+        is_subtask = getattr(self, "_in_subtask", False)
         if not is_subtask:
-            # Initialize or restore state
             if not hasattr(self, "state") or self.state is None:
-                self.state = {
-                    "messages": [],
-                    "system_state": SystemState.IDLE.value,
-                    "current_plan": None,
-                    "step_results": [],
-                    "error": None,
-                    "logs": [],
-                }
+                self.state = {"messages": [], "system_state": SystemState.IDLE.value, "current_plan": None, "step_results": [], "error": None, "logs": []}
 
-            # Restore from Redis if available and we are starting fresh
             try:
                 from src.brain.state_manager import state_manager
-
-                if (
-                    state_manager
-                    and getattr(state_manager, "available", False)
-                    and not self.state["messages"]
-                    and session_id == "current_session"
-                ):
+                if state_manager and getattr(state_manager, "available", False) and not self.state["messages"] and session_id == "current_session":
                     saved_state = await state_manager.restore_session(session_id)
                     if saved_state:
                         self.state = saved_state
-                        logger.info("[STATE] Successfully restored last active session")
-            except (ImportError, NameError):
+            except Exception:
                 pass
 
-            # Update session ID if we were using the alias
             if session_id == "current_session" and isinstance(self.state.get("session_id"), str):
                 session_id = self.state["session_id"]
                 self.current_session_id = session_id
-            elif "session_id" not in self.state:
+            else:
                 self.state["session_id"] = session_id
 
-            # Set theme if this is the first message
-            if "_theme" not in self.state or self.state["_theme"] == "Untitled Session":
+            if not self.state.get("_theme"):
                 self.state["_theme"] = user_request[:40] + ("..." if len(user_request) > 40 else "")
 
-            # CRITICAL: Verify that the DB IDs in the restored state actually exist
             await self._verify_db_ids()
-            logger.info("[ORCHESTRATOR] State validation complete")
-
-            # Append the new user message
             self.state["messages"].append(HumanMessage(content=user_request))
             asyncio.create_task(self._save_chat_message("human", user_request))
-            self.state["system_state"] = SystemState.PLANNING.value
-            self.state["error"] = None
 
-            # DB Session Creation (Only for top-level)
+            # DB Session
             try:
                 from src.brain.db.manager import db_manager
-
-                if (
-                    db_manager
-                    and getattr(db_manager, "available", False)
-                    and "db_session_id" not in self.state
-                ):
+                if db_manager and getattr(db_manager, "available", False) and "db_session_id" not in self.state:
                     async with await db_manager.get_session() as db_sess:
-                        new_session = DBSession(
-                            started_at=datetime.now(UTC),
-                            metadata_blob={"theme": self.state["_theme"]},
-                        )
+                        new_session = DBSession(started_at=datetime.now(UTC), metadata_blob={"theme": self.state["_theme"]})
                         db_sess.add(new_session)
                         await db_sess.commit()
                         self.state["db_session_id"] = str(new_session.id)
-                elif (
-                    db_manager
-                    and getattr(db_manager, "available", False)
-                    and self.state.get("db_session_id")
-                ):
-                    # Update theme in DB if it changed or was restored
-                    async with await db_manager.get_session() as db_sess:
-                        from sqlalchemy import update
+            except Exception:
+                pass
 
-                        await db_sess.execute(
-                            update(DBSession)
-                            .where(DBSession.id == self.state["db_session_id"])
-                            .values(metadata_blob={"theme": self.state["_theme"]})
-                        )
-                        await db_sess.commit()
-            except Exception as e:
-                logger.error(f"DB Session creation/update failed: {e}")
-                if "db_session_id" not in self.state:
-                    del self.state["db_session_id"]
-
-        try:
-            from src.brain.state_manager import state_manager
-
-            if not is_subtask and state_manager and getattr(state_manager, "available", False):
-                await state_manager.publish_event(
-                    "tasks",
-                    {
-                        "type": "task_started",
-                        "request": user_request,
-                        "session_id": session_id,
-                    },
-                )
-        except (ImportError, NameError):
-            pass
-
-        await self._log(f"New Request: {user_request}", "system")
-
-        # 1. Push Global Goal to Shared Context
         shared_context.push_goal(user_request)
-
-        # 1.5. CHECK IF WE CAN SKIP PLANNING (Resumption Path)
         plan = None
         if self.state.get("current_plan") and getattr(self, "_resumption_pending", False):
-            logger.info("[ORCHESTRATOR] Plan already exists. skipping Atlas planning phase.")
             plan_obj = self.state["current_plan"]
-            # Cast plan if it's a dict (from Redis restoration)
             if isinstance(plan_obj, dict):
                 from src.brain.agents.atlas import TaskPlan
-
-                # Clean steps if they are already success: True
-                plan = TaskPlan(
-                    id=plan_obj.get("id", "resumed"),
-                    goal=plan_obj.get("goal", user_request),
-                    steps=plan_obj.get("steps", []),
-                )
+                plan = TaskPlan(id=plan_obj.get("id", "resumed"), goal=plan_obj.get("goal", user_request), steps=plan_obj.get("steps", []))
             else:
                 plan = plan_obj
             self._resumption_pending = False
         else:
-            # 2. Atlas Planning
             try:
-                try:
-                    from src.brain.state_manager import state_manager
-
-                    if state_manager and getattr(state_manager, "available", False):
-                        await state_manager.publish_event(
-                            "tasks",
-                            {"type": "planning_started", "request": user_request},
-                        )
-                except (ImportError, NameError):
-                    pass
-
-                # 1.6 Pass history to Atlas for context
-                messages_raw = self.state.get("messages")
-                history = []
-                if isinstance(messages_raw, list):
-                    history = messages_raw[-25:-1] if len(messages_raw) > 1 else []
-
+                messages_raw = self.state.get("messages", [])
+                if not isinstance(messages_raw, list):
+                    messages_raw = []
+                history: list[Any] = messages_raw[-25:-1] if len(messages_raw) > 1 else []
                 analysis = await self.atlas.analyze_request(user_request, history=history)
                 intent = analysis.get("intent")
 
-                # 1.7 Check for Config-Driven Workflow (New Path)
                 from src.brain.behavior_engine import behavior_engine
-
-                if intent and behavior_engine.config.get("workflows", {}).get(str(intent)):
-                    logger.info(f"[ORCHESTRATOR] Intent '{intent}' maps to a workflow. Executing.")
+                if intent and intent in behavior_engine.config.get("workflows", {}):
                     self.state["system_state"] = SystemState.EXECUTING.value
-
-                    context = {
-                        "orchestrator": self,
-                        "user_request": user_request,
-                        "intent_analysis": analysis,
-                    }
-
-                    success = await workflow_engine.execute_workflow(str(intent), context)
-
-                    msg = f"Workflow '{intent}' execution {'completed' if success else 'failed'}."
+                    success = await workflow_engine.execute_workflow(str(intent), {"orchestrator": self, "user_request": user_request, "intent_analysis": analysis})
+                    msg = f"Workflow '{intent}' completed." if success else f"Workflow '{intent}' failed."
                     await self._speak("atlas", msg)
-
-                    self.state["system_state"] = SystemState.IDLE.value
                     self.active_task = None
                     return {"status": "completed", "result": msg, "type": "workflow"}
 
-                # Handle Atlas Solo Modes (Chat, Recall, Status, Solo Task)
-
                 if intent in ["chat", "recall", "status", "solo_task"]:
-                    self.state["system_state"] = SystemState.CHAT.value
-                    # Deep persona or tool-based solo task
-                    response = analysis.get("initial_response") or await self.atlas.chat(
-                        user_request,
-                        history=history,
-                        use_deep_persona=analysis.get("use_deep_persona", False),
-                        intent=intent,
-                        on_preamble=self._speak,
-                    )
-
-                    if response == "__ESCALATE__":
-                        await self._speak(
-                            "atlas",
-                            "Мій швидкий аналіз показав, що це завдання потребує глибшого опрацювання. Я залучаю Тетяну та Грішу для повного виконання.",
-                        )
-                        # Proceed to planning phase (fall-through to planning logic below)
-                        pass
-                    else:
+                    response = analysis.get("initial_response") or await self.atlas.chat(user_request, history=history, use_deep_persona=analysis.get("use_deep_persona", False), intent=intent, on_preamble=self._speak)
+                    if response != "__ESCALATE__":
                         await self._speak("atlas", response)
-
-                        # Background session save to avoid blocking response
-                        try:
-                            from src.brain.state_manager import state_manager
-
-                            if state_manager and getattr(state_manager, "available", False):
-                                asyncio.create_task(
-                                    state_manager.save_session(session_id, self.state)
-                                )
-                        except (ImportError, NameError):
-                            pass
-
                         self.state["system_state"] = SystemState.IDLE.value
                         self.active_task = None
                         return {"status": "completed", "result": response, "type": intent}
 
                 self.state["system_state"] = SystemState.PLANNING.value
+                shared_context.available_mcp_catalog = await mcp_manager.get_mcp_catalog()
+                await self._speak("atlas", analysis.get("voice_response") or "Аналізую запит...")
 
-                # Fetch dynamic MCP Catalog
-                mcp_catalog = await mcp_manager.get_mcp_catalog()
-                shared_context.available_mcp_catalog = mcp_catalog
+                plan = await self._planning_loop(analysis, user_request, is_subtask, history)
+                if not plan:
+                    return {"status": "completed", "result": "No plan.", "type": "chat"}
 
-                spoken_text = analysis.get("voice_response") or "Аналізую ваш запит..."
-                await self._speak("atlas", spoken_text)
-
-                _keep_alive_last_log = [0.0]
-
-                async def keep_alive_logging():
-                    import time
-
-                    while True:
-                        await asyncio.sleep(15)
-                        current_time = time.time()
-                        if current_time - _keep_alive_last_log[0] >= 10:
-                            _keep_alive_last_log[0] = current_time
-                            await self._log("Atlas is thinking... (Planning logic flow)", "system")
-
-                # --- PLANNING & VERIFICATION LOOP ---
-                # OPTIMIZED PLANNING LOOP:
-                # - Attempt 0: Atlas plans, Grisha verifies
-                # - Attempt 1: Atlas fixes based on feedback, Grisha verifies with fix_if_rejected=True
-                # - If Grisha rejects twice, use Grisha's fixed_plan immediately
-                max_retries = 1  # Maximum 2 attempts (0 and 1) before Grisha override
-                plan = None
-
-                for attempt in range(max_retries + 1):
-                    if attempt > 0:
-                        await self._log(
-                            f"🔄 Спроба перепланування {attempt}/{max_retries} на основі фідбеку Гріші...",
-                            "system",
-                        )
-                        # Pass Grisha's simulation report and the failed plan back to Atlas for re-planning
-                        analysis["simulation_result"] = getattr(self, "_last_verification_report", None)
-                        analysis["failed_plan"] = plan
-
-                    planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
-                    logger_task = asyncio.create_task(keep_alive_logging())
-                    try:
-                        plan = await asyncio.wait_for(
-                            planning_task,
-                            timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
-                        )
-                    finally:
-                        logger_task.cancel()
-                        try:
-                            await logger_task
-                        except asyncio.CancelledError:
-                            pass
-
-                    if not plan or not plan.steps:
-                        msg = self.atlas.get_voice_message("no_steps")
-                        await self._speak("atlas", msg)
-
-                        # Trigger fallback response if Atlas thought it was a task but produced no steps
-                        fallback_chat = await self.atlas.chat(
-                            user_request,
-                            history=history,
-                            use_deep_persona=True,
-                        )
-                        await self._speak("atlas", fallback_chat)
-                        self.state["system_state"] = SystemState.IDLE.value
-                        self.active_task = None
-                        return {"status": "completed", "result": fallback_chat, "type": "chat"}
-
-                    self.state["current_plan"] = plan
-
-                    # --- PLAN VERIFICATION (Grisha) ---
-                    if not is_subtask:
-                        # On the 2nd attempt (attempt=1), Grisha is authorized to fix the plan himself
-                        fix_if_rejected = (attempt >= 1)
-                        
-                        # UI FIX: Set state to VERIFYING so Grisha "lights up" in the interface
-                        self.state["system_state"] = SystemState.VERIFYING.value
-                        
-                        try:
-                            verification_result = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=fix_if_rejected)
-                        finally:
-                            # Restore state to PLANNING if we need to loop back to Atlas, 
-                            # or it will be set to EXECUTING later if approved.
-                            self.state["system_state"] = SystemState.PLANNING.value
-                        
-                        # Store report for the next planning iteration if needed
-                        self._last_verification_report = verification_result.description
-                        
-                        if not verification_result.verified:
-                            prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
-                            
-                            # Join all issues for comprehensive feedback
-                            all_issues_str = "; ".join(verification_result.issues) if verification_result.issues else "Невідома причина"
-                            msg = f"{prefix}{all_issues_str}"
-                            
-                            voice_msg = verification_result.voice_message or msg
-                            if attempt > 0 and voice_msg.startswith("План потребує доопрацювання."):
-                                voice_msg = voice_msg.replace("План потребує доопрацювання.", "Оновлений план все ще має проблеми.")
-                                
-                            await self._speak("grisha", voice_msg)
-                            await self._log(
-                                f"[ORCHESTRATOR] Plan rejected by Grisha: {verification_result.issues}",
-                                "warning",
-                            )
-                            
-                            # OPTIMIZED LOGIC: After 2 rejections, use Grisha's fixed plan if available
-                            if attempt >= max_retries and verification_result.fixed_plan:
-                                # This is the 2nd rejection - Grisha takes over
-                                await self._log("[ORCHESTRATOR] Atlas failed twice. Grisha INTERVENTION triggered.", "warning")
-                                await self._speak("grisha", "Атлас двічі не впорався з плануванням. Я переписав план самостійно.")
-                                
-                                plan = verification_result.fixed_plan
-                                self.state["current_plan"] = plan
-                                break  # Exit planning loop with Grisha's fixed plan
-                            elif attempt < max_retries:
-                                # First rejection - give Atlas another chance (Attempt 0 -> 1)
-                                await self._speak("atlas", "Зрозумів критичні зауваження. Зараз додам кроки для розвідки та виправлю структуру плану.")
-                                continue  # Loop back to Atlas for re-planning
-                            else:
-                                # ALL ATTEMPTS FAILED + NO OVERRIDE - FORCE PROCEED
-                                logger.warning("[ORCHESTRATOR] Planning failed all retries. FORCE PROCEED triggered per user directive.")
-                                await self._speak("grisha", "План все ще має значні недоліки, але за наказом Олега Миколайовича я допускаю його до виконання «як є». Починаємо виробничий цикл.")
-                                
-                                # 'plan' contains Atlas's last attempt. We use it.
-                                self.state["current_plan"] = plan
-                                break  # Break loop and proceed to execution phase
-
-
-                        await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
-                        await self._log("[ORCHESTRATOR] Plan verified by Grisha. Proceeding.", "system")
-                    
-                    # If we reached here, plan is valid or we skip verification (subtask)
-                    break
-                # ----------------------------------
-
-                # DB Task Creation
-                try:
-                    from src.brain.context import shared_context
-                    from src.brain.db.manager import db_manager
-
-                    if (
-                        db_manager
-                        and getattr(db_manager, "available", False)
-                        and self.state.get("db_session_id")
-                    ):
-                        # Safety check for static analysis (plan is guaranteed by loop break)
-                        if not plan:
-                            logger.error("[ORCHESTRATOR] Critical logic error: plan is None after loop.")
-                            return {"status": "error", "error": "Internal planning error"}
-
-                        async with await db_manager.get_session() as db_sess:
-                            # Зберігаємо рекурсивний контекст з shared_context
-                            task_metadata = {
-                                "goal_stack": shared_context.goal_stack.copy(),
-                                "parent_goal": shared_context.parent_goal,
-                                "recursive_depth": shared_context.recursive_depth,
-                                "current_goal": shared_context.current_goal,
-                            }
-                            
-                            new_task = DBTask(
-                                session_id=self.state["db_session_id"],
-                                goal=user_request,
-                                status="PENDING",
-                                metadata_blob=task_metadata,
-                                parent_task_id=self.state.get("parent_task_id"),
-                            )
-                            db_sess.add(new_task)
-                            await db_sess.commit()
-                            self.state["db_task_id"] = str(new_task.id)
-
-                            await knowledge_graph.add_node(
-                                node_type="TASK",
-                                node_id=f"task:{new_task.id}",
-                                attributes={
-                                    "goal": user_request,
-                                    "timestamp": datetime.now(UTC).isoformat(),
-                                    "steps_count": len(plan.steps) if plan and hasattr(plan, 'steps') else 0,
-                                    "parent_task_id": str(new_task.parent_task_id)
-                                    if new_task.parent_task_id
-                                    else None,
-                                },
-                            )
-
-                            if new_task.parent_task_id:
-                                await knowledge_graph.add_edge(
-                                    source_id=f"task:{new_task.parent_task_id}",
-                                    target_id=f"task:{new_task.id}",
-                                    relation="SUBTASK",
-                                )
-                except Exception as e:
-                    logger.error(f"DB Task creation failed: {e}")
-
-                try:
-                    from src.brain.state_manager import state_manager
-
-                    if state_manager and getattr(state_manager, "available", False):
-                        await state_manager.save_session(session_id, self.state)
-                except (ImportError, NameError):
-                    pass
-
-                try:
-                    from src.brain.state_manager import state_manager
-
-                    if state_manager and getattr(state_manager, "available", False):
-                        await state_manager.publish_event(
-                            "tasks",
-                            {
-                                "type": "planning_finished",
-                                "session_id": session_id,
-                                "steps_count": len(plan.steps) if plan and hasattr(plan, 'steps') else 0,
-                            },
-                        )
-                except (ImportError, NameError):
-                    pass
-
-                await self._speak(
-                    "atlas",
-                    self.atlas.get_voice_message("plan_created", steps=len(plan.steps) if plan and hasattr(plan, 'steps') else 0),
-                )
+                await self._create_db_task(user_request, plan)
+                await self._speak("atlas", self.atlas.get_voice_message("plan_created", steps=len(plan.steps)))
 
             except Exception as e:
-                import traceback
-
                 logger.error(f"[ORCHESTRATOR] Planning error: {e}")
-                logger.error(traceback.format_exc())
                 self.state["system_state"] = SystemState.ERROR.value
                 self.active_task = None
                 return {"status": "error", "error": str(e)}
 
-        # 3. Execution Loop (Tetyana) - Recursive Execution
         self.state["system_state"] = SystemState.EXECUTING.value
-
         try:
-            # Initial numbering is 1, 2, 3...
             if plan and plan.steps:
                 await self._execute_steps_recursive(plan.steps)
-            else:
-                logger.warning("[ORCHESTRATOR] No steps to execute. Ending task.")
-
         except Exception as e:
-            await self._log(f"Critical error: {e}", "error")
+            await self._log(f"Execution error: {e}", "error")
             self.active_task = None
             return {"status": "error", "error": str(e)}
 
-        # 4. Success Tasks: Memory & Cleanup
+        msgs = self.state.get("messages", [])
+        msg_count = len(msgs) if isinstance(msgs, list) else 0
+        await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
+        self.active_task = None
+        return {"status": "completed", "result": self.state["step_results"]}
+
+    async def _handle_post_execution_phase(self, user_request, is_subtask, start_time, session_id, msg_count):
+        """Evaluation, memory management and cleanup."""
         duration = asyncio.get_event_loop().time() - start_time
         notifications.show_completion(user_request, True, duration)
 
-        # Atlas Verification Gate & Memory
-        try:
-            from src.brain.memory import long_term_memory
+        if not is_subtask and self.state["system_state"] != SystemState.ERROR.value:
+            await self._evaluate_and_remember(user_request)
 
-            if (
-                long_term_memory
-                and getattr(long_term_memory, "available", False)
-                and not is_subtask
-                and self.state["system_state"] != SystemState.ERROR.value
-            ):
-                # Atlas reviews the execution
-                evaluation = await self.atlas.evaluate_execution(
-                    user_request,
-                    self.state["step_results"],
-                )
-
-                # Speak Final Report if available and goal achieved
-                final_report = evaluation.get("final_report")
-                if final_report and evaluation.get("achieved"):
-                    await self._speak("atlas", final_report)
-                elif evaluation.get("achieved"):
-                    # Fallback if no specific report generated
-                    await self._speak("atlas", "Завдання успішно виконано.")
-
-                if evaluation.get("should_remember") and evaluation.get("quality_score", 0) >= 0.7:
-                    await self._log(
-                        f"Verification Pass: Score {evaluation.get('quality_score')} ({evaluation.get('analysis')})",
-                        "atlas",
-                    )
-
-                    strategy_steps = evaluation.get(
-                        "compressed_strategy",
-                    ) or self._extract_golden_path(self.state["step_results"])
-
-                    try:
-                        from src.brain.memory import long_term_memory
-
-                        if long_term_memory and getattr(long_term_memory, "available", False):
-                            long_term_memory.remember_strategy(
-                                task=user_request,
-                                plan_steps=strategy_steps,
-                                outcome="SUCCESS",
-                                success=True,
-                            )
-                    except (ImportError, NameError):
-                        pass
-                    await self._log(f"Brain saved {len(strategy_steps)} steps to memory", "system")
-
-                # Update DB Task with quality metric
-                try:
-                    from src.brain.db.manager import db_manager
-
-                    if (
-                        db_manager
-                        and getattr(db_manager, "available", False)
-                        and self.state.get("db_task_id")
-                    ):
-                        async with await db_manager.get_session() as db_sess:
-                            from sqlalchemy import update
-
-                            await db_sess.execute(
-                                update(DBTask)
-                                .where(DBTask.id == self.state["db_task_id"])
-                                .values(golden_path=True),
-                            )
-                            await db_sess.commit()
-                except Exception as e:
-                    logger.error(f"Failed to mark golden path in DB: {e}")
-        except Exception as e:
-            logger.error(f"Post-execution verification/memory stage failed: {e}")
-
-        # Nightly/End-of-task consolidation check
-        if not is_subtask and consolidation_module.should_consolidate():
-            asyncio.create_task(consolidation_module.run_consolidation())
-
+        # Final cleanup tasks
         self.state["system_state"] = SystemState.COMPLETED.value
-
-        # 4. Pro-Memory: Summarize and persist session context for semantic search
-        msg_list_summary = self.state.get("messages")
-        if not is_subtask and isinstance(msg_list_summary, list) and len(msg_list_summary) > 2:
-            asyncio.create_task(self._persist_session_summary(session_id))
-
-        # Pop Global Goal
         shared_context.pop_goal()
+        
+        # Async tasks for summary and background operations
+        if not is_subtask and msg_count > 2:
+            asyncio.create_task(self._persist_session_summary(session_id))
+        
+        await self._notify_task_finished(session_id)
+        self._trigger_backups()
 
-        # Removed clear_session(session_id) to keep session active in Redis history
-
+    async def _evaluate_and_remember(self, user_request):
+        """Evaluate execution quality and save to LTM."""
         try:
-            from src.brain.state_manager import state_manager
+            evaluation = await self.atlas.evaluate_execution(user_request, self.state["step_results"])
+            
+            if evaluation.get("achieved"):
+                msg = evaluation.get("final_report") or "Завдання успішно виконано."
+                await self._speak("atlas", msg)
 
-            if state_manager and getattr(state_manager, "available", False):
-                await state_manager.publish_event(
-                    "tasks",
-                    {"type": "task_finished", "status": "completed", "session_id": session_id},
-                )
-        except (ImportError, NameError):
-            pass
-
-        try:
-            from src.brain.state_manager import state_manager
-
-            if state_manager and getattr(state_manager, "available", False):
-                try:
-                    await state_manager.publish_event(
-                        "sessions",
-                        {"type": "session_started", "session_id": session_id},
-                    )
-                except (ImportError, NameError):
-                    pass
-        except (ImportError, NameError):
-            pass
-
-        # Auto-backup databases after session completion
-        try:
-            import sys
-            from pathlib import Path
-
-            project_root = Path(__file__).parent.parent.parent
-            sys.path.insert(0, str(project_root))
-            from scripts.setup_dev import backup_databases
-
-            asyncio.create_task(asyncio.to_thread(backup_databases))
-            await self._log("📦 Автоматичний backup баз даних...", "system")
+            if evaluation.get("should_remember") and evaluation.get("quality_score", 0) >= 0.7:
+                await self._save_to_ltm(user_request, evaluation)
+                
+            # Update DB Task
+            if self.state.get("db_task_id"):
+                await self._mark_db_golden_path()
         except Exception as e:
-            logger.warning(f"[BACKUP] Не вдалося створити backup: {e}")
+            logger.error(f"Evaluation failed: {e}")
 
-        self.active_task = None
-        return {"status": "completed", "result": self.state["step_results"]}
+    async def _save_to_ltm(self, user_request, evaluation):
+        """Save successful strategy to Long-term Memory."""
+        from src.brain.memory import long_term_memory
+        if long_term_memory and getattr(long_term_memory, "available", False):
+            steps = evaluation.get("compressed_strategy") or self._extract_golden_path(self.state["step_results"])
+            long_term_memory.remember_strategy(task=user_request, plan_steps=steps, outcome="SUCCESS", success=True)
+
+    async def _mark_db_golden_path(self):
+        """Mark task as golden path in DB."""
+        from sqlalchemy import update
+
+        from src.brain.db.manager import db_manager
+        async with await db_manager.get_session() as db_sess:
+            await db_sess.execute(update(DBTask).where(DBTask.id == self.state["db_task_id"]).values(golden_path=True))
+            await db_sess.commit()
+
+    async def _notify_task_finished(self, session_id):
+        """Publish task finish event."""
+        try:
+            from src.brain.state_manager import state_manager
+            if state_manager and getattr(state_manager, "available", False):
+                await state_manager.publish_event("tasks", {"type": "task_finished", "status": "completed", "session_id": session_id})
+        except Exception:
+            pass
+
+    def _trigger_backups(self):
+        """Trigger background database backups."""
+        try:
+            from scripts.setup_dev import backup_databases
+            asyncio.create_task(asyncio.to_thread(backup_databases))
+        except Exception:
+            pass
 
     async def _persist_session_summary(self, session_id: str):
         """Generates a professional summary and stores it in DB and Vector memory."""
@@ -2418,7 +2109,7 @@ class Trinity:
                         logger.error(f"[ORCHESTRATOR] Deviation evaluation failed: {eval_err}")
                         result.success = False
                         result.error = "evaluation_error"
-                        return cast(StepResult, result)
+                        return result
 
                 # Handle need_user_input signal (New Autonomous Timeout Logic)
                 if result.error == "need_user_input":

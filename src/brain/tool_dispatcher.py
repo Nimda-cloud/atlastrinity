@@ -451,9 +451,9 @@ class ToolDispatcher:
         "osascript",
     }
 
-    def __init__(self, mcp_manager):
+    def __init__(self, mcp_manager) -> None:
         self.mcp_manager = mcp_manager
-        self._tasks = set()  # To prevent GC of long-running tasks
+        self._tasks: set[asyncio.Task] = set()  # To prevent GC of long-running tasks
         self._current_pid: int | None = None
         self._total_calls = 0
         self._macos_use_calls = 0
@@ -491,194 +491,39 @@ class ToolDispatcher:
             if not isinstance(args, dict):
                 args = {}
 
-            # 2. Check for known hallucinated tools first
+            # 2. Check for known hallucinated tools
             if tool_name in self.HALLUCINATED_TOOLS:
                 suggestion = self.HALLUCINATED_TOOLS[tool_name]
-                logger.warning(
-                    f"[DISPATCHER] Hallucinated tool detected: '{tool_name}'. {suggestion}",
-                )
-                return {
-                    "success": False,
-                    "error": f"Tool '{tool_name}' does not exist. {suggestion}",
-                    "hallucinated": True,
-                }
+                logger.warning(f"[DISPATCHER] Hallucinated tool detected: '{tool_name}'. {suggestion}")
+                return {"success": False, "error": f"Tool '{tool_name}' does not exist. {suggestion}", "hallucinated": True}
 
-            # 3. Heuristic inference if tool_name is missing
-            if not tool_name:
-                tool_name = self._infer_tool_from_args(args)
+            # 3. Resolve tool name and server
+            server, resolved_tool, normalized_args = self._resolve_routing(tool_name, args, explicit_server)
 
-            # 4. Handle Dot or Underscore Notation (server.tool or server_tool)
-            if "." in tool_name:
-                parts = tool_name.split(".", 1)
-                explicit_server = parts[0]
-                tool_name = parts[1]
-            else:
-                from .mcp_registry import SERVER_CATALOG, TOOL_SCHEMAS
-
-                # If tool_name is ALREADY a canonical tool in the registry, leave it alone
-                # (e.g., 'redis_get' or 'macos-use_fetch_url')
-                if tool_name not in TOOL_SCHEMAS:
-                    # Heuristic: check if tool_name starts with a known server name
-                    # Sort by length descending to catch 'duckduckgo-search' before 'duckduckgo'
-                    sorted_servers = sorted(SERVER_CATALOG.keys(), key=len, reverse=True)
-                    for s_name in sorted_servers:
-                        # Check for server_tool or server__tool
-                        # Also handle hyphenated servers appearing as underscores (e.g. duckduckgo_search_...)
-                        prefixes = [f"{s_name}_", f"{s_name.replace('-', '_')}_"]
-                        for prefix in prefixes:
-                            if tool_name.startswith(prefix):
-                                potential_tool = tool_name[len(prefix) :]
-                                potential_tool = potential_tool.removeprefix("_")
-
-                                # Only strip if the remaining part exists as a tool or is recognized
-                                explicit_server = s_name
-                                tool_name = potential_tool
-                                logger.info(
-                                    f"[DISPATCHER] Normalized {prefix}{tool_name} to {explicit_server}.{tool_name}",
-                                )
-                                break
-                        if explicit_server:
-                            break
-
-            # 5. Handle explicit server FIRST to avoid synonym hijacking
-            if explicit_server:
-                # Prioritize explicit server/realm if specified
-                server, resolved_tool, normalized_args = self._resolve_tool_and_args(
-                    tool_name,
-                    args,
-                    explicit_server,
-                )
-            else:
-                # 6. Intelligent Routing with macOS-use Priority
-                server, resolved_tool, normalized_args = self._intelligent_routing(
-                    tool_name,
-                    args,
-                )
-
-            # Special case: System tools handled internally
+            # 4. Handle internal system tools
             if server in {"_trinity_native", "system"}:
                 return await self._handle_system(resolved_tool, normalized_args)
 
             if not server:
-                # Provide helpful suggestions for unknown tools
-                from .mcp_registry import get_all_tool_names
+                return self._handle_resolution_failure(tool_name)
 
-                all_tools = get_all_tool_names()
+            # 5. Validate compatibility and arguments
+            validation_result = self._pre_dispatch_validation(server, resolved_tool, normalized_args)
+            if validation_result:
+                return validation_result
 
-                # Find similar tool names (simple substring match)
-                similar = [
-                    t for t in all_tools if tool_name in t.lower() or t.lower() in tool_name
-                ][:5]
-                suggestion = f" Did you mean: {', '.join(similar)}" if similar else ""
+            # 6. Apply command wrapping (CWD handling)
+            self._wrap_commands(server, resolved_tool, normalized_args)
 
-                logger.warning(f"[DISPATCHER] Unknown tool: '{tool_name}'.{suggestion}")
-                return {
-                    "success": False,
-                    "error": f"Could not resolve server for tool: '{tool_name}'.{suggestion}",
-                    "unknown_tool": True,
-                }
-
-            # 6. Validate realm-tool compatibility
-            is_compatible, compatibility_error = self._validate_realm_tool_compatibility(
-                server, resolved_tool, normalized_args
-            )
-            if not is_compatible:
-                logger.warning(
-                    f"[DISPATCHER] Realm-tool compatibility validation failed: {server}.{resolved_tool} - {compatibility_error}",
-                )
-                return {
-                    "success": False,
-                    "error": f"Realm-tool compatibility error: {compatibility_error}",
-                    "compatibility_error": True,
-                }
-
-            # 7. Apply central command wrapping for terminal tools
-            if server == "macos-use" and resolved_tool == "execute_command":
-                cmd = normalized_args.get("command") or normalized_args.get("cmd")
-                cwd = normalized_args.get("cwd") or normalized_args.get("path")
-                if cwd and cmd and str(cmd).strip() and not str(cmd).startswith("cd "):
-                    normalized_args["command"] = f"cd {cwd} && {cmd}"
-                    logger.info(
-                        f"[DISPATCHER] Centralized wrapping for execute_command with cwd: {cwd}"
-                    )
-
-            # 7. Validate and normalize arguments before calling MCP
+            # 7. Final validation and dispatch
             validated_args = self._validate_args(resolved_tool, normalized_args)
             if validated_args.get("__validation_error__"):
-                error_msg = validated_args.pop("__validation_error__")
-                logger.error(
-                    f"[DISPATCHER] Argument validation failed for {server}.{resolved_tool}: {error_msg}. Args: {normalized_args}",
-                )
-                return {
-                    "success": False,
-                    "error": f"Invalid arguments for '{resolved_tool}': {error_msg}",
-                    "validation_error": True,
-                    "server": server,
-                    "tool": resolved_tool,
-                    "provided_args": list(normalized_args.keys()),
-                }
+                return self._handle_validation_error(server, resolved_tool, normalized_args, validated_args)
 
-            # 8. Track metrics
-            self._total_calls += 1
-            if server == "macos-use":
-                self._macos_use_calls += 1
-
-            # 9. Metrics & Final Dispatch via MCPManager
-            logger.info(
-                f"[DISPATCHER] Calling {server}.{resolved_tool} with args: {list(validated_args.keys())}",
-            )
-
-            try:
-                result = await self.mcp_manager.call_tool(server, resolved_tool, validated_args)
-            except Exception as e:
-                logger.error(
-                    f"[DISPATCHER] MCP call failed for {server}.{resolved_tool}: {e}",
-                    exc_info=True,
-                )
-                return {
-                    "success": False,
-                    "error": f"MCP call failed: {e!s}",
-                    "server": server,
-                    "tool": resolved_tool,
-                    "exception_type": type(e).__name__,
-                }
-
-            # 9. Check for "Tool not found" errors from MCP and provide guidance
-            if isinstance(result, dict) and result.get("error"):
-                error_msg = str(result.get("error", ""))
-                if "not found" in error_msg.lower() or "-32602" in error_msg:
-                    logger.error(
-                        f"[DISPATCHER] Tool not found on server: {server}.{resolved_tool}. Error: {error_msg}",
-                    )
-                    result["suggestion"] = (
-                        f"Tool '{resolved_tool}' may not exist on server '{server}'. Check available tools with list_tools."
-                    )
-                    result["tool_not_found"] = True
-                    result["server"] = server
-                    result["tool"] = resolved_tool
-                elif "bad request" in error_msg.lower() or "400" in error_msg:
-                    logger.error(
-                        f"[DISPATCHER] Bad request for {server}.{resolved_tool}. Error: {error_msg}. Args: {list(validated_args.keys())}",
-                    )
-                    result["bad_request"] = True
-                    result["server"] = server
-                    result["tool"] = resolved_tool
-                    result["provided_args"] = list(validated_args.keys())
-                else:
-                    # Log all tool errors for debugging
-                    logger.error(
-                        f"[DISPATCHER] Tool execution failed: {server}.{resolved_tool}. Error: {error_msg}. Args: {list(validated_args.keys())}",
-                    )
-                    result["server"] = server
-                    result["tool"] = resolved_tool
-
-            return cast(dict[str, Any], result)
+            return await self._dispatch_to_mcp(server, resolved_tool, validated_args)
 
         except Exception as e:
-            logger.error(
-                f"[DISPATCHER] Dispatch failed for tool '{tool_name}': {e}",
-                exc_info=True,
-            )
+            logger.error(f"[DISPATCHER] Dispatch failed for tool '{tool_name}': {e}", exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
@@ -686,6 +531,105 @@ class ToolDispatcher:
                 "tool_name": tool_name,
                 "args_keys": list(args.keys()) if isinstance(args, dict) else [],
             }
+
+    def _resolve_routing(self, tool_name: str, args: dict[str, Any], explicit_server: str | None) -> tuple[str | None, str, dict[str, Any]]:
+        """Resolve the server and canonical tool name."""
+        if not tool_name:
+            tool_name = self._infer_tool_from_args(args)
+
+        # Handle Dot Notation
+        if "." in tool_name:
+            parts = tool_name.split(".", 1)
+            explicit_server = parts[0]
+            tool_name = parts[1]
+        else:
+            explicit_server = self._normalize_server_prefix(tool_name, explicit_server)
+            if explicit_server and tool_name.startswith(f"{explicit_server.replace('-', '_')}_"):
+                tool_name = tool_name[len(explicit_server) + 1:].removeprefix("_")
+
+        if explicit_server:
+            return self._resolve_tool_and_args(tool_name, args, explicit_server)
+        
+        return self._intelligent_routing(tool_name, args)
+
+    def _normalize_server_prefix(self, tool_name: str, explicit_server: str | None) -> str | None:
+        """Heuristically normalize server prefix in tool name."""
+        from .mcp_registry import SERVER_CATALOG, TOOL_SCHEMAS
+        if explicit_server or tool_name in TOOL_SCHEMAS:
+            return explicit_server
+
+        sorted_servers = sorted(SERVER_CATALOG.keys(), key=len, reverse=True)
+        for s_name in sorted_servers:
+            prefixes = [f"{s_name}_", f"{s_name.replace('-', '_')}_"]
+            if any(tool_name.startswith(p) for p in prefixes):
+                return s_name
+        return None
+
+    def _handle_resolution_failure(self, tool_name: str) -> dict[str, Any]:
+        """Provide suggestions for unknown tools."""
+        from .mcp_registry import get_all_tool_names
+        all_tools = get_all_tool_names()
+        similar = [t for t in all_tools if tool_name in t.lower() or t.lower() in tool_name][:5]
+        suggestion = f" Did you mean: {', '.join(similar)}" if similar else ""
+        logger.warning(f"[DISPATCHER] Unknown tool: '{tool_name}'.{suggestion}")
+        return {"success": False, "error": f"Could not resolve server for tool: '{tool_name}'.{suggestion}", "unknown_tool": True}
+
+    def _pre_dispatch_validation(self, server: str, tool: str, args: dict[str, Any]) -> dict[str, Any] | None:
+        """Validate realm-tool compatibility."""
+        is_comp, err = self._validate_realm_tool_compatibility(server, tool, args)
+        if not is_comp:
+            logger.warning(f"[DISPATCHER] Compatibility failed: {server}.{tool} - {err}")
+            return {"success": False, "error": f"Realm-tool compatibility error: {err}", "compatibility_error": True}
+        return None
+
+    def _wrap_commands(self, server: str, tool: str, args: dict[str, Any]) -> None:
+        """Central command wrapping for terminal tools."""
+        if server == "macos-use" and tool == "execute_command":
+            cmd = args.get("command") or args.get("cmd")
+            cwd = args.get("cwd") or args.get("path")
+            if cwd and cmd and str(cmd).strip() and not str(cmd).startswith("cd "):
+                args["command"] = f"cd {cwd} && {cmd}"
+
+    def _handle_validation_error(self, server: str, tool: str, args: dict[str, Any], validated: dict[str, Any]) -> dict[str, Any]:
+        """Handle argument validation failures."""
+        error_msg = validated.pop("__validation_error__")
+        logger.error(f"[DISPATCHER] Validation failed for {server}.{tool}: {error_msg}")
+        return {
+            "success": False,
+            "error": f"Invalid arguments for '{tool}': {error_msg}",
+            "validation_error": True,
+            "server": server,
+            "tool": tool,
+            "provided_args": list(args.keys()),
+        }
+
+    async def _dispatch_to_mcp(self, server: str, tool: str, args: dict[str, Any]) -> dict[str, Any]:
+        """Final metrics tracking and MCP call."""
+        self._total_calls += 1
+        if server == "macos-use":
+            self._macos_use_calls += 1
+
+        logger.info(f"[DISPATCHER] Calling {server}.{tool}")
+        try:
+            result = await self.mcp_manager.call_tool(server, tool, args)
+            return self._process_mcp_result(server, tool, args, result)
+        except Exception as e:
+            logger.error(f"[DISPATCHER] MCP call failed: {e}")
+            return {"success": False, "error": f"MCP call failed: {e!s}", "server": server, "tool": tool}
+
+    def _process_mcp_result(self, server: str, tool: str, args: dict[str, Any], result: Any) -> dict[str, Any]:
+        """Analyze result from MCP and add metadata if needed."""
+        if not isinstance(result, dict) or not result.get("error"):
+            return cast(dict[str, Any], result)
+
+        error_msg = str(result.get("error", ""))
+        if "not found" in error_msg.lower() or "-32602" in error_msg:
+            result.update({"tool_not_found": True, "suggestion": f"Tool '{tool}' may not exist on server '{server}'."})
+        elif "bad request" in error_msg.lower() or "400" in error_msg:
+            result["bad_request"] = True
+        
+        result.update({"server": server, "tool": tool})
+        return result
 
     def _validate_realm_tool_compatibility(
         self, server: str, tool_name: str, args: dict[str, Any]
@@ -785,6 +729,63 @@ class ToolDispatcher:
             f"Tool '{tool_name}' may not be compatible with {server} realm. Server capabilities: {', '.join(capabilities)}",
         )
 
+    def _autofill_missing_args(self, tool_name: str, validated: dict[str, Any], missing: list[str]) -> list[str]:
+        """Try to auto-fill common missing arguments with sensible defaults."""
+        for req in missing:
+            if req == "query" and "question" in validated:
+                validated[req] = validated["question"]
+                logger.info(f"[DISPATCHER] Auto-filled '{req}' from 'question' for {tool_name}")
+            elif req == "prompt" and "query" in validated:
+                validated[req] = validated["query"]
+                logger.info(f"[DISPATCHER] Auto-filled '{req}' from 'query' for {tool_name}")
+
+        # Re-check after auto-fill
+        return [r for r in missing if r not in validated or validated[r] is None]
+
+    def _convert_arg_types(self, tool_name: str, validated: dict[str, Any], types_map: dict[str, str]) -> None:
+        """Perform type conversion with improved error handling."""
+        import json
+
+        for key, expected_type in types_map.items():
+            if key in validated and validated[key] is not None:
+                value = validated[key]
+                try:
+                    if expected_type == "str" and not isinstance(value, str):
+                        validated[key] = str(value)
+                    elif expected_type == "int" and not isinstance(value, int):
+                        # Handle float to int conversion carefully
+                        if isinstance(value, float):
+                            validated[key] = int(value)
+                        else:
+                            validated[key] = int(float(value))
+                    elif expected_type == "float" and not isinstance(value, int | float):
+                        validated[key] = float(value)
+                    elif expected_type == "bool" and not isinstance(value, bool):
+                        validated[key] = str(value).lower() in ("true", "1", "yes", "on")
+                    elif expected_type == "list" and not isinstance(value, list):
+                        if isinstance(value, str):
+                            # Try to parse as JSON list
+                            try:
+                                parsed = json.loads(value)
+                                validated[key] = parsed if isinstance(parsed, list) else [value]
+                            except json.JSONDecodeError:
+                                # Try splitting by comma as fallback
+                                validated[key] = [v.strip() for v in value.split(",")] if "," in value else [value]
+                        else:
+                            validated[key] = [value]
+                    elif expected_type == "dict" and not isinstance(value, dict):
+                        if isinstance(value, str):
+                            try:
+                                validated[key] = json.loads(value)
+                            except json.JSONDecodeError:
+                                logger.warning(
+                                    f"[DISPATCHER] Could not parse dict from string for '{key}'"
+                                )
+                except (ValueError, TypeError) as e:
+                    logger.error(
+                        f"[DISPATCHER] Type conversion failed for '{key}' in tool '{tool_name}': {e}. Expected: {expected_type}, Got: {type(value).__name__}",
+                    )
+
     def _validate_args(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Validate and normalize arguments according to tool schema.
         Returns args with __validation_error__ key if validation failed.
@@ -807,73 +808,16 @@ class ToolDispatcher:
         if missing:
             error_msg = f"Missing required arguments: {', '.join(missing)}. Schema requires: {required}. Provided: {list(validated.keys())}"
             logger.error(f"[DISPATCHER] Validation failed for '{tool_name}': {error_msg}")
+            
             # Try to auto-fill common missing arguments with sensible defaults
-            for req in missing:
-                if req == "query" and "question" in validated:
-                    validated[req] = validated["question"]
-                    logger.info(f"[DISPATCHER] Auto-filled '{req}' from 'question' for {tool_name}")
-                elif req == "prompt" and "query" in validated:
-                    validated[req] = validated["query"]
-                    logger.info(f"[DISPATCHER] Auto-filled '{req}' from 'query' for {tool_name}")
+            missing = self._autofill_missing_args(tool_name, validated, missing)
 
-            # Re-check after auto-fill
-            missing = [r for r in required if r not in validated or validated[r] is None]
             if missing:
                 validated["__validation_error__"] = error_msg
                 return validated
 
         # Type conversion with improved error handling
-        types_map = schema.get("types", {})
-        for key, expected_type in types_map.items():
-            if key in validated and validated[key] is not None:
-                value = validated[key]
-                try:
-                    if expected_type == "str" and not isinstance(value, str):
-                        validated[key] = str(value)
-                    elif expected_type == "int" and not isinstance(value, int):
-                        # Handle float to int conversion carefully
-                        if isinstance(value, float):
-                            validated[key] = int(value)
-                        else:
-                            validated[key] = int(float(value))
-                    elif expected_type == "float" and not isinstance(value, int | float):
-                        validated[key] = float(value)
-                    elif expected_type == "bool" and not isinstance(value, bool):
-                        validated[key] = str(value).lower() in ("true", "1", "yes", "on")
-                    elif expected_type == "list" and not isinstance(value, list):
-                        if isinstance(value, str):
-                            # Try to parse as JSON list
-                            import json
-
-                            try:
-                                parsed = json.loads(value)
-                                if isinstance(parsed, list):
-                                    validated[key] = parsed
-                                else:
-                                    validated[key] = [value]
-                            except json.JSONDecodeError:
-                                # Try splitting by comma as fallback
-                                if "," in value:
-                                    validated[key] = [v.strip() for v in value.split(",")]
-                                else:
-                                    validated[key] = [value]
-                        else:
-                            validated[key] = [value]
-                    elif expected_type == "dict" and not isinstance(value, dict):
-                        if isinstance(value, str):
-                            import json
-
-                            try:
-                                validated[key] = json.loads(value)
-                            except json.JSONDecodeError:
-                                logger.warning(
-                                    f"[DISPATCHER] Could not parse dict from string for '{key}'"
-                                )
-                except (ValueError, TypeError) as e:
-                    logger.error(
-                        f"[DISPATCHER] Type conversion failed for '{key}' in tool '{tool_name}': {e}. Expected: {expected_type}, Got: {type(value).__name__}",
-                    )
-                    # Don't fail validation on type conversion - let MCP server handle it
+        self._convert_arg_types(tool_name, validated, schema.get("types", {}))
 
         return validated
 
@@ -968,147 +912,75 @@ class ToolDispatcher:
     ) -> tuple[str | None, str, dict[str, Any]]:
         """Resolves tool name to canonical form and normalizes arguments."""
         # --- STRICT SERVER PRIORITY ---
-        if explicit_server == "macos-use":
-            return self._handle_macos_use(tool_name, args)
-        if explicit_server == "filesystem":
-            return self._handle_filesystem(tool_name, args)
-        if explicit_server == "terminal":
-            return self._handle_terminal(tool_name, args)
-        if explicit_server == "vibe":
-            return self._handle_vibe(tool_name, args)
-        if explicit_server in {"puppeteer", "browser"}:
-            return self._handle_browser(tool_name, args)
+        handlers = {
+            "macos-use": self._handle_macos_use,
+            "filesystem": self._handle_filesystem,
+            "terminal": self._handle_terminal,
+            "vibe": self._handle_vibe,
+            "puppeteer": self._handle_browser,
+            "browser": self._handle_browser,
+            "devtools": self._handle_devtools,
+            "context7": self._handle_context7,
+            "golden-fund": self._handle_golden_fund,
+            "golden_fund": self._handle_golden_fund,
+        }
 
-        # --- NOTES ROUTING (Redirect to macos-use) ---
-        if explicit_server == "notes" or (
-            not explicit_server and any(tool_name.startswith(p) for p in ["notes_", "note_"])
-        ):
-            return self._handle_macos_use(tool_name, args)
+        if explicit_server in handlers:
+            return handlers[explicit_server](tool_name, args)
 
-        # --- MACOS-USE ROUTING ---
+        # --- NAMESPACE/SYNONYM ROUTING ---
+        # 1. macOS-use & Notes
         if (
-            tool_name.startswith("macos-use")
-            or tool_name.startswith("macos_use_")
+            tool_name.startswith(("macos-use", "macos_use_", "notes_", "note_"))
             or tool_name in self.MACOS_MAP
+            or explicit_server == "notes"
         ):
             return self._handle_macos_use(tool_name, args)
 
-        # --- TERMINAL ROUTING ---
+        # 2. Terminal
         if tool_name in self.TERMINAL_SYNONYMS:
             return self._handle_terminal(tool_name, args)
 
-        # --- FILESYSTEM ROUTING ---
+        # 3. Filesystem
         if tool_name in self.FILESYSTEM_SYNONYMS:
             return self._handle_filesystem(tool_name, args)
 
-        # --- BROWSER ROUTING ---
-        # Exclude 'search' from browser routing to ensure it goes to memory server as per tool schemas
+        # 4. Browser (Puppeteer)
         if (
             (tool_name in self.BROWSER_SYNONYMS and tool_name != "search")
-            or any(tool_name.startswith(x) for x in ["puppeteer_", "browser_"])
-            or explicit_server == "puppeteer"
+            or tool_name.startswith(("puppeteer_", "browser_"))
         ):
             return self._handle_browser(tool_name, args)
 
-        # --- VIBE ROUTING ---
-        if tool_name in self.VIBE_SYNONYMS or explicit_server == "vibe":
+        # 5. Vibe
+        if tool_name in self.VIBE_SYNONYMS:
             return self._handle_vibe(tool_name, args)
 
-        # --- SEQUENTIAL THINKING ---
+        # 6. Sequential Thinking
         if tool_name in ["sequential-thinking", "sequentialthinking", "think"]:
             return "sequential-thinking", "sequentialthinking", args
 
-        # --- DEVTOOLS ROUTING ---
-        if tool_name in self.DEVTOOLS_SYNONYMS or explicit_server == "devtools":
-            # Map generic terms to specific tools
-            if tool_name in ["lint", "linter", "ruff"]:
-                return "devtools", "devtools_lint_python", args
-            if tool_name in ["oxlint", "js_lint"]:
-                return "devtools", "devtools_lint_js", args
-            if tool_name in ["inspect", "inspector"]:
-                return "devtools", "devtools_launch_inspector", args
-            if tool_name in ["health", "check"]:
-                # Check 'check_code' vs 'health_check'
-                if "mcp" in str(args):
-                    return "devtools", "devtools_check_mcp_health", args
-                # Default generic 'check' might be ambiguous, but let's assume health if mcp mentioned
-                return "devtools", "devtools_check_mcp_health", args
+        # 7. DevTools
+        if tool_name in self.DEVTOOLS_SYNONYMS:
+            return self._handle_devtools(tool_name, args)
 
-            return "devtools", tool_name, args
+        # 8. Context7
+        if tool_name in self.CONTEXT7_SYNONYMS:
+            return self._handle_context7(tool_name, args)
 
-        # --- CONTEXT7 ROUTING ---
-        if tool_name in self.CONTEXT7_SYNONYMS or explicit_server == "context7":
-            # Map generic "docs" or "search" to c7_search
-            if tool_name in ["docs", "documentation", "lookup", "library"]:
-                return "context7", "c7_search", args
-            return "context7", tool_name, args
+        # 9. Golden Fund
+        if tool_name in self.GOLDEN_FUND_SYNONYMS:
+            return self._handle_golden_fund(tool_name, args)
 
-        # --- GOLDEN FUND ROUTING ---
-        if tool_name in self.GOLDEN_FUND_SYNONYMS or explicit_server in [
-            "golden-fund",
-            "golden_fund",
-        ]:
-            if tool_name in ["ingest", "ingestion", "etl"]:
-                return "golden-fund", "ingest_dataset", args
-            if tool_name in ["probe", "deep_search", "explore"]:
-                return "golden-fund", "probe_entity", args
-            if tool_name in ["vector_search", "semantic_search", "kb_search", "search_kb"]:
-                # Assume semantic mode for generic searches
-                args["mode"] = args.get("mode", "semantic")
-                return "golden-fund", "search_golden_fund", args
-
-            return "golden-fund", tool_name, args
-
-        # --- DEVTOOLS ROUTING ---
-        if tool_name in self.DEVTOOLS_SYNONYMS or explicit_server == "devtools":
-            # Map generic terms to specific tools
-            if tool_name in ["lint", "linter", "ruff"]:
-                return "devtools", "devtools_lint_python", args
-            if tool_name in ["oxlint", "js_lint"]:
-                return "devtools", "devtools_lint_js", args
-            if tool_name in ["inspect", "inspector"]:
-                return "devtools", "devtools_launch_inspector", args
-            if tool_name in ["health", "check"]:
-                # Check 'check_code' vs 'health_check'
-                if "mcp" in str(args):
-                    return "devtools", "devtools_check_mcp_health", args
-                # Default generic 'check' might be ambiguous, but let's assume health if mcp mentioned
-                return "devtools", "devtools_check_mcp_health", args
-
-            return "devtools", tool_name, args
-
-        # --- CONTEXT7 ROUTING ---
-        if tool_name in self.CONTEXT7_SYNONYMS or explicit_server == "context7":
-            # Map generic "docs" or "search" to c7_search
-            if tool_name in ["docs", "documentation", "lookup", "library"]:
-                return "context7", "c7_search", args
-            return "context7", tool_name, args
-
-        # --- GOLDEN FUND ROUTING ---
-        if tool_name in self.GOLDEN_FUND_SYNONYMS or explicit_server in [
-            "golden-fund",
-            "golden_fund",
-        ]:
-            if tool_name in ["ingest", "ingestion", "etl"]:
-                return "golden-fund", "ingest_dataset", args
-            if tool_name in ["probe", "deep_search", "explore"]:
-                return "golden-fund", "probe_entity", args
-            if tool_name in ["vector_search", "semantic_search", "kb_search", "search_kb"]:
-                # Assume semantic mode for generic searches
-                args["mode"] = args.get("mode", "semantic")
-                return "golden-fund", "search_golden_fund", args
-
-            return "golden-fund", tool_name, args
-
-        # --- DATA ANALYSIS ROUTING ---
+        # 10. Data Analysis
         if tool_name in self.DATA_ANALYSIS_SYNONYMS or explicit_server == "data-analysis":
             return self._handle_data_analysis(tool_name, args)
 
-        # --- XCODEBUILD ROUTING ---
+        # 11. XcodeBuild
         if tool_name in self.XCODEBUILD_SYNONYMS or explicit_server == "xcodebuild":
             return self._handle_xcodebuild(tool_name, args)
 
-        # --- GIT LEGACY ROUTING ---
+        # 12. Git Legacy
         if tool_name.startswith("git_") or explicit_server == "git":
             return self._handle_legacy_git(tool_name, args)
 
@@ -1116,12 +988,12 @@ class ToolDispatcher:
         # Normalize hyphenated tool names to underscores for Python-based servers
         if tool_name == "duckduckgo-search":
             tool_name = "duckduckgo_search"
-        if tool_name == "whisper-stt":
+        elif tool_name == "whisper-stt":
             tool_name = "transcribe_audio"
 
         server = explicit_server or get_server_for_tool(tool_name)
         if not server:
-            # Try registry-based name mapping (e.g. 'read_file' -> 'filesystem' server)
+            # Try registry-based name mapping
             schema = get_tool_schema(tool_name)
             if schema:
                 server = schema.get("server")
@@ -1525,6 +1397,37 @@ class ToolDispatcher:
             }
 
         return {"success": False, "error": f"Unknown system tool: {tool_name}"}
+
+    def _handle_devtools(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+        """Maps DevTools synonyms to canonical tools."""
+        if tool_name in ["lint", "linter", "ruff"]:
+            return "devtools", "devtools_lint_python", args
+        if tool_name in ["oxlint", "js_lint"]:
+            return "devtools", "devtools_lint_js", args
+        if tool_name in ["inspect", "inspector"]:
+            return "devtools", "devtools_launch_inspector", args
+        if tool_name in ["health", "check"]:
+            if "mcp" in str(args):
+                return "devtools", "devtools_check_mcp_health", args
+            return "devtools", "devtools_check_mcp_health", args
+        return "devtools", tool_name, args
+
+    def _handle_context7(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+        """Maps Context7 synonyms to canonical tools."""
+        if tool_name in ["docs", "documentation", "lookup", "library"]:
+            return "context7", "c7_search", args
+        return "context7", tool_name, args
+
+    def _handle_golden_fund(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+        """Maps Golden Fund synonyms to canonical tools."""
+        if tool_name in ["ingest", "ingestion", "etl"]:
+            return "golden-fund", "ingest_dataset", args
+        if tool_name in ["probe", "deep_search", "explore"]:
+            return "golden-fund", "probe_entity", args
+        if tool_name in ["vector_search", "semantic_search", "kb_search", "search_kb"]:
+            args["mode"] = args.get("mode", "semantic")
+            return "golden-fund", "search_golden_fund", args
+        return "golden-fund", tool_name, args
 
     def _handle_macos_use(
         self,

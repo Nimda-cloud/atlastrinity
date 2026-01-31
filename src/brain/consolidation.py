@@ -23,7 +23,7 @@ class ConsolidationModule:
     - Process: Read logs -> LLM analysis -> Extract rules -> Update ChromaDB
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.last_consolidation: datetime | None = None
         self.idle_threshold = timedelta(hours=2)
         self.log_path = os.path.join(os.path.expanduser("~/.config/atlastrinity/logs"), "brain.log")
