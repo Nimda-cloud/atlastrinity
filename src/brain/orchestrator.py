@@ -2098,6 +2098,11 @@ class Trinity:
                 if self.state and "step_results" in self.state:
                     step_copy["previous_results"] = self.state["step_results"][-10:]
 
+                # Inject critical discoveries for cross-step data access
+                discoveries_summary = shared_context.get_discoveries_summary()
+                if discoveries_summary:
+                    step_copy["critical_discoveries"] = discoveries_summary
+
                 # Full plan for sequence context
                 plan = self.state.get("current_plan")
                 if plan:
@@ -2629,6 +2634,10 @@ class Trinity:
             },
         )
 
+        # Extract and store critical discoveries from successful steps
+        if result.success and result.result:
+            self._extract_and_store_discoveries(result.result, step)
+
         try:
             from src.brain.state_manager import state_manager
 
@@ -2722,3 +2731,115 @@ class Trinity:
                 )
         except Exception as e:
             logger.error(f"Failed to update knowledge graph: {e}")
+
+    def _extract_and_store_discoveries(self, output: str, step: dict) -> None:
+        """Extract and store critical values from tool output using LLM analysis.
+        
+        Uses lightweight LLM call to dynamically identify important values
+        instead of hardcoded patterns. Stores in both SharedContext (fast access)
+        and ChromaDB (persistent semantic search).
+        """
+        # Skip if output is too short or empty
+        if not output or len(output.strip()) < 10:
+            return
+        
+        # Skip common non-informative outputs
+        skip_patterns = ["success", "done", "completed", "ok", "true", "false"]
+        if output.strip().lower() in skip_patterns:
+            return
+        
+        step_id = str(step.get("id", "unknown"))
+        step_action = step.get("action", "")[:100]
+        task_id = str(self.state.get("db_task_id") or self.state.get("session_id") or "unknown")
+        
+        # Schedule async LLM extraction in background
+        asyncio.create_task(
+            self._llm_extract_discoveries(output, step_id, step_action, task_id)
+        )
+
+    async def _llm_extract_discoveries(
+        self, output: str, step_id: str, step_action: str, task_id: str
+    ) -> None:
+        """Background LLM-based discovery extraction."""
+        from langchain_core.messages import HumanMessage, SystemMessage
+        from providers.copilot import CopilotLLM
+        from src.brain.memory import long_term_memory
+        
+        try:
+            # Use fast model for extraction
+            extraction_model = config.get("models.chat") or config.get("models.default")
+            llm = CopilotLLM(model_name=extraction_model)
+            
+            prompt = f"""Analyze this tool output and extract CRITICAL VALUES that should be remembered for later steps.
+
+OUTPUT:
+{output[:2000]}
+
+STEP CONTEXT: {step_action}
+
+Extract values that are:
+- IP addresses, hostnames, or URLs
+- File paths (especially keys, configs, credentials)
+- MAC addresses or device identifiers
+- Usernames, ports, service names
+- Any specific values that would be needed in subsequent steps
+
+Respond ONLY with valid JSON array (or empty [] if nothing important):
+[
+  {{"key": "descriptive_name", "value": "actual_value", "category": "ip_address|path|credential|identifier|other"}}
+]
+
+IMPORTANT: Extract ONLY concrete values, not descriptions. If nothing critical, return []"""
+
+            messages = [
+                SystemMessage(content="You are a precise data extractor. Return only valid JSON."),
+                HumanMessage(content=prompt),
+            ]
+            
+            response = await llm.ainvoke(messages)
+            response_text = str(response.content).strip()
+            
+            # Parse JSON response
+            # Handle markdown code blocks
+            if "```" in response_text:
+                import re
+                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response_text)
+                if json_match:
+                    response_text = json_match.group(1)
+            
+            discoveries = json.loads(response_text)
+            
+            if not discoveries or not isinstance(discoveries, list):
+                return
+            
+            for item in discoveries:
+                if not isinstance(item, dict):
+                    continue
+                    
+                key = item.get("key", "unknown")
+                value = item.get("value", "")
+                category = item.get("category", "other")
+                
+                if not value:
+                    continue
+                
+                # Store in SharedContext for immediate access
+                shared_context.store_discovery(key=key, value=value, category=category)
+                
+                # Store in ChromaDB for persistent semantic search
+                long_term_memory.remember_discovery(
+                    key=key,
+                    value=value,
+                    category=category,
+                    task_id=task_id,
+                    step_id=step_id,
+                    step_action=step_action,
+                )
+                
+                logger.info(f"[ORCHESTRATOR] LLM extracted {category}:{key}={value[:50]}...")
+                
+        except json.JSONDecodeError as e:
+            logger.debug(f"[ORCHESTRATOR] Discovery extraction returned no valid JSON: {e}")
+        except Exception as e:
+            logger.warning(f"[ORCHESTRATOR] Discovery extraction failed: {e}")
+

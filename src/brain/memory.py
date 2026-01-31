@@ -94,10 +94,15 @@ class LongTermMemory:
                 metadata={"description": "Successful logic deviations from original plans"},
             )
 
+            self.discoveries = self.client.get_or_create_collection(
+                name="discoveries",
+                metadata={"description": "Critical values discovered during task execution (IPs, paths, keys)"},
+            )
+
             self.available = True
             logger.info(f"[MEMORY] ChromaDB initialized at {CHROMA_DIR}")
             logger.info(
-                f"[MEMORY] Lessons: {self.lessons.count()} | Strategies: {self.strategies.count()} | Conversations: {self.conversations.count()}",
+                f"[MEMORY] Lessons: {self.lessons.count()} | Strategies: {self.strategies.count()} | Discoveries: {self.discoveries.count()}",
             )
 
         except Exception as e:
@@ -558,6 +563,114 @@ class LongTermMemory:
         except Exception as e:
             logger.error(f"[MEMORY] Failed to recall deviations: {e}")
             return []
+
+    def remember_discovery(
+        self,
+        key: str,
+        value: str,
+        category: str,
+        task_id: str,
+        step_id: str,
+        step_action: str = "",
+    ) -> bool:
+        """Store a critical discovery with semantic embedding for later recall.
+
+        Args:
+            key: Unique identifier (e.g., 'mikrotik_ip', 'ssh_key')
+            value: The discovered value
+            category: Type of discovery (ip_address, ssh_key_path, mac_address, etc.)
+            task_id: ID of the task this discovery belongs to
+            step_id: ID of the step that discovered this value
+            step_action: Description of what the step was doing
+        """
+        if not self.available:
+            return False
+        try:
+            doc_id = f"discovery_{task_id}_{category}_{key}"
+            
+            # Create semantic document for embedding
+            document = f"Discovery: {category} = {value}. Found during: {step_action}. Key: {key}"
+            
+            metadata = sanitize_metadata({
+                "key": key,
+                "value": value,
+                "category": category,
+                "task_id": task_id,
+                "step_id": step_id,
+                "step_action": step_action,
+                "timestamp": datetime.now().isoformat(),
+            })
+            
+            self.discoveries.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
+            logger.info(f"[MEMORY] Stored discovery: {category}:{key}={value[:30]}... (task={task_id})")
+            return True
+        except Exception as e:
+            logger.error(f"[MEMORY] Failed to store discovery: {e}")
+            return False
+
+    def recall_discoveries(
+        self,
+        query: str,
+        task_id: str | None = None,
+        category: str | None = None,
+        n_results: int = 5,
+    ) -> list[dict[str, Any]]:
+        """Semantic search for discoveries.
+
+        Args:
+            query: Natural language query (e.g., "MikroTik IP address")
+            task_id: Optional filter by task
+            category: Optional filter by category
+            n_results: Max results to return
+        """
+        if not self.available or self.discoveries.count() == 0:
+            return []
+        try:
+            where_filter = {}
+            if task_id:
+                where_filter["task_id"] = task_id
+            if category:
+                where_filter["category"] = category
+            
+            results = self.discoveries.query(
+                query_texts=[query],
+                n_results=min(n_results, self.discoveries.count()),
+                include=["documents", "metadatas", "distances"],
+                where=where_filter if where_filter else None,
+            )
+            
+            discoveries = []
+            if results and results["ids"]:
+                for i, doc_id in enumerate(results["ids"][0]):
+                    discoveries.append({
+                        "id": doc_id,
+                        "document": results["documents"][0][i] if results["documents"] else "",
+                        "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                        "distance": results["distances"][0][i] if results.get("distances") else 0,
+                    })
+            return discoveries
+        except Exception as e:
+            logger.error(f"[MEMORY] Failed to recall discoveries: {e}")
+            return []
+
+    def get_task_discoveries(self, task_id: str) -> dict[str, str]:
+        """Get all discoveries for a specific task as key-value pairs."""
+        if not self.available or self.discoveries.count() == 0:
+            return {}
+        try:
+            results = self.discoveries.get(
+                where={"task_id": task_id},
+                include=["metadatas"],
+            )
+            discoveries = {}
+            if results and results["metadatas"]:
+                for meta in results["metadatas"]:
+                    key = f"{meta.get('category', 'general')}:{meta.get('key', 'unknown')}"
+                    discoveries[key] = meta.get("value", "")
+            return discoveries
+        except Exception as e:
+            logger.error(f"[MEMORY] Failed to get task discoveries: {e}")
+            return {}
 
     async def clear_all_memory(self) -> bool:
         """Wipe all vector collections for a total knowledge reset."""
