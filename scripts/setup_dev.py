@@ -217,26 +217,35 @@ def check_system_tools():
 
 def ensure_database():
     """Initialize SQLite database in global config folder"""
-    print_step("Налаштування бази даних (SQLite)...")
+    print_step("Налаштування основної бази даних (SQLite)...")
     db_path = CONFIG_ROOT / "atlastrinity.db"
+    backup_path = PROJECT_ROOT / "backups" / "databases" / "atlastrinity.db"
 
-    # 1. Check if database file exists
+    # 1. Restore from backup if exists and local is missing
+    if not db_path.exists() and backup_path.exists():
+        print_info(f"Відновлення основної бази з бекапу репозиторію...")
+        try:
+            shutil.copy2(backup_path, db_path)
+            print_success("Базу даних відновлено")
+        except Exception as e:
+            print_warning(f"Не вдалося відновити базу: {e}")
+
+    # 2. Check if database file exists
     try:
         if db_path.exists():
             print_success(f"SQLite база даних вже існує: {db_path}")
         else:
             print_info(f"Створення нової SQLite бази: {db_path}...")
 
-        # 2. Initialize tables via SQLAlchemy
-        print_info("Ініціалізація таблиць (SQLAlchemy)...")
+        # 3. Initialize tables via SQLAlchemy
+        print_info("Перевірка та ініціалізація таблиць (SQLAlchemy)...")
         venv_python = str(VENV_PATH / "bin" / "python")
         init_cmd = [venv_python, str(PROJECT_ROOT / "scripts" / "init_db.py")]
         subprocess.run(init_cmd, cwd=PROJECT_ROOT, check=True)
-        print_success("Схему бази даних ініціалізовано (таблиці створено)")
+        print_success("Схему бази даних перевірено/ініціалізовано")
 
     except Exception as e:
         print_warning(f"Помилка при налаштуванні БД: {e}")
-        print_info("Переконайтесь, що aiosqlite встановлено: pip install aiosqlite")
 
 
 def verify_golden_fund():
@@ -248,22 +257,36 @@ def verify_golden_fund():
     config_db_path = config_db_dir / "golden.db"
     
     backup_repo_dir = PROJECT_ROOT / "backups" / "databases" / "golden_fund"
-    backup_db_path = backup_repo_dir / "golden.db"
 
-    # Ensure config directory exists
-    config_db_dir.mkdir(parents=True, exist_ok=True)
-
-    # 1. Restore from backup if fresh install or missing
-    if not config_db_path.exists():
-        if backup_db_path.exists():
-            print_info(f"Відновлення Golden Fund з бекапу: {backup_db_path} -> {config_db_path}")
+    # 1. Restore the entire Golden Fund directory (DB + Vectors + Cache)
+    if not config_db_dir.exists() or not list(config_db_dir.glob("*")):
+        if backup_repo_dir.exists():
+            print_info(f"Відновлення Golden Fund (база + вектори) з бекапу репозиторію...")
             try:
-                shutil.copy2(backup_db_path, config_db_path)
-                print_success("Базу даних відновлено з репозиторію")
+                if config_db_dir.exists():
+                    shutil.rmtree(config_db_dir)
+                shutil.copytree(backup_repo_dir, config_db_dir)
+                print_success("Golden Fund повністю відновлено з репозиторію")
             except Exception as e:
-                print_error(f"Не вдалося відновити базу даних: {e}")
+                print_error(f"Не вдалося відновити Golden Fund: {e}")
         else:
-            print_info("Бекап не знайдено. Буде створено нову базу даних.")
+            print_info("Бекап Golden Fund не знайдено. Буде ініціалізовано нову базу.")
+
+    # Ensure config directory exists (if not restored)
+    config_db_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 2. Support Memory Chroma restore
+    memory_chroma_dir = CONFIG_ROOT / "memory" / "chroma"
+    backup_memory_dir = PROJECT_ROOT / "backups" / "databases" / "memory" / "chroma"
+    
+    if not memory_chroma_dir.exists() and backup_memory_dir.exists():
+        print_info("Відновлення Memory Chroma (семантика/графи) з бекапу...")
+        try:
+            memory_chroma_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(backup_memory_dir, memory_chroma_dir)
+            print_success("Memory Chroma відновлено")
+        except Exception as e:
+             print_warning(f"Не вдалося відновити Memory Chroma: {e}")
     
     # 2. Check Tables (Verify Integrity)
     import sqlite3
