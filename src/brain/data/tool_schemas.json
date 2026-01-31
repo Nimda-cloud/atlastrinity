@@ -1236,7 +1236,7 @@
     "types": {
       "file_path": "str"
     },
-    "description": "Run 'oxlint' on a specific file or directory (for JS/TS). Returns structured JSON results."
+    "description": "Run JS/TS linters (oxlint and eslint) on a specific file or directory. Returns structured results from both tools."
   },
   "devtools_find_dead_code": {
     "server": "devtools",
@@ -1545,7 +1545,7 @@
     "types": {
       "path": "str"
     },
-    "description": "Run security audit tools (bandit, safety, detect-secrets)."
+    "description": "Run security audit tools (bandit, safety, detect-secrets, npm audit)."
   },
   "devtools_check_complexity": {
     "server": "devtools",
