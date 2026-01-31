@@ -58,7 +58,7 @@ def devtools_check_mcp_health() -> dict[str, Any]:
 
         try:
             data = json.loads(output)
-            return data
+            return cast(dict[str, Any], data)
         except json.JSONDecodeError:
             return {"error": "Failed to parse health check JSON", "raw_output": output}
 

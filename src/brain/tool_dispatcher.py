@@ -66,7 +66,7 @@ class ToolDispatcher:
         "tree",
     ]
 
-    SERACH_SYNONYMS = []  # Deprecated
+    SERACH_SYNONYMS: list[str] = []  # Deprecated
 
     VIBE_SYNONYMS = [
         "vibe",

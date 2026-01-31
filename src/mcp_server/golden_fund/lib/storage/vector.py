@@ -99,7 +99,7 @@ class VectorStorage:
             if self.collection:
                 self.collection.upsert(
                     documents=documents, 
-                    metadatas=cast(list[dict[str, str | int | float]], metadatas), 
+                    metadatas=metadatas,  # type: ignore[arg-type]
                     ids=ids
                 )
 

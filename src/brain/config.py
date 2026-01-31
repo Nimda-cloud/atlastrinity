@@ -1,7 +1,7 @@
 import os
 import platform
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 try:
     from dotenv import load_dotenv
@@ -9,7 +9,7 @@ except ImportError:  # pragma: no cover
 
     def load_dotenv(
         dotenv_path: str | os.PathLike[str] | None = None,
-        stream: str | None = None,
+        stream: IO[str] | None = None,
         verbose: bool = False,
         override: bool = False,
         interpolate: bool = True,

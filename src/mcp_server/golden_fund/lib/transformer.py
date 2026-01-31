@@ -16,12 +16,14 @@ logger = logging.getLogger("golden_fund.transformer")
 try:
     from .validation import DataValidator as ImportedDataValidator
     from .validation import ValidationResult as ImportedValidationResult
-    DataValidator = ImportedDataValidator
-    ValidationResult = ImportedValidationResult
 except ImportError:
     # Fallback for when validation module is not available
-    DataValidator: type[Any] | None = None
-    ValidationResult: type[Any] | None = None
+    ImportedDataValidator: type[Any] | None = None
+    ImportedValidationResult: type[Any] | None = None
+
+# Assign the actual names
+DataValidator = ImportedDataValidator
+ValidationResult = ImportedValidationResult
 
 
 class TransformResult:
