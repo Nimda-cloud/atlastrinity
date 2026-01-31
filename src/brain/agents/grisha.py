@@ -850,11 +850,21 @@ class Grisha(BaseAgent):
             analysis_text = reasoning_result.get("analysis", "")
             
             # Extract Sections from Simulation Output
+            gap_analysis = ""
+            if "STRATEGIC GAP ANALYSIS:" in analysis_text:
+                parts = analysis_text.split("STRATEGIC GAP ANALYSIS:")
+                if len(parts) > 1:
+                    gap_analysis = parts[1].split("FEEDBACK TO ATLAS:")[0].strip()
+
             feedback_to_atlas = ""
             if "FEEDBACK TO ATLAS:" in analysis_text:
                 parts = analysis_text.split("FEEDBACK TO ATLAS:")
                 if len(parts) > 1:
                     feedback_to_atlas = parts[1].split("SUMMARY_UKRAINIAN:")[0].strip()
+
+            # Merge Gap Analysis with Feedback
+            if gap_analysis:
+                feedback_to_atlas = f"STRATEGIC GAP ANALYSIS:\n{gap_analysis}\n\nINSTRUCTIONS:\n{feedback_to_atlas}"
 
             summary_ukrainian = ""
             if "SUMMARY_UKRAINIAN:" in analysis_text:

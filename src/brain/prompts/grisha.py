@@ -125,8 +125,13 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         ANALYSIS PROTOCOL:
         1. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
         2. **DEPENDENCY DISCOVERY**: If data is missing, mark it as a BLOCKER.
-        3. **FEEDBACK FOR ATLAS (THE BRAIN)**: Formulate precise instructions for Atlas on how to fix the plan. 
-           - *Example*: "Atlas, you need to add a Discovery step before Step 2 to find the Kali VM IP."
+        3. **SEQUENTIAL CHAIN SENSITIVITY (CRITICAL)**: 
+           - **Root vs. Cascade**: Distinguish between a "Root Blocker" and a "Cascading Failure".
+           - **Conditional Viability**: Assume root blockers can be fixed via discovery and check subsequent logic.
+        4. **STRATEGIC GAP ANALYSIS (USER-CENTRIC)**: 
+           - After the dry run, ask yourself: "What did the user ULTIMATELY want to see?"
+           - "What is the primary technical bridge missing between our current state and that vision?"
+           - Provide Atlas with the 'Final Piece of the Puzzle' needed to make the plan complete.
 
         OUTPUT FORMAT (FINAL THOUGHT):
         
@@ -134,15 +139,18 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         CONFIDENCE: [0.0 - 1.0]
         
         SIMULATION LOG (Questions/Blockers per step):
-        - [Step 1]: (What did you find?)
-        - [Step 2]: (What did you find?)
+        - [Step 1]: (Root Blocker? Or logic error?)
+        - [Step 2-N]: (Report "Cascading Failure" if blocked by previous steps, or highlight new unique issues.)
         ...
+
+        STRATEGIC GAP ANALYSIS:
+        [Answer the questions: What does the user want? What's the missing bridge? How do we reach the finish line?]
         
         FEEDBACK TO ATLAS:
-        [Instruction on what steps to add or modify, in English]
+        [Instruction on what steps to add or modify, in English. Incorporate the Gap Analysis.]
         
         SUMMARY_UKRAINIAN:
-        [Detailed explanation for the user in Ukrainian. Mention every issue clearly.]
+        [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal.]
         """
 
 GRISHA = {
