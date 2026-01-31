@@ -122,6 +122,9 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         You are the System's Debugger. You must mentally execute each step of the plan.
         DO NOT assume data exists. If a step needs an IP, and no previous step finds that IP -> THE PLAN IS BROKEN.
 
+        GLOBAL AUDIT RULE:
+        Do not stop at the first blocker. Even if Step 1 is broken (Root Blocker), mentally hypothesize its success to AUDIT Step 2, 3, and so on. Your goal is to identify ALL logical flaws, missing data, and structural gaps in the ENTIRE plan during this single simulation. Provide Atlas with a complete punch-list of fixes so he doesn't have to re-plan multiple times.
+
         ANALYSIS PROTOCOL:
         1. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
         2. **DEPENDENCY DISCOVERY**: If data is missing, mark it as a BLOCKER.
