@@ -10,9 +10,10 @@ from pathlib import Path
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
 GOLDEN_FUND_LIVE = CONFIG_ROOT / "data" / "golden_fund"
 
+
 def clean_golden_fund():
     print("🧹 Cleaning Golden Fund Data...")
-    
+
     if GOLDEN_FUND_LIVE.exists():
         try:
             shutil.rmtree(GOLDEN_FUND_LIVE)
@@ -22,8 +23,9 @@ def clean_golden_fund():
             return False
     else:
         print("ℹ️ Golden Fund dir not found (already clean).")
-        
+
     return True
+
 
 if __name__ == "__main__":
     clean_golden_fund()

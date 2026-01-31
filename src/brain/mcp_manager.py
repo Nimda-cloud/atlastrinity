@@ -254,11 +254,7 @@ class MCPManager:
 
     async def get_session(self, server_name: str) -> "ClientSession | None":
         """Get or create a persistent session for the server"""
-        if (
-            _McpClientSession is None
-            or StdioServerParameters is None
-            or stdio_client is None
-        ):
+        if _McpClientSession is None or StdioServerParameters is None or stdio_client is None:
             logger.error("MCP Python package is not installed; MCP features are unavailable")
             return None
 

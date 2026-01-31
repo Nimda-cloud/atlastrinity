@@ -223,7 +223,7 @@ def ensure_database():
 
     # 1. Restore from backup if exists and local is missing
     if not db_path.exists() and backup_path.exists():
-        print_info(f"Відновлення основної бази з бекапу репозиторію...")
+        print_info("Відновлення основної бази з бекапу репозиторію...")
         try:
             shutil.copy2(backup_path, db_path)
             print_success("Базу даних відновлено")
@@ -255,13 +255,13 @@ def verify_golden_fund():
     # Paths
     config_db_dir = CONFIG_ROOT / "data" / "golden_fund"
     config_db_path = config_db_dir / "golden.db"
-    
+
     backup_repo_dir = PROJECT_ROOT / "backups" / "databases" / "golden_fund"
 
     # 1. Restore the entire Golden Fund directory (DB + Vectors + Cache)
     if not config_db_dir.exists() or not list(config_db_dir.glob("*")):
         if backup_repo_dir.exists():
-            print_info(f"Відновлення Golden Fund (база + вектори) з бекапу репозиторію...")
+            print_info("Відновлення Golden Fund (база + вектори) з бекапу репозиторію...")
             try:
                 if config_db_dir.exists():
                     shutil.rmtree(config_db_dir)
@@ -274,11 +274,11 @@ def verify_golden_fund():
 
     # Ensure config directory exists (if not restored)
     config_db_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # 2. Support Memory Chroma restore
     memory_chroma_dir = CONFIG_ROOT / "memory" / "chroma"
     backup_memory_dir = PROJECT_ROOT / "backups" / "databases" / "memory" / "chroma"
-    
+
     if not memory_chroma_dir.exists() and backup_memory_dir.exists():
         print_info("Відновлення Memory Chroma (семантика/графи) з бекапу...")
         try:
@@ -286,10 +286,11 @@ def verify_golden_fund():
             shutil.copytree(backup_memory_dir, memory_chroma_dir)
             print_success("Memory Chroma відновлено")
         except Exception as e:
-             print_warning(f"Не вдалося відновити Memory Chroma: {e}")
-    
+            print_warning(f"Не вдалося відновити Memory Chroma: {e}")
+
     # 2. Check Tables (Verify Integrity)
     import sqlite3
+
     try:
         # We can't use the SQLStorage class directly easily here without import setup, so raw check
         with sqlite3.connect(config_db_path) as conn:
@@ -306,7 +307,7 @@ def verify_golden_fund():
                 print_info("Сервер Golden Fund створить необхідні таблиці при запуску.")
             else:
                 print_success(f"Golden Fund перевірено: {len(tables)} таблиць знайдено")
-                
+
     except Exception as e:
         print_warning(f"Не вдалося перевірити структуру Golden Fund: {e}")
 
@@ -1058,7 +1059,7 @@ def backup_databases():
     for src, dst in backups:
         if not src.exists():
             continue
-            
+
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if src.is_file():
@@ -1095,7 +1096,7 @@ def restore_databases():
     for src, dst in restores:
         if not src.exists():
             continue
-            
+
         try:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if src.is_file():

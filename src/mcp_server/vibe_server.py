@@ -515,7 +515,9 @@ async def run_vibe_subprocess(
                                 formatted = f"⚡ [VIBE-LIVE] {line}"
 
                             logger.debug(f"[VIBE_{stream_name}] {line}")
-                            level: Literal["debug", "error", "info", "warning"] = "warning" if stream_name == "ERR" else "info"
+                            level: Literal["debug", "error", "info", "warning"] = (
+                                "warning" if stream_name == "ERR" else "info"
+                            )
                             await emit_log(level, formatted)
 
                     try:
@@ -1054,15 +1056,18 @@ async def vibe_analyze_error(
 
     logger.info(f"[VIBE] Analyzing error (auto_fix={auto_fix}, step={step_action})")
 
-    return cast(dict[str, Any], await vibe_prompt(
-        ctx=ctx,
-        prompt=prompt,
-        cwd=cwd,
-        timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
-        model=AGENT_MODEL_OVERRIDE,
-        mode="auto-approve" if auto_fix else "plan",
-        max_turns=15,
-    ))
+    return cast(
+        dict[str, Any],
+        await vibe_prompt(
+            ctx=ctx,
+            prompt=prompt,
+            cwd=cwd,
+            timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
+            model=AGENT_MODEL_OVERRIDE,
+            mode="auto-approve" if auto_fix else "plan",
+            max_turns=15,
+        ),
+    )
 
 
 @server.tool()
@@ -1222,15 +1227,18 @@ EXECUTE NOW
 
     logger.info(f"[VIBE] Implementing feature: {goal[:50]}... (iterative={iterative_review})")
 
-    return cast(dict[str, Any], await vibe_prompt(
-        ctx=ctx,
-        prompt=prompt,
-        cwd=cwd,
-        timeout_s=timeout_s or 1200,
-        model=AGENT_MODEL_OVERRIDE,
-        mode="auto-approve",
-        max_turns=30 + (max_iterations * 5 if iterative_review else 0),
-    ))
+    return cast(
+        dict[str, Any],
+        await vibe_prompt(
+            ctx=ctx,
+            prompt=prompt,
+            cwd=cwd,
+            timeout_s=timeout_s or 1200,
+            model=AGENT_MODEL_OVERRIDE,
+            mode="auto-approve",
+            max_turns=30 + (max_iterations * 5 if iterative_review else 0),
+        ),
+    )
 
 
 @server.tool()
@@ -1284,15 +1292,18 @@ async def vibe_code_review(
     if focus_areas:
         prompt_parts.append(f"\nFOCUS AREAS: {focus_areas}")
 
-    return cast(dict[str, Any], await vibe_prompt(
-        ctx=ctx,
-        prompt="\n".join(prompt_parts),
-        cwd=cwd,
-        timeout_s=timeout_s or 300,
-        model=AGENT_MODEL_OVERRIDE,
-        mode="plan",  # Read-only mode
-        max_turns=5,
-    ))
+    return cast(
+        dict[str, Any],
+        await vibe_prompt(
+            ctx=ctx,
+            prompt="\n".join(prompt_parts),
+            cwd=cwd,
+            timeout_s=timeout_s or 300,
+            model=AGENT_MODEL_OVERRIDE,
+            mode="plan",  # Read-only mode
+            max_turns=5,
+        ),
+    )
 
 
 @server.tool()
@@ -1335,14 +1346,17 @@ async def vibe_smart_plan(
         ],
     )
 
-    return cast(dict[str, Any], await vibe_prompt(
-        ctx=ctx,
-        prompt="\n".join(prompt_parts),
-        cwd=cwd,
-        timeout_s=timeout_s or 300,
-        mode="plan",
-        max_turns=5,
-    ))
+    return cast(
+        dict[str, Any],
+        await vibe_prompt(
+            ctx=ctx,
+            prompt="\n".join(prompt_parts),
+            cwd=cwd,
+            timeout_s=timeout_s or 300,
+            mode="plan",
+            max_turns=5,
+        ),
+    )
 
 
 # =============================================================================
@@ -1581,13 +1595,16 @@ async def vibe_session_resume(
     full_session_id = target_path.stem.replace("session_", "")
 
     # Use vibe_prompt with session continuation
-    return cast(dict[str, Any], await vibe_prompt(
-        ctx=ctx,
-        prompt=prompt or "Continue from where we left off.",
-        cwd=cwd,
-        timeout_s=timeout_s,
-        session_id=full_session_id,
-    ))
+    return cast(
+        dict[str, Any],
+        await vibe_prompt(
+            ctx=ctx,
+            prompt=prompt or "Continue from where we left off.",
+            cwd=cwd,
+            timeout_s=timeout_s,
+            session_id=full_session_id,
+        ),
+    )
 
 
 # =============================================================================
@@ -1613,15 +1630,18 @@ async def vibe_ask(
         AI response without file modifications
 
     """
-    return cast(dict[str, Any], await vibe_prompt(
-        ctx=ctx,
-        prompt=question,
-        cwd=cwd,
-        timeout_s=timeout_s or 300,
-        mode="plan",
-        max_turns=3,
-        output_format="json",
-    ))
+    return cast(
+        dict[str, Any],
+        await vibe_prompt(
+            ctx=ctx,
+            prompt=question,
+            cwd=cwd,
+            timeout_s=timeout_s or 300,
+            mode="plan",
+            max_turns=3,
+            output_format="json",
+        ),
+    )
 
 
 @server.tool()

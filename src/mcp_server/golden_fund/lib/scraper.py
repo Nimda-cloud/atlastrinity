@@ -107,7 +107,7 @@ class DataScraper:
         """Download a file from a URL without parsing."""
         try:
             logger.info(f"Downloading file: {url}")
-            
+
             if url.startswith("file://") or "://" not in url:
                 # Local file handling
                 path_str = url.replace("file://", "")
@@ -119,19 +119,19 @@ class DataScraper:
                 result.metadata = {
                     "url": url,
                     "status_code": 200,
-                    "content_type": "application/octet-stream"
+                    "content_type": "application/octet-stream",
                 }
                 return result
 
             response = self.session.get(url, timeout=timeout)
             response.raise_for_status()
-            
+
             # Return raw bytes
             result = ScrapeResult(True, data=response.content)
             result.metadata = {
-                "url": url, 
+                "url": url,
                 "status_code": response.status_code,
-                "content_type": response.headers.get("Content-Type", "application/octet-stream")
+                "content_type": response.headers.get("Content-Type", "application/octet-stream"),
             }
             return result
         except Exception as e:

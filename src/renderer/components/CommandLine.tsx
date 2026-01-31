@@ -62,7 +62,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
       const scrollHeight = textareaRef.current.scrollHeight;
       const newHeight = Math.min(scrollHeight, 200);
       textareaRef.current.style.height = `${newHeight}px`;
-      
+
       // Track if textarea is expanded (more than single line)
       // 40px is roughly single line height
       setIsExpanded(newHeight > 40 && input.length > 0);
@@ -229,7 +229,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
         // Suppress "Failed to fetch" errors to reduce console spam
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
           // Silent fail for connection issues
-          setSttStatus("🔌 Підключення...");
+          setSttStatus('🔌 Підключення...');
         } else {
           console.error('❌ Smart STT error:', error);
           setSttStatus("❌ Помилка з'єднання");
@@ -486,7 +486,9 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
   return (
     <div className="command-line-container font-mono">
-      <div className={`flex items-start gap-2 pt-2 bg-transparent pb-0 ${isExpanded ? 'items-start' : 'items-baseline'}`}>
+      <div
+        className={`flex items-start gap-2 pt-2 bg-transparent pb-0 ${isExpanded ? 'items-start' : 'items-baseline'}`}
+      >
         {/* Left Controls - Only TTS (hidden when expanded) */}
         {!isExpanded && (
           <div className="flex items-center gap-1">

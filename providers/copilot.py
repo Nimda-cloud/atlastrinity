@@ -210,9 +210,10 @@ class CopilotLLM(BaseChatModel):
                 new_prompt = f"{original_text}\n\n[AUTOMATIC IMAGE ANALYSIS (OCR + BLIP)]:\n{combined_desc}\n\nBased on this analysis, what can you say about the screen state? Respond strictly in JSON format."
 
                 # Call LLM with text-only message
-        
 
-                text_only_messages: list[BaseMessage] = [msg for msg in messages if isinstance(msg, SystemMessage)] + [
+                text_only_messages: list[BaseMessage] = [
+                    msg for msg in messages if isinstance(msg, SystemMessage)
+                ] + [
                     HumanMessage(content=new_prompt),
                 ]
 

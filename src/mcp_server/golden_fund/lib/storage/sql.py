@@ -1,4 +1,3 @@
-
 import logging
 import sqlite3
 from pathlib import Path
@@ -12,7 +11,7 @@ logger = logging.getLogger("golden_fund.storage.sql")
 
 
 class SQLStorage:
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         if db_path is None:
             # Default location: global config directory
             config_root = Path.home() / ".config" / "atlastrinity"
@@ -57,7 +56,7 @@ class SQLStorage:
     ) -> StorageResult:
         """
         Store a DataFrame as a table in SQLite.
-        
+
         Args:
             df: The DataFrame to store
             dataset_name: Name of the dataset (used for metadata)
@@ -65,12 +64,12 @@ class SQLStorage:
             if_exists: 'fail', 'replace', or 'append'
         """
         table_name = self._sanitize_table_name(dataset_name)
-        
+
         try:
             with sqlite3.connect(self.db_path) as conn:
                 # Store actual data
                 df.to_sql(table_name, conn, if_exists=if_exists, index=False)
-                
+
                 # Update metadata
                 conn.execute(
                     """
@@ -82,15 +81,11 @@ class SQLStorage:
                     """,
                     (dataset_name, table_name, source_url, len(df), len(df)),
                 )
-            
+
             return StorageResult(
                 success=True,
                 target=table_name,
-                data={
-                    "table_name": table_name,
-                    "rows": len(df),
-                    "db_path": str(self.db_path)
-                },
+                data={"table_name": table_name, "rows": len(df), "db_path": str(self.db_path)},
             )
         except Exception as e:
             logger.error(f"Failed to store dataset {dataset_name}: {e}")
@@ -101,7 +96,9 @@ class SQLStorage:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 df = pd.read_sql_query(query, conn, params=params)
-                return StorageResult(success=True, target="query", data=df.to_dict(orient="records"))
+                return StorageResult(
+                    success=True, target="query", data=df.to_dict(orient="records")
+                )
         except Exception as e:
             return StorageResult(success=False, target="query", error=str(e))
 

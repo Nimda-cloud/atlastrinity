@@ -18,7 +18,9 @@ from .formats import (
 
 class DataParser:
     def __init__(self) -> None:
-        self._parsers: dict[str, JSONParser | CSVParser | XMLParser | ExcelParser | ParquetParser] = {
+        self._parsers: dict[
+            str, JSONParser | CSVParser | XMLParser | ExcelParser | ParquetParser
+        ] = {
             "json": JSONParser(),
             "csv": CSVParser(),
             "xml": XMLParser(),

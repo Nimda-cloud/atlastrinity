@@ -175,7 +175,9 @@ def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
 # =============================================================================
 
 
-def _get_inspector_server_cmd(server_name: str) -> tuple[list[str], dict[str, str]] | dict[str, Any]:
+def _get_inspector_server_cmd(
+    server_name: str,
+) -> tuple[list[str], dict[str, str]] | dict[str, Any]:
     """Build the inspector CLI command for a given server.
 
     Returns tuple (cmd_parts, env) on success, or error dict on failure.
@@ -440,41 +442,41 @@ def devtools_run_mcp_sandbox(
     autofix: bool = False,
 ) -> dict[str, Any]:
     """Run MCP sandbox tests with LLM-generated realistic scenarios.
-    
+
     This tool tests ALL MCP tools (including destructive ones) in a safe
     isolated sandbox environment. It generates realistic test scenarios
     using LLM and can chain multiple tools together for natural testing flows.
-    
+
     Args:
         server_name: Specific server to test (e.g., 'filesystem', 'memory')
         all_servers: Test all enabled MCP servers
         chain_length: Number of tools to chain in each scenario (1-5)
         autofix: Automatically attempt to fix failures via Vibe MCP
-    
+
     Returns:
         Dict with test results including passed/failed counts and details.
     """
     script_path = PROJECT_ROOT / "scripts" / "mcp_sandbox.py"
-    
+
     if not script_path.exists():
         return {"error": f"Sandbox script not found at {script_path}"}
-    
+
     # Build command
     cmd = [str(VENV_PYTHON), str(script_path), "--json"]
-    
+
     if server_name:
         cmd.extend(["--server", server_name])
     elif all_servers:
         cmd.append("--all")
     else:
         return {"error": "Must specify either server_name or all_servers=True"}
-    
+
     if chain_length > 1:
         cmd.extend(["--chain", str(min(5, max(1, chain_length)))])
-    
+
     if autofix:
         cmd.append("--autofix")
-    
+
     try:
         result = subprocess.run(
             cmd,
@@ -483,7 +485,7 @@ def devtools_run_mcp_sandbox(
             timeout=300,  # 5 minute timeout for full test
             check=False,
         )
-        
+
         stdout = result.stdout.strip()
         if not stdout:
             return {
@@ -491,7 +493,7 @@ def devtools_run_mcp_sandbox(
                 "stderr": result.stderr,
                 "returncode": result.returncode,
             }
-        
+
         try:
             data = json.loads(stdout)
             return cast(dict[str, Any], data)
@@ -501,11 +503,12 @@ def devtools_run_mcp_sandbox(
                 "raw_output": stdout[:500],
                 "stderr": result.stderr,
             }
-    
+
     except subprocess.TimeoutExpired:
         return {"error": "Sandbox test timed out (>5 minutes)"}
     except Exception as e:
         return {"error": str(e)}
+
 
 @server.tool()
 def devtools_validate_config() -> dict[str, Any]:
@@ -579,7 +582,7 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
     Returns structured results from both tools.
     """
     results: dict[str, Any] = {"success": True, "violations": [], "summary": {}}
-    
+
     # 1. Run oxlint
     if shutil.which("oxlint"):
         try:
@@ -600,12 +603,15 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
                 results["summary"]["oxlint"] = 0
         except Exception as e:
             results["summary"]["oxlint_exception"] = str(e)
-    
+
     # 2. Run eslint (via npx to use project-local config)
     if shutil.which("npx"):
         try:
             # Check for eslint config
-            has_config = any((PROJECT_ROOT / f).exists() for f in [".eslintrc.js", ".eslintrc.json", ".eslintrc.yml", "eslint.config.js"])
+            has_config = any(
+                (PROJECT_ROOT / f).exists()
+                for f in [".eslintrc.js", ".eslintrc.json", ".eslintrc.yml", "eslint.config.js"]
+            )
             if has_config:
                 cmd = ["npx", "eslint", "--format", "json", file_path]
                 # Filter out non-JSON lines (sometimes npx prints update notifications)
@@ -632,7 +638,7 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
                     results["summary"]["eslint"] = 0
         except Exception as e:
             results["summary"]["eslint_exception"] = str(e)
-            
+
     return results
 
 
@@ -711,7 +717,15 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
     results: dict[str, Any] = {}
 
     # 1. Bandit
-    bandit_bin = vbin if (vbin := shutil.which("bandit", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "bandit"
+    bandit_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "bandit", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else "bandit"
+    )
     try:
         cmd = [bandit_bin, "-r", path, "-ll", "--format", "json"]
         res = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -720,7 +734,15 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
         results["bandit"] = {"error": str(e)}
 
     # 2. Safety (Check dependencies)
-    safety_bin = vbin if (vbin := shutil.which("safety", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "safety"
+    safety_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "safety", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else "safety"
+    )
     try:
         cmd = [safety_bin, "check", "--json"]
         res = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -729,7 +751,15 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
         results["safety"] = {"error": str(e)}
 
     # 3. Detect-secrets
-    ds_bin = vbin if (vbin := shutil.which("detect-secrets", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "detect-secrets"
+    ds_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "detect-secrets", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else "detect-secrets"
+    )
     try:
         cmd = [ds_bin, "scan", path]
         res = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -741,7 +771,9 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
     if shutil.which("npm"):
         try:
             cmd = ["npm", "audit", "--json"]
-            res = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False)
+            res = subprocess.run(
+                cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+            )
             results["npm_audit"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
         except Exception as e:
             results["npm_audit"] = {"error": str(e)}
@@ -752,7 +784,15 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
 @server.tool()
 def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
     """Run complexity audit (xenon)."""
-    xenon_bin = vbin if (vbin := shutil.which("xenon", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "xenon"
+    xenon_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "xenon", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else "xenon"
+    )
     try:
         # xenon --max-absolute B --max-modules B --max-average A <path>
         cmd = [xenon_bin, "--max-absolute", "B", "--max-modules", "B", "--max-average", "A", path]
@@ -760,7 +800,7 @@ def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
         return {
             "success": res.returncode == 0,
             "stdout": res.stdout.strip(),
-            "stderr": res.stderr.strip()
+            "stderr": res.stderr.strip(),
         }
     except Exception as e:
         return {"error": str(e)}
@@ -769,7 +809,15 @@ def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
 @server.tool()
 def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
     """Run deep type checking for Python (mypy)."""
-    mypy_bin = vbin if (vbin := shutil.which("mypy", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "mypy"
+    mypy_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "mypy", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else "mypy"
+    )
     try:
         # We use --explicit-package-bases as discovered during CLI verification
         cmd = [mypy_bin, path, "--explicit-package-bases"]
@@ -783,7 +831,7 @@ def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
             "success": res.returncode == 0,
             "stdout": res.stdout.strip(),
             "stderr": res.stderr.strip(),
-            "violation_count": len(res.stdout.splitlines()) if res.returncode != 0 else 0
+            "violation_count": len(res.stdout.splitlines()) if res.returncode != 0 else 0,
         }
     except Exception as e:
         return {"error": str(e)}
@@ -795,11 +843,13 @@ def devtools_check_types_ts() -> dict[str, Any]:
     tsc_bin = shutil.which("tsc") or "npx tsc"
     try:
         cmd = [*tsc_bin.split(), "--noEmit"]
-        res = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False)
+        res = subprocess.run(
+            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+        )
         return {
             "success": res.returncode == 0,
             "stdout": res.stdout.strip(),
-            "stderr": res.stderr.strip()
+            "stderr": res.stderr.strip(),
         }
     except Exception as e:
         return {"error": str(e)}
@@ -808,11 +858,11 @@ def devtools_check_types_ts() -> dict[str, Any]:
 @server.tool()
 def devtools_run_context_check(test_file: str) -> dict[str, Any]:
     """Run logic validation tests from a YAML/JSON file against a mock runner (dry run).
-    
+
     This tool validates the format of your test scenarios and runs them.
     Currently runs in 'dry_run' mode unless a runner is programmatically injected.
     Future versions will integrate with the active LLM session.
-    
+
     Args:
         test_file: Path to the .yaml or .json test definition file.
     """
@@ -822,10 +872,10 @@ def devtools_run_context_check(test_file: str) -> dict[str, Any]:
 @server.tool()
 def devtools_analyze_trace(log_path: str) -> dict[str, Any]:
     """Analyze an MCP execution log file for logic issues.
-    
-    Detects infinite loops (repeated tool calls), inefficiencies, and 
+
+    Detects infinite loops (repeated tool calls), inefficiencies, and
     potential hallucinations in tool usage.
-    
+
     Args:
         log_path: Path to the log file (e.g., brain.log or relevant log file).
     """
@@ -880,7 +930,19 @@ def devtools_update_architecture_diagrams(
     if not project_path_obj.exists():
         return {"error": f"Project path does not exist: {project_path_obj}", "success": False}
 
-    response: ResponseDict = {"success": True, "git_status": {}, "github_status": {}, "diagram_status": {}, "project_type": "", "components_detected": 0, "analysis": {}, "message": "", "updates_made": False, "files_updated": [], "timestamp": ""}
+    response: ResponseDict = {
+        "success": True,
+        "git_status": {},
+        "github_status": {},
+        "diagram_status": {},
+        "project_type": "",
+        "components_detected": 0,
+        "analysis": {},
+        "message": "",
+        "updates_made": False,
+        "files_updated": [],
+        "timestamp": "",
+    }
 
     try:
         # Step 1: Analyze project structure (UNIVERSAL)

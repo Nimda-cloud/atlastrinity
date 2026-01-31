@@ -85,7 +85,12 @@ def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
     """Execute shell command with pipe handling"""
     try:
         result = subprocess.run(
-            cmd, check=False, shell=True, capture_output=True, text=True, timeout=timeout  # nosec B602
+            cmd,
+            check=False,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout,  # nosec B602
         )
         return result.returncode, result.stdout, result.stderr
     except Exception as e:

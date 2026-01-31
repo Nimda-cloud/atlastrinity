@@ -460,12 +460,7 @@ def _check_echo_and_noise(text: str, confidence: float, previous_text: str) -> b
     agent_was_speaking = trinity_voice.is_speaking if trinity_voice else False
 
     clean_text = (
-        text.strip()
-        .lower()
-        .replace(".", "")
-        .replace(",", "")
-        .replace("!", "")
-        .replace("?", "")
+        text.strip().lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
     )
     if not clean_text:
         return False

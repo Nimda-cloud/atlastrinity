@@ -838,7 +838,7 @@ class Grisha(BaseAgent):
             # SUPERIOR LOGIC: Use Sequential Thinking to simulate the plan execution
             # This catches "missing prerequisite" bugs (e.g. "ssh to ip" fails if we don't know the IP yet)
             reasoning_result = await self.use_sequential_thinking(query, total_thoughts=3)
-            
+
             if not reasoning_result.get("success"):
                 logger.warning("[GRISHA] Plan simulation failed, falling back to basic check")
                 # Fallback to basic acceptance if thinking fails (to not block user due to system error)
@@ -852,7 +852,7 @@ class Grisha(BaseAgent):
                 )
 
             analysis_text = reasoning_result.get("analysis", "")
-            
+
             # Extract Sections from Simulation Output
             gap_analysis = ""
             if "STRATEGIC GAP ANALYSIS:" in analysis_text:
@@ -888,44 +888,58 @@ class Grisha(BaseAgent):
                 atlas_feedback_parts.append(f"STRATEGIC GAP ANALYSIS:\n{gap_analysis}")
             if feedback_to_atlas:
                 atlas_feedback_parts.append(f"INSTRUCTIONS:\n{feedback_to_atlas}")
-            
+
             feedback_to_atlas = "\n\n".join(atlas_feedback_parts)
 
             summary_ukrainian = ""
             if "SUMMARY_UKRAINIAN:" in analysis_text:
                 summary_ukrainian = analysis_text.split("SUMMARY_UKRAINIAN:")[-1].strip()
-            
+
             issues = []
             raw_issues = []
             if "CORE PROBLEMS:" in analysis_text:
                 issues_block = core_problems
-                raw_issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+                raw_issues = [
+                    line.strip().replace("- ", "")
+                    for line in issues_block.split("\n")
+                    if line.strip().startswith("-")
+                ]
             elif "SIMULATION LOG" in analysis_text:
                 parts = analysis_text.split("SIMULATION LOG")
                 if len(parts) > 1:
                     issues_block = parts[1].split("CORE PROBLEMS:")[0].strip()
-                    raw_issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
-            
+                    raw_issues = [
+                        line.strip().replace("- ", "")
+                        for line in issues_block.split("\n")
+                        if line.strip().startswith("-")
+                    ]
+
             if raw_issues:
                 # INTELLIGENT SUMMARIZATION: If more than 3 cascading failures, collapse them
                 # A cascading failure is one that says "Blocked by" or "Cascading failure"
-                root_blockers = [i for i in raw_issues if "Cascading Failure" not in i and "Blocked by" not in i]
+                root_blockers = [
+                    i for i in raw_issues if "Cascading Failure" not in i and "Blocked by" not in i
+                ]
                 cascading = [i for i in raw_issues if "Cascading Failure" in i or "Blocked by" in i]
-                
+
                 issues = root_blockers
                 if len(cascading) > 3:
-                    issues.append(f"Cascading Failure: {len(cascading)} dependent steps are blocked by the root issues above.")
+                    issues.append(
+                        f"Cascading Failure: {len(cascading)} dependent steps are blocked by the root issues above."
+                    )
                 else:
                     issues.extend(cascading)
 
             # Final Verdict Determination
-            is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
+            is_approved = (
+                "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
+            )
             is_rejected = "VERDICT: REJECT" in analysis_text or "VERDICT: [REJECT]" in analysis_text
-            
+
             oleg_mentioned = (
                 "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
             )
-            
+
             # If rejected or has feedback to atlas, we treat it as a FAILURE unless Oleg overrides
             approved = is_approved and not is_rejected
 
@@ -934,8 +948,10 @@ class Grisha(BaseAgent):
                     logger.info("[GRISHA] Policy rejection. Overriding for Creator.")
                     approved = True
                 else:
-                    logger.warning("[GRISHA] Technical/Logic blockers found. Standing firm for Creator.")
-            
+                    logger.warning(
+                        "[GRISHA] Technical/Logic blockers found. Standing firm for Creator."
+                    )
+
             voice_msg = ""
             if approved:
                 voice_msg = "План схвалено. Симуляція успішна."
@@ -949,7 +965,7 @@ class Grisha(BaseAgent):
                     clean_issue = issue.replace("Step", "Крок").replace("Missing", "Відсутній")
                     clean_issue = clean_issue.replace("IP", "ІП-адреса").replace("path", "шлях")
                     voice_issues.append(clean_issue[:80])  # Truncate long issues
-                
+
                 if issues_count > 3:
                     voice_msg = f"План потребує доопрацювання. Знайдено {issues_count} проблем. Головні: {'; '.join(voice_issues)}. Ще {issues_count - 3} додаткових."
                 else:
@@ -959,14 +975,16 @@ class Grisha(BaseAgent):
 
             fixed_plan = None
             if not approved and fix_if_rejected:
-                logger.info("[GRISHA] Falling back to Architecture Override. Re-constructing plan...")
-                
+                logger.info(
+                    "[GRISHA] Falling back to Architecture Override. Re-constructing plan..."
+                )
+
                 fix_query = GRISHA_FIX_PLAN_PROMPT.format(
                     user_request=user_request,
                     failed_plan_text=plan_steps_text,
-                    audit_feedback=feedback_to_atlas
+                    audit_feedback=feedback_to_atlas,
                 )
-                
+
                 fix_result = await self.use_sequential_thinking(fix_query, total_thoughts=3)
                 if fix_result.get("success"):
                     # CRITICAL: Prefer last_thought (raw) over analysis (formatted/truncated)
@@ -977,43 +995,45 @@ class Grisha(BaseAgent):
                         for prefix in ["Thought:", "Thought PROCESS:", "Analysis:", "Plan:"]:
                             if prefix.lower() in cleaned_text.lower():
                                 # Split by prefix case-insensitively
-                                parts = re.split(re.escape(prefix), cleaned_text, flags=re.IGNORECASE)
+                                parts = re.split(
+                                    re.escape(prefix), cleaned_text, flags=re.IGNORECASE
+                                )
                                 if len(parts) > 1:
                                     cleaned_text = parts[-1]
 
-                        json_match = re.search(r'(\{.*\})', cleaned_text, re.DOTALL)
+                        json_match = re.search(r"(\{.*\})", cleaned_text, re.DOTALL)
                         if json_match:
                             raw_json = json_match.group(1).strip()
                         else:
                             raw_json = cleaned_text.strip()
-                            
+
                         # Clean markdown if still present
                         if "```json" in raw_json:
                             raw_json = raw_json.split("```json")[1].split("```")[0].strip()
                         elif "```" in raw_json:
                             raw_json = raw_json.split("```")[1].split("```")[0].strip()
-                        
+
                         # STRIP trailing non-JSON characters (common in reasoning models)
-                        if raw_json and raw_json[-1] != '}':
-                            last_brace = raw_json.rfind('}')
+                        if raw_json and raw_json[-1] != "}":
+                            last_brace = raw_json.rfind("}")
                             if last_brace != -1:
-                                raw_json = raw_json[:last_brace + 1]
+                                raw_json = raw_json[: last_brace + 1]
 
                         plan_data = json.loads(raw_json)
-                        
+
                         # We need TaskPlan class for orchestrator
                         import inspect
 
                         from src.brain.agents.atlas import TaskPlan
-                        
+
                         # CRITICAL: Strip keys that are not in TaskPlan's __init__
                         valid_keys = set(inspect.signature(TaskPlan.__init__).parameters.keys())
                         # Also include created_at, status, context which are in dataclass but might not be in __init__ signature if they have default factories
                         # Better: use __annotations__
                         valid_keys.update(TaskPlan.__annotations__.keys())
-                        
+
                         filtered_data = {k: v for k, v in plan_data.items() if k in valid_keys}
-                        
+
                         # Handle potential missing required fields
                         if "id" not in filtered_data:
                             filtered_data["id"] = "fixed_plan_grisha"
@@ -1021,11 +1041,15 @@ class Grisha(BaseAgent):
                             filtered_data["goal"] = "Generated by Grisha Override"
                         if "steps" not in filtered_data:
                             filtered_data["steps"] = []
-                        
+
                         fixed_plan = TaskPlan(**filtered_data)
-                        logger.info(f"[GRISHA] Successfully reconstructed plan via Architect Override. {len(fixed_plan.steps)} steps.")
+                        logger.info(
+                            f"[GRISHA] Successfully reconstructed plan via Architect Override. {len(fixed_plan.steps)} steps."
+                        )
                     except Exception as e:
-                        logger.error(f"[GRISHA] Failed to parse/instantiate reconstructed plan: {e}")
+                        logger.error(
+                            f"[GRISHA] Failed to parse/instantiate reconstructed plan: {e}"
+                        )
                         logger.error(f"[GRISHA] Raw LLM response preview: {cleaned_text[:2000]}")
 
             return VerificationResult(
@@ -2115,16 +2139,16 @@ class Grisha(BaseAgent):
 
             verdict = audit_result.get("audit_verdict", "REJECT")
             issues = audit_result.get("issues", [])
-            
+
             logger.info(f"[GRISHA] Audit Verdict: {verdict}")
             if issues:
                 logger.warning(f"[GRISHA] Audit Issues: {issues}")
-                
+
             # Fallback voice message if missing
             if not audit_result.get("voice_message"):
-                 audit_result["voice_message"] = (
-                     f"Аудит завершено з результатом {verdict}. {str(audit_result.get('reasoning', ''))[:200]}"
-                 )
+                audit_result["voice_message"] = (
+                    f"Аудит завершено з результатом {verdict}. {str(audit_result.get('reasoning', ''))[:200]}"
+                )
 
             return audit_result
         except Exception as e:
