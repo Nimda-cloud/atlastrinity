@@ -1118,8 +1118,8 @@ class Trinity:
 
                 # DB Task Creation
                 try:
-                    from src.brain.db.manager import db_manager
                     from src.brain.context import shared_context
+                    from src.brain.db.manager import db_manager
 
                     if (
                         db_manager
