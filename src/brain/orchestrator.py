@@ -1041,7 +1041,7 @@ class Trinity:
                 # - Attempt 0: Atlas plans, Grisha verifies
                 # - Attempt 1: Atlas fixes based on feedback, Grisha verifies with fix_if_rejected=True
                 # - If Grisha rejects twice, use Grisha's fixed_plan immediately
-                max_retries = 2  # Maximum 3 attempts (0, 1, and 2)
+                max_retries = 1  # Maximum 2 attempts (0 and 1) before Grisha override
                 plan = None
 
                 for attempt in range(max_retries + 1):

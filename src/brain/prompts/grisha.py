@@ -194,11 +194,14 @@ STRICT JSON OUTPUT FORMAT (and NOTHING ELSE):
   "goal": "Detailed goal in English",
   "steps": [
     {{
+      "id": 1,
+      "realm": "Server Name (from Catalog)",
       "goal": "Detailed sub-goal in English",
       "reason": "Technical rationale in English",
-      "action": "Terminal command or Vibe tool call",
+      "action": "Description of intent (English)",
       "voice_action": "Ukrainian status update for the user (NO ENGLISH)",
-      "expected_result": "Technical success criteria"
+      "expected_result": "Technical success criteria",
+      "requires_verification": true
     }},
     ...
   ],
@@ -208,8 +211,9 @@ STRICT JSON OUTPUT FORMAT (and NOTHING ELSE):
 CRITICAL RULES:
 1. **JSON ONLY**: Do not include any thoughts, preamble, or markdown backticks in your final answer. Provide the raw JSON object only.
 2. **DISCOVERY FIRST**: The plan MUST start with steps to find IPs, paths, or verify hardware capabilities if they were blockers.
-3. **TECHNICAL PRECISION**: Use exact commands or verified tools.
-4. **LANGUAGE SPLIT**: goal/reason/action/expected_result MUST be in English. voice_action/voice_summary MUST be in Ukrainian.
+3. **TECHNICAL PRECISION**: Each step MUST have a valid 'realm' from the catalog.
+4. **LANGUAGE SPLIT**: goal/reason/action/expected_result MUST be in English. voice_action/voice_summary MUST be in Ukrainian (0% English words).
+5. **NO EXTRA FIELDS**: Only include the fields specified in the schema above.
 """
 
 GRISHA = {
