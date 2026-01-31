@@ -1042,86 +1042,74 @@ print('TTS OK')
 
 
 def backup_databases():
-    """Архівує SQLite базу та ChromaDB для синхронізації через Git"""
-    print_step("Створення резервних копій баз даних...")
+    """Архівує всі бази даних та вектори для синхронізації через Git"""
+    print_step("Створення повних резервних копій баз даних...")
 
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     backup_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Backup SQLite database
-    sqlite_src = CONFIG_ROOT / "atlastrinity.db"
-    if sqlite_src.exists():
-        sqlite_dst = backup_dir / "atlastrinity.db"
-        shutil.copy2(sqlite_src, sqlite_dst)
-        print_success(f"SQLite база збережена: {sqlite_dst}")
-    else:
-        print_warning("SQLite база не знайдена, пропускаємо.")
+    # Definitive mappings for full system backup
+    backups = [
+        (CONFIG_ROOT / "atlastrinity.db", backup_dir / "atlastrinity.db"),
+        (CONFIG_ROOT / "data" / "golden_fund", backup_dir / "golden_fund"),
+        (CONFIG_ROOT / "memory" / "chroma", backup_dir / "memory" / "chroma"),
+    ]
 
-    # 2. Backup ChromaDB (vector database)
-    chroma_src = CONFIG_ROOT / "memory"
-    if chroma_src.exists():
-        chroma_dst = backup_dir / "memory"
-        if chroma_dst.exists():
-            shutil.rmtree(chroma_dst)
-        shutil.copytree(chroma_src, chroma_dst)
-        print_success(f"ChromaDB (векторна база) збережена: {chroma_dst}")
-    else:
-        print_warning("ChromaDB не знайдена, пропускаємо.")
+    for src, dst in backups:
+        if not src.exists():
+            continue
+            
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if src.is_file():
+                shutil.copy2(src, dst)
+                print_success(f"Файл збережено: {src.name}")
+            elif src.is_dir():
+                if dst.exists():
+                    shutil.rmtree(dst)
+                shutil.copytree(src, dst)
+                print_success(f"Папку збережено: {src.name}")
+        except Exception as e:
+            print_warning(f"Помилка при бекапі {src.name}: {e}")
 
-    # 3. Backup Golden Fund (from CONFIG_ROOT, not PROJECT_ROOT)
-    gf_src = CONFIG_ROOT / "data" / "golden_fund"
-    if gf_src.exists():
-        gf_dst = backup_dir / "golden_fund"
-        if gf_dst.exists():
-            shutil.rmtree(gf_dst)
-        shutil.copytree(gf_src, gf_dst)
-        print_success(f"Golden Fund сховище збережено: {gf_dst}")
-    else:
-        print_info(f"Golden Fund директорія ({gf_src}) ще не створена, пропускаємо.")
-
+    print_success("Повний бекап завершено успішно.")
     print_info(f"Резервні копії збережено в: {backup_dir}")
-    print_info(
-        "Тепер ви можете зробити: git add backups/ && git commit -m 'backup: database snapshot'",
-    )
 
 
 def restore_databases():
-    """Відновлює бази даних з архіву"""
+    """Відновлює всі бази даних та вектори з архіву репозиторію"""
     print_step("Відновлення баз даних з резервних копій...")
 
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     if not backup_dir.exists():
-        print_warning("Резервні копії не знайдено. Виконайте git pull або backup_databases().")
+        print_warning("Резервні копії не знайдено.")
         return
 
-    # 1. Restore SQLite
-    sqlite_src = backup_dir / "atlastrinity.db"
-    if sqlite_src.exists():
-        sqlite_dst = CONFIG_ROOT / "atlastrinity.db"
-        shutil.copy2(sqlite_src, sqlite_dst)
-        print_success(f"SQLite база відновлена: {sqlite_dst}")
+    # Definitive mappings for full system restoration
+    restores = [
+        (backup_dir / "atlastrinity.db", CONFIG_ROOT / "atlastrinity.db"),
+        (backup_dir / "golden_fund", CONFIG_ROOT / "data" / "golden_fund"),
+        (backup_dir / "memory" / "chroma", CONFIG_ROOT / "memory" / "chroma"),
+    ]
 
-    # 2. Restore ChromaDB
-    chroma_src = backup_dir / "memory"
-    if chroma_src.exists():
-        chroma_dst = CONFIG_ROOT / "memory"
-        if chroma_dst.exists():
-            shutil.rmtree(chroma_dst)
-        shutil.copytree(chroma_src, chroma_dst)
-        print_success(f"ChromaDB відновлена: {chroma_dst}")
+    for src, dst in restores:
+        if not src.exists():
+            continue
+            
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if src.is_file():
+                shutil.copy2(src, dst)
+                print_success(f"Файл відновлено: {dst.name}")
+            elif src.is_dir():
+                if dst.exists():
+                    shutil.rmtree(dst)
+                shutil.copytree(src, dst)
+                print_success(f"Папку відновлено: {dst.name}")
+        except Exception as e:
+            print_warning(f"Помилка при відновленні {dst.name}: {e}")
 
-    # 3. Restore Golden Fund (to CONFIG_ROOT, not PROJECT_ROOT)
-    gf_src = backup_dir / "golden_fund"
-    if gf_src.exists():
-        gf_dst = CONFIG_ROOT / "data" / "golden_fund"
-        if gf_dst.exists():
-            shutil.rmtree(gf_dst)
-        # Ensure parent directory exists
-        gf_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(gf_src, gf_dst)
-        print_success(f"Golden Fund сховище відновлено: {gf_dst}")
-
-    print_success("Бази даних успішно відновлено!")
+    print_success("Повне відновлення завершено.")
 
 
 async def verify_database_tables():
@@ -1277,7 +1265,8 @@ def main():
     # Sync configs BEFORE DB and tests to ensure latest templates are applied
     sync_configs()
 
-    ensure_database()  # Now dependencies are ready and config is synced
+    ensure_database()
+    verify_golden_fund()
 
     # Run detailed table verification
     asyncio.run(verify_database_tables())
