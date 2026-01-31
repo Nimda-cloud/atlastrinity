@@ -45,15 +45,5 @@ permission = "always"
 [tools.search_replace]
 permission = "ask"
 
-# MCP Servers
-[[mcp_servers]]
-name = "xcodebuild"
-transport = "stdio"
-command = "/usr/local/bin/node"
-args = ["${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"]
-
-[[mcp_servers]]
-name = "devtools"
-transport = "stdio"
-command = "/bin/sh"
-args = ["-c", "export PYTHONPATH=${PROJECT_ROOT} && ${PROJECT_ROOT}/.venv/bin/python3 -m src.mcp_server.devtools_server"]
+# MCP Servers are loaded from ~/.config/atlastrinity/mcp/config.json
+# See mcp_servers.json.template for full configuration
