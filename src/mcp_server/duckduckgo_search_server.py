@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, cast
 
 import requests
 from mcp.server import FastMCP
@@ -36,7 +36,7 @@ def _load_search_rules() -> dict[str, Any]:
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
             config = json.loads(match.group(0))
-            return config.get("search_rules", {})
+            return cast(dict[str, Any], config.get("search_rules", {}))
     except Exception as e:
         logger.error(f"Error loading protocol: {e}")
     return {}

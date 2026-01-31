@@ -401,7 +401,7 @@ async def create_relation(
 @server.tool()
 async def search_nodes(query: str, limit: int = 10, namespace: str | None = None) -> dict[str, Any]:
     """Alias for search function to maintain compatibility"""
-    return await search(query, limit, namespace)
+    return cast(dict[str, Any], await search(query, limit, namespace))
 
 
 @server.tool()
