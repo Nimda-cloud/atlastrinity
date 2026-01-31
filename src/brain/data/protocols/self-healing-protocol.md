@@ -21,24 +21,29 @@ Self-healing активується автоматично при:
 
 ```yaml
 error_types:
-  - system_error_detected      # AttributeError, ImportError, etc.
-  - tool_failure               # MCP tool повертає error
-  - connection_lost            # MCP server disconnect
-  - test_failure               # pytest/npm test fail
-  - lint_failure               # ruff/oxlint errors
-  - type_error                 # mypy/pyright errors
-  
+  - system_error_detected # AttributeError, ImportError, etc.
+  - tool_failure # MCP tool повертає error
+  - connection_lost # MCP server disconnect
+  - test_failure # pytest/npm test fail
+  - lint_failure # ruff/oxlint errors
+  - type_error # mypy/pyright errors
+
 escalation_triggers:
-  - multiple_failure_attempts  # 3+ failures in row
-  - unfamiliar_error_message   # Не в known errors list
-  - cross_system_issue         # Помилка в multiple components
+  - multiple_failure_attempts # 3+ failures in row
+  - unfamiliar_error_message # Не в known errors list
+  - cross_system_issue # Помилка в multiple components
 ```
 
-**Behavior engine detection:**
+**Mechanism:**
+
+1. Error caught in `Orchestrator._execute_steps_recursive` or via `ErrorRouter`.
+2. `ErrorRouter.analyze_error` returns `VIBE_HEAL` strategy.
+3. Orchestrator invokes `self._self_heal()` method.
+
 ```python
-# behavior_engine.py
-if error_detected and should_escalate_to_vibe(error):
-    trigger_self_healing_workflow(error_context)
+# orchestrator.py
+if strategy.action == "VIBE_HEAL":
+    heal_success, result = await self._self_heal(step, step_id, error, ...)
 ```
 
 ---
@@ -48,30 +53,30 @@ if error_detected and should_escalate_to_vibe(error):
 ```mermaid
 flowchart TD
     Error[Error Detected] --> Classify[BehaviorEngine: Classify Error]
-    
+
     Classify --> |Critical| Escalate[Escalate to Vibe]
     Classify --> |Simple| Retry[Simple Retry]
-    
+
     Escalate --> ReadDiagram[Vibe: Read Architecture Diagrams]
     ReadDiagram --> ReadGitHub[Vibe: GitHub MCP Context]
-    
+
     ReadGitHub --> Context[Build Complete Context]
     Context --> Analyze[Vibe: Analyze Error]
-    
+
     Analyze --> GenFix[Vibe: Generate Fix]
     GenFix --> ApplyFix[Apply Fix to Files]
-    
+
     ApplyFix --> Test[Run Tests]
     Test --> |Pass| UpdateDiagram[devtools: Update Diagrams]
     Test --> |Fail| GenFix
-    
+
     UpdateDiagram --> GrishaVerify[Grisha: Verify Fix]
-    
+
     GrishaVerify --> |Approved| Commit[GitHub MCP: Auto-commit]
     GrishaVerify --> |Issues| GenFix
-    
+
     Commit --> Complete[Self-Healing Complete ✅]
-    
+
     style Escalate fill:#ffe1e1
     style Context fill:#e1f5ff
     style GenFix fill:#e1ffe1
@@ -90,7 +95,7 @@ flowchart TD
 # behavior_engine.py pseudo-code
 def detect_error(error: Exception) -> ErrorContext:
     """Classify error and determine if escalation needed."""
-    
+
     error_context = {
         "error_type": type(error).__name__,
         "error_message": str(error),
@@ -98,10 +103,10 @@ def detect_error(error: Exception) -> ErrorContext:
         "line": error.__traceback__.tb_lineno,
         "stack_trace": traceback.format_exc()
     }
-    
+
     # Check complexity indicators
     complexity = calculate_complexity(error_context)
-    
+
     if complexity > threshold:
         return escalate_to_vibe(error_context)
     else:
@@ -109,6 +114,7 @@ def detect_error(error: Exception) -> ErrorContext:
 ```
 
 **Configuration:**
+
 ```yaml
 # behavior_config.yaml.template
 debugging:
@@ -145,6 +151,7 @@ for path in diagram_paths:
 ```
 
 **Config:**
+
 ```yaml
 debugging:
   vibe_debugging:
@@ -153,7 +160,7 @@ debugging:
       internal_paths:
         - ${paths.diagrams.internal_docs}/mcp_architecture_diagram.md
         - ${paths.diagrams.internal_data}/mcp_architecture.md
-      use_for_context: true  # ✅ Включити в Vibe prompt
+      use_for_context: true # ✅ Включити в Vibe prompt
 ```
 
 ### 2.2 GitHub Context (via GitHub MCP)
@@ -175,6 +182,7 @@ recent_commits = await manager.call_tool("github", "list_commits", {
 ```
 
 **Config:**
+
 ```yaml
 debugging:
   vibe_debugging:
@@ -182,9 +190,9 @@ debugging:
       enabled: true
       use_github_mcp: true
       operations:
-        read_files: true      # ✅ Automatic
-        search_code: true     # ✅ Automatic
-        list_commits: true    # ✅ Automatic
+        read_files: true # ✅ Automatic
+        search_code: true # ✅ Automatic
+        list_commits: true # ✅ Automatic
 ```
 
 ### 2.3 Complete Context Assembly
@@ -309,12 +317,13 @@ diagram_result = await manager.call_tool("devtools", "devtools_update_architectu
 ```
 
 **Config:**
+
 ```yaml
 vibe_escalation:
   escalation_types:
     self_healing:
       post_action:
-        update_diagram: true  # ✅ Automatic
+        update_diagram: true # ✅ Automatic
         use_github_mcp: true
 ```
 
@@ -345,6 +354,7 @@ grisha_review = await manager.call_tool("vibe", "vibe_code_review", {
 ```
 
 **Config:**
+
 ```yaml
 vibe_escalation:
   escalation_types:
@@ -352,8 +362,8 @@ vibe_escalation:
       post_action:
         agent_approval:
           enabled: true
-          grisha_must_verify: true  # ✅ Grisha перевіряє
-          user_approval: false       # ❌ NO user involvement
+          grisha_must_verify: true # ✅ Grisha перевіряє
+          user_approval: false # ❌ NO user involvement
 ```
 
 ---
@@ -380,12 +390,13 @@ if grisha_review["approved"]:
 ```
 
 **Config:**
+
 ```yaml
 debugging:
   vibe_debugging:
     github_integration:
       operations:
-        push_commits: true  # ✅ Agent-based approval
+        push_commits: true # ✅ Agent-based approval
       require_agent_approval:
         grisha_verifies_atlas: true
 ```
@@ -399,12 +410,13 @@ debugging:
 ```yaml
 require_agent_approval:
   enabled: true
-  grisha_verifies_atlas: true    # Grisha → Atlas
-  atlas_verifies_tetyana: true   # Atlas → Tetyana
-  user_approval_only_for: []     # Empty = NO user involvement
+  grisha_verifies_atlas: true # Grisha → Atlas
+  atlas_verifies_tetyana: true # Atlas → Tetyana
+  user_approval_only_for: [] # Empty = NO user involvement
 ```
 
 **Safety checks:**
+
 1. Grisha reviews ALL fixes перед commit
 2. Tests MUST pass
 3. Linters MUST pass
@@ -412,6 +424,7 @@ require_agent_approval:
 5. Diagrams MUST be updated
 
 **Rollback mechanism:**
+
 ```python
 # If self-healing fails 3+ times
 if failure_count > 3:
@@ -428,6 +441,7 @@ if failure_count > 3:
 ## 📊 Metrics & Monitoring
 
 **Tracked metrics:**
+
 ```yaml
 self_healing_metrics:
   - time_to_detect: duration from error to escalation
@@ -443,6 +457,7 @@ self_healing_metrics:
 ## 🧪 Testing Self-Healing
 
 **Manual test:**
+
 ```python
 # Introduce intentional error
 # src/brain/tool_dispatcher.py line 245
@@ -569,7 +584,7 @@ def capture_system_state():
 # Verify expected state changes
 def verify_state_change(pre_state, post_state, expected_changes):
     verification_results = {}
-    
+
     for change_type, expected in expected_changes.items():
         if change_type == "app_launched":
             verification_results[change_type] = verify_app_launch(pre_state, post_state, expected)
@@ -577,11 +592,12 @@ def verify_state_change(pre_state, post_state, expected_changes):
             verification_results[change_type] = verify_browser_tabs(pre_state, post_state, expected)
         elif change_type == "windows_changed":
             verification_results[change_type] = verify_windows(pre_state, post_state, expected)
-    
+
     return verification_results
 ```
 
 **Configuration:**
+
 ```yaml
 # behavior_config.yaml.template
 debugging:

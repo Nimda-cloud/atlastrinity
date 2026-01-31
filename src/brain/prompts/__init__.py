@@ -668,9 +668,10 @@ Provide your internal verification strategy in English. Do not use markdown for 
         {{
             "audit_verdict": "APPROVE" or "REJECT" or "ADJUST",
             "reasoning": "Technical justification of your verdict in UKRAINIAN",
+            "issues": ["List of specific problems found"],
             "risks_identified": ["list potential problems"],
             "suggested_adjustments": "Specific technical changes if ADJUST chosen",
-            "voice_message": "Short analytical report for the system in Ukrainian"
+            "voice_message": "Short analytical report for the system in Ukrainian. Vocalize the top issues clearly."
         }}
         """
 

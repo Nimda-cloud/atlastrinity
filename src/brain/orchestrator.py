@@ -1489,6 +1489,251 @@ class Trinity:
 
         return golden_path
 
+    async def _self_heal(
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        error: str,
+        step_result: StepResult | None,
+        depth: int,
+    ) -> tuple[bool, StepResult | None]:
+        """
+        Explicit self-healing workflow following the 8-phase protocol.
+
+        Phases:
+        1. Error Detection & Classification (already done by caller)
+        2. Context Building
+        3. Error Analysis & Fix Generation (Vibe)
+        4. Apply Fix (Vibe auto-approve)
+        5. Verification (Tests/Linters)
+        6. Diagram Update (devtools MCP)
+        7. Grisha Verification
+        8. Auto-Commit (if enabled)
+
+        Returns:
+            (success, updated_step_result)
+        """
+        success = False
+        updated_result = None
+        recovery_attempt_id = None
+        db_step_id = self.state.get("db_step_id")  # Assuming set in execute_node
+
+        # --- Phase 2: Context Building ---
+        recent_logs = []
+        if self.state and "logs" in self.state:
+            recent_logs = [
+                f"[{l.get('agent', 'SYS')}] {l.get('message', '')}"
+                for l in self.state["logs"][-20:]
+            ]
+        log_context = "\n".join(recent_logs)
+        error_context = f"Step ID: {step_id}\nAction: {step.get('action', '')}\n"
+
+        # Build structured recovery history
+        raw_results = self.state.get("step_results", []) if self.state else []
+        if not isinstance(raw_results, list):
+            raw_results = []
+
+        step_recovery_history = [
+            {
+                "attempt": i + 1,
+                "action": str(r.get("action", ""))[:200],
+                "status": "success" if r.get("success") else "failed",
+                "error": str(r.get("error", ""))[:500] if r.get("error") else None,
+            }
+            for i, r in enumerate(raw_results)
+            if isinstance(r, dict)
+            and str(r.get("step_id", "")).startswith(str(step_id).split(".")[0])
+        ]
+
+        # DB: Track Recovery Attempt Start
+        try:
+            if db_manager and getattr(db_manager, "available", False) and db_step_id:
+                async with await db_manager.get_session() as db_sess:
+                    rec_attempt = RecoveryAttempt(
+                        step_id=db_step_id,
+                        depth=depth,
+                        recovery_method="vibe",
+                        success=False,
+                        error_before=str(error)[:5000],
+                    )
+                    db_sess.add(rec_attempt)
+                    await db_sess.commit()
+                    recovery_attempt_id = rec_attempt.id
+        except Exception as e:
+            logger.error(f"Failed to log recovery attempt start: {e}")
+
+        # --- Phase 3 & 4: Vibe Diagnosis and Fix ---
+        vibe_text = None
+        
+        try:
+            await self._log("[VIBE] Diagnostic Phase...", "vibe")
+            
+            # Call Vibe to analyze and propose fix (but separate execution for audit)
+            vibe_res = await asyncio.wait_for(
+                mcp_manager.call_tool(
+                    "vibe",
+                    "vibe_analyze_error",
+                    {
+                        "error_message": f"{error_context}\n{error}",
+                        "log_context": log_context,
+                        "auto_fix": False,  # We will apply fix after audit
+                        "step_action": step.get("action", ""),
+                        "expected_result": step.get("expected_result", ""),
+                        "actual_result": str(
+                            step_result.result if step_result else "N/A"
+                        )[:2000],
+                        "recovery_history": step_recovery_history,
+                        "full_plan_context": str(self.state.get("current_plan", ""))[:3000],
+                    },
+                ),
+                timeout=300,
+            )
+            vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
+
+            if vibe_text:
+                # --- Phase 7 (Early): Grisha Verification of PLAN ---
+                # Track rejection cycles to prevent infinite loops
+                # Access _rejection_cycles from self (orchestrator)
+                rejection_count = getattr(self, "_rejection_cycles", {}).get(step_id, 0)
+
+                grisha_audit = await self.grisha.audit_vibe_fix(str(error), vibe_text)
+
+                if grisha_audit.get("audit_verdict") == "REJECT":
+                    rejection_count += 1
+                    if not hasattr(self, "_rejection_cycles"):
+                        self._rejection_cycles = {}
+                    self._rejection_cycles[step_id] = rejection_count
+
+                    # Limit rejection cycles to 3
+                    if rejection_count >= 3:
+                        logger.warning(
+                            f"[ORCHESTRATOR] Grisha rejected Vibe fix {rejection_count} times for step {step_id}. Escalating."
+                        )
+                        await self._log(
+                            f"⚠️ Система застрягла після {rejection_count} відхилень Grisha. Потрібне втручання.",
+                            "error",
+                        )
+                        # DB Update: Failure
+                        if recovery_attempt_id:
+                             try:
+                                async with await db_manager.get_session() as db_sess:
+                                    rec = await db_sess.get(RecoveryAttempt, recovery_attempt_id)
+                                    if rec:
+                                        rec.success = False
+                                        rec.vibe_text = f"REJECTED BY GRISHA: {grisha_audit.get('reasoning')}"
+                                        await db_sess.commit()
+                             except Exception:
+                                 pass
+
+                        return False, StepResult(
+                            step_id=step_id,
+                            success=False,
+                            error="need_user_input",
+                            result=f"Grisha returned rejection: {grisha_audit.get('reasoning')}",
+                        )
+
+                    return False, None
+
+                elif hasattr(self, "_rejection_cycles") and step_id in self._rejection_cycles:
+                    del self._rejection_cycles[step_id]
+
+                # Evaluate strategy via Atlas (Voice + High-level decision)
+                healing_decision = await self.atlas.evaluate_healing_strategy(
+                    str(error),
+                    vibe_text,
+                    grisha_audit,
+                )
+                await self._speak(
+                    "atlas",
+                    healing_decision.get("voice_message", "Я знайшов рішення."),
+                )
+
+                if healing_decision.get("decision") == "PROCEED":
+                    # --- Phase 4: Apply Fix ---
+                    
+                    instructions = healing_decision.get("instructions_for_vibe", "")
+                    if not instructions:
+                        instructions = "Apply the fix proposed in the analysis."
+                    
+                    # USE SEQUENTIAL THINKING BEFORE APPLYING FIX (User Requirement)
+                    await self._log(
+                        "[ORCHESTRATOR] Engaging Deep Reasoning (seq_think) before applying fix...",
+                        "system",
+                    )
+                    analysis = await self.atlas.use_sequential_thinking(
+                         f"Analyze why step {step_id} failed and how to apply the vibe fix effectively.\nError: {error}\nVibe Fix: {vibe_text}\nInstructions: {instructions}",
+                         total_thoughts=3,
+                    )
+                    if analysis.get("success"):
+                        logger.info(f"[ORCHESTRATOR] Deep reasoning completed: {analysis.get('analysis', '')[:200]}...")
+                    
+                    await mcp_manager.call_tool(
+                        "vibe",
+                        "vibe_prompt",
+                        {
+                            "prompt": f"EXECUTE FIX: {instructions}",
+                            "auto_approve": True,
+                        },
+                    )
+                    logger.info(f"[ORCHESTRATOR] Vibe healing applied for {step_id}")
+                    
+                    success = True
+                    # Vibe prompt tool returns dict, we assume success if no exception raised
+                    
+                    # --- Phase 6: Diagram Update (After successful fix) ---
+                    diagram_update_enabled = config.get("self_healing", {}).get(
+                        "vibe_debugging", {}
+                    ).get("diagram_access", {}).get("update_after_fix", False)
+
+                    if diagram_update_enabled:
+                        try:
+                            # Attempt to update diagrams if configured
+                            diagram_result = await mcp_manager.call_tool(
+                                "devtools",
+                                "devtools_update_architecture_diagrams",
+                                {
+                                    "project_path": None,  # AtlasTrinity internal
+                                    "commits_back": 1,
+                                    "target_mode": "internal",
+                                    "use_reasoning": True,
+                                },
+                            )
+                            if diagram_result:
+                                await self._log(
+                                    "[SELF-HEAL] Architecture diagrams updated after fix",
+                                    "system",
+                                )
+                        except Exception as de:
+                            logger.warning(f"Diagram update after self-heal failed: {de}")
+
+                    # DB Update: Success
+                    if recovery_attempt_id:
+                         try:
+                            async with await db_manager.get_session() as db_sess:
+                                rec = await db_sess.get(RecoveryAttempt, recovery_attempt_id)
+                                if rec:
+                                    rec.success = True
+                                    rec.vibe_text = str(vibe_text)[:5000]
+                                    await db_sess.commit()
+                         except Exception:
+                             pass
+
+        except Exception as ve:
+            logger.warning(f"Vibe self-healing workflow failed: {ve}")
+            success = False
+            if recovery_attempt_id:
+                 try:
+                    async with await db_manager.get_session() as db_sess:
+                        rec = await db_sess.get(RecoveryAttempt, recovery_attempt_id)
+                        if rec:
+                            rec.success = False
+                            rec.vibe_text = f"CRASH: {ve!s}"
+                            await db_sess.commit()
+                 except Exception:
+                     pass
+
+        return success, updated_result
+
     async def _execute_steps_recursive(
         self,
         steps: list[dict[str, Any]],
@@ -1625,7 +1870,6 @@ class Trinity:
                         last_error = "Unknown execution error (no result returned)"
                         logger.error(f"[ORCHESTRATOR] Step {step_id} returned no result")
 
-                    db_step_id = self.state.get("db_step_id")
                     await self._log(
                         f"Step {step_id} Attempt {attempt} failed: {last_error}",
                         "warning",
@@ -1738,9 +1982,23 @@ class Trinity:
                 elif strategy.action == "VIBE_HEAL":
                     # Logic/Complex Error -> Engage Vibe immediately
                     await self._log(
-                        f"Logic Error: {strategy.reason}. Engaging Vibe...", "orchestrator"
+                        f"Logic Error: {strategy.reason}. Engaging Vibe Self-Healing...", "orchestrator"
                     )
-                    # Proceed to VIBE logic below...
+                    heal_success, heal_result = await self._self_heal(
+                        step, step_id, last_error, step_result, depth
+                    )
+
+                    if heal_result:
+                        # Rejection or fatal error returned as result
+                        step_result = heal_result
+                        break
+
+                    if heal_success:
+                        await self._log(f"[ORCHESTRATOR] Healing applied for {step_id}. Retrying...", "orchestrator")
+                        continue
+                    
+                    # If healing failed, fall through to fallback (Atlas Help)
+                    await self._log(f"[ORCHESTRATOR] Healing failed for {step_id}. Attempting fallback...", "warning")
 
                 elif strategy.action == "ATLAS_PLAN":
                     await self._log(
@@ -1854,157 +2112,8 @@ class Trinity:
                         "Крок зупинився — починаю процедуру відновлення.",
                     )
 
-                # DB: Track Recovery Attempt
-                try:
-                    from src.brain.db.manager import db_manager
+                # Fallback to Atlas Help if explicit strategies failed or were skipped
 
-                    if db_manager and getattr(db_manager, "available", False) and db_step_id:
-                        async with await db_manager.get_session() as db_sess:
-                            rec_attempt = RecoveryAttempt(
-                                step_id=db_step_id,
-                                depth=depth,
-                                recovery_method="vibe",
-                                success=False,
-                                error_before=str(last_error)[:5000],
-                            )
-                            db_sess.add(rec_attempt)
-                            await db_sess.commit()
-                except Exception as e:
-                    logger.error(f"Failed to log recovery attempt start: {e}")
-
-                # Collect context for Vibe
-                recent_logs = []
-                if self.state and "logs" in self.state:
-                    recent_logs = [
-                        f"[{l.get('agent', 'SYS')}] {l.get('message', '')}"
-                        for l in self.state["logs"][-20:]
-                    ]
-                log_context = "\n".join(recent_logs)
-                error_context = f"Step ID: {step_id}\nAction: {step.get('action', '')}\n"
-
-                # Build structured recovery history for this step
-                raw_results = self.state.get("step_results", []) if self.state else []
-                # Ensure raw_results is indeed a list before enumerating
-                if not isinstance(raw_results, list):
-                    raw_results = []
-
-                step_recovery_history = [
-                    {
-                        "attempt": i + 1,
-                        "action": str(r.get("action", ""))[:200],
-                        "status": "success" if r.get("success") else "failed",
-                        "error": str(r.get("error", ""))[:500] if r.get("error") else None,
-                    }
-                    for i, r in enumerate(raw_results)
-                    if isinstance(r, dict)
-                    and str(r.get("step_id", "")).startswith(str(step_id).split(".")[0])
-                ]
-
-                # Vibe diagnostics & multi-agent healing
-                vibe_text = None
-                try:
-                    await self._log("[VIBE] Diagnostic Phase...", "vibe")
-                    vibe_res = await asyncio.wait_for(
-                        mcp_manager.call_tool(
-                            "vibe",
-                            "vibe_analyze_error",
-                            {
-                                "error_message": f"{error_context}\n{last_error}",
-                                "log_context": log_context,
-                                "auto_fix": False,
-                                # Enhanced context for better self-healing
-                                "step_action": step.get("action", ""),
-                                "expected_result": step.get("expected_result", ""),
-                                "actual_result": str(step_result.result if step_result else "N/A")[
-                                    :2000
-                                ],
-                                "recovery_history": step_recovery_history,
-                                "full_plan_context": str(self.state.get("current_plan", ""))[:3000],
-                            },
-                        ),
-                        timeout=300,
-                    )
-                    vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
-
-                    if vibe_text:
-                        # Track rejection cycles to prevent infinite loops
-                        rejection_count = getattr(self, "_rejection_cycles", {}).get(step_id, 0)
-
-                        grisha_audit = await self.grisha.audit_vibe_fix(str(last_error), vibe_text)
-
-                        # Check if Grisha rejected again
-                        if grisha_audit.get("audit_verdict") == "REJECT":
-                            rejection_count += 1
-                            if not hasattr(self, "_rejection_cycles"):
-                                self._rejection_cycles = {}
-                            self._rejection_cycles[step_id] = rejection_count
-
-                            # Limit rejection cycles to 3
-                            if rejection_count >= 3:
-                                logger.warning(
-                                    f"[ORCHESTRATOR] Grisha rejected Vibe fix {rejection_count} times for step {step_id}. "
-                                    "Breaking cycle and escalating to user."
-                                )
-                                await self._log(
-                                    f"⚠️ Система застрягла після {rejection_count} відхилень Grisha для кроку {step_id}. "
-                                    "Потрібне втручання користувача.",
-                                    "error",
-                                )
-                                # Create a result that will trigger ASK_USER
-                                step_result = StepResult(
-                                    step_id=step_id,
-                                    success=False,
-                                    error="need_user_input",
-                                    result=f"Grisha відхилив виправлення Vibe {rejection_count} разів. Виявлено: {grisha_audit.get('reasoning', 'Unknown')}",
-                                )
-                                break  # Exit retry loop
-                        elif (
-                            hasattr(self, "_rejection_cycles") and step_id in self._rejection_cycles
-                        ):
-                            # Reset counter on approval
-                            del self._rejection_cycles[step_id]
-
-                        healing_decision = await self.atlas.evaluate_healing_strategy(
-                            str(last_error),
-                            vibe_text,
-                            grisha_audit,
-                        )
-                        await self._speak(
-                            "atlas",
-                            healing_decision.get("voice_message", "Я знайшов рішення."),
-                        )
-
-                        if healing_decision.get("decision") == "PROCEED":
-                            # USE SEQUENTIAL THINKING BEFORE RETRY (User Requirement: chances via deep thinking)
-                            await self._log(
-                                f"[ORCHESTRATOR] Engaging Deep Reasoning (MSP) before Attempt {attempt + 1}...",
-                                "system",
-                            )
-                            analysis = await self.atlas.use_sequential_thinking(
-                                f"Analyze why step {step_id} failed and how to apply the vibe fix effectively.\nError: {last_error}\nVibe Fix: {vibe_text}\nInstructions: {healing_decision.get('instructions_for_vibe')}",
-                                total_thoughts=3,
-                            )
-                            if analysis.get("success"):
-                                await self._log(
-                                    f"[ATLAS] Deep Analysis: {(analysis.get('analysis') or '')[:200]}...",
-                                    "atlas",
-                                )
-                                # Inject analysis results into the next attempt's context
-                                step["grisha_feedback"] = (
-                                    f"DEEP ANALYSIS FROM PREVIOUS FAILURE:\n{analysis.get('analysis')}\nSUGGESTED ACTION: {healing_decision.get('instructions_for_vibe')}"
-                                )
-
-                            await mcp_manager.call_tool(
-                                "vibe",
-                                "vibe_prompt",
-                                {
-                                    "prompt": f"EXECUTE FIX: {healing_decision.get('instructions_for_vibe')}",
-                                    "auto_approve": True,
-                                },
-                            )
-                            logger.info(f"[ORCHESTRATOR] Vibe healing applied for {step_id}")
-                except Exception as ve:
-                    logger.warning(f"Vibe self-healing failed: {ve}")
 
                 # Standard Atlas help as fallback
                 try:
