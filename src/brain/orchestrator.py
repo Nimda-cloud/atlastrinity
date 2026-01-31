@@ -1083,8 +1083,8 @@ class Trinity:
 
                     # --- PLAN VERIFICATION (Grisha) ---
                     if not is_subtask:
-                        # On the 3rd attempt, Grisha is authorized to fix the plan himself
-                        fix_if_rejected = (attempt >= 2)
+                        # On the 2nd attempt and beyond, Grisha is authorized to fix the plan himself
+                        fix_if_rejected = (attempt >= 1)
                         verification_result = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=fix_if_rejected)
                         # Store report for the next planning iteration if needed
                         self._last_verification_report = verification_result.description
