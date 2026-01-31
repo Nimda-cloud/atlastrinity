@@ -1839,7 +1839,6 @@ class Trinity:
             last_error = ""
 
             for attempt in range(1, max_step_retries + 1):
-                db_step_id = None
                 step_result: StepResult | None = None
                 await self._log(
                     f"Step {step_id}, Attempt {attempt}: {step.get('action')}",
