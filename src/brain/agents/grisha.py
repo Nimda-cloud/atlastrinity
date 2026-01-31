@@ -2078,7 +2078,19 @@ class Grisha(BaseAgent):
             response = await self.llm.ainvoke(messages)
             audit_result = self._parse_response(cast("str", response.content))
 
-            logger.info(f"[GRISHA] Audit Verdict: {audit_result.get('audit_verdict', 'REJECT')}")
+            verdict = audit_result.get("audit_verdict", "REJECT")
+            issues = audit_result.get("issues", [])
+            
+            logger.info(f"[GRISHA] Audit Verdict: {verdict}")
+            if issues:
+                logger.warning(f"[GRISHA] Audit Issues: {issues}")
+                
+            # Fallback voice message if missing
+            if not audit_result.get("voice_message"):
+                 audit_result["voice_message"] = (
+                     f"Аудит завершено з результатом {verdict}. {str(audit_result.get('reasoning', ''))[:200]}"
+                 )
+
             return audit_result
         except Exception as e:
             logger.error(f"[GRISHA] Vibe audit failed: {e}")
