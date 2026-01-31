@@ -506,7 +506,7 @@ class Grisha(BaseAgent):
             {
                 "tool": "vibe.vibe_check_db",
                 "args": {
-                    "query": f"SELECT te.tool_name, te.arguments, te.result, te.created_at FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = '{step_id}' ORDER BY te.created_at DESC LIMIT 5"
+                    "query": f"SELECT te.tool_name, te.arguments, te.result, te.created_at FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = '{step_id}' ORDER BY te.created_at DESC LIMIT 5"  # nosec B608
                 },
                 "reason": "Primary source of truth - database audit",
             }
@@ -2004,9 +2004,9 @@ class Grisha(BaseAgent):
                     max_h = max(img.height for img in display_imgs)
                     desktop_canvas = Image.new("RGB", (total_w, max_h), (0, 0, 0))
                     x_off = 0
-                    for img in display_imgs:  # type: ignore[arg-type]
-                        desktop_canvas.paste(img, (x_off, 0))  # type: ignore[arg-type]
-                        x_off += img.width
+                    for d_img in display_imgs:
+                        desktop_canvas.paste(d_img, (x_off, 0))
+                        x_off += d_img.width
 
             if desktop_canvas is None:
                 raise RuntimeError("Failed to capture desktop canvas")

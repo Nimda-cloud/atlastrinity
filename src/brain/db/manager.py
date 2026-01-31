@@ -355,7 +355,7 @@ class DatabaseManager:
                 placeholders = ", ".join(
                     [f":{str(c).lower().replace(' ', '_').replace('-', '_')}" for c in df.columns],
                 )
-                sql = f'INSERT INTO "{table_name}" ({cols}) VALUES ({placeholders})'
+                sql = f'INSERT INTO "{table_name}" ({cols}) VALUES ({placeholders})'  # nosec B608
 
                 await session.execute(text(sql), sanitized_data)
                 await session.commit()

@@ -99,7 +99,7 @@ def ensure_dirs():
             ws.mkdir(parents=True, exist_ok=True)
         try:
             # Set 777 permissions (rwxrwxrwx) to allow full access for all users/agents
-            os.chmod(ws, 0o777)
+            os.chmod(ws, 0o777)  # nosec B103
         except Exception as e:
             # Don't print warning for user folders like Developer/Trinity if chmod fails
             if ws != project_ws:

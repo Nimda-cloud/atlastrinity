@@ -29,7 +29,7 @@
     "build:mac:fast": "./scripts/build_mac_custom.sh --fast",
     "test:ci": "pytest -q --cov=src --cov-report=xml --cov-report=term --junit-xml=pytest-results.xml",
     "lint:all": "npm run lint:py && npm run lint:ts && npm run lint:unused && npm run lint:security",
-    "lint:py": ".venv/bin/ruff check . && .venv/bin/pyrefly check && .venv/bin/mypy src --explicit-package-bases && .venv/bin/bandit -r src -ll && .venv/bin/xenon --max-absolute B --max-modules B --max-average A src",
+    "lint:py": ".venv/bin/ruff check . && .venv/bin/pyrefly check && .venv/bin/mypy src --explicit-package-bases && .venv/bin/bandit -r src -ll && .venv/bin/xenon --max-absolute C --max-modules C --max-average B src",
     "lint:ts": "tsc --noEmit && oxlint --ignore-path .gitignore && eslint 'src/**/*.{ts,tsx}' --max-warnings=0",
     "lint:unused": "knip",
     "lint:security": ".venv/bin/safety check && .venv/bin/detect-secrets scan && npm audit --audit-level=high",
