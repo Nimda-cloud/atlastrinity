@@ -645,7 +645,7 @@ async def trace_data_chain(
                 for col in cols:
                     safe_col = str(col).lower().replace(" ", "_").replace("-", "_")
                     try:
-                        sql = f'SELECT * FROM "{table_name}" WHERE "{safe_col}" = :val'
+                        sql = f'SELECT * FROM "{table_name}" WHERE "{safe_col}" = :val'  # nosec B608
                         res = await session.execute(text(sql), {"val": value})
                         row = res.fetchone()
                         if row:

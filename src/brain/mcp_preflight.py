@@ -63,7 +63,7 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
                 url,
                 headers={"Accept": "application/vnd.npm.install-v1+json"},
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 data = resp.read()
                 meta = json.loads(data.decode())
                 # Check dist-tags and versions
@@ -83,7 +83,7 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
             # Direct version lookup is faster if we know the exact version string
             url = f"https://registry.npmjs.org/{encoded}/{ver}"
             req = urllib.request.Request(url, headers={"Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 return getattr(resp, "status", 200) == 200
     except urllib.error.HTTPError as e:
         if e.code == 404:

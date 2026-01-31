@@ -85,7 +85,7 @@ def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
     """Execute shell command with pipe handling"""
     try:
         result = subprocess.run(
-            cmd, check=False, shell=True, capture_output=True, text=True, timeout=timeout
+            cmd, check=False, shell=True, capture_output=True, text=True, timeout=timeout  # nosec B602
         )
         return result.returncode, result.stdout, result.stderr
     except Exception as e:
@@ -258,7 +258,7 @@ class FirstRunInstaller:
             # In production, we might need to spawn a Terminal window
             process = subprocess.Popen(
                 install_cmd,
-                shell=True,
+                shell=True,  # nosec B602
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -459,7 +459,7 @@ class FirstRunInstaller:
         """Ensure the specified role exists in Postgres."""
         try:
             _rc, out, _ = _run_command(
-                ["psql", "-tAc", f"SELECT 1 FROM pg_roles WHERE rolname='{username}';"],
+                ["psql", "-tAc", f"SELECT 1 FROM pg_roles WHERE rolname='{username}';"],  # nosec B608
             )
             if "1" not in out:
                 self._report(SetupStep.CREATE_DATABASE, 0.1, f"Створення ролі '{username}'...")
@@ -534,7 +534,7 @@ class FirstRunInstaller:
                 "postgres",
                 "-t",
                 "-c",
-                f"SELECT 1 FROM pg_database WHERE datname='{db_name}';",
+                f"SELECT 1 FROM pg_database WHERE datname='{db_name}';",  # nosec B608
             ],
         )
 

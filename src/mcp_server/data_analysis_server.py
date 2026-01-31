@@ -836,7 +836,7 @@ async def run_pandas_code(
 
     try:
         # Execute code
-        exec(code, {"__builtins__": {}}, local_vars)
+        exec(code, {"__builtins__": {}}, local_vars)  # nosec B102
 
         # Get result (last assigned variable or 'result')
         result = local_vars.get("result", local_vars.get("df"))

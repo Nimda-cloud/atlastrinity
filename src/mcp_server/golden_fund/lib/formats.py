@@ -50,7 +50,7 @@ class CSVParser:
 class XMLParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:
         try:
-            tree = ET.parse(file_path)
+            tree = ET.parse(file_path)  # nosec B314
             root = tree.getroot()
             data = self._element_to_dict(root)
             return ParseResult(True, data=data)

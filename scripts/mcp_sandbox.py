@@ -358,7 +358,6 @@ async def run_scenario(
     """Execute a complete test scenario."""
     task = scenario.get("task", "Unknown task")
     steps = scenario.get("steps", [])
-    final_check = scenario.get("final_check", "")
     
     results = {
         "task": task,
