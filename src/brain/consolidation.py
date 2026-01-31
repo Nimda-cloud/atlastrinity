@@ -8,7 +8,7 @@ Sleep & Consolidation - Nightly learning process that:
 
 import os
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from .agents.atlas import Atlas
 from .logger import logger
@@ -175,7 +175,7 @@ class ConsolidationModule:
             # Basic JSON extraction
             start = content.find("{")
             end = content.rfind("}") + 1
-            return json.loads(content[start:end])
+            return cast(dict[str, str] | None, json.loads(content[start:end]))
         except Exception as e:
             logger.warning(f"LLM Lesson distillation failed: {e}")
             return None

@@ -129,7 +129,7 @@ class ConfigValidator:
         if not isinstance(value, int | float):
             return True  # Skip non-numeric
         min_val, max_val = range_tuple
-        return min_val <= value <= max_val
+        return cast(bool, min_val <= value <= max_val)
 
     def _check_enum(self, value: Any, allowed: list) -> bool:
         """Check if value is in allowed list."""
