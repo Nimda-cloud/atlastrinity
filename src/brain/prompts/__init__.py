@@ -443,7 +443,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         You must mentally execute the task before planning.
         1. **FAIL-SAFE CONSUMPTION**: If there is AUDIT FEEDBACK above, you MUST address EVERY SINGLE point mentioned.
         2. **PREREQUISITE GAP ANALYSIS (CRITICAL)**: For every step, ask: "Do I have the IPs, tokens, and file paths?" If you lack ANY variable, you MUST list it under a "MISSING INFORMATION" section in your thought process.
-        3. **CAPABILITY VERIFICATION**: Do not assume hardware or software capability. If you need MikroTik to sniff packets, you must verify it supports monitor mode first.
+        3. **VIRTUALIZATION & HARDWARE AWARENESS (STRICT)**: If the task involves VMs (VirtualBox, VMware) or hardware access (Wi-Fi adapters, USB), DO NOT assume connectivity/presence. You MUST plan steps to verify guest network modes (NAT vs Bridged), USB passthrough status, and interface capabilities (monitor mode).
         4. **SEQUENTIAL LOGIC**: Ensure the plan is a continuous flow, where Step N provides the data for Step N+1.
         5. **FINAL GOAL SYNTHESIS**: Ensure the dry-run leads to the ULTIMATE goal the user wants to achieve.
 

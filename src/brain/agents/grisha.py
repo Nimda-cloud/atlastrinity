@@ -951,9 +951,17 @@ class Grisha(BaseAgent):
                 
                 fix_result = await self.use_sequential_thinking(fix_query, total_thoughts=3)
                 if fix_result.get("success"):
+                    raw_text = fix_result.get("analysis", "")
                     try:
-                        # Extract JSON from thinking block if model wrapped it in markdown
-                        raw_json = fix_result.get("analysis", "")
+                        # SUPERIOR EXTRACTION: Find the first { and last } to isolate JSON
+                        import re
+                        json_match = re.search(r'(\{.*\})', raw_text, re.DOTALL)
+                        if json_match:
+                            raw_json = json_match.group(1)
+                        else:
+                            raw_json = raw_text
+                            
+                        # Clean markdown if still present
                         if "```json" in raw_json:
                             raw_json = raw_json.split("```json")[1].split("```")[0].strip()
                         elif "```" in raw_json:
@@ -966,6 +974,7 @@ class Grisha(BaseAgent):
                         logger.info("[GRISHA] Successfully reconstructed plan via Architect Override.")
                     except Exception as e:
                         logger.error(f"[GRISHA] Failed to parse reconstructed plan: {e}")
+                        logger.debug(f"[GRISHA] Raw LLM response: {raw_text}")
 
             return VerificationResult(
                 step_id="plan_init",
