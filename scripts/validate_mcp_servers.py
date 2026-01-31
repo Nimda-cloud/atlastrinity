@@ -130,6 +130,30 @@ def validate_node_server(name: str, config: dict) -> bool:
     return True
 
 
+def validate_direct_node_server(name: str, config: dict) -> bool:
+    """Перевіряє Node MCP сервер з прямим node command"""
+    args = config.get("args", [])
+
+    if not args:
+        print_error(f"{name}: Не вказано скрипт для node")
+        return False
+
+    script_path = args[0]
+
+    # Розгортаємо змінні середовища
+    if "${PROJECT_ROOT}" in script_path:
+        script_path = script_path.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+
+    script_file = Path(script_path)
+
+    if not script_file.exists():
+        print_error(f"{name}: Скрипт не знайдено: {script_file}")
+        return False
+
+    print_success(f"{name}: Node script OK ({script_file.name})")
+    return True
+
+
 def validate_swift_server(name: str, config: dict) -> bool:
     """Перевіряє Swift MCP сервер"""
     command = config.get("command")
@@ -182,6 +206,9 @@ def validate_server(name: str, config: dict) -> dict:
     elif command in ["npx", "bunx"]:
         result["type"] = "Node"
         result["status"] = "ok" if validate_node_server(name, config) else "error"
+    elif command == "node":
+        result["type"] = "Node"
+        result["status"] = "ok" if validate_direct_node_server(name, config) else "error"
     elif "mcp-server-macos-use" in command or command.endswith(
         ".build/release/mcp-server-macos-use"
     ):
