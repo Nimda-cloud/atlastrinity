@@ -849,93 +849,58 @@ class Grisha(BaseAgent):
 
             analysis_text = reasoning_result.get("analysis", "")
             
-            # Robust parsing of the simulation result
+            # Extract Sections from Simulation Output
+            feedback_to_atlas = ""
+            if "FEEDBACK TO ATLAS:" in analysis_text:
+                parts = analysis_text.split("FEEDBACK TO ATLAS:")
+                if len(parts) > 1:
+                    feedback_to_atlas = parts[1].split("SUMMARY_UKRAINIAN:")[0].strip()
+
+            summary_ukrainian = ""
+            if "SUMMARY_UKRAINIAN:" in analysis_text:
+                summary_ukrainian = analysis_text.split("SUMMARY_UKRAINIAN:")[-1].strip()
+            
+            issues = []
+            if "SIMULATION LOG" in analysis_text:
+                parts = analysis_text.split("SIMULATION LOG")
+                if len(parts) > 1:
+                    issues_block = parts[1].split("FEEDBACK TO ATLAS:")[0].strip()
+                    issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+
+            # Final Verdict Determination
             is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
             is_rejected = "VERDICT: REJECT" in analysis_text or "VERDICT: [REJECT]" in analysis_text
             
-            # Extract Reasoning and Issues/Questions
-            reasoning = ""
-            issues = []
-            
-            if "REASONING:" in analysis_text:
-                reasoning = analysis_text.split("REASONING:")[-1].strip()
-            
-            if "ISSUES/QUESTIONS:" in analysis_text:
-                parts = analysis_text.split("ISSUES/QUESTIONS:")
-                if len(parts) > 1:
-                    issues_block = parts[1].split("REASONING:")[0]
-                    issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
-
-            # If ambiguous, lean towards rejection if real issues are found
-            if not is_approved and not is_rejected:
-                 if issues and not any("None" in i for i in issues):
-                     is_rejected = True
-                 else:
-                     is_approved = True
-
             oleg_mentioned = (
                 "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
             )
             
+            # If rejected or has feedback to atlas, we treat it as a FAILURE unless Oleg overrides
+            # (But even with Oleg, if there's feedback to Atlas, we want Atlas to fix it)
             approved = is_approved and not is_rejected
 
-            # Creator Override Logic - STRICTER
-            # We override rejections for safety/policy, but NOT for technical impossibilities
             if oleg_mentioned and not approved:
-                logger.info("[GRISHA] Creator mentioned. Analyzing override feasibility.")
-                rejection_reason = analysis_text.lower()
-                
-                # If it's a DATA BLOCKER (missing IP, path), we DON'T override, because it's a trap
-                has_technical_blocker = any(kw in rejection_reason for kw in ["missing ip", "невідома адреса", "відсутні дані", "blocker", "блокер"])
-                
-                if has_technical_blocker:
-                    logger.warning("[GRISHA] Technical blocker detected. Rejection stands despite Creator request.")
-                    # Keep approved = False
-                else:
+                # We only override if it's NOT a technical blocker found in the simulation
+                # (Model will indicate this in its feedback/issues)
+                if not feedback_to_atlas and not issues:
                     logger.info("[GRISHA] Policy rejection. Overriding for Creator.")
                     approved = True
-                    reasoning = f"План схвалено (Авторизовано Творцем: Олег Миколайович).\n\n{reasoning}"
+                else:
+                    logger.warning("[GRISHA] Technical/Logic blockers found. Standing firm for Creator.")
             
-            # Ensure the voice message contains the simulation results (the clarifying questions)
             voice_msg = ""
             if approved:
-                voice_msg = "План пройшов симуляцію успішно. "
-                if issues:
-                    voice_msg += "Але маю уточнення: " + "; ".join(issues[:3])
+                voice_msg = "План схвалено. Симуляція успішна."
             else:
-                voice_msg = "План відхилено через технічні блокери. "
-                if issues:
-                    voice_msg += "Зокрема: " + "; ".join(issues)
+                voice_msg = f"План потребує доопрацювання. {summary_ukrainian[:200]}"
 
             return VerificationResult(
                 step_id="plan_init",
                 verified=approved,
-                confidence=1.0 if (approved and oleg_mentioned) else (0.9 if approved else 0.5),
-                description="Sequential Plan Simulation",
+                confidence=1.0 if (approved and oleg_mentioned) else 0.8,
+                description=f"SIMULATION REPORT: {feedback_to_atlas or 'Plan is sound.'}",
                 issues=issues,
-                voice_message=voice_msg or ("План схвалено Творцем." if (approved and oleg_mentioned) else ("План виглядає надійним." if approved else "Знайдено критичні помилки в плані.")),
-            )
-
-        except Exception as e:
-            logger.error(f"[GRISHA] Plan verification failed: {e}")
-            return VerificationResult(
-                step_id="plan_init",
-                verified=True,
-                confidence=0.5,
-                description="Plan verification system error (Allowed by default)",
-                issues=[f"System error: {e}"],
-                voice_message="Не вдалося перевірити план, але продовжую.",
-            )
-
-            return VerificationResult(
-                step_id="plan_init",
-                verified=approved,
-                confidence=1.0 if (approved and oleg_mentioned) else (0.9 if approved else 0.5),
-                description="Sequential Plan Simulation",
-                issues=issues,
-                voice_message="План схвалено Творцем."
-                if (approved and oleg_mentioned)
-                else ("План виглядає надійним." if approved else "Знайдено критичні помилки в плані."),
+                voice_message=voice_msg,
             )
 
         except Exception as e:
