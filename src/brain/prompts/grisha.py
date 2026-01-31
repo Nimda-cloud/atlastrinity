@@ -175,26 +175,27 @@ Atlas has failed to produce a viable plan after multiple attempts. You are now a
 You must resolve ALL technical gaps and "Discovery" requirements identified in the AUDIT FEEDBACK.
 
 STRICT JSON OUTPUT FORMAT (and NOTHING ELSE):
-{{
+{
   "id": "fixed_plan_grisha",
   "goal": "Detailed goal in English",
   "steps": [
-    {{
+    {
       "goal": "Detailed sub-goal in English",
       "reason": "Technical rationale in English",
       "action": "Terminal command or Vibe tool call",
       "voice_action": "Ukrainian status update for the user (NO ENGLISH)",
       "expected_result": "Technical success criteria"
-    }},
+    },
     ...
   ],
   "voice_summary": "Ukrainian summary for the user (NO ENGLISH)"
-}}
+}
 
 CRITICAL RULES:
-1. **DISCOVERY FIRST**: The plan MUST start with steps to find IPs, paths, or verify hardware capabilities if they were blockers.
-2. **TECHNICAL PRECISION**: Use exact commands or verified tools.
-3. **LANGUAGE SPLIT**: goal/reason/action/expected_result MUST be in English. voice_action/voice_summary MUST be in Ukrainian.
+1. **JSON ONLY**: Do not include any thoughts, preamble, or markdown backticks in your final answer. Provide the raw JSON object only.
+2. **DISCOVERY FIRST**: The plan MUST start with steps to find IPs, paths, or verify hardware capabilities if they were blockers.
+3. **TECHNICAL PRECISION**: Use exact commands or verified tools.
+4. **LANGUAGE SPLIT**: goal/reason/action/expected_result MUST be in English. voice_action/voice_summary MUST be in Ukrainian.
 """
 
 GRISHA = {
