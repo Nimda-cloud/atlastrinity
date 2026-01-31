@@ -60,6 +60,15 @@ def process_template(src_path: Path, dst_path: Path):
         # Ensure dir exists
         dst_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Smart write: only overwrite if content is actually different
+        if dst_path.exists():
+            try:
+                with open(dst_path, "r", encoding="utf-8") as f:
+                    if f.read() == content:
+                        return # Content is identical, skip write
+            except Exception:
+                pass # If can't read, proceed to write
+
         with open(dst_path, "w", encoding="utf-8") as f:
             f.write(content)
 
