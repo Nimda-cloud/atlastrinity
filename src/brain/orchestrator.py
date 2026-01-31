@@ -1046,8 +1046,9 @@ class Trinity:
                             f"🔄 Спроба перепланування {attempt}/{max_retries} на основі фідбеку Гріші...",
                             "system",
                         )
-                        # Pass Grisha's simulation report back to Atlas for re-planning
+                        # Pass Grisha's simulation report and the failed plan back to Atlas for re-planning
                         analysis["simulation_result"] = getattr(self, "_last_verification_report", None)
+                        analysis["failed_plan"] = plan
 
                     planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
                     logger_task = asyncio.create_task(keep_alive_logging())
