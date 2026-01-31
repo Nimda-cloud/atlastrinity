@@ -157,9 +157,9 @@ Generate the next logical thought to analyze this problem.
 
             logger.info(f"[{agent_name}] Reasoning complete using model {model_name}.")
             return {
-                "success": True, 
+                "success": True,
                 "analysis": full_analysis,
-                "last_thought": thought_content  # CRITICAL: Return raw final thought for structured output extraction
+                "last_thought": thought_content,  # CRITICAL: Return raw final thought for structured output extraction
             }
 
         except Exception as e:

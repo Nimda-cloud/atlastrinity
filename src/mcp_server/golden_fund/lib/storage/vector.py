@@ -98,9 +98,9 @@ class VectorStorage:
             # Upsert into Chroma
             if self.collection:
                 self.collection.upsert(
-                    documents=documents, 
+                    documents=documents,
                     metadatas=metadatas,  # type: ignore[arg-type]
-                    ids=ids
+                    ids=ids,
                 )
 
             record_count = len(data)

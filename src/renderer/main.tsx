@@ -7,9 +7,11 @@ import './styles/global.css';
 const originalConsoleError = console.error;
 console.error = (...args) => {
   const message = args[0];
-  if (typeof message === 'string' && 
-      (message.includes('devtools://') || 
-       (message.includes('Failed to fetch') && message.includes('devtools')))) {
+  if (
+    typeof message === 'string' &&
+    (message.includes('devtools://') ||
+      (message.includes('Failed to fetch') && message.includes('devtools')))
+  ) {
     // Suppress DevTools-related errors
     return;
   }

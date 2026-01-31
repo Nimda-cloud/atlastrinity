@@ -123,7 +123,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-
   // Add log entry
   const addLog = (agent: AgentName, message: string, type: LogEntry['type'] = 'info') => {
     const entry: LogEntry = {
@@ -226,11 +225,12 @@ const App: React.FC = () => {
     } catch (err) {
       setIsConnected(false);
       // SILENT during connection refused to clean up console
-      if (err instanceof TypeError && (
-        err.message === 'Failed to fetch' || 
-        err.message.includes('Failed to fetch') ||
-        err.message.includes('NetworkError')
-      )) {
+      if (
+        err instanceof TypeError &&
+        (err.message === 'Failed to fetch' ||
+          err.message.includes('Failed to fetch') ||
+          err.message.includes('NetworkError'))
+      ) {
         // Do nothing, silence the console spam for connection issues
       } else {
         console.error('[BRAIN] Polling error:', err);
@@ -489,104 +489,109 @@ const App: React.FC = () => {
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
                   </button>
-                <button
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                    borderColor: 'rgba(0, 229, 255, 0.4)',
-                    boxShadow: '0 0 10px rgba(0, 229, 255, 0.1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#00e5ff';
-                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
-                    e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.1)';
-                  }}
-                >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#00e5ff"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]"
+                  <button
+                    onClick={() => setIsHistoryOpen(false)}
+                    className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      borderColor: 'rgba(0, 229, 255, 0.4)',
+                      boxShadow: '0 0 10px rgba(0, 229, 255, 0.1)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#00e5ff';
+                      e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+                      e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.1)';
+                    }}
                   >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#00e5ff"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="drop-shadow-[0_0_5px_rgba(0,229,255,0.8)]"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div
+                className="flex-1 overflow-y-auto pr-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 <style>{`
                   .no-scrollbar::-webkit-scrollbar {
                     display: none;
                   }
                 `}</style>
                 <div className="no-scrollbar h-full overflow-y-auto">
-                {sessions.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-[8px] uppercase tracking-widest text-[#00e5ff]/30 italic">
-                    No history found
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {sessions.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => handleRestoreSession(s.id)}
-                        className="group p-3 border text-left transition-all duration-300 backdrop-blur-sm w-full relative overflow-hidden mb-3"
-                        style={{
-                          backgroundColor:
-                            currentSessionId === s.id ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
-                          borderColor:
-                            currentSessionId === s.id ? '#00e5ff' : 'rgba(0, 229, 255, 0.3)',
-                          boxShadow:
-                            currentSessionId === s.id
-                              ? '0 0 15px rgba(0, 229, 255, 0.25)'
-                              : 'none',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (currentSessionId !== s.id) {
-                            e.currentTarget.style.borderColor = '#00e5ff';
-                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-                            e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.2)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (currentSessionId !== s.id) {
-                            e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.3)';
-                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }
-                        }}
-                      >
-                        <div
-                          className="text-[9px] font-medium mb-1 truncate"
+                  {sessions.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-[8px] uppercase tracking-widest text-[#00e5ff]/30 italic">
+                      No history found
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {sessions.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => handleRestoreSession(s.id)}
+                          className="group p-3 border text-left transition-all duration-300 backdrop-blur-sm w-full relative overflow-hidden mb-3"
                           style={{
-                            color: '#00e5ff',
-                            textShadow: '0 0 5px rgba(0, 229, 255, 0.5)',
+                            backgroundColor:
+                              currentSessionId === s.id
+                                ? 'rgba(0, 0, 0, 0.7)'
+                                : 'rgba(0, 0, 0, 0.4)',
+                            borderColor:
+                              currentSessionId === s.id ? '#00e5ff' : 'rgba(0, 229, 255, 0.3)',
+                            boxShadow:
+                              currentSessionId === s.id
+                                ? '0 0 15px rgba(0, 229, 255, 0.25)'
+                                : 'none',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentSessionId !== s.id) {
+                              e.currentTarget.style.borderColor = '#00e5ff';
+                              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+                              e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 229, 255, 0.2)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentSessionId !== s.id) {
+                              e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.3)';
+                              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }
                           }}
                         >
-                          {s.theme}
-                        </div>
-                        <div
-                          className="text-[7px] truncate font-mono"
-                          style={{ color: 'rgba(0, 229, 255, 0.6)' }}
-                        >
-                          {new Date(s.saved_at).toLocaleString()}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                  </div>
+                          <div
+                            className="text-[9px] font-medium mb-1 truncate"
+                            style={{
+                              color: '#00e5ff',
+                              textShadow: '0 0 5px rgba(0, 229, 255, 0.5)',
+                            }}
+                          >
+                            {s.theme}
+                          </div>
+                          <div
+                            className="text-[7px] truncate font-mono"
+                            style={{ color: 'rgba(0, 229, 255, 0.6)' }}
+                          >
+                            {new Date(s.saved_at).toLocaleString()}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -796,10 +796,10 @@ Standalone Query:"""
 
     async def _self_verify_plan(self, plan_steps: list[dict], goal: str) -> dict[str, Any]:
         """Atlas performs internal self-verification before submitting the plan.
-        
+
         This is a Grisha-style analysis to catch obvious gaps BEFORE
         the plan goes to Grisha for formal verification.
-        
+
         Returns:
             {
                 "issues": list[str],  # Problems found
@@ -808,14 +808,20 @@ Standalone Query:"""
             }
         """
         if not plan_steps:
-            return {"issues": ["No steps in plan"], "suggestions": ["Generate steps"], "confidence": 0.0}
-        
+            return {
+                "issues": ["No steps in plan"],
+                "suggestions": ["Generate steps"],
+                "confidence": 0.0,
+            }
+
         # Format plan for analysis
-        plan_text = "\n".join([
-            f"{i+1}. [{s.get('realm', 'unknown')}] {s.get('action', 'No action')}"
-            for i, s in enumerate(plan_steps)
-        ])
-        
+        plan_text = "\n".join(
+            [
+                f"{i + 1}. [{s.get('realm', 'unknown')}] {s.get('action', 'No action')}"
+                for i, s in enumerate(plan_steps)
+            ]
+        )
+
         self_audit_prompt = f"""SELF-AUDIT BEFORE SUBMISSION (ATLAS INTERNAL CHECK):
 
 GOAL: {goal}
@@ -846,20 +852,20 @@ CONFIDENCE: [0.0-1.0]
 
 If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
 """
-        
+
         try:
             result = await self.use_sequential_thinking(
                 self_audit_prompt,
                 total_thoughts=2,
-                capabilities="Plan analysis and logical verification"
+                capabilities="Plan analysis and logical verification",
             )
-            
+
             if not result.get("success"):
                 logger.warning("[ATLAS] Self-verification thinking failed, proceeding with plan")
                 return {"issues": [], "suggestions": [], "confidence": 0.7}
-            
+
             analysis = result.get("analysis", "")
-            
+
             # Parse issues
             issues = []
             if "SELF_REVIEW_ISSUES:" in analysis:
@@ -871,7 +877,7 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
                     for line in issues_section.strip().split("\n")
                     if line.strip().startswith("-") and "None" not in line
                 ]
-            
+
             # Parse suggestions
             suggestions = []
             if "SUGGESTIONS:" in analysis:
@@ -883,9 +889,10 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
                     for line in suggestions_section.strip().split("\n")
                     if line.strip().startswith("-")
                 ]
-            
+
             # Parse confidence
             import re
+
             confidence = 0.7  # default
             conf_match = re.search(r"CONFIDENCE:\s*([\d.]+)", analysis)
             if conf_match:
@@ -895,15 +902,13 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
                         confidence = confidence / 100.0
                 except ValueError:
                     pass
-            
-            logger.info(f"[ATLAS] Self-verification: {len(issues)} issues found, confidence: {confidence}")
-            
-            return {
-                "issues": issues,
-                "suggestions": suggestions,
-                "confidence": confidence
-            }
-            
+
+            logger.info(
+                f"[ATLAS] Self-verification: {len(issues)} issues found, confidence: {confidence}"
+            )
+
+            return {"issues": issues, "suggestions": suggestions, "confidence": confidence}
+
         except Exception as e:
             logger.warning(f"[ATLAS] Self-verification failed: {e}")
             return {"issues": [], "suggestions": [], "confidence": 0.6}
@@ -943,12 +948,14 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
         grisha_feedback = enriched_request.get("simulation_result", "")
         failed_plan_obj = enriched_request.get("failed_plan")
         failed_plan_text = ""
-        
+
         if grisha_feedback:
-            logger.info("[ATLAS] Replanning detected. Incorporating Grisha's feedback into strategy.")
+            logger.info(
+                "[ATLAS] Replanning detected. Incorporating Grisha's feedback into strategy."
+            )
             if failed_plan_obj and hasattr(failed_plan_obj, "steps"):
                 failed_plan_text = "\n".join(
-                    [f"{i+1}. {s.get('action')}" for i, s in enumerate(failed_plan_obj.steps)]
+                    [f"{i + 1}. {s.get('action')}" for i, s in enumerate(failed_plan_obj.steps)]
                 )
 
         simulation_prompt = AgentPrompts.atlas_simulation_prompt(
@@ -960,16 +967,16 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
             reasoning = await self.use_sequential_thinking(
                 simulation_prompt,
                 total_thoughts=3,  # Deeper dry-run
-                capabilities="Full system access (read), memory, and strategic logic."
+                capabilities="Full system access (read), memory, and strategic logic.",
             )
-            
+
             if reasoning.get("success"):
                 simulation_result = reasoning.get("analysis", "Strategy simulation complete.")
                 logger.info("[ATLAS] Deep Strategy Simulation successful.")
             else:
                 logger.warning(f"[ATLAS] Deep Thinking failed: {reasoning.get('error')}")
                 simulation_result = "Standard execution strategy fallback."
-                
+
         except Exception as e:
             logger.warning(f"[ATLAS] Deep Thinking process crashed: {e}")
             simulation_result = "Strategy formulation error. Proceeding with heuristic fallback."
@@ -1032,7 +1039,7 @@ CRITICAL PLANNING RULES:
         # ENSURE VOICE_ACTION INTEGRITY: Post-process steps to guarantee Ukrainian descriptions
         steps = plan_data.get("steps", [])
         import re
-        
+
         fixed_count = 0
         for step in steps:
             # If voice_action is missing or contains English, force a generic Ukrainian description
@@ -1054,9 +1061,11 @@ CRITICAL PLANNING RULES:
                     va = "Переходжу до наступного етапу завдання"
                 step["voice_action"] = va
                 fixed_count += 1
-        
+
         if fixed_count > 0:
-            logger.info(f"[ATLAS] Standardized {fixed_count} steps with missing/English voice_action.")
+            logger.info(
+                f"[ATLAS] Standardized {fixed_count} steps with missing/English voice_action."
+            )
 
         # META-PLANNING FALLBACK: If planner failed to generate steps, force reasoning
         if not steps:
@@ -1084,21 +1093,23 @@ CRITICAL PLANNING RULES:
 
         # 3. SELF-VERIFICATION: Atlas performs internal audit before submitting
         goal_text = str(plan_data.get("goal", enriched_request.get("enriched_request", "")))
-        
+
         if steps:
             self_check = await self._self_verify_plan(steps, goal_text)
-            
+
             # If issues found and confidence is low, try to fix them immediately
             if self_check.get("issues") and self_check.get("confidence", 1.0) < 0.8:
                 issues_text = "\n".join([f"- {i}" for i in self_check["issues"]])
                 suggestions_text = "\n".join([f"- {s}" for s in self_check.get("suggestions", [])])
-                
-                logger.info(f"[ATLAS] Self-audit found {len(self_check['issues'])} issues. Attempting self-fix...")
-                
+
+                logger.info(
+                    f"[ATLAS] Self-audit found {len(self_check['issues'])} issues. Attempting self-fix..."
+                )
+
                 fix_prompt = f"""SELF-FIX REQUIRED:
 
 ORIGINAL PLAN:
-{chr(10).join([f"{i+1}. {s.get('action')}" for i, s in enumerate(steps)])}
+{chr(10).join([f"{i + 1}. {s.get('action')}" for i, s in enumerate(steps)])}
 
 SELF-AUDIT ISSUES:
 {issues_text}
@@ -1121,16 +1132,22 @@ Output the corrected plan in the same JSON format as before.
                     fix_response = await self.llm.ainvoke(fix_messages)
                     fixed_plan_data = self._parse_response(cast("str", fix_response.content))
                     fixed_steps = fixed_plan_data.get("steps", [])
-                    
+
                     if fixed_steps:
                         # Re-validate voice_action for fixed steps
                         for step in fixed_steps:
-                            if not step.get("voice_action") or re.search(r"[a-zA-Z]", step.get("voice_action", "")):
+                            if not step.get("voice_action") or re.search(
+                                r"[a-zA-Z]", step.get("voice_action", "")
+                            ):
                                 step["voice_action"] = "Виконую заплановану дію"
                         steps = fixed_steps
-                        logger.info(f"[ATLAS] Self-fix successful. Plan now has {len(steps)} steps.")
+                        logger.info(
+                            f"[ATLAS] Self-fix successful. Plan now has {len(steps)} steps."
+                        )
                 except Exception as fix_error:
-                    logger.warning(f"[ATLAS] Self-fix failed: {fix_error}. Proceeding with original plan.")
+                    logger.warning(
+                        f"[ATLAS] Self-fix failed: {fix_error}. Proceeding with original plan."
+                    )
 
         self.current_plan = TaskPlan(
             id=str(uuid.uuid4())[:8],
@@ -1156,7 +1173,10 @@ Output the corrected plan in the same JSON format as before.
                 payload.structuredContent,
                 dict,
             ):
-                return cast(dict[str, Any], payload.structuredContent.get("result", payload.structuredContent))
+                return cast(
+                    dict[str, Any],
+                    payload.structuredContent.get("result", payload.structuredContent),
+                )
             if hasattr(payload, "content"):
                 for item in getattr(payload, "content", []) or []:
                     text = getattr(item, "text", None)

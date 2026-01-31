@@ -408,7 +408,7 @@ class VibeConfig(BaseModel):
         logger.info("Using default Vibe configuration")
         return cls(
             active_model="",
-            system_prompt_id="default", 
+            system_prompt_id="default",
             default_mode=AgentMode.AUTO_APPROVE,
             disable_welcome_banner_animation=True,
             vim_keybindings=False,
@@ -418,7 +418,7 @@ class VibeConfig(BaseModel):
             timeout_s=600.0,
             vibe_home=None,
             agents_dir=None,
-            prompts_dir=None
+            prompts_dir=None,
         )
 
     @classmethod

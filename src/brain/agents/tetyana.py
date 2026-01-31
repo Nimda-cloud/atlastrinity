@@ -213,11 +213,11 @@ Respond in JSON:
 
         try:
             messages: list[BaseMessage] = [
-                    SystemMessage(
-                        content="You are a Goal Alignment Validator. Be critical but constructive.",
-                    ),
-                    HumanMessage(content=prompt),
-                ]
+                SystemMessage(
+                    content="You are a Goal Alignment Validator. Be critical but constructive.",
+                ),
+                HumanMessage(content=prompt),
+            ]
             response = await self.reasoning_llm.ainvoke(
                 messages,
             )
@@ -993,12 +993,22 @@ IMPORTANT:
         # We only flag it for informative tools that MUST return data.
         output_data = tool_result.get("output", "") or tool_result.get("result", "")
         is_empty = not str(output_data).strip()
-        
+
         # Tools that are EXPECTED to return data
-        data_intensive_tools = ["read_file", "search", "list_directory", "execute_command", "vibe_prompt"]
+        data_intensive_tools = [
+            "read_file",
+            "search",
+            "list_directory",
+            "execute_command",
+            "vibe_prompt",
+        ]
         current_tool_name = str(tool_call.get("name", "")).lower()
-        
-        if tool_result.get("success") and is_empty and any(t in current_tool_name for t in data_intensive_tools):
+
+        if (
+            tool_result.get("success")
+            and is_empty
+            and any(t in current_tool_name for t in data_intensive_tools)
+        ):
             logger.warning(
                 f"[TETYANA] Tool '{tool_call.get('name')}' returned SUCCESS but EMPTY output. Triggering soft-failure Reflexion..."
             )
@@ -1010,8 +1020,10 @@ IMPORTANT:
                 "Otherwise, it is a FAILURE requiring a different approach."
             )
         elif tool_result.get("success") and is_empty:
-             # For other tools (mkdir, write_file, etc.), empty is fine but we note it
-             logger.info(f"[TETYANA] Tool '{current_tool_name}' returned silent success (empty output).")
+            # For other tools (mkdir, write_file, etc.), empty is fine but we note it
+            logger.info(
+                f"[TETYANA] Tool '{current_tool_name}' returned silent success (empty output)."
+            )
 
         # --- PHASE 3: TECHNICAL REFLEXION (if failed) ---
         # OPTIMIZATION: Skip LLM reflexion for transient errors
@@ -1184,14 +1196,14 @@ IMPORTANT:
 
         tool_name = tool_call.get("name") or tool_call.get("tool")
         args = tool_call.get("args") or tool_call.get("arguments") or {}
-        
+
         # DEFENSIVE MAPPING: Fix common LLM hallucinations
         if isinstance(args, dict):
             # 1. new_path -> path (common in read_file/write_file)
             if "new_path" in args and "path" not in args:
                 args["path"] = args.pop("new_path")
                 logger.info("[TETYANA] Fixed hallucinated argument: new_path -> path")
-            
+
             # 2. cmd -> command
             if "cmd" in args and "command" not in args:
                 args["command"] = args.pop("cmd")

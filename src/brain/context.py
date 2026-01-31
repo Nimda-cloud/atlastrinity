@@ -282,7 +282,7 @@ class SharedContext:
     # --- Critical Discoveries API ---
     def store_discovery(self, key: str, value: str, category: str = "general") -> None:
         """Store a critical discovery for cross-step access.
-        
+
         Args:
             key: Unique identifier (e.g., 'mikrotik_ip', 'kali_ssh_key')
             value: The discovered value
@@ -291,6 +291,7 @@ class SharedContext:
         full_key = f"{category}:{key}" if category != "general" else key
         self.critical_discoveries[full_key] = value
         from .logger import logger
+
         logger.info(f"[CONTEXT] Stored discovery: {full_key}={value[:50]}...")
 
     def get_discovery(self, key: str, category: str = "general") -> str | None:

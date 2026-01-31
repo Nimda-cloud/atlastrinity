@@ -435,9 +435,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         task_text: str, memory_context: str = "", feedback: str = "", failed_plan: str = ""
     ) -> str:
         feedback_section = (
-            f"\n\nCRITICAL AUDIT FEEDBACK (from Grisha/Auditor):\n{feedback}\n"
-            if feedback
-            else ""
+            f"\n\nCRITICAL AUDIT FEEDBACK (from Grisha/Auditor):\n{feedback}\n" if feedback else ""
         )
         plan_section = (
             f"\n        REJECTED PLAN (DO NOT REPEAT THESE MISTAKES):\n        {failed_plan}\n"

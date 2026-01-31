@@ -494,11 +494,19 @@ class ToolDispatcher:
             # 2. Check for known hallucinated tools
             if tool_name in self.HALLUCINATED_TOOLS:
                 suggestion = self.HALLUCINATED_TOOLS[tool_name]
-                logger.warning(f"[DISPATCHER] Hallucinated tool detected: '{tool_name}'. {suggestion}")
-                return {"success": False, "error": f"Tool '{tool_name}' does not exist. {suggestion}", "hallucinated": True}
+                logger.warning(
+                    f"[DISPATCHER] Hallucinated tool detected: '{tool_name}'. {suggestion}"
+                )
+                return {
+                    "success": False,
+                    "error": f"Tool '{tool_name}' does not exist. {suggestion}",
+                    "hallucinated": True,
+                }
 
             # 3. Resolve tool name and server
-            server, resolved_tool, normalized_args = self._resolve_routing(tool_name, args, explicit_server)
+            server, resolved_tool, normalized_args = self._resolve_routing(
+                tool_name, args, explicit_server
+            )
 
             # 4. Handle internal system tools
             if server in {"_trinity_native", "system"}:
@@ -508,7 +516,9 @@ class ToolDispatcher:
                 return self._handle_resolution_failure(tool_name)
 
             # 5. Validate compatibility and arguments
-            validation_result = self._pre_dispatch_validation(server, resolved_tool, normalized_args)
+            validation_result = self._pre_dispatch_validation(
+                server, resolved_tool, normalized_args
+            )
             if validation_result:
                 return validation_result
 
@@ -518,7 +528,9 @@ class ToolDispatcher:
             # 7. Final validation and dispatch
             validated_args = self._validate_args(resolved_tool, normalized_args)
             if validated_args.get("__validation_error__"):
-                return self._handle_validation_error(server, resolved_tool, normalized_args, validated_args)
+                return self._handle_validation_error(
+                    server, resolved_tool, normalized_args, validated_args
+                )
 
             return await self._dispatch_to_mcp(server, resolved_tool, validated_args)
 
@@ -532,7 +544,9 @@ class ToolDispatcher:
                 "args_keys": list(args.keys()) if isinstance(args, dict) else [],
             }
 
-    def _resolve_routing(self, tool_name: str, args: dict[str, Any], explicit_server: str | None) -> tuple[str | None, str, dict[str, Any]]:
+    def _resolve_routing(
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None
+    ) -> tuple[str | None, str, dict[str, Any]]:
         """Resolve the server and canonical tool name."""
         if not tool_name:
             tool_name = self._infer_tool_from_args(args)
@@ -545,16 +559,17 @@ class ToolDispatcher:
         else:
             explicit_server = self._normalize_server_prefix(tool_name, explicit_server)
             if explicit_server and tool_name.startswith(f"{explicit_server.replace('-', '_')}_"):
-                tool_name = tool_name[len(explicit_server) + 1:].removeprefix("_")
+                tool_name = tool_name[len(explicit_server) + 1 :].removeprefix("_")
 
         if explicit_server:
             return self._resolve_tool_and_args(tool_name, args, explicit_server)
-        
+
         return self._intelligent_routing(tool_name, args)
 
     def _normalize_server_prefix(self, tool_name: str, explicit_server: str | None) -> str | None:
         """Heuristically normalize server prefix in tool name."""
         from .mcp_registry import SERVER_CATALOG, TOOL_SCHEMAS
+
         if explicit_server or tool_name in TOOL_SCHEMAS:
             return explicit_server
 
@@ -568,18 +583,29 @@ class ToolDispatcher:
     def _handle_resolution_failure(self, tool_name: str) -> dict[str, Any]:
         """Provide suggestions for unknown tools."""
         from .mcp_registry import get_all_tool_names
+
         all_tools = get_all_tool_names()
         similar = [t for t in all_tools if tool_name in t.lower() or t.lower() in tool_name][:5]
         suggestion = f" Did you mean: {', '.join(similar)}" if similar else ""
         logger.warning(f"[DISPATCHER] Unknown tool: '{tool_name}'.{suggestion}")
-        return {"success": False, "error": f"Could not resolve server for tool: '{tool_name}'.{suggestion}", "unknown_tool": True}
+        return {
+            "success": False,
+            "error": f"Could not resolve server for tool: '{tool_name}'.{suggestion}",
+            "unknown_tool": True,
+        }
 
-    def _pre_dispatch_validation(self, server: str, tool: str, args: dict[str, Any]) -> dict[str, Any] | None:
+    def _pre_dispatch_validation(
+        self, server: str, tool: str, args: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Validate realm-tool compatibility."""
         is_comp, err = self._validate_realm_tool_compatibility(server, tool, args)
         if not is_comp:
             logger.warning(f"[DISPATCHER] Compatibility failed: {server}.{tool} - {err}")
-            return {"success": False, "error": f"Realm-tool compatibility error: {err}", "compatibility_error": True}
+            return {
+                "success": False,
+                "error": f"Realm-tool compatibility error: {err}",
+                "compatibility_error": True,
+            }
         return None
 
     def _wrap_commands(self, server: str, tool: str, args: dict[str, Any]) -> None:
@@ -590,7 +616,9 @@ class ToolDispatcher:
             if cwd and cmd and str(cmd).strip() and not str(cmd).startswith("cd "):
                 args["command"] = f"cd {cwd} && {cmd}"
 
-    def _handle_validation_error(self, server: str, tool: str, args: dict[str, Any], validated: dict[str, Any]) -> dict[str, Any]:
+    def _handle_validation_error(
+        self, server: str, tool: str, args: dict[str, Any], validated: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle argument validation failures."""
         error_msg = validated.pop("__validation_error__")
         logger.error(f"[DISPATCHER] Validation failed for {server}.{tool}: {error_msg}")
@@ -603,7 +631,9 @@ class ToolDispatcher:
             "provided_args": list(args.keys()),
         }
 
-    async def _dispatch_to_mcp(self, server: str, tool: str, args: dict[str, Any]) -> dict[str, Any]:
+    async def _dispatch_to_mcp(
+        self, server: str, tool: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
         """Final metrics tracking and MCP call."""
         self._total_calls += 1
         if server == "macos-use":
@@ -615,19 +645,31 @@ class ToolDispatcher:
             return self._process_mcp_result(server, tool, args, result)
         except Exception as e:
             logger.error(f"[DISPATCHER] MCP call failed: {e}")
-            return {"success": False, "error": f"MCP call failed: {e!s}", "server": server, "tool": tool}
+            return {
+                "success": False,
+                "error": f"MCP call failed: {e!s}",
+                "server": server,
+                "tool": tool,
+            }
 
-    def _process_mcp_result(self, server: str, tool: str, args: dict[str, Any], result: Any) -> dict[str, Any]:
+    def _process_mcp_result(
+        self, server: str, tool: str, args: dict[str, Any], result: Any
+    ) -> dict[str, Any]:
         """Analyze result from MCP and add metadata if needed."""
         if not isinstance(result, dict) or not result.get("error"):
             return cast(dict[str, Any], result)
 
         error_msg = str(result.get("error", ""))
         if "not found" in error_msg.lower() or "-32602" in error_msg:
-            result.update({"tool_not_found": True, "suggestion": f"Tool '{tool}' may not exist on server '{server}'."})
+            result.update(
+                {
+                    "tool_not_found": True,
+                    "suggestion": f"Tool '{tool}' may not exist on server '{server}'.",
+                }
+            )
         elif "bad request" in error_msg.lower() or "400" in error_msg:
             result["bad_request"] = True
-        
+
         result.update({"server": server, "tool": tool})
         return result
 
@@ -729,7 +771,9 @@ class ToolDispatcher:
             f"Tool '{tool_name}' may not be compatible with {server} realm. Server capabilities: {', '.join(capabilities)}",
         )
 
-    def _autofill_missing_args(self, tool_name: str, validated: dict[str, Any], missing: list[str]) -> list[str]:
+    def _autofill_missing_args(
+        self, tool_name: str, validated: dict[str, Any], missing: list[str]
+    ) -> list[str]:
         """Try to auto-fill common missing arguments with sensible defaults."""
         for req in missing:
             if req == "query" and "question" in validated:
@@ -742,7 +786,9 @@ class ToolDispatcher:
         # Re-check after auto-fill
         return [r for r in missing if r not in validated or validated[r] is None]
 
-    def _convert_arg_types(self, tool_name: str, validated: dict[str, Any], types_map: dict[str, str]) -> None:
+    def _convert_arg_types(
+        self, tool_name: str, validated: dict[str, Any], types_map: dict[str, str]
+    ) -> None:
         """Perform type conversion with improved error handling."""
         import json
 
@@ -770,7 +816,11 @@ class ToolDispatcher:
                                 validated[key] = parsed if isinstance(parsed, list) else [value]
                             except json.JSONDecodeError:
                                 # Try splitting by comma as fallback
-                                validated[key] = [v.strip() for v in value.split(",")] if "," in value else [value]
+                                validated[key] = (
+                                    [v.strip() for v in value.split(",")]
+                                    if "," in value
+                                    else [value]
+                                )
                         else:
                             validated[key] = [value]
                     elif expected_type == "dict" and not isinstance(value, dict):
@@ -808,7 +858,7 @@ class ToolDispatcher:
         if missing:
             error_msg = f"Missing required arguments: {', '.join(missing)}. Schema requires: {required}. Provided: {list(validated.keys())}"
             logger.error(f"[DISPATCHER] Validation failed for '{tool_name}': {error_msg}")
-            
+
             # Try to auto-fill common missing arguments with sensible defaults
             missing = self._autofill_missing_args(tool_name, validated, missing)
 
@@ -946,9 +996,8 @@ class ToolDispatcher:
             return self._handle_filesystem(tool_name, args)
 
         # 4. Browser (Puppeteer)
-        if (
-            (tool_name in self.BROWSER_SYNONYMS and tool_name != "search")
-            or tool_name.startswith(("puppeteer_", "browser_"))
+        if (tool_name in self.BROWSER_SYNONYMS and tool_name != "search") or tool_name.startswith(
+            ("puppeteer_", "browser_")
         ):
             return self._handle_browser(tool_name, args)
 
@@ -1398,7 +1447,9 @@ class ToolDispatcher:
 
         return {"success": False, "error": f"Unknown system tool: {tool_name}"}
 
-    def _handle_devtools(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    def _handle_devtools(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> tuple[str, str, dict[str, Any]]:
         """Maps DevTools synonyms to canonical tools."""
         if tool_name in ["lint", "linter", "ruff"]:
             return "devtools", "devtools_lint_python", args
@@ -1412,13 +1463,17 @@ class ToolDispatcher:
             return "devtools", "devtools_check_mcp_health", args
         return "devtools", tool_name, args
 
-    def _handle_context7(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    def _handle_context7(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> tuple[str, str, dict[str, Any]]:
         """Maps Context7 synonyms to canonical tools."""
         if tool_name in ["docs", "documentation", "lookup", "library"]:
             return "context7", "c7_search", args
         return "context7", tool_name, args
 
-    def _handle_golden_fund(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    def _handle_golden_fund(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> tuple[str, str, dict[str, Any]]:
         """Maps Golden Fund synonyms to canonical tools."""
         if tool_name in ["ingest", "ingestion", "etl"]:
             return "golden-fund", "ingest_dataset", args

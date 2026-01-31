@@ -13,10 +13,12 @@ from typing import Any, cast
 
 try:
     import redis.asyncio as aioredis  # type: ignore
+
     REDIS_AVAILABLE = True
 except ImportError:
     try:
         import redis as aioredis  # type: ignore
+
         REDIS_AVAILABLE = True
     except ImportError:
         REDIS_AVAILABLE = False

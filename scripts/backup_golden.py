@@ -16,15 +16,16 @@ GOLDEN_FUND_LIVE = CONFIG_ROOT / "data" / "golden_fund"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 GOLDEN_FUND_BACKUP = PROJECT_ROOT / "backups" / "databases" / "golden_fund"
 
+
 def backup_golden_fund():
     print("--- Golden Fund Backup ---")
-    
+
     if not GOLDEN_FUND_LIVE.exists():
         print(f"Error: Live data not found at {GOLDEN_FUND_LIVE}")
         return False
-        
+
     GOLDEN_FUND_BACKUP.mkdir(parents=True, exist_ok=True)
-    
+
     # 1. Backup SQLite DB
     db_file = GOLDEN_FUND_LIVE / "golden.db"
     if db_file.exists():
@@ -52,9 +53,10 @@ def backup_golden_fund():
         except Exception as e:
             print(f"❌ Failed to backup cache: {e}")
             return False
-            
+
     print(f"🎉 Backup complete at {datetime.now()}")
     return True
+
 
 if __name__ == "__main__":
     success = backup_golden_fund()

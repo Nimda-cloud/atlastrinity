@@ -16,8 +16,10 @@ from langgraph.graph import END, StateGraph
 try:
     from langgraph.graph.message import add_messages
 except ImportError:
+
     def add_messages(left: Any, right: Any) -> Any:  # type: ignore
         return left + right
+
 
 from src.brain.agents import Atlas, Grisha, Tetyana
 from src.brain.agents.tetyana import StepResult
@@ -790,9 +792,10 @@ class Trinity:
         """Handle the planning and verification loop."""
         max_retries = 1
         plan = None
-        
+
         async def keep_alive_logging():
             import time
+
             while True:
                 await asyncio.sleep(15)
                 await self._log("Atlas is thinking... (Planning logic flow)", "system")
@@ -820,7 +823,9 @@ class Trinity:
             self.state["current_plan"] = plan
 
             if not is_subtask:
-                verified_plan = await self._verify_plan_with_grisha(plan, user_request, attempt, max_retries)
+                verified_plan = await self._verify_plan_with_grisha(
+                    plan, user_request, attempt, max_retries
+                )
                 if verified_plan:
                     plan = verified_plan
                     break
@@ -844,19 +849,23 @@ class Trinity:
         try:
             res = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=(attempt >= 1))
             self._last_verification_report = res.description
-            
+
             if res.verified:
                 await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
                 return plan
 
-            prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
+            prefix = (
+                "Гріша знову виявив недоліки: "
+                if attempt > 0
+                else "Гріша відхилив початковий план: "
+            )
             issues = "; ".join(res.issues) if res.issues else "Невідома причина"
             await self._speak("grisha", res.voice_message or f"{prefix}{issues}")
-            
+
             if attempt >= max_retries and res.fixed_plan:
                 await self._speak("grisha", "Я переписав план самостійно.")
                 return res.fixed_plan
-            
+
             if attempt == max_retries:
                 logger.warning("[ORCHESTRATOR] Planning failed. FORCE PROCEED.")
                 await self._speak("grisha", "План має недоліки, але ми починаємо за наказом.")
@@ -869,7 +878,12 @@ class Trinity:
         """Create DB task and knowledge graph node."""
         try:
             from src.brain.db.manager import db_manager
-            if not (db_manager and getattr(db_manager, "available", False) and self.state.get("db_session_id")):
+
+            if not (
+                db_manager
+                and getattr(db_manager, "available", False)
+                and self.state.get("db_session_id")
+            ):
                 return
 
             async with await db_manager.get_session() as db_sess:
@@ -891,13 +905,15 @@ class Trinity:
                 await knowledge_graph.add_node(
                     node_type="TASK",
                     node_id=f"task:{new_task.id}",
-                    attributes={"goal": user_request, "steps_count": len(plan.steps)}
+                    attributes={"goal": user_request, "steps_count": len(plan.steps)},
                 )
         except Exception as e:
             logger.error(f"DB Task creation failed: {e}")
+
     async def _initialize_run_state(self, user_request: str, session_id: str) -> str:
         """Initialize session state and DB records for a run."""
         from src.brain.context import shared_context
+
         is_subtask = getattr(self, "_in_subtask", False)
         if is_subtask:
             return session_id
@@ -914,7 +930,13 @@ class Trinity:
 
         try:
             from src.brain.state_manager import state_manager
-            if state_manager and getattr(state_manager, "available", False) and not self.state["messages"] and session_id == "current_session":
+
+            if (
+                state_manager
+                and getattr(state_manager, "available", False)
+                and not self.state["messages"]
+                and session_id == "current_session"
+            ):
                 saved_state = await state_manager.restore_session(session_id)
                 if saved_state:
                     self.state = saved_state
@@ -938,26 +960,35 @@ class Trinity:
         try:
             from src.brain.db.manager import db_manager
             from src.brain.db.schema import Session as DBSession
-            if db_manager and getattr(db_manager, "available", False) and "db_session_id" not in self.state:
+
+            if (
+                db_manager
+                and getattr(db_manager, "available", False)
+                and "db_session_id" not in self.state
+            ):
                 async with await db_manager.get_session() as db_sess:
-                    new_session = DBSession(started_at=datetime.now(UTC), metadata_blob={"theme": self.state["_theme"]})
+                    new_session = DBSession(
+                        started_at=datetime.now(UTC), metadata_blob={"theme": self.state["_theme"]}
+                    )
                     db_sess.add(new_session)
                     await db_sess.commit()
                     self.state["db_session_id"] = str(new_session.id)
         except Exception as e:
             logger.debug(f"DB Session creation skipped/failed: {e}")
-            
+
         return session_id
 
     async def _get_run_plan(self, user_request: str, is_subtask: bool) -> Any:
         """Retrieve or create a plan for the current run."""
         from src.brain.context import shared_context
+
         # 1. Resumption logic
         if self.state.get("current_plan") and getattr(self, "_resumption_pending", False):
             plan_obj = self.state["current_plan"]
             self._resumption_pending = False
             if isinstance(plan_obj, dict):
                 from src.brain.agents.atlas import TaskPlan
+
                 return TaskPlan(
                     id=plan_obj.get("id", "resumed"),
                     goal=plan_obj.get("goal", user_request),
@@ -969,30 +1000,38 @@ class Trinity:
         try:
             messages_raw = self.state.get("messages", []) or []
             if not isinstance(messages_raw, list):
-                 messages_raw = []
+                messages_raw = []
             history: list[Any] = messages_raw[-25:-1] if len(messages_raw) > 1 else []
             analysis = await self.atlas.analyze_request(user_request, history=history)
             intent = analysis.get("intent")
 
             # Workflow routing
             from src.brain.behavior_engine import behavior_engine
+
             if intent and intent in behavior_engine.config.get("workflows", {}):
                 self.state["system_state"] = SystemState.EXECUTING.value
                 success = await workflow_engine.execute_workflow(
-                    str(intent), {"orchestrator": self, "user_request": user_request, "intent_analysis": analysis}
+                    str(intent),
+                    {
+                        "orchestrator": self,
+                        "user_request": user_request,
+                        "intent_analysis": analysis,
+                    },
                 )
-                msg = f"Workflow '{intent}' completed." if success else f"Workflow '{intent}' failed."
+                msg = (
+                    f"Workflow '{intent}' completed." if success else f"Workflow '{intent}' failed."
+                )
                 await self._speak("atlas", msg)
                 return {"status": "completed", "result": msg, "type": "workflow"}
 
             # Simple intent routing (chat, solo_task, etc.)
             if intent in ["chat", "recall", "status", "solo_task"]:
                 response = analysis.get("initial_response") or await self.atlas.chat(
-                    user_request, 
-                    history=history, 
-                    use_deep_persona=analysis.get("use_deep_persona", False), 
-                    intent=intent, 
-                    on_preamble=self._speak
+                    user_request,
+                    history=history,
+                    use_deep_persona=analysis.get("use_deep_persona", False),
+                    intent=intent,
+                    on_preamble=self._speak,
                 )
                 if response != "__ESCALATE__":
                     await self._speak("atlas", response)
@@ -1001,13 +1040,16 @@ class Trinity:
             # Complex task planning
             self.state["system_state"] = SystemState.PLANNING.value
             from src.brain.mcp_manager import mcp_manager
+
             shared_context.available_mcp_catalog = await mcp_manager.get_mcp_catalog()
             await self._speak("atlas", analysis.get("voice_response") or "Аналізую запит...")
 
             plan = await self._planning_loop(analysis, user_request, is_subtask, history)
             if plan:
                 await self._create_db_task(user_request, plan)
-                await self._speak("atlas", self.atlas.get_voice_message("plan_created", steps=len(plan.steps)))
+                await self._speak(
+                    "atlas", self.atlas.get_voice_message("plan_created", steps=len(plan.steps))
+                )
             return plan
 
         except Exception as e:
@@ -1018,6 +1060,7 @@ class Trinity:
     async def run(self, user_request: str) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
         from src.brain.context import shared_context
+
         self.stop()
         self.active_task = asyncio.current_task()
         start_time = asyncio.get_event_loop().time()
@@ -1036,18 +1079,22 @@ class Trinity:
             # Already handled (e.g. chat response, workflow result)
             self.active_task = None
             if plan_or_result.get("status") == "completed":
-                 self.state["system_state"] = SystemState.IDLE.value
-                 msgs = self.state.get("messages", [])
-                 msg_count = len(msgs) if isinstance(msgs, list) else 0
-                 await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
+                self.state["system_state"] = SystemState.IDLE.value
+                msgs = self.state.get("messages", [])
+                msg_count = len(msgs) if isinstance(msgs, list) else 0
+                await self._handle_post_execution_phase(
+                    user_request, is_subtask, start_time, session_id, msg_count
+                )
             return plan_or_result
-        
+
         plan = plan_or_result
         if not plan:
             self.active_task = None
             msgs = self.state.get("messages", [])
             msg_count = len(msgs) if isinstance(msgs, list) else 0
-            await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
+            await self._handle_post_execution_phase(
+                user_request, is_subtask, start_time, session_id, msg_count
+            )
             return {"status": "completed", "result": "No plan generated.", "type": "chat"}
 
         self.state["system_state"] = SystemState.EXECUTING.value
@@ -1062,11 +1109,15 @@ class Trinity:
         is_subtask = getattr(self, "_in_subtask", False)
         msgs = self.state.get("messages", [])
         msg_count = len(msgs) if isinstance(msgs, list) else 0
-        await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
+        await self._handle_post_execution_phase(
+            user_request, is_subtask, start_time, session_id, msg_count
+        )
         self.active_task = None
         return {"status": "completed", "result": self.state["step_results"]}
 
-    async def _handle_post_execution_phase(self, user_request, is_subtask, start_time, session_id, msg_count):
+    async def _handle_post_execution_phase(
+        self, user_request, is_subtask, start_time, session_id, msg_count
+    ):
         """Evaluation, memory management and cleanup."""
         duration = asyncio.get_event_loop().time() - start_time
         notifications.show_completion(user_request, True, duration)
@@ -1077,26 +1128,28 @@ class Trinity:
         # Final cleanup tasks
         self.state["system_state"] = SystemState.COMPLETED.value
         shared_context.pop_goal()
-        
+
         # Async tasks for summary and background operations
         if not is_subtask and msg_count > 2:
             asyncio.create_task(self._persist_session_summary(session_id))
-        
+
         await self._notify_task_finished(session_id)
         self._trigger_backups()
 
     async def _evaluate_and_remember(self, user_request):
         """Evaluate execution quality and save to LTM."""
         try:
-            evaluation = await self.atlas.evaluate_execution(user_request, self.state["step_results"])
-            
+            evaluation = await self.atlas.evaluate_execution(
+                user_request, self.state["step_results"]
+            )
+
             if evaluation.get("achieved"):
                 msg = evaluation.get("final_report") or "Завдання успішно виконано."
                 await self._speak("atlas", msg)
 
             if evaluation.get("should_remember") and evaluation.get("quality_score", 0) >= 0.7:
                 await self._save_to_ltm(user_request, evaluation)
-                
+
             # Update DB Task
             if self.state.get("db_task_id"):
                 await self._mark_db_golden_path()
@@ -1106,25 +1159,37 @@ class Trinity:
     async def _save_to_ltm(self, user_request, evaluation):
         """Save successful strategy to Long-term Memory."""
         from src.brain.memory import long_term_memory
+
         if long_term_memory and getattr(long_term_memory, "available", False):
-            steps = evaluation.get("compressed_strategy") or self._extract_golden_path(self.state["step_results"])
-            long_term_memory.remember_strategy(task=user_request, plan_steps=steps, outcome="SUCCESS", success=True)
+            steps = evaluation.get("compressed_strategy") or self._extract_golden_path(
+                self.state["step_results"]
+            )
+            long_term_memory.remember_strategy(
+                task=user_request, plan_steps=steps, outcome="SUCCESS", success=True
+            )
 
     async def _mark_db_golden_path(self):
         """Mark task as golden path in DB."""
         from sqlalchemy import update
 
         from src.brain.db.manager import db_manager
+
         async with await db_manager.get_session() as db_sess:
-            await db_sess.execute(update(DBTask).where(DBTask.id == self.state["db_task_id"]).values(golden_path=True))
+            await db_sess.execute(
+                update(DBTask).where(DBTask.id == self.state["db_task_id"]).values(golden_path=True)
+            )
             await db_sess.commit()
 
     async def _notify_task_finished(self, session_id):
         """Publish task finish event."""
         try:
             from src.brain.state_manager import state_manager
+
             if state_manager and getattr(state_manager, "available", False):
-                await state_manager.publish_event("tasks", {"type": "task_finished", "status": "completed", "session_id": session_id})
+                await state_manager.publish_event(
+                    "tasks",
+                    {"type": "task_finished", "status": "completed", "session_id": session_id},
+                )
         except Exception:
             pass
 
@@ -1132,6 +1197,7 @@ class Trinity:
         """Trigger background database backups."""
         try:
             from scripts.setup_dev import backup_databases
+
             asyncio.create_task(asyncio.to_thread(backup_databases))
         except Exception:
             pass
@@ -1141,7 +1207,7 @@ class Trinity:
         try:
             from src.brain.db.schema import ConversationSummary as DBConvSummary
             from src.brain.knowledge_graph import knowledge_graph
-            
+
             messages = self.state.get("messages")
             if not isinstance(messages, list) or not messages:
                 return
@@ -1153,6 +1219,7 @@ class Trinity:
             # A. Store in Vector Memory
             try:
                 from src.brain.memory import long_term_memory
+
                 if long_term_memory and getattr(long_term_memory, "available", False):
                     long_term_memory.remember_conversation(
                         session_id=session_id,
@@ -1165,6 +1232,7 @@ class Trinity:
             # B. Store in Structured DB
             try:
                 from src.brain.db.manager import db_manager
+
                 if db_manager and getattr(db_manager, "available", False):
                     async with await db_manager.get_session() as db_sess:
                         new_summary = DBConvSummary(
@@ -1245,7 +1313,9 @@ class Trinity:
 
         return golden_path
 
-    async def _build_self_heal_context(self, step: dict[str, Any], step_id: str) -> tuple[str, str, list[dict[str, Any]]]:
+    async def _build_self_heal_context(
+        self, step: dict[str, Any], step_id: str
+    ) -> tuple[str, str, list[dict[str, Any]]]:
         """Prepare logs and error context for self-healing."""
         recent_logs = []
         if self.state and "logs" in self.state:
@@ -1286,7 +1356,7 @@ class Trinity:
         try:
             from src.brain.db.manager import db_manager
             from src.brain.db.schema import RecoveryAttempt
-            
+
             if not (db_manager and getattr(db_manager, "available", False)):
                 return None
 
@@ -1366,19 +1436,27 @@ class Trinity:
             self._rejection_cycles[step_id] = rejection_count
 
             if rejection_count >= 3:
-                logger.warning(f"[ORCHESTRATOR] Grisha rejected Vibe fix 3x for {step_id}. Escalating.")
-                await self._log("⚠️ Система застрягла після 3 відхилень Grisha. Потрібне втручання.", "error")
-                return False, StepResult(
-                    step_id=step_id,
-                    success=False,
-                    result=f"Grisha rejection loop: {grisha_audit.get('reasoning')}",
-                    error="need_user_input",
-                ), None
+                logger.warning(
+                    f"[ORCHESTRATOR] Grisha rejected Vibe fix 3x for {step_id}. Escalating."
+                )
+                await self._log(
+                    "⚠️ Система застрягла після 3 відхилень Grisha. Потрібне втручання.", "error"
+                )
+                return (
+                    False,
+                    StepResult(
+                        step_id=step_id,
+                        success=False,
+                        result=f"Grisha rejection loop: {grisha_audit.get('reasoning')}",
+                        error="need_user_input",
+                    ),
+                    None,
+                )
             return True, None, None
 
         if hasattr(self, "_rejection_cycles") and step_id in self._rejection_cycles:
             del self._rejection_cycles[step_id]
-        
+
         return False, None, grisha_audit
 
     async def _apply_vibe_fix(
@@ -1394,15 +1472,20 @@ class Trinity:
             if not instructions:
                 instructions = "Apply the fix proposed in the analysis."
 
-            await self._log("[ORCHESTRATOR] Engaging Deep Reasoning before applying fix...", "system")
+            await self._log(
+                "[ORCHESTRATOR] Engaging Deep Reasoning before applying fix...", "system"
+            )
             analysis = await self.atlas.use_sequential_thinking(
                 f"Analyze why step {step_id} failed and how to apply the vibe fix effectively.\nError: {error}\nVibe Fix: {vibe_text}\nInstructions: {instructions}",
                 total_thoughts=3,
             )
             if analysis.get("success"):
-                logger.info(f"[ORCHESTRATOR] Deep reasoning completed: {analysis.get('analysis', '')[:200]}...")
+                logger.info(
+                    f"[ORCHESTRATOR] Deep reasoning completed: {analysis.get('analysis', '')[:200]}..."
+                )
 
             from src.brain.mcp_manager import mcp_manager
+
             await mcp_manager.call_tool(
                 "vibe",
                 "vibe_prompt",
@@ -1419,11 +1502,17 @@ class Trinity:
 
     async def _update_diagrams_after_fix(self) -> None:
         """Update architecture diagrams if enabled."""
-        if not config.get("self_healing", {}).get("vibe_debugging", {}).get("diagram_access", {}).get("update_after_fix", False):
+        if (
+            not config.get("self_healing", {})
+            .get("vibe_debugging", {})
+            .get("diagram_access", {})
+            .get("update_after_fix", False)
+        ):
             return
 
         try:
             from src.brain.mcp_manager import mcp_manager
+
             diagram_result = await mcp_manager.call_tool(
                 "devtools",
                 "devtools_update_architecture_diagrams",
@@ -1453,7 +1542,9 @@ class Trinity:
         db_step_id = cast("str | None", self.state.get("db_step_id"))
 
         # --- Phase 2: Context Building ---
-        log_context, error_context, step_recovery_history = await self._build_self_heal_context(step, step_id)
+        log_context, error_context, step_recovery_history = await self._build_self_heal_context(
+            step, step_id
+        )
 
         # DB: Track Recovery Attempt Start
         recovery_attempt_id = await self._log_recovery_attempt_db(db_step_id, depth, error)
@@ -1466,37 +1557,64 @@ class Trinity:
 
             if vibe_text:
                 # --- Phase 7 (Early): Grisha Verification of PLAN ---
-                rejected, fatal_result, grisha_audit = await self._handle_grisha_vibe_audit(step_id, error, vibe_text)
-                
+                rejected, fatal_result, grisha_audit = await self._handle_grisha_vibe_audit(
+                    step_id, error, vibe_text
+                )
+
                 if fatal_result:
                     if recovery_attempt_id:
-                        await self._log_recovery_attempt_db(None, depth, error, success=False, vibe_text=fatal_result.result, attempt_id=recovery_attempt_id)
+                        await self._log_recovery_attempt_db(
+                            None,
+                            depth,
+                            error,
+                            success=False,
+                            vibe_text=fatal_result.result,
+                            attempt_id=recovery_attempt_id,
+                        )
                     return False, fatal_result
-                
+
                 if rejected:
                     return False, None
 
                 # Evaluate strategy via Atlas
-                healing_decision = await self.atlas.evaluate_healing_strategy(str(error), vibe_text, grisha_audit or {})
-                await self._speak("atlas", healing_decision.get("voice_message", "Я знайшов рішення."))
+                healing_decision = await self.atlas.evaluate_healing_strategy(
+                    str(error), vibe_text, grisha_audit or {}
+                )
+                await self._speak(
+                    "atlas", healing_decision.get("voice_message", "Я знайшов рішення.")
+                )
 
                 if healing_decision.get("decision") == "PROCEED":
                     # --- Phase 4: Apply Fix ---
                     if await self._apply_vibe_fix(step_id, error, vibe_text, healing_decision):
                         success = True
-                        
+
                         # --- Phase 6: Diagram Update ---
                         await self._update_diagrams_after_fix()
 
                         # DB Update: Success
                         if recovery_attempt_id:
-                            await self._log_recovery_attempt_db(None, depth, error, success=True, vibe_text=vibe_text, attempt_id=recovery_attempt_id)
+                            await self._log_recovery_attempt_db(
+                                None,
+                                depth,
+                                error,
+                                success=True,
+                                vibe_text=vibe_text,
+                                attempt_id=recovery_attempt_id,
+                            )
 
         except Exception as ve:
             logger.warning(f"Vibe self-healing workflow failed: {ve}")
             success = False
             if recovery_attempt_id:
-                await self._log_recovery_attempt_db(None, depth, error, success=False, vibe_text=f"CRASH: {ve!s}", attempt_id=recovery_attempt_id)
+                await self._log_recovery_attempt_db(
+                    None,
+                    depth,
+                    error,
+                    success=False,
+                    vibe_text=f"CRASH: {ve!s}",
+                    attempt_id=recovery_attempt_id,
+                )
 
         return success, updated_result
 
@@ -1555,9 +1673,7 @@ class Trinity:
         """Check if a step has already been successfully completed."""
         step_results = self.state.get("step_results") or []
         return any(
-            isinstance(res, dict)
-            and str(res.get("step_id")) == str(step_id)
-            and res.get("success")
+            isinstance(res, dict) and str(res.get("step_id")) == str(step_id) and res.get("success")
             for res in step_results
         )
 
@@ -1635,6 +1751,7 @@ class Trinity:
             await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
             try:
                 from src.brain.state_manager import state_manager
+
                 if state_manager and state_manager.available:
                     await state_manager.save_session(self.current_session_id, self.state)
                     redis_client = getattr(state_manager, "redis_client", None)
@@ -1650,9 +1767,15 @@ class Trinity:
 
             import os
             import sys
+
             await asyncio.sleep(1.0)
             os.execv(sys.executable, [sys.executable, *sys.argv])
-            return False, StepResult(step_id=step_id, success=False, error="restarting", result="Restaring due to strategy")
+            return False, StepResult(
+                step_id=step_id,
+                success=False,
+                error="restarting",
+                result="Restaring due to strategy",
+            )
 
         elif strategy.action == "ASK_USER":
             await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
@@ -1675,7 +1798,9 @@ class Trinity:
             return False, None
 
         elif strategy.action == "ATLAS_PLAN":
-            await self._log(f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator")
+            await self._log(
+                f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator"
+            )
             try:
                 replan_query = f"RECOVERY STRATEGY NEEDED. Goal: {self.state.get('current_goal')}. Step {step_id} failed: {last_error}."
                 new_plan = await self.atlas.create_plan(
@@ -1706,10 +1831,12 @@ class Trinity:
                 screenshot = await self.grisha.take_screenshot()
 
             from src.brain.context import shared_context
+
             goal_ctx = str(shared_context.get_goal_context() or "")
             verify_result = await self.grisha.verify_step(
                 step=step,
-                result=step_result or StepResult(step_id=step_id, success=False, result="", error=last_error),
+                result=step_result
+                or StepResult(step_id=step_id, success=False, result="", error=last_error),
                 screenshot_path=screenshot,
                 goal_context=goal_ctx,
                 task_id=str(self.state.get("db_task_id") or ""),
@@ -1735,9 +1862,13 @@ class Trinity:
         """Standard Atlas help as ultimate fallback."""
         try:
             recovery_agent = config.get("orchestrator", {}).get("recovery_voice_agent", "atlas")
-            await self._log(f"Recovery for Step {step_id} (announced by {recovery_agent})...", "orchestrator")
+            await self._log(
+                f"Recovery for Step {step_id} (announced by {recovery_agent})...", "orchestrator"
+            )
             if recovery_agent == "atlas":
-                await self._speak("atlas", self.atlas.get_voice_message("recovery_started", step_id=step_id))
+                await self._speak(
+                    "atlas", self.atlas.get_voice_message("recovery_started", step_id=step_id)
+                )
             else:
                 await self._speak(recovery_agent, "Крок зупинився — починаю процедуру відновлення.")
 
@@ -1759,8 +1890,9 @@ class Trinity:
             self._attempted_recoveries[step_id] = steps_hash
 
             from src.brain.context import shared_context
+
             if shared_context.is_at_max_depth(depth + 1):
-                raise Exception(f"Max recursion depth exceeded at {depth+1} for {step_id}.")
+                raise Exception(f"Max recursion depth exceeded at {depth + 1} for {step_id}.")
 
             await self._execute_steps_recursive(alt_steps, parent_prefix=step_id, depth=depth + 1)
             return True
@@ -1840,9 +1972,7 @@ class Trinity:
 
                 if step_result:
                     last_error = step_result.error or "Step failed without error message"
-                    logger.warning(
-                        f"[ORCHESTRATOR] Step {step_id} failed. Error: {last_error}."
-                    )
+                    logger.warning(f"[ORCHESTRATOR] Step {step_id} failed. Error: {last_error}.")
                 else:
                     last_error = "Execution error (timeout or crash)"
                     logger.error(f"[ORCHESTRATOR] Step {step_id} failed on attempt {attempt}")
@@ -1872,7 +2002,8 @@ class Trinity:
                     break
 
                 notifications.send_stuck_alert(
-                    int(str(step_id).split(".")[-1]) if "." in str(step_id)
+                    int(str(step_id).split(".")[-1])
+                    if "." in str(step_id)
                     else (int(step_id) if str(step_id).isdigit() else 0),
                     str(last_error or "Unknown error"),
                     max_step_retries,
@@ -2026,11 +2157,7 @@ class Trinity:
 
         try:
             info = getattr(result, "deviation_info", None)
-            proposal_text = (
-                info.get("analysis")
-                if info
-                else result.result
-            )
+            proposal_text = info.get("analysis") if info else result.result
             p_text = str(proposal_text)
             logger.warning(
                 f"[ORCHESTRATOR] Tetyana proposed a deviation: {p_text[:200]}...",
@@ -2386,13 +2513,9 @@ class Trinity:
                 if verify_result.issues:
                     result.error += f" Issues: {', '.join(verify_result.issues)}"
 
-                await self._speak(
-                    "grisha", verify_result.voice_message or "Результат не прийнято."
-                )
+                await self._speak("grisha", verify_result.voice_message or "Результат не прийнято.")
             else:
-                await self._speak(
-                    "grisha", verify_result.voice_message or "Підтверджую виконання."
-                )
+                await self._speak("grisha", verify_result.voice_message or "Підтверджую виконання.")
                 if result.is_deviation and result.success and result.deviation_info:
                     await self._commit_successful_deviation(step, step_id, result)
 
@@ -2652,7 +2775,7 @@ class Trinity:
 
     def _extract_and_store_discoveries(self, output: str, step: dict) -> None:
         """Extract and store critical values from tool output using LLM analysis.
-        
+
         Uses lightweight LLM call to dynamically identify important values
         instead of hardcoded patterns. Stores in both SharedContext (fast access)
         and ChromaDB (persistent semantic search).
@@ -2660,20 +2783,18 @@ class Trinity:
         # Skip if output is too short or empty
         if not output or len(output.strip()) < 10:
             return
-        
+
         # Skip common non-informative outputs
         skip_patterns = ["success", "done", "completed", "ok", "true", "false"]
         if output.strip().lower() in skip_patterns:
             return
-        
+
         step_id = str(step.get("id", "unknown"))
         step_action = step.get("action", "")[:100]
         task_id = str(self.state.get("db_task_id") or self.state.get("session_id") or "unknown")
-        
+
         # Schedule async LLM extraction in background
-        asyncio.create_task(
-            self._llm_extract_discoveries(output, step_id, step_action, task_id)
-        )
+        asyncio.create_task(self._llm_extract_discoveries(output, step_id, step_action, task_id))
 
     async def _llm_extract_discoveries(
         self, output: str, step_id: str, step_action: str, task_id: str
@@ -2683,12 +2804,12 @@ class Trinity:
 
         from providers.copilot import CopilotLLM
         from src.brain.memory import long_term_memory
-        
+
         try:
             # Use fast model for extraction
             extraction_model = config.get("models.chat") or config.get("models.default")
             llm = CopilotLLM(model_name=extraction_model)
-            
+
             prompt = f"""Analyze this tool output and extract CRITICAL VALUES that should be remembered for later steps.
 
 OUTPUT:
@@ -2714,37 +2835,38 @@ IMPORTANT: Extract ONLY concrete values, not descriptions. If nothing critical, 
                 SystemMessage(content="You are a precise data extractor. Return only valid JSON."),
                 HumanMessage(content=prompt),
             ]
-            
+
             response = await llm.ainvoke(messages)
             response_text = str(response.content).strip()
-            
+
             # Parse JSON response
             # Handle markdown code blocks
             if "```" in response_text:
                 import re
-                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response_text)
+
+                json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", response_text)
                 if json_match:
                     response_text = json_match.group(1)
-            
+
             discoveries = json.loads(response_text)
-            
+
             if not discoveries or not isinstance(discoveries, list):
                 return
-            
+
             for item in discoveries:
                 if not isinstance(item, dict):
                     continue
-                    
+
                 key = item.get("key", "unknown")
                 value = item.get("value", "")
                 category = item.get("category", "other")
-                
+
                 if not value:
                     continue
-                
+
                 # Store in SharedContext for immediate access
                 shared_context.store_discovery(key=key, value=value, category=category)
-                
+
                 # Store in ChromaDB for persistent semantic search
                 long_term_memory.remember_discovery(
                     key=key,
@@ -2754,11 +2876,10 @@ IMPORTANT: Extract ONLY concrete values, not descriptions. If nothing critical, 
                     step_id=step_id,
                     step_action=step_action,
                 )
-                
+
                 logger.info(f"[ORCHESTRATOR] LLM extracted {category}:{key}={value[:50]}...")
-                
+
         except json.JSONDecodeError as e:
             logger.debug(f"[ORCHESTRATOR] Discovery extraction returned no valid JSON: {e}")
         except Exception as e:
             logger.warning(f"[ORCHESTRATOR] Discovery extraction failed: {e}")
-

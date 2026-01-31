@@ -67,7 +67,12 @@ def analyze_project_structure(project_path: Path) -> dict[str, Any]:
 
 def _analyze_python_project(project_path: Path) -> dict[str, Any]:
     """Analyze Python project structure."""
-    info: dict[str, Any] = {"entry_points": [], "key_files": [], "components": [], "directories": {}}
+    info: dict[str, Any] = {
+        "entry_points": [],
+        "key_files": [],
+        "components": [],
+        "directories": {},
+    }
 
     # Find entry points
     for pattern in ["main.py", "app.py", "__main__.py", "run.py", "start.py"]:
@@ -101,7 +106,12 @@ def _analyze_python_project(project_path: Path) -> dict[str, Any]:
 
 def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
     """Analyze Node.js project structure."""
-    info: dict[str, Any] = {"entry_points": [], "key_files": [], "components": [], "directories": {}}
+    info: dict[str, Any] = {
+        "entry_points": [],
+        "key_files": [],
+        "components": [],
+        "directories": {},
+    }
 
     # Parse package.json
     pkg_json = project_path / "package.json"
@@ -140,7 +150,12 @@ def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
 
 def _analyze_rust_project(project_path: Path) -> dict[str, Any]:
     """Analyze Rust project structure."""
-    info: dict[str, Any] = {"entry_points": ["src/main.rs"], "key_files": ["Cargo.toml"], "components": [], "dependencies": {}}
+    info: dict[str, Any] = {
+        "entry_points": ["src/main.rs"],
+        "key_files": ["Cargo.toml"],
+        "components": [],
+        "dependencies": {},
+    }
 
     # Parse Cargo.toml for dependencies
     cargo_toml = project_path / "Cargo.toml"

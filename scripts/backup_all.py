@@ -13,6 +13,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from scripts.setup_dev import backup_databases
+
     backup_databases()
 except Exception as e:
     print(f"Failed to execute backup: {e}")

@@ -96,7 +96,9 @@ class LongTermMemory:
 
             self.discoveries = self.client.get_or_create_collection(
                 name="discoveries",
-                metadata={"description": "Critical values discovered during task execution (IPs, paths, keys)"},
+                metadata={
+                    "description": "Critical values discovered during task execution (IPs, paths, keys)"
+                },
             )
 
             self.available = True
@@ -587,22 +589,26 @@ class LongTermMemory:
             return False
         try:
             doc_id = f"discovery_{task_id}_{category}_{key}"
-            
+
             # Create semantic document for embedding
             document = f"Discovery: {category} = {value}. Found during: {step_action}. Key: {key}"
-            
-            metadata = sanitize_metadata({
-                "key": key,
-                "value": value,
-                "category": category,
-                "task_id": task_id,
-                "step_id": step_id,
-                "step_action": step_action,
-                "timestamp": datetime.now().isoformat(),
-            })
-            
+
+            metadata = sanitize_metadata(
+                {
+                    "key": key,
+                    "value": value,
+                    "category": category,
+                    "task_id": task_id,
+                    "step_id": step_id,
+                    "step_action": step_action,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
             self.discoveries.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
-            logger.info(f"[MEMORY] Stored discovery: {category}:{key}={value[:30]}... (task={task_id})")
+            logger.info(
+                f"[MEMORY] Stored discovery: {category}:{key}={value[:30]}... (task={task_id})"
+            )
             return True
         except Exception as e:
             logger.error(f"[MEMORY] Failed to store discovery: {e}")
@@ -631,23 +637,27 @@ class LongTermMemory:
                 where_filter["task_id"] = task_id
             if category:
                 where_filter["category"] = category
-            
+
             results = self.discoveries.query(
                 query_texts=[query],
                 n_results=min(n_results, self.discoveries.count()),
                 include=["documents", "metadatas", "distances"],
                 where=where_filter if where_filter else None,  # type: ignore[arg-type]
             )
-            
+
             discoveries = []
             if results and results["ids"]:
                 for i, doc_id in enumerate(results["ids"][0]):
-                    discoveries.append({
-                        "id": doc_id,
-                        "document": results["documents"][0][i] if results["documents"] else "",
-                        "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                        "distance": results["distances"][0][i] if results.get("distances") else 0,
-                    })
+                    discoveries.append(
+                        {
+                            "id": doc_id,
+                            "document": results["documents"][0][i] if results["documents"] else "",
+                            "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                            "distance": results["distances"][0][i]
+                            if results.get("distances")
+                            else 0,
+                        }
+                    )
             return discoveries
         except Exception as e:
             logger.error(f"[MEMORY] Failed to recall discoveries: {e}")

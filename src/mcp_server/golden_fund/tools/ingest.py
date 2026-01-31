@@ -61,7 +61,7 @@ async def ingest_dataset(
         # Assume generic file download for csv, excel, parquet, etc.
         result = scraper.download_file(url)
         save_fmt = None  # Raw bytes, Scraper detects this
-        
+
         # Infer extension from URL or type
         if type in ["csv", "json", "xml", "parquet"]:
             ext = f".{type}"
@@ -80,12 +80,14 @@ async def ingest_dataset(
     # 2. Save Raw Data
     if result.data:
         raw_file = RAW_DIR / f"{run_id}_raw{ext}"
-        
+
         # If scraper returned dict/list (API/Web), save as JSON
         if isinstance(result.data, (dict, list)):
-             save_fmt = ScrapeFormat.JSON
-        
-        save_res = scraper.save_data(result.data, raw_file, save_fmt if save_fmt else ScrapeFormat.JSON)
+            save_fmt = ScrapeFormat.JSON
+
+        save_res = scraper.save_data(
+            result.data, raw_file, save_fmt if save_fmt else ScrapeFormat.JSON
+        )
 
         if not save_res.success:
             return f"Failed to save raw data: {save_res.error}"
@@ -98,21 +100,21 @@ async def ingest_dataset(
 
     # 3. Process Pipeline
     parsed_df = None
-    
+
     if "parse" in process_pipeline:
         # Determine format hint
         format_hint = ext.lstrip(".").lower()
         if format_hint == "bin":
-             # inspect file signature or content? For now rely on user 'type' if provided
-             if type not in ["file", "web_page", "api"]:
-                 format_hint = type
+            # inspect file signature or content? For now rely on user 'type' if provided
+            if type not in ["file", "web_page", "api"]:
+                format_hint = type
 
         parse_res = parser.parse(raw_file, format_hint=format_hint)
-        
+
         if parse_res.success:
             data = parse_res.data
             records_count = 0
-            
+
             # Normalize to DataFrame if possible
             if isinstance(data, pd.DataFrame):
                 parsed_df = data
@@ -123,7 +125,7 @@ async def ingest_dataset(
             elif isinstance(data, dict):
                 parsed_df = pd.DataFrame([data])
                 records_count = 1
-                
+
             summary += f" Parsed {records_count} records."
         else:
             summary += f" Parsing failed: {parse_res.error}"
@@ -133,7 +135,7 @@ async def ingest_dataset(
         dataset_name = f"dataset_{run_id}"
         # Store in SQL
         store_res = sql_storage.store_dataset(parsed_df, dataset_name, source_url=url)
-        
+
         if store_res.success:
             summary += f" Stored in SQL table '{store_res.target}'."
         else:
@@ -143,16 +145,16 @@ async def ingest_dataset(
     if "vectorize" in process_pipeline and parsed_df is not None:
         # Create a summary node for the dataset
         desc = f"Dataset from {url} ({type}). Columns: {', '.join(parsed_df.columns[:10])}. Rows: {len(parsed_df)}."
-        
+
         vector_data = {
             "name": f"dataset_{run_id}",
             "type": "dataset",
             "content": desc,
             "source_url": url,
             "format": ext,
-            "sql_table": f"dataset_{run_id}"  # Link to SQL table
+            "sql_table": f"dataset_{run_id}",  # Link to SQL table
         }
-        
+
         vec_res = vector_storage.store(vector_data)
         if vec_res.success:
             summary += " Indexed for semantic search."
@@ -163,13 +165,15 @@ async def ingest_dataset(
     if "validate" in process_pipeline and parsed_df is not None:
         # Connect df back to list of dicts for validator
         # Ensure keys are strings for typing compatibility
-        val_data = [{str(k): v for k, v in record.items()} for record in parsed_df.to_dict(orient="records")]
-        
+        val_data = [
+            {str(k): v for k, v in record.items()} for record in parsed_df.to_dict(orient="records")
+        ]
+
         validation_res = validator.validate_data_completeness(
             val_data, context=f"ingestion_{run_id}"
         )
         if validation_res.success:
-            summary += f" Validation passed."
+            summary += " Validation passed."
         else:
             summary += f" Validation warning: {validation_res.error}"
 

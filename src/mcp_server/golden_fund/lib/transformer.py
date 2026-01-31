@@ -19,6 +19,7 @@ ValidationResult: type[Any] | None = None
 try:
     from .validation import DataValidator as ImportedDataValidator
     from .validation import ValidationResult as ImportedValidationResult
+
     DataValidator = ImportedDataValidator
     ValidationResult = ImportedValidationResult
 except ImportError:
@@ -68,7 +69,11 @@ class DataTransformer:
                         transformed.append(res)
 
                 # Add validation checkpoint if requested
-                if validate_completeness and self.validator is not None and DataValidator is not None:
+                if (
+                    validate_completeness
+                    and self.validator is not None
+                    and DataValidator is not None
+                ):
                     validation_res = self.validator.validate_data_completeness(
                         transformed, context="transformation"
                     )
