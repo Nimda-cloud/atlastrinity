@@ -40,11 +40,20 @@ class JSONParser:
 
 class CSVParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:
-        try:
-            df = pd.read_csv(file_path, **kwargs)
-            return ParseResult(True, data=df)
-        except Exception as e:
-            return ParseResult(False, error=f"CSV parse error: {e}")
+        encodings = ["utf-8", "latin1", "cp1252", "iso-8859-1"]
+        last_error = ""
+
+        for encoding in encodings:
+            try:
+                df = pd.read_csv(file_path, encoding=encoding, **kwargs)
+                return ParseResult(True, data=df)
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                last_error = str(e)
+                break
+        
+        return ParseResult(False, error=f"CSV parse error: {last_error or 'Unknown encoding'}")
 
 
 class XMLParser:

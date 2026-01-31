@@ -17,8 +17,9 @@ from ..lib.validation import DataValidator
 
 logger = logging.getLogger("golden_fund.tools.ingest")
 
-# Define storage path
-DATA_DIR = Path(__file__).parents[4] / "data" / "golden_fund"
+# Define storage path (Global config directory)
+CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
+DATA_DIR = CONFIG_ROOT / "data" / "golden_fund"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 RAW_DIR = DATA_DIR / "raw"
 RAW_DIR.mkdir(exist_ok=True)
