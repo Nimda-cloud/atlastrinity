@@ -5,11 +5,11 @@ This module now uses the centralized mcp_registry for dynamic catalog generation
 
 from ..mcp_registry import (
     DATA_PROTOCOL,
+    HACKING_PROTOCOL,
     SDLC_PROTOCOL,
     SEARCH_PROTOCOL,
     STORAGE_PROTOCOL,
     SYSTEM_MASTERY_PROTOCOL,
-    HACKING_PROTOCOL,
     TASK_PROTOCOL,
     VIBE_DOCUMENTATION,
     VOICE_PROTOCOL,
@@ -19,13 +19,12 @@ from ..mcp_registry import (
 # Re-export VOICE_PROTOCOL directly
 __all__ = [
     "DATA_PROTOCOL",
-    # Legacy exports for backwards compatibility
     "DEFAULT_REALM_CATALOG",
+    "HACKING_PROTOCOL",
     "SDLC_PROTOCOL",
     "SEARCH_PROTOCOL",
     "STORAGE_PROTOCOL",
     "SYSTEM_MASTERY_PROTOCOL",
-    "HACKING_PROTOCOL",
     "TASK_PROTOCOL",
     "VIBE_TOOLS_DOCUMENTATION",
     "VOICE_PROTOCOL",
