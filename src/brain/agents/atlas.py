@@ -824,7 +824,14 @@ Standalone Query:"""
                     f"[ATLAS] Recalled {len(behavioral_lessons)} behavioral lessons for planning.",
                 )
 
-        simulation_prompt = AgentPrompts.atlas_simulation_prompt(task_text, memory_context)
+        # 1.1 CONSUME FEEDBACK (if replanning)
+        grisha_feedback = enriched_request.get("simulation_result", "")
+        if grisha_feedback:
+            logger.info("[ATLAS] Replanning detected. Incorporating Grisha's feedback into strategy.")
+
+        simulation_prompt = AgentPrompts.atlas_simulation_prompt(
+            task_text, memory_context, feedback=grisha_feedback
+        )
 
         try:
             # Mandate Deep Reasoning for the Strategic Simulation
