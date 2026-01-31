@@ -3,6 +3,9 @@
 
 system_prompt_id = "cli"
 
+[tools.bash]
+permission = "ask"
+
 [tools.write_file]
 permission = "always"
 

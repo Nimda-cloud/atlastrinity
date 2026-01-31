@@ -8,11 +8,11 @@ AtlasTrinity використовує централізовану систем�
 
 | Template | Призначення | Цільовий шлях після deploy |
 |----------|-------------|----------------------------|
-| `config.yaml.template` | Основні налаштування системи (агенти, voice, orchestrator) | `~/.config/atlastrinity/config.yaml` |
+| `config.yaml.template` | Основні налаштування системи (агенти, voice, orchestrator, monitoring) | `~/.config/atlastrinity/config.yaml` |
 | `behavior_config.yaml.template` | Behavior Engine патерни, intent detection, tool routing | `~/.config/atlastrinity/behavior_config.yaml` |
 | `mcp_servers.json.template` | MCP серверна конфігурація (маршрутизація серверів) | `~/.config/atlastrinity/mcp/config.json` |
-| `vibe_config.toml.template` | Vibe MCP server конфігурація | `~/.config/atlastrinity/vibe_config.toml` |
-| `monitoring_config.yaml.template` | Prometheus, Grafana, OpenSearch, tracing | `~/.config/atlastrinity/monitoring_config.yaml` |
+| `vibe_config.toml.template` | Vibe CLI конфігурація (моделі, провайдери) | `~/.config/atlastrinity/vibe_config.toml` |
+| `prometheus.yml.template` | Prometheus metrics scraping | `~/.config/atlastrinity/prometheus.yml` |
 
 ## Deployment Process
 

@@ -2,6 +2,9 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# AtlasTrinity Standalone Binary Mode
+# Metrics are exposed locally, no Docker networking required
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
@@ -10,4 +13,4 @@ scrape_configs:
   - job_name: 'atlastrinity'
     metrics_path: '/'
     static_configs:
-      - targets: ['host.docker.internal:8001']
+      - targets: ['localhost:8001']

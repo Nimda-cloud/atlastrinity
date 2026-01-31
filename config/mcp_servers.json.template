@@ -325,9 +325,9 @@
     }
   },
   "_metadata": {
-    "version": "4.8",
+    "version": "5.0",
     "last_updated": "2026-01-31",
-    "description": "Synced MCP configuration for AtlasTrinity - matches mcp_registry.py and data/ JSONs",
+    "description": "Single source of truth for MCP server configuration. Used by Brain, Vibe, and all agents.",
     "active_servers": 17,
     "total_servers": 18,
     "notes": [
