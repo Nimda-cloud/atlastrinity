@@ -968,7 +968,8 @@ class Grisha(BaseAgent):
                 
                 fix_result = await self.use_sequential_thinking(fix_query, total_thoughts=3)
                 if fix_result.get("success"):
-                    raw_text = fix_result.get("analysis", "")
+                    # CRITICAL: Prefer last_thought (raw) over analysis (formatted/truncated)
+                    raw_text = fix_result.get("last_thought") or fix_result.get("analysis", "")
                     cleaned_text = str(raw_text)
                     try:
                         # SUPERIOR EXTRACTION: Find the first { and last } to isolate JSON

@@ -101,6 +101,7 @@ class BaseAgent:
 
         full_analysis = ""
         current_context = ""  # Accumulate thoughts for LLM context
+        thought_content = ""  # Safe initialization for structured output parsing
 
         # Capability context
         cap_ctx = f"\nAGENT CAPABILITIES:\n{capabilities}\n" if capabilities else ""
@@ -152,10 +153,15 @@ Generate the next logical thought to analyze this problem.
 
                 # Update context for next iteration
                 current_context += f"Thought {i}: {thought_content}\n"
-                full_analysis += f"\n[Thought {i}]: {thought_content[:5000]}..."
+                # Return full content without aggressive truncation (use 100k as safe guard)
+                full_analysis += f"\n[Thought {i}]: {thought_content[:100000]}"
 
             logger.info(f"[{agent_name}] Reasoning complete using model {model_name}.")
-            return {"success": True, "analysis": full_analysis}
+            return {
+                "success": True, 
+                "analysis": full_analysis,
+                "last_thought": thought_content  # CRITICAL: Return raw final thought for structured output extraction
+            }
 
         except Exception as e:
             logger.warning(f"[{agent_name}] Sequential thinking unavailable/failed: {e}")

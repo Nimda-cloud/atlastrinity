@@ -213,7 +213,8 @@ CRITICAL RULES:
 2. **DISCOVERY FIRST**: The plan MUST start with steps to find IPs, paths, or verify hardware capabilities if they were blockers.
 3. **TECHNICAL PRECISION**: Each step MUST have a valid 'realm' from the catalog.
 4. **LANGUAGE SPLIT**: goal/reason/action/expected_result MUST be in English. voice_action/voice_summary MUST be in Ukrainian (0% English words).
-5. **NO EXTRA FIELDS**: Only include the fields specified in the schema above.
+5. **NO REFUSALS**: Even if the task seems technically impossible (e.g., monitor mode support), you MUST NOT explain why. Instead, create a plan to ATTEMPT verification or finding a workaround. You ARE NOT ALLOWED to output plain text or refuse the task. YOUR OUTPUT MUST BE VALID JSON.
+6. **NO EXTRA FIELDS**: Only include the fields specified in the schema above.
 """
 
 GRISHA = {
