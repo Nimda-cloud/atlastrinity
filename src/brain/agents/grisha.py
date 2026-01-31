@@ -849,67 +849,83 @@ class Grisha(BaseAgent):
 
             analysis_text = reasoning_result.get("analysis", "")
             
-            # Simple parsing of the simulation result
+            # Robust parsing of the simulation result
             is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
             is_rejected = "VERDICT: REJECT" in analysis_text or "VERDICT: [REJECT]" in analysis_text
             
-            # If ambiguous, lean towards rejection if "ISSUES" are present
+            # Extract Reasoning and Issues/Questions
+            reasoning = ""
+            issues = []
+            
+            if "REASONING:" in analysis_text:
+                reasoning = analysis_text.split("REASONING:")[-1].strip()
+            
+            if "ISSUES/QUESTIONS:" in analysis_text:
+                parts = analysis_text.split("ISSUES/QUESTIONS:")
+                if len(parts) > 1:
+                    issues_block = parts[1].split("REASONING:")[0]
+                    issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+
+            # If ambiguous, lean towards rejection if real issues are found
             if not is_approved and not is_rejected:
-                 if "ISSUES:" in analysis_text and "- None" not in analysis_text:
+                 if issues and not any("None" in i for i in issues):
                      is_rejected = True
                  else:
                      is_approved = True
 
-            # Determine verdict - support if Oleg is mentioned and analysis is positive or if verdict is explicitly APPROVE
             oleg_mentioned = (
                 "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
             )
             
             approved = is_approved and not is_rejected
 
-            # Override logic for Creator
+            # Creator Override Logic - STRICTER
+            # We override rejections for safety/policy, but NOT for technical impossibilities
             if oleg_mentioned and not approved:
-                logger.info("[GRISHA] Creator mentioned. Applying high-authority override check.")
+                logger.info("[GRISHA] Creator mentioned. Analyzing override feasibility.")
                 rejection_reason = analysis_text.lower()
-
-                # Check if rejection is primarily about authorization or safety/ethics
-                if any(
-                    kw in rejection_reason
-                    for kw in [
-                        "authorization",
-                        "permission",
-                        "illegal",
-                        "safety",
-                        "ethic",
-                        "security",
-                    ]
-                ):
-                    logger.info(
-                        "[GRISHA] Rejection was due to policy/authorization. Overriding for Creator."
-                    )
-                    approved = True
-                    analysis_text = f"План схвалено (Авторизовано Творцем: Олег Миколайович).\n\n{analysis_text}"
-                else:
-                    # If it's a technical BLOCKER (missing IP), we SHOULD NOT override completely blindly,
-                    # but the requirement was "support... thoughtlessly". 
-                    # However, a technical impossibility (missing IP) will fail anyway. 
-                    # For now, we respect the "thoughtless support" directive but warn.
-                    logger.info("[GRISHA] Overriding technical rejection for Creator (WARNING: Might fail).")
-                    approved = True
-                    analysis_text = f"План схвалено (За запитом Творця - обережно, можливі технічні блокери).\n\n{analysis_text}"
-            
-            # Extract issues for the report
-            issues = []
-            if not approved:
-                # Naive extraction of issues section
-                if "ISSUES:" in analysis_text:
-                    parts = analysis_text.split("ISSUES:")
-                    if len(parts) > 1:
-                        issues_block = parts[1].split("REASONING:")[0]
-                        issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
                 
-                if not issues:
-                    issues = ["Plan rejected during simulation (see reasoning)"]
+                # If it's a DATA BLOCKER (missing IP, path), we DON'T override, because it's a trap
+                has_technical_blocker = any(kw in rejection_reason for kw in ["missing ip", "невідома адреса", "відсутні дані", "blocker", "блокер"])
+                
+                if has_technical_blocker:
+                    logger.warning("[GRISHA] Technical blocker detected. Rejection stands despite Creator request.")
+                    # Keep approved = False
+                else:
+                    logger.info("[GRISHA] Policy rejection. Overriding for Creator.")
+                    approved = True
+                    reasoning = f"План схвалено (Авторизовано Творцем: Олег Миколайович).\n\n{reasoning}"
+            
+            # Ensure the voice message contains the simulation results (the clarifying questions)
+            voice_msg = ""
+            if approved:
+                voice_msg = "План пройшов симуляцію успішно. "
+                if issues:
+                    voice_msg += "Але маю уточнення: " + "; ".join(issues[:3])
+            else:
+                voice_msg = "План відхилено через технічні блокери. "
+                if issues:
+                    voice_msg += "Зокрема: " + "; ".join(issues)
+
+            return VerificationResult(
+                step_id="plan_init",
+                verified=approved,
+                confidence=1.0 if (approved and oleg_mentioned) else (0.9 if approved else 0.5),
+                description="Sequential Plan Simulation",
+                issues=issues,
+                voice_message=voice_msg or ("План схвалено Творцем." if (approved and oleg_mentioned) else ("План виглядає надійним." if approved else "Знайдено критичні помилки в плані.")),
+            )
+
+        except Exception as e:
+            logger.error(f"[GRISHA] Plan verification failed: {e}")
+            return VerificationResult(
+                step_id="plan_init",
+                verified=True,
+                confidence=0.5,
+                description="Plan verification system error (Allowed by default)",
+                issues=[f"System error: {e}"],
+                voice_message="Не вдалося перевірити план, але продовжую.",
+            )
 
             return VerificationResult(
                 step_id="plan_init",

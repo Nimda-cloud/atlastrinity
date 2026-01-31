@@ -111,7 +111,7 @@ Provide report in the following format:
 - **SUMMARY_UKRAINIAN**: (Detailed explanation for the user in Ukrainian language)"""
 
 GRISHA_PLAN_VERIFICATION_PROMPT = """
-        TASK: DEEP SIMULATION & VERIFICATION OF EXECUTION PLAN
+        TASK: DEEP SIMULATION & CRITICAL VERIFICATION OF EXECUTION PLAN
 
         USER REQUEST: {user_request}
 
@@ -119,26 +119,29 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
         {plan_steps_text}
 
         YOUR MISSION:
-        Perform a mental dry-run simulation of this plan.
-        Use SEQUENTIAL THINKING to go through each step as if it were actually executing.
+        Perform a mental dry-run simulation of EACH STEP. 
+        Think like a forensic auditor. Your goal is to find where the plan will FAIL.
 
         ANALYSIS PROTOCOL:
-        1. **PREREQUISITES CHECK**: For each step, ask "Do I have the data required to execute this?"
-           - *Example*: If step is "Connect to IP", do we HAVE the IP? If not -> BLOCKER.
-           - *Example*: If step is "Login to DB", do we HAVE credentials? If not -> BLOCKER.
-        2. **LOGICAL FLOW**: Does the output of Step N naturally feed into Step N+1?
-        3. **SAFETY**: Are there hidden dangers in the sequence?
+        1. **STEP-BY-STEP SIMULATION**: For *each* numbered step, perform a thought about its feasibility.
+        2. **DATA PREREQUISITES**: Ask: "Do I have the specific data (IP, path, credentials) to execute Step N?"
+           - If Step N requires an IP and Step 1..N-1 does NOT discover it -> BLOCKER.
+        3. **CLARIFYING QUESTIONS**: For *every* step, formulate 1-2 clarifying questions about missing details or potential blockers. 
+           - *Example*: "Для кроку 2: Яким чином ми дізнаємося IP-адресу Kali, якщо вона не вказана?"
+        4. **SAFETY & LOGIC**: Check for command validity and sequence logic.
 
         OUTPUT STRICTLY IN THIS FORMAT (for the final thought):
         
         VERDICT: [APPROVE | REJECT]
         CONFIDENCE: [0.0 - 1.0]
-        ISSUES:
-        - [Issue 1]
-        - [Issue 2]
+        
+        ISSUES/QUESTIONS:
+        - [Step 1]: (Question or Blocker)
+        - [Step 2]: (Question or Blocker)
+        ...
         
         REASONING:
-        [Summary to be shown to the user in Ukrainian]
+        [Detailed summary in Ukrainian explaining why the plan is solid or where it breaks. Mention specific missing data like IPs or paths.]
         """
 
 GRISHA = {
