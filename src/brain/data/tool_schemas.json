@@ -1537,5 +1537,38 @@
       "target_component": "str"
     },
     "description": "Returns a JavaScript snippet for React introspection to be executed in the browser context."
+  },
+  "devtools_check_security": {
+    "server": "devtools",
+    "required": [],
+    "optional": ["path"],
+    "types": {
+      "path": "str"
+    },
+    "description": "Run security audit tools (bandit, safety, detect-secrets)."
+  },
+  "devtools_check_complexity": {
+    "server": "devtools",
+    "required": [],
+    "optional": ["path"],
+    "types": {
+      "path": "str"
+    },
+    "description": "Run complexity audit (xenon)."
+  },
+  "devtools_check_types_python": {
+    "server": "devtools",
+    "required": [],
+    "optional": ["path"],
+    "types": {
+      "path": "str"
+    },
+    "description": "Run deep type checking for Python (mypy)."
+  },
+  "devtools_check_types_ts": {
+    "server": "devtools",
+    "required": [],
+    "optional": [],
+    "description": "Run deep type checking for TypeScript (tsc --noEmit)."
   }
 }
