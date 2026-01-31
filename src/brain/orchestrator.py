@@ -2130,18 +2130,25 @@ class Trinity:
                     )
                     alt_steps = recovery.get("alternative_steps", [])
                     if alt_steps:
-                        # CRITICAL: Перевірка максимальної глибини перед рекурсією
+                        # --- RECURSION GUARD ---
+                        # Check if this exact set of steps was already attempted at this depth
+                        steps_hash = hash(str(alt_steps))
+                        if not hasattr(self, "_attempted_recoveries"):
+                            self._attempted_recoveries = {}
+                        
+                        if self._attempted_recoveries.get(step_id) == steps_hash:
+                            logger.error(f"[ORCHESTRATOR] Atlas suggested a redundant recovery sub-plan for {step_id}. Breaking loop to prevent stall.")
+                            raise Exception(f"Recursive recovery stall detected for step {step_id}.")
+                        
+                        self._attempted_recoveries[step_id] = steps_hash
+                        
+                        # CRITICAL: Check max depth before recursion
                         from src.brain.context import shared_context
-
                         if shared_context.is_at_max_depth(depth + 1):
-                            logger.error(
-                                f"[ORCHESTRATOR] Max recursion depth {shared_context.max_recursive_depth} would be exceeded at depth {depth + 1}. Cannot create sub-plan for step {step_id}."
-                            )
-                            raise Exception(
-                                f"Maximum recursion depth ({shared_context.max_recursive_depth}) would be exceeded. Cannot subdivide step {step_id} further."
-                            )
+                            logger.error(f"[ORCHESTRATOR] Max recursion depth exceeded at depth {depth+1}. Cannot subdivide {step_id}.")
+                            raise Exception(f"Maximum recursion depth exceeded. Task halted at step {step_id}.")
 
-                        # Рекурсивне виконання під-завдань
+                        # Recursive execution of sub-tasks
                         await self._execute_steps_recursive(
                             alt_steps,
                             parent_prefix=step_id,
