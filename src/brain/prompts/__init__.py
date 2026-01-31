@@ -441,14 +441,15 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
 
         SIMULATION DOCTRINE:
         You must mentally execute the task before planning.
-        1. **FAIL-SAFE CONSUMPTION**: If there is AUDIT FEEDBACK above, you MUST address EVERY SINGLE point mentioned. Do not skip any "Problem" or "Blocker".
-        2. **PATHWAY ANALYSIS**: Identify every app, API, and tool required. 
-        3. **DATA DEPENDENCY**: For every step, ask: "Do I have the IPs, tokens, or file paths?" If Step 3 needs an IP found in Step 1, highlight this chain.
-        4. **BOTTLENECK IDENTIFICATION**: Find macOS-specific barriers (permissions, SIP, hardware limits).
-        5. **SEQUENTIAL LOGIC**: Ensure the plan isn't a list of isolated tasks, but a continuous flow.
-        6. **FINAL GOAL SYNTHESIS (CRITICAL)**: After the mental dry-run, ask yourself: "What did the user ULTIMATELY want to see?" and "What exactly is missing right now to realize that?" Use this to guide the final plan structure.
+        1. **FAIL-SAFE CONSUMPTION**: If there is AUDIT FEEDBACK above, you MUST address EVERY SINGLE point mentioned.
+        2. **PREREQUISITE GAP ANALYSIS (CRITICAL)**: For every step, ask: "Do I have the IPs, tokens, and file paths?" If you lack ANY variable, you MUST list it under a "MISSING INFORMATION" section in your thought process.
+        3. **CAPABILITY VERIFICATION**: Do not assume hardware or software capability. If you need MikroTik to sniff packets, you must verify it supports monitor mode first.
+        4. **SEQUENTIAL LOGIC**: Ensure the plan is a continuous flow, where Step N provides the data for Step N+1.
+        5. **FINAL GOAL SYNTHESIS**: Ensure the dry-run leads to the ULTIMATE goal the user wants to achieve.
 
-        OUTPUT: Provide a technical strategy in English. If you are re-planning based on feedback, EXPLICITLY state how you are fixing each point from the audit.
+        OUTPUT: Provide a technical strategy in English.
+        - If gaps were found, explicitly state: "PREREQUISITE GAPS: [List missing IPs, paths, or capabilities]".
+        - State how you will discover or verify each gap in the first 2-3 steps of the plan.
         """
 
     @staticmethod
@@ -478,8 +479,12 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         - **STEP LOCALIZATION**: Each step in 'steps' MUST include a 'voice_action' field in natural UKRAINIAN (100% Ukrainian, NO English words, NO technical jargon). This message is for the USER to hear while the tool runs. E.g., Use "Шукаю інформацію" instead of "Executing search".
         - **META-PLANNING AUTHORIZED**: If the task is complex, you MAY include reasoning steps (using `sequential-thinking`) to discover the path forward. Do not just say "no steps found". Goal achievement is mandatory.
 
-        - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1. This ensures Tetyana has the latest technical schemas before execution.
-        - **RE-PLANNING DOCTRINE (STRICT)**: If the 'STRATEGY' section refers to an Audit or Simulation Report with blockers, you MUST include specific, actionable steps to resolve EACH and EVERY blocker. If IPs are missing, add a discovery/scan step. If tools are unverified, add a check step. A plan that leaves even ONE Grisha-reported problem unaddressed is a FAILURE.
+        - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1.
+        - **PROACTIVE DATA ACQUISITION (STRICT)**: If the 'STRATEGY' identifies "PREREQUISITE GAPS" (missing IPs, paths, interfaces, or capabilities), you MUST include specific, autonomous steps (e.g., scan network, read config, check caps) at the BEGINNING of the plan to resolve them. Do not assume the user or system already has them.
+        - **RE-PLANNING DOCTRINE**: Address EVERY blocker mentioned in the Audit Feedack. A plan that leaves one problem unaddressed will be rejected by Grisha.
+        - **LANGUAGE SPLIT (MANDATORY)**: 
+          * Internal JSON fields (`goal`, `reason`, `action`, `expected_result`) MUST be in ENGLISH.
+          * User-facing fields (`voice_summary`, `voice_action`) MUST be in UKRAINIAN (0% English words).
         - **DEVIATION AUTHORITY**: Explicitly instruct Tetyana that she is authorized to deviate from this plan if she discovers a more optimal path.
         
         **CRITICAL: CODE IMPLEMENTATION STEPS MUST USE VIBE MCP**:

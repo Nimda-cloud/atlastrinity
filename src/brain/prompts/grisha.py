@@ -140,25 +140,24 @@ Proposed plan from Atlas is:
         CONFIDENCE: [0.0 - 1.0]
 
         ESTABLISHED GOAL:
-        [Clear formulation of the end-state based on user message]
-        
-        SIMULATION LOG (Questions/Blockers per step):
-        - [Step 1]: (Root Blocker? Or logic error?)
-        - [Step 2-N]: (List ALL issues. If multiple steps are blocked by one root cause, say: "[Steps X-Y]: Blocked by Step Z missing IP.")
-        ...
+        [Mental dry-run of the user's ultimate objective. State it clearly.]
+
+        SIMULATION LOG:
+        - [Step 1]: (Root Blocker? Logic error? Assumed connectivity without discovery?)
+        - [Step 2-N]: (Report "Blocked by Step X" if applicable. IMPORTANT: Hypothesize success of early steps (e.g., "Assume Step 1 found the IP") to uncover independent issues in later steps.)
 
         CORE PROBLEMS:
-        - [Problem 1]: ...
-        - [Problem 2]: ... (List EVERYTHING that needs to be fixed to reach the goal)
+        - [Problem 1]: (Detailed technical description in ENGLISH for Atlas. Be extremely picky. If a step uses a variable (IP, path, port) that wasn't explicitly found in a previous step, it's a BLIND ASSUMPTION.)
+        - [Problem 2-N]: (List ALL logical flaws, naming conflicts, or structural gaps.)
 
         STRATEGIC GAP ANALYSIS:
-        [Answer: What is the missing bridge? How do we reach the finish line?]
-        
+        [English analysis: What does the user want? What's the missing bridge? Why is the current plan insufficient?]
+
         FEEDBACK TO ATLAS:
-        [COMPREHENSIVE instruction on what steps to add or modify. List ALL necessary fixes here.]
-        
+        [Precise technical instructions in English on how to fix the plan. Mandate "Discovery First" steps for all missing variables.]
+
         SUMMARY_UKRAINIAN:
-        [Detailed explanation for the user in Ukrainian. List all blockers and the path to the final goal clearly.]
+        [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal. 100% Ukrainian.]
         """
 
 GRISHA = {
