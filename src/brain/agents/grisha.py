@@ -902,7 +902,7 @@ class Grisha(BaseAgent):
             if approved:
                 voice_msg = "План схвалено. Симуляція успішна."
             else:
-                voice_msg = f"План потребує доопрацювання. {summary_ukrainian[:200]}"
+                voice_msg = f"План потребує доопрацювання. {summary_ukrainian[:100]}"
 
             return VerificationResult(
                 step_id="plan_init",

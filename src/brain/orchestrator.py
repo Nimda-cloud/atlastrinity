@@ -1087,14 +1087,22 @@ class Trinity:
                         self._last_verification_report = verification_result.description
                         
                         if not verification_result.verified:
-                            msg = f"Гріша відхилив план: {verification_result.issues[0] if verification_result.issues else 'Невідома причина'}"
-                            await self._speak("grisha", verification_result.voice_message or msg)
+                            prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
+                            msg = f"{prefix}{verification_result.issues[0] if verification_result.issues else 'Невідома причина'}"
+                            
+                            voice_msg = verification_result.voice_message or msg
+                            if attempt > 0 and voice_msg.startswith("План потребує доопрацювання."):
+                                voice_msg = voice_msg.replace("План потребує доопрацювання.", "Оновлений план все ще має проблеми.")
+                                
+                            await self._speak("grisha", voice_msg)
                             await self._log(
                                 f"[ORCHESTRATOR] Plan rejected by Grisha: {verification_result.issues}",
                                 "warning",
                             )
                             
                             if attempt < max_retries:
+                                # Bridge the gap: Atlas confirms he is fixing the plan
+                                await self._speak("atlas", "Зрозумів критичні зауваження. Зараз додам кроки для розвідки та виправлю структуру плану.")
                                 continue # Loop back to Atlas for re-planning
                             else:
                                 self.state["system_state"] = SystemState.IDLE.value
