@@ -12,15 +12,13 @@ import argparse
 import asyncio
 import json
 import os
+from pathlib import Path
 import platform
 import select
 import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
-
-import yaml
 
 
 # Кольори для консолі
@@ -1012,6 +1010,7 @@ def download_models():
             else PROJECT_ROOT / "config" / "config.yaml.template"
         )
         if target_path.exists():
+            import yaml
             with open(target_path, encoding="utf-8") as f:
                 # Use dynamic lookup to satisfy Pyrefly and Ruff
                 yml_load = getattr(yaml, "safe_loa" + "d")
