@@ -1037,11 +1037,17 @@ class Trinity:
             self.active_task = None
             if plan_or_result.get("status") == "completed":
                  self.state["system_state"] = SystemState.IDLE.value
+                 msgs = self.state.get("messages", [])
+                 msg_count = len(msgs) if isinstance(msgs, list) else 0
+                 await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
             return plan_or_result
         
         plan = plan_or_result
         if not plan:
             self.active_task = None
+            msgs = self.state.get("messages", [])
+            msg_count = len(msgs) if isinstance(msgs, list) else 0
+            await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
             return {"status": "completed", "result": "No plan generated.", "type": "chat"}
 
         self.state["system_state"] = SystemState.EXECUTING.value
