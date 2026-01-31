@@ -577,8 +577,8 @@ class Trinity:
             # Check for restart flag in Redis
             restart_key = state_manager._key("restart_pending")
             data = None
-            if state_manager.redis:
-                data = await state_manager.redis.get(restart_key)
+            if state_manager.redis_client:
+                data = await state_manager.redis_client.get(restart_key)
 
             if data:
                 restart_info = json.loads(cast("str", data))
@@ -601,8 +601,8 @@ class Trinity:
                     self.current_session_id = session_id
 
                     # Clear the flag
-                    if state_manager.redis:
-                        await state_manager.redis.delete(restart_key)
+                    if state_manager.redis_client:
+                        await state_manager.redis_client.delete(restart_key)
                     self._resumption_pending = True
 
                     await self._log(

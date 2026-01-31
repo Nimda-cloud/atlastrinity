@@ -44,8 +44,8 @@ async def test_resumption():
             "session_id": session_id,
             "timestamp": "2026-01-19T20:00:00",
         }
-        if state_manager.redis:
-            await state_manager.redis.set(restart_key, json.dumps(restart_metadata))
+        if state_manager.redis_client:
+            await state_manager.redis_client.set(restart_key, json.dumps(restart_metadata))
         print(f"Set restart_pending flag and saved session {session_id}")
     else:
         print("Redis unavailable. Test skipped.")
@@ -93,8 +93,8 @@ async def test_resumption():
         print(f"FAILED: Step skipping logic incorrect. Called: {steps_called}")
 
     # Cleanup
-    if state_manager.redis:
-        await state_manager.redis.delete(restart_key)
+    if state_manager.redis_client:
+        await state_manager.redis_client.delete(restart_key)
 
 
 if __name__ == "__main__":

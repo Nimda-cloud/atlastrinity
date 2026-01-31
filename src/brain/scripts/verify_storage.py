@@ -114,7 +114,7 @@ async def verify_redis():
         return
 
     try:
-        if not state_manager.redis:
+        if not state_manager.redis_client:
             print("❌ Redis client is NOT initialized.")
             return
 
@@ -122,15 +122,15 @@ async def verify_redis():
         test_key = "verify_storage_test_key"
         test_val = "working"
 
-        await state_manager.redis.set(test_key, test_val, ex=10)
-        val = await state_manager.redis.get(test_key)
+        await state_manager.redis_client.set(test_key, test_val, ex=10)
+        val = await state_manager.redis_client.get(test_key)
 
         if val and (val == test_val or (hasattr(val, "decode") and val.decode() == test_val)):
             print("✅ Redis Connection: OK (Write/Read success)")
 
             # Check distinct active sessions if possible
             # Iterate keys safely
-            keys = await state_manager.redis.keys("session:*")
+            keys = await state_manager.redis_client.keys("session:*")
             print(f"   - Active Session Keys in Redis: {len(keys)}")
 
         else:
