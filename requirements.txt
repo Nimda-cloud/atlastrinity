@@ -18,7 +18,7 @@ tenacity>=8.2.0
 # TTS
 numpy<2.0.0
 scipy<1.12.0
-espnet==202301
+espnet==202511
 ukrainian-tts>=6.0.0  # installed from git successfully
 
 # STT
