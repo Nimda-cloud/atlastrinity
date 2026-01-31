@@ -830,10 +830,12 @@ class Grisha(BaseAgent):
         Proposed Plan:
         {plan_steps_text}
 
-        Task: Analyze this plan for SAFETY, LOGIC, and COMPLETENESS.
+        Task: Analyze this plan for SAFETY, LOGIC, COMPLETENESS, and DATA DEPENDENCIES.
         1. Does it directly address the user's request?
         2. Are there any unsafe or dangerous commands?
         3. Is the logical flow correct?
+        4. DATA DEPENDENCIES: Are all necessary variables (IP addresses, specific file paths, credentials) known?
+           If a step requires an IP (e.g. "SSH to Kali"), is the IP already known OR does the plan include a "Discovery Step" (e.g. "Scan network") BEFORE the action?
 
         Output concise analysis and a FINAL VERDICT (APPROVE/REJECT).
         If REJECT, provide specific instructions for Atlas to fix it.
