@@ -105,10 +105,26 @@ function syncConfig(mapping, options = {}) {
     backupConfig(destination);
   }
 
-  // Copy template to destination
+  // Copy template to destination with variable substitution
   try {
     if (force || !fs.existsSync(destination)) {
-      fs.copyFileSync(template, destination);
+      let content = fs.readFileSync(template, 'utf8');
+
+      // Define substitutions
+      const replacements = {
+        '${PROJECT_ROOT}': PROJECT_ROOT,
+        '${HOME}': os.homedir(),
+        '${CONFIG_ROOT}': CONFIG_ROOT,
+        '${PYTHONPATH}': PROJECT_ROOT,
+        '${GITHUB_TOKEN}': process.env.GITHUB_TOKEN || '${GITHUB_TOKEN}',
+      };
+
+      // Perform replacements
+      for (const [key, value] of Object.entries(replacements)) {
+        content = content.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+      }
+
+      fs.writeFileSync(destination, content);
       console.log(`   ✓ Synced successfully`);
       return true;
     } else {
