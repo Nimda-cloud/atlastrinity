@@ -2109,7 +2109,7 @@ class Trinity:
                         logger.error(f"[ORCHESTRATOR] Deviation evaluation failed: {eval_err}")
                         result.success = False
                         result.error = "evaluation_error"
-                        return result
+                        return cast(StepResult, result)
 
                 # Handle need_user_input signal (New Autonomous Timeout Logic)
                 if result.error == "need_user_input":
