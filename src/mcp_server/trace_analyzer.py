@@ -44,7 +44,6 @@ def parse_brain_log(log_path: str | Path) -> list[LogEntry]:
     
     # We'll use a loose regex to catch variations
     tool_call_re = re.compile(r"Calling tool:\s*(\w+)\s*args:\s*(\{.*\})", re.IGNORECASE)
-    tool_error_re = re.compile(r"Tool execution failed:\s*(.*)", re.IGNORECASE)
     
     with open(path, encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -78,11 +77,11 @@ def analyze_trace_issues(entries: list[LogEntry]) -> list[TraceIssue]:
     
     # 1. Loop Detection
     # Logic: if same tool + same args called > 3 times
-    call_counts = defaultdict(int)
+    call_counts: dict[str, int] = defaultdict(int)
     
     for entry in entries:
         # Create a simple signature: tool + args
-        sig = f"{entry['tool_name']}:{str(entry['args'])}"
+        sig = f"{entry['tool_name']}:{entry['args']!s}"
         call_counts[sig] += 1
 
     for sig, count in call_counts.items():

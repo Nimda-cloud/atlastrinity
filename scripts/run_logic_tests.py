@@ -2,8 +2,8 @@
 """
 Script to run logic tests using the new ContextCheck module.
 """
-import sys
 import json
+import sys
 from pathlib import Path
 
 # Add src to path
@@ -11,6 +11,7 @@ project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root / "src"))
 
 from mcp_server.context_check import run_test_suite
+
 
 def mock_runner(input_str: str) -> str:
     """Mock LLM/System runner for testing purposes."""
