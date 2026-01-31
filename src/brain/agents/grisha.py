@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
 
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+
 from providers.copilot import CopilotLLM
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
@@ -272,7 +274,6 @@ class Grisha(BaseAgent):
         OPTIMIZATION: Caches strategies by step type to avoid redundant LLM calls.
         NOTE: This method appears to be legacy/unused. Consider removal or refactoring.
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         # OPTIMIZATION: Check cache first
         cache_key = f"{step_description[:50]}"
@@ -1751,7 +1752,6 @@ class Grisha(BaseAgent):
 
     async def security_check(self, action: dict[str, Any]) -> dict[str, Any]:
         """Performs security check before execution"""
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         action_str = str(action)
         if self._check_blocklist(action_str):
@@ -2087,7 +2087,6 @@ class Grisha(BaseAgent):
         """Audits a proposed fix from Vibe AI before execution.
         Uses advanced reasoning to ensure safety and correctness.
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         context_data = context or shared_context.to_dict()
 

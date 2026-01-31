@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
 
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+
 from providers.copilot import CopilotLLM
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
@@ -213,15 +215,16 @@ Respond in JSON:
 """
 
         try:
-            response = await self.reasoning_llm.ainvoke(
-                [
+            messages: list[BaseMessage] = [
                     SystemMessage(
                         content="You are a Goal Alignment Validator. Be critical but constructive.",
                     ),
                     HumanMessage(content=prompt),
-                ],
+                ]
+            response = await self.reasoning_llm.ainvoke(
+                messages,
             )
-            result = self._parse_response(cast("str", response.content))
+            result = self._parse_response(cast(str, response.content))
             result["goal_chain"] = goal_chain
 
             if result.get("deviation_suggested"):
@@ -481,7 +484,7 @@ IMPORTANT:
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}},
         ]
 
-        messages = [
+        messages: list[BaseMessage] = [
             SystemMessage(
                 content="You are a Vision assistant for macOS GUI automation. Analyze screenshots precisely and provide accurate element coordinates.",
             ),
@@ -518,7 +521,6 @@ IMPORTANT:
         2. Tool Execution
         3. Technical Reflexion (Self-correction on failure) - SKIPPED for transient errors
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         from ..logger import logger
         from ..state_manager import state_manager

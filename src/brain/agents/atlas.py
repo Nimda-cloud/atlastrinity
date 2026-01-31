@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, cast
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage, SystemMessage
 
 from providers.copilot import CopilotLLM
 from src.brain.agents.base_agent import BaseAgent
@@ -583,8 +583,6 @@ class Atlas(BaseAgent):
                 use_deep_persona=use_deep_persona,
             )
 
-        from langchain_core.messages import BaseMessage
-
         messages: list[BaseMessage] = [SystemMessage(content=system_prompt_text)]
 
         # DEEP PERSONA INJECTION: Ensure the full mission/soul context is in history
@@ -607,6 +605,9 @@ class Atlas(BaseAgent):
 
         messages.append(HumanMessage(content=user_request))
 
+        # Ensure correct type for LLM call
+        final_messages: list[BaseMessage] = list(messages)
+
         # 3. Select LLM instance based on deep persona mode
         # Deep persona uses llm_deep with larger max_tokens (8000 vs 2000)
         base_llm = self.llm_deep if use_deep_persona else self.llm
@@ -620,7 +621,7 @@ class Atlas(BaseAgent):
         current_turn = 0
 
         while current_turn < MAX_CHAT_TURNS:
-            response = await llm_instance.ainvoke(messages)
+            response = await llm_instance.ainvoke(final_messages)
 
             # 4. Handle tool calls or final answer
             if not getattr(response, "tool_calls", None):

@@ -17,7 +17,7 @@ class DataQualityGuard:
 
     def validate_dataframe(self, df: pd.DataFrame, dataset_name: str) -> dict[str, Any]:
         """Performs a multi-point validation of a pandas DataFrame."""
-        report = {
+        report: dict[str, Any] = {
             "dataset": dataset_name,
             "row_count": len(df),
             "column_count": len(df.columns),
