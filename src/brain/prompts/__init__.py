@@ -454,6 +454,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         3. **VIRTUALIZATION & HARDWARE AWARENESS (STRICT)**: If the task involves VMs (VirtualBox, VMware) or hardware access (Wi-Fi adapters, USB), DO NOT assume connectivity/presence. You MUST plan steps to verify guest network modes (NAT vs Bridged), USB passthrough status, and interface capabilities (monitor mode).
         4. **SEQUENTIAL LOGIC**: Ensure the plan is a continuous flow, where Step N provides the data for Step N+1.
         5. **FINAL GOAL SYNTHESIS**: Ensure the dry-run leads to the ULTIMATE goal the user wants to achieve.
+        6. **ARCHITECTURAL ADHERENCE (STRICT)**: If the user provides a specific technical path (e.g., "use MikroTik for monitoring", "tunnel through X"), you MUST follow it. Do not substitute it with a "simpler" method unless the requested path is technically impossible.
 
         OUTPUT: Provide a technical strategy in English.
         - If gaps were found, explicitly state: "PREREQUISITE GAPS: [List missing IPs, paths, or capabilities]".
@@ -488,6 +489,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         - **META-PLANNING AUTHORIZED**: If the task is complex, you MAY include reasoning steps (using `sequential-thinking`) to discover the path forward. Do not just say "no steps found". Goal achievement is mandatory.
 
         - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1.
+        - **ARCHITECTURAL ADHERENCE (MANDATORY)**: Respect the user's choice of tools and topology. If they ask to use MikroTik for monitoring and Kali for cracking, the plan MUST show the "handover" (e.g., capture on MikroTik, transfer pcap to Kali).
         - **PROACTIVE DATA ACQUISITION (STRICT)**: If the 'STRATEGY' identifies "PREREQUISITE GAPS" (missing IPs, paths, interfaces, or capabilities), you MUST include specific, autonomous steps (e.g., scan network, read config, check caps) at the BEGINNING of the plan to resolve them. Do not assume the user or system already has them.
         - **RE-PLANNING DOCTRINE**: Address EVERY blocker mentioned in the Audit Feedack. A plan that leaves one problem unaddressed will be rejected by Grisha.
         - **LANGUAGE SPLIT (MANDATORY)**: 

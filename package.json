@@ -9,6 +9,7 @@
     "fresh-install": "./scripts/fresh_install.sh",
     "clean": "./scripts/clean-cache.sh",
     "clean:full": "python3 scripts/clear_experience_fixed.py",
+    "clean:memory": "python3 scripts/clear_experience_fixed.py",
     "config:sync": "node scripts/sync_config_templates.js",
     "dev": "npm run clean && concurrently \"npm run dev:brain\" \"npm run dev:electron\" \"npm run dev:renderer\" --kill-others",
     "dev:electron": "tsc -p tsconfig.main.json && NODE_ENV=development electron .",
