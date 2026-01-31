@@ -64,8 +64,8 @@ class SystemConfig:
                 "use_defaults": False,
             },
             {
-                "global": CONFIG_ROOT / "monitoring_config.yaml",
-                "template": PROJECT_ROOT / "config" / "monitoring_config.yaml.template",
+                "global": CONFIG_ROOT / "vibe_config.toml",
+                "template": PROJECT_ROOT / "config" / "vibe_config.toml.template",
                 "use_defaults": False,
             },
             {

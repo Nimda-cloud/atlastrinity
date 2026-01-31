@@ -844,10 +844,7 @@ def sync_configs():
                 PROJECT_ROOT / "config" / "vibe_config.toml.template",
                 CONFIG_ROOT / "vibe_config.toml",
             ),
-            (
-                PROJECT_ROOT / "config" / "monitoring_config.yaml.template",
-                CONFIG_ROOT / "monitoring_config.yaml",
-            ),
+
         ]
 
         # Process standard configs (Force Overwrite logic simplified for setup)
@@ -1334,6 +1331,17 @@ def main():
 
     check_services()
     run_integrity_check()
+
+    # Install watchdog if missing (it might be in requirements.txt but we want to be sure for the watcher)
+    print_step("Перевірка наявності Watchdog для авто-синхронізації...")
+    try:
+        import watchdog
+        print_success("Watchdog вже встановлено")
+    except ImportError:
+        print_info("Встановлення Watchdog...")
+        subprocess.run([str(VENV_PATH / "bin" / "python"), "-m", "pip", "install", "watchdog"], check=False)
+
+    print_info(f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'python scripts/watch_config.py' для авто-синхронізації конфігів")
 
     import json
 
