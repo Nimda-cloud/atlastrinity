@@ -426,11 +426,18 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         """
 
     @staticmethod
-    def atlas_simulation_prompt(task_text: str, memory_context: str) -> str:
+    def atlas_simulation_prompt(task_text: str, memory_context: str, feedback: str = "") -> str:
+        feedback_section = (
+            f"\n\nPREVIOUS FAILURE FEEDBACK (from Auditor/Grisha):\n{feedback}\n"
+            if feedback
+            else ""
+        )
+
         return f"""TASK: STRATEGIC ARCHITECTURE SIMULATION (DRY-RUN)
         Objective: {task_text}
         
         {memory_context}
+        {feedback_section}
 
         SIMULATION DOCTRINE:
         You must mentally execute the task before planning.
