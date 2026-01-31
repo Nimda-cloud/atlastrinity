@@ -1,14 +1,9 @@
-"""
-AtlasTrinity Monitoring and Logging Integration
-
-Provides comprehensive monitoring with Prometheus, Grafana, and OpenSearch integration
-for real-time insights and observability.
-"""
-
 import json
 import logging
+import sqlite3
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional, Union, cast
 
 import psutil
@@ -30,19 +25,17 @@ logger = logging.getLogger(__name__)
 
 class MonitoringSystem:
     """
-    Comprehensive monitoring system integrating Prometheus, Grafana, and OpenSearch.
-
-    This system provides:
-    - Real-time metrics collection via Prometheus
-    - Distributed tracing with OpenTelemetry
-    - Logging integration for Grafana visualization
-    - OpenSearch integration for analytics and insights
+    Comprehensive monitoring system.
+    Provides:
+    - Real-time metrics (Prometheus - embedded)
+    - Tracing (OpenTelemetry)
+    - Persistent Logs & Metrics (SQLite)
     """
 
     def __init__(
         self,
         prometheus_port: int = 8001,
-        opensearch_enabled: bool = True,
+        opensearch_enabled: bool = False, # Now defaults to False, acts as "External DB" flag
         grafana_enabled: bool = True,
         config: dict[str, Any] | None = None,
     ):
@@ -51,8 +44,8 @@ class MonitoringSystem:
 
         Args:
             prometheus_port: Port for Prometheus metrics server
-            opensearch_enabled: Enable OpenSearch integration
-            grafana_enabled: Enable Grafana logging integration
+            opensearch_enabled: (Legacy name) Enable external DB storage
+            grafana_enabled: Enable structured logging
             config: Optional monitoring configuration dictionary
         """
         # Load configuration
@@ -60,10 +53,12 @@ class MonitoringSystem:
 
         # Apply configuration
         self.prometheus_port = self.config.get("prometheus", {}).get("port", prometheus_port)
-        self.opensearch_enabled = self.config.get("opensearch", {}).get(
-            "enabled", opensearch_enabled
-        )
+        self.storage_enabled = True # Always enable local storage
         self.grafana_enabled = self.config.get("grafana", {}).get("enabled", grafana_enabled)
+
+        # Initialize SQLite for Logs/Metrics
+        self.db_path = Path.home() / ".config" / "atlastrinity" / "data" / "monitoring.db"
+        self._init_db()
 
         # Initialize metrics collectors
         self._initialize_metrics()
@@ -74,7 +69,59 @@ class MonitoringSystem:
         # Start Prometheus server
         self._start_prometheus_server()
 
-        logger.info(f"Monitoring system initialized - Prometheus on port {self.prometheus_port}")
+        logger.info(f"Monitoring system initialized - SQLite DB at {self.db_path}")
+
+    def _init_db(self):
+        """Initialize SQLite monitoring database."""
+        try:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            with sqlite3.connect(self.db_path) as conn:
+                # Logs table
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT,
+                        level TEXT,
+                        service TEXT,
+                        message TEXT,
+                        data JSON
+                    )
+                """)
+                # Metrics table (Snapshots)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS metric_snapshots (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT,
+                        metrics JSON
+                    )
+                """)
+                
+                # Request Logs
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS request_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT,
+                        request_type TEXT,
+                        status TEXT,
+                        duration REAL
+                    )
+                """)
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to init monitoring DB: {e}")
+
+    def _save_to_db(self, table: str, data: dict):
+        """Helper to save dict data to SQLite."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                columns = ', '.join(data.keys())
+                placeholders = ', '.join(['?'] * len(data))
+                sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+                conn.execute(sql, list(data.values()))
+                conn.commit()
+        except Exception as e:
+            # Don't crash app on monitoring failure
+            logger.error(f"Failed to write to monitoring DB ({table}): {e}")
 
     def _load_config(self) -> dict[str, Any]:
         """
@@ -137,16 +184,6 @@ class MonitoringSystem:
             ["pipeline_stage", "error_type"],
         )
 
-        # OpenSearch metrics
-        self.opensearch_queries = Counter(
-            "atlastrinity_opensearch_queries",
-            "Number of OpenSearch queries executed",
-            ["query_type"],
-        )
-        self.opensearch_documents = Counter(
-            "atlastrinity_opensearch_documents", "Number of documents indexed in OpenSearch"
-        )
-
     def _initialize_tracing(self) -> None:
         """Initialize OpenTelemetry tracing."""
         try:
@@ -204,7 +241,7 @@ class MonitoringSystem:
             self.network_bytes_sent.inc(net_io.bytes_sent)
             self.network_bytes_received.inc(net_io.bytes_recv)
 
-            return {
+            metrics = {
                 "cpu_usage_percent": cpu_percent,
                 "memory_used_bytes": mem.used,
                 "memory_total_bytes": mem.total,
@@ -214,6 +251,14 @@ class MonitoringSystem:
                 "network_bytes_received": net_io.bytes_recv,
                 "timestamp": datetime.now().isoformat(),
             }
+            
+            # Save snapshot to SQLite
+            self._save_to_db("metric_snapshots", {
+                "timestamp": metrics["timestamp"],
+                "metrics": json.dumps(metrics)
+            })
+            
+            return metrics
 
         except Exception as e:
             logger.error(f"Error collecting system metrics: {e}")
@@ -231,6 +276,14 @@ class MonitoringSystem:
         try:
             self.request_count.labels(request_type=request_type, status=status).inc()
             self.request_latency.labels(request_type=request_type).observe(duration)
+            
+            self._save_to_db("request_logs", {
+                "timestamp": datetime.now().isoformat(),
+                "request_type": request_type,
+                "status": status,
+                "duration": duration
+            })
+
             logger.info(
                 f"Recorded {request_type} request: status={status}, duration={duration:.2f}s"
             )
@@ -253,6 +306,7 @@ class MonitoringSystem:
             self.etl_records_processed.labels(pipeline_stage=stage).inc(records_processed)
             if errors > 0:
                 self.etl_errors.labels(pipeline_stage=stage, error_type=error_type).inc(errors)
+            
             logger.info(
                 f"ETL metrics recorded: stage={stage}, records={records_processed}, errors={errors}"
             )
@@ -261,21 +315,16 @@ class MonitoringSystem:
 
     def record_opensearch_metrics(self, query_type: str, documents: int = 0) -> None:
         """
-        Record OpenSearch-related metrics.
+        Record Search-related metrics (Legacy Name).
 
         Args:
-            query_type: Type of OpenSearch operation
-            documents: Number of documents involved (for indexing operations)
+            query_type: Type of search operation
+            documents: Number of documents involved
         """
-        try:
-            self.opensearch_queries.labels(query_type=query_type).inc()
-            if documents > 0:
-                self.opensearch_documents.inc(documents)
-            logger.info(
-                f"OpenSearch metrics recorded: query_type={query_type}, documents={documents}"
-            )
-        except Exception as e:
-            logger.error(f"Error recording OpenSearch metrics: {e}")
+        # Kept for compatibility, logs to stdout mainly
+        logger.info(
+            f"Search metrics recorded: query_type={query_type}, documents={documents}"
+        )
 
     def start_request(self) -> None:
         """Increment active request counter."""
@@ -306,28 +355,35 @@ class MonitoringSystem:
 
     def log_for_grafana(self, message: str, level: str = "info", **kwargs) -> None:
         """
-        Log message in Grafana-compatible format.
+        Log message in structured format.
 
         Args:
             message: Log message
             level: Log level (info, warning, error, debug)
             kwargs: Additional context data
         """
-        if not self.grafana_enabled:
-            return
-
         try:
+            timestamp = datetime.now().isoformat()
+            
+            # Save to SQLite
+            self._save_to_db("logs", {
+                "timestamp": timestamp,
+                "level": level,
+                "service": "atlastrinity",
+                "message": message,
+                "data": json.dumps(kwargs, ensure_ascii=False)
+            })
+
+            # Stdout logging
             log_entry = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": timestamp,
                 "level": level,
                 "message": message,
                 "service": "atlastrinity",
                 **kwargs,
             }
-
             log_json = json.dumps(log_entry, ensure_ascii=False)
 
-            # Log in structured format that Grafana can parse
             if level == "error":
                 logger.error(log_json)
             elif level == "warning":
@@ -338,7 +394,7 @@ class MonitoringSystem:
                 logger.info(log_json)
 
         except Exception as e:
-            logger.error(f"Error logging for Grafana: {e}")
+            logger.error(f"Error logging: {e}")
 
     def create_span(self, name: str, **kwargs) -> Any:
         """
@@ -368,9 +424,10 @@ class MonitoringSystem:
             True if monitoring system is operational, False otherwise
         """
         try:
-            # Check if we can collect basic metrics
-            metrics = self.collect_system_metrics()
-            return bool(metrics)
+            # Check if we can write to DB
+            with sqlite3.connect(str(self.db_path)) as conn:
+                conn.execute("SELECT 1")
+            return True
         except Exception:
             return False
 

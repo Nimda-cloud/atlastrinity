@@ -1,13 +1,9 @@
-"""
-Search Storage Adapter for Golden Fund
-Ported from etl_module/src/distribution/opensearch_adapter.py
-"""
-
-import json
 import logging
+import sqlite3
+import json
 import uuid
-from datetime import datetime
-from typing import Any, Optional, Union
+from pathlib import Path
+from typing import Any
 
 from .types import StorageResult
 
@@ -16,17 +12,54 @@ logger = logging.getLogger("golden_fund.storage.search")
 
 class SearchStorage:
     """
-    Search engine storage adapter (OpenSearch/ES-style logic).
+    Search engine storage adapter (SQLite with FTS5).
+    Provides full-text search capabilities without external dependencies.
     """
 
-    def __init__(self, enabled: bool = True, index_name: str = "golden_fund_index"):
+    def __init__(
+        self,
+        enabled: bool = True,
+        index_name: str = "golden_fund_index",
+        # Kept for compatibility but unused in SQLite mode
+        hosts: list[str] = None 
+    ):
         self.enabled = enabled
         self.index_name = index_name
-
+        
+        # SQLite DB path (per index)
+        # Using ~/.config/atlastrinity/data/search/
+        self.db_path = Path.home() / ".config" / "atlastrinity" / "data" / "search" / f"{index_name}.db"
+        
         if enabled:
-            logger.info(f"SearchStorage initialized with index: {index_name}")
+            try:
+                self._init_db()
+                logger.info(f"SearchStorage (SQLite/FTS5) initialized: {self.db_path}")
+            except Exception as e:
+                logger.error(f"Failed to init SQLite FTS5: {e}")
+                self.enabled = False
         else:
             logger.info("SearchStorage disabled")
+
+    def _init_db(self):
+        """Initialize SQLite database with FTS5 table."""
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with sqlite3.connect(self.db_path) as conn:
+            # Enable FTS5 extension if it's not builtin (usually it is in Python 3.12+)
+            # Create FTS5 virtual table
+            # We store the raw JSON source in a separate column or in the FTS table (if needed for result)
+            # Here we follow a simple schema: id, title, content, description, source_json
+            
+            conn.execute(f"""
+                CREATE VIRTUAL TABLE IF NOT EXISTS {self.index_name} USING fts5(
+                    id, 
+                    title, 
+                    content, 
+                    description, 
+                    source_json UNINDEXED
+                )
+            """)
+            conn.commit()
 
     def index_documents(self, data: dict[str, Any] | list[dict[str, Any]]) -> StorageResult:
         if not self.enabled:
@@ -39,8 +72,24 @@ class SearchStorage:
             if isinstance(data, dict):
                 data = [data]
 
-            doc_count = len(data)
-            logger.info(f"Simulating Indexing: {doc_count} docs into '{self.index_name}'")
+            doc_count = 0
+            with sqlite3.connect(self.db_path) as conn:
+                for item in data:
+                    doc_id = item.get("id", str(uuid.uuid4()))
+                    title = item.get("title", "")
+                    content = item.get("content", "")
+                    description = item.get("description", "")
+                    source_json = json.dumps(item, ensure_ascii=False)
+                    
+                    # REPLACE INTO helps updating existing docs
+                    conn.execute(
+                        f"INSERT OR REPLACE INTO {self.index_name} (id, title, content, description, source_json) VALUES (?, ?, ?, ?, ?)",
+                        (doc_id, title, content, description, source_json)
+                    )
+                    doc_count += 1
+                conn.commit()
+
+            logger.info(f"Indexed {doc_count} docs into '{self.index_name}' (SQLite)")
 
             return StorageResult(
                 True, "search", data={"index": self.index_name, "indexed_count": doc_count}
@@ -55,19 +104,37 @@ class SearchStorage:
             return StorageResult(False, "search", error="SearchStorage is disabled")
 
         try:
-            logger.info(f"Simulating textual search in '{self.index_name}' for: {query}")
+            logger.info(f"Searching '{self.index_name}' for: {query}")
 
-            # Simulated results
             results = []
-            for i in range(min(limit, 5)):
-                results.append(
-                    {
-                        "id": str(uuid.uuid4()),
-                        "score": 1.0 - (i * 0.1),
-                        "source": {"name": f"Result {i + 1}", "text": f"Content matching {query}"},
-                    }
+            total = 0
+            
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                
+                # FTS5 Query
+                # Simple match query. 
+                # Note: FTS5 query syntax is strict, might need sanitization for production
+                safe_query = query.replace('"', '""') 
+                
+                cursor = conn.execute(
+                    f"SELECT id, source_json, rank FROM {self.index_name} WHERE {self.index_name} MATCH ? ORDER BY rank LIMIT ?", 
+                    (safe_query, limit)
                 )
+                
+                rows = cursor.fetchall()
+                for row in rows:
+                    results.append({
+                        "id": row["id"],
+                        "score": row["rank"], # FTS5 rank is lower = better usually, but API expects score. 
+                        "source": json.loads(row["source_json"])
+                    })
+                
+                # Get total count (approximation)
+                # For FTS this can be slow if table is huge
+                total = len(results) 
 
-            return StorageResult(True, "search", data={"results": results})
+            return StorageResult(True, "search", data={"results": results, "total": total})
+            
         except Exception as e:
             return StorageResult(False, "search", error=f"Search failed: {e}")
