@@ -23,244 +23,103 @@ logger = logging.getLogger(__name__)
 class MonitoringConfig:
     """
     Monitoring configuration loader and manager.
-
-    This class handles loading monitoring configuration from YAML files
+    
+    This class handles loading monitoring configuration from the main config.yaml
     and provides access to monitoring settings.
     """
 
-    def __init__(self, config_path: str | None = None):
+    def __init__(self):
         """
         Initialize the monitoring configuration loader.
-
-        Args:
-            config_path: Optional path to monitoring config file
+        Uses the global SystemConfig singleton to access merged configuration.
         """
-        self.config_path = Path(config_path) if config_path else self._get_default_config_path()
-        self.config = self._load_config()
+        # Lazy import to avoid circular dependencies if any
+        from .config_loader import config
+        self.system_config = config
 
-    def _get_default_config_path(self) -> Path:
+    def _get_config_section(self) -> dict[str, Any]:
         """
-        Get the default monitoring configuration path.
-
-        Returns:
-            Path to the default monitoring configuration file
-        """
-        # Check for config in standard locations
-        possible_paths = [
-            Path("/etc/atlastrinity/monitoring_config.yaml"),
-            Path.home() / ".config" / "atlastrinity" / "monitoring_config.yaml",
-            Path("config/monitoring_config.yaml"),
-            Path("monitoring_config.yaml"),
-        ]
-
-        for path in possible_paths:
-            if path.exists():
-                return path
-
-        # Return default location (will be created if needed)
-        return Path.home() / ".config" / "atlastrinity" / "monitoring_config.yaml"
-
-    def _load_config(self) -> dict[str, Any]:
-        """
-        Load monitoring configuration from YAML file.
+        Get monitoring configuration section.
 
         Returns:
             Dictionary containing monitoring configuration
         """
-        default_config = self._get_default_config()
-
-        try:
-            if self.config_path.exists():
-                with open(self.config_path, encoding="utf-8") as f:
-                    user_config = yaml.safe_load(f) or {}
-
-                # Deep merge user config with defaults
-                return self._deep_merge(default_config, user_config)
-            else:
-                logger.info(
-                    f"Monitoring config file not found at {self.config_path}, using defaults"
-                )
-                return default_config
-
-        except Exception as e:
-            logger.error(f"Error loading monitoring config: {e}")
-            logger.info("Falling back to default configuration")
-            return default_config
-
-    def _get_default_config(self) -> dict[str, Any]:
-        """
-        Get default monitoring configuration.
-
-        Returns:
-            Dictionary containing default monitoring configuration
-        """
-        return {
-            "monitoring": {
-                "prometheus": {
-                    "enabled": True,
-                    "port": 8001,
-                    "scrape_interval": "15s",
-                    "evaluation_interval": "15s",
-                },
-                "grafana": {"enabled": True, "logging_format": "json", "log_level": "info"},
-                "opensearch": {"enabled": True, "hosts": [], "index_prefix": "atlastrinity"},
-                "tracing": {
-                    "enabled": True,
-                    "service_name": "atlastrinity",
-                    "otlp_endpoint": "localhost:4317",
-                    "batch_timeout": "5s",
-                    "max_export_batch_size": 512,
-                },
-                "etl": {
-                    "enabled": True,
-                    "track_stages": ["scraping", "transformation", "distribution", "indexing"],
-                    "error_thresholds": {"warning": 5, "critical": 10},
-                },
-                "alerts": {
-                    "high_cpu_usage": {"threshold": 90, "duration": "5m", "severity": "warning"},
-                    "high_memory_usage": {"threshold": 85, "duration": "5m", "severity": "warning"},
-                    "request_failures": {"threshold": 10, "duration": "1m", "severity": "critical"},
-                },
-            }
-        }
-
-    def _deep_merge(self, base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
-        """
-        Deep merge two dictionaries.
-
-        Args:
-            base: Base dictionary
-            overlay: Dictionary to merge into base
-
-        Returns:
-            Merged dictionary
-        """
-        result = base.copy()
-        for key, value in overlay.items():
-            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-                result[key] = self._deep_merge(result[key], value)
-            else:
-                result[key] = value
-        return result
+        return cast(dict[str, Any], self.system_config.get("monitoring", {}))
 
     def get_prometheus_config(self) -> dict[str, Any]:
-        """
-        Get Prometheus configuration.
-
-        Returns:
-            Prometheus configuration dictionary
-        """
-        return cast(dict[str, Any], self.config.get("monitoring", {}).get("prometheus", {}))
+        """Get Prometheus configuration."""
+        return cast(dict[str, Any], self._get_config_section().get("prometheus", {}))
 
     def get_grafana_config(self) -> dict[str, Any]:
-        """
-        Get Grafana configuration.
-
-        Returns:
-            Grafana configuration dictionary
-        """
-        return cast(dict[str, Any], self.config.get("monitoring", {}).get("grafana", {}))
+        """Get Grafana configuration."""
+        return cast(dict[str, Any], self._get_config_section().get("grafana", {}))
 
     def get_opensearch_config(self) -> dict[str, Any]:
-        """
-        Get OpenSearch configuration.
-
-        Returns:
-            OpenSearch configuration dictionary
-        """
-        return cast(dict[str, Any], self.config.get("monitoring", {}).get("opensearch", {}))
+        """Get OpenSearch configuration."""
+        return cast(dict[str, Any], self._get_config_section().get("opensearch", {}))
 
     def get_tracing_config(self) -> dict[str, Any]:
-        """
-        Get tracing configuration.
-
-        Returns:
-            Tracing configuration dictionary
-        """
-        return cast(dict[str, Any], self.config.get("monitoring", {}).get("tracing", {}))
+        """Get tracing configuration."""
+        return cast(dict[str, Any], self._get_config_section().get("tracing", {}))
 
     def get_etl_config(self) -> dict[str, Any]:
-        """
-        Get ETL monitoring configuration.
-
-        Returns:
-            ETL configuration dictionary
-        """
-        return cast(dict[str, Any], self.config.get("monitoring", {}).get("etl", {}))
+        """Get ETL monitoring configuration."""
+        return cast(dict[str, Any], self._get_config_section().get("etl", {}))
 
     def get_alerts_config(self) -> dict[str, Any]:
-        """
-        Get alerts configuration.
-
-        Returns:
-            Alerts configuration dictionary
-        """
-        return cast(dict[str, Any], self.config.get("monitoring", {}).get("alerts", {}))
+        """Get alerts configuration."""
+        return cast(dict[str, Any], self._get_config_section().get("alerts", {}))
 
     def is_prometheus_enabled(self) -> bool:
-        """
-        Check if Prometheus monitoring is enabled.
-
-        Returns:
-            True if Prometheus is enabled, False otherwise
-        """
+        """Check if Prometheus monitoring is enabled."""
         return cast(bool, self.get_prometheus_config().get("enabled", True))
 
     def is_grafana_enabled(self) -> bool:
-        """
-        Check if Grafana logging is enabled.
-
-        Returns:
-            True if Grafana is enabled, False otherwise
-        """
+        """Check if Grafana logging is enabled."""
         return cast(bool, self.get_grafana_config().get("enabled", True))
 
     def is_opensearch_enabled(self) -> bool:
-        """
-        Check if OpenSearch integration is enabled.
-
-        Returns:
-            True if OpenSearch is enabled, False otherwise
-        """
+        """Check if OpenSearch integration is enabled."""
         return cast(bool, self.get_opensearch_config().get("enabled", True))
 
     def is_tracing_enabled(self) -> bool:
-        """
-        Check if tracing is enabled.
-
-        Returns:
-            True if tracing is enabled, False otherwise
-        """
+        """Check if tracing is enabled."""
         return cast(bool, self.get_tracing_config().get("enabled", True))
-
-    def get_config_path(self) -> Path:
-        """
-        Get the path to the monitoring configuration file.
-
-        Returns:
-            Path to the configuration file
-        """
-        return self.config_path
 
     def save_config(self, config: dict[str, Any]) -> bool:
         """
         Save monitoring configuration to file.
-
-        Args:
-            config: Configuration dictionary to save
-
-        Returns:
-            True if save was successful, False otherwise
+        Note: This now updates the main config.yaml file via manual load/dump 
+        since SystemConfig is read-only for now.
         """
+        from .config_loader import CONFIG_ROOT
+        import yaml
+        
+        config_path = CONFIG_ROOT / "config.yaml"
+        
         try:
-            # Ensure directory exists
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            # Load full config
+            full_config = {}
+            if config_path.exists():
+                with open(config_path, encoding="utf-8") as f:
+                    full_config = yaml.safe_load(f) or {}
+            
+            # Update monitoring section
+            if "monitoring" not in full_config:
+                full_config["monitoring"] = {}
+                
+            # Deep merge or replace? Replace specific sections provided
+            if "monitoring" in config:
+                full_config["monitoring"] = config["monitoring"]
+            else:
+                # Assume passed config IS the monitoring block
+                full_config["monitoring"] = config
 
-            # Save configuration
-            with open(self.config_path, "w", encoding="utf-8") as f:
-                yaml.safe_dump(config, f, sort_keys=False)
+            # Save back
+            with open(config_path, "w", encoding="utf-8") as f:
+                yaml.safe_dump(full_config, f, sort_keys=False)
 
-            logger.info(f"Monitoring configuration saved to {self.config_path}")
+            logger.info(f"Monitoring configuration saved to {config_path}")
             return True
 
         except Exception as e:

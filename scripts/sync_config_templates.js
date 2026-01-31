@@ -38,11 +38,7 @@ const CONFIG_MAPPINGS = [
     destination: path.join(CONFIG_ROOT, 'vibe_config.toml'),
     description: 'Vibe CLI configuration',
   },
-  {
-    template: path.join(PROJECT_ROOT, 'config', 'monitoring_config.yaml.template'),
-    destination: path.join(CONFIG_ROOT, 'monitoring_config.yaml'),
-    description: 'Monitoring and observability configuration',
-  },
+
   {
     template: path.join(PROJECT_ROOT, 'config', 'mcp_servers.json.template'),
     destination: path.join(MCP_DIR, 'config.json'),
