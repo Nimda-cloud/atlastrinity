@@ -222,6 +222,13 @@ intent_detection:
       - шукай
       - 'розкажи про'
       - прочитай
+      - документація
+      - documentation
+      - бібліотека
+      - library
+      - api
+      - 'як використовувати'
+      - 'how to use'
     intent: solo_task
     require_tools: true
     priority: medium
@@ -633,6 +640,30 @@ tool_routing:
         context:
           target_mode: internal
           auto_export: true
+          
+  # Library Documentation (Context7)
+  library_docs:
+    synonyms:
+      - context7
+      - c7_search
+      - c7_query
+      - c7_info
+      - documentation
+      - docs
+      - api_reference
+    priority_server: context7
+    fallback_server: duckduckgo-search
+    tool_mapping:
+      c7_search: c7_search
+      c7_query: c7_query
+      c7_info: c7_info
+    routing_rules:
+      - pattern: 'c7_.*'
+        server: context7
+      - pattern: '.*docs.*'
+        server: context7
+      - pattern: '.*documentation.*'
+        server: context7
 
   # Thinking & Reasoning
   thinking:
