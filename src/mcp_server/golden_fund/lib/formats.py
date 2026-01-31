@@ -19,7 +19,7 @@ class ParseResult:
         self.success = success
         self.data = data
         self.error = error
-        self.metadata = {}
+        self.metadata: dict[str, Any] = {}
 
 
 class JSONParser:

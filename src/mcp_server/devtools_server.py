@@ -3,8 +3,9 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict, cast
 
 from mcp.server import FastMCP, Server
 from mcp.types import TextContent, Tool
@@ -20,6 +21,20 @@ server = FastMCP("devtools-server")
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 VENV_BIN = PROJECT_ROOT / ".venv" / "bin"
 VENV_PYTHON = VENV_BIN / "python"
+
+
+class ResponseDict(TypedDict):
+    success: bool
+    git_status: dict[str, Any]
+    github_status: dict[str, Any]
+    diagram_status: dict[str, Any]
+    project_type: str
+    components_detected: int
+    analysis: dict[str, Any]
+    message: str
+    updates_made: bool
+    files_updated: list[str]
+    timestamp: str
 
 
 @server.tool()
@@ -448,7 +463,6 @@ def devtools_update_architecture_diagrams(
         and reasoning analysis if enabled
     """
     import asyncio
-    from datetime import datetime
 
     # Determine project paths
     if project_path is None:
@@ -460,7 +474,7 @@ def devtools_update_architecture_diagrams(
     if not project_path_obj.exists():
         return {"error": f"Project path does not exist: {project_path_obj}", "success": False}
 
-    response = {"success": True, "git_status": {}, "github_status": {}, "diagram_status": {}}
+    response: ResponseDict = {"success": True, "git_status": {}, "github_status": {}, "diagram_status": {}, "project_type": "", "components_detected": 0, "analysis": {}, "message": "", "updates_made": False, "files_updated": [], "timestamp": ""}
 
     try:
         # Step 1: Analyze project structure (UNIVERSAL)
@@ -565,7 +579,7 @@ def devtools_update_architecture_diagrams(
         response["files_updated"] = updated_files  # type: ignore[typeddict-item]
         response["timestamp"] = datetime.now().isoformat()  # type: ignore[typeddict-item]
 
-        return response
+        return cast(dict[str, Any], response)
 
     except Exception as e:
         return {"error": f"Failed to update diagrams: {e}", "success": False}

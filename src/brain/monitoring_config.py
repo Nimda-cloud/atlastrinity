@@ -7,7 +7,7 @@ Loads and manages monitoring configuration for Prometheus, Grafana, and OpenSear
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import yaml
 
@@ -150,7 +150,7 @@ class MonitoringConfig:
         Returns:
             Prometheus configuration dictionary
         """
-        return self.config.get("monitoring", {}).get("prometheus", {})
+        return cast(dict[str, Any], self.config.get("monitoring", {}).get("prometheus", {}))
 
     def get_grafana_config(self) -> dict[str, Any]:
         """
@@ -159,7 +159,7 @@ class MonitoringConfig:
         Returns:
             Grafana configuration dictionary
         """
-        return self.config.get("monitoring", {}).get("grafana", {})
+        return cast(dict[str, Any], self.config.get("monitoring", {}).get("grafana", {}))
 
     def get_opensearch_config(self) -> dict[str, Any]:
         """
@@ -168,7 +168,7 @@ class MonitoringConfig:
         Returns:
             OpenSearch configuration dictionary
         """
-        return self.config.get("monitoring", {}).get("opensearch", {})
+        return cast(dict[str, Any], self.config.get("monitoring", {}).get("opensearch", {}))
 
     def get_tracing_config(self) -> dict[str, Any]:
         """
@@ -177,7 +177,7 @@ class MonitoringConfig:
         Returns:
             Tracing configuration dictionary
         """
-        return self.config.get("monitoring", {}).get("tracing", {})
+        return cast(dict[str, Any], self.config.get("monitoring", {}).get("tracing", {}))
 
     def get_etl_config(self) -> dict[str, Any]:
         """
@@ -186,7 +186,7 @@ class MonitoringConfig:
         Returns:
             ETL configuration dictionary
         """
-        return self.config.get("monitoring", {}).get("etl", {})
+        return cast(dict[str, Any], self.config.get("monitoring", {}).get("etl", {}))
 
     def get_alerts_config(self) -> dict[str, Any]:
         """
@@ -195,7 +195,7 @@ class MonitoringConfig:
         Returns:
             Alerts configuration dictionary
         """
-        return self.config.get("monitoring", {}).get("alerts", {})
+        return cast(dict[str, Any], self.config.get("monitoring", {}).get("alerts", {}))
 
     def is_prometheus_enabled(self) -> bool:
         """
@@ -204,7 +204,7 @@ class MonitoringConfig:
         Returns:
             True if Prometheus is enabled, False otherwise
         """
-        return self.get_prometheus_config().get("enabled", True)
+        return cast(bool, self.get_prometheus_config().get("enabled", True))
 
     def is_grafana_enabled(self) -> bool:
         """
@@ -213,7 +213,7 @@ class MonitoringConfig:
         Returns:
             True if Grafana is enabled, False otherwise
         """
-        return self.get_grafana_config().get("enabled", True)
+        return cast(bool, self.get_grafana_config().get("enabled", True))
 
     def is_opensearch_enabled(self) -> bool:
         """
@@ -222,7 +222,7 @@ class MonitoringConfig:
         Returns:
             True if OpenSearch is enabled, False otherwise
         """
-        return self.get_opensearch_config().get("enabled", True)
+        return cast(bool, self.get_opensearch_config().get("enabled", True))
 
     def is_tracing_enabled(self) -> bool:
         """
@@ -231,7 +231,7 @@ class MonitoringConfig:
         Returns:
             True if tracing is enabled, False otherwise
         """
-        return self.get_tracing_config().get("enabled", True)
+        return cast(bool, self.get_tracing_config().get("enabled", True))
 
     def get_config_path(self) -> Path:
         """

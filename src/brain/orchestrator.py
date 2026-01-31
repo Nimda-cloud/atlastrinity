@@ -2145,7 +2145,7 @@ class Trinity:
                         # Check if this exact set of steps was already attempted at this depth
                         steps_hash = hash(str(alt_steps))
                         if not hasattr(self, "_attempted_recoveries"):
-                            self._attempted_recoveries = {}
+                            self._attempted_recoveries: dict[str, int] = {}
                         
                         if self._attempted_recoveries.get(step_id) == steps_hash:
                             logger.error(f"[ORCHESTRATOR] Atlas suggested a redundant recovery sub-plan for {step_id}. Breaking loop to prevent stall.")

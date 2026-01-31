@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import httpx
 from mcp.server import FastMCP
@@ -23,7 +24,7 @@ server = FastMCP("whisper-stt")
 _local_stt = None
 
 
-async def get_local_stt():
+async def get_local_stt() -> Any:
     global _local_stt
     if _local_stt is None:
         model_name = config.get("voice.stt.model", "large-v3")
@@ -31,7 +32,7 @@ async def get_local_stt():
     return _local_stt
 
 
-async def _transcribe_via_brain(audio_path: str):
+async def _transcribe_via_brain(audio_path: str) -> str | None:
     """Спроба відправити аудіо на основний сервер AtlasBrain для економії пам'яті"""
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:

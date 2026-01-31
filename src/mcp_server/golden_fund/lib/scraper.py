@@ -37,7 +37,7 @@ class ScrapeResult:
         self.data = data
         self.error = error
         self.timestamp = datetime.now()
-        self.metadata = {}
+        self.metadata: dict[str, Any] = {}
 
     def __repr__(self) -> str:
         if self.success:

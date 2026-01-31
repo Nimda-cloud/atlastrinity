@@ -18,6 +18,9 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 from PIL import Image
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
+# Type aliases for better type safety
+ContentItem = str | dict[str, Any]
+
 
 class CopilotLLM(BaseChatModel):
     model_name: str | None = None
@@ -322,7 +325,7 @@ class CopilotLLM(BaseChatModel):
             # Handle list content (Vision)
             content = m.content
             if isinstance(content, list):
-                processed_content = []
+                processed_content: list[ContentItem] = []
                 for item in content:
                     if isinstance(item, dict) and item.get("type") == "image_url":
                         # Optimize image if needed
@@ -362,7 +365,7 @@ class CopilotLLM(BaseChatModel):
         try:
             _header, encoded = data_url.split(",", 1)
             image_bytes = base64.b64decode(encoded)
-            img = Image.open(BytesIO(image_bytes))
+            img: Image.Image = Image.open(BytesIO(image_bytes))
 
             # Max dimension 1280 (OpenAI high res limit without extra tiles)
             max_size = 1280
@@ -374,10 +377,10 @@ class CopilotLLM(BaseChatModel):
                     resampling = Image.Resampling.LANCZOS  # type: ignore
                 except AttributeError:
                     resampling = Image.LANCZOS  # type: ignore
-                img = img.resize(new_size, resampling)
+                img = cast(Image.Image, img.resize(new_size, resampling))
 
             if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
+                img = cast(Image.Image, img.convert("RGB"))
 
             buffered = BytesIO()
             img.save(buffered, format="JPEG", quality=80)

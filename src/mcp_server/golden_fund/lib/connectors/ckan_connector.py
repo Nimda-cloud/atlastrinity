@@ -5,7 +5,7 @@ Handles interaction with CKAN-based open data portals (e.g., data.gov.ua).
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import requests
 
@@ -30,14 +30,14 @@ class CKANConnector:
 
         try:
             logger.info(f"Searching CKAN packages for: {query}")
-            response = self.session.get(url, params=params)
+            response = self.session.get(url, params=params)  # type: ignore[arg-type]
             response.raise_for_status()
             data = response.json()
 
             if data.get("success"):
                 results = data["result"]["results"]
                 logger.info(f"Found {len(results)} packages")
-                return results
+                return cast(list[dict[str, Any]], results)
             else:
                 logger.warning(f"CKAN search failed: {data.get('error')}")
                 return []
@@ -59,7 +59,7 @@ class CKANConnector:
             data = response.json()
 
             if data.get("success"):
-                return data["result"]
+                return cast(dict[str, Any], data["result"])
             return None
 
         except Exception as e:

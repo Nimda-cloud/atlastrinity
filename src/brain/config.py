@@ -7,7 +7,14 @@ try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover
 
-    def load_dotenv(*args: Any, **kwargs: Any) -> bool:
+    def load_dotenv(
+        dotenv_path: str | os.PathLike[str] | None = None,
+        stream: str | None = None,
+        verbose: bool = False,
+        override: bool = False,
+        interpolate: bool = True,
+        encoding: str | None = "utf-8",
+    ) -> bool:  # type: ignore[override]
         return False
 
 

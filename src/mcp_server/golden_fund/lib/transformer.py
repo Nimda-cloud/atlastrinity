@@ -5,7 +5,7 @@ Ported from etl_module/src/transformation/data_transformer.py
 
 import logging
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -14,11 +14,14 @@ logger = logging.getLogger("golden_fund.transformer")
 
 # Import validation module for integration
 try:
-    from .validation import DataValidator, ValidationResult
+    from .validation import DataValidator as ImportedDataValidator
+    from .validation import ValidationResult as ImportedValidationResult
+    DataValidator = ImportedDataValidator
+    ValidationResult = ImportedValidationResult
 except ImportError:
     # Fallback for when validation module is not available
-    DataValidator = None
-    ValidationResult = None
+    DataValidator: type[Any] | None = None
+    ValidationResult: type[Any] | None = None
 
 
 class TransformResult:
@@ -45,7 +48,7 @@ class UnifiedSchema(BaseModel):
 class DataTransformer:
     def __init__(self):
         self.schema = UnifiedSchema
-        self.validator = DataValidator() if DataValidator else None
+        self.validator = DataValidator() if DataValidator is not None else None
         logger.info("DataTransformer initialized")
 
     def transform(
@@ -63,7 +66,7 @@ class DataTransformer:
                         transformed.append(res)
 
                 # Add validation checkpoint if requested
-                if validate_completeness and self.validator:
+                if validate_completeness and self.validator is not None and DataValidator is not None:
                     validation_res = self.validator.validate_data_completeness(
                         transformed, context="transformation"
                     )
