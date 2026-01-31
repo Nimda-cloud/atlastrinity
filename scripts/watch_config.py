@@ -28,6 +28,9 @@ MAPPINGS: dict[str, str] = {
     "config.yaml.template": "config.yaml",
     "behavior_config.yaml.template": "behavior_config.yaml",
     "vibe_config.toml.template": "vibe_config.toml",
+    "vibe/agents/accept-edits.toml.template": "vibe/agents/accept-edits.toml",
+    "vibe/agents/auto-approve.toml.template": "vibe/agents/auto-approve.toml",
+    "vibe/agents/plan.toml.template": "vibe/agents/plan.toml",
 
     "mcp_servers.json.template": "mcp/config.json",
     "prometheus.yml.template": "prometheus.yml",
@@ -70,7 +73,13 @@ class ConfigHandler(FileSystemEventHandler):
         if event.is_directory:
             return
             
-        filename = Path(event.src_path).name
+        # Get relative path from config source
+        try:
+            rel_path = Path(event.src_path).relative_to(CONFIG_SRC)
+            filename = str(rel_path)
+        except ValueError:
+            return
+
         if filename in MAPPINGS:
             dst_rel = MAPPINGS[filename]
             dst_path = CONFIG_DST_ROOT / dst_rel
@@ -94,7 +103,7 @@ def main():
 
     event_handler = ConfigHandler()
     observer = Observer()
-    observer.schedule(event_handler, str(CONFIG_SRC), recursive=False)
+    observer.schedule(event_handler, str(CONFIG_SRC), recursive=True)
     observer.start()
 
     try:
