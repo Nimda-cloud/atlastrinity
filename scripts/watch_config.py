@@ -5,16 +5,15 @@ Monitors `config/*.template` files and automatically syncs them to `~/.config/at
 preserving variable substitutions.
 """
 
-import sys
-import time
 import os
 import shutil
+import sys
+import time
 from pathlib import Path
-from typing import Dict
 
 try:
-    from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
+    from watchdog.observers import Observer
 except ImportError:
     print("Error: 'watchdog' module not found. Please run: pip install watchdog")
     sys.exit(1)
@@ -25,7 +24,7 @@ CONFIG_SRC = PROJECT_ROOT / "config"
 CONFIG_DST_ROOT = Path.home() / ".config" / "atlastrinity"
 
 # Mappings (Template Filename -> Destination Relative Path)
-MAPPINGS: Dict[str, str] = {
+MAPPINGS: dict[str, str] = {
     "config.yaml.template": "config.yaml",
     "behavior_config.yaml.template": "behavior_config.yaml",
     "vibe_config.toml.template": "vibe_config.toml",
@@ -80,7 +79,7 @@ class ConfigHandler(FileSystemEventHandler):
             process_template(Path(event.src_path), dst_path)
 
 def main():
-    print(f"Starting AtlasTrinity Config Watcher...")
+    print("Starting AtlasTrinity Config Watcher...")
     print(f"Watching: {CONFIG_SRC}")
     print(f"Target:   {CONFIG_DST_ROOT}")
     print("-" * 40)

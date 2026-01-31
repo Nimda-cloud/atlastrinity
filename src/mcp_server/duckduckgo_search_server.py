@@ -75,6 +75,53 @@ def _execute_protocol_search(rule_name: str, query_val: str, provider_name: str)
         return {"error": str(e)}
 
 
+def _extract_from_match(match, seen_urls, results, max_results, is_fallback=False):
+    """Extracted logic to process a single regex match."""
+    href = html.unescape(match.group(1)).strip()
+    
+    # Filter DDG internal links
+    forbidden = ["duckduckgo.com/", "ad_redirect", "javascript:"]
+    if not is_fallback:
+        forbidden.append("#")
+        
+    if any(x in href for x in forbidden):
+        if "duckduckgo.com/l/?uddg=" not in href and "uddg=" not in href:
+            return False
+
+    # Title extraction
+    if not is_fallback:
+        title = html.unescape(match.group(2)).strip()
+    else:
+        title_html = match.group(2)
+        title = html.unescape(re.sub(r"<.*?>", "", title_html)).strip()
+
+    if not href or not title or len(title) < 2:
+        return False
+
+    # Clean up DDG redirects
+    if "uddg=" in href:
+        match_real = re.search(r"uddg=([^&]+)", href)
+        if match_real:
+            from urllib.parse import unquote
+            href = unquote(match_real.group(1))
+
+    if href.startswith("//"):
+        href = "https:" + href
+    elif is_fallback and href.startswith("/"):
+        href = "https://duckduckgo.com" + href
+
+    if is_fallback:
+        # Filter UI elements
+        if any(title.lower() == x for x in ["next", "previous", "images", "videos", "news"]):
+            return False
+
+    if href not in seen_urls and href.startswith("http"):
+        seen_urls.add(href)
+        results.append({"title": title, "url": href})
+        return len(results) >= max_results
+    return False
+
+
 def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str, Any]]:
     url = "https://html.duckduckgo.com/html/"
     try:
@@ -89,110 +136,27 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
             timeout=timeout_s,
         )
         resp.raise_for_status()
-        if not resp.text.strip():
-            logger.warning("Empty response from DDG")
-            return []
-
-        if "Checking your browser" in resp.text or "Cloudflare" in resp.text:
-            logger.warning("Blocked by CAPTCHA/Cloudflare")
+        if not resp.text.strip() or "Checking your browser" in resp.text or "Cloudflare" in resp.text:
             return []
     except Exception as e:
         logger.error(f"Request error: {e}")
         return []
 
-    # Multiple patterns to match different DDG HTML layouts
-    patterns = [
-        # Pattern 1: result__url class (modern layout)
-        re.compile(
-            r'class="result__url"[^>]*href="([^"]+)"[^>]*>([^<]+)',
-            re.IGNORECASE | re.DOTALL,
-        ),
-        # Pattern 2: Standard anchor with result class
-        re.compile(
-            r'<a[^>]*class="[^"]*result[^"]*"[^>]*href="([^"]+)"[^>]*>([^<]*)',
-            re.IGNORECASE | re.DOTALL,
-        ),
-        # Pattern 3: Generic anchor tags (fallback)
-        re.compile(
-            r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
-            re.IGNORECASE | re.DOTALL,
-        ),
-    ]
-
     results: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
 
-    # Extract from result__a class (title links) - more reliable
+    # Method 1: Extraction via result__a class
     title_pattern = re.compile(r'class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)', re.IGNORECASE)
-
-    # Method 1: Extract from result__a class (title links)
     for match in title_pattern.finditer(resp.text):
-        href = html.unescape(match.group(1)).strip()
-        title = html.unescape(match.group(2)).strip()
+        if _extract_from_match(match, seen_urls, results, max_results):
+            break
 
-        if not href or not title or len(title) < 2:
-            continue
-
-        # Skip internal DDG links
-        if any(x in href for x in ["duckduckgo.com/", "ad_redirect", "javascript:", "#"]):
-            if "duckduckgo.com/l/?uddg=" not in href:
-                continue
-
-        # Clean up DDG redirects
-        if "uddg=" in href:
-            match_real = re.search(r"uddg=([^&]+)", href)
-            if match_real:
-                from urllib.parse import unquote
-
-                href = unquote(match_real.group(1))
-
-        if href.startswith("//"):
-            href = "https:" + href
-
-        if href not in seen_urls and href.startswith("http"):
-            seen_urls.add(href)
-            results.append({"title": title, "url": href})
-            if len(results) >= max_results:
-                break
-
-    # Method 2: Fallback to generic pattern if Method 1 fails
+    # Method 2: Fallback
     if len(results) < max_results:
-        for match in patterns[2].finditer(resp.text):
-            href = html.unescape(match.group(1)).strip()
-
-            # Filter DDG internal links
-            if any(x in href for x in ["duckduckgo.com/", "ad_redirect", "javascript:"]):
-                if "uddg=" not in href:
-                    continue
-
-            title_html = match.group(2)
-            title = html.unescape(re.sub(r"<.*?>", "", title_html)).strip()
-
-            if not href or not title or len(title) < 2:
-                continue
-
-            # Clean up DDG redirects
-            if "uddg=" in href:
-                match_real = re.search(r"uddg=([^&]+)", href)
-                if match_real:
-                    from urllib.parse import unquote
-
-                    href = unquote(match_real.group(1))
-
-            if href.startswith("//"):
-                href = "https:" + href
-            elif href.startswith("/"):
-                href = "https://duckduckgo.com" + href
-
-            # Filter UI elements
-            if any(title.lower() == x for x in ["next", "previous", "images", "videos", "news"]):
-                continue
-
-            if href not in seen_urls and href.startswith("http"):
-                seen_urls.add(href)
-                results.append({"title": title, "url": href})
-                if len(results) >= max_results:
-                    break
+        fallback_pattern = re.compile(r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+        for match in fallback_pattern.finditer(resp.text):
+            if _extract_from_match(match, seen_urls, results, max_results, is_fallback=True):
+                break
 
     return results
 

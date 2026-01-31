@@ -93,13 +93,12 @@ class MonitoringConfig:
         since SystemConfig is read-only for now.
         """
         from .config_loader import CONFIG_ROOT
-        import yaml
         
         config_path = CONFIG_ROOT / "config.yaml"
         
         try:
             # Load full config
-            full_config = {}
+            full_config: dict[str, Any] = {}
             if config_path.exists():
                 with open(config_path, encoding="utf-8") as f:
                     full_config = yaml.safe_load(f) or {}
