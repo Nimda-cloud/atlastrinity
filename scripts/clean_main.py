@@ -16,8 +16,10 @@ def clean_main():
 
     targets = [
         CONFIG_ROOT / "atlastrinity.db",
+        CONFIG_ROOT / "data" / "monitoring.db",
         CONFIG_ROOT / "memory",
         CONFIG_ROOT / "logs",
+        CONFIG_ROOT / "cache",
     ]
 
     for target in targets:

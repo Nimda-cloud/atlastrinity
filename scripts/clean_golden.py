@@ -14,15 +14,24 @@ GOLDEN_FUND_LIVE = CONFIG_ROOT / "data" / "golden_fund"
 def clean_golden_fund():
     print("🧹 Cleaning Golden Fund Data...")
 
-    if GOLDEN_FUND_LIVE.exists():
-        try:
-            shutil.rmtree(GOLDEN_FUND_LIVE)
-            print(f"✅ Deleted {GOLDEN_FUND_LIVE}")
-        except Exception as e:
-            print(f"❌ Failed to delete {GOLDEN_FUND_LIVE}: {e}")
-            return False
-    else:
-        print("ℹ️ Golden Fund dir not found (already clean).")
+    targets = [
+        GOLDEN_FUND_LIVE,
+        CONFIG_ROOT / "data" / "search",
+        CONFIG_ROOT / "memory" / "chroma",
+    ]
+
+    for target in targets:
+        if target.exists():
+            try:
+                if target.is_file():
+                    target.unlink()
+                else:
+                    shutil.rmtree(target)
+                print(f"✅ Deleted {target}")
+            except Exception as e:
+                print(f"❌ Failed to delete {target}: {e}")
+        else:
+            print(f"ℹ️ {target.name} not found.")
 
     return True
 

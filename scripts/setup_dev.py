@@ -248,6 +248,49 @@ def ensure_database():
         print_warning(f"Помилка при налаштуванні БД: {e}")
 
 
+def prepare_monitoring_db():
+    """Initialize Monitoring SQLite database"""
+    print_step("Налаштування бази даних моніторингу (SQLite)...")
+    monitor_db_path = CONFIG_ROOT / "data" / "monitoring.db"
+    monitor_db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    if monitor_db_path.exists():
+         print_success(f"Monitoring DB вже існує: {monitor_db_path}")
+    else:
+         print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
+         
+    # Backup restore logic could go here if we persist monitoring data across resets
+    backup_path = PROJECT_ROOT / "backups" / "databases" / "monitoring.db"
+    if not monitor_db_path.exists() and backup_path.exists():
+        try:
+            shutil.copy2(backup_path, monitor_db_path)
+            print_success("Monitoring DB відновлено з бекапу")
+        except Exception as e:
+            print_warning(f"Не вдалося відновити Monitoring DB: {e}")
+
+
+
+def prepare_monitoring_db():
+    """Initialize Monitoring SQLite database"""
+    print_step("Налаштування бази даних моніторингу (SQLite)...")
+    monitor_db_path = CONFIG_ROOT / "data" / "monitoring.db"
+    monitor_db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    if monitor_db_path.exists():
+         print_success(f"Monitoring DB вже існує: {monitor_db_path}")
+    else:
+         print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
+         
+    # Backup restore logic could go here if we persist monitoring data across resets
+    backup_path = PROJECT_ROOT / "backups" / "databases" / "monitoring.db"
+    if not monitor_db_path.exists() and backup_path.exists():
+        try:
+            shutil.copy2(backup_path, monitor_db_path)
+            print_success("Monitoring DB відновлено з бекапу")
+        except Exception as e:
+            print_warning(f"Не вдалося відновити Monitoring DB: {e}")
+
+
 def verify_golden_fund():
     """Verify Golden Fund database and restore from backup if needed."""
     print_step("Перевірка Golden Fund (Backup & Restore)...")
@@ -1347,6 +1390,27 @@ def main():
     print_info(f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'python scripts/watch_config.py' для авто-синхронізації конфігів")
 
     import json
+
+def prepare_monitoring_db():
+    """Initialize Monitoring SQLite database"""
+    print_step("Налаштування бази даних моніторингу (SQLite)...")
+    monitor_db_path = CONFIG_ROOT / "data" / "monitoring.db"
+    monitor_db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    if monitor_db_path.exists():
+         print_success(f"Monitoring DB вже існує: {monitor_db_path}")
+    else:
+         print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
+         
+    # Backup restore logic could go here if we persist monitoring data across resets
+    backup_path = PROJECT_ROOT / "backups" / "databases" / "monitoring.db"
+    if not monitor_db_path.exists() and backup_path.exists():
+        try:
+            shutil.copy2(backup_path, monitor_db_path)
+            print_success("Monitoring DB відновлено з бекапу")
+        except Exception as e:
+            print_warning(f"Не вдалося відновити Monitoring DB: {e}")
+
 
     mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
     enabled_servers = []
