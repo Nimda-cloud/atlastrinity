@@ -438,8 +438,9 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         2. **DATA DEPENDENCY**: For every step, ask: "Do I have the IPs, tokens, or file paths?" If Step 3 needs an IP found in Step 1, highlight this chain.
         3. **BOTTLENECK IDENTIFICATION**: Find macOS-specific barriers (permissions, SIP, hardware limits).
         4. **SEQUENTIAL LOGIC**: Ensure the plan isn't a list of isolated tasks, but a continuous flow.
+        5. **FINAL GOAL SYNTHESIS (CRITICAL)**: After the mental dry-run, ask yourself: "What did the user ULTIMATELY want to see?" and "What exactly is missing right now to realize that?" Use this to guide the final plan structure.
 
-        OUTPUT: Provide a technical strategy in English, detailing the prerequisites for each phase.
+        OUTPUT: Provide a technical strategy in English, detailing the prerequisites for each phase and a clear path to the ultimate goal.
         """
 
     @staticmethod
@@ -470,6 +471,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         - **META-PLANNING AUTHORIZED**: If the task is complex, you MAY include reasoning steps (using `sequential-thinking`) to discover the path forward. Do not just say "no steps found". Goal achievement is mandatory.
 
         - **DISCOVERY FIRST**: If your plan involves the `macos-use` server, you MUST include a discovery step (tool: `macos-use.discovery`) as Step 1. This ensures Tetyana has the latest technical schemas before execution.
+        - **RE-PLANNING DOCTRINE**: If the 'STRATEGY' section contains a 'SIMULATION REPORT' with blockers (especially missing IPs or paths), your priority is to insert steps that DISCOVER this missing data. Do not ignore blockers.
         - **DEVIATION AUTHORITY**: Explicitly instruct Tetyana that she is authorized to deviate from this plan if she discovers a more optimal path.
         
         **CRITICAL: CODE IMPLEMENTATION STEPS MUST USE VIBE MCP**:
