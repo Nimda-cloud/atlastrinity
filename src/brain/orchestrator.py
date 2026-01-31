@@ -2762,6 +2762,7 @@ class Trinity:
     ) -> None:
         """Background LLM-based discovery extraction."""
         from langchain_core.messages import HumanMessage, SystemMessage
+
         from providers.copilot import CopilotLLM
         from src.brain.memory import long_term_memory
         

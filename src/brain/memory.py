@@ -626,7 +626,7 @@ class LongTermMemory:
         if not self.available or self.discoveries.count() == 0:
             return []
         try:
-            where_filter = {}
+            where_filter: dict[str, Any] = {}
             if task_id:
                 where_filter["task_id"] = task_id
             if category:
@@ -636,7 +636,7 @@ class LongTermMemory:
                 query_texts=[query],
                 n_results=min(n_results, self.discoveries.count()),
                 include=["documents", "metadatas", "distances"],
-                where=where_filter if where_filter else None,
+                where=where_filter if where_filter else None,  # type: ignore[arg-type]
             )
             
             discoveries = []
@@ -653,7 +653,7 @@ class LongTermMemory:
             logger.error(f"[MEMORY] Failed to recall discoveries: {e}")
             return []
 
-    def get_task_discoveries(self, task_id: str) -> dict[str, str]:
+    def get_task_discoveries(self, task_id: str) -> dict[str, Any]:
         """Get all discoveries for a specific task as key-value pairs."""
         if not self.available or self.discoveries.count() == 0:
             return {}
@@ -683,6 +683,7 @@ class LongTermMemory:
                 "knowledge_graph_nodes",
                 "conversations",
                 "behavior_deviations",
+                "discoveries",
             ]:
                 try:
                     self.client.delete_collection(name=collection_name)
@@ -698,6 +699,7 @@ class LongTermMemory:
             self.knowledge = self.client.get_collection(name="knowledge_graph_nodes")
             self.conversations = self.client.get_collection(name="conversations")
             self.behavior_deviations = self.client.get_collection(name="behavior_deviations")
+            self.discoveries = self.client.get_collection(name="discoveries")
 
             logger.info("[MEMORY] ALL VECTOR MEMORY CLEARED SUCCESSFULLY.")
             return True
