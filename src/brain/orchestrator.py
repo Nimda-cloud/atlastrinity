@@ -895,6 +895,125 @@ class Trinity:
                 )
         except Exception as e:
             logger.error(f"DB Task creation failed: {e}")
+    async def _initialize_run_state(self, user_request: str, session_id: str) -> str:
+        """Initialize session state and DB records for a run."""
+        from src.brain.context import shared_context
+        is_subtask = getattr(self, "_in_subtask", False)
+        if is_subtask:
+            return session_id
+
+        if not hasattr(self, "state") or self.state is None:
+            self.state = {
+                "messages": [],
+                "system_state": SystemState.IDLE.value,
+                "current_plan": None,
+                "step_results": [],
+                "error": None,
+                "logs": [],
+            }
+
+        try:
+            from src.brain.state_manager import state_manager
+            if state_manager and getattr(state_manager, "available", False) and not self.state["messages"] and session_id == "current_session":
+                saved_state = await state_manager.restore_session(session_id)
+                if saved_state:
+                    self.state = saved_state
+        except Exception:
+            pass
+
+        if session_id == "current_session" and isinstance(self.state.get("session_id"), str):
+            session_id = self.state["session_id"]
+            self.current_session_id = session_id
+        else:
+            self.state["session_id"] = session_id
+
+        if not self.state.get("_theme"):
+            self.state["_theme"] = user_request[:40] + ("..." if len(user_request) > 40 else "")
+
+        await self._verify_db_ids()
+        self.state["messages"].append(HumanMessage(content=user_request))
+        asyncio.create_task(self._save_chat_message("human", user_request))
+
+        # DB Session creation
+        try:
+            from src.brain.db.manager import db_manager
+            from src.brain.db.schema import Session as DBSession
+            if db_manager and getattr(db_manager, "available", False) and "db_session_id" not in self.state:
+                async with await db_manager.get_session() as db_sess:
+                    new_session = DBSession(started_at=datetime.now(UTC), metadata_blob={"theme": self.state["_theme"]})
+                    db_sess.add(new_session)
+                    await db_sess.commit()
+                    self.state["db_session_id"] = str(new_session.id)
+        except Exception as e:
+            logger.debug(f"DB Session creation skipped/failed: {e}")
+            
+        return session_id
+
+    async def _get_run_plan(self, user_request: str, is_subtask: bool) -> Any:
+        """Retrieve or create a plan for the current run."""
+        from src.brain.context import shared_context
+        # 1. Resumption logic
+        if self.state.get("current_plan") and getattr(self, "_resumption_pending", False):
+            plan_obj = self.state["current_plan"]
+            self._resumption_pending = False
+            if isinstance(plan_obj, dict):
+                from src.brain.agents.atlas import TaskPlan
+                return TaskPlan(
+                    id=plan_obj.get("id", "resumed"),
+                    goal=plan_obj.get("goal", user_request),
+                    steps=plan_obj.get("steps", []),
+                )
+            return plan_obj
+
+        # 2. Planning logic
+        try:
+            messages_raw = self.state.get("messages", []) or []
+            if not isinstance(messages_raw, list):
+                 messages_raw = []
+            history: list[Any] = messages_raw[-25:-1] if len(messages_raw) > 1 else []
+            analysis = await self.atlas.analyze_request(user_request, history=history)
+            intent = analysis.get("intent")
+
+            # Workflow routing
+            from src.brain.behavior_engine import behavior_engine
+            if intent and intent in behavior_engine.config.get("workflows", {}):
+                self.state["system_state"] = SystemState.EXECUTING.value
+                success = await workflow_engine.execute_workflow(
+                    str(intent), {"orchestrator": self, "user_request": user_request, "intent_analysis": analysis}
+                )
+                msg = f"Workflow '{intent}' completed." if success else f"Workflow '{intent}' failed."
+                await self._speak("atlas", msg)
+                return {"status": "completed", "result": msg, "type": "workflow"}
+
+            # Simple intent routing (chat, solo_task, etc.)
+            if intent in ["chat", "recall", "status", "solo_task"]:
+                response = analysis.get("initial_response") or await self.atlas.chat(
+                    user_request, 
+                    history=history, 
+                    use_deep_persona=analysis.get("use_deep_persona", False), 
+                    intent=intent, 
+                    on_preamble=self._speak
+                )
+                if response != "__ESCALATE__":
+                    await self._speak("atlas", response)
+                    return {"status": "completed", "result": response, "type": intent}
+
+            # Complex task planning
+            self.state["system_state"] = SystemState.PLANNING.value
+            from src.brain.mcp_manager import mcp_manager
+            shared_context.available_mcp_catalog = await mcp_manager.get_mcp_catalog()
+            await self._speak("atlas", analysis.get("voice_response") or "Аналізую запит...")
+
+            plan = await self._planning_loop(analysis, user_request, is_subtask, history)
+            if plan:
+                await self._create_db_task(user_request, plan)
+                await self._speak("atlas", self.atlas.get_voice_message("plan_created", steps=len(plan.steps)))
+            return plan
+
+        except Exception as e:
+            logger.error(f"[ORCHESTRATOR] Planning error: {e}")
+            self.state["system_state"] = SystemState.ERROR.value
+            return {"status": "error", "error": str(e)}
 
     async def run(self, user_request: str) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
@@ -903,101 +1022,27 @@ class Trinity:
         self.active_task = asyncio.current_task()
         start_time = asyncio.get_event_loop().time()
         session_id = self.current_session_id
+        is_subtask = getattr(self, "_in_subtask", False)
 
         if not IS_MACOS:
             await self._log(f"WARNING: Running on {PLATFORM_NAME}.", "system", type="warning")
 
-        is_subtask = getattr(self, "_in_subtask", False)
-        if not is_subtask:
-            if not hasattr(self, "state") or self.state is None:
-                self.state = {"messages": [], "system_state": SystemState.IDLE.value, "current_plan": None, "step_results": [], "error": None, "logs": []}
-
-            try:
-                from src.brain.state_manager import state_manager
-                if state_manager and getattr(state_manager, "available", False) and not self.state["messages"] and session_id == "current_session":
-                    saved_state = await state_manager.restore_session(session_id)
-                    if saved_state:
-                        self.state = saved_state
-            except Exception:
-                pass
-
-            if session_id == "current_session" and isinstance(self.state.get("session_id"), str):
-                session_id = self.state["session_id"]
-                self.current_session_id = session_id
-            else:
-                self.state["session_id"] = session_id
-
-            if not self.state.get("_theme"):
-                self.state["_theme"] = user_request[:40] + ("..." if len(user_request) > 40 else "")
-
-            await self._verify_db_ids()
-            self.state["messages"].append(HumanMessage(content=user_request))
-            asyncio.create_task(self._save_chat_message("human", user_request))
-
-            # DB Session
-            try:
-                from src.brain.db.manager import db_manager
-                if db_manager and getattr(db_manager, "available", False) and "db_session_id" not in self.state:
-                    async with await db_manager.get_session() as db_sess:
-                        new_session = DBSession(started_at=datetime.now(UTC), metadata_blob={"theme": self.state["_theme"]})
-                        db_sess.add(new_session)
-                        await db_sess.commit()
-                        self.state["db_session_id"] = str(new_session.id)
-            except Exception:
-                pass
-
+        session_id = await self._initialize_run_state(user_request, session_id)
         shared_context.push_goal(user_request)
-        plan = None
-        if self.state.get("current_plan") and getattr(self, "_resumption_pending", False):
-            plan_obj = self.state["current_plan"]
-            if isinstance(plan_obj, dict):
-                from src.brain.agents.atlas import TaskPlan
-                plan = TaskPlan(id=plan_obj.get("id", "resumed"), goal=plan_obj.get("goal", user_request), steps=plan_obj.get("steps", []))
-            else:
-                plan = plan_obj
-            self._resumption_pending = False
-        else:
-            try:
-                messages_raw = self.state.get("messages", [])
-                if not isinstance(messages_raw, list):
-                    messages_raw = []
-                history: list[Any] = messages_raw[-25:-1] if len(messages_raw) > 1 else []
-                analysis = await self.atlas.analyze_request(user_request, history=history)
-                intent = analysis.get("intent")
 
-                from src.brain.behavior_engine import behavior_engine
-                if intent and intent in behavior_engine.config.get("workflows", {}):
-                    self.state["system_state"] = SystemState.EXECUTING.value
-                    success = await workflow_engine.execute_workflow(str(intent), {"orchestrator": self, "user_request": user_request, "intent_analysis": analysis})
-                    msg = f"Workflow '{intent}' completed." if success else f"Workflow '{intent}' failed."
-                    await self._speak("atlas", msg)
-                    self.active_task = None
-                    return {"status": "completed", "result": msg, "type": "workflow"}
-
-                if intent in ["chat", "recall", "status", "solo_task"]:
-                    response = analysis.get("initial_response") or await self.atlas.chat(user_request, history=history, use_deep_persona=analysis.get("use_deep_persona", False), intent=intent, on_preamble=self._speak)
-                    if response != "__ESCALATE__":
-                        await self._speak("atlas", response)
-                        self.state["system_state"] = SystemState.IDLE.value
-                        self.active_task = None
-                        return {"status": "completed", "result": response, "type": intent}
-
-                self.state["system_state"] = SystemState.PLANNING.value
-                shared_context.available_mcp_catalog = await mcp_manager.get_mcp_catalog()
-                await self._speak("atlas", analysis.get("voice_response") or "Аналізую запит...")
-
-                plan = await self._planning_loop(analysis, user_request, is_subtask, history)
-                if not plan:
-                    return {"status": "completed", "result": "No plan.", "type": "chat"}
-
-                await self._create_db_task(user_request, plan)
-                await self._speak("atlas", self.atlas.get_voice_message("plan_created", steps=len(plan.steps)))
-
-            except Exception as e:
-                logger.error(f"[ORCHESTRATOR] Planning error: {e}")
-                self.state["system_state"] = SystemState.ERROR.value
-                self.active_task = None
-                return {"status": "error", "error": str(e)}
+        # Plan Resolution
+        plan_or_result = await self._get_run_plan(user_request, is_subtask)
+        if isinstance(plan_or_result, dict):
+            # Already handled (e.g. chat response, workflow result)
+            self.active_task = None
+            if plan_or_result.get("status") == "completed":
+                 self.state["system_state"] = SystemState.IDLE.value
+            return plan_or_result
+        
+        plan = plan_or_result
+        if not plan:
+            self.active_task = None
+            return {"status": "completed", "result": "No plan generated.", "type": "chat"}
 
         self.state["system_state"] = SystemState.EXECUTING.value
         try:
@@ -1008,6 +1053,7 @@ class Trinity:
             self.active_task = None
             return {"status": "error", "error": str(e)}
 
+        is_subtask = getattr(self, "_in_subtask", False)
         msgs = self.state.get("messages", [])
         msg_count = len(msgs) if isinstance(msgs, list) else 0
         await self._handle_post_execution_phase(user_request, is_subtask, start_time, session_id, msg_count)
@@ -1087,6 +1133,9 @@ class Trinity:
     async def _persist_session_summary(self, session_id: str):
         """Generates a professional summary and stores it in DB and Vector memory."""
         try:
+            from src.brain.db.schema import ConversationSummary as DBConvSummary
+            from src.brain.knowledge_graph import knowledge_graph
+            
             messages = self.state.get("messages")
             if not isinstance(messages, list) or not messages:
                 return
@@ -1095,23 +1144,21 @@ class Trinity:
             summary = summary_data.get("summary", "No summary generated")
             entities = summary_data.get("entities", [])
 
-            # A. Store in Vector Memory (ChromaDB)
+            # A. Store in Vector Memory
             try:
                 from src.brain.memory import long_term_memory
-
                 if long_term_memory and getattr(long_term_memory, "available", False):
                     long_term_memory.remember_conversation(
                         session_id=session_id,
                         summary=summary,
                         metadata={"entities": entities},
                     )
-            except (ImportError, NameError):
+            except Exception:
                 pass
 
-            # B. Store in Structured DB (SQLite)
+            # B. Store in Structured DB
             try:
                 from src.brain.db.manager import db_manager
-
                 if db_manager and getattr(db_manager, "available", False):
                     async with await db_manager.get_session() as db_sess:
                         new_summary = DBConvSummary(
@@ -1133,12 +1180,9 @@ class Trinity:
                         "description": f"Entity mentioned in session {session_id}",
                         "source": "session_summary",
                     },
-                    namespace="global",  # Concepts from summaries are often global-worthy, or could stay in session?
-                    # For now, let's keep session concepts in global as "anchors" or maybe we decide later.
+                    namespace="global",
                 )
-
-            logger.info(f"[ORCHESTRATOR] Persisted professional session summary for {session_id}")
-
+            logger.info(f"[ORCHESTRATOR] Persisted summary for {session_id}")
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] Failed to persist session summary: {e}")
 
@@ -1195,36 +1239,8 @@ class Trinity:
 
         return golden_path
 
-    async def _self_heal(
-        self,
-        step: dict[str, Any],
-        step_id: str,
-        error: str,
-        step_result: StepResult | None,
-        depth: int,
-    ) -> tuple[bool, StepResult | None]:
-        """
-        Explicit self-healing workflow following the 8-phase protocol.
-
-        Phases:
-        1. Error Detection & Classification (already done by caller)
-        2. Context Building
-        3. Error Analysis & Fix Generation (Vibe)
-        4. Apply Fix (Vibe auto-approve)
-        5. Verification (Tests/Linters)
-        6. Diagram Update (devtools MCP)
-        7. Grisha Verification
-        8. Auto-Commit (if enabled)
-
-        Returns:
-            (success, updated_step_result)
-        """
-        success = False
-        updated_result = None
-        recovery_attempt_id = None
-        db_step_id = self.state.get("db_step_id")  # Assuming set in execute_node
-
-        # --- Phase 2: Context Building ---
+    async def _build_self_heal_context(self, step: dict[str, Any], step_id: str) -> tuple[str, str, list[dict[str, Any]]]:
+        """Prepare logs and error context for self-healing."""
         recent_logs = []
         if self.state and "logs" in self.state:
             recent_logs = [
@@ -1234,7 +1250,6 @@ class Trinity:
         log_context = "\n".join(recent_logs)
         error_context = f"Step ID: {step_id}\nAction: {step.get('action', '')}\n"
 
-        # Build structured recovery history
         raw_results = self.state.get("step_results", []) if self.state else []
         if not isinstance(raw_results, list):
             raw_results = []
@@ -1250,31 +1265,62 @@ class Trinity:
             if isinstance(r, dict)
             and str(r.get("step_id", "")).startswith(str(step_id).split(".")[0])
         ]
+        return log_context, error_context, step_recovery_history
 
-        # DB: Track Recovery Attempt Start
+    async def _log_recovery_attempt_db(
+        self,
+        db_step_id: str | None,
+        depth: int,
+        error: str,
+        success: bool = False,
+        vibe_text: str | None = None,
+        attempt_id: Any = None,
+    ) -> Any:
+        """Log recovery attempt start or update to the database."""
         try:
-            if db_manager and getattr(db_manager, "available", False) and db_step_id:
-                async with await db_manager.get_session() as db_sess:
+            from src.brain.db.manager import db_manager
+            from src.brain.db.schema import RecoveryAttempt
+            
+            if not (db_manager and getattr(db_manager, "available", False)):
+                return None
+
+            async with await db_manager.get_session() as db_sess:
+                if attempt_id:
+                    rec = await db_sess.get(RecoveryAttempt, attempt_id)
+                    if rec:
+                        rec.success = success
+                        if vibe_text:
+                            rec.vibe_text = str(vibe_text)[:5000]
+                        await db_sess.commit()
+                        return attempt_id
+                elif db_step_id:
                     rec_attempt = RecoveryAttempt(
-                        step_id=db_step_id,
+                        step_id=cast("Any", db_step_id),
                         depth=depth,
                         recovery_method="vibe",
-                        success=False,
+                        success=success,
                         error_before=str(error)[:5000],
                     )
                     db_sess.add(rec_attempt)
                     await db_sess.commit()
-                    recovery_attempt_id = rec_attempt.id
+                    return rec_attempt.id
         except Exception as e:
-            logger.error(f"Failed to log recovery attempt start: {e}")
+            logger.error(f"DB Recovery logging failed: {e}")
+        return None
 
-        # --- Phase 3 & 4: Vibe Diagnosis and Fix ---
-        vibe_text = None
-        
+    async def _get_vibe_diagnosis(
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        error: str,
+        log_context: str,
+        step_recovery_history: list[dict[str, Any]],
+        step_result: StepResult | None,
+        error_context: str,
+    ) -> str | None:
+        """Call Vibe to analyze and propose a fix."""
         try:
             await self._log("[VIBE] Diagnostic Phase...", "vibe")
-            
-            # Call Vibe to analyze and propose fix (but separate execution for audit)
             vibe_res = await asyncio.wait_for(
                 mcp_manager.call_tool(
                     "vibe",
@@ -1282,163 +1328,439 @@ class Trinity:
                     {
                         "error_message": f"{error_context}\n{error}",
                         "log_context": log_context,
-                        "auto_fix": False,  # We will apply fix after audit
+                        "auto_fix": False,
                         "step_action": step.get("action", ""),
                         "expected_result": step.get("expected_result", ""),
-                        "actual_result": str(
-                            step_result.result if step_result else "N/A"
-                        )[:2000],
+                        "actual_result": str(step_result.result if step_result else "N/A")[:2000],
                         "recovery_history": step_recovery_history,
                         "full_plan_context": str(self.state.get("current_plan", ""))[:3000],
                     },
                 ),
                 timeout=300,
             )
-            vibe_text = self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
+            return self._extract_vibe_payload(self._mcp_result_to_text(vibe_res))
+        except Exception as e:
+            logger.error(f"Vibe diagnosis failed: {e}")
+            return None
+
+    async def _handle_grisha_vibe_audit(
+        self,
+        step_id: str,
+        error: str,
+        vibe_text: str,
+    ) -> tuple[bool, StepResult | None, dict[str, Any] | None]:
+        """Engagement logic for Grisha's audit of the Vibe fix."""
+        rejection_count = getattr(self, "_rejection_cycles", {}).get(step_id, 0)
+        grisha_audit = await self.grisha.audit_vibe_fix(str(error), vibe_text)
+
+        if grisha_audit.get("audit_verdict") == "REJECT":
+            rejection_count += 1
+            if not hasattr(self, "_rejection_cycles"):
+                self._rejection_cycles = {}
+            self._rejection_cycles[step_id] = rejection_count
+
+            if rejection_count >= 3:
+                logger.warning(f"[ORCHESTRATOR] Grisha rejected Vibe fix 3x for {step_id}. Escalating.")
+                await self._log("⚠️ Система застрягла після 3 відхилень Grisha. Потрібне втручання.", "error")
+                return False, StepResult(
+                    step_id=step_id,
+                    success=False,
+                    result=f"Grisha rejection loop: {grisha_audit.get('reasoning')}",
+                    error="need_user_input",
+                ), None
+            return True, None, None
+
+        if hasattr(self, "_rejection_cycles") and step_id in self._rejection_cycles:
+            del self._rejection_cycles[step_id]
+        
+        return False, None, grisha_audit
+
+    async def _apply_vibe_fix(
+        self,
+        step_id: str,
+        error: str,
+        vibe_text: str,
+        healing_decision: dict[str, Any],
+    ) -> bool:
+        """Sequential thinking and applying the Vibe fix."""
+        try:
+            instructions = healing_decision.get("instructions_for_vibe", "")
+            if not instructions:
+                instructions = "Apply the fix proposed in the analysis."
+
+            await self._log("[ORCHESTRATOR] Engaging Deep Reasoning before applying fix...", "system")
+            analysis = await self.atlas.use_sequential_thinking(
+                f"Analyze why step {step_id} failed and how to apply the vibe fix effectively.\nError: {error}\nVibe Fix: {vibe_text}\nInstructions: {instructions}",
+                total_thoughts=3,
+            )
+            if analysis.get("success"):
+                logger.info(f"[ORCHESTRATOR] Deep reasoning completed: {analysis.get('analysis', '')[:200]}...")
+
+            from src.brain.mcp_manager import mcp_manager
+            await mcp_manager.call_tool(
+                "vibe",
+                "vibe_prompt",
+                {
+                    "prompt": f"EXECUTE FIX: {instructions}",
+                    "auto_approve": True,
+                },
+            )
+            logger.info(f"[ORCHESTRATOR] Vibe healing applied for {step_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to apply Vibe fix: {e}")
+            return False
+
+    async def _update_diagrams_after_fix(self) -> None:
+        """Update architecture diagrams if enabled."""
+        if not config.get("self_healing", {}).get("vibe_debugging", {}).get("diagram_access", {}).get("update_after_fix", False):
+            return
+
+        try:
+            from src.brain.mcp_manager import mcp_manager
+            diagram_result = await mcp_manager.call_tool(
+                "devtools",
+                "devtools_update_architecture_diagrams",
+                {
+                    "project_path": None,
+                    "commits_back": 1,
+                    "target_mode": "internal",
+                    "use_reasoning": True,
+                },
+            )
+            if diagram_result:
+                await self._log("[SELF-HEAL] Architecture diagrams updated after fix", "system")
+        except Exception as de:
+            logger.warning(f"Diagram update after self-heal failed: {de}")
+
+    async def _self_heal(
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        error: str,
+        step_result: StepResult | None,
+        depth: int,
+    ) -> tuple[bool, StepResult | None]:
+        """Explicit self-healing workflow following the 8-phase protocol."""
+        success = False
+        updated_result = None
+        db_step_id = cast("str | None", self.state.get("db_step_id"))
+
+        # --- Phase 2: Context Building ---
+        log_context, error_context, step_recovery_history = await self._build_self_heal_context(step, step_id)
+
+        # DB: Track Recovery Attempt Start
+        recovery_attempt_id = await self._log_recovery_attempt_db(db_step_id, depth, error)
+
+        try:
+            # --- Phase 3 & 4: Vibe Diagnosis and Fix ---
+            vibe_text = await self._get_vibe_diagnosis(
+                step, step_id, error, log_context, step_recovery_history, step_result, error_context
+            )
 
             if vibe_text:
                 # --- Phase 7 (Early): Grisha Verification of PLAN ---
-                # Track rejection cycles to prevent infinite loops
-                # Access _rejection_cycles from self (orchestrator)
-                rejection_count = getattr(self, "_rejection_cycles", {}).get(step_id, 0)
-
-                grisha_audit = await self.grisha.audit_vibe_fix(str(error), vibe_text)
-
-                if grisha_audit.get("audit_verdict") == "REJECT":
-                    rejection_count += 1
-                    if not hasattr(self, "_rejection_cycles"):
-                        self._rejection_cycles = {}
-                    self._rejection_cycles[step_id] = rejection_count
-
-                    # Limit rejection cycles to 3
-                    if rejection_count >= 3:
-                        logger.warning(
-                            f"[ORCHESTRATOR] Grisha rejected Vibe fix {rejection_count} times for step {step_id}. Escalating."
-                        )
-                        await self._log(
-                            f"⚠️ Система застрягла після {rejection_count} відхилень Grisha. Потрібне втручання.",
-                            "error",
-                        )
-                        # DB Update: Failure
-                        if recovery_attempt_id:
-                             try:
-                                async with await db_manager.get_session() as db_sess:
-                                    rec = await db_sess.get(RecoveryAttempt, recovery_attempt_id)
-                                    if rec:
-                                        rec.success = False
-                                        rec.vibe_text = f"REJECTED BY GRISHA: {grisha_audit.get('reasoning')}"
-                                        await db_sess.commit()
-                             except Exception:
-                                 pass
-
-                        return False, StepResult(
-                            step_id=step_id,
-                            success=False,
-                            error="need_user_input",
-                            result=f"Grisha returned rejection: {grisha_audit.get('reasoning')}",
-                        )
-
+                rejected, fatal_result, grisha_audit = await self._handle_grisha_vibe_audit(step_id, error, vibe_text)
+                
+                if fatal_result:
+                    if recovery_attempt_id:
+                        await self._log_recovery_attempt_db(None, depth, error, success=False, vibe_text=fatal_result.result, attempt_id=recovery_attempt_id)
+                    return False, fatal_result
+                
+                if rejected:
                     return False, None
 
-                elif hasattr(self, "_rejection_cycles") and step_id in self._rejection_cycles:
-                    del self._rejection_cycles[step_id]
-
-                # Evaluate strategy via Atlas (Voice + High-level decision)
-                healing_decision = await self.atlas.evaluate_healing_strategy(
-                    str(error),
-                    vibe_text,
-                    grisha_audit,
-                )
-                await self._speak(
-                    "atlas",
-                    healing_decision.get("voice_message", "Я знайшов рішення."),
-                )
+                # Evaluate strategy via Atlas
+                healing_decision = await self.atlas.evaluate_healing_strategy(str(error), vibe_text, grisha_audit or {})
+                await self._speak("atlas", healing_decision.get("voice_message", "Я знайшов рішення."))
 
                 if healing_decision.get("decision") == "PROCEED":
                     # --- Phase 4: Apply Fix ---
-                    
-                    instructions = healing_decision.get("instructions_for_vibe", "")
-                    if not instructions:
-                        instructions = "Apply the fix proposed in the analysis."
-                    
-                    # USE SEQUENTIAL THINKING BEFORE APPLYING FIX (User Requirement)
-                    await self._log(
-                        "[ORCHESTRATOR] Engaging Deep Reasoning (seq_think) before applying fix...",
-                        "system",
-                    )
-                    analysis = await self.atlas.use_sequential_thinking(
-                         f"Analyze why step {step_id} failed and how to apply the vibe fix effectively.\nError: {error}\nVibe Fix: {vibe_text}\nInstructions: {instructions}",
-                         total_thoughts=3,
-                    )
-                    if analysis.get("success"):
-                        logger.info(f"[ORCHESTRATOR] Deep reasoning completed: {analysis.get('analysis', '')[:200]}...")
-                    
-                    await mcp_manager.call_tool(
-                        "vibe",
-                        "vibe_prompt",
-                        {
-                            "prompt": f"EXECUTE FIX: {instructions}",
-                            "auto_approve": True,
-                        },
-                    )
-                    logger.info(f"[ORCHESTRATOR] Vibe healing applied for {step_id}")
-                    
-                    success = True
-                    # Vibe prompt tool returns dict, we assume success if no exception raised
-                    
-                    # --- Phase 6: Diagram Update (After successful fix) ---
-                    diagram_update_enabled = config.get("self_healing", {}).get(
-                        "vibe_debugging", {}
-                    ).get("diagram_access", {}).get("update_after_fix", False)
+                    if await self._apply_vibe_fix(step_id, error, vibe_text, healing_decision):
+                        success = True
+                        
+                        # --- Phase 6: Diagram Update ---
+                        await self._update_diagrams_after_fix()
 
-                    if diagram_update_enabled:
-                        try:
-                            # Attempt to update diagrams if configured
-                            diagram_result = await mcp_manager.call_tool(
-                                "devtools",
-                                "devtools_update_architecture_diagrams",
-                                {
-                                    "project_path": None,  # AtlasTrinity internal
-                                    "commits_back": 1,
-                                    "target_mode": "internal",
-                                    "use_reasoning": True,
-                                },
-                            )
-                            if diagram_result:
-                                await self._log(
-                                    "[SELF-HEAL] Architecture diagrams updated after fix",
-                                    "system",
-                                )
-                        except Exception as de:
-                            logger.warning(f"Diagram update after self-heal failed: {de}")
-
-                    # DB Update: Success
-                    if recovery_attempt_id:
-                         try:
-                            async with await db_manager.get_session() as db_sess:
-                                rec = await db_sess.get(RecoveryAttempt, recovery_attempt_id)
-                                if rec:
-                                    rec.success = True
-                                    rec.vibe_text = str(vibe_text)[:5000]
-                                    await db_sess.commit()
-                         except Exception:
-                             pass
+                        # DB Update: Success
+                        if recovery_attempt_id:
+                            await self._log_recovery_attempt_db(None, depth, error, success=True, vibe_text=vibe_text, attempt_id=recovery_attempt_id)
 
         except Exception as ve:
             logger.warning(f"Vibe self-healing workflow failed: {ve}")
             success = False
             if recovery_attempt_id:
-                 try:
-                    async with await db_manager.get_session() as db_sess:
-                        rec = await db_sess.get(RecoveryAttempt, recovery_attempt_id)
-                        if rec:
-                            rec.success = False
-                            rec.vibe_text = f"CRASH: {ve!s}"
-                            await db_sess.commit()
-                 except Exception:
-                     pass
+                await self._log_recovery_attempt_db(None, depth, error, success=False, vibe_text=f"CRASH: {ve!s}", attempt_id=recovery_attempt_id)
 
         return success, updated_result
+
+    async def _handle_recursion_backoff(self, depth: int) -> None:
+        """Apply exponential backoff for deeper recursion levels."""
+        BACKOFF_BASE_MS = 500
+        if depth > 1:
+            backoff_ms = BACKOFF_BASE_MS * (2 ** (depth - 1))
+            await self._log(
+                f"Recursion depth {depth}: applying {backoff_ms}ms backoff",
+                "orchestrator",
+            )
+            await asyncio.sleep(backoff_ms / 1000)
+
+    async def _push_recursive_goal(
+        self, parent_prefix: str | None, depth: int, steps: list[dict[str, Any]]
+    ) -> bool:
+        """Push a new goal to the shared context for a recursive level."""
+        from src.brain.context import shared_context
+
+        goal_description = (
+            f"Recovery sub-tasks for step {parent_prefix}"
+            if parent_prefix
+            else f"Sub-plan at depth {depth}"
+        )
+        if parent_prefix or depth > 0:
+            try:
+                shared_context.push_goal(goal_description, total_steps=len(steps))
+                logger.info(
+                    f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
+                )
+                await self._update_task_metadata()
+                return True
+            except Exception as e:
+                logger.warning(f"Failed to push goal: {e}")
+        return False
+
+    async def _pop_recursive_goal(self, goal_pushed: bool, depth: int) -> None:
+        """Pop the goal from the shared context upon leaving a recursive level."""
+        if goal_pushed:
+            try:
+                from src.brain.context import shared_context
+
+                completed_goal = shared_context.pop_goal()
+                logger.info(
+                    f"[ORCHESTRATOR] ✅ Completed recursive level {depth}: {completed_goal}"
+                )
+                await self._update_task_metadata()
+            except Exception as e:
+                logger.warning(f"Failed to pop goal: {e}")
+
+            except Exception as e:
+                logger.warning(f"Failed to pop goal: {e}")
+
+    def _is_step_already_completed(self, step_id: str) -> bool:
+        """Check if a step has already been successfully completed."""
+        step_results = self.state.get("step_results") or []
+        return any(
+            isinstance(res, dict)
+            and str(res.get("step_id")) == str(step_id)
+            and res.get("success")
+            for res in step_results
+        )
+
+    async def _execute_step_attempt(
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        attempt: int,
+        depth: int,
+    ) -> StepResult | None:
+        """Execute a single attempt of a step with timeout handling."""
+        try:
+            timeout = float(config.get("orchestrator", {}).get("task_timeout", 1200.0))
+            return await asyncio.wait_for(
+                self.execute_node(
+                    cast("TrinityState", self.state),
+                    step,
+                    step_id,
+                    attempt=attempt,
+                    depth=depth,
+                ),
+                timeout=timeout + 60.0,
+            )
+        except TimeoutError:
+            logger.error(f"[ORCHESTRATOR] Step {step_id} timed out on attempt {attempt}")
+            return None
+        except Exception as e:
+            logger.error(
+                f"[ORCHESTRATOR] Step {step_id} crashed on attempt {attempt}: {e}",
+                exc_info=True,
+            )
+            return None
+
+    async def _handle_step_error_strategy(
+        self,
+        strategy: Any,
+        step: dict[str, Any],
+        step_id: str,
+        attempt: int,
+        last_error: str,
+        step_result: StepResult | None,
+        depth: int,
+        steps: list[dict[str, Any]],
+        index: int,
+    ) -> tuple[bool, StepResult | None]:
+        """Route the strategy decided by error_router."""
+        if strategy.action == "RETRY":
+            if attempt < strategy.max_retries:
+                await self._log(
+                    f"Transient error detected. {strategy.reason}. Retrying in {strategy.backoff}s...",
+                    "orchestrator",
+                )
+                await asyncio.sleep(strategy.backoff)
+                return True, None
+            return False, step_result
+
+        elif strategy.action == "WAIT_AND_RETRY":
+            if attempt < strategy.max_retries:
+                await self._log(
+                    f"Infrastructure issue detected. {strategy.reason}. Waiting {strategy.backoff}s...",
+                    "orchestrator",
+                )
+                await asyncio.sleep(strategy.backoff)
+                return True, None
+            else:
+                await self._log(f"Persistent infrastructure issue: {strategy.reason}.", "error")
+                return False, StepResult(
+                    step_id=step_id,
+                    success=False,
+                    error="infrastructure_failure",
+                    result=f"API issue persisted after {attempt} attempts. {strategy.reason}",
+                )
+
+        elif strategy.action == "RESTART":
+            await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
+            try:
+                from src.brain.state_manager import state_manager
+                if state_manager and state_manager.available:
+                    await state_manager.save_session(self.current_session_id, self.state)
+                    redis_client = getattr(state_manager, "redis_client", None)
+                    if redis_client:
+                        restart_metadata = {
+                            "reason": strategy.reason,
+                            "timestamp": datetime.now().isoformat(),
+                            "source": "orchestrator_self_healing",
+                        }
+                        await redis_client.set("restart_pending", json.dumps(restart_metadata))
+            except Exception as e:
+                logger.error(f"Restart preparation failed: {e}")
+
+            import os
+            import sys
+            await asyncio.sleep(1.0)
+            os.execv(sys.executable, [sys.executable, *sys.argv])
+            return False, StepResult(step_id=step_id, success=False, error="restarting", result="Restaring due to strategy")
+
+        elif strategy.action == "ASK_USER":
+            await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
+            return False, StepResult(
+                step_id=step_id,
+                success=False,
+                error="need_user_input",
+                result=f"ASK_USER: {strategy.reason}",
+            )
+
+        elif strategy.action == "VIBE_HEAL":
+            await self._log(f"Logic Error: {strategy.reason}. Engaging Vibe...", "orchestrator")
+            heal_success, heal_result = await self._self_heal(
+                step, step_id, last_error, step_result, depth
+            )
+            if heal_result:
+                return False, heal_result
+            if heal_success:
+                return True, None
+            return False, None
+
+        elif strategy.action == "ATLAS_PLAN":
+            await self._log(f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator")
+            try:
+                replan_query = f"RECOVERY STRATEGY NEEDED. Goal: {self.state.get('current_goal')}. Step {step_id} failed: {last_error}."
+                new_plan = await self.atlas.create_plan(
+                    {"enriched_request": replan_query, "intent": "task", "complexity": "medium"}
+                )
+                if new_plan and getattr(new_plan, "steps", []):
+                    for offset, s in enumerate(new_plan.steps):
+                        steps.insert(index + 1 + offset, s)
+                    return True, None
+            except Exception as e:
+                logger.error(f"Atlas re-planning failed: {e}")
+            return False, None
+
+        return False, step_result
+
+    async def _validate_with_grisha_failure(
+        self, step: dict[str, Any], step_id: str, step_result: StepResult | None, last_error: str
+    ) -> bool:
+        """Consult Grisha for a second opinion on a failed step."""
+        if not config.get("orchestrator", {}).get("validate_failed_steps_with_grisha", False):
+            return False
+
+        try:
+            await self._log(f"Requesting Grisha validation for {step_id}...", "orchestrator")
+            screenshot = None
+            expected = step.get("expected_result", "").lower()
+            if any(k in expected for k in ["visual", "screenshot", "ui", "interface", "window"]):
+                screenshot = await self.grisha.take_screenshot()
+
+            from src.brain.context import shared_context
+            goal_ctx = str(shared_context.get_goal_context() or "")
+            verify_result = await self.grisha.verify_step(
+                step=step,
+                result=step_result or StepResult(step_id=step_id, success=False, result="", error=last_error),
+                screenshot_path=screenshot,
+                goal_context=goal_ctx,
+                task_id=str(self.state.get("db_task_id") or ""),
+            )
+            if verify_result.verified:
+                await self._log(f"Grisha verified step {step_id} despite failure.", "orchestrator")
+                return True
+
+            recovery_agent = config.get("orchestrator", {}).get("recovery_voice_agent", "atlas")
+            await self._speak(
+                recovery_agent, verify_result.voice_message or "Крок потребує відновлення."
+            )
+        except Exception as e:
+            logger.warning(f"Grisha validation failed: {e}")
+        return False
+
+    async def _atlas_recovery_fallback(
+        self,
+        step_id: str,
+        last_error: str,
+        depth: int,
+    ) -> bool:
+        """Standard Atlas help as ultimate fallback."""
+        try:
+            recovery_agent = config.get("orchestrator", {}).get("recovery_voice_agent", "atlas")
+            await self._log(f"Recovery for Step {step_id} (announced by {recovery_agent})...", "orchestrator")
+            if recovery_agent == "atlas":
+                await self._speak("atlas", self.atlas.get_voice_message("recovery_started", step_id=step_id))
+            else:
+                await self._speak(recovery_agent, "Крок зупинився — починаю процедуру відновлення.")
+
+            recovery = await asyncio.wait_for(
+                self.atlas.help_tetyana(str(step_id), str(last_error)),
+                timeout=60.0,
+            )
+            await self._speak("atlas", recovery.get("voice_message", "Альтернативний шлях."))
+            alt_steps = recovery.get("alternative_steps", [])
+            if not alt_steps:
+                return False
+
+            # --- RECURSION GUARD ---
+            steps_hash = hash(str(alt_steps))
+            if not hasattr(self, "_attempted_recoveries"):
+                self._attempted_recoveries: dict[str, int] = {}
+            if self._attempted_recoveries.get(step_id) == steps_hash:
+                raise Exception(f"Recursive recovery stall detected for step {step_id}.")
+            self._attempted_recoveries[step_id] = steps_hash
+
+            from src.brain.context import shared_context
+            if shared_context.is_at_max_depth(depth + 1):
+                raise Exception(f"Max recursion depth exceeded at {depth+1} for {step_id}.")
+
+            await self._execute_steps_recursive(alt_steps, parent_prefix=step_id, depth=depth + 1)
+            return True
+        except Exception as r_err:
+            logger.error(f"Atlas recovery failed: {r_err}")
+            raise Exception(f"Task failed at step {step_id} after retries and recovery: {r_err}")
 
     async def _execute_steps_recursive(
         self,
@@ -1456,58 +1778,18 @@ class Trinity:
         Supports hierarchical numbering (e.g. 3.1, 3.2) and deep recovery.
         """
         MAX_RECURSION_DEPTH = 5
-        BACKOFF_BASE_MS = 500  # Exponential backoff between depths
 
         if depth > MAX_RECURSION_DEPTH:
             raise RecursionError("Max task recursion depth reached. Failing task.")
 
-        # Exponential backoff on deeper recursion to prevent overwhelming the system
-        if depth > 1:
-            backoff_ms = BACKOFF_BASE_MS * (2 ** (depth - 1))
-            await self._log(
-                f"Recursion depth {depth}: applying {backoff_ms}ms backoff",
-                "orchestrator",
-            )
-            await asyncio.sleep(backoff_ms / 1000)
+        # Exponential backoff
+        await self._handle_recursion_backoff(depth)
 
         # Track recursion metrics for analytics
         metrics_collector.record("recursion_depth", depth, tags={"parent": parent_prefix or "root"})
 
-        # PUSH GOAL: Входимо в під-завдання (рекурсивний рівень)
-        # Визначити ціль для цього рівня рекурсії
-        from src.brain.context import shared_context
-
-        goal_pushed = False
-        if parent_prefix:
-            # Це під-завдання, створене для відновлення кроку parent_prefix
-            goal_description = f"Recovery sub-tasks for step {parent_prefix}"
-            try:
-                shared_context.push_goal(goal_description, total_steps=len(steps))
-                goal_pushed = True
-                logger.info(
-                    f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
-                )
-
-                # Оновити metadata_blob в БД для збереження рекурсивного контексту
-                await self._update_task_metadata()
-
-            except Exception as e:
-                logger.warning(f"Failed to push goal: {e}")
-        elif depth > 0:
-            # Це вкладений рівень (не повинно відбуватися без parent_prefix, але на всяк випадок)
-            goal_description = f"Sub-plan at depth {depth}"
-            try:
-                shared_context.push_goal(goal_description, total_steps=len(steps))
-                goal_pushed = True
-                logger.info(
-                    f"[ORCHESTRATOR] 🎯 Entering recursive level {depth}: {goal_description}"
-                )
-
-                # Оновити metadata_blob в БД для збереження рекурсивного контексту
-                await self._update_task_metadata()
-
-            except Exception as e:
-                logger.warning(f"Failed to push goal: {e}")
+        # PUSH GOAL
+        goal_pushed = await self._push_recursive_goal(parent_prefix, depth, steps)
 
         for i, step in enumerate(steps):
             # Generate hierarchical ID: "1", "2" or "3.1", "3.2"
@@ -1530,13 +1812,7 @@ class Trinity:
                 pass
 
             # --- SKIP ALREADY COMPLETED STEPS ---
-            step_results = self.state.get("step_results") or []
-            if any(
-                isinstance(res, dict)
-                and str(res.get("step_id")) == str(step_id)
-                and res.get("success")
-                for res in step_results
-            ):
+            if self._is_step_already_completed(step_id):
                 logger.info(f"[ORCHESTRATOR] Skipping already completed step {step_id}")
                 continue
 
@@ -1545,357 +1821,72 @@ class Trinity:
             last_error = ""
 
             for attempt in range(1, max_step_retries + 1):
-                step_result: StepResult | None = None
                 await self._log(
                     f"Step {step_id}, Attempt {attempt}: {step.get('action')}",
                     "orchestrator",
                 )
 
-                try:
-                    step_result = await asyncio.wait_for(
-                        self.execute_node(
-                            cast("TrinityState", self.state),
-                            step,
-                            step_id,
-                            attempt=attempt,
-                            depth=depth,
-                        ),
-                        timeout=float(config.get("orchestrator", {}).get("task_timeout", 1200.0))
-                        + 60.0,
-                    )
-                    if step_result and step_result.success:
-                        logger.info(f"[ORCHESTRATOR] Step {step_id} completed successfully")
-                        break
-                    if step_result:
-                        last_error = step_result.error or "Step failed without error message"
-                        logger.warning(
-                            f"[ORCHESTRATOR] Step {step_id} failed. Error: {last_error}. Tool: {step_result.tool_call.get('name') if step_result.tool_call else 'N/A'}"
-                        )
-                    else:
-                        last_error = "Unknown execution error (no result returned)"
-                        logger.error(f"[ORCHESTRATOR] Step {step_id} returned no result")
+                step_result = await self._execute_step_attempt(step, step_id, attempt, depth)
 
-                    await self._log(
-                        f"Step {step_id} Attempt {attempt} failed: {last_error}",
-                        "warning",
-                    )
+                if step_result and step_result.success:
+                    logger.info(f"[ORCHESTRATOR] Step {step_id} completed successfully")
+                    break
 
-                except TimeoutError:
-                    last_error = f"Step execution timeout after {config.get('orchestrator', {}).get('task_timeout', 1200.0)}s"
-                    logger.error(f"[ORCHESTRATOR] Step {step_id} timed out on attempt {attempt}")
-                    await self._log(
-                        f"Step {step_id} Attempt {attempt} timed out: {last_error}",
-                        "error",
+                if step_result:
+                    last_error = step_result.error or "Step failed without error message"
+                    logger.warning(
+                        f"[ORCHESTRATOR] Step {step_id} failed. Error: {last_error}."
                     )
-                except Exception as e:
-                    last_error = f"{type(e).__name__}: {e!s}"
-                    logger.error(
-                        f"[ORCHESTRATOR] Step {step_id} crashed on attempt {attempt}: {last_error}",
-                        exc_info=True,
-                    )
-                    await self._log(
-                        f"Step {step_id} Attempt {attempt} crashed: {last_error}",
-                        "error",
-                    )
+                else:
+                    last_error = "Execution error (timeout or crash)"
+                    logger.error(f"[ORCHESTRATOR] Step {step_id} failed on attempt {attempt}")
+
+                await self._log(
+                    f"Step {step_id} Attempt {attempt} failed: {last_error}",
+                    "warning",
+                )
 
                 # === SMART SELF-HEALING ROUTER ===
                 strategy = error_router.decide(last_error, attempt)
                 logger.info(
-                    f"[ORCHESTRATOR] Recovery Strategy: {strategy.action} (Reason: {strategy.reason})"
+                    f"[ORCHESTRATOR] Recovery Strategy: {strategy.action} ({strategy.reason})"
                 )
 
-                if strategy.action == "RETRY":
-                    # Simple patient retry for transient errors
-                    if attempt < strategy.max_retries:
-                        await self._log(
-                            f"Transient error detected. {strategy.reason}. Retrying in {strategy.backoff}s...",
-                            "orchestrator",
-                        )
-                        await asyncio.sleep(strategy.backoff)
-                        continue  # Continue loop to retry
-                    # If max retries exhausted, flow down to fallback (or escalation)
-
-                elif strategy.action == "WAIT_AND_RETRY":
-                    # Infrastructure errors: API rate limits, service unavailability
-                    # Don't involve Vibe/Grisha - these are external issues
-                    if attempt < strategy.max_retries:
-                        await self._log(
-                            f"Infrastructure issue detected. {strategy.reason}. Waiting {strategy.backoff}s...",
-                            "orchestrator",
-                        )
-                        await asyncio.sleep(strategy.backoff)
-                        continue  # Continue loop to retry
-                    else:
-                        # After all retries exhausted, notify user
-                        await self._log(
-                            f"Persistent infrastructure issue: {strategy.reason}. User intervention needed.",
-                            "error",
-                        )
-                        step_result = StepResult(
-                            step_id=step_id,
-                            success=False,
-                            error="infrastructure_failure",
-                            result=f"API rate limit or service unavailability persisted after {attempt} attempts. {strategy.reason}",
-                        )
-                        break
-
-                elif strategy.action == "RESTART":
-                    # Critical State Error
-                    await self._log(
-                        f"CRITICAL: {strategy.reason}. Initiating System Restart...",
-                        "system",
-                        type="error",
-                    )
-
-                    # Safe Redis access
-                    redis_client = getattr(state_manager, "redis", None)
-
-                    # Save state immediately
-                    if state_manager and state_manager.available:
-                        await state_manager.save_session(self.current_session_id, self.state)
-                        if redis_client:
-                            restart_metadata = {
-                                "reason": strategy.reason,
-                                "timestamp": datetime.now().isoformat(),
-                                "source": "orchestrator_self_healing",
-                            }
-                            await redis_client.set("restart_pending", json.dumps(restart_metadata))
-
-                    # Execute Restart
-                    import os
-                    import sys
-
-                    logger.info("[ORCHESTRATOR] Executing os.execv restart now...")
-                    await asyncio.sleep(1.0)  # Give logs time to flush
-                    os.execv(sys.executable, [sys.executable, *sys.argv])
-                    return False  # Stop current execution
-
-                elif strategy.action == "ASK_USER":
-                    await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
-                    # Flow continues to user input handling logic below or breaks retry loop to ask user
-                    # Integration with 'need_user_input' logic
-                    # For now we break to let the loop finish and potentially ask user via result.error="need_user_input"
-                    # But here we are in Exception block, so we might need to synthesize a result
-                    step_result = StepResult(
-                        step_id=step_id,
-                        success=False,
-                        error="need_user_input",
-                        result=strategy.reason,
-                    )
+                should_retry, override_result = await self._handle_step_error_strategy(
+                    strategy, step, step_id, attempt, last_error, step_result, depth, steps, i
+                )
+                if should_retry:
+                    continue
+                if override_result:
+                    step_result = override_result
                     break
 
-                elif strategy.action == "VIBE_HEAL":
-                    # Logic/Complex Error -> Engage Vibe immediately
-                    await self._log(
-                        f"Logic Error: {strategy.reason}. Engaging Vibe Self-Healing...", "orchestrator"
-                    )
-                    heal_success, heal_result = await self._self_heal(
-                        step, step_id, last_error, step_result, depth
-                    )
-
-                    if heal_result:
-                        # Rejection or fatal error returned as result
-                        step_result = heal_result
-                        break
-
-                    if heal_success:
-                        await self._log(f"[ORCHESTRATOR] Healing applied for {step_id}. Retrying...", "orchestrator")
-                        continue
-                    
-                    # If healing failed, fall through to fallback (Atlas Help)
-                    await self._log(f"[ORCHESTRATOR] Healing failed for {step_id}. Attempting fallback...", "warning")
-
-                elif strategy.action == "ATLAS_PLAN":
-                    await self._log(
-                        f"Strategic Recovery: {strategy.reason}. Escalating to Atlas for plan update...",
-                        "orchestrator",
-                    )
-                    try:
-                        # Request a strategic pivot from Atlas
-                        replan_query = f"RECOVERY STRATEGY NEEDED. Goal: {self.state.get('current_goal')}. Step {step_id} failed with error: {last_error}."
-                        # Create an enriched request for Atlas.create_plan
-                        enriched = {
-                            "enriched_request": replan_query,
-                            "intent": "task",
-                            "complexity": "medium",
-                        }
-                        new_plan = await self.atlas.create_plan(enriched)
-
-                        if new_plan and hasattr(new_plan, "steps") and new_plan.steps:
-                            await self._log(
-                                f"Atlas provided a recovery sub-plan with {len(new_plan.steps)} steps. Inserting...",
-                                "orchestrator",
-                            )
-                            # Insert these steps into the current list to be executed next
-                            for offset, s in enumerate(new_plan.steps):
-                                steps.insert(i + 1 + offset, s)
-                            continue  # Move to the next step (which is now the first recovery step)
-                    except Exception as e:
-                        logger.error(f"Atlas re-planning failed: {e}")
-
-                # ... fall through to existing Vibe/Atlas recovery logic if action is VIBE_HEAL ...
-
-                # RECOVERY LOGIC (Legacy + Vibe Integration)
-                validate_with_grisha = bool(
-                    config.get("orchestrator", {}).get("validate_failed_steps_with_grisha", False),
-                )
-                recovery_agent = config.get("orchestrator", {}).get("recovery_voice_agent", "atlas")
-
-                if validate_with_grisha:
-                    try:
-                        await self._log(
-                            f"Requesting Grisha validation for failed step {step_id}...",
-                            "orchestrator",
-                        )
-                        screenshot = None
-                        expected = step.get("expected_result", "").lower()
-                        if any(
-                            k in expected
-                            for k in ["visual", "screenshot", "ui", "interface", "window"]
-                        ):
-                            screenshot = await self.grisha.take_screenshot()
-
-                        try:
-                            from src.brain.context import shared_context
-
-                            goal_ctx = str(shared_context.get_goal_context() or "")
-                        except (ImportError, NameError):
-                            goal_ctx = ""
-
-                        verify_result = await self.grisha.verify_step(
-                            step=step,
-                            result=step_result
-                            if step_result is not None
-                            else StepResult(
-                                step_id=step_id,
-                                success=False,
-                                result="",
-                                error=last_error,
-                            ),
-                            screenshot_path=screenshot,
-                            goal_context=goal_ctx,
-                            task_id=str(self.state.get("db_task_id") or ""),
-                        )
-
-                        if verify_result.verified:
-                            await self._log(
-                                f"Grisha verified step {step_id} despite reporting failure. Marking success.",
-                                "orchestrator",
-                            )
-                            break
-                        await self._speak(
-                            recovery_agent,
-                            verify_result.voice_message or "Крок потребує відновлення.",
-                        )
-                    except Exception as e:
-                        logger.warning(f"Grisha validation failed: {e}")
+                # === GRISHA VALIDATION FALLBACK ===
+                if await self._validate_with_grisha_failure(step, step_id, step_result, last_error):
+                    break
 
                 notifications.send_stuck_alert(
-                    int(str(step_id).split(".")[-1])
-                    if "." in str(step_id)
-                    else (
-                        int(step_id)
-                        if isinstance(step_id, int | str) and str(step_id).isdigit()
-                        else 0
-                    ),
+                    int(str(step_id).split(".")[-1]) if "." in str(step_id)
+                    else (int(step_id) if str(step_id).isdigit() else 0),
                     str(last_error or "Unknown error"),
                     max_step_retries,
                 )
 
-                await self._log(
-                    f"Recovery for Step {step_id} (announced by {recovery_agent})...",
-                    "orchestrator",
-                )
-                if recovery_agent == "atlas":
-                    await self._speak(
-                        "atlas",
-                        self.atlas.get_voice_message("recovery_started", step_id=step_id),
-                    )
-                else:
-                    await self._speak(
-                        recovery_agent,
-                        "Крок зупинився — починаю процедуру відновлення.",
-                    )
-
-                # Fallback to Atlas Help if explicit strategies failed or were skipped
-
-
-                # Standard Atlas help as fallback
-                try:
-                    recovery = await asyncio.wait_for(
-                        self.atlas.help_tetyana(str(step_id), str(last_error)),
-                        timeout=60.0,
-                    )
-                    await self._speak(
-                        "atlas",
-                        recovery.get("voice_message", "Альтернативний шлях."),
-                    )
-                    alt_steps = recovery.get("alternative_steps", [])
-                    if alt_steps:
-                        # --- RECURSION GUARD ---
-                        # Check if this exact set of steps was already attempted at this depth
-                        steps_hash = hash(str(alt_steps))
-                        if not hasattr(self, "_attempted_recoveries"):
-                            self._attempted_recoveries: dict[str, int] = {}
-                        
-                        if self._attempted_recoveries.get(step_id) == steps_hash:
-                            logger.error(f"[ORCHESTRATOR] Atlas suggested a redundant recovery sub-plan for {step_id}. Breaking loop to prevent stall.")
-                            raise Exception(f"Recursive recovery stall detected for step {step_id}.")
-                        
-                        self._attempted_recoveries[step_id] = steps_hash
-                        
-                        # CRITICAL: Check max depth before recursion
-                        from src.brain.context import shared_context
-                        if shared_context.is_at_max_depth(depth + 1):
-                            logger.error(f"[ORCHESTRATOR] Max recursion depth exceeded at depth {depth+1}. Cannot subdivide {step_id}.")
-                            raise Exception(f"Maximum recursion depth exceeded. Task halted at step {step_id}.")
-
-                        # Recursive execution of sub-tasks
-                        await self._execute_steps_recursive(
-                            alt_steps,
-                            parent_prefix=step_id,
-                            depth=depth + 1,
-                        )
-                        # If recursion returns, we consider the step fixed
-                        break
-                except Exception as r_err:
-                    logger.error(f"Atlas recovery failed: {r_err}")
-                    raise Exception(
-                        f"Task failed at step {step_id} after retries and recovery attempts.",
-                    )
+                # === ATLAS RECOVERY FALLBACK ===
+                if await self._atlas_recovery_fallback(step_id, last_error, depth):
+                    break
 
             # End of retry loop for THIS step
             # НЕ викликаємо pop_goal тут - він викликається тільки в кінці рекурсії
 
-        # POP GOAL: Виходимо з під-завдання (рекурсивний рівень)
-        if goal_pushed:
-            try:
-                completed_goal = shared_context.pop_goal()
-                logger.info(
-                    f"[ORCHESTRATOR] ✅ Completed recursive level {depth}: {completed_goal}"
-                )
-
-                # Оновити metadata_blob в БД після виходу з рекурсії
-                await self._update_task_metadata()
-
-            except Exception as e:
-                logger.warning(f"Failed to pop goal: {e}")
+        # POP GOAL
+        await self._pop_recursive_goal(goal_pushed, depth)
 
         return True
 
-    async def execute_node(
-        self,
-        state: TrinityState,
-        step: dict[str, Any],
-        step_id: str,
-        attempt: int = 1,
-        depth: int = 0,
-    ) -> StepResult:
-        """Atomic execution logic with recursion and dynamic temperature"""
-        # Starting message logic
-        # Simple heuristic: If it's a top level step (no dots) and first attempt
+    async def _announce_step_start(self, step: dict[str, Any], step_id: str, attempt: int) -> None:
+        """Handle starting messages and state publishing for a step."""
         if "." not in str(step_id) and attempt == 1:
-            # Use voice_action from plan if available, else fallback to generic
             msg = step.get("voice_action")
             if not msg:
                 msg = self.tetyana.get_voice_message(
@@ -1904,9 +1895,6 @@ class Trinity:
                     description=step.get("action", ""),
                 )
             await self._speak("tetyana", msg)
-        elif "." in str(step_id):
-            # It's a sub-step/recovery step
-            pass
 
         try:
             from src.brain.state_manager import state_manager
@@ -1923,7 +1911,9 @@ class Trinity:
                 )
         except (ImportError, NameError):
             pass
-        # DB Step logging
+
+    async def _log_db_step_start(self, step: dict[str, Any], step_id: str) -> str | None:
+        """Log the start of a step to the database."""
         db_step_id = None
         self.state["db_step_id"] = None
         try:
@@ -1948,377 +1938,607 @@ class Trinity:
                     self.state["db_step_id"] = db_step_id
         except Exception as e:
             logger.error(f"DB Step creation failed: {e}")
+        return db_step_id
+
+    async def _prepare_step_context(self, step: dict[str, Any]) -> dict[str, Any]:
+        """Inject additional context into the step before execution."""
+        step_copy = step.copy()
+        if self.state and "step_results" in self.state:
+            step_copy["previous_results"] = self.state["step_results"][-10:]
+
+        # Inject critical discoveries for cross-step data access
+        discoveries_summary = shared_context.get_discoveries_summary()
+        if discoveries_summary:
+            step_copy["critical_discoveries"] = discoveries_summary
+
+        # Full plan for sequence context
+        plan = self.state.get("current_plan")
+        if plan:
+            # Convert plan steps to a readable summary
+            step_list = []
+            plan_steps = getattr(plan, "steps", [])
+            if isinstance(plan_steps, list):
+                for s in plan_steps:
+                    s_dict = s if isinstance(s, dict) else {}
+                    step_results = self.state.get("step_results") or []
+                    status = (
+                        "DONE"
+                        if any(
+                            isinstance(res, dict)
+                            and str(res.get("step_id")) == str(s_dict.get("id"))
+                            and res.get("success")
+                            for res in step_results
+                        )
+                        else "PENDING"
+                    )
+                    step_list.append(
+                        f"Step {s_dict.get('id')}: {s_dict.get('action')} [{status}]",
+                    )
+            step_copy["full_plan"] = "\n".join(step_list)
+
+        # Check message bus for specific feedback from other agents
+        bus_messages = await message_bus.receive("tetyana", mark_read=True)
+        if bus_messages:
+            step_copy["bus_messages"] = [m.to_dict() for m in bus_messages]
+
+        return step_copy
+
+    async def _handle_imminent_restart(self) -> None:
+        """Save session if a restart is pending."""
+        try:
+            from src.brain.state_manager import state_manager
+
+            if state_manager and getattr(state_manager, "available", False):
+                restart_key = state_manager._key("restart_pending")
+                try:
+                    if state_manager.redis_client and await state_manager.redis_client.exists(
+                        restart_key,
+                    ):
+                        logger.warning(
+                            "[ORCHESTRATOR] Imminent application restart detected. Saving session state immediately.",
+                        )
+                        await state_manager.save_session(
+                            self.current_session_id,
+                            self.state,
+                        )
+                        # We stop here. The process replacement (execv) will happen in ToolDispatcher task
+                        # and this orchestrator task will either be killed or return soon.
+                except Exception:
+                    pass
+        except (ImportError, NameError):
+            pass
+
+    async def _handle_strategy_deviation(
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        result: StepResult,
+    ) -> StepResult | None:
+        """Handle cases where Tetyana proposes a strategy deviation."""
+        if not (getattr(result, "is_deviation", False) or result.error == "strategy_deviation"):
+            return None
+
+        try:
+            info = getattr(result, "deviation_info", None)
+            proposal_text = (
+                info.get("analysis")
+                if info
+                else result.result
+            )
+            p_text = str(proposal_text)
+            logger.warning(
+                f"[ORCHESTRATOR] Tetyana proposed a deviation: {p_text[:200]}...",
+            )
+
+            # Consult Atlas
+            evaluation = await self.atlas.evaluate_deviation(
+                step,
+                str(proposal_text),
+                getattr(self.state.get("current_plan"), "steps", []),
+            )
+
+            voice_msg = evaluation.get("voice_message", "")
+            if voice_msg:
+                await self._speak("atlas", voice_msg)
+
+            if evaluation.get("approved"):
+                logger.info("[ORCHESTRATOR] Deviation APPROVED. Adjusting plan...")
+                result.success = True
+                result.result = f"Strategy Deviated: {evaluation.get('reason')}"
+                result.error = None
+
+                # Mark for behavioral learning after successful verification
+                result.is_deviation = True
+                result.deviation_info = evaluation
+
+                # PERSISTENCE: Remember this approved deviation immediately
+                await self._log_behavioral_deviation(step, step_id, result, p_text)
+                return result
+
+            else:
+                logger.info("[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
+                step["grisha_feedback"] = (
+                    f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."
+                )
+                result.success = False
+                return result
+        except Exception as eval_err:
+            logger.error(f"[ORCHESTRATOR] Deviation evaluation failed: {eval_err}")
+            result.success = False
+            result.error = "evaluation_error"
+            return result
+
+    async def _log_behavioral_deviation(
+        self, step: dict[str, Any], step_id: str, result: StepResult, proposal_text: str
+    ) -> None:
+        """Log behavioral learning for approved deviations."""
+        try:
+            from src.brain.memory import long_term_memory
+
+            if long_term_memory and getattr(long_term_memory, "available", False):
+                evaluation = result.deviation_info or {}
+                reason_text = str(evaluation.get("reason", "Unknown"))
+                long_term_memory.remember_behavioral_change(
+                    original_intent=step.get("action", ""),
+                    deviation=proposal_text[:300],
+                    reason=reason_text,
+                    result="Deviated plan approved",
+                    context={
+                        "step_id": str(self.state.get("db_step_id") or ""),
+                        "sequence_id": str(step_id),
+                        "session_id": self.state.get("session_id"),
+                        "db_session_id": self.state.get("db_session_id"),
+                    },
+                    decision_factors={
+                        "original_step": step,
+                        "analysis": proposal_text,
+                    },
+                )
+                logger.info(
+                    "[ORCHESTRATOR] Learned and memorized new behavioral deviation strategy.",
+                )
+        except (ImportError, NameError) as mem_err:
+            logger.warning(f"Failed to memorize deviation: {mem_err}")
+
+    async def _handle_user_input_request(
+        self, step: dict[str, Any], step_id: str, result: StepResult
+    ) -> StepResult:
+        """Handle cases where Tetyana needs user input."""
+        if result.error != "need_user_input":
+            return result
+
+        # Speak Tetyana's request BEFORE waiting to inform the user immediately
+        if result.voice_message:
+            await self._speak("tetyana", result.voice_message)
+            result.voice_message = None  # Clear it so it won't be spoken again
+
+        timeout_val = float(config.get("orchestrator.user_input_timeout", 12.0))
+        await self._log(
+            f"User input needed for step {step_id}. Waiting {timeout_val} seconds...",
+            "orchestrator",
+        )
+
+        # Display the question to the user in the logs/UI
+        await self._log(f"[REQUEST] {result.result}", "system", type="warning")
+
+        # Wait for user message on the bus or timeout
+        user_response = None
+        try:
+            start_wait = asyncio.get_event_loop().time()
+            while asyncio.get_event_loop().time() - start_wait < timeout_val:
+                bus_msgs = await message_bus.receive("orchestrator", mark_read=True)
+                for m in bus_msgs:
+                    if m.message_type == MessageType.CHAT and m.from_agent == "USER":
+                        user_response = m.payload.get("text")
+                        break
+                if user_response:
+                    break
+                await asyncio.sleep(0.5)
+
+        except Exception as wait_err:
+            logger.warning(f"Error during user wait: {wait_err}")
+
+        if user_response:
+            await self._log(f"User responded: {user_response}", "system")
+            messages = self.state.get("messages")
+            if messages is not None and isinstance(messages, list):
+                messages.append(HumanMessage(content=user_response))
+                self.state["messages"] = messages
+            try:
+                from src.brain.state_manager import state_manager
+
+                if state_manager and getattr(state_manager, "available", False):
+                    await state_manager.save_session("current_session", self.state)
+            except (ImportError, NameError):
+                pass
+
+            # Direct feedback for the next retry
+            await message_bus.send(
+                AgentMsg(
+                    from_agent="USER",
+                    to_agent="tetyana",
+                    message_type=MessageType.FEEDBACK,
+                    payload={"user_response": user_response},
+                    step_id=step.get("id"),
+                ),
+            )
+            result.success = False
+            result.error = "user_input_received"
+        else:
+            # TIMEOUT: Atlas ONLY speaks if user was truly silent
+            await self._log(
+                "User silent for timeout. Atlas deciding...",
+                "orchestrator",
+                type="warning",
+            )
+            messages = self.state.get("messages", [])
+            goal_msg = messages[0] if messages else HumanMessage(content="Unknown")
+
+            def _get_msg_content(m):
+                if hasattr(m, "content"):
+                    return m.content
+                if isinstance(m, dict):
+                    return m.get("content", str(m))
+                return str(m)
+
+            autonomous_decision = await self.atlas.decide_for_user(
+                str(result.result or ""),
+                {
+                    "goal": _get_msg_content(goal_msg),
+                    "current_step": str(step.get("action") or ""),
+                    "history": [_get_msg_content(m) for m in (messages[-5:] if messages else [])],
+                },
+            )
+
+            await self._log(
+                f"Atlas Autonomous Decision (Timeout): {autonomous_decision}",
+                "atlas",
+            )
+            await self._speak(
+                "atlas",
+                f"Оскільки ви не відповіли, я вирішив: {autonomous_decision}",
+            )
+
+            # Inject decision as feedback
+            await message_bus.send(
+                AgentMsg(
+                    from_agent="atlas",
+                    to_agent="tetyana",
+                    message_type=MessageType.FEEDBACK,
+                    payload={
+                        "user_response": f"(Autonomous Decision): {autonomous_decision}",
+                    },
+                    step_id=step.get("id"),
+                ),
+            )
+            result.success = False
+            result.error = "autonomous_decision_made"
+        return result
+
+    async def _log_tool_execution_db(self, result: StepResult, db_step_id: str | None) -> None:
+        """Log tool execution to DB for Grisha's audit."""
+        try:
+            from src.brain.db.manager import db_manager
+
+            if db_manager and getattr(db_manager, "available", False) and db_step_id:
+                async with await db_manager.get_session() as db_sess:
+                    tool_call_data = result.tool_call or {}
+                    tool_exec = DBToolExecution(
+                        step_id=db_step_id,
+                        task_id=self.state.get("db_task_id"),
+                        server_name=tool_call_data.get("server")
+                        or tool_call_data.get("realm")
+                        or "unknown",
+                        tool_name=tool_call_data.get("name") or "unknown",
+                        arguments=tool_call_data.get("args") or {},
+                        result=str(result.result)[:10000],
+                    )
+                    db_sess.add(tool_exec)
+                    await db_sess.commit()
+                    logger.info(f"[ORCHESTRATOR] Logged tool execution: {tool_exec.tool_name}")
+        except Exception as e:
+            logger.error(f"Failed to log tool execution to DB: {e}")
+
+    async def _handle_proactive_help_request(
+        self, step: dict[str, Any], step_id: str, result: StepResult, depth: int
+    ) -> StepResult:
+        """Handle proactive help requested by Tetyana."""
+        if result.error != "proactive_help_requested":
+            return result
+
+        await self._log(
+            f"Tetyana requested proactive help: {result.result}",
+            "orchestrator",
+        )
+        history_results = self.state.get("step_results")
+        if not isinstance(history_results, list):
+            history_results = []
+
+        help_resp = await self.atlas.help_tetyana(
+            str(step.get("id") or step_id),
+            str(result.result or ""),
+            history=history_results,
+        )
+
+        voice_msg = ""
+        if isinstance(help_resp, dict):
+            voice_msg = help_resp.get("voice_message") or help_resp.get("reason") or str(help_resp)
+        else:
+            voice_msg = str(help_resp)
+
+        await self._speak("atlas", voice_msg)
+
+        # Support hierarchical recovery
+        alt_steps = help_resp.get("alternative_steps") if isinstance(help_resp, dict) else None
+        if alt_steps and isinstance(alt_steps, list):
+            await self._log(
+                f"Atlas provided {len(alt_steps)} alternative steps. Executing recovery sub-plan...",
+                "orchestrator",
+            )
+            success = await self._execute_steps_recursive(
+                alt_steps, parent_prefix=str(step.get("id") or step_id), depth=depth + 1
+            )
+            if success:
+                await self._log(
+                    f"Recovery sub-plan for {step_id} completed successfully. Retrying original step with new context.",
+                    "orchestrator",
+                )
+            else:
+                await self._log(f"Recovery sub-plan for {step_id} failed.", "error")
+
+        await message_bus.send(
+            AgentMsg(
+                from_agent="atlas",
+                to_agent="tetyana",
+                message_type=MessageType.FEEDBACK,
+                payload={"guidance": help_resp},
+                step_id=step.get("id"),
+            ),
+        )
+        result.success = False
+        result.error = "help_pending"
+        return result
+
+    async def _handle_subtask_node(self, step: dict[str, Any], step_id: str) -> StepResult:
+        """Execute a subtask node recursively."""
+        self._in_subtask = True
+        try:
+            sub_result = await self.run(str(step.get("action") or ""))
+        finally:
+            self._in_subtask = False
+
+        return StepResult(
+            step_id=str(step.get("id") or step_id),
+            success=sub_result.get("status") == "completed",
+            result="Subtask completed",
+            error=str(sub_result.get("error") or ""),
+        )
+
+    async def _update_db_step_status(
+        self,
+        db_step_id: str | None,
+        result: StepResult,
+        step_start_time: float,
+    ) -> None:
+        """Update step status in the database."""
+        try:
+            from src.brain.db.manager import db_manager
+
+            if db_manager and getattr(db_manager, "available", False) and db_step_id:
+                try:
+                    duration_ms = int((asyncio.get_event_loop().time() - step_start_time) * 1000)
+                    async with await db_manager.get_session() as db_sess:
+                        from sqlalchemy import update
+
+                        await db_sess.execute(
+                            update(DBStep)
+                            .where(DBStep.id == db_step_id)
+                            .values(
+                                status="SUCCESS" if result.success else "FAILED",
+                                error_message=result.error,
+                                duration_ms=duration_ms,
+                            ),
+                        )
+                        await db_sess.commit()
+                except Exception as e:
+                    logger.error(f"DB Step update failed: {e}")
+        except (ImportError, NameError):
+            pass
+
+    async def _verify_step_execution(
+        self, step: dict[str, Any], step_id: str, result: StepResult
+    ) -> StepResult:
+        """Verify step execution using Grisha."""
+        if not step.get("requires_verification"):
+            return result
+
+        self.state["system_state"] = SystemState.VERIFYING.value
+        try:
+            await self._log("Preparing verification...", "system")
+            await asyncio.sleep(0.5)
+
+            expected = step.get("expected_result", "").lower()
+            visual_verification_needed = any(
+                k in expected for k in ["visual", "screenshot", "ui", "interface", "window"]
+            )
+
+            screenshot = None
+            if visual_verification_needed:
+                screenshot = await self.grisha.take_screenshot()
+
+            verify_result = await self.grisha.verify_step(
+                step=step,
+                result=result,
+                screenshot_path=screenshot,
+                goal_context=shared_context.get_goal_context(),
+                task_id=str(self.state.get("db_task_id") or ""),
+            )
+
+            if not verify_result.verified:
+                result.success = False
+                result.error = f"Grisha rejected: {verify_result.description}"
+                if verify_result.issues:
+                    result.error += f" Issues: {', '.join(verify_result.issues)}"
+
+                await self._speak(
+                    "grisha", verify_result.voice_message or "Результат не прийнято."
+                )
+            else:
+                await self._speak(
+                    "grisha", verify_result.voice_message or "Підтверджую виконання."
+                )
+                if result.is_deviation and result.success and result.deviation_info:
+                    await self._commit_successful_deviation(step, step_id, result)
+
+        except Exception as e:
+            logger.exception("Verification crashed")
+            await self._log(f"Verification crashed: {e}", "error")
+            result.success = False
+            result.error = f"Verification system error: {e}"
+
+        self.state["system_state"] = SystemState.EXECUTING.value
+        return result
+
+    async def _commit_successful_deviation(
+        self, step: dict[str, Any], step_id: str, result: StepResult
+    ) -> None:
+        """Commit behavioral learning for successful deviations."""
+        evaluation = result.deviation_info or {}
+        factors = evaluation.get("decision_factors", {})
+
+        # 1. Vector Memory
+        try:
+            from src.brain.memory import long_term_memory
+
+            if long_term_memory and getattr(long_term_memory, "available", False):
+                long_term_memory.remember_behavioral_change(
+                    original_intent=str(step.get("action") or "Unknown"),
+                    deviation=str(result.result),
+                    reason=str(evaluation.get("reason") or "Unknown"),
+                    result="Verified Success",
+                    context={
+                        "step_id": str(step.get("id") or step_id),
+                        "session_id": self.state.get("session_id"),
+                        "db_session_id": self.state.get("db_session_id"),
+                    },
+                    decision_factors=factors,
+                )
+        except (ImportError, NameError):
+            pass
+
+        # 2. Knowledge Graph
+        if knowledge_graph:
+            try:
+                lesson_id = f"lesson:{int(datetime.now().timestamp())}"
+                await knowledge_graph.add_node(
+                    node_type="LESSON",
+                    node_id=lesson_id,
+                    attributes={
+                        "name": f"Successful Deviation: {str(evaluation.get('reason') or '')[:50]}",
+                        "intent": str(step.get("action") or ""),
+                        "outcome": "Verified Success",
+                        "reason": str(evaluation.get("reason") or ""),
+                    },
+                )
+                if self.state.get("db_task_id"):
+                    await knowledge_graph.add_edge(
+                        f"task:{self.state.get('db_task_id')}", lesson_id, "learned_lesson"
+                    )
+
+                for f_name, f_val in factors.items():
+                    factor_node_id = f"factor:{f_name}:{str(f_val).lower().replace(' ', '_')}"
+                    await knowledge_graph.add_node(
+                        "FACTOR",
+                        factor_node_id,
+                        {"name": f_name, "value": f_val, "type": "environmental_factor"},
+                    )
+                    await knowledge_graph.add_edge(lesson_id, factor_node_id, "CONTINGENT_ON")
+            except Exception as g_err:
+                logger.error(f"[ORCHESTRATOR] Error linking factors in graph: {g_err}")
+
+    async def _finalize_node_execution(
+        self, step: dict[str, Any], step_id: str, result: StepResult
+    ) -> None:
+        """Finalize node execution, store results and publish events."""
+        # Store final result
+        self.state["step_results"].append(
+            {
+                "step_id": str(result.step_id),
+                "action": f"[{step_id}] {step.get('action')}",
+                "success": result.success,
+                "result": result.result,
+                "error": result.error,
+            },
+        )
+
+        # Extract and store critical discoveries
+        if result.success and result.result:
+            self._extract_and_store_discoveries(result.result, step)
+
+        # Publish finished event
+        try:
+            from src.brain.state_manager import state_manager
+
+            if state_manager and getattr(state_manager, "available", False):
+                await state_manager.publish_event(
+                    "steps",
+                    {
+                        "type": "step_finished",
+                        "step_id": str(step_id),
+                        "success": result.success,
+                        "error": result.error,
+                        "result": result.result,
+                    },
+                )
+        except (ImportError, NameError):
+            pass
+
+        # Knowledge Graph Sync
+        kg_task = asyncio.create_task(self._update_knowledge_graph(step_id, result))
+        self._background_tasks.add(kg_task)
+        kg_task.add_done_callback(self._background_tasks.discard)
+
+    async def execute_node(
+        self,
+        state: TrinityState,
+        step: dict[str, Any],
+        step_id: str,
+        attempt: int = 1,
+        depth: int = 0,
+    ) -> StepResult:
+        """Atomic execution logic with recursion and dynamic temperature"""
+        # Starting message logic
+        await self._announce_step_start(step, step_id, attempt)
+
+        # DB Step logging
+        db_step_id = await self._log_db_step_start(step, step_id)
 
         step_start_time = asyncio.get_event_loop().time()
 
         if step.get("type") == "subtask" or step.get("tool") == "subtask":
-            self._in_subtask = True
-            try:
-                sub_result = await self.run(str(step.get("action") or ""))
-            finally:
-                self._in_subtask = False
-
-            result = StepResult(
-                step_id=str(step.get("id") or step_id),
-                success=sub_result.get("status") == "completed",
-                result="Subtask completed",
-                error=str(sub_result.get("error") or ""),
-            )
+            result = await self._handle_subtask_node(step, step_id)
         else:
             try:
-                # Inject context results (last 10 for better relevance)
-                step_copy = step.copy()
-                if self.state and "step_results" in self.state:
-                    step_copy["previous_results"] = self.state["step_results"][-10:]
-
-                # Inject critical discoveries for cross-step data access
-                discoveries_summary = shared_context.get_discoveries_summary()
-                if discoveries_summary:
-                    step_copy["critical_discoveries"] = discoveries_summary
-
-                # Full plan for sequence context
-                plan = self.state.get("current_plan")
-                if plan:
-                    # Convert plan steps to a readable summary
-                    step_list = []
-                    plan_steps = getattr(plan, "steps", [])
-                    if isinstance(plan_steps, list):
-                        for s in plan_steps:
-                            s_dict = s if isinstance(s, dict) else {}
-                            step_results = self.state.get("step_results") or []
-                            status = (
-                                "DONE"
-                                if any(
-                                    isinstance(res, dict)
-                                    and str(res.get("step_id")) == str(s_dict.get("id"))
-                                    and res.get("success")
-                                    for res in step_results
-                                )
-                                else "PENDING"
-                            )
-                            step_list.append(
-                                f"Step {s_dict.get('id')}: {s_dict.get('action')} [{status}]",
-                            )
-                    step_copy["full_plan"] = "\n".join(step_list)
-
-                # Check message bus for specific feedback from other agents
-                bus_messages = await message_bus.receive("tetyana", mark_read=True)
-                if bus_messages:
-                    step_copy["bus_messages"] = [m.to_dict() for m in bus_messages]
-
+                # Inject context and prepare execution
+                step_copy = await self._prepare_step_context(step)
                 result = await self.tetyana.execute_step(step_copy, attempt=attempt)
 
                 # --- RESTART DETECTION ---
-                try:
-                    from src.brain.state_manager import state_manager
-
-                    if state_manager and getattr(state_manager, "available", False):
-                        restart_key = state_manager._key("restart_pending")
-                        try:
-                            if state_manager.redis_client and await state_manager.redis_client.exists(
-                                restart_key,
-                            ):
-                                logger.warning(
-                                    "[ORCHESTRATOR] Imminent application restart detected. Saving session state immediately.",
-                                )
-                                await state_manager.save_session(
-                                    self.current_session_id,
-                                    self.state,
-                                )
-                                # We stop here. The process replacement (execv) will happen in ToolDispatcher task
-                                # and this orchestrator task will either be killed or return soon.
-                        except Exception:
-                            pass
-                except (ImportError, NameError):
-                    pass
+                await self._handle_imminent_restart()
 
                 # --- DYNAMIC AGENCY: Check for Strategy Deviation ---
-                # --- DYNAMIC AGENCY: Check for Strategy Deviation ---
-                if getattr(result, "is_deviation", False) or result.error == "strategy_deviation":
-                    try:
-                        proposal_text = (
-                            result.deviation_info.get("analysis")
-                            if getattr(result, "deviation_info", None)
-                            else result.result
-                        )
-                        p_text = str(proposal_text)
-                        logger.warning(
-                            f"[ORCHESTRATOR] Tetyana proposed a deviation: {p_text[:200]}...",
-                        )
-
-                        # Consult Atlas
-                        evaluation = await self.atlas.evaluate_deviation(
-                            step,
-                            str(proposal_text),
-                            getattr(self.state.get("current_plan"), "steps", []),
-                        )
-
-                        voice_msg = evaluation.get("voice_message", "")
-                        if voice_msg:
-                            await self._speak("atlas", voice_msg)
-
-                        if evaluation.get("approved"):
-                            logger.info("[ORCHESTRATOR] Deviation APPROVED. Adjusting plan...")
-                            result.success = True
-                            result.result = f"Strategy Deviated: {evaluation.get('reason')}"
-                            result.error = None
-
-                            # Mark for behavioral learning after successful verification
-                            result.is_deviation = True
-                            result.deviation_info = evaluation
-
-                            # PERSISTENCE: Remember this approved deviation immediately
-                            try:
-                                from src.brain.memory import long_term_memory
-
-                                if long_term_memory and getattr(
-                                    long_term_memory,
-                                    "available",
-                                    False,
-                                ):
-                                    reason_text = str(evaluation.get("reason", "Unknown"))
-                                    long_term_memory.remember_behavioral_change(
-                                        original_intent=step.get("action", ""),
-                                        deviation=p_text[:300],
-                                        reason=reason_text,
-                                        result="Deviated plan approved",
-                                        context={
-                                            "step_id": str(self.state.get("db_step_id") or ""),
-                                            "sequence_id": str(step_id),
-                                            "session_id": self.state.get("session_id"),
-                                            "db_session_id": self.state.get("db_session_id"),
-                                        },
-                                        decision_factors={
-                                            "original_step": step,
-                                            "analysis": proposal_text,
-                                        },
-                                    )
-                                    logger.info(
-                                        "[ORCHESTRATOR] Learned and memorized new behavioral deviation strategy.",
-                                    )
-                            except (ImportError, NameError) as mem_err:
-                                logger.warning(f"Failed to memorize deviation: {mem_err}")
-
-                        else:
-                            logger.info("[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
-                            step["grisha_feedback"] = (
-                                f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."
-                            )
-                            result.success = False
-                    except Exception as eval_err:
-                        logger.error(f"[ORCHESTRATOR] Deviation evaluation failed: {eval_err}")
-                        result.success = False
-                        result.error = "evaluation_error"
-                        return cast(StepResult, result)
+                deviation_result = await self._handle_strategy_deviation(step, step_id, result)
+                if deviation_result:
+                    return deviation_result
 
                 # Handle need_user_input signal (New Autonomous Timeout Logic)
-                if result.error == "need_user_input":
-                    # Speak Tetyana's request BEFORE waiting to inform the user immediately
-                    if result.voice_message:
-                        await self._speak("tetyana", result.voice_message)
-                        result.voice_message = (
-                            None  # Clear it so it won't be spoken again at the end of node
-                        )
-
-                    timeout_val = float(config.get("orchestrator.user_input_timeout", 12.0))
-                    await self._log(
-                        f"User input needed for step {step_id}. Waiting {timeout_val} seconds...",
-                        "orchestrator",
-                    )
-
-                    # Display the question to the user in the logs/UI
-                    await self._log(f"[REQUEST] {result.result}", "system", type="warning")
-
-                    # Wait for user message on the bus or timeout
-                    user_response = None
-                    try:
-                        # Wait for a 'user_response' message type specifically for this step
-                        start_wait = asyncio.get_event_loop().time()
-                        while asyncio.get_event_loop().time() - start_wait < timeout_val:
-                            bus_msgs = await message_bus.receive("orchestrator", mark_read=True)
-                            for m in bus_msgs:
-                                if m.message_type == MessageType.CHAT and m.from_agent == "USER":
-                                    user_response = m.payload.get("text")
-                                    break
-                            if user_response:
-                                break
-                            await asyncio.sleep(0.5)
-
-                    except Exception as wait_err:
-                        logger.warning(f"Error during user wait: {wait_err}")
-
-                    if user_response:
-                        await self._log(f"User responded: {user_response}", "system")
-                        messages = self.state.get("messages")
-                        if messages is not None and isinstance(messages, list):
-                            messages.append(HumanMessage(content=user_response))
-                            self.state["messages"] = messages
-                        try:
-                            from src.brain.state_manager import state_manager
-
-                            if state_manager and getattr(state_manager, "available", False):
-                                await state_manager.save_session("current_session", self.state)
-                        except (ImportError, NameError):
-                            pass
-
-                        # Direct feedback for the next retry
-                        await message_bus.send(
-                            AgentMsg(
-                                from_agent="USER",
-                                to_agent="tetyana",
-                                message_type=MessageType.FEEDBACK,
-                                payload={"user_response": user_response},
-                                step_id=step.get("id"),
-                            ),
-                        )
-                        result.success = False
-                        result.error = "user_input_received"
-                    else:
-                        # TIMEOUT: Atlas ONLY speaks if user was truly silent
-                        await self._log(
-                            "User silent for timeout. Atlas deciding...",
-                            "orchestrator",
-                            type="warning",
-                        )
-
-                        def _get_msg_content(m):
-                            if hasattr(m, "content"):
-                                return m.content
-                            if isinstance(m, dict):
-                                return m.get("content", str(m))
-                            return str(m)
-
-                        messages = self.state.get("messages", [])
-                        goal_msg = messages[0] if messages else HumanMessage(content="Unknown")
-
-                        autonomous_decision = await self.atlas.decide_for_user(
-                            str(result.result or ""),
-                            {
-                                "goal": _get_msg_content(goal_msg),
-                                "current_step": str(step.get("action") or ""),
-                                "history": [
-                                    _get_msg_content(m) for m in (messages[-5:] if messages else [])
-                                ],
-                            },
-                        )
-
-                        await self._log(
-                            f"Atlas Autonomous Decision (Timeout): {autonomous_decision}",
-                            "atlas",
-                        )
-                        await self._speak(
-                            "atlas",
-                            f"Оскільки ви не відповіли, я вирішив: {autonomous_decision}",
-                        )
-
-                        # Inject decision as feedback
-                        await message_bus.send(
-                            AgentMsg(
-                                from_agent="atlas",
-                                to_agent="tetyana",
-                                message_type=MessageType.FEEDBACK,
-                                payload={
-                                    "user_response": f"(Autonomous Decision): {autonomous_decision}",
-                                },
-                                step_id=step.get("id"),
-                            ),
-                        )
-                        result.success = False
-                        result.error = "autonomous_decision_made"
+                result = await self._handle_user_input_request(step, step_id, result)
 
                 # Log tool execution to DB for Grisha's audit
-                try:
-                    from src.brain.db.manager import db_manager
-
-                    if db_manager and getattr(db_manager, "available", False) and db_step_id:
-                        async with await db_manager.get_session() as db_sess:
-                            tool_call_data = result.tool_call or {}
-                            tool_exec = DBToolExecution(
-                                step_id=db_step_id,
-                                task_id=self.state.get("db_task_id"),  # Direct link for analytics
-                                server_name=tool_call_data.get("server")
-                                or tool_call_data.get("realm")
-                                or "unknown",
-                                tool_name=tool_call_data.get("name") or "unknown",
-                                arguments=tool_call_data.get("args") or {},
-                                result=str(result.result)[:10000],  # Cap size
-                            )
-
-                            db_sess.add(tool_exec)
-                            await db_sess.commit()
-                            logger.info(
-                                f"[ORCHESTRATOR] Logged tool execution: {tool_exec.tool_name}",
-                            )
-                except Exception as e:
-                    logger.error(f"Failed to log tool execution to DB: {e}")
+                await self._log_tool_execution_db(result, db_step_id)
 
                 # Handle proactive help requested by Tetyana
-                if result.error == "proactive_help_requested":
-                    await self._log(
-                        f"Tetyana requested proactive help: {result.result}",
-                        "orchestrator",
-                    )
-                    # Atlas help logic
-                    history_results = self.state.get("step_results")
-                    if not isinstance(history_results, list):
-                        history_results = []
-
-                    help_resp = await self.atlas.help_tetyana(
-                        str(step.get("id") or step_id),
-                        str(result.result or ""),
-                        history=history_results,
-                    )
-
-                    # Extract voice message or reason from Atlas response
-                    voice_msg = ""
-                    if isinstance(help_resp, dict):
-                        voice_msg = (
-                            help_resp.get("voice_message")
-                            or help_resp.get("reason")
-                            or str(help_resp)
-                        )
-                    else:
-                        voice_msg = str(help_resp)
-
-                    await self._speak("atlas", voice_msg)
-
-                    # NEW: Support hierarchical recovery via alternative_steps
-                    alt_steps = None
-                    if isinstance(help_resp, dict):
-                        alt_steps = help_resp.get("alternative_steps")
-
-                    if alt_steps and isinstance(alt_steps, list):
-                        await self._log(
-                            f"Atlas provided {len(alt_steps)} alternative steps. Executing recovery sub-plan...",
-                            "orchestrator",
-                        )
-                        # Execute the sub-steps recursively
-                        success = await self._execute_steps_recursive(
-                            alt_steps, parent_prefix=str(step.get("id") or step_id), depth=depth + 1
-                        )
-                        if success:
-                            await self._log(
-                                f"Recovery sub-plan for {step_id} completed successfully. Retrying original step with new context.",
-                                "orchestrator",
-                            )
-                            # We don't return success yet, we want to retry the original step
-                            # now that we (hopefully) have the missing info in context.
-                        else:
-                            await self._log(f"Recovery sub-plan for {step_id} failed.", "error")
-
-                    # Re-run the step with Atlas's guidance as bus feedback
-                    await message_bus.send(
-                        AgentMsg(
-                            from_agent="atlas",
-                            to_agent="tetyana",
-                            message_type=MessageType.FEEDBACK,
-                            payload={"guidance": help_resp},
-                            step_id=step.get("id"),
-                        ),
-                    )
-                    # Mark result as "Help pending" so retry loop can pick it up
-                    result.success = False
-                    result.error = "help_pending"
+                result = await self._handle_proactive_help_request(step, step_id, result, depth)
 
                 # Log interaction to Knowledge Graph if successful
                 if result.success and result.tool_call:
@@ -2344,194 +2564,13 @@ class Trinity:
                 )
 
         # Update DB Step
-        try:
-            from src.brain.db.manager import db_manager
-
-            if db_manager and getattr(db_manager, "available", False) and db_step_id:
-                try:
-                    duration_ms = int((asyncio.get_event_loop().time() - step_start_time) * 1000)
-                    async with await db_manager.get_session() as db_sess:
-                        from sqlalchemy import update
-
-                        await db_sess.execute(
-                            update(DBStep)
-                            .where(DBStep.id == db_step_id)
-                            .values(
-                                status="SUCCESS" if result.success else "FAILED",
-                                error_message=result.error,
-                                duration_ms=duration_ms,
-                            ),
-                        )
-                        await db_sess.commit()
-                except Exception as e:
-                    logger.error(f"DB Step update failed: {e}")
-        except (ImportError, NameError):
-            pass
+        await self._update_db_step_status(db_step_id, result, step_start_time)
 
         # Check verification
-        if step.get("requires_verification"):
-            self.state["system_state"] = SystemState.VERIFYING.value
-            # Removed redundant speak call here.
-            # Tetyana's execute_step already provides result.voice_message if successful.
+        result = await self._verify_step_execution(step, step_id, result)
 
-            try:
-                # OPTIMIZATION: Reduced delay from 2.5s to 0.5s
-                await self._log("Preparing verification...", "system")
-                await asyncio.sleep(0.5)
-
-                # Only take screenshot if visual verification is needed
-                expected = step.get("expected_result", "").lower()
-                visual_verification_needed = (
-                    "visual" in expected
-                    or "screenshot" in expected
-                    or "ui" in expected
-                    or "interface" in expected
-                    or "window" in expected
-                )
-
-                screenshot = None
-                if visual_verification_needed:
-                    screenshot = await self.grisha.take_screenshot()
-
-                # GRISHA'S AWARENESS: Pass the full result (including thoughts) and the goal
-                verify_result = await self.grisha.verify_step(
-                    step=step,
-                    result=result,
-                    screenshot_path=screenshot,
-                    goal_context=shared_context.get_goal_context(),
-                    task_id=str(self.state.get("db_task_id") or ""),
-                )
-                if not verify_result.verified:
-                    result.success = False
-                    result.error = f"Grisha rejected: {verify_result.description}"
-                    if verify_result.issues:
-                        result.error += f" Issues: {', '.join(verify_result.issues)}"
-
-                    await self._speak(
-                        "grisha",
-                        verify_result.voice_message or "Результат не прийнято.",
-                    )
-                else:
-                    await self._speak(
-                        "grisha",
-                        verify_result.voice_message or "Підтверджую виконання.",
-                    )
-
-                    # --- BEHAVIORAL LEARNING: Commit successful deviations ---
-                    if result.is_deviation and result.success and result.deviation_info:
-                        evaluation = result.deviation_info
-                        factors = evaluation.get("decision_factors", {})
-
-                        # 1. Vector Memory
-                        try:
-                            from src.brain.memory import long_term_memory
-
-                            if long_term_memory and getattr(long_term_memory, "available", False):
-                                long_term_memory.remember_behavioral_change(
-                                    original_intent=str(step.get("action") or "Unknown"),
-                                    deviation=str(result.result),
-                                    reason=str(evaluation.get("reason") or "Unknown"),
-                                    result="Verified Success",
-                                    context={
-                                        "step_id": str(step.get("id") or step_id),
-                                        "session_id": self.state.get("session_id"),
-                                        "db_session_id": self.state.get("db_session_id"),
-                                    },
-                                    decision_factors=factors,
-                                )
-                        except (ImportError, NameError):
-                            pass
-
-                        # 2. Knowledge Graph (Structured Factors)
-                        if knowledge_graph:
-                            try:
-                                lesson_id = f"lesson:{int(datetime.now().timestamp())}"
-                                await knowledge_graph.add_node(
-                                    node_type="LESSON",
-                                    node_id=lesson_id,
-                                    attributes={
-                                        "name": f"Successful Deviation: {str(evaluation.get('reason') or '')[:50]}",
-                                        "intent": str(step.get("action") or ""),
-                                        "outcome": "Verified Success",
-                                        "reason": str(evaluation.get("reason") or ""),
-                                    },
-                                )
-                                # Link to task
-                                if self.state.get("db_task_id"):
-                                    await knowledge_graph.add_edge(
-                                        f"task:{self.state.get('db_task_id')}",
-                                        lesson_id,
-                                        "learned_lesson",
-                                    )
-
-                                # Structured Factor Nodes
-                                for f_name, f_val in factors.items():
-                                    factor_node_id = (
-                                        f"factor:{f_name}:{str(f_val).lower().replace(' ', '_')}"
-                                    )
-                                    await knowledge_graph.add_node(
-                                        "FACTOR",
-                                        factor_node_id,
-                                        {
-                                            "name": f_name,
-                                            "value": f_val,
-                                            "type": "environmental_factor",
-                                        },
-                                    )
-                                    await knowledge_graph.add_edge(
-                                        lesson_id,
-                                        factor_node_id,
-                                        "CONTINGENT_ON",
-                                    )
-
-                            except Exception as g_err:
-                                logger.error(
-                                    f"[ORCHESTRATOR] Error linking factors in graph: {g_err}",
-                                )
-            except Exception as e:
-                print(f"[ERROR] Verification failed: {e}")
-                await self._log(f"Verification crashed: {e}", "error")
-                result.success = False
-                result.error = f"Verification system error: {e!s}"
-
-            self.state["system_state"] = SystemState.EXECUTING.value
-
-        # Store final result
-        self.state["step_results"].append(
-            {
-                "step_id": str(result.step_id),  # Ensure string
-                "action": f"[{step_id}] {step.get('action')}",  # Adding ID context
-                "success": result.success,
-                "result": result.result,
-                "error": result.error,
-            },
-        )
-
-        # Extract and store critical discoveries from successful steps
-        if result.success and result.result:
-            self._extract_and_store_discoveries(result.result, step)
-
-        try:
-            from src.brain.state_manager import state_manager
-
-            if state_manager and getattr(state_manager, "available", False):
-                await state_manager.publish_event(
-                    "steps",
-                    {
-                        "type": "step_finished",
-                        "step_id": str(step_id),
-                        "success": result.success,
-                        "error": result.error,
-                        "result": result.result,
-                    },
-                )
-        except (ImportError, NameError):
-            pass
-
-        # Knowledge Graph Sync
-        kg_task = asyncio.create_task(self._update_knowledge_graph(step_id, result))
-        self._background_tasks.add(kg_task)
-        kg_task.add_done_callback(self._background_tasks.discard)
+        # Finalize and notify
+        await self._finalize_node_execution(step, step_id, result)
 
         return result
 
