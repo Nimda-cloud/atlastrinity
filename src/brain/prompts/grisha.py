@@ -111,37 +111,38 @@ Provide report in the following format:
 - **SUMMARY_UKRAINIAN**: (Detailed explanation for the user in Ukrainian language)"""
 
 GRISHA_PLAN_VERIFICATION_PROMPT = """
-        TASK: DEEP SIMULATION & CRITICAL VERIFICATION OF EXECUTION PLAN
+        TASK: MENTAL SANDBOX & PLAN AUDIT (THE SIMULATOR)
 
         USER REQUEST: {user_request}
 
         PROPOSED PLAN:
         {plan_steps_text}
 
-        YOUR MISSION:
-        Perform a mental dry-run simulation of EACH STEP. 
-        Think like a forensic auditor. Your goal is to find where the plan will FAIL.
+        YOUR MISSION (SIMULATION DOCTRINE):
+        You are the System's Debugger. You must mentally execute each step of the plan.
+        DO NOT assume data exists. If a step needs an IP, and no previous step finds that IP -> THE PLAN IS BROKEN.
 
         ANALYSIS PROTOCOL:
-        1. **STEP-BY-STEP SIMULATION**: For *each* numbered step, perform a thought about its feasibility.
-        2. **DATA PREREQUISITES**: Ask: "Do I have the specific data (IP, path, credentials) to execute Step N?"
-           - If Step N requires an IP and Step 1..N-1 does NOT discover it -> BLOCKER.
-        3. **CLARIFYING QUESTIONS**: For *every* step, formulate 1-2 clarifying questions about missing details or potential blockers. 
-           - *Example*: "Для кроку 2: Яким чином ми дізнаємося IP-адресу Kali, якщо вона не вказана?"
-        4. **SAFETY & LOGIC**: Check for command validity and sequence logic.
+        1. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
+        2. **DEPENDENCY DISCOVERY**: If data is missing, mark it as a BLOCKER.
+        3. **FEEDBACK FOR ATLAS (THE BRAIN)**: Formulate precise instructions for Atlas on how to fix the plan. 
+           - *Example*: "Atlas, you need to add a Discovery step before Step 2 to find the Kali VM IP."
 
-        OUTPUT STRICTLY IN THIS FORMAT (for the final thought):
+        OUTPUT FORMAT (FINAL THOUGHT):
         
         VERDICT: [APPROVE | REJECT]
         CONFIDENCE: [0.0 - 1.0]
         
-        ISSUES/QUESTIONS:
-        - [Step 1]: (Question or Blocker)
-        - [Step 2]: (Question or Blocker)
+        SIMULATION LOG (Questions/Blockers per step):
+        - [Step 1]: (What did you find?)
+        - [Step 2]: (What did you find?)
         ...
         
-        REASONING:
-        [Detailed summary in Ukrainian explaining why the plan is solid or where it breaks. Mention specific missing data like IPs or paths.]
+        FEEDBACK TO ATLAS:
+        [Instruction on what steps to add or modify, in English]
+        
+        SUMMARY_UKRAINIAN:
+        [Detailed explanation for the user in Ukrainian. Mention every issue clearly.]
         """
 
 GRISHA = {
