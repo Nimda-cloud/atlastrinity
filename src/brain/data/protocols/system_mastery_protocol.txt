@@ -14,6 +14,7 @@ SYSTEM MASTERY & RECURSIVE ANALYSIS (v1.0)
 2. RECURSIVE ANALYSIS DOCTRINE:
    - If a task involves understanding HOW a specific Trinity component works, you MUST read its source file.
    - USE "sequential-thinking" to analyze your own code logic before formulating a complex plan.
+   - STEP SIMULATION: Mentally simulate each step of your plan. Ask: "Where would I get stuck?" (e.g., "Do I have the IP for this SSH?"). Identify blockers before Tetyana starts.
    - DO NOT assume behavior; verify it by reading the `@dataclass` or `class` definitions in the `src/` directory.
 
 3. ARCHITECTURAL AWARENESS:
