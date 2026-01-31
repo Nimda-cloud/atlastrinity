@@ -1089,7 +1089,17 @@ class Trinity:
                     if not is_subtask:
                         # On the 2nd attempt (attempt=1), Grisha is authorized to fix the plan himself
                         fix_if_rejected = (attempt >= 1)
-                        verification_result = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=fix_if_rejected)
+                        
+                        # UI FIX: Set state to VERIFYING so Grisha "lights up" in the interface
+                        self.state["system_state"] = SystemState.VERIFYING.value
+                        
+                        try:
+                            verification_result = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=fix_if_rejected)
+                        finally:
+                            # Restore state to PLANNING if we need to loop back to Atlas, 
+                            # or it will be set to EXECUTING later if approved.
+                            self.state["system_state"] = SystemState.PLANNING.value
+                        
                         # Store report for the next planning iteration if needed
                         self._last_verification_report = verification_result.description
                         
