@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(root))
 
 import base64
 import json
-import os
+import re
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
@@ -895,25 +895,27 @@ class Grisha(BaseAgent):
                 summary_ukrainian = analysis_text.split("SUMMARY_UKRAINIAN:")[-1].strip()
             
             issues = []
+            raw_issues = []
             if "CORE PROBLEMS:" in analysis_text:
-                # Use Core Problems as the primary source of issues for Atlas and Orchestrator
                 issues_block = core_problems
-                issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+                raw_issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
             elif "SIMULATION LOG" in analysis_text:
                 parts = analysis_text.split("SIMULATION LOG")
                 if len(parts) > 1:
                     issues_block = parts[1].split("CORE PROBLEMS:")[0].strip()
                     raw_issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
-                    
-                    # INTELLIGENT SUMMARIZATION: If more than 3 cascading failures, collapse them
-                    root_blockers = [i for i in raw_issues if "Cascading Failure" not in i and "Blocked by" not in i]
-                    cascading = [i for i in raw_issues if "Cascading Failure" in i or "Blocked by" in i]
-                    
-                    issues = root_blockers
-                    if len(cascading) > 3:
-                        issues.append(f"Cascading Failure: {len(cascading)} steps are blocked by the root issues above.")
-                    else:
-                        issues.extend(cascading)
+            
+            if raw_issues:
+                # INTELLIGENT SUMMARIZATION: If more than 3 cascading failures, collapse them
+                # A cascading failure is one that says "Blocked by" or "Cascading failure"
+                root_blockers = [i for i in raw_issues if "Cascading Failure" not in i and "Blocked by" not in i]
+                cascading = [i for i in raw_issues if "Cascading Failure" in i or "Blocked by" in i]
+                
+                issues = root_blockers
+                if len(cascading) > 3:
+                    issues.append(f"Cascading Failure: {len(cascading)} dependent steps are blocked by the root issues above.")
+                else:
+                    issues.extend(cascading)
 
             # Final Verdict Determination
             is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
@@ -967,14 +969,21 @@ class Grisha(BaseAgent):
                 fix_result = await self.use_sequential_thinking(fix_query, total_thoughts=3)
                 if fix_result.get("success"):
                     raw_text = fix_result.get("analysis", "")
+                    cleaned_text = str(raw_text)
                     try:
                         # SUPERIOR EXTRACTION: Find the first { and last } to isolate JSON
-                        import re
-                        json_match = re.search(r'(\{.*\})', raw_text, re.DOTALL)
+                        for prefix in ["Thought:", "Thought PROCESS:", "Analysis:", "Plan:"]:
+                            if prefix.lower() in cleaned_text.lower():
+                                # Split by prefix case-insensitively
+                                parts = re.split(re.escape(prefix), cleaned_text, flags=re.IGNORECASE)
+                                if len(parts) > 1:
+                                    cleaned_text = parts[-1]
+
+                        json_match = re.search(r'(\{.*\})', cleaned_text, re.DOTALL)
                         if json_match:
-                            raw_json = json_match.group(1)
+                            raw_json = json_match.group(1).strip()
                         else:
-                            raw_json = raw_text
+                            raw_json = cleaned_text.strip()
                             
                         # Clean markdown if still present
                         if "```json" in raw_json:
@@ -982,14 +991,40 @@ class Grisha(BaseAgent):
                         elif "```" in raw_json:
                             raw_json = raw_json.split("```")[1].split("```")[0].strip()
                         
+                        # STRIP trailing non-JSON characters (common in reasoning models)
+                        if raw_json and raw_json[-1] != '}':
+                            last_brace = raw_json.rfind('}')
+                            if last_brace != -1:
+                                raw_json = raw_json[:last_brace + 1]
+
                         plan_data = json.loads(raw_json)
+                        
                         # We need TaskPlan class for orchestrator
+                        import inspect
+
                         from src.brain.agents.atlas import TaskPlan
-                        fixed_plan = TaskPlan(**plan_data)
-                        logger.info("[GRISHA] Successfully reconstructed plan via Architect Override.")
+                        
+                        # CRITICAL: Strip keys that are not in TaskPlan's __init__
+                        valid_keys = set(inspect.signature(TaskPlan.__init__).parameters.keys())
+                        # Also include created_at, status, context which are in dataclass but might not be in __init__ signature if they have default factories
+                        # Better: use __annotations__
+                        valid_keys.update(TaskPlan.__annotations__.keys())
+                        
+                        filtered_data = {k: v for k, v in plan_data.items() if k in valid_keys}
+                        
+                        # Handle potential missing required fields
+                        if "id" not in filtered_data:
+                            filtered_data["id"] = "fixed_plan_grisha"
+                        if "goal" not in filtered_data:
+                            filtered_data["goal"] = "Generated by Grisha Override"
+                        if "steps" not in filtered_data:
+                            filtered_data["steps"] = []
+                        
+                        fixed_plan = TaskPlan(**filtered_data)
+                        logger.info(f"[GRISHA] Successfully reconstructed plan via Architect Override. {len(fixed_plan.steps)} steps.")
                     except Exception as e:
-                        logger.error(f"[GRISHA] Failed to parse reconstructed plan: {e}")
-                        logger.debug(f"[GRISHA] Raw LLM response: {raw_text}")
+                        logger.error(f"[GRISHA] Failed to parse/instantiate reconstructed plan: {e}")
+                        logger.error(f"[GRISHA] Raw LLM response preview: {cleaned_text[:2000]}")
 
             return VerificationResult(
                 step_id="plan_init",
