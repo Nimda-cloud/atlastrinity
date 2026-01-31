@@ -18,6 +18,8 @@ from .project_analyzer import analyze_project_structure, detect_changed_componen
 server = FastMCP("devtools-server")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+VENV_BIN = PROJECT_ROOT / ".venv" / "bin"
+VENV_PYTHON = VENV_BIN / "python"
 
 
 @server.tool()
@@ -313,6 +315,97 @@ def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
             "error_count": error_count,
             "stdout": stdout,
             "stderr": stderr,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@server.tool()
+def devtools_check_security(path: str = "src/") -> dict[str, Any]:
+    """Run security audit tools (bandit, safety, detect-secrets)."""
+    results = {}
+
+    # 1. Bandit
+    bandit_bin = vbin if (vbin := shutil.which("bandit", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "bandit"
+    try:
+        cmd = [bandit_bin, "-r", path, "-ll", "--format", "json"]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        results["bandit"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
+    except Exception as e:
+        results["bandit"] = {"error": str(e)}
+
+    # 2. Safety (Check dependencies)
+    safety_bin = vbin if (vbin := shutil.which("safety", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "safety"
+    try:
+        cmd = [safety_bin, "check", "--json"]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        results["safety"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
+    except Exception as e:
+        results["safety"] = {"error": str(e)}
+
+    # 3. Detect-secrets
+    ds_bin = vbin if (vbin := shutil.which("detect-secrets", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "detect-secrets"
+    try:
+        cmd = [ds_bin, "scan", path]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        results["secrets"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
+    except Exception as e:
+        results["secrets"] = {"error": str(e)}
+
+    return results
+
+
+@server.tool()
+def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
+    """Run complexity audit (xenon)."""
+    xenon_bin = vbin if (vbin := shutil.which("xenon", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "xenon"
+    try:
+        # xenon --max-absolute B --max-modules B --max-average A <path>
+        cmd = [xenon_bin, "--max-absolute", "B", "--max-modules", "B", "--max-average", "A", path]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        return {
+            "success": res.returncode == 0,
+            "stdout": res.stdout.strip(),
+            "stderr": res.stderr.strip()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@server.tool()
+def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
+    """Run deep type checking for Python (mypy)."""
+    mypy_bin = vbin if (vbin := shutil.which("mypy", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "mypy"
+    try:
+        # We use --explicit-package-bases as discovered during CLI verification
+        cmd = [mypy_bin, path, "--explicit-package-bases"]
+        # Set MYPYPATH if needed, but CLI test showed 'mypy src' works if src is root-ish
+        env = os.environ.copy()
+        if path == "src":
+            env["MYPYPATH"] = "src"
+
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
+        return {
+            "success": res.returncode == 0,
+            "stdout": res.stdout.strip(),
+            "stderr": res.stderr.strip(),
+            "violation_count": len(res.stdout.splitlines()) if res.returncode != 0 else 0
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@server.tool()
+def devtools_check_types_ts() -> dict[str, Any]:
+    """Run deep type checking for TypeScript (tsc --noEmit)."""
+    tsc_bin = shutil.which("tsc") or "npx tsc"
+    try:
+        cmd = [*tsc_bin.split(), "--noEmit"]
+        res = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False)
+        return {
+            "success": res.returncode == 0,
+            "stdout": res.stdout.strip(),
+            "stderr": res.stderr.strip()
         }
     except Exception as e:
         return {"error": str(e)}
