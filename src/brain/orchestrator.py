@@ -258,6 +258,7 @@ class Trinity:
         # Attempt DB Reconstruction
         try:
             from sqlalchemy import select
+
             async with await db_manager.get_session() as db_sess:
                 # 1. Fetch Session Theme
                 sess_info = await db_sess.execute(
@@ -283,7 +284,9 @@ class Trinity:
                     if m.role == "human":
                         reconstructed_messages.append(HumanMessage(content=m.content))
                     elif m.role == "ai":
-                        agent = m.metadata_blob.get("agent", "ATLAS") if m.metadata_blob else "ATLAS"
+                        agent = (
+                            m.metadata_blob.get("agent", "ATLAS") if m.metadata_blob else "ATLAS"
+                        )
                         reconstructed_messages.append(AIMessage(content=m.content, name=agent))
 
                 # 3. Fetch Logs (Optional but nice)
@@ -295,13 +298,17 @@ class Trinity:
                 db_logs = log_info.scalars().all()
                 reconstructed_logs = []
                 for l in db_logs:
-                    reconstructed_logs.append({
-                        "id": f"db-log-{l.id}",
-                        "timestamp": l.timestamp.timestamp(),
-                        "agent": l.source.upper(),
-                        "message": l.message,
-                        "type": l.metadata_blob.get("type", "info") if l.metadata_blob else "info"
-                    })
+                    reconstructed_logs.append(
+                        {
+                            "id": f"db-log-{l.id}",
+                            "timestamp": l.timestamp.timestamp(),
+                            "agent": l.source.upper(),
+                            "message": l.message,
+                            "type": l.metadata_blob.get("type", "info")
+                            if l.metadata_blob
+                            else "info",
+                        }
+                    )
 
                 # Initial Fresh State
                 self.state = {
@@ -311,7 +318,7 @@ class Trinity:
                     "step_results": [],
                     "error": None,
                     "logs": reconstructed_logs,
-                    "_theme": db_sess_obj.metadata_blob.get("theme", "Restored Session")
+                    "_theme": db_sess_obj.metadata_blob.get("theme", "Restored Session"),
                 }
                 self.current_session_id = session_id
                 await self._log(f"Сесія {session_id} відновлена з бази даних", "system")
@@ -553,7 +560,7 @@ class Trinity:
                     session_id=self.current_session_id,
                     role=role,
                     content=str(content),
-                    metadata_blob={"agent": agent_id.upper() if agent_id else None}
+                    metadata_blob={"agent": agent_id.upper() if agent_id else None},
                 )
                 session.add(msg)
                 await session.commit()
@@ -861,7 +868,7 @@ class Trinity:
                     async with await db_manager.get_session() as db_sess:
                         new_session = DBSession(
                             started_at=datetime.now(UTC),
-                            metadata_blob={"theme": self.state["_theme"]}
+                            metadata_blob={"theme": self.state["_theme"]},
                         )
                         db_sess.add(new_session)
                         await db_sess.commit()
@@ -874,6 +881,7 @@ class Trinity:
                     # Update theme in DB if it changed or was restored
                     async with await db_manager.get_session() as db_sess:
                         from sqlalchemy import update
+
                         await db_sess.execute(
                             update(DBSession)
                             .where(DBSession.id == self.state["db_session_id"])
@@ -1057,6 +1065,30 @@ class Trinity:
                     return {"status": "completed", "result": fallback_chat, "type": "chat"}
 
                 self.state["current_plan"] = plan
+
+                # --- PLAN VERIFICATION (Grisha) ---
+                if not is_subtask:
+                    verification_result = await self.grisha.verify_plan(plan, user_request)
+                    if not verification_result.verified:
+                        msg = f"Гріша відхилив план: {verification_result.issues[0] if verification_result.issues else 'Невідома причина'}"
+                        await self._speak("grisha", verification_result.voice_message or msg)
+                        await self._log(
+                            f"[ORCHESTRATOR] Plan rejected by Grisha: {verification_result.issues}",
+                            "warning",
+                        )
+
+                        # Trigger Re-planning with feedback
+                        analysis["instructions_for_vibe"] = (
+                            f"FIX PLAN: {verification_result.issues}"
+                        )
+                        # Simple retry mechanism - usually we would loop back, but for now we just return error to force re-prompt or simple stop
+                        # Ideally, we should loop back to planning.
+                        self.state["system_state"] = SystemState.IDLE.value
+                        return {"status": "error", "error": f"Plan verification failed: {msg}"}
+
+                    await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
+                    await self._log("[ORCHESTRATOR] Plan verified by Grisha. Proceeding.", "system")
+                # ----------------------------------
 
                 # DB Task Creation
                 try:
