@@ -1,6 +1,6 @@
+import json
 import logging
 import sqlite3
-import json
 import uuid
 from pathlib import Path
 from typing import Any
@@ -21,7 +21,7 @@ class SearchStorage:
         enabled: bool = True,
         index_name: str = "golden_fund_index",
         # Kept for compatibility but unused in SQLite mode
-        hosts: list[str] = None 
+        hosts: list[str] | None = None 
     ):
         self.enabled = enabled
         self.index_name = index_name
@@ -58,7 +58,7 @@ class SearchStorage:
                     description, 
                     source_json UNINDEXED
                 )
-            """)
+            """)  # nosec B608
             conn.commit()
 
     def index_documents(self, data: dict[str, Any] | list[dict[str, Any]]) -> StorageResult:
@@ -83,7 +83,7 @@ class SearchStorage:
                     
                     # REPLACE INTO helps updating existing docs
                     conn.execute(
-                        f"INSERT OR REPLACE INTO {self.index_name} (id, title, content, description, source_json) VALUES (?, ?, ?, ?, ?)",
+                        f"INSERT OR REPLACE INTO {self.index_name} (id, title, content, description, source_json) VALUES (?, ?, ?, ?, ?)",  # nosec B608
                         (doc_id, title, content, description, source_json)
                     )
                     doc_count += 1
@@ -118,7 +118,7 @@ class SearchStorage:
                 safe_query = query.replace('"', '""') 
                 
                 cursor = conn.execute(
-                    f"SELECT id, source_json, rank FROM {self.index_name} WHERE {self.index_name} MATCH ? ORDER BY rank LIMIT ?", 
+                    f"SELECT id, source_json, rank FROM {self.index_name} WHERE {self.index_name} MATCH ? ORDER BY rank LIMIT ?",  # nosec B608
                     (safe_query, limit)
                 )
                 

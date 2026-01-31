@@ -25,18 +25,38 @@ RAW_DIR = DATA_DIR / "raw"
 RAW_DIR.mkdir(exist_ok=True)
 
 
+def _get_scrape_result(url: str, type: str, scraper: DataScraper):
+    """Helper to handle the first stage of ingestion: scraping."""
+    if type == "api":
+        return scraper.scrape_api_endpoint(url), ".json"
+    elif type == "web_page":
+        return scraper.scrape_web_page(url), ".json"
+    
+    # Generic file download
+    result = scraper.download_file(url)
+    if type in ["csv", "json", "xml", "parquet"]:
+        ext = f".{type}"
+    elif type in ["excel", "xlsx", "xls"]:
+        ext = ".xlsx"
+    else:
+        path = Path(url)
+        ext = path.suffix if path.suffix else ".bin"
+    return result, ext
+
+
+def _parse_raw_data(raw_file: Path, ext: str, type: str, parser: DataParser):
+    """Helper to handle the second stage: parsing."""
+    format_hint = ext.lstrip(".").lower()
+    if format_hint == "bin" and type not in ["file", "web_page", "api"]:
+        format_hint = type
+    
+    return parser.parse(raw_file, format_hint=format_hint)
+
+
 async def ingest_dataset(
     url: str, type: str = "web_page", process_pipeline: list[str] | None = None
 ) -> str:
-    """
-    Ingest a dataset from a URL.
-
-    Args:
-        url: URL to ingest
-        type: 'web_page', 'api', 'file', 'csv', 'json', 'excel', 'parquet', etc.
-        process_pipeline: List of steps (e.g. ['parse', 'vectorize', 'validate'])
-                          If None, defaults to ['parse', 'store_sql']
-    """
+    """Ingest a dataset from a URL."""
     scraper = DataScraper()
     parser = DataParser()
     validator = DataValidator()
@@ -49,133 +69,50 @@ async def ingest_dataset(
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
     logger.info(f"Starting ingestion run {run_id} for {url} ({type})")
 
-    # 1. Scrape / Fetch / Download
-    if type == "api":
-        result = scraper.scrape_api_endpoint(url)
-        save_fmt = ScrapeFormat.JSON
-        ext = ".json"
-    elif type == "web_page":
-        result = scraper.scrape_web_page(url)
-        save_fmt = ScrapeFormat.JSON  # Saves soup/text structure
-        ext = ".json"
-    else:
-        # Assume generic file download for csv, excel, parquet, etc.
-        result = scraper.download_file(url)
-        save_fmt = None  # Raw bytes, Scraper detects this
-
-        # Infer extension from URL or type
-        if type in ["csv", "json", "xml", "parquet"]:
-            ext = f".{type}"
-        elif type in ["excel", "xlsx", "xls"]:
-            ext = ".xlsx"
-        else:
-            # Try to get from URL
-            path = Path(url)
-            ext = path.suffix if path.suffix else ".bin"
-
+    result, ext = _get_scrape_result(url, type, scraper)
     if not result.success:
         msg = f"Ingestion failed during retrieval: {result.error}"
         logger.error(msg)
         return msg
 
-    # 2. Save Raw Data
-    if result.data:
-        raw_file = RAW_DIR / f"{run_id}_raw{ext}"
-
-        # If scraper returned dict/list (API/Web), save as JSON
-        if isinstance(result.data, (dict, list)):
-            save_fmt = ScrapeFormat.JSON
-
-        save_res = scraper.save_data(
-            result.data, raw_file, save_fmt if save_fmt else ScrapeFormat.JSON
-        )
-
-        if not save_res.success:
-            return f"Failed to save raw data: {save_res.error}"
-
-        logger.info(f"Saved raw data to {save_res.data}")
-    else:
+    if not result.data:
         return "No data retrieved"
 
-    summary = f"Ingestion {run_id} successful. Raw data: {raw_file.name}."
+    raw_file = RAW_DIR / f"{run_id}_raw{ext}"
+    save_res = scraper.save_data(result.data, raw_file)
+    if not save_res.success:
+        return f"Failed to save raw data: {save_res.error}"
 
-    # 3. Process Pipeline
+    summary = f"Ingestion {run_id} successful. Raw data: {raw_file.name}."
     parsed_df = None
 
     if "parse" in process_pipeline:
-        # Determine format hint
-        format_hint = ext.lstrip(".").lower()
-        if format_hint == "bin":
-            # inspect file signature or content? For now rely on user 'type' if provided
-            if type not in ["file", "web_page", "api"]:
-                format_hint = type
-
-        parse_res = parser.parse(raw_file, format_hint=format_hint)
-
+        parse_res = _parse_raw_data(raw_file, ext, type, parser)
         if parse_res.success:
             data = parse_res.data
-            records_count = 0
-
-            # Normalize to DataFrame if possible
             if isinstance(data, pd.DataFrame):
                 parsed_df = data
-                records_count = len(parsed_df)
             elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
                 parsed_df = pd.DataFrame(data)
-                records_count = len(parsed_df)
             elif isinstance(data, dict):
                 parsed_df = pd.DataFrame([data])
-                records_count = 1
-
-            summary += f" Parsed {records_count} records."
+            summary += f" Parsed {len(parsed_df) if parsed_df is not None else 0} records."
         else:
             summary += f" Parsing failed: {parse_res.error}"
 
-    # 4. Storage (SQL)
     if "store_sql" in process_pipeline and parsed_df is not None:
-        dataset_name = f"dataset_{run_id}"
-        # Store in SQL
-        store_res = sql_storage.store_dataset(parsed_df, dataset_name, source_url=url)
+        store_res = sql_storage.store_dataset(parsed_df, f"dataset_{run_id}", source_url=url)
+        summary += f" Stored in SQL table '{store_res.target}'." if store_res.success else f" SQL Storage failed: {store_res.error}"
 
-        if store_res.success:
-            summary += f" Stored in SQL table '{store_res.target}'."
-        else:
-            summary += f" SQL Storage failed: {store_res.error}"
-
-    # 5. Vectorize (Semantic Search)
     if "vectorize" in process_pipeline and parsed_df is not None:
-        # Create a summary node for the dataset
         desc = f"Dataset from {url} ({type}). Columns: {', '.join(parsed_df.columns[:10])}. Rows: {len(parsed_df)}."
-
-        vector_data = {
-            "name": f"dataset_{run_id}",
-            "type": "dataset",
-            "content": desc,
-            "source_url": url,
-            "format": ext,
-            "sql_table": f"dataset_{run_id}",  # Link to SQL table
-        }
-
+        vector_data = {"name": f"dataset_{run_id}", "type": "dataset", "content": desc, "source_url": url, "format": ext, "sql_table": f"dataset_{run_id}"}
         vec_res = vector_storage.store(vector_data)
-        if vec_res.success:
-            summary += " Indexed for semantic search."
-        else:
-            summary += f" Vector indexing failed: {vec_res.error}"
+        summary += " Indexed for semantic search." if vec_res.success else f" Vector indexing failed: {vec_res.error}"
 
-    # 6. Validation
     if "validate" in process_pipeline and parsed_df is not None:
-        # Connect df back to list of dicts for validator
-        # Ensure keys are strings for typing compatibility
-        val_data = [
-            {str(k): v for k, v in record.items()} for record in parsed_df.to_dict(orient="records")
-        ]
-
-        validation_res = validator.validate_data_completeness(
-            val_data, context=f"ingestion_{run_id}"
-        )
-        if validation_res.success:
-            summary += " Validation passed."
-        else:
-            summary += f" Validation warning: {validation_res.error}"
+        val_data = [{str(k): v for k, v in record.items()} for record in parsed_df.to_dict(orient="records")]
+        validation_res = validator.validate_data_completeness(val_data, context=f"ingestion_{run_id}")
+        summary += " Validation passed." if validation_res.success else f" Validation warning: {validation_res.error}"
 
     return summary

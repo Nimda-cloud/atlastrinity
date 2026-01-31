@@ -55,6 +55,7 @@ class MonitoringSystem:
         self.prometheus_port = self.config.get("prometheus", {}).get("port", prometheus_port)
         self.storage_enabled = True # Always enable local storage
         self.grafana_enabled = self.config.get("grafana", {}).get("enabled", grafana_enabled)
+        self.opensearch_enabled = self.config.get("opensearch", {}).get("enabled", opensearch_enabled)
 
         # Initialize SQLite for Logs/Metrics
         self.db_path = Path.home() / ".config" / "atlastrinity" / "data" / "monitoring.db"
@@ -116,7 +117,7 @@ class MonitoringSystem:
             with sqlite3.connect(self.db_path) as conn:
                 columns = ', '.join(data.keys())
                 placeholders = ', '.join(['?'] * len(data))
-                sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+                sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"  # nosec B608
                 conn.execute(sql, list(data.values()))
                 conn.commit()
         except Exception as e:

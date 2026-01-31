@@ -8,15 +8,19 @@
 - Завантаження AI моделей (STT/TTS)
 - Перевірка системних сервісів (Redis, Vibe CLI)
 """
-
+import argparse
 import asyncio
+import json
 import os
 import platform
+import select
 import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+import yaml
 
 
 # Кольори для консолі
@@ -246,28 +250,6 @@ def ensure_database():
 
     except Exception as e:
         print_warning(f"Помилка при налаштуванні БД: {e}")
-
-
-def prepare_monitoring_db():
-    """Initialize Monitoring SQLite database"""
-    print_step("Налаштування бази даних моніторингу (SQLite)...")
-    monitor_db_path = CONFIG_ROOT / "data" / "monitoring.db"
-    monitor_db_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    if monitor_db_path.exists():
-         print_success(f"Monitoring DB вже існує: {monitor_db_path}")
-    else:
-         print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
-         
-    # Backup restore logic could go here if we persist monitoring data across resets
-    backup_path = PROJECT_ROOT / "backups" / "databases" / "monitoring.db"
-    if not monitor_db_path.exists() and backup_path.exists():
-        try:
-            shutil.copy2(backup_path, monitor_db_path)
-            print_success("Monitoring DB відновлено з бекапу")
-        except Exception as e:
-            print_warning(f"Не вдалося відновити Monitoring DB: {e}")
-
 
 
 def prepare_monitoring_db():
@@ -988,7 +970,6 @@ def download_models():
     # 1. Faster-Whisper: Detect model
     model_name = "large-v3"
     try:
-        import yaml
 
         config_path = CONFIG_ROOT / "config.yaml"
         target_path = (
@@ -1031,8 +1012,6 @@ def download_models():
         print(
             f"{Colors.OKCYAN}❓ Бажаєте перекачати моделі? У вас є 5 секунд для вибору: [s]kip (default), [a]ll, [stt], [tts]{Colors.ENDC}"
         )
-
-        import select
 
         i, o, e = select.select([sys.stdin], [], [], 5)
         choice = sys.stdin.readline().strip().lower() if i else "s"
@@ -1248,8 +1227,6 @@ def main():
     )
 
     # Parse arguments
-    import argparse
-
     parser = argparse.ArgumentParser(description="AtlasTrinity Dev Setup")
     parser.add_argument("--backup", action="store_true", help="Backup databases and exit")
     parser.add_argument("--restore", action="store_true", help="Restore databases and exit")
@@ -1310,6 +1287,7 @@ def main():
     sync_configs()
 
     ensure_database()
+    prepare_monitoring_db()
     verify_golden_fund()
 
     # Run detailed table verification
@@ -1388,29 +1366,6 @@ def main():
         subprocess.run([str(VENV_PATH / "bin" / "python"), "-m", "pip", "install", "watchdog"], check=False)
 
     print_info(f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'python scripts/watch_config.py' для авто-синхронізації конфігів")
-
-    import json
-
-def prepare_monitoring_db():
-    """Initialize Monitoring SQLite database"""
-    print_step("Налаштування бази даних моніторингу (SQLite)...")
-    monitor_db_path = CONFIG_ROOT / "data" / "monitoring.db"
-    monitor_db_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    if monitor_db_path.exists():
-         print_success(f"Monitoring DB вже існує: {monitor_db_path}")
-    else:
-         print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
-         
-    # Backup restore logic could go here if we persist monitoring data across resets
-    backup_path = PROJECT_ROOT / "backups" / "databases" / "monitoring.db"
-    if not monitor_db_path.exists() and backup_path.exists():
-        try:
-            shutil.copy2(backup_path, monitor_db_path)
-            print_success("Monitoring DB відновлено з бекапу")
-        except Exception as e:
-            print_warning(f"Не вдалося відновити Monitoring DB: {e}")
-
 
     mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
     enabled_servers = []
