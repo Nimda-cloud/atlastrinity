@@ -10,11 +10,12 @@ from typing import Any, TypedDict, cast
 from mcp.server import FastMCP, Server
 from mcp.types import TextContent, Tool
 
+from .context_check import run_test_suite
+
 # Import universal modules for external project support
 from .diagram_generator import generate_architecture_diagram
 from .git_manager import ensure_git_repository, get_git_changes, setup_github_remote
 from .project_analyzer import analyze_project_structure, detect_changed_components
-from .context_check import run_test_suite
 from .trace_analyzer import analyze_log_file
 
 # Initialize FastMCP server

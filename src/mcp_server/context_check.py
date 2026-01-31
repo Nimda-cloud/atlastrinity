@@ -6,10 +6,12 @@ This module validates LLM outputs against expected logical conditions defined in
 
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Literal, TypedDict, Union
+from typing import Any, Literal, TypedDict, Union, cast
 
 import yaml
+
 
 # Types
 class Expectation(TypedDict):
@@ -52,9 +54,9 @@ def load_tests(file_path: str | Path) -> list[TestScenario]:
 
     # Support specific "tests" key or root list
     if isinstance(data, dict) and "tests" in data:
-        return data["tests"]
+        return cast(list[TestScenario], data["tests"])
     if isinstance(data, list):
-        return data
+        return cast(list[TestScenario], data)
     
     raise ValueError("Invalid test file structure. Expected list of tests or {'tests': [...]}")
 
