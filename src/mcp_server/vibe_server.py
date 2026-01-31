@@ -327,12 +327,12 @@ def resolve_vibe_binary() -> str | None:
 
     # Try absolute path from config
     if os.path.isabs(VIBE_BINARY) and os.path.exists(VIBE_BINARY):
-        return VIBE_BINARY
+        return cast(str, VIBE_BINARY)
 
     # Search PATH
     found = shutil.which(VIBE_BINARY)
     if found:
-        return found
+        return cast(str, found)
 
     logger.warning(f"Vibe binary '{VIBE_BINARY}' not found")
     return None
@@ -1054,7 +1054,7 @@ async def vibe_analyze_error(
 
     logger.info(f"[VIBE] Analyzing error (auto_fix={auto_fix}, step={step_action})")
 
-    return await vibe_prompt(
+    return cast(dict[str, Any], await vibe_prompt(
         ctx=ctx,
         prompt=prompt,
         cwd=cwd,
@@ -1062,7 +1062,7 @@ async def vibe_analyze_error(
         model=AGENT_MODEL_OVERRIDE,
         mode="auto-approve" if auto_fix else "plan",
         max_turns=15,
-    )
+    ))
 
 
 @server.tool()
@@ -1222,7 +1222,7 @@ EXECUTE NOW
 
     logger.info(f"[VIBE] Implementing feature: {goal[:50]}... (iterative={iterative_review})")
 
-    return await vibe_prompt(
+    return cast(dict[str, Any], await vibe_prompt(
         ctx=ctx,
         prompt=prompt,
         cwd=cwd,
@@ -1230,7 +1230,7 @@ EXECUTE NOW
         model=AGENT_MODEL_OVERRIDE,
         mode="auto-approve",
         max_turns=30 + (max_iterations * 5 if iterative_review else 0),
-    )
+    ))
 
 
 @server.tool()
@@ -1284,7 +1284,7 @@ async def vibe_code_review(
     if focus_areas:
         prompt_parts.append(f"\nFOCUS AREAS: {focus_areas}")
 
-    return await vibe_prompt(
+    return cast(dict[str, Any], await vibe_prompt(
         ctx=ctx,
         prompt="\n".join(prompt_parts),
         cwd=cwd,
@@ -1292,7 +1292,7 @@ async def vibe_code_review(
         model=AGENT_MODEL_OVERRIDE,
         mode="plan",  # Read-only mode
         max_turns=5,
-    )
+    ))
 
 
 @server.tool()
@@ -1335,14 +1335,14 @@ async def vibe_smart_plan(
         ],
     )
 
-    return await vibe_prompt(
+    return cast(dict[str, Any], await vibe_prompt(
         ctx=ctx,
         prompt="\n".join(prompt_parts),
         cwd=cwd,
         timeout_s=timeout_s or 300,
         mode="plan",
         max_turns=5,
-    )
+    ))
 
 
 # =============================================================================
@@ -1581,13 +1581,13 @@ async def vibe_session_resume(
     full_session_id = target_path.stem.replace("session_", "")
 
     # Use vibe_prompt with session continuation
-    return await vibe_prompt(
+    return cast(dict[str, Any], await vibe_prompt(
         ctx=ctx,
         prompt=prompt or "Continue from where we left off.",
         cwd=cwd,
         timeout_s=timeout_s,
         session_id=full_session_id,
-    )
+    ))
 
 
 # =============================================================================
@@ -1613,7 +1613,7 @@ async def vibe_ask(
         AI response without file modifications
 
     """
-    return await vibe_prompt(
+    return cast(dict[str, Any], await vibe_prompt(
         ctx=ctx,
         prompt=question,
         cwd=cwd,
@@ -1621,7 +1621,7 @@ async def vibe_ask(
         mode="plan",
         max_turns=3,
         output_format="json",
-    )
+    ))
 
 
 @server.tool()
