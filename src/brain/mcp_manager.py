@@ -5,7 +5,10 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from mcp.client.session import ClientSession
 
 
 def _import_mcp_sdk():
@@ -36,11 +39,11 @@ except Exception:
 
 
 try:
-    ClientSession, StdioServerParameters, stdio_client, LoggingMessageNotification = (
+    _McpClientSession, StdioServerParameters, stdio_client, LoggingMessageNotification = (
         _import_mcp_sdk()
     )
 except ImportError:  # pragma: no cover
-    ClientSession = None  # type: ignore
+    _McpClientSession = None  # type: ignore
     StdioServerParameters = None  # type: ignore
     stdio_client = None  # type: ignore
     LoggingMessageNotification = None  # type: ignore
@@ -248,9 +251,13 @@ class MCPManager:
         except Exception as e:
             logger.debug(f"Orphan cleanup failed for {server_name}: {e}")
 
-    async def get_session(self, server_name: str) -> ClientSession | None:
+    async def get_session(self, server_name: str) -> "ClientSession | None":
         """Get or create a persistent session for the server"""
-        if ClientSession is None or StdioServerParameters is None or stdio_client is None:
+        if (
+            _McpClientSession is None
+            or StdioServerParameters is None
+            or stdio_client is None
+        ):
             logger.error("MCP Python package is not installed; MCP features are unavailable")
             return None
 
@@ -273,7 +280,7 @@ class MCPManager:
         self,
         server_name: str,
         config: dict[str, Any],
-    ) -> ClientSession | None:
+    ) -> "ClientSession | None":
         """Establish a new connection to an MCP server"""
         default_timeout = float(
             self.config.get("mcpServers", {}).get("_defaults", {}).get("connect_timeout", 30.0),
@@ -416,7 +423,7 @@ class MCPManager:
                                     f"[MCP] Log callback dispatch error ({server_name}): {e}",
                                 )
 
-                    async with cast("Any", ClientSession)(
+                    async with cast("Any", _McpClientSession)(
                         read,
                         write,
                         logging_callback=handle_log,

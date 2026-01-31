@@ -1835,7 +1835,7 @@ class Grisha(BaseAgent):
                     f"[GRISHA] Quartz unavailable for screenshots (will fallback to screencapture): {qerr}",
                 )
 
-            desktop_canvas = None
+            desktop_canvas: Any = None
             active_win_img = None
 
             if quartz_available and Quartz is not None:
