@@ -844,7 +844,10 @@ def sync_configs():
                 PROJECT_ROOT / "config" / "vibe_config.toml.template",
                 CONFIG_ROOT / "vibe_config.toml",
             ),
-
+            (
+                PROJECT_ROOT / "config" / "prometheus.yml.template",
+                CONFIG_ROOT / "prometheus.yml",
+            ),
         ]
 
         # Process standard configs (Force Overwrite logic simplified for setup)
