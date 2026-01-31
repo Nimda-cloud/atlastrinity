@@ -370,7 +370,7 @@ class DatabaseManager:
         """Get a new async session."""
         if not self.available or not self._session_maker:
             raise RuntimeError("Database not initialized")
-        return self._session_maker()
+        return cast(AsyncSession, self._session_maker())
 
     async def close(self):
         if self._engine:

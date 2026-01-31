@@ -7,7 +7,7 @@ Acts as the 'Triaging Doctor' for exceptions during task execution.
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from .logger import logger
 
@@ -123,7 +123,7 @@ class SmartErrorRouter:
         """Classifies an error string into a category"""
         error_str = str(error).lower()
         if error_str in self._cache:
-            return self._cache[error_str]
+            return cast(ErrorCategory, self._cache[error_str])
 
         if error_str in ["help_pending", "need_user_input", "user_input_received"]:
             category = ErrorCategory.USER_INPUT
