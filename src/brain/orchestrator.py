@@ -787,6 +787,7 @@ class Trinity:
 
     async def run(self, user_request: str) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
+        from src.brain.context import shared_context
         self.stop()  # Stop any current speech and task when a new request arrives
         self.active_task = asyncio.current_task()
         start_time = asyncio.get_event_loop().time()
@@ -1035,70 +1036,93 @@ class Trinity:
                             _keep_alive_last_log[0] = current_time
                             await self._log("Atlas is thinking... (Planning logic flow)", "system")
 
-                planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
-                logger_task = asyncio.create_task(keep_alive_logging())
-                try:
-                    plan = await asyncio.wait_for(
-                        planning_task,
-                        timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
-                    )
-                finally:
-                    logger_task.cancel()
-                    try:
-                        await logger_task
-                    except asyncio.CancelledError:
-                        pass
+                # --- PLANNING & VERIFICATION LOOP ---
+                max_retries = 2
+                plan = None
 
-                if not plan or not plan.steps:
-                    msg = self.atlas.get_voice_message("no_steps")
-                    await self._speak("atlas", msg)
-
-                    # Trigger fallback response if Atlas thought it was a task but produced no steps
-                    fallback_chat = await self.atlas.chat(
-                        user_request,
-                        history=history,
-                        use_deep_persona=True,
-                    )
-                    await self._speak("atlas", fallback_chat)
-                    self.state["system_state"] = SystemState.IDLE.value
-                    self.active_task = None
-                    return {"status": "completed", "result": fallback_chat, "type": "chat"}
-
-                self.state["current_plan"] = plan
-
-                # --- PLAN VERIFICATION (Grisha) ---
-                if not is_subtask:
-                    verification_result = await self.grisha.verify_plan(plan, user_request)
-                    if not verification_result.verified:
-                        msg = f"Гріша відхилив план: {verification_result.issues[0] if verification_result.issues else 'Невідома причина'}"
-                        await self._speak("grisha", verification_result.voice_message or msg)
+                for attempt in range(max_retries + 1):
+                    if attempt > 0:
                         await self._log(
-                            f"[ORCHESTRATOR] Plan rejected by Grisha: {verification_result.issues}",
-                            "warning",
+                            f"🔄 Спроба перепланування {attempt}/{max_retries} на основі фідбеку Гріші...",
+                            "system",
                         )
+                        # Pass Grisha's simulation report back to Atlas for re-planning
+                        analysis["simulation_result"] = getattr(self, "_last_verification_report", None)
 
-                        # Trigger Re-planning with feedback
-                        analysis["instructions_for_vibe"] = (
-                            f"FIX PLAN: {verification_result.issues}"
+                    planning_task = asyncio.create_task(self.atlas.create_plan(analysis))
+                    logger_task = asyncio.create_task(keep_alive_logging())
+                    try:
+                        plan = await asyncio.wait_for(
+                            planning_task,
+                            timeout=config.get("orchestrator", {}).get("task_timeout", 1200.0),
                         )
-                        # Simple retry mechanism - usually we would loop back, but for now we just return error to force re-prompt or simple stop
-                        # Ideally, we should loop back to planning.
+                    finally:
+                        logger_task.cancel()
+                        try:
+                            await logger_task
+                        except asyncio.CancelledError:
+                            pass
+
+                    if not plan or not plan.steps:
+                        msg = self.atlas.get_voice_message("no_steps")
+                        await self._speak("atlas", msg)
+
+                        # Trigger fallback response if Atlas thought it was a task but produced no steps
+                        fallback_chat = await self.atlas.chat(
+                            user_request,
+                            history=history,
+                            use_deep_persona=True,
+                        )
+                        await self._speak("atlas", fallback_chat)
                         self.state["system_state"] = SystemState.IDLE.value
-                        return {"status": "error", "error": f"Plan verification failed: {msg}"}
+                        self.active_task = None
+                        return {"status": "completed", "result": fallback_chat, "type": "chat"}
 
-                    await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
-                    await self._log("[ORCHESTRATOR] Plan verified by Grisha. Proceeding.", "system")
+                    self.state["current_plan"] = plan
+
+                    # --- PLAN VERIFICATION (Grisha) ---
+                    if not is_subtask:
+                        verification_result = await self.grisha.verify_plan(plan, user_request)
+                        # Store report for the next planning iteration if needed
+                        self._last_verification_report = verification_result.description
+                        
+                        if not verification_result.verified:
+                            msg = f"Гріша відхилив план: {verification_result.issues[0] if verification_result.issues else 'Невідома причина'}"
+                            await self._speak("grisha", verification_result.voice_message or msg)
+                            await self._log(
+                                f"[ORCHESTRATOR] Plan rejected by Grisha: {verification_result.issues}",
+                                "warning",
+                            )
+                            
+                            if attempt < max_retries:
+                                continue # Loop back to Atlas for re-planning
+                            else:
+                                self.state["system_state"] = SystemState.IDLE.value
+                                self.active_task = None
+                                return {"status": "error", "error": f"Plan verification failed after {max_retries} спроб: {msg}"}
+
+                        await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
+                        await self._log("[ORCHESTRATOR] Plan verified by Grisha. Proceeding.", "system")
+                    
+                    # If we reached here, plan is valid or we skip verification (subtask)
+                    break
                 # ----------------------------------
 
                 # DB Task Creation
                 try:
                     from src.brain.db.manager import db_manager
+                    from src.brain.context import shared_context
 
                     if (
                         db_manager
                         and getattr(db_manager, "available", False)
                         and self.state.get("db_session_id")
                     ):
+                        # Safety check for static analysis (plan is guaranteed by loop break)
+                        if not plan:
+                            logger.error("[ORCHESTRATOR] Critical logic error: plan is None after loop.")
+                            return {"status": "error", "error": "Internal planning error"}
+
                         async with await db_manager.get_session() as db_sess:
                             # Зберігаємо рекурсивний контекст з shared_context
                             task_metadata = {
@@ -1107,7 +1131,7 @@ class Trinity:
                                 "recursive_depth": shared_context.recursive_depth,
                                 "current_goal": shared_context.current_goal,
                             }
-
+                            
                             new_task = DBTask(
                                 session_id=self.state["db_session_id"],
                                 goal=user_request,
@@ -1125,7 +1149,7 @@ class Trinity:
                                 attributes={
                                     "goal": user_request,
                                     "timestamp": datetime.now(UTC).isoformat(),
-                                    "steps_count": len(plan.steps),
+                                    "steps_count": len(plan.steps) if plan and hasattr(plan, 'steps') else 0,
                                     "parent_task_id": str(new_task.parent_task_id)
                                     if new_task.parent_task_id
                                     else None,
@@ -1158,7 +1182,7 @@ class Trinity:
                             {
                                 "type": "planning_finished",
                                 "session_id": session_id,
-                                "steps_count": len(plan.steps),
+                                "steps_count": len(plan.steps) if plan and hasattr(plan, 'steps') else 0,
                             },
                         )
                 except (ImportError, NameError):
@@ -1166,7 +1190,7 @@ class Trinity:
 
                 await self._speak(
                     "atlas",
-                    self.atlas.get_voice_message("plan_created", steps=len(plan.steps)),
+                    self.atlas.get_voice_message("plan_created", steps=len(plan.steps) if plan and hasattr(plan, 'steps') else 0),
                 )
 
             except Exception as e:
