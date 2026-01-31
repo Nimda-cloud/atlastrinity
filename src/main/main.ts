@@ -299,7 +299,7 @@ app.on('before-quit', () => {
   try {
     // Targeted pkill for core components to avoid "orphans"
     // brain.server handles its own children, but this is a final fail-safe
-    const targets = 'vibe_server vibe brain.server mcp-server memory_server graph_server macos-use';
+    const targets = 'vibe_server vibe brain.server mcp-server memory_server graph_server macos-use watch_config';
     const command =
       targets
         .split(' ')
