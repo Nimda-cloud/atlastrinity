@@ -26,13 +26,17 @@ from src.brain.memory import long_term_memory
 def kill_processes():
     """Kill all project-related processes to free file locks"""
     print("🔪 Killing active project processes...")
-    
+
     # Process patterns and names to kill
     process_patterns = [
-        "vibe_server", "memory_server", "graph_server", "mcp-server",
-        "macos-use", "brain.server"
+        "vibe_server",
+        "memory_server",
+        "graph_server",
+        "mcp-server",
+        "macos-use",
+        "brain.server",
     ]
-    
+
     for pattern in process_patterns:
         try:
             # We use pkill for name matching
@@ -52,7 +56,7 @@ def kill_processes():
                     subprocess.run(["kill", "-9", pid], check=False)
         except Exception:
             pass
-            
+
     print("✅ Processes terminated.")
 
 
@@ -70,7 +74,7 @@ def clear_redis():
 def clear_cache():
     """Clear all cache directories including recursive __pycache__"""
     print("🧹 Clearing cache directories...")
-    
+
     # 1. Standard locations
     cache_dirs = [
         CONFIG_ROOT / "cache",
@@ -78,10 +82,10 @@ def clear_cache():
         project_root / ".vite",
         Path.home() / "Library" / "Caches" / "atlastrinity",
     ]
-    
+
     # 2. Add recursive __pycache__ and logs
     print("🔍 Searching for recursive __pycache__ and logs...")
-    
+
     # Logs
     log_dir = project_root / "logs"
     if log_dir.exists():
@@ -103,7 +107,7 @@ def clear_cache():
             pycache_count += 1
         except Exception:
             pass
-            
+
     # Recursive .pyc
     for p in project_root.rglob("*.pyc"):
         try:
@@ -123,19 +127,19 @@ def clear_cache():
                 print(f"✅ Deleted: {cache_dir}")
             except Exception as e:
                 print(f"⚠️ Could not delete {cache_dir}: {e}")
-    
+
     print(f"✅ Cleared {cleared_count} standard cache paths and {pycache_count} __pycache__ dirs.")
 
 
 def clear_chroma_files():
     """Force clear ChromaDB files"""
     print("🧹 Force clearing ChromaDB files...")
-    
+
     chroma_paths = [
         CONFIG_ROOT / "memory" / "chroma",
         project_root / "data" / "golden_fund" / "chroma_db",
     ]
-    
+
     for chroma_path in chroma_paths:
         if chroma_path.exists():
             try:
@@ -143,7 +147,7 @@ def clear_chroma_files():
                 print(f"✅ Deleted ChromaDB directory: {chroma_path}")
             except Exception as e:
                 print(f"⚠️ Could not delete {chroma_path}: {e}")
-    
+
     # Also delete any SQLite files in config root
     for sqlite_file in CONFIG_ROOT.rglob("*.sqlite3"):
         try:
@@ -157,7 +161,7 @@ async def cleanup_hallucinations():
     """Cleanup specific hallucinations as done in cleanup_memory.py"""
     if not long_term_memory.available:
         return
-        
+
     print("🔍 Cleaning up specific hallucinations...")
     hallucinations = [
         "Сподівайся, як обходить",
@@ -198,11 +202,11 @@ async def clear_experience():
                 print("🧹 Deleting from database tables...")
                 # Disable foreign key constraints for SQLite
                 await conn.execute(text("PRAGMA foreign_keys = OFF"))
-                
+
                 # Order matters due to FKs
                 tables = [
                     "kg_edges",
-                    "kg_nodes", 
+                    "kg_nodes",
                     "logs",
                     "tool_executions",
                     "task_steps",
@@ -215,7 +219,7 @@ async def clear_experience():
                         print(f"✅ Cleared table {table}")
                     except Exception as e:
                         print(f"ℹ️ Table {table} skipped: {e}")
-                
+
                 # Re-enable foreign key constraints
                 await conn.execute(text("PRAGMA foreign_keys = ON"))
                 print("✅ Database tables cleared.")
@@ -228,10 +232,10 @@ async def clear_experience():
             print("🧠 Wiping all vector memory collections...")
             # Use the built-in method for a safe and complete reset
             await long_term_memory.clear_all_memory()
-            
+
             # Special cleanup for hallucinations
             await cleanup_hallucinations()
-            
+
             print("✅ ChromaDB collections completely cleared.")
         except Exception as e:
             print(f"❌ Failed to clear ChromaDB via client: {e}")
