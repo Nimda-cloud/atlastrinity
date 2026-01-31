@@ -1955,7 +1955,7 @@ class Grisha(BaseAgent):
                         except Exception:
                             pass
             else:
-                display_imgs = []
+                display_imgs: list[Image.Image] = []
                 consecutive_failures = 0
                 for di in range(1, 17):
                     fhandle, path = tempfile.mkstemp(suffix=".png")
