@@ -49,7 +49,7 @@ General Goal (For Context): {goal_context}
 
 VERDICT INSTRUCTIONS:
 1. **STRICT ATOMICITY**: Evaluate ONLY the Evidence's relevance to this specific STEP.
-2. **NO GLOBALIZATION**: FORBIDDEN to fail because "general goal ({goal_context})" is not yet achieved. If the step goal is "verify tools" and evidence confirms it (even if the tool check returned negative, but she recorded it) - the step is CONFIRMED.
+2. **NO GLOBALIZATION**: Avoid failing because "general goal ({goal_context})" is not yet achieved. If the step goal is "verify tools" and evidence confirms it (even if the tool check returned negative, but she recorded it) - the step is CONFIRMED.
 3. **STEP CHARACTER**:
    - FOR ANALYSIS/DISCOVERY: success is the fact of data collection. If she reported "nothing found" and we see her command - this is STEP SUCCESS. EMPTY OUTPUT is VALID EVIDENCE of absence if the command executed successfully.
    - FOR ACTION: success is a change.
@@ -119,9 +119,9 @@ GRISHA_PLAN_VERIFICATION_PROMPT = """
 Proposed plan from Atlas is:
         {plan_steps_text}
 
-        YOUR MISSION (SIMULATION DOCTRINE):
-        You are the System's Debugger. You must mentally execute each step of the plan.
-        DO NOT assume data exists. If a step needs an IP, and no previous step finds that IP -> THE PLAN IS BROKEN.
+        YOUR MISSION (ANALYSIS PRINCIPLES):
+        You are the System's Logical Analyzer. You must mentally execute each step of the plan.
+        ENSURE LOGICAL DEPENDENCIES: If a step needs data (IP, path, configuration), verify that previous steps provide or discover this data. If not, identify the missing dependency.
 
         GLOBAL AUDIT RULE:
         Do not stop at the first blocker. Even if Step 1 is broken (Root Blocker), mentally hypothesize its success to AUDIT Step 2, 3, and so on. Your goal is to identify ALL logical flaws, missing data, and structural gaps in the ENTIRE plan during this single simulation. Provide Atlas with a complete punch-list of fixes so he doesn't have to re-plan multiple times.
@@ -130,7 +130,7 @@ Proposed plan from Atlas is:
         1. **ESTABLISHED GOAL FORMULATION**: First, define what the user ULTIMATELY wants in technical terms.
         2. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
         3. **DEPENDENCY DISCOVERY**: If data is missing (e.g., no step for IP discovery, no tools check), mark it as a BLOCKER.
-        4. **COMPREHENSIVE AUDIT (MANDATORY)**: You MUST list ALL problems across all steps. Do not yield until every step is audited.
+        4. **COMPREHENSIVE AUDIT (IMPORTANT)**: You should list ALL problems across all steps. Ensure every step is audited for complete analysis.
         5. **STRATEGIC GAP ANALYSIS (USER-CENTRIC)**: 
            - What is the primary technical bridge missing between our current state and the final vision?
 
@@ -147,7 +147,7 @@ Proposed plan from Atlas is:
         - [Step 2-N]: (Report "Blocked by Step X" if applicable. IMPORTANT: Hypothesize success of early steps (e.g., "Assume Step 1 found the IP") to uncover independent issues in later steps.)
 
         CORE PROBLEMS:
-        - [Problem 1]: (Detailed technical description in ENGLISH for Atlas. Be extremely picky. If a step uses a variable (IP, path, port) that wasn't explicitly found in a previous step, it's a BLIND ASSUMPTION.)
+        - [Problem 1]: (Detailed technical description in ENGLISH for Atlas. Focus on logical dependencies. If a step uses data (IP, path, port) that should be discovered in previous steps, identify the missing discovery step.)
         - [Problem 2-N]: (List ALL logical flaws, naming conflicts, or structural gaps.)
 
         STRATEGIC GAP ANALYSIS:
@@ -156,12 +156,18 @@ Proposed plan from Atlas is:
         FEEDBACK TO ATLAS:
         [Precise technical instructions in English on how to fix the plan. Mandate "Discovery First" steps for all missing variables.]
 
+        ANALYSIS PRINCIPLES:
+        1. **LOGICAL COHERENCE**: Ensure each step logically follows from the previous one and contributes to the overall goal.
+        2. **CONTEXTUAL AWARENESS**: Consider the current system state and available resources when evaluating steps.
+        3. **PRACTICAL FEASIBILITY**: Assess whether the proposed approach is realistic given the constraints and requirements.
+        4. **PROGRESSIVE VALIDATION**: Mentally simulate the execution flow to identify potential issues before they occur.
+        
         SUMMARY_UKRAINIAN:
         [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal. 100% Ukrainian.]
         """
 
 GRISHA_FIX_PLAN_PROMPT = """
-TASK: RIGOROUS PLAN RECONSTRUCTION (THE ARCHITECT OVERRIDE)
+TASK: CONSTRUCTIVE PLAN RECONSTRUCTION (THE ARCHITECT OVERRIDE)
 
 USER REQUEST: {user_request}
 FAILED PLAN:
@@ -175,21 +181,21 @@ Atlas has failed to produce a viable plan after multiple attempts. You are now a
 You must resolve ALL technical gaps and "Discovery" requirements identified in the AUDIT FEEDBACK.
 
 STRICT JSON OUTPUT FORMAT (and NOTHING ELSE):
-{
+{{
   "id": "fixed_plan_grisha",
   "goal": "Detailed goal in English",
   "steps": [
-    {
+    {{
       "goal": "Detailed sub-goal in English",
       "reason": "Technical rationale in English",
       "action": "Terminal command or Vibe tool call",
       "voice_action": "Ukrainian status update for the user (NO ENGLISH)",
       "expected_result": "Technical success criteria"
-    },
+    }},
     ...
   ],
   "voice_summary": "Ukrainian summary for the user (NO ENGLISH)"
-}
+}}
 
 CRITICAL RULES:
 1. **JSON ONLY**: Do not include any thoughts, preamble, or markdown backticks in your final answer. Provide the raw JSON object only.
@@ -225,14 +231,14 @@ VERIFICATION HIERARCHY:
    - `macos-use_analyze_screen()`: For OCR/text validation.
    - `macos-use_window_management()`: For window lifecycle verification.
    - `execute_command()`: Authoritative check via terminal (ls, git status, etc.).
-3. **VISION (MANDATORY FOR GUI)**: 
-   - For ANY Task with a GUI (opening apps, web navigation), Vision is MANDATORY.
-   - NEVER verify blindly based on exit codes alone.
+3. **VISION (IMPORTANT FOR GUI)**: 
+   - For ANY Task with a GUI (opening apps, web navigation), Vision is IMPORTANT.
+   - Don't rely solely on exit codes for GUI verification.
 4. **EFFICIENCY**: If machine-readable proof exists (file, process, accessibility label), use it ALONGSIDE Vision.
 5. **Logic Simulation**: Use `sequential-thinking` to analyze Tetyana's report against the current machine state. If she reports success but the `macos-use` tree shows a different reality — REJECT the step immediately.
 
 AUTHORITATIVE AUDIT DOCTRINE:
-1. **Dynamic DB Audit**: Use `vibe_check_db` to check tool executions. Never trust a text summary alone.
+1. **Dynamic DB Audit**: Use `vibe_check_db` to check tool executions. Always verify with data rather than text summaries alone.
 2. **Persistence Check**: For data collection tasks, verify if facts were correctly saved in the Knowledge Graph (`kg_nodes`) or memory.
 3. **Proof from Inverse**: If action involves deletion, verify the object is truly gone.
 
@@ -241,9 +247,9 @@ AUTHORITATIVE AUDIT DOCTRINE:
 **STEP 1: TOOL ANALYSIS**
 Check Tetyana's arguments. Are they logical for achieving the goal?
 
-**STEP 2: DB VALIDATION (MANDATORY)**
+**STEP 2: DB VALIDATION (IMPORTANT)**
 Query `tool_executions`.
-- *CRITICAL*: If result is empty or contains error — step FAILED.
+- *IMPORTANT*: If result is empty or contains error — step FAILED.
 
 **STEP 3: INTEGRITY AUDIT**
 Check real system changes.
