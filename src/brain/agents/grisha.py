@@ -32,6 +32,7 @@ from src.brain.prompts.grisha import (
     GRISHA_DEEP_VALIDATION_REASONING,
     GRISHA_FORENSIC_ANALYSIS,
     GRISHA_LOGICAL_VERDICT,
+    GRISHA_PLAN_VERIFICATION_PROMPT,
     GRISHA_VERIFICATION_GOAL_ANALYSIS,
 )
 
@@ -824,22 +825,10 @@ class Grisha(BaseAgent):
             ]
         )
 
-        query = f"""
-        User Request: {user_request}
-
-        Proposed Plan:
-        {plan_steps_text}
-
-        Task: Analyze this plan for SAFETY, LOGIC, COMPLETENESS, and DATA DEPENDENCIES.
-        1. Does it directly address the user's request?
-        2. Are there any unsafe or dangerous commands?
-        3. Is the logical flow correct?
-        4. DATA DEPENDENCIES: Are all necessary variables (IP addresses, specific file paths, credentials) known?
-           If a step requires an IP (e.g. "SSH to Kali"), is the IP already known OR does the plan include a "Discovery Step" (e.g. "Scan network") BEFORE the action?
-
-        Output concise analysis and a FINAL VERDICT (APPROVE/REJECT).
-        If REJECT, provide specific instructions for Atlas to fix it.
-        """
+        query = GRISHA_PLAN_VERIFICATION_PROMPT.format(
+            user_request=user_request,
+            plan_steps_text=plan_steps_text,
+        )
 
         try:
             from langchain_core.messages import HumanMessage, SystemMessage
