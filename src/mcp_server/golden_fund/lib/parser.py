@@ -6,15 +6,25 @@ Ported from etl_module/src/parsing/data_parser.py
 from pathlib import Path
 from typing import Optional, Union, cast
 
-from .formats import CSVParser, JSONParser, ParseResult, XMLParser
+from .formats import (
+    CSVParser,
+    ExcelParser,
+    JSONParser,
+    ParquetParser,
+    ParseResult,
+    XMLParser,
+)
 
 
 class DataParser:
     def __init__(self) -> None:
-        self._parsers: dict[str, JSONParser | CSVParser | XMLParser] = {
+        self._parsers: dict[str, JSONParser | CSVParser | XMLParser | ExcelParser | ParquetParser] = {
             "json": JSONParser(),
             "csv": CSVParser(),
             "xml": XMLParser(),
+            "xlsx": ExcelParser(),
+            "xls": ExcelParser(),
+            "parquet": ParquetParser(),
         }
 
     def parse(self, file_path: str | Path, format_hint: str | None = None) -> ParseResult:

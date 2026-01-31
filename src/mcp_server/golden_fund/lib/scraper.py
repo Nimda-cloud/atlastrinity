@@ -103,6 +103,40 @@ class DataScraper:
         except Exception as e:
             return ScrapeResult(False, error=f"API scraping failed: {e!s}")
 
+    def download_file(self, url: str, timeout: int = 60) -> ScrapeResult:
+        """Download a file from a URL without parsing."""
+        try:
+            logger.info(f"Downloading file: {url}")
+            
+            if url.startswith("file://") or "://" not in url:
+                # Local file handling
+                path_str = url.replace("file://", "")
+                path = Path(path_str)
+                if not path.exists():
+                    return ScrapeResult(False, error=f"Local file not found: {path}")
+                content = path.read_bytes()
+                result = ScrapeResult(True, data=content)
+                result.metadata = {
+                    "url": url,
+                    "status_code": 200,
+                    "content_type": "application/octet-stream"
+                }
+                return result
+
+            response = self.session.get(url, timeout=timeout)
+            response.raise_for_status()
+            
+            # Return raw bytes
+            result = ScrapeResult(True, data=response.content)
+            result.metadata = {
+                "url": url, 
+                "status_code": response.status_code,
+                "content_type": response.headers.get("Content-Type", "application/octet-stream")
+            }
+            return result
+        except Exception as e:
+            return ScrapeResult(False, error=f"File download failed: {e!s}")
+
     def scrape_html_tables(self, url: str, timeout: int = 30) -> ScrapeResult:
         """Scrape HTML tables from a web page as a fallback when structured data is not available.
 
@@ -157,7 +191,10 @@ class DataScraper:
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
-            if format == ScrapeFormat.JSON:
+            if isinstance(data, bytes):
+                with open(file_path, "wb") as f:
+                    f.write(data)
+            elif format == ScrapeFormat.JSON:
                 with open(file_path, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2, ensure_ascii=False)
             elif format == ScrapeFormat.CSV and isinstance(data, list) and len(data) > 0:

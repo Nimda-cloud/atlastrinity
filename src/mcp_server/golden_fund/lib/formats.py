@@ -79,3 +79,29 @@ class XMLParser:
             else:
                 return {"#text": element.text.strip()}
         return result
+
+
+class ExcelParser:
+    def parse(self, file_path: Path, **kwargs) -> ParseResult:
+        try:
+            # Read all sheets by default if not specified
+            sheet_name = kwargs.get("sheet_name", None)
+            df_dict = pd.read_excel(file_path, sheet_name=sheet_name, **kwargs)
+
+            if isinstance(df_dict, dict):
+                # Multiple sheets, return dict of DataFrames
+                return ParseResult(True, data=df_dict)
+            else:
+                # Single DataFrame
+                return ParseResult(True, data=df_dict)
+        except Exception as e:
+            return ParseResult(False, error=f"Excel parse error: {e}")
+
+
+class ParquetParser:
+    def parse(self, file_path: Path, **kwargs) -> ParseResult:
+        try:
+            df = pd.read_parquet(file_path, **kwargs)
+            return ParseResult(True, data=df)
+        except Exception as e:
+            return ParseResult(False, error=f"Parquet parse error: {e}")
