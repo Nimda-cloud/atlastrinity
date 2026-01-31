@@ -88,19 +88,29 @@ class ConfigHandler(FileSystemEventHandler):
             process_template(Path(event.src_path), dst_path)
 
 def main():
-    print("Starting AtlasTrinity Config Watcher...")
+    import argparse
+    parser = argparse.ArgumentParser(description="Watch or sync configs")
+    parser.add_argument("--sync-only", action="store_true", help="Sync once and exit")
+    args = parser.parse_args()
+
+    print("Starting AtlasTrinity Config Sync...")
     print(f"Watching: {CONFIG_SRC}")
     print(f"Target:   {CONFIG_DST_ROOT}")
     print("-" * 40)
     
     # Initial sync
-    print("Performing initial sync...")
+    print("Performing sync...")
     for tpl, dst in MAPPINGS.items():
         src = CONFIG_SRC / tpl
         if src.exists():
             process_template(src, CONFIG_DST_ROOT / dst)
+    print("Sync completed.")
     print("-" * 40)
 
+    if args.sync_only:
+        return
+
+    print("Entering watch mode...")
     event_handler = ConfigHandler()
     observer = Observer()
     observer.schedule(event_handler, str(CONFIG_SRC), recursive=True)
