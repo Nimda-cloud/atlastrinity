@@ -486,32 +486,37 @@ class LongTermMemory:
                 from .db.schema import BehavioralDeviation
 
                 async def _sync_to_sql():
-                    async with await db_manager.get_session() as session:
-                        # Validate step_id is a valid UUID
-                        step_uuid = context.get("step_id")
-                        try:
-                            if step_uuid:
-                                import uuid
+                    try:
+                        session_id = context.get("db_session_id") or context.get("session_id")
+                        if not session_id:
+                            logger.warning("[MEMORY] Skipping SQL sync: session_id is missing")
+                            return
 
-                                uuid.UUID(str(step_uuid))
-                        except (ValueError, TypeError):
-                            logger.warning(
-                                f"[MEMORY] Invalid step_id UUID: {step_uuid}. Logging as None.",
+                        async with await db_manager.get_session() as session:
+                            # Validate step_id is a valid UUID
+                            step_uuid = context.get("step_id")
+                            try:
+                                if step_uuid:
+                                    import uuid
+
+                                    uuid.UUID(str(step_uuid))
+                            except (ValueError, TypeError):
+                                step_uuid = None
+
+                            deviation_entry = BehavioralDeviation(
+                                session_id=session_id,
+                                step_id=step_uuid,
+                                original_intent=original_intent,
+                                deviation=deviation,
+                                reason=reason,
+                                result=result,
+                                decision_factors=decision_factors or {},
                             )
-                            step_uuid = None
-
-                        deviation_entry = BehavioralDeviation(
-                            session_id=context.get("db_session_id") or context.get("session_id"),
-                            step_id=step_uuid,
-                            original_intent=original_intent,
-                            deviation=deviation,
-                            reason=reason,
-                            result=result,
-                            decision_factors=decision_factors or {},
-                        )
-                        session.add(deviation_entry)
-                        await session.commit()
-                        logger.info("[MEMORY] Synced deviation to SQL")
+                            session.add(deviation_entry)
+                            await session.commit()
+                            logger.info("[MEMORY] Synced deviation to SQL")
+                    except Exception as e:
+                        logger.warning(f"[MEMORY] Background SQL sync failed: {e}")
 
                 # Check if we are in an event loop (likely)
                 try:

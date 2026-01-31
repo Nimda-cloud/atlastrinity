@@ -2207,6 +2207,8 @@ class Trinity:
                                         context={
                                             "step_id": str(self.state.get("db_step_id") or ""),
                                             "sequence_id": str(step_id),
+                                            "session_id": self.state.get("session_id"),
+                                            "db_session_id": self.state.get("db_session_id"),
                                         },
                                         decision_factors={
                                             "original_step": step,
@@ -2552,7 +2554,11 @@ class Trinity:
                                     deviation=str(result.result),
                                     reason=str(evaluation.get("reason") or "Unknown"),
                                     result="Verified Success",
-                                    context={"step_id": str(step.get("id") or step_id)},
+                                    context={
+                                        "step_id": str(step.get("id") or step_id),
+                                        "session_id": self.state.get("session_id"),
+                                        "db_session_id": self.state.get("db_session_id"),
+                                    },
                                     decision_factors=factors,
                                 )
                         except (ImportError, NameError):
