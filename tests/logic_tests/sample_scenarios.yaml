@@ -1,0 +1,15 @@
+tests:
+  - name: 'Simple Greeting Check'
+    input: 'Hello'
+    expected:
+      - type: 'contains'
+        value: 'Hello'
+      - type: 'not_contains'
+        value: 'Error'
+
+  - name: 'JSON Output Check'
+    input: 'Generate JSON'
+    expected:
+      - type: 'json_field'
+        key: 'status'
+        value: 'success'

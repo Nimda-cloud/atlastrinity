@@ -1651,5 +1651,23 @@
       "autofix": "bool"
     },
     "description": "Run MCP sandbox tests with LLM-generated scenarios. Tests ALL tools (including destructive) in safe isolation."
+  },
+  "devtools_run_context_check": {
+    "server": "devtools",
+    "required": ["test_file"],
+    "optional": [],
+    "types": {
+      "test_file": "str"
+    },
+    "description": "Run logic validation tests from a YAML/JSON file against expectations."
+  },
+  "devtools_analyze_trace": {
+    "server": "devtools",
+    "required": ["log_path"],
+    "optional": [],
+    "types": {
+      "log_path": "str"
+    },
+    "description": "Analyze MCP execution logs for loops, hallucinations, and inefficiencies."
   }
 }

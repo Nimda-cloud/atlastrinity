@@ -14,6 +14,8 @@ from mcp.types import TextContent, Tool
 from .diagram_generator import generate_architecture_diagram
 from .git_manager import ensure_git_repository, get_git_changes, setup_github_remote
 from .project_analyzer import analyze_project_structure, detect_changed_components
+from .context_check import run_test_suite
+from .trace_analyzer import analyze_log_file
 
 # Initialize FastMCP server
 server = FastMCP("devtools-server")
@@ -800,6 +802,33 @@ def devtools_check_types_ts() -> dict[str, Any]:
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+@server.tool()
+def devtools_run_context_check(test_file: str) -> dict[str, Any]:
+    """Run logic validation tests from a YAML/JSON file against a mock runner (dry run).
+    
+    This tool validates the format of your test scenarios and runs them.
+    Currently runs in 'dry_run' mode unless a runner is programmatically injected.
+    Future versions will integrate with the active LLM session.
+    
+    Args:
+        test_file: Path to the .yaml or .json test definition file.
+    """
+    return run_test_suite(test_file)
+
+
+@server.tool()
+def devtools_analyze_trace(log_path: str) -> dict[str, Any]:
+    """Analyze an MCP execution log file for logic issues.
+    
+    Detects infinite loops (repeated tool calls), inefficiencies, and 
+    potential hallucinations in tool usage.
+    
+    Args:
+        log_path: Path to the log file (e.g., brain.log or relevant log file).
+    """
+    return analyze_log_file(log_path)
 
 
 @server.tool()
