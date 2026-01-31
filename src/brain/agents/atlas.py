@@ -102,7 +102,7 @@ class Atlas(BaseAgent):
             )
 
         # Optimization: Tool Cache
-        self._cached_info_tools = []
+        self._cached_info_tools: list[dict[str, Any]] = []
         self._last_tool_refresh = 0
         self._refresh_interval = 1800  # 30 minutes
         self.temperature = agent_config.get("temperature", 0.7)
@@ -344,7 +344,7 @@ class Atlas(BaseAgent):
         graph_context = ""
         vector_context = ""
         system_status = ""
-        available_tools_info = []
+        available_tools_info: list[dict[str, Any]] = []
 
         # 2. Parallel Data Fetching: Graph, Vector, and Tools
         if should_fetch_context:
@@ -1156,7 +1156,7 @@ Output the corrected plan in the same JSON format as before.
                 payload.structuredContent,
                 dict,
             ):
-                return payload.structuredContent.get("result", payload.structuredContent)
+                return cast(dict[str, Any], payload.structuredContent.get("result", payload.structuredContent))
             if hasattr(payload, "content"):
                 for item in getattr(payload, "content", []) or []:
                     text = getattr(item, "text", None)
@@ -1164,10 +1164,10 @@ Output the corrected plan in the same JSON format as before.
                         return text
                     if isinstance(text, str):
                         try:
-                            return json.loads(text)
+                            return cast(dict[str, Any], json.loads(text))
                         except Exception:
                             try:
-                                return ast.literal_eval(text)
+                                return cast(dict[str, Any], ast.literal_eval(text))
                             except Exception:
                                 continue
             return None
@@ -1209,11 +1209,11 @@ Output the corrected plan in the same JSON format as before.
             if result and hasattr(result, "content"):
                 for item in result.content:
                     if hasattr(item, "text"):
-                        return item.text
+                        return cast(str, item.text)
             elif isinstance(result, dict) and "entities" in result:
                 entities = result["entities"]
                 if entities and len(entities) > 0:
-                    return entities[0].get("observations", [""])[0]
+                    return cast(str, entities[0].get("observations", [""])[0])
 
             logger.info(f"[ATLAS] Retrieved Grisha's report from memory for step {step_id}")
         except Exception as e:
@@ -1341,7 +1341,7 @@ Output the corrected plan in the same JSON format as before.
 
             start = content.find("{")
             end = content.rfind("}") + 1
-            return json.loads(content[start:end])
+            return cast(dict[str, Any], json.loads(content[start:end]))
         except Exception as e:
             logger.error(f"Failed to summarize session: {e}")
             return {"summary": "Summary failed", "entities": []}
