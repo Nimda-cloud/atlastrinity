@@ -572,35 +572,65 @@ def devtools_lint_python(file_path: str = ".") -> dict[str, Any]:
 
 @server.tool()
 def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
-    """Run 'oxlint' on a specific file or directory (for JS/TS).
-    Returns structured JSON results.
+    """Run JS/TS linters (oxlint and eslint) on a specific file or directory.
+    Returns structured results from both tools.
     """
-    if not shutil.which("oxlint"):
-        return {"error": "oxlint is not installed or not in PATH."}
-
-    try:
-        # oxlint --format json
-        cmd = ["oxlint", "--format", "json", file_path]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-
-        output = result.stdout.strip()
-        if not output:
-            return {"success": True, "violations": []}
-
+    results: dict[str, Any] = {"success": True, "violations": [], "summary": {}}
+    
+    # 1. Run oxlint
+    if shutil.which("oxlint"):
         try:
-            data = json.loads(output)
-            # Oxlint JSON format is typically an array of objects
-            violations = data if isinstance(data, list) else data.get("messages", [])
-            return {
-                "success": len(violations) == 0,
-                "violation_count": len(violations),
-                "violations": violations,
-            }
-        except json.JSONDecodeError:
-            return {"error": "Failed to parse oxlint JSON output", "raw_output": output}
-
-    except Exception as e:
-        return {"error": str(e)}
+            cmd = ["oxlint", "--format", "json", file_path]
+            res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            output = res.stdout.strip()
+            if output:
+                try:
+                    data = json.loads(output)
+                    violations = data if isinstance(data, list) else data.get("messages", [])
+                    results["violations"].extend(violations)
+                    results["summary"]["oxlint"] = len(violations)
+                    if len(violations) > 0:
+                        results["success"] = False
+                except json.JSONDecodeError:
+                    results["summary"]["oxlint_error"] = "Failed to parse JSON"
+            else:
+                results["summary"]["oxlint"] = 0
+        except Exception as e:
+            results["summary"]["oxlint_exception"] = str(e)
+    
+    # 2. Run eslint (via npx to use project-local config)
+    if shutil.which("npx"):
+        try:
+            # Check for eslint config
+            has_config = any((PROJECT_ROOT / f).exists() for f in [".eslintrc.js", ".eslintrc.json", ".eslintrc.yml", "eslint.config.js"])
+            if has_config:
+                cmd = ["npx", "eslint", "--format", "json", file_path]
+                # Filter out non-JSON lines (sometimes npx prints update notifications)
+                res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                output = res.stdout.strip()
+                if output:
+                    # Find the first '[' which usually starts the JSON array
+                    start_idx = output.find("[")
+                    if start_idx != -1:
+                        try:
+                            violations = json.loads(output[start_idx:])
+                            # ESLint returns objects with 'messages' list per file
+                            total_eslint = 0
+                            for item in violations:
+                                msgs = item.get("messages", [])
+                                total_eslint += len(msgs)
+                                results["violations"].extend(msgs)
+                            results["summary"]["eslint"] = total_eslint
+                            if total_eslint > 0:
+                                results["success"] = False
+                        except json.JSONDecodeError:
+                            results["summary"]["eslint_error"] = "Failed to parse JSON"
+                else:
+                    results["summary"]["eslint"] = 0
+        except Exception as e:
+            results["summary"]["eslint_exception"] = str(e)
+            
+    return results
 
 
 @server.tool()
@@ -674,8 +704,8 @@ def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
 
 @server.tool()
 def devtools_check_security(path: str = "src/") -> dict[str, Any]:
-    """Run security audit tools (bandit, safety, detect-secrets)."""
-    results = {}
+    """Run security audit tools (bandit, safety, detect-secrets, npm audit)."""
+    results: dict[str, Any] = {}
 
     # 1. Bandit
     bandit_bin = vbin if (vbin := shutil.which("bandit", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")]))) else "bandit"
@@ -703,6 +733,15 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
         results["secrets"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
     except Exception as e:
         results["secrets"] = {"error": str(e)}
+
+    # 4. NPM Audit
+    if shutil.which("npm"):
+        try:
+            cmd = ["npm", "audit", "--json"]
+            res = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False)
+            results["npm_audit"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
+        except Exception as e:
+            results["npm_audit"] = {"error": str(e)}
 
     return results
 

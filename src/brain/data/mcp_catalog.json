@@ -264,7 +264,7 @@
     "name": "devtools",
     "tier": 2,
     "category": "developer",
-    "description": "Developer Tools (Linter, Analysis, Architecture & MCP Inspector CLI) wrapper",
+    "description": "Developer Tools (Linter, Analysis, Architecture, MCP Inspector & Sandbox) wrapper (Ruff, ESLint, Oxlint, Knip, Bandit, Safety, npm audit, etc.).",
     "capabilities": [
       "Python linting (Ruff)",
       "JavaScript/TypeScript linting (Oxlint)",
