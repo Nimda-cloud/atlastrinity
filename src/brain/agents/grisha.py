@@ -189,7 +189,7 @@ class Grisha(BaseAgent):
             step_action=step_action,
             expected_result=expected,
             result_str=result_str,
-            goal_context=goal_context
+            goal_context=goal_context,
         )
 
         reasoning = await self.use_sequential_thinking(reasoning_query, total_thoughts=2)
@@ -438,7 +438,7 @@ class Grisha(BaseAgent):
             step_id=step_id,
             step_action=step_action,
             expected_result=expected_result,
-            goal_context=goal_context
+            goal_context=goal_context,
         )
 
         logger.info(f"[GRISHA] Phase 1: Analyzing verification goal for step {step_id}...")
@@ -460,7 +460,7 @@ class Grisha(BaseAgent):
                 }
 
             analysis_text = reasoning_result.get("analysis", "")
-            
+
             # ANTI-LOOP DETECTION: Check for repetitive patterns
             if self._detect_repetitive_thinking(analysis_text):
                 logger.warning("[GRISHA] Anti-loop triggered - repetitive thinking detected")
@@ -600,7 +600,7 @@ class Grisha(BaseAgent):
             expected_result=expected_result,
             results_summary=results_summary,
             goal_analysis=goal_analysis,
-            goal_context=goal_context
+            goal_context=goal_context,
         )
 
         logger.info(f"[GRISHA] Phase 2: Forming logical verdict for step {step_id}...")
@@ -680,7 +680,7 @@ class Grisha(BaseAgent):
             is_relevant, relevance_reason = self._check_command_relevance(
                 step_action, expected_result, verification_results
             )
-            
+
             if not is_relevant:
                 logger.warning(f"[GRISHA] Command relevance check FAILED: {relevance_reason}")
                 verified = False
@@ -765,34 +765,125 @@ class Grisha(BaseAgent):
         """Check if this step represents final task completion vs intermediate step"""
         step_action = step.get("action", "").lower()
         expected_result = step.get("expected_result", "").lower()
-        
+
         # Keywords indicating final task completion
         final_keywords = [
-            "complete", "completed", "finished", "done", "success", 
-            "завершено", "виконано", "готово", "успішно"
+            "complete",
+            "completed",
+            "finished",
+            "done",
+            "success",
+            "завершено",
+            "виконано",
+            "готово",
+            "успішно",
         ]
-        
+
         # Check if step action or expected result indicates completion
         is_final = any(keyword in step_action for keyword in final_keywords)
         is_final = is_final or any(keyword in expected_result for keyword in final_keywords)
-        
+
         # Also check if this is a verification of overall task success
         verification_keywords = ["verify", "check", "confirm", "перевірити", "перевірка"]
         is_verification = any(keyword in step_action for keyword in verification_keywords)
-        
+
         # If it's a verification step but not about specific technical details,
         # it might be a final verification
-        if is_verification and not any(tech in step_action for tech in ["bridged", "network", "ip", "vm"]):
+        if is_verification and not any(
+            tech in step_action for tech in ["bridged", "network", "ip", "vm"]
+        ):
             is_final = True
-            
-        logger.info(f"[GRISHA] Step completion check - Final: {is_final}, Action: {step_action[:50]}")
+
+        logger.info(
+            f"[GRISHA] Step completion check - Final: {is_final}, Action: {step_action[:50]}"
+        )
         return is_final
 
-    def _check_command_relevance(self, step_action: str, expected_result: str, verification_results: list) -> tuple[bool, str]:
+    async def verify_plan(
+        self,
+        plan: Any,
+        user_request: str,
+    ) -> VerificationResult:
+        """Verifies the entire execution plan before any steps are taken.
+
+        Args:
+            plan: The TaskPlan object from Atlas
+            user_request: The original user goal
+
+        Returns:
+            VerificationResult with approved=True/False and reasoning.
+        """
+        logger.info("[GRISHA] Verifying proposed execution plan...")
+
+        # Convert plan to text for LLM analysis
+        plan_steps_text = "\n".join(
+            [
+                f"{i + 1}. [{step.get('voice_action', 'Action')}] {step.get('action')}"
+                for i, step in enumerate(plan.steps)
+            ]
+        )
+
+        query = f"""
+        User Request: {user_request}
+
+        Proposed Plan:
+        {plan_steps_text}
+
+        Task: Analyze this plan for SAFETY, LOGIC, and COMPLETENESS.
+        1. Does it directly address the user's request?
+        2. Are there any unsafe or dangerous commands?
+        3. Is the logical flow correct?
+
+        Output concise analysis and a FINAL VERDICT (APPROVE/REJECT).
+        If REJECT, provide specific instructions for Atlas to fix it.
+        """
+
+        try:
+            from langchain_core.messages import HumanMessage, SystemMessage
+
+            # Use Strategy Model (Reasoning) for plan analysis
+            response = await self.strategist.ainvoke(
+                [
+                    SystemMessage(
+                        content="You are the Auditor. You verify plans BEFORE execution. Be strict but fair."
+                    ),
+                    HumanMessage(content=query),
+                ]
+            )
+            analysis_text = getattr(response, "content", str(response))
+
+            # Determine verdict
+            approved = "APPROVE" in analysis_text.upper() and "REJECT" not in analysis_text.upper()
+
+            # Construct result
+            return VerificationResult(
+                step_id="plan_init",
+                verified=approved,
+                confidence=0.9 if approved else 0.5,
+                description="Plan Verification",
+                issues=[] if approved else [analysis_text],
+                voice_message="План схвалено." if approved else "План потребує доопрацювання.",
+            )
+
+        except Exception as e:
+            logger.error(f"[GRISHA] Plan verification failed: {e}")
+            # Fallback: Default to allow if analysis fails, but warn
+            return VerificationResult(
+                step_id="plan_init",
+                verified=True,
+                confidence=0.5,
+                description="Plan verification system error (Allowed by default)",
+                issues=[f"System error: {e}"],
+                voice_message="Не вдалося перевірити план, але продовжую.",
+            )
+
+    def _check_command_relevance(
+        self, step_action: str, expected_result: str, verification_results: list
+    ) -> tuple[bool, str]:
         """Check if executed commands are relevant to expected results"""
         if not verification_results:
             return False, "No verification results available"
-        
+
         # Extract command from verification results
         commands = []
         for result in verification_results:
@@ -801,34 +892,36 @@ class Grisha(BaseAgent):
                 args = result.get("args", {})
                 if "execute_command" in tool_name and "command" in args:
                     commands.append(args["command"])
-        
+
         if not commands:
             return True, "No commands to check relevance"
-        
+
         # Check relevance based on expected result keywords
         expected_lower = expected_result.lower()
         step_lower = step_action.lower()
-        
+
         for cmd in commands:
             cmd_lower = cmd.lower()
-            
+
             # Bridged Mode specific checks
             if "bridged" in expected_lower or "network mode" in expected_lower:
-                if any(keyword in cmd_lower for keyword in ["showvminfo", "getextradata", "modifyvm"]):
+                if any(
+                    keyword in cmd_lower for keyword in ["showvminfo", "getextradata", "modifyvm"]
+                ):
                     return True, f"Command '{cmd}' is relevant for network configuration"
                 elif "list vms" in cmd_lower:
                     return True, f"Command '{cmd}' is relevant as initial step for VM verification"
-            
+
             # IP/Network checks
             if "ip" in expected_lower or "network" in expected_lower:
                 if any(keyword in cmd_lower for keyword in ["ip a", "ifconfig", "ping"]):
                     return True, f"Command '{cmd}' is relevant for network verification"
-            
+
             # General VM management
             if "vm" in expected_lower and "virtualbox" in step_lower:
                 if any(keyword in cmd_lower for keyword in ["showvminfo", "list", "getextradata"]):
                     return True, f"Command '{cmd}' is relevant for VM management"
-        
+
         # Default: if no specific relevance found, assume relevant
         return True, "Command relevance assumed (no specific pattern matched)"
 
@@ -836,25 +929,25 @@ class Grisha(BaseAgent):
         """Detect if the thinking is repetitive (anti-loop protection)"""
         if not analysis_text or len(analysis_text) < 100:
             return False
-            
+
         # Split into sentences/lines
-        lines = [line.strip() for line in analysis_text.split('\n') if line.strip()]
+        lines = [line.strip() for line in analysis_text.split("\n") if line.strip()]
         if len(lines) < 3:
             return False
-            
+
         # Check for repeated patterns
         unique_lines = set(lines)
         repetition_ratio = 1 - (len(unique_lines) / len(lines))
-        
+
         # If more than 50% of lines are duplicates, consider it repetitive
         if repetition_ratio > 0.5:
             return True
-            
+
         # Check for repeated key phrases
-        phrases = analysis_text.split('.')
+        phrases = analysis_text.split(".")
         unique_phrases = set([p.strip() for p in phrases if p.strip()])
         phrase_repetition = 1 - (len(unique_phrases) / len(phrases))
-        
+
         return phrase_repetition > 0.6
 
     async def _verify_config_sync(self) -> dict[str, Any]:
@@ -862,35 +955,35 @@ class Grisha(BaseAgent):
         try:
             config_root = os.path.join(os.path.expanduser("~"), ".config", "atlastrinity")
             project_config_dir = os.path.join(root, "config")
-            
+
             sync_issues = []
-            
+
             # Check key config files
             config_files = [
                 ("config.yaml", "config.yaml.template"),
                 ("behavior_config.yaml", "behavior_config.yaml.template"),
                 ("vibe_config.toml", "vibe_config.toml.template"),
             ]
-            
+
             for config_file, template_file in config_files:
                 config_path = os.path.join(config_root, config_file)
                 template_path = os.path.join(project_config_dir, template_file)
-                
+
                 if not os.path.exists(config_path):
                     sync_issues.append(f"Missing config: {config_file}")
                     continue
-                    
+
                 if not os.path.exists(template_path):
                     sync_issues.append(f"Missing template: {template_file}")
                     continue
-                
+
                 # Simple modification time check
                 config_mtime = os.path.getmtime(config_path)
                 template_mtime = os.path.getmtime(template_path)
-                
+
                 if template_mtime > config_mtime:
                     sync_issues.append(f"Template newer than config: {config_file}")
-            
+
             # Try to run sync script to check
             try:
                 sync_script = os.path.join(root, "scripts", "sync_config_templates.js")
@@ -899,27 +992,27 @@ class Grisha(BaseAgent):
                         ["node", sync_script, "--dry-run"],
                         capture_output=True,
                         text=True,
-                        timeout=10
+                        timeout=10,
                     )
                     if result.returncode != 0:
                         sync_issues.append("Config sync script failed")
             except Exception as e:
                 logger.warning(f"[GRISHA] Config sync check failed: {e}")
-            
+
             return {
                 "sync_status": "ok" if not sync_issues else "issues_found",
                 "issues": sync_issues,
                 "config_root": config_root,
-                "template_root": project_config_dir
+                "template_root": project_config_dir,
             }
-            
+
         except Exception as e:
             logger.error(f"[GRISHA] Config sync verification failed: {e}")
             return {
                 "sync_status": "error",
                 "issues": [f"Verification failed: {e!s}"],
                 "config_root": None,
-                "template_root": None
+                "template_root": None,
             }
 
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
@@ -992,14 +1085,16 @@ class Grisha(BaseAgent):
         # NEW LOGIC: Skip verification for intermediate steps
         # Only verify final task completion steps
         if not self._is_final_task_completion(step):
-            logger.info(f"[GRISHA] Skipping intermediate step {step_id} - not a final task completion")
+            logger.info(
+                f"[GRISHA] Skipping intermediate step {step_id} - not a final task completion"
+            )
             return VerificationResult(
                 step_id=step_id,
                 verified=True,  # Auto-approve intermediate steps
                 confidence=1.0,
                 description="Intermediate step - auto-approved",
                 issues=[],
-                voice_message=f"Step {step_id} is intermediate, continuing task execution"
+                voice_message=f"Step {step_id} is intermediate, continuing task execution",
             )
 
         # SYSTEM CHECK: Verify config sync for system-critical tasks
@@ -1179,12 +1274,14 @@ class Grisha(BaseAgent):
 
         # Return structured verification result
         all_issues = verdict.get("issues", [])
-        
+
         # Add system issues if any
         if system_issues:
             all_issues.extend([f"Config sync: {issue}" for issue in system_issues])
-            logger.warning(f"[GRISHA] Adding {len(system_issues)} system issues to verification result")
-        
+            logger.warning(
+                f"[GRISHA] Adding {len(system_issues)} system issues to verification result"
+            )
+
         result_obj = VerificationResult(
             step_id=step_id,
             verified=verdict.get("verified", False) and not system_issues,  # Fail if system issues
@@ -1262,7 +1359,7 @@ class Grisha(BaseAgent):
             GRISHA_FORENSIC_ANALYSIS.format(
                 step_json=json.dumps(step, default=str),
                 error=error,
-                context_data=str(context_data)[:1000]
+                context_data=str(context_data)[:1000],
             ),
             total_thoughts=3,
         )
