@@ -279,7 +279,9 @@
       "Git change analysis and Mermaid diagram generation",
       "Security auditing (Bandit, Safety, detect-secrets)",
       "Complexity analysis (Xenon)",
-      "Type checking (MyPy, tsc)"
+      "Type checking (MyPy, tsc)",
+      "Logic validation (ContextCheck)",
+      "Log analysis (TraceAnalyzer)"
     ],
     "key_tools": [
       "devtools_lint_python",
@@ -294,7 +296,10 @@
       "devtools_check_security",
       "devtools_check_complexity",
       "devtools_check_types_python",
+      "devtools_check_types_python",
       "devtools_check_types_ts",
+      "devtools_run_context_check",
+      "devtools_analyze_trace",
       "mcp_inspector_list_tools",
       "mcp_inspector_call_tool",
       "mcp_inspector_list_resources",
