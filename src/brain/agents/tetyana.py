@@ -512,48 +512,18 @@ IMPORTANT:
         """Dynamic temperature: 0.1 + attempt * 0.2, capped at 1.0"""
         return min(0.1 + (attempt * 0.2), 1.0)
 
-    async def execute_step(self, step: dict[str, Any], attempt: int = 1) -> StepResult:
-        """Executes a single plan step with Advanced Reasoning:
-        1. Internal Monologue (Thinking before acting) - SKIPPED for simple tools
-        2. Tool Execution
-        3. Technical Reflexion (Self-correction on failure) - SKIPPED for transient errors
-        """
-
+    async def _check_consent_requirements(
+        self,
+        step: dict[str, Any],
+        provided_response: str | None,
+        step_id: Any,
+    ) -> StepResult | None:
+        """Checks if the step requires user consent and returns a StepResult if blocked."""
         from ..logger import logger
-        from ..state_manager import state_manager
-
-        self.attempt_count = attempt
-
-        # Get step_id early for logging
-        step_id = step.get("id", self.current_step)
-
-        # --- SPECIAL CASE: Consent/Approval Steps ---
-        # Robust check for provided response in message bus or previous context
-        provided_response = None
-        if "bus_messages" in step:
-            for bm in step["bus_messages"]:
-                payload = bm.get("payload", {})
-                if "user_response" in payload:
-                    provided_response = payload["user_response"]
-                    logger.info(
-                        f"[TETYANA] Found provided response in bus_messages: {provided_response}",
-                    )
-                    break
-
-        # If not in bus_messages, check previous_results for Atlas's autonomous decision
-        if not provided_response and "previous_results" in step:
-            for pr in reversed(step["previous_results"]):
-                if (
-                    pr.get("error") == "autonomous_decision_made"
-                    or pr.get("error") == "user_input_received"
-                ):
-                    # The response should have been injected into message bus, but as a backup check
-                    pass
 
         # Refined consent detection - LESS AGGRESSIVE
         step_action_lower = str(step.get("action", "")).lower()
 
-        # Only trigger consent if we DON'T have a response yet AND it's explicitly marked
         is_consent_request = (not provided_response) and (
             step.get("requires_consent", False) is True
             or step.get("requires_user_input", False) is True
@@ -619,58 +589,16 @@ IMPORTANT:
                 error="need_user_input",
                 thought=f"I detected a need for user consent in step: {step.get('action')}. provided_response={provided_response}.",
             )
+        return None
 
-        if provided_response:
-            logger.info(f"[TETYANA] Proceeding with provided response: {provided_response}")
-            # We let the reasoning LLM know we have this response via 'bus_messages' which is already in the prompt
+    async def _perform_vision_analysis_if_needed(
+        self,
+        step: dict[str, Any],
+        attempt: int,
+    ) -> tuple[dict[str, Any] | None, StepResult | None]:
+        """Performs vision analysis if required. Returns (vision_result, blocking_StepResult)."""
+        from ..logger import logger
 
-        # --- OPTIMIZATION: SMART REASONING GATE ---
-        # Skip reasoning LLM for well-defined, simple tools
-        # Skip reasoning LLM for well-defined, simple tools
-        # We KEEP "terminal" here for speed, but tools like "git" or "macos-use" benefit from reasoning (coordinates, args)
-        # REMOVED: "terminal" - Systemic fix to force reasoning for shell commands to prevent Empty Proof failures
-        SKIP_REASONING_TOOLS = ["filesystem", "time", "fetch"]
-        TRANSIENT_ERRORS = [
-            "Connection refused",
-            "timeout",
-            "rate limit",
-            "Broken pipe",
-            "Connection reset",
-        ]
-
-        # --- PHASE 0: DYNAMIC INSPECTION ---
-        actual_step_id = step.get("id", self.current_step)
-        logger.info(f"[TETYANA] Executing step {actual_step_id}...")
-        context_data = shared_context.to_dict()
-
-        # Populate tools summary if empty
-        if not shared_context.available_tools_summary:
-            logger.info("[TETYANA] Fetching fresh MCP catalog for context...")
-            shared_context.available_tools_summary = await mcp_manager.get_mcp_catalog()
-
-        # --- PHASE 0.3: GOAL ALIGNMENT VALIDATION ---
-        # Validate step aligns with global goal (supports recursive goal checking)
-        global_goal = shared_context.get_goal_context() or step.get("full_plan", "")
-        if global_goal and attempt == 1:  # Only validate on first attempt
-            alignment = await self._validate_goal_alignment(step, global_goal)
-
-            if not alignment.get("aligned") and alignment.get("deviation_suggested"):
-                alt = alignment.get("suggested_alternative")
-                logger.warning(
-                    f"[TETYANA] Step misaligned with goal. Confidence: {alignment.get('confidence')}. "
-                    f"Alternative: {alt}",
-                )
-                # If agent autonomously decides deviation is better, modify step
-                if alignment.get("confidence", 0) < 0.3 and alt:
-                    logger.info(
-                        "[TETYANA] Autonomous deviation decision: using alternative approach",
-                    )
-                    step["action"] = alt
-                    step["deviation_applied"] = True
-                    step["original_action"] = step.get("action", "")
-
-        # --- PHASE 0.5: VISION ANALYSIS (if required) ---
-        # When step has requires_vision=true, use Vision to find UI elements
         vision_result = None
         if step.get("requires_vision") and attempt <= 2:
             logger.info("[TETYANA] Step requires Vision analysis for UI element discovery...")
@@ -681,19 +609,16 @@ IMPORTANT:
             if step.get("args") and isinstance(step.get("args"), dict):
                 step_pid = step["args"].get("pid")
 
-            vision_result = await self.analyze_screen(query, step_pid or self._current_pid)
+            effective_pid = step_pid or self._current_pid
+            vision_result = await self.analyze_screen(query, effective_pid)
 
             if vision_result.get("found") and vision_result.get("suggested_action"):
                 suggested = vision_result["suggested_action"]
                 logger.info(f"[TETYANA] Vision suggests action: {suggested}")
-
-                # If Vision found the element, we can use its suggestion directly
-                # This will be used in the tool_call below
             elif vision_result.get("notes"):
                 # Check for CAPTCHA or other blockers
                 notes = vision_result.get("notes", "").lower()
                 notes_lower = notes.lower()
-                # Smarter check to avoid false positives like "No CAPTCHA detected"
                 is_blocker = (
                     ("captcha" in notes_lower and "no captcha" not in notes_lower)
                     or ("verification" in notes_lower and "no verification" not in notes_lower)
@@ -705,14 +630,11 @@ IMPORTANT:
                     logger.warning(
                         f"[TETYANA] Vision detected blocker: {vision_result.get('notes')}",
                     )
-
-                    # Use actual notes for localization if possible, otherwise generic
                     blocker_desc = vision_result.get("notes", "Виявлено перешкоду")
                     voice_msg = (
                         f"Я бачу перешкоду на екрані: {blocker_desc}. Мені потрібна ваша допомога."
                     )
-
-                    return StepResult(
+                    error_result = StepResult(
                         step_id=step.get("id", self.current_step),
                         success=False,
                         result=f"Vision detected blocker: {vision_result.get('notes')}",
@@ -720,29 +642,73 @@ IMPORTANT:
                         error=f"Blocker detected: {vision_result.get('notes')}",
                         screenshot_path=vision_result.get("screenshot_path"),
                     )
+                    return vision_result, error_result
+        return vision_result, None
 
-        # Fetch Grisha's feedback (Priority: Injected via self-healing loop > Saved rejection report)
+    async def _fetch_grisha_feedback(
+        self,
+        step: dict[str, Any],
+        attempt: int,
+        step_id: int,
+    ) -> str:
+        """Fetches Grisha's feedback for the step."""
+        from ..logger import logger
+
         grisha_feedback = step.get("grisha_feedback", "")
         if not grisha_feedback and attempt > 1:
             logger.info(
                 f"[TETYANA] Attempt {attempt} - fetching Grisha's rejection feedback from memory...",
             )
-            grisha_feedback = await self.get_grisha_feedback(cast("int", step.get("id"))) or ""
+            grisha_feedback = await self.get_grisha_feedback(step_id) or ""
+        return cast("str", grisha_feedback)
 
-        if grisha_feedback:
-            logger.info(
-                f"[TETYANA] Improving execution with Grisha's feedback: {grisha_feedback[:100]}...",
-            )
+    def _infer_tool_from_action(self, action_text: str) -> str | None:
+        """Infer tool name from action text."""
+        action_text = action_text.lower()
+        if any(
+            kw in action_text for kw in ["implement feature", "deep code", "refactor project"]
+        ):
+            return "vibe_implement_feature"
+        elif any(kw in action_text for kw in ["vibe", "code", "debug", "analyze error"]):
+            return "vibe_prompt"
+        elif any(kw in action_text for kw in ["click", "type", "press", "scroll", "open app"]):
+            return "macos-use_take_screenshot"
+        elif any(
+            kw in action_text
+            for kw in ["finder", "desktop", "folder", "sort", "trash", "open path"]
+        ):
+            return "macos-use_finder_list_files"
+        elif any(kw in action_text for kw in ["read_file", "write_file", "list_directory"]):
+            return "filesystem"
+        elif any(
+            kw in action_text
+            for kw in ["run", "execute", "command", "terminal", "bash", "mkdir"]
+        ):
+            return "execute_command"
+        return None
 
-        target_server = step.get("realm") or step.get("tool") or step.get("server")
-        # Normalize generic 'browser' realm to macos-use to leverage native automation
-        if target_server == "browser":
-            target_server = "macos-use"
-        tools_summary = ""
-        monologue = {}
+    async def _determine_tool_action(
+        self,
+        step: dict[str, Any],
+        target_server: str,
+        attempt: int,
+        grisha_feedback: str,
+        vision_result: dict[str, Any] | None,
+        provided_response: str | None,
+    ) -> tuple[dict[str, Any], dict[str, Any], StepResult | None]:
+        """Determines the tool action using reasoning or fast path.
+        Returns (tool_call, monologue, blocking_StepResult)"""
+        from langchain_core.messages import HumanMessage, SystemMessage
 
-        # SMART GATE: Check if we can skip reasoning
-        # Only skip if it's the first attempt; on retries (attempt > 1) or if FEEDBACK exists, always use reasoning
+        from ..context import shared_context
+        from ..logger import logger
+        from ..mcp_manager import mcp_manager
+        from ..message_bus import AgentMsg, MessageType, message_bus
+        from ..prompts import AgentPrompts
+
+        # SMART GATE: Check if we can skip reasoning (FAST PATH)
+        SKIP_REASONING_TOOLS = ["filesystem", "time", "fetch"]
+
         skip_reasoning = (
             attempt == 1
             and not grisha_feedback
@@ -752,8 +718,11 @@ IMPORTANT:
             and not step.get("requires_vision")
         )
 
+        tool_call: dict[str, Any] = {}
+        monologue: dict[str, Any] = {}
+
         if skip_reasoning:
-            # Direct execution path - no LLM call needed
+            # Direct execution path
             logger.info(
                 f"[TETYANA] FAST PATH: Skipping reasoning for simple tool '{target_server}'",
             )
@@ -762,9 +731,11 @@ IMPORTANT:
                 "args": step.get("args", {}),
                 "server": target_server,
             }
-            monologue = {"thought": f"Executing simple tool '{target_server}' via FAST PATH."}
+            monologue = {
+                "thought": f"Executing simple tool '{target_server}' via FAST PATH.",
+            }
         else:
-            # Full reasoning path for complex/ambiguous steps
+            # Full reasoning path
             configured_servers = mcp_manager.config.get("mcpServers", {})
             if (
                 target_server
@@ -781,9 +752,7 @@ IMPORTANT:
                     name = getattr(t, "name", str(t))
                     desc = getattr(t, "description", "")
                     schema = getattr(t, "inputSchema", {})
-                    tools_summary += (
-                        f"- {name}: {desc}\n  Schema: {json.dumps(schema, ensure_ascii=False)}\n"
-                    )
+                    tools_summary += f"- {name}: {desc}\n  Schema: {json.dumps(schema, ensure_ascii=False)}\n"
             else:
                 tools_summary = getattr(
                     shared_context,
@@ -791,8 +760,8 @@ IMPORTANT:
                     "List available tools using list_tools if needed.",
                 )
 
-            # Extract previous_results from step if available
             previous_results = step.get("previous_results")
+            context_data = shared_context.to_dict()
 
             reasoning_prompt = AgentPrompts.tetyana_reasoning_prompt(
                 str(step),
@@ -824,8 +793,6 @@ IMPORTANT:
                     question = monologue["question_to_atlas"]
                     logger.info(f"[TETYANA] Proactive help request to Atlas: {question}")
 
-                    from ..message_bus import AgentMsg, MessageType, message_bus
-
                     msg = AgentMsg(
                         from_agent="tetyana",
                         to_agent="atlas",
@@ -835,7 +802,7 @@ IMPORTANT:
                     )
                     await message_bus.send(msg)
 
-                    return StepResult(
+                    error_result = StepResult(
                         step_id=step.get("id", self.current_step),
                         success=False,
                         result=f"Blocked on Atlas: {question}",
@@ -844,6 +811,7 @@ IMPORTANT:
                         error="proactive_help_requested",
                         thought=monologue.get("thought"),
                     )
+                    return {}, {}, error_result
 
                 proposed = monologue.get("proposed_action")
                 if isinstance(proposed, dict):
@@ -867,43 +835,11 @@ IMPORTANT:
                     )
 
                 if not tool_call.get("name"):
-                    # Enhanced fallback: Try to infer tool name from step metadata
                     inferred_name = step.get("tool") or step.get("server") or step.get("realm")
-                    # Try action-based inference
                     if not inferred_name:
-                        action_text = str(step.get("action", "")).lower()
-                        if any(
-                            kw in action_text
-                            for kw in ["implement feature", "deep code", "refactor project"]
-                        ):
-                            inferred_name = "vibe_implement_feature"
-                        elif any(
-                            kw in action_text for kw in ["vibe", "code", "debug", "analyze error"]
-                        ):
-                            inferred_name = "vibe_prompt"
-                        elif any(
-                            kw in action_text
-                            for kw in ["click", "type", "press", "scroll", "open app"]
-                        ):
-                            inferred_name = (
-                                "macos-use_take_screenshot"  # Default to screenshot if UI action
-                            )
-                        elif any(
-                            kw in action_text
-                            for kw in ["finder", "desktop", "folder", "sort", "trash", "open path"]
-                        ):
-                            inferred_name = "macos-use_finder_list_files"
-                        elif any(
-                            kw in action_text
-                            for kw in ["read_file", "write_file", "list_directory"]
-                        ):
-                            inferred_name = "filesystem"
-                        elif any(
-                            kw in action_text
-                            for kw in ["run", "execute", "command", "terminal", "bash", "mkdir"]
-                        ):
-                            inferred_name = "execute_command"
-
+                        inferred_name = self._infer_tool_from_action(
+                            str(step.get("action", "")),
+                        )
                     if inferred_name:
                         tool_call["name"] = inferred_name
                         logger.info(
@@ -984,6 +920,136 @@ IMPORTANT:
                         logger.info(
                             f"[TETYANA] Auto-filled pid from tracked state: {self._current_pid}",
                         )
+        return tool_call, monologue, None
+
+    async def execute_step(self, step: dict[str, Any], attempt: int = 1) -> StepResult:
+        """Executes a single plan step with Advanced Reasoning:
+        1. Internal Monologue (Thinking before acting) - SKIPPED for simple tools
+        2. Tool Execution
+        3. Technical Reflexion (Self-correction on failure) - SKIPPED for transient errors
+        """
+
+        from ..context import shared_context
+        from ..logger import logger
+        from ..mcp_manager import mcp_manager
+        from ..state_manager import state_manager
+
+        self.attempt_count = attempt
+
+        # Get step_id early for logging
+        step_id = step.get("id", self.current_step)
+
+        # 1. Check for provided response (Consent/Input)
+        provided_response = None
+        if "bus_messages" in step:
+            for bm in step["bus_messages"]:
+                payload = bm.get("payload", {})
+                if "user_response" in payload:
+                    provided_response = payload["user_response"]
+                    logger.info(
+                        f"[TETYANA] Found provided response in bus_messages: {provided_response}",
+                    )
+                    break
+
+        # If not in bus_messages, check previous_results for Atlas's autonomous decision
+        if not provided_response and "previous_results" in step:
+            for pr in reversed(step["previous_results"]):
+                if (
+                    pr.get("error") == "autonomous_decision_made"
+                    or pr.get("error") == "user_input_received"
+                ):
+                    # The response should have been injected into message bus, but as a backup check
+                    pass
+
+        # 2. Consent Check
+        consent_block = await self._check_consent_requirements(
+            step, provided_response, step_id
+        )
+        if consent_block:
+            return consent_block
+
+        if provided_response:
+            logger.info(f"[TETYANA] Proceeding with provided response: {provided_response}")
+            # We let the reasoning LLM know we have this response via 'bus_messages' which is already in the prompt
+
+        # --- OPTIMIZATION: SMART REASONING GATE ---
+        # Skip reasoning LLM for well-defined, simple tools
+        # Skip reasoning LLM for well-defined, simple tools
+        # We KEEP "terminal" here for speed, but tools like "git" or "macos-use" benefit from reasoning (coordinates, args)
+        # REMOVED: "terminal" - Systemic fix to force reasoning for shell commands to prevent Empty Proof failures
+        TRANSIENT_ERRORS = [
+            "Connection refused",
+            "timeout",
+            "rate limit",
+            "Broken pipe",
+            "Connection reset",
+        ]
+
+        # --- PHASE 0: DYNAMIC INSPECTION ---
+        actual_step_id = step.get("id", self.current_step)
+        logger.info(f"[TETYANA] Executing step {actual_step_id}...")
+        # Populate tools summary if empty
+        if not shared_context.available_tools_summary:
+            logger.info("[TETYANA] Fetching fresh MCP catalog for context...")
+            shared_context.available_tools_summary = await mcp_manager.get_mcp_catalog()
+
+        # --- PHASE 0.3: GOAL ALIGNMENT VALIDATION ---
+        # Validate step aligns with global goal (supports recursive goal checking)
+        global_goal = shared_context.get_goal_context() or step.get("full_plan", "")
+        if global_goal and attempt == 1:  # Only validate on first attempt
+            alignment = await self._validate_goal_alignment(step, global_goal)
+
+            if not alignment.get("aligned") and alignment.get("deviation_suggested"):
+                alt = alignment.get("suggested_alternative")
+                logger.warning(
+                    f"[TETYANA] Step misaligned with goal. Confidence: {alignment.get('confidence')}. "
+                    f"Alternative: {alt}",
+                )
+                # If agent autonomously decides deviation is better, modify step
+                if alignment.get("confidence", 0) < 0.3 and alt:
+                    logger.info(
+                        "[TETYANA] Autonomous deviation decision: using alternative approach",
+                    )
+                    step["action"] = alt
+                    step["deviation_applied"] = True
+                    step["original_action"] = step.get("action", "")
+
+        # 3. Vision Analysis
+        vision_result, vision_block = await self._perform_vision_analysis_if_needed(
+            step,
+            attempt,
+        )
+        if vision_block:
+            return vision_block
+
+        # 4. Grisha Feedback
+        grisha_feedback = await self._fetch_grisha_feedback(
+            step,
+            attempt,
+            cast("int", step.get("id")),
+        )
+
+        if grisha_feedback:
+            logger.info(
+                f"[TETYANA] Improving execution with Grisha's feedback: {grisha_feedback[:100]}...",
+            )
+
+        target_server = str(step.get("realm") or step.get("tool") or step.get("server") or "macos-use")
+        # Normalize generic 'browser' realm to macos-use to leverage native automation
+        if target_server == "browser":
+            target_server = "macos-use"
+
+        # 5. Determine Action (Reasoning)
+        tool_call, monologue, action_block = await self._determine_tool_action(
+            step,
+            target_server,
+            attempt,
+            grisha_feedback,
+            vision_result,
+            provided_response,
+        )
+        if action_block:
+            return action_block
 
         # --- PHASE 2: TOOL EXECUTION ---
         tool_result = await self._execute_tool(tool_call)
