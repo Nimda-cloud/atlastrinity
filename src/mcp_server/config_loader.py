@@ -5,7 +5,7 @@ Loads MCP server configurations from config.yaml
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -81,4 +81,4 @@ def get_config_value(section: str, key: str, default: Any = None) -> Any:
 
 def load_mcp_config() -> dict[str, Any]:
     """Deprecated: use load_config().get('mcp', {}) instead"""
-    return load_config().get("mcp", {})
+    return cast(dict[str, Any], load_config().get("mcp", {}))

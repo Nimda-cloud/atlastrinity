@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import numpy as np
 
@@ -97,7 +97,11 @@ class VectorStorage:
 
             # Upsert into Chroma
             if self.collection:
-                self.collection.upsert(documents=documents, metadatas=metadatas, ids=ids)
+                self.collection.upsert(
+                    documents=documents, 
+                    metadatas=cast(list[dict[str, str | int | float]], metadatas), 
+                    ids=ids
+                )
 
             record_count = len(data)
             logger.info(
@@ -140,10 +144,14 @@ class VectorStorage:
                         {
                             "id": results["ids"][0][i],
                             "score": 1.0 - results["distances"][0][i]
-                            if results["distances"]
+                            if results["distances"] and results["distances"][0]
                             else 0,  # Chroma returns distance
-                            "content": results["documents"][0][i],
-                            "metadata": results["metadatas"][0][i],
+                            "content": results["documents"][0][i]
+                            if results["documents"] and results["documents"][0]
+                            else "",
+                            "metadata": results["metadatas"][0][i]
+                            if results["metadatas"] and results["metadatas"][0]
+                            else {},
                         }
                     )
 

@@ -161,7 +161,7 @@ class Grisha(BaseAgent):
         self.temperature = agent_config.get("temperature", 0.3)
         self.dangerous_commands = security_config.get("dangerous_commands", self.BLOCKLIST)
         self.verifications: list = []
-        self._strategy_cache = {}
+        self._strategy_cache: dict[str, str] = {}
 
         logger.info(
             f"[GRISHA] 3-Phase Architecture Initialized:\n"
@@ -279,7 +279,7 @@ class Grisha(BaseAgent):
         cache_key = f"{step_description[:50]}"
         if cache_key in self._strategy_cache:
             logger.info(f"[GRISHA] Using cached strategy for: {cache_key[:30]}...")
-            return self._strategy_cache[cache_key]
+            return cast(str, self._strategy_cache[cache_key])
 
         # Legacy code - parameters don't match usage
         prompt = f"Create verification strategy for: {step_description}\nContext: {context}\nGoal: {goal_context}"
@@ -1835,7 +1835,7 @@ class Grisha(BaseAgent):
                     f"[GRISHA] Quartz unavailable for screenshots (will fallback to screencapture): {qerr}",
                 )
 
-            desktop_canvas: Any = None
+            desktop_canvas: Image.Image | None = None
             active_win_img = None
 
             if quartz_available and Quartz is not None:
@@ -2005,7 +2005,7 @@ class Grisha(BaseAgent):
                     desktop_canvas = Image.new("RGB", (total_w, max_h), (0, 0, 0))
                     x_off = 0
                     for img in display_imgs:
-                        desktop_canvas.paste(img, (x_off, 0))
+                        desktop_canvas.paste(cast(Image.Image, img), (x_off, 0))
                         x_off += img.width
 
             if desktop_canvas is None:

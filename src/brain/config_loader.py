@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -9,7 +9,13 @@ try:
     from dotenv import dotenv_values
 except ImportError:  # pragma: no cover
 
-    def dotenv_values(*args, **kwargs):
+    def dotenv_values(
+        dotenv_path: str | os.PathLike[str] | None = None,
+        stream: str | None = None,
+        verbose: bool = False,
+        interpolate: bool = True,
+        encoding: str | None = "utf-8",
+    ) -> dict[str, str | None]:  # type: ignore[override]
         return {}
 
 
@@ -250,7 +256,7 @@ class SystemConfig:
             if val:
                 return val
 
-        return self.get(f"api.{key_name}", "")
+        return cast(str, self.get(f"api.{key_name}", ""))
 
     def get_agent_config(self, agent_name: str) -> dict[str, Any]:
         """Returns specific agent configuration with global model inheritance."""
@@ -278,11 +284,11 @@ class SystemConfig:
                     "models.default",
                 )
 
-        return agent_config
+        return cast(dict[str, Any], agent_config)
 
     def get_security_config(self) -> dict[str, Any]:
         """Returns security configuration."""
-        return self.get("security", {})
+        return cast(dict[str, Any], self.get("security", {}))
 
     @property
     def all(self) -> dict[str, Any]:

@@ -402,7 +402,7 @@ class VoiceManager:
         self._tts = None
         self.is_speaking = False
         self.last_text = ""
-        self.history = deque(maxlen=5)  # History of last spoken phrases
+        self.history: deque[str] = deque(maxlen=5)  # History of last spoken phrases
         self.last_speak_time = 0.0
 
         # Concurrency control
@@ -411,7 +411,7 @@ class VoiceManager:
         self._lock = asyncio.Lock()
         self._stop_event = asyncio.Event()
 
-        self._current_process = None  # Track current subprocess
+        self._current_process: asyncio.subprocess.Process | None = None  # Track current subprocess
         self._translator_llm = None  # Lazy loaded
 
     async def get_engine(self):

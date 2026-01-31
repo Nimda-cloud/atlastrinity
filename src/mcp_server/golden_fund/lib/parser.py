@@ -4,7 +4,7 @@ Ported from etl_module/src/parsing/data_parser.py
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from .formats import CSVParser, JSONParser, ParseResult, XMLParser
 
@@ -26,4 +26,4 @@ class DataParser:
         if not parser:
             return ParseResult(False, error=f"No parser for format: {format_hint}")
 
-        return parser.parse(file_path)
+        return cast(ParseResult, parser.parse(file_path))

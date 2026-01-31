@@ -8,6 +8,7 @@ Handles system-level dependencies like Redis and Docker:
 import os
 import shutil
 import subprocess
+from typing import Any
 
 from .config import CONFIG_ROOT
 from .logger import logger
@@ -16,7 +17,7 @@ from .logger import logger
 class ServiceStatus:
     is_ready = False
     status_message = "Initializing..."
-    details = {}
+    details: dict[str, Any] = {}
 
 
 def is_brew_available() -> bool:

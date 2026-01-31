@@ -406,7 +406,20 @@ class VibeConfig(BaseModel):
 
         # Return defaults
         logger.info("Using default Vibe configuration")
-        return cls()
+        return cls(
+            active_model="",
+            system_prompt_id="default", 
+            default_mode=AgentMode.AUTO_APPROVE,
+            disable_welcome_banner_animation=True,
+            vim_keybindings=False,
+            textual_theme=None,
+            max_turns=10,
+            max_price=None,
+            timeout_s=600.0,
+            vibe_home=None,
+            agents_dir=None,
+            prompts_dir=None
+        )
 
     @classmethod
     def _load_from_file(cls, path: Path) -> VibeConfig:

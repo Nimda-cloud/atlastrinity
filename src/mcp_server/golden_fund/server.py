@@ -125,7 +125,7 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
         )
 
     # Build entity profile from results
-    entity_profile = {
+    entity_profile: dict[str, Any] = {
         "entity_id": entity_id,
         "found": True,
         "depth": depth,

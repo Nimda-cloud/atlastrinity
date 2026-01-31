@@ -140,7 +140,7 @@ def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
 
 def _analyze_rust_project(project_path: Path) -> dict[str, Any]:
     """Analyze Rust project structure."""
-    info = {"entry_points": ["src/main.rs"], "key_files": ["Cargo.toml"], "components": []}
+    info: dict[str, Any] = {"entry_points": ["src/main.rs"], "key_files": ["Cargo.toml"], "components": [], "dependencies": {}}
 
     # Parse Cargo.toml for dependencies
     cargo_toml = project_path / "Cargo.toml"

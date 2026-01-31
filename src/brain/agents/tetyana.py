@@ -8,20 +8,16 @@ Model: Configured model
 
 import asyncio
 import os
-from typing import Any, cast
-
-# Robust path handling for both Dev and Production (Packaged)
 import sys
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, cast
 
 # Set up paths first
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..", "..")
 sys.path.insert(0, os.path.abspath(root))
-
-import time
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, cast
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
@@ -1138,13 +1134,13 @@ IMPORTANT:
                 logger.error(f"[TETYANA] Reflexion failed: {re}")
                 break
 
-        voice_msg = cast(str | None, tool_result.get("voice_message")) or (
+        final_voice_msg: str | None = cast(str | None, tool_result.get("voice_message")) or (
             cast(str | None, monologue.get("voice_message")) if attempt == 1 else None
         )
 
         # Fallback if no specific voice message from LLM/Tool
-        if not voice_msg and attempt == 1:
-            voice_msg = self.get_voice_message(
+        if not final_voice_msg and attempt == 1:
+            final_voice_msg = self.get_voice_message(
                 "completed" if tool_result.get("success") else "failed",
                 step=step.get("id", self.current_step),
                 description=step.get("action", ""),
@@ -1156,7 +1152,7 @@ IMPORTANT:
             result=tool_result.get("output", ""),
             screenshot_path=tool_result.get("screenshot_path")
             or (vision_result.get("screenshot_path") if vision_result else None),
-            voice_message=voice_msg,
+            voice_message=final_voice_msg,
             error=tool_result.get("error"),
             tool_call=tool_call,
             thought=monologue.get("thought") if isinstance(monologue, dict) else None,
@@ -1260,7 +1256,7 @@ IMPORTANT:
                                     content_text += item.get("text", "")
                         result["error"] = content_text or "Unknown tool execution error"
 
-            return result
+            return cast(dict[str, Any], result)
 
         except Exception as e:
             logger.error(f"[TETYANA] Tool execution failed: {e}")

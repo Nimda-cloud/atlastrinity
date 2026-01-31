@@ -515,7 +515,7 @@ async def run_vibe_subprocess(
                                 formatted = f"⚡ [VIBE-LIVE] {line}"
 
                             logger.debug(f"[VIBE_{stream_name}] {line}")
-                            level = "warning" if stream_name == "ERR" else "info"
+                            level: Literal["debug", "error", "info", "warning"] = "warning" if stream_name == "ERR" else "info"
                             await emit_log(level, formatted)
 
                     try:
