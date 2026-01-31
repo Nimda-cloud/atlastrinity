@@ -863,7 +863,7 @@ class Grisha(BaseAgent):
                     feedback_to_atlas = parts[1].split("SUMMARY_UKRAINIAN:")[0].strip()
 
             # Merge Gap Analysis with Feedback
-            if gap_analysis:
+            if gap_analysis and gap_analysis not in feedback_to_atlas:
                 feedback_to_atlas = f"STRATEGIC GAP ANALYSIS:\n{gap_analysis}\n\nINSTRUCTIONS:\n{feedback_to_atlas}"
 
             summary_ukrainian = ""
@@ -875,7 +875,17 @@ class Grisha(BaseAgent):
                 parts = analysis_text.split("SIMULATION LOG")
                 if len(parts) > 1:
                     issues_block = parts[1].split("FEEDBACK TO ATLAS:")[0].strip()
-                    issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+                    raw_issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+                    
+                    # INTELLIGENT SUMMARIZATION: If more than 3 cascading failures, collapse them
+                    root_blockers = [i for i in raw_issues if "Cascading Failure" not in i]
+                    cascading = [i for i in raw_issues if "Cascading Failure" in i]
+                    
+                    issues = root_blockers
+                    if len(cascading) > 3:
+                        issues.append(f"Cascading Failure: {len(cascading)} steps are blocked by the root issues above.")
+                    else:
+                        issues.extend(cascading)
 
             # Final Verdict Determination
             is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
