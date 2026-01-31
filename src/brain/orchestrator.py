@@ -1037,7 +1037,11 @@ class Trinity:
                             await self._log("Atlas is thinking... (Planning logic flow)", "system")
 
                 # --- PLANNING & VERIFICATION LOOP ---
-                max_retries = 2
+                # OPTIMIZED PLANNING LOOP:
+                # - Attempt 0: Atlas plans, Grisha verifies
+                # - Attempt 1: Atlas fixes based on feedback, Grisha verifies with fix_if_rejected=True
+                # - If Grisha rejects twice, use Grisha's fixed_plan immediately
+                max_retries = 1  # Maximum 2 attempts (0 and 1)
                 plan = None
 
                 for attempt in range(max_retries + 1):
@@ -1083,7 +1087,7 @@ class Trinity:
 
                     # --- PLAN VERIFICATION (Grisha) ---
                     if not is_subtask:
-                        # On the 2nd attempt and beyond, Grisha is authorized to fix the plan himself
+                        # On the 2nd attempt (attempt=1), Grisha is authorized to fix the plan himself
                         fix_if_rejected = (attempt >= 1)
                         verification_result = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=fix_if_rejected)
                         # Store report for the next planning iteration if needed
@@ -1106,26 +1110,24 @@ class Trinity:
                                 "warning",
                             )
                             
-                            if attempt < max_retries:
-                                if verification_result.fixed_plan:
-                                    prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
-                                    all_issues_str = "; ".join(verification_result.issues) if verification_result.issues else "Невідома причина"
-                                    msg = f"{prefix}{all_issues_str}"
-                                    
-                                    await self._log(f"[ORCHESTRATOR] Plan rejected on attempt {attempt}. Grisha INTERVENTION triggered.", "warning")
-                                    await self._speak("grisha", "Атлас не впорався з плануванням. Я переписав план самостійно, щоб ми могли рухатися далі.")
-                                    
-                                    plan = verification_result.fixed_plan
-                                    self.state["current_plan"] = plan
-                                    break # Exit planning loop with Grisha's fixed plan
+                            # OPTIMIZED LOGIC: After 2 rejections, use Grisha's fixed plan if available
+                            if attempt >= max_retries and verification_result.fixed_plan:
+                                # This is the 2nd rejection - Grisha takes over
+                                await self._log("[ORCHESTRATOR] Atlas failed twice. Grisha INTERVENTION triggered.", "warning")
+                                await self._speak("grisha", "Атлас двічі не впорався з плануванням. Я переписав план самостійно.")
                                 
-                                # Bridge the gap: Atlas confirms he is fixing the plan
+                                plan = verification_result.fixed_plan
+                                self.state["current_plan"] = plan
+                                break  # Exit planning loop with Grisha's fixed plan
+                            elif attempt < max_retries:
+                                # First rejection - give Atlas another chance
                                 await self._speak("atlas", "Зрозумів критичні зауваження. Зараз додам кроки для розвідки та виправлю структуру плану.")
-                                continue # Loop back to Atlas for re-planning
+                                continue  # Loop back to Atlas for re-planning
                             else:
+                                # 2nd rejection but no fixed_plan available - fail gracefully
                                 self.state["system_state"] = SystemState.IDLE.value
                                 self.active_task = None
-                                return {"status": "error", "error": f"Plan verification failed after {max_retries} спроб: {msg}"}
+                                return {"status": "error", "error": f"Plan verification failed after {max_retries + 1} спроб: {msg}"}
 
                         await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
                         await self._log("[ORCHESTRATOR] Plan verified by Grisha. Proceeding.", "system")
