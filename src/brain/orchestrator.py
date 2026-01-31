@@ -1082,7 +1082,9 @@ class Trinity:
 
                     # --- PLAN VERIFICATION (Grisha) ---
                     if not is_subtask:
-                        verification_result = await self.grisha.verify_plan(plan, user_request)
+                        # On the 3rd attempt, Grisha is authorized to fix the plan himself
+                        fix_if_rejected = (attempt >= 2)
+                        verification_result = await self.grisha.verify_plan(plan, user_request, fix_if_rejected=fix_if_rejected)
                         # Store report for the next planning iteration if needed
                         self._last_verification_report = verification_result.description
                         
@@ -1104,6 +1106,18 @@ class Trinity:
                             )
                             
                             if attempt < max_retries:
+                                if verification_result.fixed_plan:
+                                    prefix = "Гріша знову виявив недоліки: " if attempt > 0 else "Гріша відхилив початковий план: "
+                                    all_issues_str = "; ".join(verification_result.issues) if verification_result.issues else "Невідома причина"
+                                    msg = f"{prefix}{all_issues_str}"
+                                    
+                                    await self._log(f"[ORCHESTRATOR] Plan rejected on attempt {attempt}. Grisha INTERVENTION triggered.", "warning")
+                                    await self._speak("grisha", "Атлас не впорався з плануванням. Я переписав план самостійно, щоб ми могли рухатися далі.")
+                                    
+                                    plan = verification_result.fixed_plan
+                                    self.state["current_plan"] = plan
+                                    break # Exit planning loop with Grisha's fixed plan
+                                
                                 # Bridge the gap: Atlas confirms he is fixing the plan
                                 await self._speak("atlas", "Зрозумів критичні зауваження. Зараз додам кроки для розвідки та виправлю структуру плану.")
                                 continue # Loop back to Atlas for re-planning

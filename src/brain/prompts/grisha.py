@@ -160,6 +160,43 @@ Proposed plan from Atlas is:
         [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal. 100% Ukrainian.]
         """
 
+GRISHA_FIX_PLAN_PROMPT = """
+TASK: RIGOROUS PLAN RECONSTRUCTION (THE ARCHITECT OVERRIDE)
+
+USER REQUEST: {user_request}
+FAILED PLAN:
+{failed_plan_text}
+
+AUDIT FEEDBACK (BLOCKERS):
+{audit_feedback}
+
+YOUR MISSION:
+Atlas has failed to produce a viable plan after multiple attempts. You are now authorized to REWRITE the entire plan from scratch.
+You must resolve ALL technical gaps and "Discovery" requirements identified in the AUDIT FEEDBACK.
+
+STRICT JSON OUTPUT FORMAT (and NOTHING ELSE):
+{{
+  "id": "fixed_plan_grisha",
+  "goal": "Detailed goal in English",
+  "steps": [
+    {{
+      "goal": "Detailed sub-goal in English",
+      "reason": "Technical rationale in English",
+      "action": "Terminal command or Vibe tool call",
+      "voice_action": "Ukrainian status update for the user (NO ENGLISH)",
+      "expected_result": "Technical success criteria"
+    }},
+    ...
+  ],
+  "voice_summary": "Ukrainian summary for the user (NO ENGLISH)"
+}}
+
+CRITICAL RULES:
+1. **DISCOVERY FIRST**: The plan MUST start with steps to find IPs, paths, or verify hardware capabilities if they were blockers.
+2. **TECHNICAL PRECISION**: Use exact commands or verified tools.
+3. **LANGUAGE SPLIT**: goal/reason/action/expected_result MUST be in English. voice_action/voice_summary MUST be in Ukrainian.
+"""
+
 GRISHA = {
     "NAME": "GRISHA",
     "DISPLAY_NAME": "Grisha",
