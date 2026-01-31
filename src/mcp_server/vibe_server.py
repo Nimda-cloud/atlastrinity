@@ -113,7 +113,7 @@ try:
 
 except Exception:
 
-    def get_config_value(section: str, key: str, default: Any) -> Any:
+    def get_config_value(section: str, key: str, default: Any = None) -> Any:
         return default
 
     VIBE_BINARY = "vibe"

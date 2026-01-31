@@ -6,7 +6,14 @@ try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover
 
-    def load_dotenv(*args, **kwargs):
+    def load_dotenv(
+        dotenv_path=None,
+        stream=None,
+        verbose=False,
+        override=False,
+        interpolate=True,
+        encoding=None,
+    ):
         return False
 
 

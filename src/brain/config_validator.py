@@ -322,7 +322,7 @@ class ConfigValidator:
                         )
                     continue
 
-                value = server_config[key]
+                value = server_config.get(key)
                 expected_type = spec.get("_type")
 
                 if (
@@ -341,7 +341,7 @@ class ConfigValidator:
 
                 if (
                     "_range" in spec
-                    and isinstance(spec["_range"], tuple)
+                    and isinstance(spec.get("_range"), tuple)
                     and not self._check_range(value, spec["_range"])
                 ):
                     issues.append(

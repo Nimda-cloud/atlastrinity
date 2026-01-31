@@ -252,7 +252,7 @@ class VibeConfig(BaseModel):
     timeout_s: float = Field(600.0, ge=10.0, description="Default timeout in seconds")
 
     # Paths (resolved at runtime)
-    workspace: str | None = Field(None, description="Working directory")
+    workspace: str = Field(default_factory=lambda: str(Path.cwd()), description="Working directory")
     vibe_home: str | None = Field(None, description="Custom VIBE_HOME directory")
     agents_dir: str | None = Field(None, description="Custom agents directory")
     prompts_dir: str | None = Field(None, description="Custom prompts directory")

@@ -14,9 +14,10 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage  # type
 from langgraph.graph import END, StateGraph
 
 try:
-    from langgraph.graph import add_messages
+    from langgraph.graph.message import add_messages
 except ImportError:
-    pass
+    def add_messages(left: list, right: list) -> list:
+        return left + right
 
 from src.brain.agents import Atlas, Grisha, Tetyana
 from src.brain.agents.tetyana import StepResult
@@ -2323,7 +2324,7 @@ class Trinity:
                     if state_manager and getattr(state_manager, "available", False):
                         restart_key = state_manager._key("restart_pending")
                         try:
-                            if state_manager.redis and await state_manager.redis.exists(
+                            if state_manager.redis_client and await state_manager.redis_client.exists(
                                 restart_key,
                             ):
                                 logger.warning(

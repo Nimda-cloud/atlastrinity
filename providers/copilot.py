@@ -3,7 +3,7 @@ import json
 import os
 from collections.abc import Callable
 from io import BytesIO
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import requests
@@ -97,7 +97,7 @@ class CopilotLLM(BaseChatModel):
     def _llm_type(self) -> str:
         return "copilot-chat"
 
-    def bind_tools(self, tools: Any) -> "CopilotLLM":
+    def bind_tools(self, tools: Any, **kwargs: Any) -> "CopilotLLM":
         # Store tools to describe them in the system prompt and instruct the model
         # to generate JSON tool_calls structure. MacSystemAgent calls CopilotLLM without tools,
         # so its own JSON protocol is not affected.
@@ -126,10 +126,10 @@ class CopilotLLM(BaseChatModel):
                 google_api_key=api_key,
                 temperature=0.1,
             )
-            return llm.invoke(messages)
+            return cast(AIMessage, llm.invoke(messages))
         except Exception as e:
             # If Gemini fails, try local BLIP captioning
-            return self._invoke_local_blip_fallback(messages, e)
+            return self._invoke_local_blip_fallback(list(messages), e)
 
     def _invoke_local_blip_fallback(
         self,
@@ -207,9 +207,9 @@ class CopilotLLM(BaseChatModel):
                 new_prompt = f"{original_text}\n\n[AUTOMATIC IMAGE ANALYSIS (OCR + BLIP)]:\n{combined_desc}\n\nBased on this analysis, what can you say about the screen state? Respond strictly in JSON format."
 
                 # Call LLM with text-only message
-                from langchain_core.messages import HumanMessage, SystemMessage
+        
 
-                text_only_messages = [msg for msg in messages if isinstance(msg, SystemMessage)] + [
+                text_only_messages: list[BaseMessage] = [msg for msg in messages if isinstance(msg, SystemMessage)] + [
                     HumanMessage(content=new_prompt),
                 ]
 
@@ -226,7 +226,7 @@ class CopilotLLM(BaseChatModel):
         try:
             result = self._generate(messages)
             if result.generations:
-                return result.generations[0].message
+                return cast(AIMessage, result.generations[0].message)
             return AIMessage(content="[No response generated]")
         except Exception as e:
             return AIMessage(content=f"[Internal invoke error] {e}")
@@ -364,7 +364,12 @@ class CopilotLLM(BaseChatModel):
             if max(img.size) > max_size:
                 ratio = max_size / max(img.size)
                 new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-                img = img.resize(new_size, Image.LANCZOS)
+                # modern PIL uses Resampling.LANCZOS
+                try:
+                    resampling = Image.Resampling.LANCZOS
+                except AttributeError:
+                    resampling = Image.LANCZOS
+                img = img.resize(new_size, resampling)
 
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
