@@ -885,8 +885,8 @@ def sync_configs():
         agents_dir = CONFIG_ROOT / "vibe" / "agents"
         agents_dir.mkdir(parents=True, exist_ok=True)
 
-        # Example: if we had agent templates in config/agents/*.template
-        agent_templates_dir = PROJECT_ROOT / "config" / "agents"
+        # Sync agent templates from config/vibe/agents/*.template
+        agent_templates_dir = PROJECT_ROOT / "config" / "vibe" / "agents"
         if agent_templates_dir.exists():
             for tpl in agent_templates_dir.glob("*.template"):
                 dst_name = tpl.stem  # removes .template extension, e.g. auto-approve.toml
@@ -1365,7 +1365,7 @@ def main():
         print_info("Встановлення Watchdog...")
         subprocess.run([str(VENV_PATH / "bin" / "python"), "-m", "pip", "install", "watchdog"], check=False)
 
-    print_info(f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'python scripts/watch_config.py' для авто-синхронізації конфігів")
+    print_info(f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'npm run watch:config' для авто-синхронізації конфігів")
 
     mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
     enabled_servers = []
