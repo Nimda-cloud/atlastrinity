@@ -285,3 +285,24 @@ class KnowledgePromotion(Base):
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
+
+class Discovery(Base):
+    """Stores critical values discovered during task execution.
+    Complements ChromaDB vector storage with structured SQL storage.
+    Enables fast task-specific retrieval and auditing.
+    """
+
+    __tablename__ = "discoveries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    task_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tasks.id"), index=True)
+    step_id: Mapped[str] = mapped_column(String(50), index=True)  # Hierarchical step ID (e.g., "1.2.3")
+
+    key: Mapped[str] = mapped_column(String(100))  # Descriptive key (e.g., "mikrotik_ip")
+    value: Mapped[str] = mapped_column(Text)  # The actual discovered value
+    category: Mapped[str] = mapped_column(String(50))  # ip_address, path, credential, identifier, other
+    step_action: Mapped[str] = mapped_column(Text, nullable=True)  # Context of what step was doing
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
