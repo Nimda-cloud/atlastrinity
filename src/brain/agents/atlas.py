@@ -826,11 +826,18 @@ Standalone Query:"""
 
         # 1.1 CONSUME FEEDBACK (if replanning)
         grisha_feedback = enriched_request.get("simulation_result", "")
+        failed_plan_obj = enriched_request.get("failed_plan")
+        failed_plan_text = ""
+        
         if grisha_feedback:
             logger.info("[ATLAS] Replanning detected. Incorporating Grisha's feedback into strategy.")
+            if failed_plan_obj and hasattr(failed_plan_obj, "steps"):
+                failed_plan_text = "\n".join(
+                    [f"{i+1}. {s.get('action')}" for i, s in enumerate(failed_plan_obj.steps)]
+                )
 
         simulation_prompt = AgentPrompts.atlas_simulation_prompt(
-            task_text, memory_context, feedback=grisha_feedback
+            task_text, memory_context, feedback=grisha_feedback, failed_plan=failed_plan_text
         )
 
         try:

@@ -426,10 +426,17 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         """
 
     @staticmethod
-    def atlas_simulation_prompt(task_text: str, memory_context: str, feedback: str = "") -> str:
+    def atlas_simulation_prompt(
+        task_text: str, memory_context: str = "", feedback: str = "", failed_plan: str = ""
+    ) -> str:
         feedback_section = (
             f"\n\nCRITICAL AUDIT FEEDBACK (from Grisha/Auditor):\n{feedback}\n"
             if feedback
+            else ""
+        )
+        plan_section = (
+            f"\n        REJECTED PLAN (DO NOT REPEAT THESE MISTAKES):\n        {failed_plan}\n"
+            if failed_plan
             else ""
         )
 
@@ -438,6 +445,7 @@ Do not suggest creating a complex plan, just use your tools autonomously to answ
         
         {memory_context}
         {feedback_section}
+        {plan_section}
 
         SIMULATION DOCTRINE:
         You must mentally execute the task before planning.
