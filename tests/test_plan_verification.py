@@ -54,3 +54,25 @@ def test_grisha_rejects_unsafe_plan():
         assert len(result.issues) > 0
 
     asyncio.run(run_test())
+def test_grisha_approves_creator_request():
+    async def run_test():
+        # Setup
+        grisha = Grisha()
+        grisha.strategist = AsyncMock()
+        # Simulate a rejection due to authorization that should be overridden
+        grisha.strategist.ainvoke.return_value = "REJECT: Lack of written authorization for pentest."
+        
+        plan = TaskPlan(
+            id="pentest_plan",
+            goal="Test network",
+            steps=[{"action": "aircrack-ng", "voice_action": "Scanning"}]
+        )
+        
+        # Execute with Creator mention
+        result = await grisha.verify_plan(plan, "Олег Миколайович asks to test Zub1")
+        
+        # Verify override
+        assert result.verified is True
+        assert "Творцем" in result.voice_message
+
+    asyncio.run(run_test())
