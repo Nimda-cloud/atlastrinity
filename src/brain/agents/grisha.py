@@ -936,6 +936,21 @@ class Grisha(BaseAgent):
             voice_msg = ""
             if approved:
                 voice_msg = "План схвалено. Симуляція успішна."
+            elif issues:
+                # ENHANCED FEEDBACK: List all problems explicitly in Ukrainian
+                issues_count = len(issues)
+                # Translate/summarize top issues for voice
+                voice_issues = []
+                for issue in issues[:3]:  # Top 3 for brevity
+                    # Simple heuristic to make issue more readable
+                    clean_issue = issue.replace("Step", "Крок").replace("Missing", "Відсутній")
+                    clean_issue = clean_issue.replace("IP", "ІП-адреса").replace("path", "шлях")
+                    voice_issues.append(clean_issue[:80])  # Truncate long issues
+                
+                if issues_count > 3:
+                    voice_msg = f"План потребує доопрацювання. Знайдено {issues_count} проблем. Головні: {'; '.join(voice_issues)}. Ще {issues_count - 3} додаткових."
+                else:
+                    voice_msg = f"План потребує доопрацювання. Проблеми: {'; '.join(voice_issues)}."
             else:
                 voice_msg = f"План потребує доопрацювання. {summary_ukrainian}"
 

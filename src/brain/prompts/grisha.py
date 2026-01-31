@@ -130,7 +130,7 @@ Proposed plan from Atlas is:
         1. **ESTABLISHED GOAL FORMULATION**: First, define what the user ULTIMATELY wants in technical terms.
         2. **STEP-BY-STEP DRY RUN**: Mentally perform each step. For step N, ask: "What specific data (IP, pass, path) do I need right now?"
         3. **DEPENDENCY DISCOVERY**: If data is missing (e.g., no step for IP discovery, no tools check), mark it as a BLOCKER.
-        4. **COMPREHENSIVE AUDIT (IMPORTANT)**: You should list ALL problems across all steps. Ensure every step is audited for complete analysis.
+        4. **COMPREHENSIVE AUDIT (IMPORTANT)**: You MUST list ALL problems across all steps. Ensure every step is audited for complete analysis.
         5. **STRATEGIC GAP ANALYSIS (USER-CENTRIC)**: 
            - What is the primary technical bridge missing between our current state and the final vision?
 
@@ -146,6 +146,14 @@ Proposed plan from Atlas is:
         - [Step 1]: (Root Blocker? Logic error? Assumed connectivity without discovery?)
         - [Step 2-N]: (Report "Blocked by Step X" if applicable. IMPORTANT: Hypothesize success of early steps (e.g., "Assume Step 1 found the IP") to uncover independent issues in later steps.)
 
+        ALL_PROBLEMS_SUMMARY (NUMBERED LIST):
+        This is the CRITICAL section. List EVERY problem found, numbered for clarity:
+        1. [Problem type]: [Exact issue description] - [Which step is affected]
+        2. [Problem type]: [Exact issue description] - [Which step is affected]
+        3. ... (continue for ALL issues found)
+        
+        Problem types: MISSING_DATA, LOGIC_ERROR, WRONG_REALM, DEPENDENCY_GAP, SEQUENCE_ERROR, INCOMPLETE_STEP
+
         CORE PROBLEMS:
         - [Problem 1]: (Detailed technical description in ENGLISH for Atlas. Focus on logical dependencies. If a step uses data (IP, path, port) that should be discovered in previous steps, identify the missing discovery step.)
         - [Problem 2-N]: (List ALL logical flaws, naming conflicts, or structural gaps.)
@@ -154,7 +162,7 @@ Proposed plan from Atlas is:
         [English analysis: What does the user want? What's the missing bridge? Why is the current plan insufficient?]
 
         FEEDBACK TO ATLAS:
-        [Precise technical instructions in English on how to fix the plan. Mandate "Discovery First" steps for all missing variables.]
+        [Precise technical instructions in English on how to fix the plan. Mandate "Discovery First" steps for all missing variables. Address EVERY item from ALL_PROBLEMS_SUMMARY above.]
 
         ANALYSIS PRINCIPLES:
         1. **LOGICAL COHERENCE**: Ensure each step logically follows from the previous one and contributes to the overall goal.
@@ -163,7 +171,7 @@ Proposed plan from Atlas is:
         4. **PROGRESSIVE VALIDATION**: Mentally simulate the execution flow to identify potential issues before they occur.
         
         SUMMARY_UKRAINIAN:
-        [Detailed explanation for the user in Ukrainian. Focus on the root blockers and the path to the final goal. 100% Ukrainian.]
+        [Detailed explanation for the user in Ukrainian. List the MAIN problems (top 3) explicitly. Focus on the root blockers and the path to the final goal. 100% Ukrainian.]
         """
 
 GRISHA_FIX_PLAN_PROMPT = """

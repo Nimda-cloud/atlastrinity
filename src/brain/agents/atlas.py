@@ -793,6 +793,120 @@ Standalone Query:"""
         except Exception as e:
             logger.warning(f"[ATLAS] Memory write failed: {e}")
 
+    async def _self_verify_plan(self, plan_steps: list[dict], goal: str) -> dict[str, Any]:
+        """Atlas performs internal self-verification before submitting the plan.
+        
+        This is a Grisha-style analysis to catch obvious gaps BEFORE
+        the plan goes to Grisha for formal verification.
+        
+        Returns:
+            {
+                "issues": list[str],  # Problems found
+                "suggestions": list[str],  # How to fix them
+                "confidence": float  # 0.0-1.0 self-confidence
+            }
+        """
+        if not plan_steps:
+            return {"issues": ["No steps in plan"], "suggestions": ["Generate steps"], "confidence": 0.0}
+        
+        # Format plan for analysis
+        plan_text = "\n".join([
+            f"{i+1}. [{s.get('realm', 'unknown')}] {s.get('action', 'No action')}"
+            for i, s in enumerate(plan_steps)
+        ])
+        
+        self_audit_prompt = f"""SELF-AUDIT BEFORE SUBMISSION (ATLAS INTERNAL CHECK):
+
+GOAL: {goal}
+
+PROPOSED PLAN:
+{plan_text}
+
+YOUR TASK: Perform a GRISHA-STYLE simulation of this plan BEFORE submitting it.
+For each step, ask: "Do I have the data (IP, path, credentials) needed for this step?"
+
+CRITICAL CHECKS:
+1. **PREREQUISITE CHAIN**: Does step N provide data needed by step N+1?
+2. **DISCOVERY GAPS**: Are there unknown IPs, paths, or configs that should be discovered first?
+3. **REALM VALIDITY**: Is each step assigned to an appropriate MCP server?
+4. **LOGICAL SEQUENCE**: Is the order of steps correct?
+5. **COMPLETENESS**: Does the plan actually achieve the stated goal?
+
+OUTPUT FORMAT:
+SELF_REVIEW_ISSUES:
+- [Issue 1 if any]
+- [Issue 2 if any]
+
+SUGGESTIONS:
+- [How to fix Issue 1]
+- [How to fix Issue 2]
+
+CONFIDENCE: [0.0-1.0]
+
+If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
+"""
+        
+        try:
+            result = await self.use_sequential_thinking(
+                self_audit_prompt,
+                total_thoughts=2,
+                capabilities="Plan analysis and logical verification"
+            )
+            
+            if not result.get("success"):
+                logger.warning("[ATLAS] Self-verification thinking failed, proceeding with plan")
+                return {"issues": [], "suggestions": [], "confidence": 0.7}
+            
+            analysis = result.get("analysis", "")
+            
+            # Parse issues
+            issues = []
+            if "SELF_REVIEW_ISSUES:" in analysis:
+                issues_section = analysis.split("SELF_REVIEW_ISSUES:")[1]
+                if "SUGGESTIONS:" in issues_section:
+                    issues_section = issues_section.split("SUGGESTIONS:")[0]
+                issues = [
+                    line.strip().replace("- ", "")
+                    for line in issues_section.strip().split("\n")
+                    if line.strip().startswith("-") and "None" not in line
+                ]
+            
+            # Parse suggestions
+            suggestions = []
+            if "SUGGESTIONS:" in analysis:
+                suggestions_section = analysis.split("SUGGESTIONS:")[1]
+                if "CONFIDENCE:" in suggestions_section:
+                    suggestions_section = suggestions_section.split("CONFIDENCE:")[0]
+                suggestions = [
+                    line.strip().replace("- ", "")
+                    for line in suggestions_section.strip().split("\n")
+                    if line.strip().startswith("-")
+                ]
+            
+            # Parse confidence
+            import re
+            confidence = 0.7  # default
+            conf_match = re.search(r"CONFIDENCE:\s*([\d.]+)", analysis)
+            if conf_match:
+                try:
+                    confidence = float(conf_match.group(1))
+                    if confidence > 1.0:
+                        confidence = confidence / 100.0
+                except ValueError:
+                    pass
+            
+            logger.info(f"[ATLAS] Self-verification: {len(issues)} issues found, confidence: {confidence}")
+            
+            return {
+                "issues": issues,
+                "suggestions": suggestions,
+                "confidence": confidence
+            }
+            
+        except Exception as e:
+            logger.warning(f"[ATLAS] Self-verification failed: {e}")
+            return {"issues": [], "suggestions": [], "confidence": 0.6}
+
     async def create_plan(self, enriched_request: dict[str, Any]) -> TaskPlan:
         """Principal Architect: Creates an execution plan with Strategic Thinking."""
         import uuid
@@ -967,9 +1081,59 @@ CRITICAL PLANNING RULES:
                     ):
                         step["voice_action"] = "Виконую заплановану дію"
 
+        # 3. SELF-VERIFICATION: Atlas performs internal audit before submitting
+        goal_text = str(plan_data.get("goal", enriched_request.get("enriched_request", "")))
+        
+        if steps:
+            self_check = await self._self_verify_plan(steps, goal_text)
+            
+            # If issues found and confidence is low, try to fix them immediately
+            if self_check.get("issues") and self_check.get("confidence", 1.0) < 0.8:
+                issues_text = "\n".join([f"- {i}" for i in self_check["issues"]])
+                suggestions_text = "\n".join([f"- {s}" for s in self_check.get("suggestions", [])])
+                
+                logger.info(f"[ATLAS] Self-audit found {len(self_check['issues'])} issues. Attempting self-fix...")
+                
+                fix_prompt = f"""SELF-FIX REQUIRED:
+
+ORIGINAL PLAN:
+{chr(10).join([f"{i+1}. {s.get('action')}" for i, s in enumerate(steps)])}
+
+SELF-AUDIT ISSUES:
+{issues_text}
+
+SUGGESTIONS:
+{suggestions_text}
+
+TASK: Regenerate the steps with these issues FIXED.
+- Add discovery steps for any missing data (IPs, paths, configs)
+- Fix realm assignments
+- Ensure logical sequence
+
+Output the corrected plan in the same JSON format as before.
+"""
+                try:
+                    fix_messages = [
+                        SystemMessage(content=dynamic_system_prompt),
+                        HumanMessage(content=fix_prompt),
+                    ]
+                    fix_response = await self.llm.ainvoke(fix_messages)
+                    fixed_plan_data = self._parse_response(cast("str", fix_response.content))
+                    fixed_steps = fixed_plan_data.get("steps", [])
+                    
+                    if fixed_steps:
+                        # Re-validate voice_action for fixed steps
+                        for step in fixed_steps:
+                            if not step.get("voice_action") or re.search(r"[a-zA-Z]", step.get("voice_action", "")):
+                                step["voice_action"] = "Виконую заплановану дію"
+                        steps = fixed_steps
+                        logger.info(f"[ATLAS] Self-fix successful. Plan now has {len(steps)} steps.")
+                except Exception as fix_error:
+                    logger.warning(f"[ATLAS] Self-fix failed: {fix_error}. Proceeding with original plan.")
+
         self.current_plan = TaskPlan(
             id=str(uuid.uuid4())[:8],
-            goal=str(plan_data.get("goal", enriched_request.get("enriched_request", ""))),
+            goal=goal_text,
             steps=steps,
             context={**enriched_request, "simulation": simulation_result},
         )
