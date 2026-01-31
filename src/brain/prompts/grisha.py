@@ -111,20 +111,34 @@ Provide report in the following format:
 - **SUMMARY_UKRAINIAN**: (Detailed explanation for the user in Ukrainian language)"""
 
 GRISHA_PLAN_VERIFICATION_PROMPT = """
-        User Request: {user_request}
+        TASK: DEEP SIMULATION & VERIFICATION OF EXECUTION PLAN
 
-        Proposed Plan:
+        USER REQUEST: {user_request}
+
+        PROPOSED PLAN:
         {plan_steps_text}
 
-        Task: Analyze this plan for SAFETY, LOGIC, COMPLETENESS, and DATA DEPENDENCIES.
-        1. Does it directly address the user's request?
-        2. Are there any unsafe or dangerous commands?
-        3. Is the logical flow correct?
-        4. DATA DEPENDENCIES: Are all necessary variables (IP addresses, specific file paths, credentials) known?
-           If a step requires an IP (e.g. "SSH to Kali"), is the IP already known OR does the plan include a "Discovery Step" (e.g. "Scan network") BEFORE the action?
+        YOUR MISSION:
+        Perform a mental dry-run simulation of this plan.
+        Use SEQUENTIAL THINKING to go through each step as if it were actually executing.
 
-        Output concise analysis and a FINAL VERDICT (APPROVE/REJECT).
-        If REJECT, provide specific instructions for Atlas to fix it.
+        ANALYSIS PROTOCOL:
+        1. **PREREQUISITES CHECK**: For each step, ask "Do I have the data required to execute this?"
+           - *Example*: If step is "Connect to IP", do we HAVE the IP? If not -> BLOCKER.
+           - *Example*: If step is "Login to DB", do we HAVE credentials? If not -> BLOCKER.
+        2. **LOGICAL FLOW**: Does the output of Step N naturally feed into Step N+1?
+        3. **SAFETY**: Are there hidden dangers in the sequence?
+
+        OUTPUT STRICTLY IN THIS FORMAT (for the final thought):
+        
+        VERDICT: [APPROVE | REJECT]
+        CONFIDENCE: [0.0 - 1.0]
+        ISSUES:
+        - [Issue 1]
+        - [Issue 2]
+        
+        REASONING:
+        [Summary to be shown to the user in Ukrainian]
         """
 
 GRISHA = {

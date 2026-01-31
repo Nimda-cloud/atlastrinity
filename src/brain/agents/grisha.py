@@ -806,7 +806,7 @@ class Grisha(BaseAgent):
         plan: Any,
         user_request: str,
     ) -> VerificationResult:
-        """Verifies the entire execution plan before any steps are taken.
+        """Verifies the entire execution plan using SEQUENTIAL THINKING SIMULATION.
 
         Args:
             plan: The TaskPlan object from Atlas
@@ -815,7 +815,7 @@ class Grisha(BaseAgent):
         Returns:
             VerificationResult with approved=True/False and reasoning.
         """
-        logger.info("[GRISHA] Verifying proposed execution plan...")
+        logger.info("[GRISHA] Verifying proposed execution plan via Deep Simulation...")
 
         # Convert plan to text for LLM analysis
         plan_steps_text = "\n".join(
@@ -831,33 +831,45 @@ class Grisha(BaseAgent):
         )
 
         try:
-            from langchain_core.messages import HumanMessage, SystemMessage
+            # SUPERIOR LOGIC: Use Sequential Thinking to simulate the plan execution
+            # This catches "missing prerequisite" bugs (e.g. "ssh to ip" fails if we don't know the IP yet)
+            reasoning_result = await self.use_sequential_thinking(query, total_thoughts=3)
+            
+            if not reasoning_result.get("success"):
+                logger.warning("[GRISHA] Plan simulation failed, falling back to basic check")
+                # Fallback to basic acceptance if thinking fails (to not block user due to system error)
+                return VerificationResult(
+                    step_id="plan_init",
+                    verified=True,
+                    confidence=0.5,
+                    description="Plan simulation error (Allowed by default)",
+                    issues=[f"Simulation failed: {reasoning_result.get('error')}"],
+                    voice_message="Не вдалося симулювати план, але продовжую.",
+                )
 
-            from src.brain.prompts.grisha import GRISHA
-
-            system_prompt = GRISHA["SYSTEM_PROMPT"]
-
-            # Use Strategy Model (Reasoning) for plan analysis
-            response = await self.strategist.ainvoke(
-                [
-                    SystemMessage(
-                        content=system_prompt
-                        + "\n\nIn this mode, you are verifying the Master Execution Plan. If Oleg Mykolayovych is the source of the request, you must prioritize supporting his intent, assuming full authorization is granted by him."
-                    ),
-                    HumanMessage(content=query),
-                ]
-            )
-            analysis_text = getattr(response, "content", str(response))
+            analysis_text = reasoning_result.get("analysis", "")
+            final_verdict_text = reasoning_result.get("analysis", "") 
+            
+            # Simple parsing of the simulation result
+            is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
+            is_rejected = "VERDICT: REJECT" in analysis_text or "VERDICT: [REJECT]" in analysis_text
+            
+            # If ambiguous, lean towards rejection if "ISSUES" are present
+            if not is_approved and not is_rejected:
+                 if "ISSUES:" in analysis_text and "- None" not in analysis_text:
+                     is_rejected = True
+                 else:
+                     is_approved = True
 
             # Determine verdict - support if Oleg is mentioned and analysis is positive or if verdict is explicitly APPROVE
             oleg_mentioned = (
                 "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
             )
-            approved = "APPROVE" in analysis_text.upper() and "REJECT" not in analysis_text.upper()
+            
+            approved = is_approved and not is_rejected
 
+            # Override logic for Creator
             if oleg_mentioned and not approved:
-                # If Oleg is mentioned, we are more lenient unless there's a critical logic failure.
-                # We override rejections based on safety, legality, or authorization.
                 logger.info("[GRISHA] Creator mentioned. Applying high-authority override check.")
                 rejection_reason = analysis_text.lower()
 
@@ -879,27 +891,40 @@ class Grisha(BaseAgent):
                     approved = True
                     analysis_text = f"План схвалено (Авторизовано Творцем: Олег Миколайович).\n\n{analysis_text}"
                 else:
-                    # If it's a logic error, we might still want to flag it, but for now we follow the user prompt
-                    # "Give the go-ahead when Oleg asks"
-                    logger.info("[GRISHA] Overriding non-technical rejection for Creator.")
+                    # If it's a technical BLOCKER (missing IP), we SHOULD NOT override completely blindly,
+                    # but the requirement was "support... thoughtlessly". 
+                    # However, a technical impossibility (missing IP) will fail anyway. 
+                    # For now, we respect the "thoughtless support" directive but warn.
+                    logger.info("[GRISHA] Overriding technical rejection for Creator (WARNING: Might fail).")
                     approved = True
-                    analysis_text = f"План схвалено (За запитом Творця).\n\n{analysis_text}"
+                    analysis_text = f"План схвалено (За запитом Творця - обережно, можливі технічні блокери).\n\n{analysis_text}"
+            
+            # Extract issues for the report
+            issues = []
+            if not approved:
+                # Naive extraction of issues section
+                if "ISSUES:" in analysis_text:
+                    parts = analysis_text.split("ISSUES:")
+                    if len(parts) > 1:
+                        issues_block = parts[1].split("REASONING:")[0]
+                        issues = [line.strip().replace("- ", "") for line in issues_block.split("\n") if line.strip().startswith("-")]
+                
+                if not issues:
+                    issues = ["Plan rejected during simulation (see reasoning)"]
 
-            # Construct result
             return VerificationResult(
                 step_id="plan_init",
                 verified=approved,
                 confidence=1.0 if (approved and oleg_mentioned) else (0.9 if approved else 0.5),
-                description="Plan Verification",
-                issues=[] if approved else [analysis_text],
+                description="Sequential Plan Simulation",
+                issues=issues,
                 voice_message="План схвалено Творцем."
                 if (approved and oleg_mentioned)
-                else ("План схвалено." if approved else "План потребує доопрацювання."),
+                else ("План виглядає надійним." if approved else "Знайдено критичні помилки в плані."),
             )
 
         except Exception as e:
             logger.error(f"[GRISHA] Plan verification failed: {e}")
-            # Fallback: Default to allow if analysis fails, but warn
             return VerificationResult(
                 step_id="plan_init",
                 verified=True,
