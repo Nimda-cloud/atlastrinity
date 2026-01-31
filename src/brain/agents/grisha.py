@@ -848,7 +848,6 @@ class Grisha(BaseAgent):
                 )
 
             analysis_text = reasoning_result.get("analysis", "")
-            final_verdict_text = reasoning_result.get("analysis", "") 
             
             # Simple parsing of the simulation result
             is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
