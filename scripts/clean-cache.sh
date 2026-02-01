@@ -59,4 +59,9 @@ pkill -9 -f mcp-server 2>/dev/null || true
 pkill -9 -f macos-use 2>/dev/null || true
 pkill -9 -f brain.server 2>/dev/null || true
 
+# Вбиваємо процеси на портах Vite (3000, 3001)
+echo "  • Звільнення портів UI (3000, 3001)..."
+lsof -ti :3000 | xargs kill -9 2>/dev/null || true
+lsof -ti :3001 | xargs kill -9 2>/dev/null || true
+
 echo "✅ Кеші очищені!"

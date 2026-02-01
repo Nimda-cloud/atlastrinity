@@ -281,12 +281,12 @@ const App: React.FC = () => {
     let interval: NodeJS.Timeout;
 
     // Delay initial connection attempts to allow Python server to start
-    // Increased from 2000 to 5000 for better stability
+    // Reduced from 5000 to 1000 since we now delay Electron launch at process level
     const startupTimeout = setTimeout(() => {
       pollState();
       fetchSessions();
       interval = setInterval(pollState, 1500); // Polling every 1.5s
-    }, 5000);
+    }, 1000);
 
     return () => {
       clearTimeout(startupTimeout);
