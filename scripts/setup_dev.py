@@ -635,7 +635,11 @@ def setup_google_maps():
                 content = f.read()
                 matches = re.findall(r"GOOGLE_MAPS_API_KEY=(AIza[a-zA-Z0-9_\-]+)", content)
                 if matches:
-                    api_key = matches[0]
+                    potential_key = matches[0]
+                    # Ignore known placeholder
+                    if "AIzaSyBq4tcSGVtplM3eFdqPOC14lbsBWNxGp_0" not in potential_key:
+                         api_key = potential_key
+
                 if api_key and f"VITE_GOOGLE_MAPS_API_KEY={api_key}" in content:
                     has_vite_key = True
                 if api_key:
