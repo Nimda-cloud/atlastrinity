@@ -120,7 +120,7 @@ async function createWindow(): Promise<void> {
       try {
         await mainWindow.loadURL(url);
         mainWindow.webContents.openDevTools();
-      } catch (err) {
+      } catch {
         if (retryCount < 10) {
           console.log(`[ELECTRON] Load failed, retrying in 2s...`);
           setTimeout(() => attemptLoad(retryCount + 1), 2000);
