@@ -926,6 +926,16 @@ def sync_configs():
     """Copies template configs to global folder with variable expansion."""
     print_step("Setting up global configurations...")
 
+    # Load local .env into environment so process_template can use the keys
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        with open(env_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key.strip()] = value.strip()
+
     try:
         # Define mappings (Source -> Destination)
         configs = [
