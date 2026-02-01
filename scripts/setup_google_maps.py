@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-import subprocess
-import sys
 import json
 import os
-import re
 import random
-import string
+import re
 import shutil
+import string
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 # --- Constants ---
@@ -194,7 +195,7 @@ def update_env(api_key):
         else:
             ENV_FILE.touch()
     
-    with open(ENV_FILE, 'r') as f:
+    with open(ENV_FILE) as f:
         content = f.read()
     
     key_pattern = r'^GOOGLE_MAPS_API_KEY=.*$'
@@ -231,5 +232,4 @@ def main():
         print_error("Failed to retrieve API key.")
 
 if __name__ == "__main__":
-    import time
     main()
