@@ -13,6 +13,12 @@ interface MapViewProps {
   type: 'STREET' | 'STATIC' | 'INTERACTIVE';
   location?: string;
   onClose: () => void;
+  agentView?: {
+    heading: number;
+    pitch: number;
+    fov: number;
+    timestamp: string;
+  } | null;
 }
 
 // AtlasTrinity Cyberpunk Map Style - Blue/Turquoise Theme
@@ -98,7 +104,7 @@ const GOOGLE_MAPS_API_KEY =
 
 const API_BASE = 'http://localhost:8000';
 
-const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) => {
+const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, agentView }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
@@ -364,6 +370,28 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
               <div className="hud-status">ENCRYPTED_LINK_ACTIVE</div>
               <div className="hud-timestamp">{new Date().toLocaleTimeString()}</div>
             </div>
+
+            {/* Agent POV Telemetry */}
+            {agentView && (
+              <div className="agent-pov-telemetry animate-pulse">
+                <div className="telemetry-item">
+                  <span className="telemetry-label">HEADING:</span>
+                  <span className="telemetry-value">{agentView.heading.toFixed(1)}°</span>
+                </div>
+                <div className="telemetry-item">
+                  <span className="telemetry-label">PITCH:</span>
+                  <span className="telemetry-value">{agentView.pitch.toFixed(1)}°</span>
+                </div>
+                <div className="telemetry-item">
+                  <span className="telemetry-label">FOV:</span>
+                  <span className="telemetry-value">{agentView.fov}°</span>
+                </div>
+                <div className="telemetry-item">
+                  <span className="telemetry-label">SOURCE:</span>
+                  <span className="telemetry-value">AGENT_NEURAL_UPLINK</span>
+                </div>
+              </div>
+            )}
 
             {/* Corner Brackets */}
             <div className="map-corner tl"></div>
@@ -693,6 +721,38 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           height: 1px;
           background: rgba(0, 163, 255, 0.3);
           width: 100%;
+        }
+
+        .agent-pov-telemetry {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          background: rgba(0, 10, 20, 0.7);
+          padding: 10px 14px;
+          border-right: 2px solid #ff00ff;
+          font-family: 'JetBrains Mono', monospace;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        .telemetry-item {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          font-size: 9px;
+          letter-spacing: 1px;
+        }
+
+        .telemetry-label {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .telemetry-value {
+          color: #ff00ff;
+          text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
         }
       `}</style>
     </div>
