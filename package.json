@@ -2,6 +2,10 @@
   "name": "atlastrinity",
   "version": "1.0.0",
   "description": "Autonomous Recursive Agentic System for macOS",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "main": "dist/main/main.js",
   "type": "module",
   "scripts": {
