@@ -1389,8 +1389,10 @@ def main():
             for root, _, files in os.walk(bdir):
                 for f in files:
                     fpath = Path(root) / f
-                    # If it looks like an executable (macos-use, terminal, etc)
-                    if "macos-use" in f or "vibe" in f or fpath.suffix == "":
+                    # If it looks like an executable (Swift binaries, MCP servers, etc)
+                    if ("macos-use" in f or "vibe" in f or "googlemaps" in f or 
+                        "mcp-server" in f or fpath.suffix == "" or 
+                        "xcodebuild" in f.lower()):
                         try:
                             os.chmod(fpath, 0o755)
                         except Exception:
@@ -1493,6 +1495,7 @@ def main():
         ("redis", "Оглядовість кешу та сесій (Python)"),
         ("golden-fund", "Knowledge Base & Data Persistence (Python)"),
         ("data-analysis", "Pandas Data Analysis Engine (Python)"),
+        ("googlemaps", "Google Maps API з Cyberpunk фільтром (Swift)"),
     ]
 
     print_info(
