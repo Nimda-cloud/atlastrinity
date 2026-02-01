@@ -97,9 +97,16 @@ const CYBERPUNK_MAP_STYLE = [
   },
 ];
 
-// Google Maps API Key from environment
+// Google Maps API Key from environment (loaded from global config via Vite plugin)
 const GOOGLE_MAPS_API_KEY =
   import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
+// Debug logging to verify key source
+console.log('🗺️ MapView: VITE_GOOGLE_MAPS_API_KEY loaded:', GOOGLE_MAPS_API_KEY ? '✓ Present' : '✗ Missing');
+console.log('🗺️ MapView: Key length:', GOOGLE_MAPS_API_KEY.length);
+if (GOOGLE_MAPS_API_KEY) {
+    console.log('🗺️ MapView: Key starts with:', GOOGLE_MAPS_API_KEY.substring(0, 10) + '...');
+}
 
 
 
@@ -115,6 +122,13 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   // Load the Extended Component Library script
   useEffect(() => {
     if (type !== 'INTERACTIVE') return;
+
+    // Check for API key first
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error("Critical: VITE_GOOGLE_MAPS_API_KEY is missing!");
+      setError("MISSING_API_KEY");
+      return;
+    }
 
     const loadScript = () => {
       // Check if script already loaded
@@ -261,12 +275,14 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
 
   // Create API loader element with correct key attribute
   const renderApiLoader = () => {
-    // Create the element using innerHTML to avoid React's key prop interference
+    if (!GOOGLE_MAPS_API_KEY) return null; // Don't render without key
+    
+    // Use solution-channel to avoid warnings
     return (
       <div
         ref={apiLoaderRef}
         dangerouslySetInnerHTML={{
-          __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}"></gmpx-api-loader>`,
+          __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}" solution-channel="GMP_CDN_extended_v0.6.11"></gmpx-api-loader>`,
         }}
       />
     );
