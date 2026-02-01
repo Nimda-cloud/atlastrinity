@@ -61,18 +61,23 @@ def process_template(src_path: Path, dst_path: Path):
         with open(src_path, encoding="utf-8") as f:
             content = f.read()
 
-        # Define substitutions
+        # Core replacements
         replacements = {
             "${PROJECT_ROOT}": str(PROJECT_ROOT),
             "${HOME}": str(Path.home()),
             "${CONFIG_ROOT}": str(CONFIG_DST_ROOT),
             "${PYTHONPATH}": str(PROJECT_ROOT),
-            "${GITHUB_TOKEN}": os.getenv("GITHUB_TOKEN", "${GITHUB_TOKEN}"),
-            "${GOOGLE_MAPS_API_KEY}": os.getenv("GOOGLE_MAPS_API_KEY", "${GOOGLE_MAPS_API_KEY}"),
         }
 
         for key, value in replacements.items():
             content = content.replace(key, value)
+            
+        # Dynamic replacements for any ${VARIABLE} from .env / environment
+        matches = re.findall(r"\${([A-Z0-9_]+)}", content)
+        for var_name in set(matches):
+            env_val = os.getenv(var_name)
+            if env_val is not None:
+                content = content.replace(f"${{{var_name}}}", env_val)
 
         # Ensure dir exists
         dst_path.parent.mkdir(parents=True, exist_ok=True)
@@ -139,7 +144,23 @@ def main():
     print("Entering watch mode...")
     event_handler = ConfigHandler()
     observer = Observer()
+    
+    # Watch config directory
     observer.schedule(event_handler, str(CONFIG_SRC), recursive=True)
+    
+    # Also watch .env file if it exists
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        class EnvHandler(FileSystemEventHandler):
+            def on_modified(self, event):
+                if event.src_path == str(env_file):
+                    print(f"[{time.strftime('%H:%M:%S')}] .env modified, reloading and syncing all...")
+                    load_env()
+                    for tpl, dst in MAPPINGS.items():
+                        process_template(CONFIG_SRC / tpl, CONFIG_DST_ROOT / dst)
+        
+        observer.schedule(EnvHandler(), str(PROJECT_ROOT), recursive=False)
+        
     observer.start()
 
     try:
