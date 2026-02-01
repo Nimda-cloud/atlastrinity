@@ -1,0 +1,11 @@
+# Safety policy file to ignore specific vulnerabilities that are either disputed
+# or required for compatibility with specialized dependencies like espnet.
+
+security:
+  ignore-vulnerabilities:
+    72086:
+      reason: 'Disputed vulnerability in Gradio. Supplier states it is not a realistic attack vector (user attacking themselves).'
+      expires: '2027-01-01 00:00:00'
+    76752:
+      reason: 'Setuptools path traversal vulnerability. Version is capped to <74.0.0 by espnet (TTS engine).'
+      expires: '2027-01-01 00:00:00'
