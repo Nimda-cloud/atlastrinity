@@ -1247,38 +1247,70 @@ class Grisha(BaseAgent):
         """Determines if a single command is relevant to the expected result."""
         cmd_lower = cmd.lower()
         
-        # Grid Mode / Network Mode
-        if "bridged" in expected_lower or "network mode" in expected_lower:
-            if any(kw in cmd_lower for kw in ["showvminfo", "getextradata", "modifyvm"]):
-                return True, f"Command '{cmd}' is relevant for network configuration"
-            if "list vms" in cmd_lower:
-                return True, f"Command '{cmd}' is relevant as initial step for VM verification"
-
-        # IP/Network
-        if "ip" in expected_lower or "network" in expected_lower:
-            if any(kw in cmd_lower for kw in ["ip a", "ifconfig", "ping", "netstat", "nmap"]):
-                return True, f"Command '{cmd}' is relevant for network verification"
-
-        # VirtualBox VM management
-        if "vm" in expected_lower and "virtualbox" in step_lower:
-            if any(kw in cmd_lower for kw in ["showvminfo", "list", "getextradata"]):
-                return True, f"Command '{cmd}' is relevant for VM management"
+        # Network-related checks
+        if self._is_network_related(expected_lower, step_lower):
+            return self._check_network_relevance(cmd_lower, cmd)
         
-        # Search / Find / File Operations
-        if any(kw in step_lower for kw in ["search", "find", "locate", "read", "check"]):
-            if any(kw in cmd_lower for kw in ["grep", "find", "ls", "cat", "read", "list"]):
-                return True, f"Command '{cmd}' is relevant for data discovery/analysis"
-
-        # Web / API
-        if any(kw in expected_lower for kw in ["url", "api", "web", "http"]):
-            if any(kw in cmd_lower for kw in ["curl", "wget", "fetch", "http"]):
-                return True, f"Command '{cmd}' is relevant for web/API interaction"
-                
-        # Repository / Project structure
-        if "project" in expected_lower or "structure" in expected_lower or "file" in expected_lower:
-            if any(kw in cmd_lower for kw in ["ls", "find", "tree", "git status"]):
-                return True, f"Command '{cmd}' is relevant for project inspection"
-
+        # Search/file operations
+        if self._is_search_related(step_lower):
+            return self._check_search_relevance(cmd_lower, cmd)
+        
+        # Web/API operations
+        if self._is_web_related(expected_lower):
+            return self._check_web_relevance(cmd_lower, cmd)
+        
+        # Project structure
+        if self._is_project_related(expected_lower):
+            return self._check_project_relevance(cmd_lower, cmd)
+        
+        return False, ""
+    
+    def _is_network_related(self, expected_lower: str, step_lower: str) -> bool:
+        """Check if context is network-related."""
+        network_keywords = ["bridged", "network mode", "ip", "network", "vm"]
+        return any(kw in expected_lower or kw in step_lower for kw in network_keywords)
+    
+    def _is_search_related(self, step_lower: str) -> bool:
+        """Check if context is search-related."""
+        search_keywords = ["search", "find", "locate", "read", "check"]
+        return any(kw in step_lower for kw in search_keywords)
+    
+    def _is_web_related(self, expected_lower: str) -> bool:
+        """Check if context is web-related."""
+        web_keywords = ["url", "api", "web", "http"]
+        return any(kw in expected_lower for kw in web_keywords)
+    
+    def _is_project_related(self, expected_lower: str) -> bool:
+        """Check if context is project-related."""
+        project_keywords = ["project", "structure", "file"]
+        return any(kw in expected_lower for kw in project_keywords)
+    
+    def _check_network_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
+        """Check network command relevance."""
+        network_cmds = ["showvminfo", "getextradata", "modifyvm", "ip a", "ifconfig", "ping", "netstat", "nmap", "list vms"]
+        if any(kw in cmd_lower for kw in network_cmds):
+            return True, f"Command '{cmd}' is relevant for network configuration"
+        return False, ""
+    
+    def _check_search_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
+        """Check search command relevance."""
+        search_cmds = ["grep", "find", "ls", "cat", "read", "list"]
+        if any(kw in cmd_lower for kw in search_cmds):
+            return True, f"Command '{cmd}' is relevant for data discovery/analysis"
+        return False, ""
+    
+    def _check_web_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
+        """Check web command relevance."""
+        web_cmds = ["curl", "wget", "fetch", "http"]
+        if any(kw in cmd_lower for kw in web_cmds):
+            return True, f"Command '{cmd}' is relevant for web/API interaction"
+        return False, ""
+    
+    def _check_project_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
+        """Check project command relevance."""
+        project_cmds = ["ls", "find", "tree", "git status"]
+        if any(kw in cmd_lower for kw in project_cmds):
+            return True, f"Command '{cmd}' is relevant for project inspection"
         return False, ""
 
     def _detect_repetitive_thinking(self, analysis_text: str) -> bool:

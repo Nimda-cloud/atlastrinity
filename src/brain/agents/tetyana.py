@@ -1142,40 +1142,60 @@ IMPORTANT:
 
     def _normalize_tool_result(self, result: Any, tool_name: str) -> dict[str, Any]:
         """Normalize various MCP result formats into a standard success/error structure."""
-        if hasattr(result, "model_dump"):
-            result = result.model_dump()
-        elif hasattr(result, "dict"):
-            result = result.dict()
-        elif not isinstance(result, dict):
-            result = {"content": [{"type": "text", "text": str(result)}], "isError": False}
-
+        # Convert to dict format
+        result = self._convert_to_dict(result)
+        
         if not isinstance(result, dict):
             return {"success": False, "error": "Invalid result type"}
 
-        # Ensure 'success' key is present, defaulting to False if not explicitly True
-        if "success" not in result:
-            result["success"] = not result.get("isError", False)
-
+        # Ensure success field
+        result["success"] = not result.get("isError", False)
+        
+        # Handle errors
         if not result.get("success"):
             self._log_dispatcher_errors(result, tool_name)
-            if "error" not in result:
-                content_text = ""
-                if "content" in result and isinstance(result["content"], list):
-                    for item in result["content"]:
-                        if isinstance(item, dict) and item.get("type") == "text":
-                            content_text += item.get("text", "")
-                result["error"] = content_text or "Unknown tool execution error"
-
-        # Map 'content' to 'output' for compatibility with StepResult and verification logic
-        if "content" in result and isinstance(result["content"], list):
-            output_text = ""
-            for item in result["content"]:
-                if isinstance(item, dict) and item.get("type") == "text":
-                    output_text += item.get("text", "")
-            if output_text and not result.get("output"):
+            result = self._extract_error_message(result)
+        
+        # Map content to output
+        result = self._map_content_to_output(result)
+        
+        return result
+    
+    def _convert_to_dict(self, result: Any) -> Any:
+        """Convert various result types to dict."""
+        if hasattr(result, "model_dump"):
+            return result.model_dump()
+        elif hasattr(result, "dict"):
+            return result.dict()
+        elif not isinstance(result, dict):
+            return {"content": [{"type": "text", "text": str(result)}], "isError": False}
+        return result
+    
+    def _extract_error_message(self, result: dict[str, Any]) -> dict[str, Any]:
+        """Extract error message from result content."""
+        if "error" not in result:
+            content_text = self._extract_content_text(result.get("content", []))
+            result["error"] = content_text or "Unknown tool execution error"
+        return result
+    
+    def _extract_content_text(self, content: Any) -> str:
+        """Extract text from content array."""
+        if not isinstance(content, list):
+            return ""
+        
+        text_parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                text_parts.append(item.get("text", ""))
+        return "".join(text_parts)
+    
+    def _map_content_to_output(self, result: dict[str, Any]) -> dict[str, Any]:
+        """Map content field to output for compatibility."""
+        if "content" in result and isinstance(result["content"], list) and not result.get("output"):
+            output_text = self._extract_content_text(result["content"])
+            if output_text:
                 result["output"] = output_text
-
-        return cast(dict[str, Any], result)
+        return result
 
     def _log_dispatcher_errors(self, result: dict[str, Any], tool_name: str) -> None:
         """Log specific error types from the dispatcher."""

@@ -11,29 +11,20 @@ class BaseAgent:
     """Base class for Trinity agents with shared utilities."""
 
     def _parse_response(self, content: str) -> dict[str, Any]:
-        """Parse JSON response from LLM with extreme resilience and fuzzy fallback.
-
-        Handles:
-        1. Clean JSON responses
-        2. JSON embedded in markdown blocks (```json ... ```)
-        3. JSON with technical preambles or thought traces
-        4. Malformed JSON with trailing characters
-        5. Fuzzy YAML-like parsing
-        6. Raw text fallback
-        """
+        """Parse JSON response from LLM with resilience."""
         text = str(content).strip()
         
-        # 1. Try markdown block extraction first (highest reliability)
+        # Try markdown JSON extraction
         if "```json" in text:
             blocks = text.split("```json")
             for block in blocks[1:]:
-                inner = block.split("```")[0].strip()
+                inner = block.split("`")[0].strip()
                 try:
                     return cast(dict[str, Any], json.loads(inner))
                 except json.JSONDecodeError:
                     continue
         
-        # 2. Try generic code block extraction
+        # Try generic code block extraction
         if "```" in text:
             blocks = text.split("```")
             for block in blocks[1:]:
@@ -42,55 +33,49 @@ class BaseAgent:
                     try:
                         return cast(dict[str, Any], json.loads(inner))
                     except json.JSONDecodeError:
-                        # Continue to find { } in the block naturally
                         pass
 
-        # 3. Natural { } extraction (recursive-friendly)
+        # Try natural JSON extraction
         try:
             start = text.find("{")
             end = text.rfind("}") + 1
             if start >= 0 and end > start:
                 candidate = text[start:end]
-                try:
-                    return cast(dict[str, Any], json.loads(candidate))
-                except json.JSONDecodeError:
-                    # Try to fix trailing characters (common in babbling)
-                    if candidate.count("{") == candidate.count("}"):
-                        pass # JSON error is structural
-                    elif candidate.count("{") > candidate.count("}"):
-                        # Try adding missing braces (dangerous but sometimes works)
-                        pass
-        except Exception:
+                return cast(dict[str, Any], json.loads(candidate))
+        except (json.JSONDecodeError, Exception):
             pass
 
-        # 4. Fuzzy YAML-like parsing (handles LLM responses like "verified: true\nconfidence: 0.9")
+        # Fuzzy YAML parsing
         try:
-            data: dict[str, Any] = {}
-            for line in text.strip().split("\n"):
-                if ":" in line:
-                    key, value = line.split(":", 1)
-                    key = key.strip().lower()
-                    value = value.strip()
-
-                    # Handle boolean values
-                    if value.lower() == "true":
-                        data[key] = True
-                    elif value.lower() == "false":
-                        data[key] = False
-                    # Handle numeric values
-                    elif value.replace(".", "", 1).isdigit():
-                        data[key] = float(value)
-                    else:
-                        data[key] = value
-
-            # Consider it valid fuzzy parse if we found key fields
-            if "verified" in data or "intent" in data or "success" in data or "steps" in data:
-                return data
+            return self._parse_fuzzy_yaml(text)
         except Exception:
             pass
 
-        # 5. Return raw content as fallback
         return {"raw": text}
+
+    def _parse_fuzzy_yaml(self, text: str) -> dict[str, Any]:
+        """Parse YAML-like key: value pairs."""
+        data: dict[str, Any] = {}
+        for line in text.strip().split("\n"):
+            if ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip().lower()
+                value = value.strip()
+                
+                # Type conversion
+                if value.lower() == "true":
+                    data[key] = True
+                elif value.lower() == "false":
+                    data[key] = False
+                elif value.replace(".", "", 1).isdigit():
+                    data[key] = float(value)
+                else:
+                    data[key] = value
+        
+        # Valid if has expected fields
+        if any(field in data for field in ["verified", "intent", "success", "steps"]):
+            return data
+        raise ValueError("No valid fields found")
 
     async def use_sequential_thinking(
         self,
