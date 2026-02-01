@@ -7,7 +7,6 @@ export default defineConfig({
     base: './',
     root: 'src/renderer',
     envDir: '../../',
-    envDir: '../../',
     build: {
         outDir: '../../dist/renderer',
         emptyOutDir: true,

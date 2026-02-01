@@ -1401,7 +1401,7 @@ def ensure_frontend_config():
         with open(vite_config, "r", encoding="utf-8") as f:
             content = f.read()
         
-        if 'envDir: "../../"' not in content:
+        if not re.search(r"envDir:\s*['\"](\.\./){2}['\"]", content):
             print_warning("Vite не налаштований на завантаження .env з кореня. Виправлення...")
             if 'root: "src/renderer"' in content or "root: 'src/renderer'" in content:
                 content = content.replace("root: 'src/renderer',", "root: 'src/renderer',\n    envDir: '../../',")
