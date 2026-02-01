@@ -102,6 +102,9 @@ mcp:
     # Model configuration for this tool is handled by agents definition
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
+  googlemaps:
+    enabled: true
+
   vibe:
     enabled: true
     # Configuration is in vibe_config.toml

@@ -52,6 +52,22 @@
         "grisha"
       ]
     },
+    "googlemaps": {
+      "command": "${PROJECT_ROOT}/vendor/mcp-server-googlemaps/.build/release/mcp-server-googlemaps",
+      "connect_timeout": 60,
+      "description": "Google Maps (9 tools): geocode, reverse_geocode, search_places, place_details, directions, distance_matrix, street_view, static_map, elevation. Includes Cyberpunk image filter.",
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
+      },
+      "disabled": false,
+      "tier": 2,
+      "agents": [
+        "atlas",
+        "tetyana",
+        "grisha"
+      ],
+      "note": "Compiled Swift binary. Requires GOOGLE_MAPS_API_KEY in .env. Street View and Static Maps apply Cyberpunk color filter by default."
+    },
     "_comment_tier2": "=== TIER 2: HIGH PRIORITY (Рекомендовані) ===",
     "xcodebuild": {
       "command": "node",

@@ -29,7 +29,7 @@ python3 scripts/setup_dev.py
 ### Що робить Setup:
 
 - ✅ **Environment**: Перевіряє версію Python (3.12.12), наявність Swift, Bun, Redis та Vibe CLI.
-- ✅ **FORCED Native Build**: Автоматично **перекомпілює** Swift MCP сервер (`macos-use`) для гарантованої роботи останніх функцій.
+- ✅ **FORCED Native Build**: Автоматично **перекомпілює** Swift MCP сервери (`macos-use`, `googlemaps`) для гарантованої роботи останніх функцій.
 - ✅ **Dependencies**: Встановлює Python venv та всі NPM пакети (включаючи 8 основних MCP серверів).
 - ✅ **Models**: Завантажує TTS (український голос) та STT (Faster-Whisper large-v3) моделі (~3GB).
 - ✅ **FORCED Sync**: Повна синхронізація конфігурацій з примусовим перезаписом `~/.config/atlastrinity/` з актуальних темплейтів.
@@ -55,7 +55,7 @@ AtlasTrinity використовує архітектуру **Global First** д
 
 Система використовує **13 високооптимізованих** серверів для повного контролю над macOS:
 
-- **Core**: `macos-use` (**39 інструментів**: GUI, Vision/OCR, Terminal, Apps), `filesystem`, `sequential-thinking`, `system`.
+- **Core**: `macos-use` (**39 інструментів**: GUI, Vision/OCR, Terminal, Apps), `googlemaps` (**9 інструментів**: Cyberpunk Maps, Traffic, Directions), `filesystem`, `sequential-thinking`, `system`.
 - **AI & Data**: `vibe` (**12 інструментів**: AI Coding, Self-Healing, Debugging), `memory` (Golden Fund), `graph` (Visualization), `redis`.
 - **Search & Productivity**: `puppeteer` (Headless Browser), `duckduckgo-search`, `github`, `whisper-stt`, `chrome-devtools`.
 
@@ -96,7 +96,7 @@ npm run mcp:status
 
 **Результати:**
 
-- ✅ Можливості: **80+ активних інструментів**
+- ✅ Можливості: **90+ активних інструментів**
 - ✅ Затримка з'єднання: **< 100ms**
 - ✅ Тайм-аути: **3600s** (1 година) для стійких операцій
 
