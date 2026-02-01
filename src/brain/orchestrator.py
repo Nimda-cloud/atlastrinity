@@ -844,7 +844,7 @@ class Trinity:
 
     async def _planning_loop(self, analysis, user_request, is_subtask, history):
         """Handle the planning and verification loop."""
-        max_retries = 1
+        max_retries = 2
         plan = None
 
         async def keep_alive_logging():

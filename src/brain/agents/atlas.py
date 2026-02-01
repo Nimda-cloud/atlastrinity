@@ -1185,11 +1185,12 @@ TASK: Regenerate the steps with these issues FIXED.
 Output the corrected plan in the same JSON format as before.
 """
             try:
+                # Use Reasoning model for the fix to ensure it actually solves the issues
                 fix_messages = [
                     SystemMessage(content=dynamic_system_prompt),
                     HumanMessage(content=fix_prompt),
                 ]
-                fix_response = await self.llm.ainvoke(fix_messages)
+                fix_response = await self.llm_deep.ainvoke(fix_messages)
                 fixed_plan_data = self._parse_response(cast("str", fix_response.content))
                 fixed_steps = fixed_plan_data.get("steps", [])
 
@@ -1220,13 +1221,14 @@ Output the corrected plan in the same JSON format as before.
             task_text, memory_context, grisha_feedback, failed_plan_text
         )
 
-        # 3. Plan Formulation
+        # 3. Plan Formulation (Architectural Upgrade: Use Deep reasoning for the final structure)
         intent = enriched_request.get("intent", "task")
         messages, dynamic_sys_prompt = await self._construct_plan_prompt(
             task_text, simulation_result, intent
         )
 
-        response = await self.llm.ainvoke(messages)
+        # Use deep model for the actual JSON formulation to ensure structural integrity
+        response = await self.llm_deep.ainvoke(messages)
         plan_data = self._parse_response(cast("str", response.content))
         steps = plan_data.get("steps", [])
 

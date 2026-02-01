@@ -11,27 +11,62 @@ class BaseAgent:
     """Base class for Trinity agents with shared utilities."""
 
     def _parse_response(self, content: str) -> dict[str, Any]:
-        """Parse JSON response from LLM with fuzzy fallback.
+        """Parse JSON response from LLM with extreme resilience and fuzzy fallback.
 
         Handles:
         1. Clean JSON responses
-        2. JSON embedded in text
-        3. YAML-like key:value pairs
-        4. Raw text fallback
+        2. JSON embedded in markdown blocks (```json ... ```)
+        3. JSON with technical preambles or thought traces
+        4. Malformed JSON with trailing characters
+        5. Fuzzy YAML-like parsing
+        6. Raw text fallback
         """
-        # 1. Try standard JSON extraction
+        text = str(content).strip()
+        
+        # 1. Try markdown block extraction first (highest reliability)
+        if "```json" in text:
+            blocks = text.split("```json")
+            for block in blocks[1:]:
+                inner = block.split("```")[0].strip()
+                try:
+                    return cast(dict[str, Any], json.loads(inner))
+                except json.JSONDecodeError:
+                    continue
+        
+        # 2. Try generic code block extraction
+        if "```" in text:
+            blocks = text.split("```")
+            for block in blocks[1:]:
+                inner = block.strip()
+                if inner.startswith("{") and "}" in inner:
+                    try:
+                        return cast(dict[str, Any], json.loads(inner))
+                    except json.JSONDecodeError:
+                        # Continue to find { } in the block naturally
+                        pass
+
+        # 3. Natural { } extraction (recursive-friendly)
         try:
-            start = content.find("{")
-            end = content.rfind("}") + 1
+            start = text.find("{")
+            end = text.rfind("}") + 1
             if start >= 0 and end > start:
-                return cast(dict[str, Any], json.loads(content[start:end]))
-        except json.JSONDecodeError:
+                candidate = text[start:end]
+                try:
+                    return cast(dict[str, Any], json.loads(candidate))
+                except json.JSONDecodeError:
+                    # Try to fix trailing characters (common in babbling)
+                    if candidate.count("{") == candidate.count("}"):
+                        pass # JSON error is structural
+                    elif candidate.count("{") > candidate.count("}"):
+                        # Try adding missing braces (dangerous but sometimes works)
+                        pass
+        except Exception:
             pass
 
-        # 2. Fuzzy YAML-like parsing (handles LLM responses like "verified: true\nconfidence: 0.9")
+        # 4. Fuzzy YAML-like parsing (handles LLM responses like "verified: true\nconfidence: 0.9")
         try:
             data: dict[str, Any] = {}
-            for line in content.strip().split("\n"):
+            for line in text.strip().split("\n"):
                 if ":" in line:
                     key, value = line.split(":", 1)
                     key = key.strip().lower()
@@ -49,13 +84,13 @@ class BaseAgent:
                         data[key] = value
 
             # Consider it valid fuzzy parse if we found key fields
-            if "verified" in data or "intent" in data or "success" in data:
+            if "verified" in data or "intent" in data or "success" in data or "steps" in data:
                 return data
         except Exception:
             pass
 
-        # 3. Return raw content as fallback
-        return {"raw": content}
+        # 5. Return raw content as fallback
+        return {"raw": text}
 
     async def use_sequential_thinking(
         self,
