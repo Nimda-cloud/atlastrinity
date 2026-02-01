@@ -62,7 +62,7 @@ Provide response:
 - **VERDICT**: CONFIRMED or FAILED
 - **CONFIDENCE**: 0.0-1.0
 - **REASONING**: (Analysis in English. Explain why this ATOMIC step is considered done or not.)
-- **ISSUES**: (List of issues ONLY FOR THIS STEP)"""
+- **ISSUES**: (List ONLY actual, currently present technical flaws or missing evidence. DO NOT list hypothetical concerns, general best practices, or future risks here. If the step succeeded but you have recommendations, put them in REASONING, not ISSUES. If there are NO actual flaws, respond with 'None'.)"""
 
 GRISHA_DEEP_VALIDATION_REASONING = """DEEP MULTI-LAYER VALIDATION ANALYSIS
         
