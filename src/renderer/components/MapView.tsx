@@ -155,11 +155,35 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
               mapElement.innerMap.setOptions({
                 styles: CYBERPUNK_MAP_STYLE,
                 disableDefaultUI: true,
-                zoomControl: true,
+                zoomControl: false,
                 mapTypeControl: false,
                 streetViewControl: false,
                 fullscreenControl: false,
               });
+
+              // Inject styles into shadow DOM to darken the copyright bar
+              if (mapElement.shadowRoot) {
+                const style = document.createElement('style');
+                style.textContent = `
+                  .gm-style-cc { 
+                    filter: invert(1) hue-rotate(180deg) brightness(1.2) contrast(1.2);
+                    opacity: 0.8;
+                    mix-blend-mode: screen;
+                  }
+                  .gm-style-cc span, .gm-style-cc a {
+                    color: #00e5ff !important; 
+                  }
+                  /* Invert the background strip but keep text readable */
+                  .gmnoprint a, .gmnoprint span {
+                    color: #00e5ff !important;
+                  }
+                  /* Target the google logo if possible, generic filter */
+                  a[href^="https://maps.google.com/maps"] img {
+                    filter: invert(1) grayscale(1) brightness(2) drop-shadow(0 0 2px #00e5ff);
+                  }
+                `;
+                mapElement.shadowRoot.appendChild(style);
+              }
               setMapInitialized(true);
             }
           }, 100);
@@ -214,6 +238,15 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
       return () => placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
     }
   }, [type, mapInitialized, handlePlaceChange]);
+
+  const handleZoom = (delta: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapElement = document.querySelector('gmp-map') as any;
+    if (mapElement && mapElement.innerMap) {
+      const currentZoom = mapElement.innerMap.getZoom();
+      mapElement.innerMap.setZoom(currentZoom + delta);
+    }
+  };
 
   // Create API loader element with correct key attribute
   const renderApiLoader = () => {
@@ -289,6 +322,22 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
                 <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
               </div>
             )}
+
+            {/* Custom Zoom Controls */}
+            <div className="map-zoom-controls">
+              <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <div className="zoom-separator"></div>
+              <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
           </div>
         ) : !error && imageUrl ? (
           <div className={`map-image-wrapper ${isLoaded ? 'loaded' : ''}`}>
@@ -600,6 +649,48 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
 
         gmp-map {
           filter: contrast(1.05) brightness(0.95) saturate(1.1);
+        }
+
+        .map-zoom-controls {
+          position: absolute;
+          bottom: 40px;
+          right: 20px;
+          display: flex;
+          flex-direction: column;
+          background: rgba(0, 10, 20, 0.9);
+          border: 1px solid #00a3ff;
+          border-radius: 2px;
+          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+          z-index: 10;
+        }
+
+        .zoom-btn {
+          width: 32px;
+          height: 32px;
+          background: transparent;
+          border: none;
+          color: #00e5ff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .zoom-btn:hover {
+          background: rgba(0, 163, 255, 0.2);
+          color: #fff;
+          text-shadow: 0 0 8px #00e5ff;
+        }
+
+        .zoom-btn:active {
+          transform: scale(0.95);
+        }
+
+        .zoom-separator {
+          height: 1px;
+          background: rgba(0, 163, 255, 0.3);
+          width: 100%;
         }
       `}</style>
     </div>
