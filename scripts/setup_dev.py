@@ -882,6 +882,7 @@ def install_deps():
             capture_output=True,
         )
         # Install espnet and ukrainian-tts separately with no-build-isolation
+        # We use a more recent version (202509) to avoid protobuf/importlib-metadata conflicts
         run_venv_cmd(
             [
                 "-m",
@@ -889,16 +890,17 @@ def install_deps():
                 "install",
                 "--no-build-isolation",
                 "--no-deps",
-                "espnet==202301",
+                "espnet==202509",
             ],
             check=True,
         )
-        # Install ukrainian-tts from git (works with espnet 202301)
+        # Install ukrainian-tts from git with --no-deps to avoid pulling in conflicting old versions of espnet/scipy
         run_venv_cmd(
             [
                 "-m",
                 "pip",
                 "install",
+                "--no-deps",
                 "git+https://github.com/robinhad/ukrainian-tts.git",
             ],
             check=True,
@@ -1253,6 +1255,7 @@ def backup_databases():
     # Definitive mappings for full system backup
     backups = [
         (CONFIG_ROOT / "atlastrinity.db", backup_dir / "atlastrinity.db"),
+        (CONFIG_ROOT / "data" / "monitoring.db", backup_dir / "monitoring.db"),
         (CONFIG_ROOT / "data" / "golden_fund", backup_dir / "golden_fund"),
         (CONFIG_ROOT / "memory" / "chroma", backup_dir / "memory" / "chroma"),
     ]
