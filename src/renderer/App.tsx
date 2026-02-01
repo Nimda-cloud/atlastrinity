@@ -68,7 +68,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'NEURAL' | 'MAP'>('NEURAL');
   const [mapData, setMapData] = useState<{
     url?: string;
-    type: 'STREET' | 'STATIC';
+    type: 'STREET' | 'STATIC' | 'INTERACTIVE';
     location?: string;
   }>({ type: 'STATIC' });
 
@@ -160,6 +160,16 @@ const App: React.FC = () => {
         });
         setViewMode('MAP');
       }
+    }
+
+    // Auto-detect interactive map signal
+    if (message.includes('🌐 INTERACTIVE_MAP_OPEN:')) {
+      const query = message.replace('🌐 INTERACTIVE_MAP_OPEN:', '').trim();
+      setMapData({
+        type: 'INTERACTIVE',
+        location: query || 'SEARCH_MODE_ACTIVE',
+      });
+      setViewMode('MAP');
     }
   };
 
