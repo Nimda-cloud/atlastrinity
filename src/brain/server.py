@@ -29,12 +29,14 @@ if github_token:
     print("[Server] ✓ GITHUB_TOKEN loaded from global context")
 
 import asyncio
+from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .logger import logger
+from .mcp_manager import mcp_manager
 from .orchestrator import Trinity
 from .production_setup import run_production_setup
 from .voice.stt import SpeechType, WhisperSTT
@@ -596,6 +598,233 @@ async def transcribe_audio(file_path: str):
     """Transcribe a wav file"""
     result = await trinity.stt.transcribe_file(file_path)
     return {"text": result.text, "confidence": result.confidence}
+
+
+# =============================================================================
+# Google Maps API Endpoints
+# =============================================================================
+
+from .map_state import map_state_manager
+
+
+@app.post("/api/maps/search")
+async def maps_search(payload: dict[str, Any]):
+    """
+    Search for places using Google Maps MCP
+    Payload: {query: str, location?: str, radius?: int}
+    """
+    try:
+        query = payload.get("query")
+        location = payload.get("location")
+        radius = payload.get("radius", 1000)
+
+        if not query:
+            raise HTTPException(status_code=400, detail="query is required")
+
+        # Call MCP googlemaps tool
+        result = await mcp_manager.call_tool(
+            "googlemaps",
+            "maps_search_places",
+            {"query": query, "location": location, "radius": radius},
+        )
+
+        # Parse result and add markers
+        map_state_manager.clear_markers()
+
+        if isinstance(result, dict) and "places" in result:
+            places = result["places"]
+            for place in places[:20]:  # Limit to 20 markers
+                position = place.get("location", {})
+                if "lat" in position and "lng" in position:
+                    marker_type = _categorize_place(place.get("types", []))
+                    map_state_manager.add_marker(
+                        position=position,
+                        title=place.get("name", "Unknown"),
+                        marker_type=marker_type,
+                        data=place,
+                    )
+
+            # Center on first result
+            if places and "location" in places[0]:
+                loc = places[0]["location"]
+                map_state_manager.set_center(loc["lat"], loc["lng"], 14)
+
+        return {"status": "success", "data": result, "map_state": map_state_manager.to_dict()}
+
+    except Exception as e:
+        logger.exception(f"Maps search error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/maps/directions")
+async def maps_directions(payload: dict[str, Any]):
+    """
+    Get directions between two points
+    Payload: {origin: str, destination: str, mode?: str}
+    """
+    try:
+        origin = payload.get("origin")
+        destination = payload.get("destination")
+        mode = payload.get("mode", "driving")
+
+        if not origin or not destination:
+            raise HTTPException(status_code=400, detail="origin and destination are required")
+
+        # Call MCP googlemaps tool
+        result = await mcp_manager.call_tool(
+            "googlemaps",
+            "maps_directions",
+            {"origin": origin, "destination": destination, "mode": mode},
+        )
+
+        # Parse result and add route
+        map_state_manager.clear_routes()
+
+        if isinstance(result, dict) and "routes" in result:
+            routes = result["routes"]
+            if routes:
+                route_data = routes[0]
+                legs = route_data.get("legs", [])
+                if legs:
+                    leg = legs[0]
+                    map_state_manager.add_route(
+                        origin=leg.get("start_location", {}),
+                        destination=leg.get("end_location", {}),
+                        polyline=route_data.get("overview_polyline", {}).get("points", ""),
+                        distance=leg.get("distance", {}).get("text", "Unknown"),
+                        duration=leg.get("duration", {}).get("text", "Unknown"),
+                        steps=leg.get("steps", []),
+                        mode=mode,
+                    )
+
+                    # Add origin/destination markers
+                    start_loc = leg.get("start_location", {})
+                    end_loc = leg.get("end_location", {})
+                    if start_loc.get("lat") and start_loc.get("lng"):
+                        map_state_manager.add_marker(
+                            position=start_loc,
+                            title=origin,
+                            marker_type="origin",
+                            color="#00ff00",
+                        )
+                    if end_loc.get("lat") and end_loc.get("lng"):
+                        map_state_manager.add_marker(
+                            position=end_loc,
+                            title=destination,
+                            marker_type="destination",
+                            color="#ff0000",
+                        )
+
+                    # Center on route
+                    if start_loc.get("lat") and start_loc.get("lng"):
+                        map_state_manager.set_center(start_loc["lat"], start_loc["lng"], 13)
+
+        return {"status": "success", "data": result, "map_state": map_state_manager.to_dict()}
+
+    except Exception as e:
+        logger.exception(f"Maps directions error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/maps/place-details")
+async def maps_place_details(payload: dict[str, Any]):
+    """
+    Get detailed information about a place
+    Payload: {place_id: str}
+    """
+    try:
+        place_id = payload.get("place_id")
+        if not place_id:
+            raise HTTPException(status_code=400, detail="place_id is required")
+
+        result = await mcp_manager.call_tool(
+            "googlemaps", "maps_place_details", {"place_id": place_id}
+        )
+
+        # Set as active place
+        if isinstance(result, dict):
+            map_state_manager.set_active_place(result)
+
+        return {"status": "success", "data": result}
+
+    except Exception as e:
+        logger.exception(f"Maps place details error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/maps/street-view")
+async def maps_street_view(payload: dict[str, Any]):
+    """
+    Get Street View image
+    Payload: {location: str, heading?: int, pitch?: int, fov?: int, cyberpunk?: bool}
+    """
+    try:
+        location = payload.get("location")
+        if not location:
+            raise HTTPException(status_code=400, detail="location is required")
+
+        heading = payload.get("heading", 0)
+        pitch = payload.get("pitch", 0)
+        fov = payload.get("fov", 90)
+        cyberpunk = payload.get("cyberpunk", True)
+
+        result = await mcp_manager.call_tool(
+            "googlemaps",
+            "maps_street_view",
+            {
+                "location": location,
+                "heading": heading,
+                "pitch": pitch,
+                "fov": fov,
+                "cyberpunk": cyberpunk,
+            },
+        )
+
+        return {"status": "success", "data": result}
+
+    except Exception as e:
+        logger.exception(f"Maps street view error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/maps/state")
+async def get_map_state():
+    """Get current map state (markers, routes, center, etc.)"""
+    try:
+        return {"status": "success", "data": map_state_manager.to_dict()}
+    except Exception as e:
+        logger.exception(f"Maps state error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/maps/clear")
+async def clear_map():
+    """Clear all markers and routes"""
+    try:
+        map_state_manager.clear_all()
+        return {"status": "success", "message": "Map cleared"}
+    except Exception as e:
+        logger.exception(f"Maps clear error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _categorize_place(types: list[str]) -> str:
+    """Categorize a place based on Google Maps types"""
+    if not types:
+        return "custom"
+
+    # Priority-based categorization
+    if any(t in types for t in ["restaurant", "cafe", "bar", "food"]):
+        return "restaurant"
+    elif any(t in types for t in ["lodging", "hotel"]):
+        return "hotel"
+    elif any(
+        t in types
+        for t in ["tourist_attraction", "museum", "park", "point_of_interest", "landmark"]
+    ):
+        return "attraction"
+    else:
+        return "custom"
 
 
 # MCP Wrapper
