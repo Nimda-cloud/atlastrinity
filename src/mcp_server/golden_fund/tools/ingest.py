@@ -83,36 +83,89 @@ async def ingest_dataset(
     if not save_res.success:
         return f"Failed to save raw data: {save_res.error}"
 
-    summary = f"Ingestion {run_id} successful. Raw data: {raw_file.name}."
+    summary_parts = [f"Ingestion {run_id} successful.", f"Raw data: {raw_file.name}."]
     parsed_df = None
 
     if "parse" in process_pipeline:
-        parse_res = _parse_raw_data(raw_file, ext, type, parser)
-        if parse_res.success:
-            data = parse_res.data
-            if isinstance(data, pd.DataFrame):
-                parsed_df = data
-            elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-                parsed_df = pd.DataFrame(data)
-            elif isinstance(data, dict):
-                parsed_df = pd.DataFrame([data])
-            summary += f" Parsed {len(parsed_df) if parsed_df is not None else 0} records."
-        else:
-            summary += f" Parsing failed: {parse_res.error}"
+        parsed_df, parse_msg = _perform_parsing(raw_file, ext, type, parser)
+        summary_parts.append(parse_msg)
 
     if "store_sql" in process_pipeline and parsed_df is not None:
-        store_res = sql_storage.store_dataset(parsed_df, f"dataset_{run_id}", source_url=url)
-        summary += f" Stored in SQL table '{store_res.target}'." if store_res.success else f" SQL Storage failed: {store_res.error}"
+        sql_msg = _perform_sql_storage(parsed_df, run_id, url, sql_storage)
+        summary_parts.append(sql_msg)
 
     if "vectorize" in process_pipeline and parsed_df is not None:
-        desc = f"Dataset from {url} ({type}). Columns: {', '.join(parsed_df.columns[:10])}. Rows: {len(parsed_df)}."
-        vector_data = {"name": f"dataset_{run_id}", "type": "dataset", "content": desc, "source_url": url, "format": ext, "sql_table": f"dataset_{run_id}"}
-        vec_res = vector_storage.store(vector_data)
-        summary += " Indexed for semantic search." if vec_res.success else f" Vector indexing failed: {vec_res.error}"
+        vec_msg = _perform_vector_storage(parsed_df, run_id, url, ext, vector_storage)
+        summary_parts.append(vec_msg)
 
     if "validate" in process_pipeline and parsed_df is not None:
-        val_data = [{str(k): v for k, v in record.items()} for record in parsed_df.to_dict(orient="records")]
-        validation_res = validator.validate_data_completeness(val_data, context=f"ingestion_{run_id}")
-        summary += " Validation passed." if validation_res.success else f" Validation warning: {validation_res.error}"
+        val_msg = _perform_validation(parsed_df, run_id, validator)
+        summary_parts.append(val_msg)
 
-    return summary
+    return " ".join(summary_parts)
+
+
+def _perform_parsing(
+    raw_file: Path, ext: str, type: str, parser: DataParser
+) -> tuple[pd.DataFrame | None, str]:
+    """Helper to parse raw data into a DataFrame."""
+    parse_res = _parse_raw_data(raw_file, ext, type, parser)
+    if not parse_res.success:
+        return None, f"Parsing failed: {parse_res.error}"
+
+    data = parse_res.data
+    df = None
+    if isinstance(data, pd.DataFrame):
+        df = data
+    elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+        df = pd.DataFrame(data)
+    elif isinstance(data, dict):
+        df = pd.DataFrame([data])
+
+    count = len(df) if df is not None else 0
+    return df, f"Parsed {count} records."
+
+
+def _perform_sql_storage(
+    df: pd.DataFrame, run_id: str, url: str, sql_storage: SQLStorage
+) -> str:
+    """Helper to store dataset in SQL database."""
+    table_name = f"dataset_{run_id}"
+    store_res = sql_storage.store_dataset(df, table_name, source_url=url)
+    if store_res.success:
+        return f"Stored in SQL table '{store_res.target}'."
+    return f"SQL Storage failed: {store_res.error}"
+
+
+def _perform_vector_storage(
+    df: pd.DataFrame, run_id: str, url: str, ext: str, vector_storage: VectorStorage
+) -> str:
+    """Helper to store dataset metadata in vector database."""
+    cols = ", ".join(df.columns[:10])
+    desc = f"Dataset from {url} ({type}). Columns: {cols}. Rows: {len(df)}."
+    table_name = f"dataset_{run_id}"
+    vector_data = {
+        "name": table_name,
+        "type": "dataset",
+        "content": desc,
+        "source_url": url,
+        "format": ext,
+        "sql_table": table_name,
+    }
+    vec_res = vector_storage.store(vector_data)
+    if vec_res.success:
+        return "Indexed for semantic search."
+    return f"Vector indexing failed: {vec_res.error}"
+
+
+def _perform_validation(df: pd.DataFrame, run_id: str, validator: DataValidator) -> str:
+    """Helper to validate ingested data completeness."""
+    val_data = [
+        {str(k): v for k, v in record.items()} for record in df.to_dict(orient="records")
+    ]
+    validation_res = validator.validate_data_completeness(
+        val_data, context=f"ingestion_{run_id}"
+    )
+    if validation_res.success:
+        return "Validation passed."
+    return f"Validation warning: {validation_res.error}"

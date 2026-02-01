@@ -91,28 +91,11 @@ async def ingest_dataset(url: str, type: str, process_pipeline: list[str] | None
 
 @mcp.tool()
 async def probe_entity(entity_id: str, depth: int = 1) -> str:
-    """
-    Probe the knowledge graph for an entity to explore relationships.
-
-    Args:
-        entity_id: ID or name of the entity to probe.
-        depth: How deep to traverse the graph relationships (1-3).
-    """
+    """Probe the knowledge graph for an entity to explore relationships."""
     logger.info(f"Probing entity: {entity_id} (depth={depth})")
 
-    # Search for the entity in vector store
-    search_result = vector_store.search(entity_id, limit=5)
-
-    if not search_result.success:
-        return json.dumps({"error": f"Entity search failed: {search_result.error}"})
-
-    results = search_result.data.get("results", []) if search_result.data else []
-
-    if not results:
-        # Try keyword search as fallback
-        keyword_result = search_store.search(entity_id)
-        if keyword_result.success and keyword_result.data:
-            results = keyword_result.data.get("results", [])
+    # Search for the entity
+    results = _find_entity_results(entity_id)
 
     if not results:
         return json.dumps(
@@ -125,6 +108,31 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
         )
 
     # Build entity profile from results
+    entity_profile = _build_entity_profile(entity_id, results, depth)
+
+    # Recursive depth exploration
+    if depth > 1 and entity_profile["related_entities"]:
+        _explore_deeper(entity_profile)
+
+    return json.dumps(entity_profile, indent=2, default=str)
+
+
+def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
+    """Helper to find entity matches using vector and keyword search."""
+    search_result = vector_store.search(entity_id, limit=5)
+    results = search_result.data.get("results", []) if search_result.success and search_result.data else []
+
+    if not results:
+        # Try keyword search as fallback
+        keyword_result = search_store.search(entity_id)
+        if keyword_result.success and keyword_result.data:
+            results = keyword_result.data.get("results", [])
+
+    return results
+
+
+def _build_entity_profile(entity_id: str, results: list[dict[str, Any]], depth: int) -> dict[str, Any]:
+    """Helper to build an entity profile from search results."""
     entity_profile: dict[str, Any] = {
         "entity_id": entity_id,
         "found": True,
@@ -134,7 +142,7 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
         "metadata": {},
     }
 
-    seen_entities = set()
+    seen_entities = {entity_id}
 
     for result in results[:10]:  # Limit to top 10
         match_info = {
@@ -143,46 +151,52 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
             "content_preview": str(result.get("content", ""))[:200],
         }
 
-        # Extract metadata
+        # Extract metadata and relationships
         meta = result.get("metadata", {})
         if meta:
             match_info["metadata"] = meta
-
-            # Extract related entities from metadata
-            for key, value in meta.items():
-                if (
-                    isinstance(value, str)
-                    and len(value) > 2
-                    and key not in ["timestamp", "source_format"]
-                ):
-                    if value not in seen_entities and value != entity_id:
-                        seen_entities.add(value)
-                        entity_profile["related_entities"].append(
-                            {
-                                "name": value,
-                                "relation": key,
-                            }
-                        )
+            _extract_relationships(entity_profile, meta, seen_entities)
 
         entity_profile["matches"].append(match_info)
+    return entity_profile
 
-    # Recursive depth exploration
-    if depth > 1 and entity_profile["related_entities"]:
-        entity_profile["deeper_exploration"] = []
-        for related in entity_profile["related_entities"][:3]:  # Limit recursion
-            sub_result = vector_store.search(related["name"], limit=2)
-            if sub_result.success and sub_result.data:
-                sub_matches = sub_result.data.get("results", [])
-                if sub_matches:
-                    entity_profile["deeper_exploration"].append(
-                        {
-                            "entity": related["name"],
-                            "relation": related["relation"],
-                            "sub_matches_count": len(sub_matches),
-                        }
-                    )
 
-    return json.dumps(entity_profile, indent=2, default=str)
+def _extract_relationships(
+    entity_profile: dict[str, Any], meta: dict[str, Any], seen_entities: set[str]
+) -> None:
+    """Extract related entities from metadata and add to profile."""
+    for key, value in meta.items():
+        if (
+            isinstance(value, str)
+            and len(value) > 2
+            and key not in ["timestamp", "source_format"]
+        ):
+            if value not in seen_entities:
+                seen_entities.add(value)
+                entity_profile["related_entities"].append(
+                    {
+                        "name": value,
+                        "relation": key,
+                    }
+                )
+
+
+def _explore_deeper(entity_profile: dict[str, Any]) -> None:
+    """Perform deeper recursive depth exploration."""
+    entity_profile["deeper_exploration"] = []
+    # Limit recursion to top 3 related entities
+    for related in entity_profile["related_entities"][:3]:
+        sub_result = vector_store.search(related["name"], limit=2)
+        if sub_result.success and sub_result.data:
+            sub_matches = sub_result.data.get("results", [])
+            if sub_matches:
+                entity_profile["deeper_exploration"].append(
+                    {
+                        "entity": related["name"],
+                        "relation": related["relation"],
+                        "sub_matches_count": len(sub_matches),
+                    }
+                )
 
 
 @mcp.tool()
