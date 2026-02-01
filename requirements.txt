@@ -19,7 +19,7 @@ tenacity>=8.2.0
 # Voice - TTS (Ukrainian specific)
 numpy>=1.26.4
 scipy==1.11.4
-espnet==202301
+espnet==202511
 # Sub-dependencies for espnet/ukrainian-tts
 torch>=1.12.0
 sentencepiece==0.2.0
