@@ -19,7 +19,8 @@ REQUIRED_SERVICES = [
     "street-view-image-backend.googleapis.com",
     "directions-backend.googleapis.com",
     "places-backend.googleapis.com",
-    "geocoding-backend.googleapis.com"
+    "geocoding-backend.googleapis.com",
+    "addressvalidation.googleapis.com" # Added for additional verification/autocomplete
 ]
 
 class Colors:
@@ -128,17 +129,57 @@ def create_project():
     print_success(f"Project {project_id} created and set as active")
     
     print_warning("IMPORTANT: You must enable Billing for this project in the Google Cloud Console.")
+    print_warning("Without billing, maps will show 'for development purposes only' watermark and be darkened.")
     print(f"URL: https://console.cloud.google.com/billing/linkedaccount?project={project_id}")
-    input("Press Enter after you have linked a billing account...")
+    input("\nPress Enter after you have linked a billing account to continue setup...")
     
     return project_id
 
+def check_billing(project_id):
+    """Перевірка прив'язки Білінгу до проекту"""
+    print_step("Checking Billing status...")
+    try:
+        result = run_command(["gcloud", "billing", "projects", "describe", project_id, "--format=json"], check=False)
+        if result.returncode == 0:
+            billing_info = json.loads(result.stdout)
+            if billing_info.get("billingEnabled"):
+                print_success(f"Billing is ENABLED for project {project_id}")
+                return True
+        
+        print_warning(f"Billing is NOT enabled for project {project_id}")
+        print_info("Without billing, maps will show 'for development purposes only' watermark.")
+        print(f"URL: https://console.cloud.google.com/billing/linkedaccount?project={project_id}")
+        choice = input("\nDo you want to continue without billing? (y/n): ").lower()
+        return choice == 'y'
+    except Exception as e:
+        print_warning(f"Could not verify billing status: {e}")
+        return True # Continue anyway
+
 def enable_apis(project_id):
-    print_step("Enabling required Google Maps APIs...")
+    print_step("Verifying & Enabling required Google Maps APIs...")
+    
+    # Get currently enabled services to avoid redundant calls
+    enabled_result = run_command(["gcloud", "services", "list", "--enabled", "--project", project_id, "--format=json"])
+    enabled_names = [s['config']['name'] for s in json.loads(enabled_result.stdout)]
+    
     for service in REQUIRED_SERVICES:
-        print(f"  Enabling {service}...")
-        run_command(["gcloud", "services", "enable", service, "--project", project_id])
+        if service in enabled_names:
+            print_success(f"Service {service} is already enabled")
+        else:
+            print(f"  Enabling {service}...")
+            run_command(["gcloud", "services", "enable", service, "--project", project_id])
     print_success("All required APIs enabled")
+
+def ensure_key_unrestricted(project_id, key_name):
+    """Знімає обмеження з ключа для уникнення ApiTargetBlockedMapError"""
+    print_step("Optimizing API Key restrictions...")
+    try:
+        # We use alpha services api-keys update --clear-restrictions
+        print_info(f"Clearing restrictions for key: {key_name}")
+        run_command(["gcloud", "alpha", "services", "api-keys", "update", key_name, "--clear-restrictions", "--project", project_id])
+        print_success("API Key restrictions cleared (Full access enabled)")
+    except Exception as e:
+        print_warning(f"Could not clear restrictions automatically: {e}")
 
 def get_or_create_api_key(project_id):
     print_step("Managing API Key...")
@@ -161,6 +202,8 @@ def get_or_create_api_key(project_id):
                 desc = run_command(["gcloud", "alpha", "services", "api-keys", "get-key-string", key_name], check=False)
                 if desc.returncode == 0:
                     api_key = desc.stdout.strip().split("keyString: ")[-1]
+                    # Ensure it is unrestricted
+                    ensure_key_unrestricted(project_id, key_name)
                     return api_key
 
         print_info("Creating new API key...")
@@ -177,6 +220,8 @@ def get_or_create_api_key(project_id):
         desc = run_command(["gcloud", "alpha", "services", "api-keys", "get-key-string", key_res_name])
         # Output format is usually keyString: AIza...
         api_key = desc.stdout.strip().split("keyString: ")[-1].strip()
+        # Ensure it is unrestricted
+        ensure_key_unrestricted(project_id, key_res_name)
         return api_key
 
     except Exception as e:
@@ -222,6 +267,7 @@ def main():
     check_auth()
     
     project_id = get_or_create_project()
+    check_billing(project_id)
     enable_apis(project_id)
     
     api_key = get_or_create_api_key(project_id)
