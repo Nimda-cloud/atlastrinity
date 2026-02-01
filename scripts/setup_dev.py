@@ -1206,9 +1206,34 @@ print('TTS OK')
 
 
 def backup_databases():
-    """Архівує всі бази даних та вектори для синхронізації через Git"""
-    print_step("Створення повних резервних копій баз даних...")
+    """Архівує всі бази даних з шифруванням та фільтрацією секретів"""
+    print_step("Створення безпечних резервних копій баз даних...")
+    
+    try:
+        from scripts.secure_backup import SecureBackupManager
+        
+        backup_manager = SecureBackupManager(PROJECT_ROOT)
+        success = backup_manager.create_secure_backup()
+        
+        if success:
+            print_success("Безпечний бекап завершено успішно.")
+            print_info(f"Резервні копії збережено в: {PROJECT_ROOT / 'backups' / 'databases'}")
+        else:
+            print_error("Помилка при створенні безпечного бекапу")
+            
+    except ImportError as e:
+        print_error(f"Модуль безпечного бекапу не знайдено: {e}")
+        print_warning("Використання старого методу бекапу...")
+        # Fallback to old method
+        _legacy_backup_databases()
+    except Exception as e:
+        print_error(f"Помилка при створенні бекапу: {e}")
 
+
+def _legacy_backup_databases():
+    """Застарілий метод бекапу (без шифрування)"""
+    print_warning("Використання застарілого методу бекапу без шифрування...")
+    
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     backup_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1237,7 +1262,7 @@ def backup_databases():
         except Exception as e:
             print_warning(f"Помилка при бекапі {src.name}: {e}")
 
-    print_success("Повний бекап завершено успішно.")
+    print_success("Бекап завершено успішно.")
     print_info(f"Резервні копії збережено в: {backup_dir}")
 
 
