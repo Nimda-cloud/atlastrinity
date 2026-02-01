@@ -114,8 +114,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
       return new Promise<void>((resolve, reject) => {
         const script = document.createElement('script');
         script.type = 'module';
-        script.src =
-          'https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js';
+        script.src = 'https://unpkg.com/@googlemaps/extended-component-library@0.6.11/dist/index.min.js';
         script.onload = () => resolve();
         script.onerror = () =>
           reject(new Error('Failed to load Google Maps Extended Component Library'));
