@@ -27,6 +27,7 @@ TASK_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "task_protocol.txt")
 DATA_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "data_protocol.txt")
 SYSTEM_MASTERY_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "system_mastery_protocol.txt")
 HACKING_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "hacking_sysadmin_protocol.md")
+MAPS_PROTOCOL_PATH = os.path.join(PROTOCOLS_DIR, "maps_protocol.md")
 
 # Global variables to store loaded data
 SERVER_CATALOG: dict[str, dict[str, Any]] = {}
@@ -40,6 +41,7 @@ TASK_PROTOCOL: str = ""
 DATA_PROTOCOL: str = ""
 SYSTEM_MASTERY_PROTOCOL: str = ""
 HACKING_PROTOCOL: str = ""
+MAPS_PROTOCOL: str = ""
 
 # Cache for frequently accessed data
 _tool_lookup_cache: dict[str, str | None] = {}  # tool_name -> server_name
@@ -60,7 +62,8 @@ def load_registry():
         TASK_PROTOCOL, \
         DATA_PROTOCOL, \
         SYSTEM_MASTERY_PROTOCOL, \
-        HACKING_PROTOCOL
+        HACKING_PROTOCOL, \
+        MAPS_PROTOCOL
 
     try:
         # Load Catalog
@@ -137,6 +140,16 @@ def load_registry():
                 HACKING_PROTOCOL = f.read()
         else:
             HACKING_PROTOCOL = "Hacking & Sysadmin protocol not found."
+
+
+
+
+        # Load Maps Protocol
+        if os.path.exists(MAPS_PROTOCOL_PATH):
+            with open(MAPS_PROTOCOL_PATH, encoding="utf-8") as f:
+                MAPS_PROTOCOL = f.read()
+        else:
+            MAPS_PROTOCOL = "Maps protocol not found."
 
     except Exception as e:
         print(f"[Here be Dragons] Error loading MCP registry: {e}")

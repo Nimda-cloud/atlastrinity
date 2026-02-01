@@ -1,6 +1,7 @@
 from .common import (
     DATA_PROTOCOL,
     DEFAULT_REALM_CATALOG,
+    MAPS_PROTOCOL,
     SDLC_PROTOCOL,
     SEARCH_PROTOCOL,
     STORAGE_PROTOCOL,
@@ -137,6 +138,13 @@ Respond with JSON as defined in your protocol.
     
     """
     + DATA_PROTOCOL
+    + """
+    
+    """
+    + """
+    
+    """
+    + MAPS_PROTOCOL
     + """
     
     """
