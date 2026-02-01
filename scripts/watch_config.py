@@ -10,6 +10,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
+import re
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -36,6 +37,21 @@ MAPPINGS: dict[str, str] = {
     "prometheus.yml.template": "prometheus.yml",
 }
 
+# Load .env if it exists
+def load_env():
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        with open(env_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key.strip()] = value.strip()
+
+load_env()
+
 def process_template(src_path: Path, dst_path: Path):
     """Copies template to destination with variable substitution."""
     try:
@@ -52,6 +68,7 @@ def process_template(src_path: Path, dst_path: Path):
             "${CONFIG_ROOT}": str(CONFIG_DST_ROOT),
             "${PYTHONPATH}": str(PROJECT_ROOT),
             "${GITHUB_TOKEN}": os.getenv("GITHUB_TOKEN", "${GITHUB_TOKEN}"),
+            "${GOOGLE_MAPS_API_KEY}": os.getenv("GOOGLE_MAPS_API_KEY", "${GOOGLE_MAPS_API_KEY}"),
         }
 
         for key, value in replacements.items():

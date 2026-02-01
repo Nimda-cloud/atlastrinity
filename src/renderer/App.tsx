@@ -478,7 +478,17 @@ const App: React.FC = () => {
           </svg>
         </button>
         <button
-          onClick={() => setViewMode(viewMode === 'NEURAL' ? 'MAP' : 'NEURAL')}
+          onClick={() => {
+            const nextMode = viewMode === 'NEURAL' ? 'MAP' : 'NEURAL';
+            setViewMode(nextMode);
+            // If switching to MAP and no specific feed is active, default to INTERACTIVE manual control
+            if (nextMode === 'MAP' && !mapData.url && mapData.type !== 'INTERACTIVE') {
+              setMapData({
+                type: 'INTERACTIVE',
+                location: 'INTERACTIVE_SEARCH_ACTIVE'
+              });
+            }
+          }}
           className={`titlebar-btn group ${viewMode === 'MAP' ? 'active' : ''}`}
           title="Toggle Map/Neural Core"
         >
