@@ -845,83 +845,32 @@ def install_deps():
                 return subprocess.run([sys.executable, *cmd_args], env=env, **kwargs)
             raise
 
-    # Update PIP first
+    # Update PIP and foundational tools
     run_venv_cmd(
-        ["-m", "pip", "install", "-U", "pip", "setuptools<72.0.0", "wheel"],
+        ["-m", "pip", "install", "-U", "pip", "setuptools<70.0.0", "wheel"],
         check=False,
         capture_output=True,
     )
 
-    # Pre-install protobuf with no-build-isolation to avoid setuptools build issues
-    print_info("Pre-installing protobuf to avoid build issues...")
-    try:
-        run_venv_cmd(
-            ["-m", "pip", "install", "--no-build-isolation", "protobuf==3.19.6"], check=True
-        )
-    except Exception as e:
-        print_warning(
-            f"Failed to install protobuf with no-build-isolation: {e}. Trying standard install..."
-        )
-        run_venv_cmd(["-m", "pip", "install", "protobuf==3.19.6"], check=True)
-
-        # Install main requirements
+    # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
-        print_info("PIP install -r requirements.txt...")
+        # Install all requirements from requirements.txt
+        # We use --prefer-binary to speed up and avoid build issues on macOS ARM64
+        # We also pass --no-build-isolation specifically for espnet if needed, 
+        # but for a general requirements.txt it's better to let pip decide.
+        print_info("Installing all dependencies from requirements.txt...")
         run_venv_cmd(
             [
                 "-m",
                 "pip",
                 "install",
-                "-U",
-                "pip",
-                "setuptools<72.0.0",
-                "wheel",
-            ],
-            check=False,
-            capture_output=True,
-        )
-        # Install espnet and ukrainian-tts separately with no-build-isolation
-        # We use a more recent version (202509) to avoid protobuf/importlib-metadata conflicts
-        run_venv_cmd(
-            [
-                "-m",
-                "pip",
-                "install",
-                "--no-build-isolation",
-                "--no-deps",
-                "espnet==202509",
+                "--prefer-binary",
+                "-r",
+                str(req_file),
             ],
             check=True,
         )
-        # Install ukrainian-tts from git with --no-deps to avoid pulling in conflicting old versions of espnet/scipy
-        run_venv_cmd(
-            [
-                "-m",
-                "pip",
-                "install",
-                "--no-deps",
-                "git+https://github.com/robinhad/ukrainian-tts.git",
-            ],
-            check=True,
-        )
-        # Install remaining requirements
-        with open(req_file) as f:
-            lines = f.readlines()
-        filtered_lines = [
-            line
-            for line in lines
-            if not line.strip().startswith("espnet==")
-            and not line.strip().startswith("ukrainian-tts")
-        ]
-        filtered_file = str(req_file) + ".filtered"
-        with open(filtered_file, "w") as f:
-            f.writelines(filtered_lines)
-        run_venv_cmd(
-            ["-m", "pip", "install", "--prefer-binary", "-r", filtered_file],
-            check=True,
-        )
-        os.remove(filtered_file)
 
     # Install dev requirements if they exist (it's a dev setup)
     req_dev_file = PROJECT_ROOT / "requirements-dev.txt"

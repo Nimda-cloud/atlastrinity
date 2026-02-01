@@ -16,10 +16,31 @@ tenacity>=8.2.0
 
 # === Voice ===
 # TTS
+# Voice - TTS (Ukrainian specific)
 numpy>=1.26.4
 scipy==1.11.4
-espnet==202509
-ukrainian-tts>=6.0.0  # installed from git successfully
+espnet==202301
+# Sub-dependencies for espnet/ukrainian-tts
+torch>=1.12.0
+sentencepiece==0.2.0
+librosa>=0.10.1
+kaldiio>=2.18.0
+jamo==0.4.1
+pypinyin<=0.44.0
+pyworld>=0.3.4
+torch-complex
+typeguard<3.0.0
+hydra-core
+configargparse
+editdistance
+espnet-tts-frontend
+fast-bss-eval
+ci-sdr
+asteroid-filterbanks
+ukrainian-word-stress==1.1.0
+num2words @ git+https://github.com/savoirfairelinux/num2words.git@3e39091d052829fc9e65c18176ce7b7ff6169772
+ukrainian_accentor @ git+https://github.com/egorsmkv/ukrainian-accentor.git@5b7971c4e135e3ff3283336962e63fc0b1c80f4c
+ukrainian-tts>=6.0.0
 
 # STT
 faster-whisper>=1.0.0
@@ -68,7 +89,8 @@ structlog>=24.1.0
 # Note: asyncio is stdlib in Python 3.12+, no external package needed
 
 # === Fixed Dependencies for espnet compatibility ===
-protobuf>=4.25.8,<5.0.0
+protobuf>=3.20.1,<4.0.0
+importlib-metadata<5.0
 setuptools>=73.0.0,<74.0.0
 onnxruntime
 opentelemetry-api
