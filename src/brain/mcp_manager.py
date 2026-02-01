@@ -479,6 +479,41 @@ class MCPManager:
         # Metrics tracking
         start_time = asyncio.get_event_loop().time()
 
+        # --- LOCAL TOOL INTERCEPTION ---
+        if server_name == "local":
+            try:
+                if tool_name == "maps_start_tour":
+                    from src.brain.navigation.tour_driver import tour_driver
+                    polyline = (arguments or {}).get("polyline", "")
+                    await tour_driver.start_tour(polyline)
+                    return {"content": [{"type": "text", "text": "Tour started successfully."}]}
+                
+                elif tool_name == "maps_tour_control":
+                    from src.brain.navigation.tour_driver import tour_driver
+                    action = (arguments or {}).get("action", "")
+                    val = (arguments or {}).get("value")
+                    
+                    if action == "stop":
+                        await tour_driver.stop_tour()
+                        return {"content": [{"type": "text", "text": "Tour stopped."}]}
+                    elif action == "pause":
+                        tour_driver.pause_tour()
+                        return {"content": [{"type": "text", "text": "Tour paused."}]}
+                    elif action == "resume":
+                        tour_driver.resume_tour()
+                        return {"content": [{"type": "text", "text": "Tour resumed."}]}
+                    elif action == "look":
+                        angle = int(val) if val is not None else 0
+                        tour_driver.look_around(angle)
+                        return {"content": [{"type": "text", "text": f"Looking at {angle}."}]}
+                    
+                    return {"content": [{"type": "text", "text": f"Unknown tour action: {action}"}]}
+
+            except Exception as e:
+                 logger.error(f"[MCP] Local tool {tool_name} failed: {e}")
+                 return {"content": [{"type": "text", "text": f"Error: {e}"}], "isError": True}
+
+        # --- MCP SERVER CALL ---
         session = await self.get_session(server_name)
         if not session:
             return self._create_no_session_error(server_name, tool_name)
