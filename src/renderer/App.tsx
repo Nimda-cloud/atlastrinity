@@ -5,6 +5,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import MapView from './components/MapView';
 import NeuralCore from './components/NeuralCore';
 import ExecutionLog from './components/ExecutionLog.tsx';
 import AgentStatus from './components/AgentStatus.tsx';
@@ -62,6 +63,14 @@ const App: React.FC = () => {
     net_down_unit: 'K/S',
   });
   const [isConnected, setIsConnected] = useState(false);
+
+  // Map state
+  const [viewMode, setViewMode] = useState<'NEURAL' | 'MAP'>('NEURAL');
+  const [mapData, setMapData] = useState<{
+    url?: string;
+    type: 'STREET' | 'STATIC';
+    location?: string;
+  }>({ type: 'STATIC' });
 
   // Command dock auto-hide state
   const [isDockVisible, setIsDockVisible] = useState(true);
@@ -133,6 +142,25 @@ const App: React.FC = () => {
       type,
     };
     setLogs((prev) => [...prev.slice(-100), entry]); // Keep last 100 entries
+
+    // Auto-detect map updates in logs
+    if (message.includes('Saved to:') && message.includes('.png')) {
+      const pathMatch = message.match(/Saved to: (.+\.png)/);
+      if (pathMatch && pathMatch[1]) {
+        const filePath = pathMatch[1];
+        // Convert local path to file:// URL for Electron display
+        // Note: In some Electron setups you might need a custom protocol or webSecurity: false
+        const fileUrl = `file://${filePath}`;
+        const isStreet = message.toLowerCase().includes('street');
+
+        setMapData({
+          url: fileUrl,
+          type: isStreet ? 'STREET' : 'STATIC',
+          location: message.match(/Location: ([^\n]+)/)?.[1] || message.match(/Center: ([^\n]+)/)?.[1]
+        });
+        setViewMode('MAP');
+      }
+    }
   };
 
   const [currentTask, setCurrentTask] = useState<string>('');
@@ -431,8 +459,27 @@ const App: React.FC = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button
+          onClick={() => setViewMode(viewMode === 'NEURAL' ? 'MAP' : 'NEURAL')}
+          className={`titlebar-btn group ${viewMode === 'MAP' ? 'active' : ''}`}
+          title="Toggle Map/Neural Core"
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
           </svg>
         </button>
       </div>
@@ -598,9 +645,18 @@ const App: React.FC = () => {
         )}
       </aside>
 
-      {/* Center Panel: Neural Core */}
+      {/* Center Panel: Neural Core / Map View */}
       <main className="panel center-panel">
-        <NeuralCore state={systemState} activeAgent={activeAgent} />
+        {viewMode === 'NEURAL' ? (
+          <NeuralCore state={systemState} activeAgent={activeAgent} />
+        ) : (
+          <MapView
+            imageUrl={mapData.url}
+            type={mapData.type}
+            location={mapData.location}
+            onClose={() => setViewMode('NEURAL')}
+          />
+        )}
       </main>
 
       {/* Right Panel: Chat Panel */}

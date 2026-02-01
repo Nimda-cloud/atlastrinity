@@ -212,7 +212,7 @@ def check_system_tools():
             pass
 
     if "swift" in missing:
-        print_error("Swift необхідний для компіляції macos-use MCP серверу!")
+        print_error("Swift необхідний для компіляції macos-use та googlemaps MCP серверів!")
         print_info("Встановіть Xcode або Command Line Tools: xcode-select --install")
 
     # 4. Check for Full Xcode (for XcodeBuildMCP)
@@ -561,6 +561,46 @@ def build_swift_mcp():
         print_error(f"Помилка компіляції Swift: {e}")
         return False
 
+
+def build_googlemaps_mcp():
+    """Компілює Swift Google Maps MCP сервер"""
+    print_step("Компіляція Google Maps MCP серверу (googlemaps)...")
+    mcp_path = PROJECT_ROOT / "vendor" / "mcp-server-googlemaps"
+
+    if not mcp_path.exists():
+        print_warning("Папка vendor/mcp-server-googlemaps не знайдена!")
+        print_info("Пропускаємо компіляцію Google Maps MCP...")
+        return False
+
+    # Check if binary already exists and is recent
+    binary_path = mcp_path / ".build" / "release" / "mcp-server-googlemaps"
+    if binary_path.exists():
+        import time
+
+        binary_age = time.time() - binary_path.stat().st_mtime
+        if binary_age < 7 * 24 * 3600:  # 7 days
+            print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
+            return True
+        else:
+            print_info(
+                f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція..."
+            )
+
+    print_info("Компіляція googlemaps...")
+
+    try:
+        print_info("Запуск 'swift build -c release' (це може зайняти час)...")
+        subprocess.run(["swift", "build", "-c", "release"], cwd=mcp_path, check=True)
+
+        if binary_path.exists():
+            print_success(f"Скомпільовано успішно: {binary_path}")
+            return True
+        else:
+            print_error("Бінарний файл не знайдено після компіляції!")
+            return False
+    except subprocess.CalledProcessError as e:
+        print_error(f"Помилка компіляції Swift: {e}")
+        return False
 
 def setup_xcodebuild_mcp():
     """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
@@ -1327,6 +1367,7 @@ def main():
     asyncio.run(verify_database_tables())
 
     build_swift_mcp()
+    build_googlemaps_mcp()
     setup_xcodebuild_mcp()
 
     # Ensure all binaries are executable

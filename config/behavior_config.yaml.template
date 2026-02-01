@@ -798,6 +798,46 @@ tool_routing:
         server: xcodebuild
         tool: xcodebuild_get_coverage
 
+  # Google Maps & Location Services
+  googlemaps:
+    synonyms:
+      - maps
+      - location
+      - directions
+      - route
+      - traffic
+      - streetview
+      - street_view
+      - static_map
+      - geocode
+      - elevation
+      - place
+      - places
+    priority_server: googlemaps
+    fallback_server: macos-use
+    tool_mapping:
+      street_view: maps_street_view
+      static_map: maps_static_map
+      directions: maps_directions
+      route: maps_directions
+      traffic: maps_distance_matrix
+      geocode: maps_geocode
+      search_places: maps_search_places
+      place_details: maps_place_details
+      elevation: maps_elevation
+    routing_rules:
+      - pattern: 'maps_.*'
+        server: googlemaps
+      - pattern: '.*location.*'
+        server: googlemaps
+        tool: maps_geocode
+      - pattern: '.*route.*'
+        server: googlemaps
+        tool: maps_directions
+      - pattern: '.*traffic.*'
+        server: googlemaps
+        tool: maps_distance_matrix
+
 # =============================================================================
 # TASK CLASSIFICATION
 # =============================================================================
@@ -823,7 +863,12 @@ task_classification:
 
   web_tasks:
     keywords: [search, web, internet, google, find, browser, navigate, automation, scrape, react]
-    recommended_servers: [duckduckgo-search, puppeteer, macos-use, react-devtools]
+    recommended_servers: [duckduckgo-search, puppeteer, macos-use, react-devtools, googlemaps]
+    priority: tier2
+
+  location_tasks:
+    keywords: [де, адреса, карта, мапа, маршрут, пробки, трафік, затори, улица, вулиця, street, location, directions, traffic]
+    recommended_servers: [googlemaps, macos-use]
     priority: tier2
 
   react_tasks:

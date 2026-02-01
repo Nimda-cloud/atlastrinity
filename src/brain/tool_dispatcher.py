@@ -299,6 +299,23 @@ class ToolDispatcher:
         "xcodebuild_archive_project",
         "xcodebuild_clean_build",
     ]
+    
+    MAPS_SYNONYMS = [
+        "maps",
+        "location",
+        "directions",
+        "route",
+        "traffic",
+        "streetview",
+        "street_view",
+        "static_map",
+        "geocode",
+        "elevation",
+        "place",
+        "places",
+        "atlas_maps",
+        "cyberpunk_maps",
+    ]
 
     MACOS_MAP = {
         "click": "macos-use_click_and_traverse",
