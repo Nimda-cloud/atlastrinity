@@ -17,6 +17,7 @@ import warnings
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Literal
 
 from ..config import MODELS_DIR
 from ..config_loader import config
@@ -312,54 +313,52 @@ class AgentVoice:
         return self._tts
 
     def speak(self, text: str, output_file: str | None = None) -> str | None:
-        """Generate speech from text
-
-        Args:
-            text: Ukrainian text to speak
-            output_file: Optional path to save audio. If None, uses temp file
-
-        Returns:
-            Path to the generated audio file, or None if TTS not available
-
-        """
-        if not _check_tts_available():
-            print(f"[TTS] [{self.config.name}]: {text}")
-            return None
-
-        if not text:
+        """Generate speech from text."""
+        if not _check_tts_available() or not text:
+            if not _check_tts_available() and text:
+                print(f"[TTS] [{self.config.name}]: {text}")
             return None
 
         # Clean text for better pronunciation
         text = sanitize_text_for_tts(text)
-        if not text:  # Check again after sanitization
+        if not text:
             return None
 
         # Determine output path
-        if output_file is None:
-            output_file = os.path.join(
-                tempfile.gettempdir(),
-                f"tts_{self.agent_name}_{hash(text) % 10000}.wav",
-            )
+        output_file = output_file or self._get_default_output_path(text)
 
         try:
-            with open(output_file, mode="wb") as f:
-                # Import Stress and Voices only here
-                from ukrainian_tts.tts import Stress
-
-                if self.tts:
-                    _, _accented_text = self.tts.tts(
-                        text,
-                        self._voice,
-                        Stress.Dictionary.value,
-                        f,  # Use cached value
-                    )
-
-            print(f"[TTS] [{self.config.name}]: {text}")
-            return output_file
-
+            success = self._perform_tts_generation(text, output_file)
+            if success:
+                print(f"[TTS] [{self.config.name}]: {text}")
+                return output_file
+            return None
         except Exception as e:
             print(f"[TTS] Error generating speech: {e}")
             return None
+
+    def _get_default_output_path(self, text: str) -> str:
+        """Generate a default temporary path for TTS output."""
+        return os.path.join(
+            tempfile.gettempdir(),
+            f"tts_{self.agent_name}_{hash(text) % 10000}.wav",
+        )
+
+    def _perform_tts_generation(self, text: str, output_file: str) -> bool:
+        """Execute the core TTS generation logic."""
+        from ukrainian_tts.tts import Stress  # type: ignore[import-not-found]
+
+        if not self.tts:
+            return False
+
+        with open(output_file, mode="wb") as f:
+            self.tts.tts(
+                text,
+                self._voice,
+                Stress.Dictionary.value,
+                f,
+            )
+        return True
 
     def speak_and_play(self, text: str) -> bool:
         """Generate speech and play it immediately (macOS)
@@ -572,8 +571,7 @@ Ukrainian:"""
         await asyncio.sleep(0.1)
 
     async def speak(self, agent_id: str, text: str) -> str | None:
-        # Reset stop event for new phrase only if we aren't already stopping?
-        # Actually, if we are in a lock, previous speech is done.
+        """Centralized speak method for VoiceManager."""
         self._stop_event.clear()
 
         async with self._lock:
@@ -586,9 +584,7 @@ Ukrainian:"""
                 return None
 
             # Prepare text (sanitize + translate)
-            # This logic is now centralized in prepare_speech_text
             text = await self.prepare_speech_text(text)
-
             if not text:
                 return None
 
@@ -603,129 +599,135 @@ Ukrainian:"""
             voice_enum = getattr(Voices, agent_conf.voice_id).value
 
             try:
-                import asyncio
-                import re
-                import time
+                # 1. Split text into manageable chunks
+                chunks = self._chunk_text_for_tts(text)
 
-                # async generator function
-                async def _gen_f(c_text, c_idx):
-                    # Check cancellation before heavy work
-                    if self._stop_event.is_set():
-                        return None
-
-                    c_id = f"{agent_id}_{c_idx}_{hash(c_text) % 10000}"
-                    c_file = Path(tempfile.gettempdir()) / f"tts_{c_id}.wav"
-
-                    def _do_gen():
-                        if self.engine:
-                            with c_file.open(mode="wb") as f:
-                                self.engine.tts(c_text, voice_enum, Stress.Dictionary.value, f)
-
-                    await asyncio.to_thread(_do_gen)
-                    return c_file
-
-                # 1. Split text
-                chunks = re.split(r"([.!?]+(?:\s+|$))", text)
-                processed_chunks = []
-                for i in range(0, len(chunks) - 1, 2):
-                    processed_chunks.append(chunks[i] + chunks[i + 1])
-                if len(chunks) % 2 == 1 and chunks[-1]:
-                    processed_chunks.append(chunks[-1])
-
-                final_chunks = [c.strip() for c in processed_chunks if c.strip()]
-
-                # Merge short chunks
-                min_len = 40
-                refined_chunks = []
-                temp_chunk = ""
-                for chunk in final_chunks:
-                    if temp_chunk:
-                        temp_chunk += " " + chunk
-                    else:
-                        temp_chunk = chunk
-                    if len(temp_chunk) >= min_len:
-                        refined_chunks.append(temp_chunk)
-                        temp_chunk = ""
-
-                if temp_chunk:
-                    if refined_chunks:
-                        refined_chunks[-1] += " " + temp_chunk
-                    else:
-                        refined_chunks.append(temp_chunk)
-
-                final_chunks = refined_chunks or [text]
-
-                print(
-                    f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(final_chunks)} chunks...",
+                # 2. Start pipelined playback
+                return await self._pipelined_playback(
+                    agent_id, agent_conf, chunks, voice_enum
                 )
-                start_time = time.time()
-
-                # Check interruption
-                if self._stop_event.is_set():
-                    return None
-
-                # Generate first chunk
-                current_file = await _gen_f(final_chunks[0], 0)
-                if not current_file:
-                    return None  # Interrupted
-
-                time.time() - start_time
-                # print(f"[TTS] [{config.name}] First chunk ready in {first_chunk_time:.2f}s")
-
-                for idx in range(len(final_chunks)):
-                    # Return if interrupted
-                    if self._stop_event.is_set():
-                        print(f"[TTS] [{agent_conf.name}] 🛑 Sequence cancelled.")
-                        return "cancelled"
-
-                    # Start generating next
-                    next_gen_task = None
-                    if idx + 1 < len(final_chunks):
-                        next_gen_task = asyncio.create_task(_gen_f(final_chunks[idx + 1], idx + 1))
-
-                    if not Path(current_file).exists():
-                        continue
-
-                    print(
-                        f"[TTS] [{agent_conf.name}] 🔊 Speaking chunk {idx + 1}/{len(final_chunks)}: {final_chunks[idx][:50]}...",
-                    )
-                    self.last_text = final_chunks[idx].strip().lower()
-                    self.history.append(self.last_text)
-                    self.is_speaking = True
-
-                    try:
-                        self._current_process = await asyncio.create_subprocess_exec(
-                            "afplay",
-                            current_file,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE,
-                        )
-                        await self._current_process.communicate()
-                    except asyncio.CancelledError:
-                        print(f"[TTS] [{agent_conf.name}] 🛑 Playback cancelled.")
-                        if self._current_process:
-                            self._current_process.terminate()
-                        raise
-                    except Exception as e:
-                        print(f"[TTS] [{agent_conf.name}] ⚠ Playback error: {e}")
-                    finally:
-                        self.is_speaking = False
-                        self._current_process = None
-
-                    current_path = Path(current_file)
-                    if current_path.exists():
-                        current_path.unlink()
-
-                    # Wait for next chunk
-                    if next_gen_task:
-                        current_file = await next_gen_task
-                        if not current_file:  # Interrupted during generation
-                            return "cancelled"
-
-                await asyncio.sleep(0.3)
-                self.last_speak_time = time.time()
-                return "pipelined_playback_completed"
-
             except Exception as e:
                 print(f"[TTS] Error: {e}")
                 return None
+
+    def _chunk_text_for_tts(self, text: str) -> list[str]:
+        """Split text into manageable chunks for TTS engine."""
+        import re
+
+        # Split by punctuation
+        raw_chunks = re.split(r"([.!?]+(?:\s+|$))", text)
+        processed_chunks = []
+        for i in range(0, len(raw_chunks) - 1, 2):
+            processed_chunks.append(raw_chunks[i] + raw_chunks[i + 1])
+        if len(raw_chunks) % 2 == 1 and raw_chunks[-1]:
+            processed_chunks.append(raw_chunks[-1])
+
+        # Merge short chunks
+        min_len = 40
+        refined_chunks = []
+        temp_chunk = ""
+        for chunk in [c.strip() for c in processed_chunks if c.strip()]:
+            if temp_chunk:
+                temp_chunk += " " + chunk
+            else:
+                temp_chunk = chunk
+            if len(temp_chunk) >= min_len:
+                refined_chunks.append(temp_chunk)
+                temp_chunk = ""
+
+        if temp_chunk:
+            if refined_chunks:
+                refined_chunks[-1] += " " + temp_chunk
+            else:
+                refined_chunks.append(temp_chunk)
+
+        return refined_chunks or [text]
+
+    async def _pipelined_playback(
+        self, agent_id: str, agent_conf: Any, chunks: list[str], voice_enum: Any
+    ) -> str | None:
+        """Handle pipelined generation and playback of speech chunks."""
+        import time
+
+        print(
+            f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(chunks)} chunks..."
+        )
+
+        # Generate first chunk
+        current_file = await self._generate_chunk(chunks[0], 0, agent_id, voice_enum)
+        if not current_file:
+            return None
+
+        for idx, chunk_text in enumerate(chunks):
+            if self._stop_event.is_set():
+                print(f"[TTS] [{agent_conf.name}] 🛑 Sequence cancelled.")
+                return "cancelled"
+
+            # Start generating next chunk while playing current one
+            next_gen_task = None
+            if idx + 1 < len(chunks):
+                next_gen_task = asyncio.create_task(
+                    self._generate_chunk(chunks[idx + 1], idx + 1, agent_id, voice_enum)
+                )
+
+            if Path(current_file).exists():
+                await self._speak_chunk(idx, len(chunks), chunk_text, current_file, agent_conf)
+                Path(current_file).unlink()
+
+            # Wait for next chunk to be ready
+            if next_gen_task:
+                current_file = await next_gen_task
+                if not current_file:
+                    return "cancelled"
+
+        await asyncio.sleep(0.3)
+        self.last_speak_time = time.time()
+        return "pipelined_playback_completed"
+
+    async def _generate_chunk(
+        self, text: str, idx: int, agent_id: str, voice_enum: Any
+    ) -> Path | None:
+        """Generate a single chunk of audio."""
+        from ukrainian_tts.tts import Stress
+
+        if self._stop_event.is_set():
+            return None
+
+        c_id = f"{agent_id}_{idx}_{hash(text) % 10000}"
+        c_file = Path(tempfile.gettempdir()) / f"tts_{c_id}.wav"
+
+        def _do_gen():
+            if self.engine:
+                with c_file.open(mode="wb") as f:
+                    self.engine.tts(text, voice_enum, Stress.Dictionary.value, f)
+
+        await asyncio.to_thread(_do_gen)
+        return c_file
+
+    async def _speak_chunk(
+        self, idx: int, total: int, text: str, file_path: Path, agent_conf: Any
+    ) -> None:
+        """Play a single chunk of audio and manage state."""
+        print(f"[TTS] [{agent_conf.name}] 🔊 Speaking chunk {idx + 1}/{total}: {text[:50]}...")
+        self.last_text = text.strip().lower()
+        self.history.append(self.last_text)
+        self.is_speaking = True
+
+        try:
+            self._current_process = await asyncio.create_subprocess_exec(
+                "afplay",
+                str(file_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await self._current_process.communicate()
+        except asyncio.CancelledError:
+            print(f"[TTS] [{agent_conf.name}] 🛑 Playback cancelled.")
+            if self._current_process:
+                self._current_process.terminate()
+            raise
+        except Exception as e:
+            print(f"[TTS] [{agent_conf.name}] ⚠ Playback error: {e}")
+        finally:
+            self.is_speaking = False
+            self._current_process = None

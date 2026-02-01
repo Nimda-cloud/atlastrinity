@@ -274,12 +274,7 @@ async def list_entities() -> dict[str, Any]:
 
 @server.tool()
 async def search(query: str, limit: int = 10, namespace: str | None = None) -> dict[str, Any]:
-    """Args:
-    query: Text to search for within entity names, types, and observations
-    limit: Maximum number of results to return (default: 10)
-    namespace: Optional filter (task_id or 'global')
-
-    """
+    """Search for knowledge within entity names, types, and observations."""
     q = str(query or "").strip().lower()
     if not q:
         return {"error": "query is required"}
@@ -288,43 +283,7 @@ async def search(query: str, limit: int = 10, namespace: str | None = None) -> d
 
     # 1. Semantic search via ChromaDB (Fastest and smartest)
     if long_term_memory.available:
-        where_filter = {"namespace": namespace} if namespace else None
-        results = long_term_memory.knowledge.query(
-            query_texts=[q],
-            n_results=lim,
-            include=["documents", "metadatas", "distances"],
-            where=cast("Any", where_filter),
-        )
-
-        formatted = []
-        if results and isinstance(results.get("documents"), list) and results.get("documents"):
-            docs_list = results.get("documents") or [[]]
-            docs = docs_list[0] if docs_list else []
-
-            metas_list = results.get("metadatas") or [[]]
-            metas = metas_list[0] if metas_list else []
-
-            ids_list = results.get("ids") or [[]]
-            ids = ids_list[0] if ids_list else []
-
-            dists_list = results.get("distances") or [[]]
-            dists = dists_list[0] if dists_list else []
-
-            for i, _doc in enumerate(docs):
-                meta = metas[i] if i < len(metas) else {}
-                # Filter to only show ENTITY types in this tool
-                if isinstance(meta, dict) and meta.get("type") == "ENTITY":
-                    formatted.append(
-                        {
-                            "name": str(ids[i]).replace("entity:", "")
-                            if i < len(ids)
-                            else "unknown",
-                            "entityType": meta.get("entity_type", "ENTITY"),
-                            "observations": meta.get("observations", []),
-                            "score": 1.0 - (dists[i] if i < len(dists) else 0.5),
-                        },
-                    )
-
+        formatted = _perform_semantic_search(q, lim, namespace)
         return {
             "success": True,
             "results": formatted,
@@ -333,6 +292,60 @@ async def search(query: str, limit: int = 10, namespace: str | None = None) -> d
         }
 
     # 2. Fallback to SQL ILIKE search if Chroma is down
+    results = await _perform_sql_fallback_search(q, lim, namespace)
+    return {
+        "success": True,
+        "results": results,
+        "count": len(results),
+        "method": "sql_fallback",
+    }
+
+
+def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[dict[str, Any]]:
+    """Helper for semantic search via ChromaDB."""
+    where_filter = {"namespace": namespace} if namespace else None
+    results = long_term_memory.knowledge.query(
+        query_texts=[q],
+        n_results=lim,
+        include=["documents", "metadatas", "distances"],
+        where=cast("Any", where_filter),
+    )
+
+    formatted = []
+    if results and isinstance(results.get("documents"), list) and results.get("documents"):
+        docs_list = results.get("documents") or [[]]
+        docs = docs_list[0] if docs_list else []
+
+        metas_list = results.get("metadatas") or [[]]
+        metas = metas_list[0] if metas_list else []
+
+        ids_list = results.get("ids") or [[]]
+        ids = ids_list[0] if ids_list else []
+
+        dists_list = results.get("distances") or [[]]
+        dists = dists_list[0] if dists_list else []
+
+        for i, _doc in enumerate(docs):
+            meta = metas[i] if i < len(metas) else {}
+            # Filter to only show ENTITY types in this tool
+            if isinstance(meta, dict) and meta.get("type") == "ENTITY":
+                formatted.append(
+                    {
+                        "name": str(ids[i]).replace("entity:", "")
+                        if i < len(ids)
+                        else "unknown",
+                        "entityType": meta.get("entity_type", "ENTITY"),
+                        "observations": meta.get("observations", []),
+                        "score": 1.0 - (dists[i] if i < len(dists) else 0.5),
+                    },
+                )
+    return formatted
+
+
+async def _perform_sql_fallback_search(
+    q: str, lim: int, namespace: str | None
+) -> list[dict[str, Any]]:
+    """Helper for SQL-based fallback search."""
     from sqlalchemy import or_, select
 
     from src.brain.db.schema import KGNode
@@ -359,10 +372,9 @@ async def search(query: str, limit: int = 10, namespace: str | None = None) -> d
                     "observations": n.attributes.get("observations", []),
                 },
             )
+        return results
     finally:
         await session.close()
-
-    return {"success": True, "results": results, "count": len(results), "method": "sql_fallback"}
 
 
 @server.tool()

@@ -807,51 +807,53 @@ class ToolDispatcher:
         self, tool_name: str, validated: dict[str, Any], types_map: dict[str, str]
     ) -> None:
         """Perform type conversion with improved error handling."""
-        import json
-
         for key, expected_type in types_map.items():
             if key in validated and validated[key] is not None:
                 value = validated[key]
                 try:
-                    if expected_type == "str" and not isinstance(value, str):
-                        validated[key] = str(value)
-                    elif expected_type == "int" and not isinstance(value, int):
-                        # Handle float to int conversion carefully
-                        if isinstance(value, float):
-                            validated[key] = int(value)
-                        else:
-                            validated[key] = int(float(value))
-                    elif expected_type == "float" and not isinstance(value, int | float):
-                        validated[key] = float(value)
-                    elif expected_type == "bool" and not isinstance(value, bool):
-                        validated[key] = str(value).lower() in ("true", "1", "yes", "on")
-                    elif expected_type == "list" and not isinstance(value, list):
-                        if isinstance(value, str):
-                            # Try to parse as JSON list
-                            try:
-                                parsed = json.loads(value)
-                                validated[key] = parsed if isinstance(parsed, list) else [value]
-                            except json.JSONDecodeError:
-                                # Try splitting by comma as fallback
-                                validated[key] = (
-                                    [v.strip() for v in value.split(",")]
-                                    if "," in value
-                                    else [value]
-                                )
-                        else:
-                            validated[key] = [value]
-                    elif expected_type == "dict" and not isinstance(value, dict):
-                        if isinstance(value, str):
-                            try:
-                                validated[key] = json.loads(value)
-                            except json.JSONDecodeError:
-                                logger.warning(
-                                    f"[DISPATCHER] Could not parse dict from string for '{key}'"
-                                )
+                    validated[key] = self._convert_single_arg_value(
+                        tool_name, key, value, expected_type
+                    )
                 except (ValueError, TypeError) as e:
                     logger.error(
-                        f"[DISPATCHER] Type conversion failed for '{key}' in tool '{tool_name}': {e}. Expected: {expected_type}, Got: {type(value).__name__}",
+                        f"[DISPATCHER] Type conversion failed for '{key}' in tool '{tool_name}': {e}. Expected: {expected_type}, Got: {type(value).__name__}.",
                     )
+
+    def _convert_single_arg_value(
+        self, tool_name: str, key: str, value: Any, expected_type: str
+    ) -> Any:
+        """Helper to convert a single argument value to the expected type."""
+        if expected_type == "str" and not isinstance(value, str):
+            return str(value)
+        if expected_type == "int" and not isinstance(value, int):
+            if isinstance(value, float):
+                return int(value)
+            return int(float(value))
+        if expected_type == "float" and not isinstance(value, int | float):
+            return float(value)
+        if expected_type == "bool" and not isinstance(value, bool):
+            return str(value).lower() in ("true", "1", "yes", "on")
+        if expected_type == "list" and not isinstance(value, list):
+            return self._convert_to_list(value)
+        if expected_type == "dict" and not isinstance(value, dict):
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    logger.warning(f"[DISPATCHER] Could not parse dict from string for '{key}'")
+        return value
+
+    def _convert_to_list(self, value: Any) -> list[Any]:
+        """Helper to convert a value to a list."""
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+                return parsed if isinstance(parsed, list) else [value]
+            except json.JSONDecodeError:
+                if "," in value:
+                    return [v.strip() for v in value.split(",")]
+                return [value]
+        return [value]
 
     def _validate_args(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Validate and normalize arguments according to tool schema.
@@ -978,7 +980,23 @@ class ToolDispatcher:
         explicit_server: str | None = None,
     ) -> tuple[str | None, str, dict[str, Any]]:
         """Resolves tool name to canonical form and normalizes arguments."""
-        # --- STRICT SERVER PRIORITY ---
+        # 1. Strict Server Priority
+        res_explicit = self._handle_explicit_server(tool_name, args, explicit_server)
+        if res_explicit:
+            return res_explicit
+
+        # 2. Namespace/Synonym Routing
+        res_synonym = self._route_by_synonyms(tool_name, args, explicit_server)
+        if res_synonym:
+            return res_synonym
+
+        # 3. Fallback: Registry
+        return self._resolve_from_registry(tool_name, args, explicit_server)
+
+    def _handle_explicit_server(
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None
+    ) -> tuple[str, str, dict[str, Any]] | None:
+        """Handle strict server priority routing."""
         handlers = {
             "macos-use": self._handle_macos_use,
             "filesystem": self._handle_filesystem,
@@ -991,12 +1009,15 @@ class ToolDispatcher:
             "golden-fund": self._handle_golden_fund,
             "golden_fund": self._handle_golden_fund,
         }
-
         if explicit_server in handlers:
             return handlers[explicit_server](tool_name, args)
+        return None
 
-        # --- NAMESPACE/SYNONYM ROUTING ---
-        # 1. macOS-use & Notes
+    def _route_by_synonyms(
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None
+    ) -> tuple[str | None, str, dict[str, Any]] | None:
+        """Route tool by name synonyms or namespaces."""
+        # macOS-use & Notes
         if (
             tool_name.startswith(("macos-use", "macos_use_", "notes_", "note_"))
             or tool_name in self.MACOS_MAP
@@ -1004,53 +1025,40 @@ class ToolDispatcher:
         ):
             return self._handle_macos_use(tool_name, args)
 
-        # 2. Terminal
+        # Basic Synonyms
         if tool_name in self.TERMINAL_SYNONYMS:
             return self._handle_terminal(tool_name, args)
-
-        # 3. Filesystem
         if tool_name in self.FILESYSTEM_SYNONYMS:
             return self._handle_filesystem(tool_name, args)
-
-        # 4. Browser (Puppeteer)
         if (tool_name in self.BROWSER_SYNONYMS and tool_name != "search") or tool_name.startswith(
             ("puppeteer_", "browser_")
         ):
             return self._handle_browser(tool_name, args)
-
-        # 5. Vibe
         if tool_name in self.VIBE_SYNONYMS:
             return self._handle_vibe(tool_name, args)
 
-        # 6. Sequential Thinking
+        # Specialized Tools
         if tool_name in ["sequential-thinking", "sequentialthinking", "think"]:
             return "sequential-thinking", "sequentialthinking", args
-
-        # 7. DevTools
         if tool_name in self.DEVTOOLS_SYNONYMS:
             return self._handle_devtools(tool_name, args)
-
-        # 8. Context7
         if tool_name in self.CONTEXT7_SYNONYMS:
             return self._handle_context7(tool_name, args)
-
-        # 9. Golden Fund
         if tool_name in self.GOLDEN_FUND_SYNONYMS:
             return self._handle_golden_fund(tool_name, args)
-
-        # 10. Data Analysis
         if tool_name in self.DATA_ANALYSIS_SYNONYMS or explicit_server == "data-analysis":
             return self._handle_data_analysis(tool_name, args)
-
-        # 11. XcodeBuild
         if tool_name in self.XCODEBUILD_SYNONYMS or explicit_server == "xcodebuild":
             return self._handle_xcodebuild(tool_name, args)
-
-        # 12. Git Legacy
         if tool_name.startswith("git_") or explicit_server == "git":
             return self._handle_legacy_git(tool_name, args)
 
-        # --- FALLBACK: USE REGISTRY ---
+        return None
+
+    def _resolve_from_registry(
+        self, tool_name: str, args: dict[str, Any], explicit_server: str | None
+    ) -> tuple[str | None, str, dict[str, Any]]:
+        """Final fallback to MCP registry lookup."""
         # Normalize hyphenated tool names to underscores for Python-based servers
         if tool_name == "duckduckgo-search":
             tool_name = "duckduckgo_search"
@@ -1507,55 +1515,73 @@ class ToolDispatcher:
         args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
         """Standardizes macos-use GUI and productivity tool calls."""
-        # Clean prefix if it exists
-        clean_name = tool_name
-        if tool_name.startswith("macos-use_") or tool_name.startswith("macos_use_"):
-            clean_name = tool_name[10:]
-        elif tool_name.startswith("git_"):
+        if tool_name.startswith("git_"):
             return self._handle_legacy_git(tool_name, args)
-        elif tool_name == "macos-use":
-            # Infer tool from arguments
-            if "identifier" in args:
-                clean_name = "open"
-            elif "x" in args:
-                clean_name = "click"
-            elif "text" in args:
-                clean_name = "type"
-            elif "path" in args:
-                clean_name = "finder_list"
-            elif "url" in args:
-                clean_name = "fetch"
-            elif "command" in args:
-                clean_name = "terminal"
-            else:
-                clean_name = "screenshot"
 
+        clean_name = self._get_clean_macos_tool_name(tool_name, args)
         resolved_tool = self.MACOS_MAP.get(clean_name, tool_name)
 
         # FINAL SAFETY: If we still have 'macos-use' as a method name, it's definitely an error.
-        # Try one last heuristic based on args.
         if resolved_tool == "macos-use":
-            if "command" in args or "cmd" in args:
-                resolved_tool = "execute_command"
-            elif "path" in args:
-                resolved_tool = "macos-use_finder_open_path"
-            else:
-                resolved_tool = "macos-use_take_screenshot"
-            logger.info(f"[DISPATCHER] Last-resort mapping macos-use -> {resolved_tool}")
+            resolved_tool = self._last_resort_macos_mapping(args)
 
         if resolved_tool == "macos-use_fetch_url":
-            if "urls" in args and "url" not in args:
-                urls = args.get("urls")
-                if isinstance(urls, list) and len(urls) > 0:
-                    args["url"] = urls[0]
-                    logger.info(f"[DISPATCHER] Patched fetch: urls[0] -> url ({args['url']})")
+            self._patch_fetch_args(args)
 
         # Inject PID if missing
         if self._current_pid and "pid" not in args:
             args["pid"] = self._current_pid
 
         # Standardize 'identifier' for app opening
-        if resolved_tool == "macos-use_open_application_and_traverse" and "identifier" not in args:
-            args["identifier"] = args.get("app_name") or args.get("name") or args.get("app") or ""
+        if resolved_tool == "macos-use_open_application_and_traverse":
+            self._standardize_app_identifier(args)
 
         return "macos-use", resolved_tool, args
+
+    def _get_clean_macos_tool_name(self, tool_name: str, args: dict[str, Any]) -> str:
+        """Extract clean tool name from macos-use prefix or generic call."""
+        if tool_name.startswith(("macos-use_", "macos_use_")):
+            return tool_name[10:]
+        if tool_name == "macos-use":
+            return self._infer_macos_tool_from_args(args)
+        return tool_name
+
+    def _infer_macos_tool_from_args(self, args: dict[str, Any]) -> str:
+        """Heuristically infer the tool based on arguments."""
+        if "identifier" in args:
+            return "open"
+        if "x" in args:
+            return "click"
+        if "text" in args:
+            return "type"
+        if "path" in args:
+            return "finder_list"
+        if "url" in args:
+            return "fetch"
+        if "command" in args:
+            return "terminal"
+        return "screenshot"
+
+    def _last_resort_macos_mapping(self, args: dict[str, Any]) -> str:
+        """Handle cases where tool name remains generic 'macos-use'."""
+        if "command" in args or "cmd" in args:
+            resolved = "execute_command"
+        elif "path" in args:
+            resolved = "macos-use_finder_open_path"
+        else:
+            resolved = "macos-use_take_screenshot"
+        logger.info(f"[DISPATCHER] Last-resort mapping macos-use -> {resolved}")
+        return resolved
+
+    def _patch_fetch_args(self, args: dict[str, Any]) -> None:
+        """Patch 'urls[0]' to 'url' for fetch_url if needed."""
+        if "urls" in args and "url" not in args:
+            urls = args.get("urls")
+            if isinstance(urls, list) and len(urls) > 0:
+                args["url"] = urls[0]
+                logger.info(f"[DISPATCHER] Patched fetch: urls[0] -> url ({args['url']})")
+
+    def _standardize_app_identifier(self, args: dict[str, Any]) -> None:
+        """Ensure 'identifier' is present for application opening."""
+        if "identifier" not in args:
+            args["identifier"] = args.get("app_name") or args.get("name") or args.get("app") or ""

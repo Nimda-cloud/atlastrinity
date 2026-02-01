@@ -413,261 +413,283 @@ async def run_vibe_subprocess(
     ctx: Context | None = None,
     prompt_preview: str | None = None,
 ) -> dict[str, Any]:
-    """Execute Vibe CLI subprocess with streaming output.
+    """Execute Vibe CLI subprocess with streaming output."""
+    process_env = _prepare_vibe_env(env)
+    logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
 
-    Returns:
-        Dict with keys: success, stdout, stderr, returncode, command
+    if prompt_preview:
+        await _emit_vibe_log(ctx, "info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
 
-    """
+    try:
+        return await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
+    except Exception as outer_e:
+        error_msg = f"Outer subprocess error: {outer_e}"
+        logger.error(f"[VIBE] {error_msg}")
+        return {"success": False, "error": error_msg, "command": argv}
+
+
+def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
+    """Prepare environment variables for Vibe subprocess."""
     config = get_vibe_config()
-
-    # Prepare environment
     process_env = os.environ.copy()
     process_env.update(config.get_environment())
     if env:
         process_env.update({k: str(v) for k, v in env.items()})
+    return process_env
 
-    logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
 
-    async def emit_log(level: Literal["debug", "error", "info", "warning"], message: str) -> None:
-        if not ctx:
-            return
-        try:
-            await ctx.log(level, message, logger_name="vibe_mcp")
-        except Exception as e:
-            logger.debug(f"[VIBE] Failed to send log to client: {e}")
-
-    # Повідомлення про початок
-    if prompt_preview:
-        await emit_log("info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
-
+async def _emit_vibe_log(ctx: Context | None, level: str, message: str) -> None:
+    """Emit log message to the client context."""
+    if not ctx:
+        return
     try:
-        MAX_RETRIES = 5  # Increased from 2 to 5
-        # Exponential backoff delays: 30s, 60s, 120s, 240s, 480s
-        BACKOFF_DELAYS = [30, 60, 120, 240, 480]
+        # Cast level string to Literal expected by ctx.log
+        log_level = cast(Literal["debug", "info", "warning", "error"], level)
+        await ctx.log(log_level, message, logger_name="vibe_mcp")
+    except Exception as e:
+        logger.debug(f"[VIBE] Failed to send log to client: {e}")
 
-        for attempt in range(MAX_RETRIES):
-            try:
-                full_argv = argv
 
-                process = await asyncio.create_subprocess_exec(
-                    *full_argv,
-                    cwd=cwd or VIBE_WORKSPACE,
-                    env=process_env,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    stdin=asyncio.subprocess.DEVNULL,
-                )
+async def _handle_vibe_line(line: str, stream_name: str, ctx: Context | None) -> None:
+    """Process and log a single line of output from Vibe."""
+    line = _clean_vibe_line(line)
+    if not line:
+        return
 
-                stdout_chunks: list[bytes] = []
-                stderr_chunks: list[bytes] = []
+    # Try structured logging first
+    if await _try_parse_structured_vibe_log(line, ctx):
+        return
 
-                async def read_stream_with_logging(
-                    stream: asyncio.StreamReader,
-                    chunks: list[bytes],
-                    stream_name: str,
-                ) -> None:
-                    """Read from stream, log important lines, collect output."""
-                    buffer = b""
+    # Fallback to standard streaming log
+    await _format_and_emit_vibe_log(line, stream_name, ctx)
 
-                    async def handle_line(line: str) -> None:
-                        if not line:
-                            return
 
-                        # Filter out terminal control characters and TUI artifacts
-                        if any(c < "\x20" for c in line if c not in "\t\n\r"):
-                            line = "".join(c for c in line if c >= "\x20" or c in "\t\n\r")
+def _clean_vibe_line(line: str) -> str:
+    """Filter out terminal control characters and TUI artifacts."""
+    if not line:
+        return ""
+    if any(c < "\x20" for c in line if c not in "\t\n\r"):
+        line = "".join(c for c in line if c >= "\x20" or c in "\t\n\r")
+    return line.strip()
 
-                        if not line:
-                            return
 
-                        # Try to parse as JSON for structured logging
-                        try:
-                            obj = json.loads(line)
-                            if isinstance(obj, dict) and obj.get("role") and obj.get("content"):
-                                preview = str(obj["content"])[:200]
-                                # Форматування для UI
-                                if obj["role"] == "assistant":
-                                    message = f"🧠 [VIBE-THOUGHT] {preview}"
-                                elif obj["role"] == "tool":
-                                    message = f"🔧 [VIBE-ACTION] {preview}"
-                                else:
-                                    message = f"💬 [VIBE-GEN] {preview}"
+async def _try_parse_structured_vibe_log(line: str, ctx: Context | None) -> bool:
+    """Try to parse as JSON for structured logging."""
+    try:
+        obj = json.loads(line)
+        if (
+            not isinstance(obj, dict)
+            or not obj.get("role")
+            or not obj.get("content")
+        ):
+            return False
 
-                                logger.info(message)
-                                await emit_log("info", message)
-                                return
-                        except json.JSONDecodeError:
-                            pass
-
-                        # Regular log line - filter out TUI spam
-                        if any(t in line for t in SPAM_TRIGGERS):
-                            return
-
-                        # Живий стрім для UI
-                        if len(line) < 1000:
-                            # Форматуємо для ExecutionLog компонента
-                            if "Thinking" in line or "Planning" in line:
-                                formatted = f"🧠 [VIBE-THOUGHT] {line}"
-                            elif "Running" in line or "Executing" in line:
-                                formatted = f"🔧 [VIBE-ACTION] {line}"
-                            else:
-                                formatted = f"⚡ [VIBE-LIVE] {line}"
-
-                            logger.debug(f"[VIBE_{stream_name}] {line}")
-                            level: Literal["debug", "error", "info", "warning"] = (
-                                "warning" if stream_name == "ERR" else "info"
-                            )
-                            await emit_log(level, formatted)
-
-                    try:
-                        while True:
-                            data = await stream.read(8192)
-                            if not data:
-                                break
-
-                            chunks.append(data)
-                            buffer += data
-
-                            # Process complete lines
-                            while b"\n" in buffer:
-                                line_bytes, buffer = buffer.split(b"\n", 1)
-                                line = strip_ansi(line_bytes.decode(errors="replace")).strip()
-                                await handle_line(line)
-
-                        if buffer:
-                            line = strip_ansi(buffer.decode(errors="replace")).strip()
-                            await handle_line(line)
-
-                    except TimeoutError:
-                        logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
-                    except Exception as e:
-                        logger.error(f"[VIBE] Stream reading error ({stream_name}): {e}")
-
-                # Read both streams concurrently
-                try:
-                    from collections.abc import Awaitable
-
-                    tasks: list[Awaitable[Any]] = []
-                    if process.stdout:
-                        tasks.append(read_stream_with_logging(process.stdout, stdout_chunks, "OUT"))
-                    if process.stderr:
-                        tasks.append(read_stream_with_logging(process.stderr, stderr_chunks, "ERR"))
-                    tasks.append(process.wait())
-
-                    await asyncio.wait_for(
-                        cast("Any", asyncio.gather(*tasks)),
-                        timeout=timeout_s + 20,  # Add buffer for graceful shutdown
-                    )
-                    # Повідомлення про успіх
-                    await emit_log("info", "✅ [VIBE-LIVE] Vibe завершив роботу успішно")
-                except TimeoutError:
-                    logger.warning(f"[VIBE] Process timeout ({timeout_s}s), terminating")
-                    await emit_log("warning", f"⏱️ [VIBE-LIVE] Перевищено timeout ({timeout_s}s)")
-                    try:
-                        process.terminate()
-                        await asyncio.wait_for(process.wait(), timeout=5)
-                    except TimeoutError:
-                        process.kill()
-                        await process.wait()
-
-                    stdout_str = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
-                    stderr_str = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
-
-                    # Final cleanup of the strings
-                    stdout_str = "".join(c for c in stdout_str if c >= "\x20" or c in "\t\n\r")
-                    stderr_str = "".join(c for c in stderr_str if c >= "\x20" or c in "\t\n\r")
-
-                    return {
-                        "success": False,
-                        "error": f"Vibe execution timed out after {timeout_s}s",
-                        "returncode": -1,
-                        "stdout": truncate_output(stdout_str),
-                        "stderr": truncate_output(stderr_str),
-                        "command": argv,
-                    }
-
-                stdout = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
-                stderr = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
-
-                # Final cleanup of the strings
-                stdout = "".join(c for c in stdout if c >= "\x20" or c in "\t\n\r")
-                stderr = "".join(c for c in stderr if c >= "\x20" or c in "\t\n\r")
-
-                # CHECK FOR RATE LIMIT with exponential backoff
-                if "Rate limit exceeded" in stderr or "Rate limit exceeded" in stdout:
-                    if attempt < MAX_RETRIES - 1:
-                        wait_time = BACKOFF_DELAYS[attempt]
-                        logger.warning(
-                            f"[VIBE] Rate limit detected (attempt {attempt + 1}/{MAX_RETRIES}). "
-                            f"Retrying in {wait_time}s..."
-                        )
-                        await emit_log(
-                            "warning",
-                            f"⚠️ [VIBE-RATE-LIMIT] Перевищено ліміт запитів Mistral API. "
-                            f"Спроба {attempt + 1}/{MAX_RETRIES}. Очікування {wait_time}с...",
-                        )
-                        await asyncio.sleep(wait_time)
-                        continue
-                    else:
-                        # All retries exhausted
-                        error_msg = (
-                            f"Mistral API rate limit exceeded after {MAX_RETRIES} attempts. "
-                            f"Total wait time: {sum(BACKOFF_DELAYS)}s. "
-                            "Please wait a few minutes before retrying or check your API quota."
-                        )
-                        logger.error(f"[VIBE] {error_msg}")
-                        await emit_log("error", f"❌ [VIBE-RATE-LIMIT] {error_msg}")
-                        return {
-                            "success": False,
-                            "error": error_msg,
-                            "error_type": "RATE_LIMIT",
-                            "returncode": 1,
-                            "stdout": truncate_output(stdout),
-                            "stderr": truncate_output(stderr),
-                            "command": argv,
-                        }
-
-                logger.info(f"[VIBE] Process completed with exit code: {process.returncode}")
-
-                return {
-                    "success": process.returncode == 0,
-                    "returncode": process.returncode,
-                    "stdout": truncate_output(stdout),
-                    "stderr": truncate_output(stderr),
-                    "command": argv,
-                }
-
-            except FileNotFoundError as e:
-                error_msg = f"Vibe binary not found: {argv[0]}"
-                logger.error(f"[VIBE] {error_msg}: {e}")
-                return {
-                    "success": False,
-                    "error": error_msg,
-                    "command": argv,
-                }
-
-            except Exception as e:
-                error_msg = f"Subprocess error: {e}"
-                logger.error(f"[VIBE] {error_msg}")
-                return {
-                    "success": False,
-                    "error": error_msg,
-                    "command": argv,
-                }
-
-    except Exception as outer_e:
-        error_msg = f"Outer subprocess error: {outer_e}"
-        logger.error(f"[VIBE] {error_msg}")
-        return {
-            "success": False,
-            "error": error_msg,
-            "command": argv,
+        role_map = {
+            "assistant": "🧠 [VIBE-THOUGHT]",
+            "tool": "🔧 [VIBE-ACTION]",
         }
+        prefix = role_map.get(obj["role"], "💬 [VIBE-GEN]")
+        message = f"{prefix} {str(obj['content'])[:200]}"
+
+        logger.info(message)
+        await _emit_vibe_log(ctx, "info", message)
+        return True
+    except (json.JSONDecodeError, ValueError):
+        return False
+
+
+async def _format_and_emit_vibe_log(
+    line: str, stream_name: str, ctx: Context | None
+) -> None:
+    """Format and emit a standard log line."""
+    if any(t in line for t in SPAM_TRIGGERS):
+        return
+
+    if len(line) >= 1000:
+        return
+
+    if "Thinking" in line or "Planning" in line:
+        formatted = f"🧠 [VIBE-THOUGHT] {line}"
+    elif "Running" in line or "Executing" in line:
+        formatted = f"🔧 [VIBE-ACTION] {line}"
+    else:
+        formatted = f"⚡ [VIBE-LIVE] {line}"
+
+    logger.debug(f"[VIBE_{stream_name}] {line}")
+    level = "warning" if stream_name == "ERR" else "info"
+    await _emit_vibe_log(ctx, level, formatted)
+
+
+async def _read_vibe_stream(
+    stream: asyncio.StreamReader,
+    chunks: list[bytes],
+    stream_name: str,
+    timeout_s: float,
+    ctx: Context | None,
+) -> None:
+    """Read from Vibe stream and process lines."""
+    buffer = b""
+    try:
+        while True:
+            data = await stream.read(8192)
+            if not data:
+                break
+            chunks.append(data)
+            buffer += data
+            while b"\n" in buffer:
+                line_bytes, buffer = buffer.split(b"\n", 1)
+                line = strip_ansi(line_bytes.decode(errors="replace")).strip()
+                await _handle_vibe_line(line, stream_name, ctx)
+        if buffer:
+            line = strip_ansi(buffer.decode(errors="replace")).strip()
+            await _handle_vibe_line(line, stream_name, ctx)
+    except TimeoutError:
+        logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
+    except Exception as e:
+        logger.error(f"[VIBE] Stream reading error ({stream_name}): {e}")
+
+
+async def _execute_vibe_with_retries(
+    argv: list[str],
+    cwd: str | None,
+    timeout_s: float,
+    process_env: dict[str, str],
+    ctx: Context | None,
+) -> dict[str, Any]:
+    """Execute loop with retries for Vibe subprocess."""
+    MAX_RETRIES = 5
+    BACKOFF_DELAYS = [30, 60, 120, 240, 480]
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *argv,
+                cwd=cwd or VIBE_WORKSPACE,
+                env=process_env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
+            )
+
+            stdout_chunks: list[bytes] = []
+            stderr_chunks: list[bytes] = []
+
+            tasks: list[Any] = []
+            if process.stdout:
+                tasks.append(
+                    _read_vibe_stream(process.stdout, stdout_chunks, "OUT", timeout_s, ctx)
+                )
+            if process.stderr:
+                tasks.append(
+                    _read_vibe_stream(process.stderr, stderr_chunks, "ERR", timeout_s, ctx)
+                )
+            tasks.append(process.wait())
+
+            try:
+                # Cast to Any to avoid strict Awaitable[tuple] vs Awaitable[list] mismatch in some Pyrefly versions
+                gather_fut = cast(Any, asyncio.gather(*tasks))
+                await asyncio.wait_for(gather_fut, timeout=timeout_s + 20)
+                await _emit_vibe_log(ctx, "info", "✅ [VIBE-LIVE] Vibe завершив роботу успішно")
+            except TimeoutError:
+                return await _handle_vibe_timeout(process, argv, timeout_s, stdout_chunks, stderr_chunks, ctx)
+
+            stdout = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
+            stderr = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
+
+            # Check for API rate limits
+            if "Rate limit exceeded" in stderr or "Rate limit exceeded" in stdout:
+                res = await _handle_vibe_rate_limit(
+                    attempt, MAX_RETRIES, BACKOFF_DELAYS, stdout, stderr, argv, ctx
+                )
+                if isinstance(res, bool) and res is True:  # Continue to next retry
+                    continue
+                return cast(dict[str, Any], res)
+
+            return {
+                "success": process.returncode == 0,
+                "returncode": process.returncode,
+                "stdout": truncate_output(stdout),
+                "stderr": truncate_output(stderr),
+                "command": argv,
+            }
+        except FileNotFoundError:
+            return {"success": False, "error": f"Vibe binary not found: {argv[0]}", "command": argv}
+        except Exception as e:
+            logger.error(f"[VIBE] Subprocess error during attempt {attempt + 1}: {e}")
+            if attempt == MAX_RETRIES - 1:
+                return {"success": False, "error": str(e), "command": argv}
+
+    return {"success": False, "error": "Retries exhausted", "command": argv}
+
+
+async def _handle_vibe_timeout(
+    process: asyncio.subprocess.Process,
+    argv: list[str],
+    timeout_s: float,
+    stdout_chunks: list[bytes],
+    stderr_chunks: list[bytes],
+    ctx: Context | None,
+) -> dict[str, Any]:
+    """Handle process timeout by terminating/killing and returning partial output."""
+    logger.warning(f"[VIBE] Process timeout ({timeout_s}s), terminating")
+    await _emit_vibe_log(ctx, "warning", f"⏱️ [VIBE-LIVE] Перевищено timeout ({timeout_s}s)")
+    
+    try:
+        process.terminate()
+        await asyncio.wait_for(process.wait(), timeout=5)
+    except TimeoutError:
+        process.kill()
+        await process.wait()
+
+    stdout_str = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
+    stderr_str = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
 
     return {
         "success": False,
-        "error": "Unknown error in run_vibe_subprocess",
+        "error": f"Vibe execution timed out after {timeout_s}s",
+        "returncode": -1,
+        "stdout": truncate_output(stdout_str),
+        "stderr": truncate_output(stderr_str),
+        "command": argv,
+    }
+
+
+async def _handle_vibe_rate_limit(
+    attempt: int,
+    max_retries: int,
+    backoff_delays: list[int],
+    stdout: str,
+    stderr: str,
+    argv: list[str],
+    ctx: Context | None,
+) -> bool | dict[str, Any]:
+    """Handle rate limit errors with backoff or report failure."""
+    if attempt < max_retries - 1:
+        wait_time = backoff_delays[attempt]
+        logger.warning(
+            f"[VIBE] Rate limit detected (attempt {attempt + 1}/{max_retries}). Retrying in {wait_time}s..."
+        )
+        await _emit_vibe_log(
+            ctx,
+            "warning",
+            f"⚠️ [VIBE-RATE-LIMIT] Перевищено ліміт запитів Mistral API. Спроба {attempt + 1}/{max_retries}. Очікування {wait_time}с...",
+        )
+        await asyncio.sleep(wait_time)
+        return True
+
+    error_msg = (
+        f"Mistral API rate limit exceeded after {max_retries} attempts. "
+        f"Please wait a few minutes or check API quota."
+    )
+    logger.error(f"[VIBE] {error_msg}")
+    await _emit_vibe_log(ctx, "error", f"❌ [VIBE-RATE-LIMIT] {error_msg}")
+    return {
+        "success": False,
+        "error": error_msg,
+        "error_type": "RATE_LIMIT",
+        "returncode": 1,
+        "stdout": truncate_output(stdout),
+        "stderr": truncate_output(stderr),
         "command": argv,
     }
 

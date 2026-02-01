@@ -661,10 +661,23 @@ class Grisha(BaseAgent):
     def _parse_verdict_analysis(self, analysis_text: str) -> dict[str, Any]:
         """Parses the logical verdict analysis text with improved reliability."""
         analysis_upper = analysis_text.upper()
+
+        verified = self._extract_verdict(analysis_text, analysis_upper)
+        confidence = self._extract_confidence(analysis_text, verified)
+        reasoning = self._extract_reasoning(analysis_text)
+        issues = self._extract_issues(analysis_text, verified)
+
+        return {
+            "verified": verified,
+            "confidence": confidence,
+            "reasoning": reasoning,
+            "issues": issues,
+        }
+
+    def _extract_verdict(self, analysis_text: str, analysis_upper: str) -> bool:
+        """Determines verification success or failure from text."""
         import re
 
-        # Verdict logic - IMPROVED: Check for explicit verdict first, then reasoning consistency
-        verified = False
         verdict_match = re.search(
             r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)",
             analysis_text,
@@ -673,46 +686,64 @@ class Grisha(BaseAgent):
 
         if verdict_match:
             verdict_val = verdict_match.group(1).upper()
-            verified = any(
-                word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"]
-            )
-        else:
-            # ENHANCED FALLBACK: Analyze reasoning consistency
-            header_text = analysis_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
-            
-            # Check for explicit success indicators
-            success_indicators = [
-                "CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО",
-                "КРОК ПІДТВЕРДЖЕНО", "УСПІШНО ВИКОНАНО", "ЗАВДАННЯ ВИКОНАНО"
-            ]
-            
-            # Check for explicit failure indicators  
-            failure_indicators = [
-                "FAILED", "ERROR", "ПРОВАЛЕНО", "ПОМИЛКА", "НЕ ВИКОНАНО",
-                "КРОК НЕ ПРОЙШОВ", "ЗАВДАННЯ НЕ ВИКОНАНО"
-            ]
-            
-            has_success = any(word in header_text for word in success_indicators)
-            has_failure = any(word in header_text for word in failure_indicators)
-            
-            # CRITICAL FIX: If reasoning confirms success but no explicit verdict, trust reasoning
-            reasoning_text = analysis_text.upper()
-            reasoning_confirms_success = any(phrase in reasoning_text for phrase in [
-                "ШЛЯХ ІСНУЄ", "КАТАЛОГ СТВОРЕНО", "ПРАВА ДОСТУПУ Є", "НЕМАЄ ОЗНАК ПРОБЛЕМ",
-                "ДОСТАТНІ ОЗНАКИ", "УСПІШНО СТВОРЕНО", "ПІДТВЕРДЖУЄ", "ВСЕ ДОБРЕ"
-            ])
-            
-            if has_success and not has_failure:
-                verified = True
-            elif reasoning_confirms_success and not has_failure:
-                verified = True
-            elif has_failure:
-                verified = False
-            else:
-                # Default to cautious positive if evidence suggests success
-                verified = reasoning_confirms_success
+            return any(word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
 
-        # Confidence extraction
+        return self._fallback_verdict_analysis(analysis_text, analysis_upper)
+
+    def _fallback_verdict_analysis(self, analysis_text: str, analysis_upper: str) -> bool:
+        """Enhanced fallback to analyze reasoning consistency."""
+        header_text = analysis_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
+
+        success_indicators = [
+            "CONFIRMED",
+            "SUCCESS",
+            "VERIFIED",
+            "ПІДТВЕРДЖЕНО",
+            "УСПІШНО",
+            "КРОК ПІДТВЕРДЖЕНО",
+            "УСПІШНО ВИКОНАНО",
+            "ЗАВДАННЯ ВИКОНАНО",
+        ]
+        failure_indicators = [
+            "FAILED",
+            "ERROR",
+            "ПРОВАЛЕНО",
+            "ПОМИЛКА",
+            "НЕ ВИКОНАНО",
+            "КРОК НЕ ПРОЙШОВ",
+            "ЗАВДАННЯ НЕ ВИКОНАНО",
+        ]
+
+        has_success = any(word in header_text for word in success_indicators)
+        has_failure = any(word in header_text for word in failure_indicators)
+
+        reasoning_text = analysis_text.upper()
+        reasoning_confirms_success = any(
+            phrase in reasoning_text
+            for phrase in [
+                "ШЛЯХ ІСНУЄ",
+                "КАТАЛОГ СТВОРЕНО",
+                "ПРАВА ДОСТУПУ Є",
+                "НЕМАЄ ОЗНАК ПРОБЛЕМ",
+                "ДОСТАТНІ ОЗНАКИ",
+                "УСПІШНО СТВОРЕНО",
+                "ПІДТВЕРДЖУЄ",
+                "ВСЕ ДОБРЕ",
+            ]
+        )
+
+        if has_success and not has_failure:
+            return True
+        if reasoning_confirms_success and not has_failure:
+            return True
+        if has_failure:
+            return False
+        return reasoning_confirms_success
+
+    def _extract_confidence(self, analysis_text: str, verified: bool) -> float:
+        """Extracts confidence percentage from analysis."""
+        import re
+
         confidence_match = re.search(
             r"(?:CONFIDENCE|ВПЕВНЕНІСТЬ)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE
         )
@@ -721,18 +752,23 @@ class Grisha(BaseAgent):
         )
         if confidence > 1.0:
             confidence /= 100.0
+        return confidence
 
-        # Reasoning extraction
+    def _extract_reasoning(self, analysis_text: str) -> str:
+        """Extracts reasoning text block."""
+        import re
+
         reasoning_match = re.search(
             r"(?:REASONING|ОБҐРУНТУВАННЯ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
             analysis_text,
             re.DOTALL | re.IGNORECASE,
         )
-        ukrainian_reasoning = (
-            reasoning_match.group(1).strip() if reasoning_match else analysis_text
-        )
+        return reasoning_match.group(1).strip() if reasoning_match else analysis_text
 
-        # Issues extraction with better logic
+    def _extract_issues(self, analysis_text: str, verified: bool) -> list[str]:
+        """Extracts and filters potential issues."""
+        import re
+
         issues_match = re.search(
             r"(?:ISSUES|ПРОБЛЕМИ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
             analysis_text,
@@ -749,29 +785,23 @@ class Grisha(BaseAgent):
             for i in issues_text.split("\n")
             if i.strip() and i.strip() not in ["None", "Не виявлено"]
         ]
-        
-        # CRITICAL FIX: Remove contradictory issues when verified is True
+
         if verified and issues:
-            # Remove issues that contradict successful verification
-            filtered_issues = []
-            for issue in issues:
-                issue_upper = issue.upper()
-                contradicting_phrases = [
-                    "НЕ ВИКОНАНО", "ПОМИЛКА", "ПРОВАЛЕНО", "НЕМАЄ", "ВІДСУТНІЙ"
-                ]
-                if not any(phrase in issue_upper for phrase in contradicting_phrases):
-                    filtered_issues.append(issue)
-            issues = filtered_issues
-        
+            issues = self._filter_contradictory_issues(issues)
+
         if not verified and not issues:
             issues.append("Verification criteria not met")
+        return issues
 
-        return {
-            "verified": verified,
-            "confidence": confidence,
-            "reasoning": ukrainian_reasoning,
-            "issues": issues,
-        }
+    def _filter_contradictory_issues(self, issues: list[str]) -> list[str]:
+        """Removes issues that contradict successful verification."""
+        filtered_issues = []
+        for issue in issues:
+            issue_upper = issue.upper()
+            contradicting_phrases = ["НЕ ВИКОНАНО", "ПОМИЛКА", "ПРОВАЛЕНО", "НЕМАЄ", "ВІДСУТНІЙ"]
+            if not any(phrase in issue_upper for phrase in contradicting_phrases):
+                filtered_issues.append(issue)
+        return filtered_issues
 
     def _fallback_verdict(self, verification_results: list[dict]) -> dict[str, Any]:
         """Strict fallback verdict logic if sequential-thinking fails."""

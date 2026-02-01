@@ -607,6 +607,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
 
 // Add global declarations for Google Maps Web Components to satisfy TypeScript
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       'gmp-map': any;

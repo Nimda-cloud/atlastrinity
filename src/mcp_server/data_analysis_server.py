@@ -192,17 +192,7 @@ async def analyze_dataset(
     output_format: str = "json",
     target_path: str | None = None,
 ) -> dict[str, Any]:
-    """Analyze a dataset with statistical methods and generate insights.
-
-    Args:
-        data_source: Path to data file or URL
-        analysis_type: Type of analysis - 'summary', 'correlation', 'distribution', 'outliers'
-        output_format: Output format - 'json', 'markdown', 'html'
-        target_path: Optional path to save results
-
-    Returns:
-        Analysis results with insights and recommendations
-    """
+    """Analyze a dataset with statistical methods and generate insights."""
     logger.info(f"Analyzing dataset: {data_source} (type={analysis_type})")
 
     df, error = _load_dataframe(data_source, nrows=MAX_ROWS_FULL)
@@ -220,103 +210,118 @@ async def analyze_dataset(
     }
 
     if analysis_type == "summary":
-        # Basic summary statistics
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
-
-        results["numeric_summary"] = df[numeric_cols].describe().to_dict() if numeric_cols else {}
-        results["categorical_summary"] = {
-            col: df[col].value_counts().head(10).to_dict()
-            for col in categorical_cols[:5]  # Limit to first 5 categorical columns
-        }
-        results["missing_values"] = df.isna().sum().to_dict()
-
+        _analyze_summary(df, results)
     elif analysis_type == "correlation":
-        # Correlation analysis for numeric columns
-        numeric_df = df.select_dtypes(include=[np.number])
-        if len(numeric_df.columns) > 1:
-            corr_matrix = numeric_df.corr()
-            results["correlation_matrix"] = corr_matrix.to_dict()
-
-            # Find strong correlations
-            strong_corrs = []
-            for i in range(len(corr_matrix.columns)):
-                for j in range(i + 1, len(corr_matrix.columns)):
-                    val = corr_matrix.iloc[i, j]
-                    # Handle potential Timedelta or other non-float types
-                    try:
-                        v_any: Any = val
-                        f_val = float(v_any)
-                        if abs(f_val) > 0.7:
-                            strong_corrs.append(
-                                {
-                                    "col1": str(corr_matrix.columns[i]),
-                                    "col2": str(corr_matrix.columns[j]),
-                                    "correlation": round(f_val, 4),
-                                }
-                            )
-                    except (TypeError, ValueError):
-                        continue
-            results["strong_correlations"] = strong_corrs
-        else:
-            results["correlation_matrix"] = {}
-            results["note"] = "Not enough numeric columns for correlation analysis"
-
+        _analyze_correlation(df, results)
     elif analysis_type == "distribution":
-        # Distribution analysis
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        distributions = {}
-        for col in numeric_cols[:10]:  # Limit to first 10
-            series = df[col].dropna()
-            if len(series) > 0:
-                # Cast to Any to satisfy Pyrefly's strict type checking for pandas series
-                val_skew: Any = series.skew()
-                val_kurt: Any = series.kurtosis()
-                distributions[col] = {
-                    "mean": round(float(series.mean()), 4),
-                    "median": float(series.median()),
-                    "std": round(float(series.std()), 4),
-                    "skewness": round(float(val_skew), 4) if not pd.isna(val_skew) else 0.0,
-                    "kurtosis": round(float(val_kurt), 4) if not pd.isna(val_kurt) else 0.0,
-                    "percentiles": {
-                        "25%": float(series.quantile(0.25)),
-                        "50%": float(series.quantile(0.50)),
-                        "75%": float(series.quantile(0.75)),
-                        "95%": float(series.quantile(0.95)),
-                    },
-                }
-        results["distributions"] = distributions
-
+        _analyze_distribution(df, results)
     elif analysis_type == "outliers":
-        # Outlier detection using IQR method
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        outliers = {}
-        for col in numeric_cols[:10]:
-            series = df[col].dropna()
-            if len(series) > 0:
-                Q1 = series.quantile(0.25)
-                Q3 = series.quantile(0.75)
-                IQR = Q3 - Q1
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
-                outlier_count = ((series < lower_bound) | (series > upper_bound)).sum()
-                outliers[col] = {
-                    "outlier_count": int(outlier_count),
-                    "outlier_percentage": round(outlier_count / len(series) * 100, 2),
-                    "lower_bound": round(float(lower_bound), 4),
-                    "upper_bound": round(float(upper_bound), 4),
-                }
-        results["outliers"] = outliers
+        _analyze_outliers(df, results)
 
     # Save results if target path specified
     if target_path:
-        output_path = Path(target_path).expanduser()
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2, default=str)
-        results["saved_to"] = str(output_path)
+        _save_analysis_results(results, target_path)
 
     return results
+
+
+def _analyze_summary(df, results: dict[str, Any]) -> None:
+    """Helper for summary statistics analysis."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+
+    results["numeric_summary"] = df[numeric_cols].describe().to_dict() if numeric_cols else {}
+    results["categorical_summary"] = {
+        col: df[col].value_counts().head(10).to_dict()
+        for col in categorical_cols[:5]
+    }
+    results["missing_values"] = df.isna().sum().to_dict()
+
+
+def _analyze_correlation(df, results: dict[str, Any]) -> None:
+    """Helper for correlation analysis."""
+    numeric_df = df.select_dtypes(include=[np.number])
+    if len(numeric_df.columns) > 1:
+        corr_matrix = numeric_df.corr()
+        results["correlation_matrix"] = corr_matrix.to_dict()
+
+        strong_corrs = []
+        for i in range(len(corr_matrix.columns)):
+            for j in range(i + 1, len(corr_matrix.columns)):
+                val = corr_matrix.iloc[i, j]
+                try:
+                    v_any: Any = val
+                    f_val = float(v_any)
+                    if abs(f_val) > 0.7:
+                        strong_corrs.append(
+                            {
+                                "col1": str(corr_matrix.columns[i]),
+                                "col2": str(corr_matrix.columns[j]),
+                                "correlation": round(f_val, 4),
+                            }
+                        )
+                except (TypeError, ValueError):
+                    continue
+        results["strong_correlations"] = strong_corrs
+    else:
+        results["correlation_matrix"] = {}
+        results["note"] = "Not enough numeric columns for correlation analysis"
+
+
+def _analyze_distribution(df, results: dict[str, Any]) -> None:
+    """Helper for distribution analysis."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    distributions = {}
+    for col in numeric_cols[:10]:
+        series = df[col].dropna()
+        if len(series) > 0:
+            val_skew: Any = series.skew()
+            val_kurt: Any = series.kurtosis()
+            distributions[col] = {
+                "mean": round(float(series.mean()), 4),
+                "median": float(series.median()),
+                "std": round(float(series.std()), 4),
+                "skewness": round(float(val_skew), 4) if not pd.isna(val_skew) else 0.0,
+                "kurtosis": round(float(val_kurt), 4) if not pd.isna(val_kurt) else 0.0,
+                "percentiles": {
+                    "25%": float(series.quantile(0.25)),
+                    "50%": float(series.quantile(0.50)),
+                    "75%": float(series.quantile(0.75)),
+                    "95%": float(series.quantile(0.95)),
+                },
+            }
+    results["distributions"] = distributions
+
+
+def _analyze_outliers(df, results: dict[str, Any]) -> None:
+    """Helper for outlier detection."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    outliers = {}
+    for col in numeric_cols[:10]:
+        series = df[col].dropna()
+        if len(series) > 0:
+            Q1 = series.quantile(0.25)
+            Q3 = series.quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            outlier_count = ((series < lower_bound) | (series > upper_bound)).sum()
+            outliers[col] = {
+                "outlier_count": int(outlier_count),
+                "outlier_percentage": round(outlier_count / len(series) * 100, 2),
+                "lower_bound": round(float(lower_bound), 4),
+                "upper_bound": round(float(upper_bound), 4),
+            }
+    results["outliers"] = outliers
+
+
+def _save_analysis_results(results: dict[str, Any], target_path: str) -> None:
+    """Save analysis results to target path."""
+    output_path = Path(target_path).expanduser()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, default=str)
+    results["saved_to"] = str(output_path)
 
 
 @server.tool()
@@ -429,24 +434,11 @@ async def create_visualization(
     title: str | None = None,
     output_format: str = "png",
 ) -> dict[str, Any]:
-    """Create visualizations from data.
-
-    Args:
-        data_source: Path to data file or URL
-        visualization_type: Type - 'histogram', 'scatter', 'bar', 'line', 'box', 'heatmap'
-        x_axis: Column name for X axis
-        y_axis: Column name for Y axis
-        title: Chart title
-        output_format: Output format - 'png', 'svg', 'html'
-
-    Returns:
-        Path to generated visualization or base64 encoded image
-    """
+    """Create visualizations from data."""
     logger.info(f"Creating visualization: {visualization_type}")
 
     try:
         import matplotlib  # type: ignore[import-not-found]
-
         matplotlib.use("Agg")  # Non-interactive backend
         import matplotlib.pyplot as plt  # type: ignore[import-not-found]
     except ImportError:
@@ -455,103 +447,123 @@ async def create_visualization(
     df, error = _load_dataframe(data_source, nrows=MAX_ROWS_PREVIEW)
     if error:
         return {"success": False, "error": error}
-
     if df is None:
         return {"success": False, "error": "Failed to load dataframe"}
 
-    # Create figure
     fig, ax = plt.subplots(figsize=(10, 6))
-
     try:
+        viz_error = None
         if visualization_type == "histogram":
-            if x_axis and x_axis in df.columns:
-                df[x_axis].hist(ax=ax, bins=30, edgecolor="black")
-                ax.set_xlabel(str(x_axis))
-                ax.set_ylabel("Frequency")
-            else:
-                # Histogram of first numeric column
-                numeric_cols = df.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    col_name = numeric_cols[0]
-                    df[col_name].hist(ax=ax, bins=30, edgecolor="black")
-                    ax.set_xlabel(str(col_name))
-                    ax.set_ylabel("Frequency")
-
+            _plot_histogram(ax, df, x_axis)
         elif visualization_type == "scatter":
-            if x_axis and y_axis and x_axis in df.columns and y_axis in df.columns:
-                ax.scatter(df[x_axis], df[y_axis], alpha=0.6)
-                ax.set_xlabel(str(x_axis))
-                ax.set_ylabel(str(y_axis))
-            else:
-                return {"success": False, "error": "x_axis and y_axis required for scatter plot"}
-
+            viz_error = _plot_scatter(ax, df, x_axis, y_axis)
         elif visualization_type == "bar":
-            if x_axis and x_axis in df.columns:
-                value_counts = df[x_axis].value_counts().head(20)
-                value_counts.plot(kind="bar", ax=ax)
-                ax.set_xlabel(str(x_axis))
-                ax.set_ylabel("Count")
-                plt.xticks(rotation=45, ha="right")
-            else:
-                return {"success": False, "error": "x_axis required for bar chart"}
-
+            viz_error = _plot_bar(ax, df, x_axis)
         elif visualization_type == "line":
-            if y_axis and y_axis in df.columns:
-                if x_axis and x_axis in df.columns:
-                    ax.plot(df[x_axis], df[y_axis])
-                    ax.set_xlabel(x_axis)
-                else:
-                    ax.plot(df[y_axis])
-                ax.set_ylabel(y_axis)
-            else:
-                return {"success": False, "error": "y_axis required for line chart"}
-
+            viz_error = _plot_line(ax, df, x_axis, y_axis)
         elif visualization_type == "box":
-            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-            if numeric_cols:
-                df[numeric_cols[:10]].boxplot(ax=ax)
-                plt.xticks(rotation=45, ha="right")
-
+            _plot_box(ax, df)
         elif visualization_type == "heatmap":
-            numeric_df = df.select_dtypes(include=[np.number])
-            if len(numeric_df.columns) > 1:
-                corr = numeric_df.corr()
-                im = ax.imshow(corr, cmap="coolwarm", aspect="auto")
-                ax.set_xticks(range(len(corr.columns)))
-                ax.set_yticks(range(len(corr.columns)))
-                ax.set_xticklabels(corr.columns, rotation=45, ha="right")
-                ax.set_yticklabels(corr.columns)
-                plt.colorbar(im, ax=ax)
-            else:
-                return {"success": False, "error": "Need at least 2 numeric columns for heatmap"}
+            viz_error = _plot_heatmap(ax, df)
         else:
-            return {"success": False, "error": f"Unknown visualization type: {visualization_type}"}
+            viz_error = f"Unknown visualization type: {visualization_type}"
 
-        # Set title
-        if title:
-            ax.set_title(title)
-        else:
-            ax.set_title(f"{visualization_type.capitalize()} Chart")
+        if viz_error:
+            plt.close(fig)
+            return {"success": False, "error": viz_error}
 
+        ax.set_title(title or f"{visualization_type.capitalize()} Chart")
         plt.tight_layout()
 
-        # Save to file
         output_file = DATA_DIR / f"chart_{uuid.uuid4().hex[:8]}.{output_format}"
         fig.savefig(output_file, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
         logger.info(f"Saved visualization to: {output_file}")
-
         return {
             "success": True,
             "visualization_type": visualization_type,
             "output_path": str(output_file),
             "format": output_format,
         }
-
     except Exception as e:
         plt.close(fig)
         return {"success": False, "error": f"Visualization failed: {e!s}"}
+
+
+def _plot_histogram(ax, df, x_axis):
+    """Helper for histogram plotting."""
+    target_col = x_axis if (x_axis and x_axis in df.columns) else None
+    if not target_col:
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            target_col = numeric_cols[0]
+    
+    if target_col:
+        df[target_col].hist(ax=ax, bins=30, edgecolor="black")
+        ax.set_xlabel(str(target_col))
+        ax.set_ylabel("Frequency")
+
+
+def _plot_scatter(ax, df, x_axis, y_axis):
+    """Helper for scatter plotting."""
+    if x_axis and y_axis and x_axis in df.columns and y_axis in df.columns:
+        ax.scatter(df[x_axis], df[y_axis], alpha=0.6)
+        ax.set_xlabel(str(x_axis))
+        ax.set_ylabel(str(y_axis))
+        return None
+    return "x_axis and y_axis required for scatter plot"
+
+
+def _plot_bar(ax, df, x_axis):
+    """Helper for bar chart plotting."""
+    import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+    if x_axis and x_axis in df.columns:
+        value_counts = df[x_axis].value_counts().head(20)
+        value_counts.plot(kind="bar", ax=ax)
+        ax.set_xlabel(str(x_axis))
+        ax.set_ylabel("Count")
+        plt.xticks(rotation=45, ha="right")
+        return None
+    return "x_axis required for bar chart"
+
+
+def _plot_line(ax, df, x_axis, y_axis):
+    """Helper for line chart plotting."""
+    if y_axis and y_axis in df.columns:
+        if x_axis and x_axis in df.columns:
+            ax.plot(df[x_axis], df[y_axis])
+            ax.set_xlabel(str(x_axis))
+        else:
+            ax.plot(df[y_axis])
+        ax.set_ylabel(str(y_axis))
+        return None
+    return "y_axis required for line chart"
+
+
+def _plot_box(ax, df):
+    """Helper for box plot plotting."""
+    import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if numeric_cols:
+        df[numeric_cols[:10]].boxplot(ax=ax)
+        plt.xticks(rotation=45, ha="right")
+
+
+def _plot_heatmap(ax, df):
+    """Helper for heatmap plotting."""
+    import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+    numeric_df = df.select_dtypes(include=[np.number])
+    if len(numeric_df.columns) > 1:
+        corr = numeric_df.corr()
+        im = ax.imshow(corr, cmap="coolwarm", aspect="auto")
+        ax.set_xticks(range(len(corr.columns)))
+        ax.set_yticks(range(len(corr.columns)))
+        ax.set_xticklabels(corr.columns, rotation=45, ha="right")
+        ax.set_yticklabels(corr.columns)
+        plt.colorbar(im, ax=ax)
+        return None
+    return "Need at least 2 numeric columns for heatmap"
 
 
 @server.tool()
@@ -561,17 +573,7 @@ async def data_cleaning(
     handle_missing: str = "drop",
     output_path: str | None = None,
 ) -> dict[str, Any]:
-    """Clean and preprocess data.
-
-    Args:
-        data_source: Path to data file
-        cleaning_methods: List of methods - 'remove_duplicates', 'fill_missing', 'normalize', 'standardize', 'remove_outliers'
-        handle_missing: How to handle missing values - 'drop', 'mean', 'median', 'mode', 'zero'
-        output_path: Path to save cleaned data
-
-    Returns:
-        Cleaning summary and path to cleaned data
-    """
+    """Clean and preprocess data."""
     logger.info(f"Cleaning data: {data_source}")
 
     if cleaning_methods is None:
@@ -580,77 +582,30 @@ async def data_cleaning(
     df, error = _load_dataframe(data_source)
     if error:
         return {"success": False, "error": error}
-
     if df is None:
         return {"success": False, "error": "Failed to load dataframe"}
 
     original_shape = df.shape
-    cleaning_log = []
+    cleaning_log: list[str] = []
 
     for method in cleaning_methods:
         if method == "remove_duplicates":
-            before = len(df)
-            df = df.drop_duplicates()
-            removed = before - len(df)
-            cleaning_log.append(f"Removed {removed} duplicate rows")
-
+            df = _clean_remove_duplicates(df, cleaning_log)
         elif method == "fill_missing":
-            numeric_cols = df.select_dtypes(include=[np.number]).columns
-            for col in numeric_cols:
-                if df[col].isna().any():
-                    if handle_missing == "mean":
-                        df[col] = df[col].fillna(df[col].mean())
-                    elif handle_missing == "median":
-                        df[col] = df[col].fillna(df[col].median())
-                    elif handle_missing == "zero":
-                        df[col] = df[col].fillna(0)
-            cleaning_log.append(f"Filled missing values using {handle_missing}")
-
+            _clean_fill_missing(df, handle_missing, cleaning_log)
         elif method == "normalize":
-            numeric_cols = df.select_dtypes(include=[np.number]).columns
-            for col in numeric_cols:
-                min_val = df[col].min()
-                max_val = df[col].max()
-                if max_val != min_val:
-                    df[col] = (df[col] - min_val) / (max_val - min_val)
-            cleaning_log.append(f"Normalized {len(numeric_cols)} numeric columns to [0, 1]")
-
+            _clean_normalize(df, cleaning_log)
         elif method == "standardize":
-            numeric_cols = df.select_dtypes(include=[np.number]).columns
-            for col in numeric_cols:
-                mean = df[col].mean()
-                std = df[col].std()
-                if std != 0:
-                    df[col] = (df[col] - mean) / std
-            cleaning_log.append(f"Standardized {len(numeric_cols)} numeric columns (z-score)")
-
+            _clean_standardize(df, cleaning_log)
         elif method == "remove_outliers":
-            numeric_cols = df.select_dtypes(include=[np.number]).columns
-            before = len(df)
-            for col in numeric_cols:
-                Q1 = df[col].quantile(0.25)
-                Q3 = df[col].quantile(0.75)
-                IQR = Q3 - Q1
-                df = df[(df[col] >= Q1 - 1.5 * IQR) & (df[col] <= Q3 + 1.5 * IQR)]
-            removed = before - len(df)
-            cleaning_log.append(f"Removed {removed} outlier rows")
+            df = _clean_remove_outliers(df, cleaning_log)
 
     # Handle remaining missing values
     if handle_missing == "drop":
-        before = len(df)
-        df = df.dropna()
-        dropped = before - len(df)
-        if dropped > 0:
-            cleaning_log.append(f"Dropped {dropped} rows with missing values")
+        df = _clean_drop_missing(df, cleaning_log)
 
     # Save cleaned data
-    if output_path:
-        save_path = Path(output_path).expanduser()
-    else:
-        save_path = DATA_DIR / f"cleaned_{uuid.uuid4().hex[:8]}.csv"
-
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(save_path, index=False)
+    save_path = _save_cleaned_data(df, output_path)
 
     return {
         "success": True,
@@ -659,6 +614,84 @@ async def data_cleaning(
         "cleaning_log": cleaning_log,
         "output_path": str(save_path),
     }
+
+
+def _clean_remove_duplicates(df, log: list[str]):
+    """Helper to remove duplicate rows."""
+    before = len(df)
+    df = df.drop_duplicates()
+    log.append(f"Removed {before - len(df)} duplicate rows")
+    return df
+
+
+def _clean_fill_missing(df, handle_missing: str, log: list[str]):
+    """Helper to fill missing numeric values."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        if df[col].isna().any():
+            if handle_missing == "mean":
+                df[col] = df[col].fillna(df[col].mean())
+            elif handle_missing == "median":
+                df[col] = df[col].fillna(df[col].median())
+            elif handle_missing == "zero":
+                df[col] = df[col].fillna(0)
+    log.append(f"Filled missing values using {handle_missing}")
+
+
+def _clean_normalize(df, log: list[str]):
+    """Helper to normalize numeric columns to [0, 1]."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        min_val = df[col].min()
+        max_val = df[col].max()
+        if max_val != min_val:
+            df[col] = (df[col] - min_val) / (max_val - min_val)
+    log.append(f"Normalized {len(numeric_cols)} numeric columns to [0, 1]")
+
+
+def _clean_standardize(df, log: list[str]):
+    """Helper to standardize numeric columns (z-score)."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        mean = df[col].mean()
+        std = df[col].std()
+        if std != 0:
+            df[col] = (df[col] - mean) / std
+    log.append(f"Standardized {len(numeric_cols)} numeric columns (z-score)")
+
+
+def _clean_remove_outliers(df, log: list[str]):
+    """Helper to remove outlier rows."""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    before = len(df)
+    for col in numeric_cols:
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        df = df[(df[col] >= Q1 - 1.5 * IQR) & (df[col] <= Q3 + 1.5 * IQR)]
+    log.append(f"Removed {before - len(df)} outlier rows")
+    return df
+
+
+def _clean_drop_missing(df, log: list[str]):
+    """Helper to drop rows with missing values."""
+    before = len(df)
+    df = df.dropna()
+    dropped = before - len(df)
+    if dropped > 0:
+        log.append(f"Dropped {dropped} rows with missing values")
+    return df
+
+
+def _save_cleaned_data(df, output_path: str | None):
+    """Helper to save cleaned dataframe."""
+    if output_path:
+        save_path = Path(output_path).expanduser()
+    else:
+        save_path = DATA_DIR / f"cleaned_{uuid.uuid4().hex[:8]}.csv"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(save_path, index=False)
+    return save_path
 
 
 @server.tool()
