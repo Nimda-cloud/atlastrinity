@@ -67,5 +67,5 @@ vendor/XcodeBuildMCP/
 
 # Database Backups Strategy:
 # - Local databases in ~/.config/atlastrinity/ are never committed
-# - backups/databases/ is now ignored to prevent workspace clutter.
-backups/databases/
+# - backups/databases/ is now TRACKED to allow sharing state/knowledge
+# backups/databases/
