@@ -3,6 +3,9 @@
  */
 
 import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
+// Disable Electron Security Warnings in Dev
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
+
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs';
