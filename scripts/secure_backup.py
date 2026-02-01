@@ -207,7 +207,7 @@ class SecureBackupManager:
                 'source': self.config_root / "memory" / "chroma",
                 'dest': self.backup_dir / "memory" / "chroma",
                 'encrypt': False,  # Vector embeddings - no direct secrets
-                'filter_sqlite': False
+                'filter_sqlite': True  # But documents/metadata may contain secrets!
             }
         ]
         
