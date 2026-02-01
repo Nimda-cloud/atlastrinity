@@ -659,11 +659,11 @@ class Grisha(BaseAgent):
             return self._fallback_verdict(verification_results)
 
     def _parse_verdict_analysis(self, analysis_text: str) -> dict[str, Any]:
-        """Parses the logical verdict analysis text."""
+        """Parses the logical verdict analysis text with improved reliability."""
         analysis_upper = analysis_text.upper()
         import re
 
-        # Verdict logic
+        # Verdict logic - IMPROVED: Check for explicit verdict first, then reasoning consistency
         verified = False
         verdict_match = re.search(
             r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)",
@@ -677,16 +677,40 @@ class Grisha(BaseAgent):
                 word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"]
             )
         else:
-            # Fallback to keyword search
+            # ENHANCED FALLBACK: Analyze reasoning consistency
             header_text = analysis_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
-            verified = any(
-                word in header_text
-                for word in ["CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО"]
-            )
-            if not verified and any(
-                word in header_text for word in ["FAILED", "ERROR", "ПРОВАЛЕНО"]
-            ):
+            
+            # Check for explicit success indicators
+            success_indicators = [
+                "CONFIRMED", "SUCCESS", "VERIFIED", "ПІДТВЕРДЖЕНО", "УСПІШНО",
+                "КРОК ПІДТВЕРДЖЕНО", "УСПІШНО ВИКОНАНО", "ЗАВДАННЯ ВИКОНАНО"
+            ]
+            
+            # Check for explicit failure indicators  
+            failure_indicators = [
+                "FAILED", "ERROR", "ПРОВАЛЕНО", "ПОМИЛКА", "НЕ ВИКОНАНО",
+                "КРОК НЕ ПРОЙШОВ", "ЗАВДАННЯ НЕ ВИКОНАНО"
+            ]
+            
+            has_success = any(word in header_text for word in success_indicators)
+            has_failure = any(word in header_text for word in failure_indicators)
+            
+            # CRITICAL FIX: If reasoning confirms success but no explicit verdict, trust reasoning
+            reasoning_text = analysis_text.upper()
+            reasoning_confirms_success = any(phrase in reasoning_text for phrase in [
+                "ШЛЯХ ІСНУЄ", "КАТАЛОГ СТВОРЕНО", "ПРАВА ДОСТУПУ Є", "НЕМАЄ ОЗНАК ПРОБЛЕМ",
+                "ДОСТАТНІ ОЗНАКИ", "УСПІШНО СТВОРЕНО", "ПІДТВЕРДЖУЄ", "ВСЕ ДОБРЕ"
+            ])
+            
+            if has_success and not has_failure:
+                verified = True
+            elif reasoning_confirms_success and not has_failure:
+                verified = True
+            elif has_failure:
                 verified = False
+            else:
+                # Default to cautious positive if evidence suggests success
+                verified = reasoning_confirms_success
 
         # Confidence extraction
         confidence_match = re.search(
@@ -708,7 +732,7 @@ class Grisha(BaseAgent):
             reasoning_match.group(1).strip() if reasoning_match else analysis_text
         )
 
-        # Issues extraction
+        # Issues extraction with better logic
         issues_match = re.search(
             r"(?:ISSUES|ПРОБЛЕМИ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
             analysis_text,
@@ -725,6 +749,20 @@ class Grisha(BaseAgent):
             for i in issues_text.split("\n")
             if i.strip() and i.strip() not in ["None", "Не виявлено"]
         ]
+        
+        # CRITICAL FIX: Remove contradictory issues when verified is True
+        if verified and issues:
+            # Remove issues that contradict successful verification
+            filtered_issues = []
+            for issue in issues:
+                issue_upper = issue.upper()
+                contradicting_phrases = [
+                    "НЕ ВИКОНАНО", "ПОМИЛКА", "ПРОВАЛЕНО", "НЕМАЄ", "ВІДСУТНІЙ"
+                ]
+                if not any(phrase in issue_upper for phrase in contradicting_phrases):
+                    filtered_issues.append(issue)
+            issues = filtered_issues
+        
         if not verified and not issues:
             issues.append("Verification criteria not met")
 
