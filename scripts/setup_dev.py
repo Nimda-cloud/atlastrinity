@@ -640,12 +640,15 @@ def setup_google_maps():
             script_path = PROJECT_ROOT / "scripts" / "setup_google_maps.py"
             if script_path.exists():
                 subprocess.run([sys.executable, str(script_path)], check=True)
+                return True
             else:
                 print_error(f"Скрипт {script_path} не знайдено!")
         else:
             print_info("Пропущено. Ви можете налаштувати ключ вручну в .env")
     except Exception as e:
         print_error(f"Помилка при автоматичному налаштуванні: {e}")
+    
+    return False
 
 def setup_xcodebuild_mcp():
     """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
@@ -1426,10 +1429,16 @@ def main():
     build_googlemaps_mcp()
     
     # Google Maps Automation
+    gmaps_updated = False
     try:
-        setup_google_maps()
+        gmaps_updated = setup_google_maps()
     except Exception as e:
         print_warning(f"Google Maps automation skipped: {e}")
+
+    # Re-sync if maps were updated to ensure .env is propagated globally
+    if gmaps_updated:
+        print_info("Прокидаємо новий API ключ у глобальну конфігурацію...")
+        sync_configs()
 
     setup_xcodebuild_mcp()
 
