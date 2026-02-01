@@ -502,15 +502,15 @@ def _handle_barge_in(text: str, confidence: float) -> bool:
         return False
 
     stop_commands = {
-        "стоп",
-        "стій",
-        "зупинись",
-        "зупини",
-        "тихо",
-        "stop",
-        "halt",
-        "quiet",
-        "wait",
+        "система стоп",
+        "зупини систему",
+        "атлас стоп",
+        "атлас тиша",
+        "вимкни звук",
+        "system stop",
+        "atlas stop",
+        "stop system",
+        "silence mode",
     }
     clean_text = text.strip().lower()
     if any(cmd in clean_text for cmd in stop_commands) and confidence > 0.70:
