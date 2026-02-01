@@ -280,7 +280,6 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
               <div slot="control-block-start-inline-start" className="place-picker-container">
                 <gmpx-place-picker placeholder="SEARCH_TARGET_LOCATION..."></gmpx-place-picker>
               </div>
-              <gmp-advanced-marker></gmp-advanced-marker>
             </gmp-map>
 
             {/* Loading overlay */}
