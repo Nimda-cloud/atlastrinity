@@ -430,13 +430,10 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
         .map-content-container {
           flex: 1;
           position: relative;
-          border: 1px solid rgba(0, 163, 255, 0.2);
-          background: #020a10;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: inset 0 0 50px rgba(0, 163, 255, 0.1);
         }
 
         .map-grid-overlay {
@@ -589,6 +586,9 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           z-index: 2;
           opacity: 0;
           transition: opacity 0.5s ease;
+          /* Edge fade effect - 60-80px transparent gradient on all sides */
+          -webkit-mask-image: radial-gradient(ellipse 90% 90% at center, black 60%, transparent 100%);
+          mask-image: radial-gradient(ellipse 90% 90% at center, black 60%, transparent 100%);
         }
 
         .interactive-map-wrapper.loaded {
