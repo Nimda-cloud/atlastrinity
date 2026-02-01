@@ -19,9 +19,10 @@ type SystemState =
 interface NeuralCoreProps {
   state: SystemState;
   activeAgent: AgentName;
+  minimized?: boolean;
 }
 
-const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
+const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent, minimized = false }) => {
   // --- DYNAMIC CORE COLOR ---
   const getStateColor = (): string => {
     // If we have an active agent and we are not idle, prioritize agent color
@@ -87,7 +88,10 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
   } as React.CSSProperties;
 
   return (
-    <div className="neural-core transition-colors-slow" style={containerStyle}>
+    <div
+      className={`neural-core transition-colors-slow ${minimized ? 'minimized' : ''}`}
+      style={containerStyle}
+    >
       <svg viewBox="-400 -400 800 800" className="orbital-svg">
         <defs>
           <filter id="glow-core">
@@ -324,12 +328,14 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
       </svg>
 
       {/* --- RECTANGULAR STATUS INDICATOR --- */}
-      <div className="status-indicator">
-        <div className="status-glow"></div>
-        <div className="status-box">
-          <span className="status-text">{getStateLabel()}</span>
+      {!minimized && (
+        <div className="status-indicator">
+          <div className="status-glow"></div>
+          <div className="status-box">
+            <span className="status-text">{getStateLabel()}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <style>{`
                 .neural-core {
@@ -340,6 +346,13 @@ const NeuralCore: React.FC<NeuralCoreProps> = ({ state, activeAgent }) => {
                     align-items: center;
                     justify-content: center;
                     overflow: visible;
+                    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .neural-core.minimized {
+                    opacity: 0.15;
+                    transform: scale(0.6);
+                    pointer-events: none;
+                    filter: blur(2px);
                 }
                 .orbital-svg {
                     width: 480px;

@@ -656,16 +656,24 @@ const App: React.FC = () => {
       </aside>
 
       {/* Center Panel: Neural Core / Map View */}
-      <main className="panel center-panel">
-        {viewMode === 'NEURAL' ? (
-          <NeuralCore state={systemState} activeAgent={activeAgent} />
-        ) : (
-          <MapView
-            imageUrl={mapData.url}
-            type={mapData.type}
-            location={mapData.location}
-            onClose={() => setViewMode('NEURAL')}
-          />
+      <main className="panel center-panel relative overflow-hidden">
+        {/* Neural Core is always present, but minimized when map is active */}
+        <NeuralCore
+          state={systemState}
+          activeAgent={activeAgent}
+          minimized={viewMode === 'MAP'}
+        />
+
+        {/* Map View overlays the core when active */}
+        {viewMode === 'MAP' && (
+          <div className="absolute inset-0 z-10 animate-fade-in">
+            <MapView
+              imageUrl={mapData.url}
+              type={mapData.type}
+              location={mapData.location}
+              onClose={() => setViewMode('NEURAL')}
+            />
+          </div>
         )}
       </main>
 
