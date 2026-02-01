@@ -1159,17 +1159,19 @@ IMPORTANT:
         # Map content to output
         result = self._map_content_to_output(result)
         
+        # Guarantee correct type for type checker
+        assert isinstance(result, dict), f"Expected dict, got {type(result)}"
         return result
     
-    def _convert_to_dict(self, result: Any) -> Any:
+    def _convert_to_dict(self, result: Any) -> dict[str, Any]:
         """Convert various result types to dict."""
         if hasattr(result, "model_dump"):
-            return result.model_dump()
+            return cast(dict[str, Any], result.model_dump())
         elif hasattr(result, "dict"):
-            return result.dict()
+            return cast(dict[str, Any], result.dict())
         elif not isinstance(result, dict):
             return {"content": [{"type": "text", "text": str(result)}], "isError": False}
-        return result
+        return cast(dict[str, Any], result)
     
     def _extract_error_message(self, result: dict[str, Any]) -> dict[str, Any]:
         """Extract error message from result content."""
