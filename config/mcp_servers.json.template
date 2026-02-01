@@ -55,7 +55,7 @@
     "googlemaps": {
       "command": "${PROJECT_ROOT}/vendor/mcp-server-googlemaps/.build/release/mcp-server-googlemaps",
       "connect_timeout": 60,
-      "description": "Google Maps (10 tools): geocode, reverse_geocode, search_places, place_details, directions, distance_matrix, street_view, static_map, elevation, interactive_search. Includes Cyberpunk image filter.",
+      "description": "Google Maps (12 tools): geocode, reverse_geocode, search_places, place_details, directions, maps_start_tour, maps_tour_control, distance_matrix, street_view, static_map, elevation, interactive_search. Includes Cyberpunk image filter.",
       "env": {
         "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
       },
