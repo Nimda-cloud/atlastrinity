@@ -207,7 +207,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const pollState = async () => {
+  const pollState = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/api/state`);
       if (response.ok) {
@@ -302,7 +302,7 @@ const App: React.FC = () => {
         console.error('[BRAIN] Polling error:', err);
       }
     }
-  };
+  }, [viewMode]);
 
   // Initialize & Poll State
   useEffect(() => {
@@ -320,7 +320,7 @@ const App: React.FC = () => {
       clearTimeout(startupTimeout);
       if (interval) clearInterval(interval);
     };
-  }, [fetchSessions]);
+  }, [fetchSessions, pollState]);
 
   const handleCommand = async (cmd: string) => {
     // 1. Log user action

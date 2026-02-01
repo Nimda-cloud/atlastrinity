@@ -5,8 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { MarkerData, RouteData, MapState } from './MapTypes';
-import { getMarkerIcon, decodePolyline } from './MapTypes';
+
 
 interface MapViewProps {
   imageUrl?: string;
@@ -102,7 +101,7 @@ const CYBERPUNK_MAP_STYLE = [
 const GOOGLE_MAPS_API_KEY =
   import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-const API_BASE = 'http://localhost:8000';
+
 
 const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, agentView }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -111,11 +110,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const apiLoaderRef = useRef<HTMLDivElement | null>(null);
   
-  // Map state from backend
-  const [mapState, setMapState] = useState<MapState | null>(null);
-  const [markers, setMarkers] = useState<any[]>([]);  // Google Maps markers
-  const [polylines, setPolylines] = useState<any[]>([]);  // Google Maps polylines
-  const mapInstanceRef = useRef<any>(null);
+
 
   // Load the Extended Component Library script
   useEffect(() => {

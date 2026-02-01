@@ -29,8 +29,13 @@ from src.brain.config_loader import config
 from src.brain.consolidation import consolidation_module
 from src.brain.context import shared_context
 from src.brain.db.manager import db_manager
-from src.brain.db.schema import ChatMessage, RecoveryAttempt
-from src.brain.db.schema import ConversationSummary as DBConvSummary
+from src.brain.db.schema import (
+    ChatMessage,
+    RecoveryAttempt,
+)
+from src.brain.db.schema import (
+    ConversationSummary as DBConvSummary,
+)
 from src.brain.db.schema import LogEntry as DBLog
 from src.brain.db.schema import Session as DBSession
 from src.brain.db.schema import Task as DBTask
@@ -39,8 +44,8 @@ from src.brain.db.schema import ToolExecution as DBToolExecution
 from src.brain.error_router import error_router
 from src.brain.knowledge_graph import knowledge_graph
 from src.brain.logger import logger
-from src.brain.mcp_manager import mcp_manager
 from src.brain.map_state import map_state_manager
+from src.brain.mcp_manager import mcp_manager
 from src.brain.message_bus import AgentMsg, MessageType, message_bus
 from src.brain.metrics import metrics_collector
 from src.brain.navigation.tour_driver import tour_driver
@@ -74,49 +79,6 @@ class TrinityState(TypedDict):
 
 
 class Trinity:
-    async def stop(self):
-        """Force system stop/pause"""
-        logger.warning("Trinity STOP called!")
-        await self.voice.stop_speaking()
-        # Ensure we stop the tour if active
-        await tour_driver.stop_tour()
-        
-        # If running a graph, we might want to cancel it?
-        # For now, just stop voice output.
-
-    # -------------------------------------------------------------------------
-    # Guided Tour Controls
-    # -------------------------------------------------------------------------
-
-    async def start_tour(self, polyline: str):
-        """Start a guided tour along a polyline."""
-        await tour_driver.start_tour(polyline)
-        return "Tour started."
-
-    async def stop_tour(self):
-        """Stop the current tour."""
-        await tour_driver.stop_tour()
-        return "Tour stopped."
-
-    async def pause_tour(self):
-        """Pause the tour."""
-        tour_driver.pause_tour()
-        return "Tour paused."
-
-    async def resume_tour(self):
-        """Resume the tour."""
-        tour_driver.resume_tour()
-        return "Tour resumed."
-
-    async def look_around(self, angle: int):
-        """Change view angle."""
-        tour_driver.look_around(angle)
-        return f"Looking at angle {angle}."
-
-    async def set_tour_speed(self, modifier: float):
-        """Set tour speed."""
-        tour_driver.set_speed(modifier)
-        return f"Speed set to {modifier}x."
     # -------------------------------------------------------------------------
     # Guided Tour Controls
     # -------------------------------------------------------------------------
@@ -503,6 +465,7 @@ class Trinity:
         """Immediately stop voice and cancel current orchestration task"""
         logger.info("[TRINITY] 🛑 STOP SIGNAL RECEIVED.")
         self.voice.stop()
+        asyncio.create_task(tour_driver.stop_tour())
         if self.active_task and not self.active_task.done():
             logger.info("[TRINITY] Cancelling active orchestration task.")
             self.active_task.cancel()
@@ -515,7 +478,7 @@ class Trinity:
         # Implementation of self.stop() handles the process termination
         logger.info("[VoiceManager] Stopped speaking.")
 
-    async def _speak(self, agent_id: str, text: str) -> str | None:
+    async def _speak(self, agent_id: str, text: str) -> None:
         """Voice wrapper with config-driven sanitization"""
         from src.brain.behavior_engine import behavior_engine
 
