@@ -587,8 +587,14 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           opacity: 0;
           transition: opacity 0.5s ease;
           /* Edge fade effect - 60-80px transparent gradient on all sides */
-          -webkit-mask-image: radial-gradient(ellipse 90% 90% at center, black 60%, transparent 100%);
-          mask-image: radial-gradient(ellipse 90% 90% at center, black 60%, transparent 100%);
+          -webkit-mask-image: 
+            linear-gradient(to right, transparent 0, black 80px, black calc(100% - 80px), transparent 100%),
+            linear-gradient(to bottom, transparent 0, black 80px, black calc(100% - 80px), transparent 100%);
+          -webkit-mask-composite: source-in;
+          mask-image: 
+            linear-gradient(to right, transparent 0, black 80px, black calc(100% - 80px), transparent 100%),
+            linear-gradient(to bottom, transparent 0, black 80px, black calc(100% - 80px), transparent 100%);
+          mask-composite: intersect;
         }
 
         .interactive-map-wrapper.loaded {
