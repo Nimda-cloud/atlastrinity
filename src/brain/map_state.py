@@ -44,6 +44,7 @@ class MapState:
     zoom: int = 12
     map_type: str = "roadmap"  # roadmap, satellite, hybrid, terrain
     layers: list[str] = field(default_factory=list)  # traffic, transit, bicycle
+    agent_view: dict[str, Any] | None = None  # {image_path, heading, pitch, fov}
 
 
 class MapStateManager:
@@ -126,6 +127,16 @@ class MapStateManager:
         """Set the currently active/selected place"""
         self.state.active_place = place_data
 
+    def set_agent_view(self, image_path: str, heading: int, pitch: int, fov: int):
+        """Update the agent's current visual perspective"""
+        self.state.agent_view = {
+            "image_path": image_path,
+            "heading": heading,
+            "pitch": pitch,
+            "fov": fov,
+            "timestamp": "now"  # Handled by frontend
+        }
+
     def to_dict(self) -> dict[str, Any]:
         """Convert state to dictionary for JSON serialization"""
         return {
@@ -159,6 +170,7 @@ class MapStateManager:
             "zoom": self.state.zoom,
             "map_type": self.state.map_type,
             "layers": self.state.layers,
+            "agent_view": self.state.agent_view,
         }
 
 
