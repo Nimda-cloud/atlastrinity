@@ -847,7 +847,7 @@ def install_deps():
 
     # Update PIP and foundational tools
     run_venv_cmd(
-        ["-m", "pip", "install", "-U", "pip", "setuptools<70.0.0", "wheel"],
+        ["-m", "pip", "install", "-U", "pip", "setuptools", "wheel"],
         check=False,
         capture_output=True,
     )
@@ -855,11 +855,22 @@ def install_deps():
     # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
-        # Install all requirements from requirements.txt
-        # We use --prefer-binary to speed up and avoid build issues on macOS ARM64
-        # We also pass --no-build-isolation specifically for espnet if needed, 
-        # but for a general requirements.txt it's better to let pip decide.
-        print_info("Installing all dependencies from requirements.txt...")
+        # Step 1: Install major voice components without dependencies. 
+        # Their metadata has old constraints (e.g. importlib-metadata < 5.0) 
+        # which conflict with modern libraries. Installing them first --no-deps 
+        # allows us to use modern versions for everything else.
+        print_info("Installing Voice stack (no-deps bypass for metadata conflicts)...")
+        run_venv_cmd(
+            [
+                "-m", "pip", "install", "--no-deps", 
+                "espnet==202509", "ukrainian-tts>=6.0.2"
+            ], 
+            check=True
+        )
+
+        # Step 2: Install remaining core dependencies from requirements.txt.
+        # Pip will now resolve the rest of the environment normally.
+        print_info("Installing core dependencies from requirements.txt...")
         run_venv_cmd(
             [
                 "-m",
