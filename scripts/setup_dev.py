@@ -602,6 +602,51 @@ def build_googlemaps_mcp():
         print_error(f"Помилка компіляції Swift: {e}")
         return False
 
+def setup_google_maps():
+    """Адаптивне налаштування Google Maps API через gcloud"""
+    print_step("Автоматизація Google Cloud / Google Maps...")
+    
+    # Провірка чи ключ вже є в .env (локально або в глобальному конфігу)
+    env_path = PROJECT_ROOT / ".env"
+    global_env_path = CONFIG_ROOT / ".env"
+    
+    has_key = False
+    for p in [env_path, global_env_path]:
+        if p.exists():
+            with open(p, encoding="utf-8") as f:
+                content = f.read()
+                if "GOOGLE_MAPS_API_KEY=" in content and "AIza" in content:
+                    has_key = True
+                    break
+    
+    if has_key:
+        print_success("Google Maps API Key вже налаштовано")
+        return
+
+    print_info("API Ключ не знайдено або він недійсний.")
+    print(f"{Colors.BOLD}Бажаєте налаштувати Google Maps автоматично через gcloud? (y/n){Colors.ENDC}")
+    print_info("Це створить проект, увімкне API та згенерує ключ.")
+    
+    try:
+        # Timed input for non-interactive environments
+        rlist, _, _ = select.select([sys.stdin], [], [], 10)
+        if rlist:
+            choice = sys.stdin.readline().strip().lower()
+        else:
+            print_info("Тайм-аут. Пропускаємо автоматичне налаштування.")
+            return
+
+        if choice == 'y':
+            script_path = PROJECT_ROOT / "scripts" / "setup_google_maps.py"
+            if script_path.exists():
+                subprocess.run([sys.executable, str(script_path)], check=True)
+            else:
+                print_error(f"Скрипт {script_path} не знайдено!")
+        else:
+            print_info("Пропущено. Ви можете налаштувати ключ вручну в .env")
+    except Exception as e:
+        print_error(f"Помилка при автоматичному налаштуванні: {e}")
+
 def setup_xcodebuild_mcp():
     """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
     print_step("Налаштування XcodeBuildMCP (Xcode automation)...")
@@ -1379,6 +1424,13 @@ def main():
 
     build_swift_mcp()
     build_googlemaps_mcp()
+    
+    # Google Maps Automation
+    try:
+        setup_google_maps()
+    except Exception as e:
+        print_warning(f"Google Maps automation skipped: {e}")
+
     setup_xcodebuild_mcp()
 
     # Ensure all binaries are executable
