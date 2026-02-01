@@ -117,6 +117,7 @@ function syncConfig(mapping, options = {}) {
         '${CONFIG_ROOT}': CONFIG_ROOT,
         '${PYTHONPATH}': PROJECT_ROOT,
         '${GITHUB_TOKEN}': process.env.GITHUB_TOKEN || '${GITHUB_TOKEN}',
+        '${GOOGLE_MAPS_API_KEY}': process.env.GOOGLE_MAPS_API_KEY || '${GOOGLE_MAPS_API_KEY}',
       };
 
       // Perform replacements
