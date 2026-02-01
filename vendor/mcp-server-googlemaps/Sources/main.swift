@@ -18,7 +18,7 @@ struct CyberpunkFilter {
     /// Apply Cyberpunk filter: blue/cyan color transform + edge detection + glow
     static func apply(to imageData: Data) -> Data? {
         guard let nsImage = NSImage(data: imageData),
-              let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil)
         else {
             return imageData
         }
@@ -124,10 +124,10 @@ func geocode(address: String) async throws -> String {
     let json = try await fetchJSON(endpoint: "geocode/json", params: ["address": address])
 
     guard let results = json["results"] as? [[String: Any]], let first = results.first,
-          let geometry = first["geometry"] as? [String: Any],
-          let location = geometry["location"] as? [String: Double],
-          let lat = location["lat"], let lng = location["lng"],
-          let formattedAddress = first["formatted_address"] as? String
+        let geometry = first["geometry"] as? [String: Any],
+        let location = geometry["location"] as? [String: Double],
+        let lat = location["lat"], let lng = location["lng"],
+        let formattedAddress = first["formatted_address"] as? String
     else {
         return "No results found for: \(address)"
     }
@@ -143,7 +143,7 @@ func reverseGeocode(lat: Double, lng: Double) async throws -> String {
         endpoint: "geocode/json", params: ["latlng": "\(lat),\(lng)"])
 
     guard let results = json["results"] as? [[String: Any]], let first = results.first,
-          let formattedAddress = first["formatted_address"] as? String
+        let formattedAddress = first["formatted_address"] as? String
     else {
         return "No address found for: \(lat), \(lng)"
     }
@@ -151,11 +151,45 @@ func reverseGeocode(lat: Double, lng: Double) async throws -> String {
     return "Address: \(formattedAddress)"
 }
 
-func searchPlaces(query: String, location: String?) async throws -> String {
+func searchPlaces(
+    query: String,
+    location: String?,
+    radius: Int?,
+    type: String?,
+    minPrice: Int?,
+    maxPrice: Int?,
+    openNow: Bool?,
+    rankBy: String?
+) async throws -> String {
     var params: [String: String] = ["query": query]
+
     if let loc = location {
         params["location"] = loc
-        params["radius"] = "5000"
+        params["radius"] = String(radius ?? 5000)
+    }
+
+    if let t = type {
+        params["type"] = t
+    }
+
+    if let minP = minPrice {
+        params["minprice"] = String(minP)
+    }
+
+    if let maxP = maxPrice {
+        params["maxprice"] = String(maxP)
+    }
+
+    if let open = openNow, open {
+        params["opennow"] = "true"
+    }
+
+    if let rank = rankBy {
+        params["rankby"] = rank
+        // When using rankby=distance, radius must be omitted
+        if rank == "distance" {
+            params.removeValue(forKey: "radius")
+        }
     }
 
     let json = try await fetchJSON(endpoint: "place/textsearch/json", params: params)
@@ -164,22 +198,45 @@ func searchPlaces(query: String, location: String?) async throws -> String {
         return "No places found for: \(query)"
     }
 
-    let places = results.prefix(5).compactMap { place -> String? in
+    let places = results.prefix(10).compactMap { place -> String? in
         guard let name = place["name"] as? String,
-              let address = place["formatted_address"] as? String
+            let address = place["formatted_address"] as? String
         else { return nil }
         let rating = place["rating"] as? Double ?? 0
-        return "• \(name) (★\(String(format: "%.1f", rating)))\n  \(address)"
+        let priceLevel = place["price_level"] as? Int
+        let openNowStatus = (place["opening_hours"] as? [String: Any])?["open_now"] as? Bool
+
+        var info = "• \(name) (★\(String(format: "%.1f", rating)))"
+        if let price = priceLevel {
+            info += " [\(String(repeating: "$", count: price))]"
+        }
+        if let isOpen = openNowStatus {
+            info += isOpen ? " 🟢 OPEN" : " 🔴 CLOSED"
+        }
+        info += "\n  \(address)"
+        return info
     }
 
     return places.joined(separator: "\n\n")
 }
 
-func placeDetails(placeId: String) async throws -> String {
-    let json = try await fetchJSON(
-        endpoint: "place/details/json",
-        params: ["place_id": placeId, "fields": "name,formatted_address,rating,opening_hours,website,phone_number"]
-    )
+func placeDetails(placeId: String, fields: String?, language: String?) async throws -> String {
+    var params: [String: String] = ["place_id": placeId]
+
+    // Custom field selection (for API quota optimization)
+    if let customFields = fields {
+        params["fields"] = customFields
+    } else {
+        params["fields"] =
+            "name,formatted_address,rating,opening_hours,website,formatted_phone_number,reviews,photos,price_level,user_ratings_total,types"
+    }
+
+    // Language preference
+    if let lang = language {
+        params["language"] = lang
+    }
+
+    let json = try await fetchJSON(endpoint: "place/details/json", params: params)
 
     guard let result = json["result"] as? [String: Any] else {
         return "Place not found"
@@ -188,98 +245,179 @@ func placeDetails(placeId: String) async throws -> String {
     let name = result["name"] as? String ?? "Unknown"
     let address = result["formatted_address"] as? String ?? ""
     let rating = result["rating"] as? Double ?? 0
+    let ratingsTotal = result["user_ratings_total"] as? Int
     let website = result["website"] as? String ?? "N/A"
     let phone = result["formatted_phone_number"] as? String ?? "N/A"
+    let priceLevel = result["price_level"] as? Int
+    let types = result["types"] as? [String] ?? []
 
-    return """
+    var info = """
         📍 \(name)
         Address: \(address)
         Rating: ★\(String(format: "%.1f", rating))
-        Phone: \(phone)
-        Website: \(website)
         """
+
+    if let total = ratingsTotal {
+        info += " (\(total) reviews)"
+    }
+
+    if let price = priceLevel {
+        info += "\n        Price: \(String(repeating: "$", count: price))"
+    }
+
+    info += """
+        \n        Phone: \(phone)
+        Website: \(website)
+        Categories: \(types.prefix(3).joined(separator: ", "))
+        """
+
+    // Opening hours
+    if let hours = result["opening_hours"] as? [String: Any] {
+        if let openNow = hours["open_now"] as? Bool {
+            info += "\n        Status: \(openNow ? "🟢 OPEN NOW" : "🔴 CLOSED")"
+        }
+        if let weekdayText = hours["weekday_text"] as? [String] {
+            info += "\n        Hours:\n        " + weekdayText.joined(separator: "\n        ")
+        }
+    }
+
+    // Reviews
+    if let reviews = result["reviews"] as? [[String: Any]] {
+        let topReviews = reviews.prefix(2).compactMap { review -> String? in
+            guard let author = review["author_name"] as? String,
+                let text = review["text"] as? String,
+                let reviewRating = review["rating"] as? Int
+            else { return nil }
+            return "   ★\(reviewRating) - \(author): \"\(text.prefix(100))...\""
+        }
+        if !topReviews.isEmpty {
+            info += "\n\n        Top Reviews:\n" + topReviews.joined(separator: "\n")
+        }
+    }
+
+    return info
 }
 
-func getDirections(origin: String, destination: String, mode: String) async throws -> String {
-    let json = try await fetchJSON(
-        endpoint: "directions/json",
-        params: [
-            "origin": origin, 
-            "destination": destination, 
-            "mode": mode,
-            "departure_time": "now",
-            "traffic_model": "best_guess"
-        ]
-    )
+func getDirections(
+    origin: String,
+    destination: String,
+    mode: String,
+    waypoints: String?,
+    alternatives: Bool?,
+    avoid: String?,
+    departureTime: String?,
+    arrivalTime: String?
+) async throws -> String {
+    var params: [String: String] = [
+        "origin": origin,
+        "destination": destination,
+        "mode": mode,
+    ]
 
-    guard let routes = json["routes"] as? [[String: Any]], let route = routes.first,
-          let legs = route["legs"] as? [[String: Any]], let leg = legs.first,
-          let distance = leg["distance"] as? [String: Any],
-          let duration = leg["duration"] as? [String: Any],
-          let steps = leg["steps"] as? [[String: Any]]
-    else {
+    // Add waypoints for multi-stop routes
+    if let wp = waypoints {
+        params["waypoints"] = "optimize:true|\(wp)"
+    }
+
+    // Request alternative routes
+    if let alt = alternatives, alt {
+        params["alternatives"] = "true"
+    }
+
+    // Avoid specific route features
+    if let avoidFeatures = avoid {
+        params["avoid"] = avoidFeatures  // tolls, highways, ferries
+    }
+
+    // Departure/arrival time for transit/traffic
+    if let depTime = departureTime {
+        params["departure_time"] = depTime
+        params["traffic_model"] = "best_guess"
+    } else if let arrTime = arrivalTime {
+        params["arrival_time"] = arrTime
+    } else {
+        // Default: live traffic
+        params["departure_time"] = "now"
+        params["traffic_model"] = "best_guess"
+    }
+
+    let json = try await fetchJSON(endpoint: "directions/json", params: params)
+
+    guard let routes = json["routes"] as? [[String: Any]] else {
         return "No route found"
     }
 
-    let distanceText = distance["text"] as? String ?? ""
-    let durationText = duration["text"] as? String ?? ""
-    let durationInTrafficText = leg["duration_in_traffic"] != nil ? (leg["duration_in_traffic"] as? [String: Any])?["text"] as? String : nil
+    var allRoutes: [String] = []
 
-    let directions = steps.prefix(10).compactMap { step -> String? in
-        guard let instruction = step["html_instructions"] as? String else { return nil }
-        // Strip HTML tags
-        let clean =
-            instruction
-            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        return "→ \(clean)"
+    for (idx, route) in routes.prefix(3).enumerated() {
+        guard let legs = route["legs"] as? [[String: Any]], let leg = legs.first,
+            let distance = leg["distance"] as? [String: Any],
+            let duration = leg["duration"] as? [String: Any],
+            let steps = leg["steps"] as? [[String: Any]]
+        else { continue }
+
+        let distanceText = distance["text"] as? String ?? ""
+        let durationText = duration["text"] as? String ?? ""
+        let durationInTrafficText =
+            (leg["duration_in_traffic"] as? [String: Any])?["text"] as? String
+        let summary = route["summary"] as? String ?? "Route \(idx + 1)"
+
+        let directions = steps.prefix(10).compactMap { step -> String? in
+            guard let instruction = step["html_instructions"] as? String else { return nil }
+            let clean = instruction.replacingOccurrences(
+                of: "<[^>]+>", with: "", options: .regularExpression)
+            return "   → \(clean)"
+        }
+
+        var routeInfo = """
+            \(idx == 0 ? "🚗" : "🔀") \(summary)
+            Distance: \(distanceText) | Duration: \(durationText)
+            """
+
+        if let traffic = durationInTrafficText {
+            routeInfo += "\n        Duration in Traffic: \(traffic) (LIVE)"
+        }
+
+        routeInfo += "\n\n        Directions:\n\(directions.joined(separator: "\n"))"
+        allRoutes.append(routeInfo)
     }
 
-    var result = """
-        🚗 Route: \(origin) → \(destination)
-        Distance: \(distanceText)
-        Duration: \(durationText)
-        """
-    
-    if let traffic = durationInTrafficText {
-        result += "\n        Duration in Traffic: \(traffic) (LIVE)"
-    }
-
-    result += "\n\n        Directions:\n        \(directions.joined(separator: "\n"))"
-    return result
+    return allRoutes.joined(separator: "\n\n─────────────────────\n\n")
 }
 
 func getDistanceMatrix(origins: String, destinations: String) async throws -> String {
     let json = try await fetchJSON(
         endpoint: "distancematrix/json",
         params: [
-            "origins": origins, 
+            "origins": origins,
             "destinations": destinations,
             "departure_time": "now",
-            "traffic_model": "best_guess"
+            "traffic_model": "best_guess",
         ]
     )
 
     guard let rows = json["rows"] as? [[String: Any]], let row = rows.first,
-          let elements = row["elements"] as? [[String: Any]], let element = elements.first,
-          let distance = element["distance"] as? [String: Any],
-          let duration = element["duration"] as? [String: Any]
+        let elements = row["elements"] as? [[String: Any]], let element = elements.first,
+        let distance = element["distance"] as? [String: Any],
+        let duration = element["duration"] as? [String: Any]
     else {
         return "Could not calculate distance"
     }
 
     let distanceText = distance["text"] as? String ?? ""
     let durationText = duration["text"] as? String ?? ""
-    let durationInTrafficText = (element["duration_in_traffic"] as? [String: Any])?["text"] as? String
+    let durationInTrafficText =
+        (element["duration_in_traffic"] as? [String: Any])?["text"] as? String
 
     var result = """
         📏 Distance: \(distanceText)
         ⏱️ Duration: \(durationText)
         """
-    
+
     if let traffic = durationInTrafficText {
         result += "\n        ⏱️ Duration in Traffic: \(traffic) (LIVE)"
     }
-    
+
     return result
 }
 
@@ -373,10 +511,11 @@ func getElevation(locations: String) async throws -> String {
 
     let elevations = results.compactMap { result -> String? in
         guard let elevation = result["elevation"] as? Double,
-              let location = result["location"] as? [String: Double],
-              let lat = location["lat"], let lng = location["lng"]
+            let location = result["location"] as? [String: Double],
+            let lat = location["lat"], let lng = location["lng"]
         else { return nil }
-        return "📍 (\(String(format: "%.4f", lat)), \(String(format: "%.4f", lng))): \(String(format: "%.1f", elevation))m"
+        return
+            "📍 (\(String(format: "%.4f", lat)), \(String(format: "%.4f", lng))): \(String(format: "%.1f", elevation))m"
     }
 
     return "Elevation Data:\n" + elevations.joined(separator: "\n")
@@ -421,6 +560,30 @@ let searchPlacesSchema: Value = .object([
             "type": .string("string"),
             "description": .string("Optional: center point as 'lat,lng'"),
         ]),
+        "radius": .object([
+            "type": .string("number"),
+            "description": .string("Search radius in meters (default: 5000)"),
+        ]),
+        "type": .object([
+            "type": .string("string"),
+            "description": .string("Filter by type: restaurant, cafe, hotel, etc."),
+        ]),
+        "min_price": .object([
+            "type": .string("number"),
+            "description": .string("Minimum price level (0-4)"),
+        ]),
+        "max_price": .object([
+            "type": .string("number"),
+            "description": .string("Maximum price level (0-4)"),
+        ]),
+        "open_now": .object([
+            "type": .string("boolean"),
+            "description": .string("Show only places open now"),
+        ]),
+        "rankby": .object([
+            "type": .string("string"),
+            "description": .string("Rank by: prominence (default) or distance"),
+        ]),
     ]),
     "required": .array([.string("query")]),
 ])
@@ -431,7 +594,15 @@ let placeDetailsSchema: Value = .object([
         "place_id": .object([
             "type": .string("string"),
             "description": .string("Google Place ID"),
-        ])
+        ]),
+        "fields": .object([
+            "type": .string("string"),
+            "description": .string("Comma-separated fields to return (for API quota optimization)"),
+        ]),
+        "language": .object([
+            "type": .string("string"),
+            "description": .string("Language code (e.g., 'en', 'uk', 'ru')"),
+        ]),
     ]),
     "required": .array([.string("place_id")]),
 ])
@@ -451,9 +622,30 @@ let directionsSchema: Value = .object([
             "type": .string("string"),
             "description": .string("Travel mode: driving, walking, bicycling, transit"),
         ]),
+        "waypoints": .object([
+            "type": .string("string"),
+            "description": .string("Intermediate stops, pipe-separated (e.g., 'Point1|Point2')"),
+        ]),
+        "alternatives": .object([
+            "type": .string("boolean"),
+            "description": .string("Return multiple route options (default: false)"),
+        ]),
+        "avoid": .object([
+            "type": .string("string"),
+            "description": .string("Avoid: tolls, highways, ferries (comma-separated)"),
+        ]),
+        "departure_time": .object([
+            "type": .string("string"),
+            "description": .string("Departure time (epoch timestamp or 'now')"),
+        ]),
+        "arrival_time": .object([
+            "type": .string("string"),
+            "description": .string("Arrival time (epoch timestamp)"),
+        ]),
     ]),
     "required": .array([.string("origin"), .string("destination")]),
-    "description": .string("Get turn-by-turn directions with live traffic awareness (departure_time=now).")
+    "description": .string(
+        "Get turn-by-turn directions with live traffic awareness and multi-stop routing."),
 ])
 
 let distanceMatrixSchema: Value = .object([
@@ -469,7 +661,8 @@ let distanceMatrixSchema: Value = .object([
         ]),
     ]),
     "required": .array([.string("origins"), .string("destinations")]),
-    "description": .string("Calculate travel distance and time with live traffic awareness (departure_time=now).")
+    "description": .string(
+        "Calculate travel distance and time with live traffic awareness (departure_time=now)."),
 ])
 
 let streetViewSchema: Value = .object([
@@ -579,20 +772,21 @@ func getOptionalBool(from args: [String: Value]?, key: String, defaultValue: Boo
 
 func generateMapsLink(location: String, zoom: Int, mapType: String) -> String {
     // Encode location for URL
-    let encodedLocation = location.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? location
-    
+    let encodedLocation =
+        location.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? location
+
     // Build Google Maps URL
     var urlComponents = URLComponents(string: "https://www.google.com/maps")!
     urlComponents.queryItems = [
         URLQueryItem(name: "q", value: encodedLocation),
         URLQueryItem(name: "z", value: String(zoom)),
-        URLQueryItem(name: "maptype", value: mapType)
+        URLQueryItem(name: "maptype", value: mapType),
     ]
-    
+
     guard let url = urlComponents.url else {
         return "🔗 MAP_LINK_ERROR: Invalid URL parameters"
     }
-    
+
     return """
         🔗 Google Maps Link Generated!
         Location: \(location)
@@ -676,7 +870,7 @@ func setupAndStartServer() async throws -> Server {
                         "description": .string("Location (address or coordinates)"),
                     ]),
                     "zoom": .object([
-                        "type": .string("number"), 
+                        "type": .string("number"),
                         "description": .string("Zoom level (1-20, default 15)"),
                     ]),
                     "map_type": .object([
@@ -718,7 +912,7 @@ func setupAndStartServer() async throws -> Server {
 
             case "maps_reverse_geocode":
                 guard let lat = args?["lat"]?.doubleValue,
-                      let lng = args?["lng"]?.doubleValue
+                    let lng = args?["lng"]?.doubleValue
                 else {
                     throw MCPError.invalidParams("Missing lat/lng")
                 }
@@ -727,17 +921,49 @@ func setupAndStartServer() async throws -> Server {
             case "maps_search_places":
                 let query = try getRequiredString(from: args, key: "query")
                 let location = getOptionalString(from: args, key: "location")
-                result = try await searchPlaces(query: query, location: location)
+                let radius = getOptionalInt(from: args, key: "radius", defaultValue: 5000)
+                let type = getOptionalString(from: args, key: "type")
+                let minPrice = args?["min_price"]?.intValue
+                let maxPrice = args?["max_price"]?.intValue
+                let openNow = args?["open_now"]?.boolValue
+                let rankBy = getOptionalString(from: args, key: "rankby")
+                result = try await searchPlaces(
+                    query: query,
+                    location: location,
+                    radius: radius,
+                    type: type,
+                    minPrice: minPrice,
+                    maxPrice: maxPrice,
+                    openNow: openNow,
+                    rankBy: rankBy
+                )
 
             case "maps_place_details":
                 let placeId = try getRequiredString(from: args, key: "place_id")
-                result = try await placeDetails(placeId: placeId)
+                let fields = getOptionalString(from: args, key: "fields")
+                let language = getOptionalString(from: args, key: "language")
+                result = try await placeDetails(
+                    placeId: placeId, fields: fields, language: language)
 
             case "maps_directions":
                 let origin = try getRequiredString(from: args, key: "origin")
                 let destination = try getRequiredString(from: args, key: "destination")
                 let mode = getOptionalString(from: args, key: "mode") ?? "driving"
-                result = try await getDirections(origin: origin, destination: destination, mode: mode)
+                let waypoints = getOptionalString(from: args, key: "waypoints")
+                let alternatives = args?["alternatives"]?.boolValue
+                let avoid = getOptionalString(from: args, key: "avoid")
+                let departureTime = getOptionalString(from: args, key: "departure_time")
+                let arrivalTime = getOptionalString(from: args, key: "arrival_time")
+                result = try await getDirections(
+                    origin: origin,
+                    destination: destination,
+                    mode: mode,
+                    waypoints: waypoints,
+                    alternatives: alternatives,
+                    avoid: avoid,
+                    departureTime: departureTime,
+                    arrivalTime: arrivalTime
+                )
 
             case "maps_distance_matrix":
                 let origins = try getRequiredString(from: args, key: "origins")
