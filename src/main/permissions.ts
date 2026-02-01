@@ -50,7 +50,7 @@ async function checkScreenRecordingPermission(): Promise<boolean> {
 
   try {
     // MediaAccessStatus for screen can be: 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown'
-    const status = systemPreferences.getMediaAccessStatus('screen') as any;
+    const status = systemPreferences.getMediaAccessStatus('screen') as string;
     return status === 'granted';
   } catch (err) {
     console.error('[PERMISSIONS] Error checking screen recording status:', err);
