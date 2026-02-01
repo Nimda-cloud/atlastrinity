@@ -1,9 +1,10 @@
 /**
  * MapView - Cyberpunk Map Visualization
  * Displays Street View and Static Maps with "hacker-style" aesthetic
+ * Blue-turquoise theme matching AtlasTrinity design system
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 interface MapViewProps {
   imageUrl?: string;
@@ -12,150 +13,283 @@ interface MapViewProps {
   onClose: () => void;
 }
 
+// AtlasTrinity Cyberpunk Map Style - Blue/Turquoise Theme
 const CYBERPUNK_MAP_STYLE = [
-  { elementType: "geometry", stylers: [{ color: "#020202" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#020202" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#00e5ff" }] },
+  { elementType: 'geometry', stylers: [{ color: '#020a10' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#020a10' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#00e5ff' }] },
   {
-    featureType: "administrative",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#00a3ff" }, { weight: 1.2 }],
+    featureType: 'administrative',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#00a3ff' }, { weight: 1.2 }],
   },
   {
-    featureType: "landscape",
-    elementType: "geometry",
-    stylers: [{ color: "#050505" }],
+    featureType: 'administrative.country',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#00e5ff' }],
   },
   {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#0a0a0a" }],
+    featureType: 'landscape',
+    elementType: 'geometry',
+    stylers: [{ color: '#051520' }],
   },
   {
-    featureType: "poi",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#00e5ff" }],
+    featureType: 'poi',
+    elementType: 'geometry',
+    stylers: [{ color: '#0a1a25' }],
   },
   {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#002030" }],
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#00e5ff' }],
   },
   {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#00a3ff" }, { weight: 0.5 }],
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#062030' }],
   },
   {
-    featureType: "road",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#00e5ff" }],
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#002535' }],
   },
   {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#001015" }],
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#00a3ff' }, { weight: 0.4 }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#00e5ff' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#004060' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#00a3ff' }, { weight: 0.8 }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#003050' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#001520' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#00a3ff' }],
   },
 ];
 
+// Google Maps API Key from environment
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8';
+
 const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const mapRef = React.useRef<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const apiLoaderRef = useRef<HTMLElement | null>(null);
 
+  // Load the Extended Component Library script
+  useEffect(() => {
+    if (type !== 'INTERACTIVE') return;
+
+    const loadScript = () => {
+      // Check if script already loaded
+      if (document.querySelector('script[src*="@googlemaps/extended-component-library"]')) {
+        return Promise.resolve();
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src =
+          'https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js';
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error('Failed to load Google Maps Extended Component Library'));
+        document.head.appendChild(script);
+      });
+    };
+
+    loadScript()
+      .then(() => {
+        setIsLoaded(true);
+      })
+      .catch((err) => {
+        setError(err.message);
+      });
+  }, [type]);
+
+  // Initialize the interactive map with cyberpunk styling
+  useEffect(() => {
+    if (type !== 'INTERACTIVE' || !isLoaded || mapInitialized) return;
+
+    const initMap = async () => {
+      try {
+        // Wait for custom elements to be defined
+        await customElements.whenDefined('gmp-map');
+        await customElements.whenDefined('gmpx-api-loader');
+
+        // Small delay to ensure everything is rendered
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const mapElement = document.querySelector('gmp-map') as any;
+
+        if (mapElement) {
+          // Wait for the inner map to be available
+          const checkMap = setInterval(() => {
+            if (mapElement.innerMap) {
+              clearInterval(checkMap);
+              mapElement.innerMap.setOptions({
+                styles: CYBERPUNK_MAP_STYLE,
+                disableDefaultUI: true,
+                zoomControl: true,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+              });
+              setMapInitialized(true);
+            }
+          }, 100);
+
+          // Timeout after 10 seconds
+          setTimeout(() => clearInterval(checkMap), 10000);
+        }
+      } catch (err) {
+        console.error('Failed to initialize map:', err);
+        setError('Failed to initialize map');
+      }
+    };
+
+    initMap();
+  }, [type, isLoaded, mapInitialized]);
+
+  // Handle image loading for static/street view
   useEffect(() => {
     if (imageUrl && type !== 'INTERACTIVE') {
       setIsLoaded(false);
+      setError(null);
       const img = new Image();
       img.src = imageUrl;
       img.onload = () => setIsLoaded(true);
-    } else if (type === 'INTERACTIVE') {
-      // Load interactive map logic
-      const initInteractive = async () => {
-        // @ts-ignore
-        if (window.google) {
-          setIsLoaded(true);
-        }
-      };
-      initInteractive();
+      img.onerror = () => setError('Failed to load map image');
     }
   }, [imageUrl, type]);
 
-  // Handle place changes in interactive mode
-  useEffect(() => {
-    const placePicker = document.querySelector('gmpx-place-picker');
+  // Handle place picker changes
+  const handlePlaceChange = useCallback(() => {
+    const placePicker = document.querySelector('gmpx-place-picker') as any;
     const mapElement = document.querySelector('gmp-map') as any;
 
-    if (placePicker && mapElement) {
-      const handlePlaceChange = () => {
-        // @ts-ignore
-        const place = placePicker.value;
-        if (place?.location) {
-          mapElement.center = place.location;
-          mapElement.zoom = 17;
-        }
-      };
+    if (placePicker && mapElement?.innerMap) {
+      const place = placePicker.value;
+      if (place?.location) {
+        mapElement.innerMap.panTo(place.location);
+        mapElement.innerMap.setZoom(17);
+      }
+    }
+  }, []);
 
+  // Set up place picker event listener
+  useEffect(() => {
+    if (type !== 'INTERACTIVE' || !mapInitialized) return;
+
+    const placePicker = document.querySelector('gmpx-place-picker');
+    if (placePicker) {
       placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
       return () => placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
     }
-  }, [isLoaded, type]);
+  }, [type, mapInitialized, handlePlaceChange]);
 
-  const googleMapsKey = "AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8"; // User provided key
+  // Create API loader element with correct key attribute
+  const renderApiLoader = () => {
+    // Create the element using innerHTML to avoid React's key prop interference
+    return (
+      <div
+        ref={apiLoaderRef as any}
+        dangerouslySetInnerHTML={{
+          __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}"></gmpx-api-loader>`,
+        }}
+      />
+    );
+  };
 
   return (
     <div className="map-view animate-fade-in">
-      {/* Extended Components Library Script */}
-      <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
-
       {/* Header Info */}
       <div className="map-header">
         <div className="map-type-badge">{type}_FEED</div>
-        <div className="map-location">{location || (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : 'TRACKING_COORDINATES...')}</div>
+        <div className="map-location">
+          {location ||
+            (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : 'TRACKING_COORDINATES...')}
+        </div>
         <button className="map-close-btn" onClick={onClose}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
 
-      <div className="map-content-container">
+      <div className="map-content-container" ref={mapContainerRef}>
         {/* Decorative Grid */}
         <div className="map-grid-overlay"></div>
 
+        {/* Error State */}
+        {error && (
+          <div className="map-error">
+            <div className="error-icon">⚠</div>
+            <div className="error-text">{error}</div>
+            <div className="error-hint">API_CONNECTION_FAILED</div>
+          </div>
+        )}
+
         {/* The Map Image / Interactive Map */}
-        {type === 'INTERACTIVE' ? (
-          <div className="interactive-map-wrapper loaded">
-            <gmpx-api-loader key={googleMapsKey}></gmpx-api-loader>
+        {!error && type === 'INTERACTIVE' ? (
+          <div className={`interactive-map-wrapper ${isLoaded ? 'loaded' : ''}`}>
+            {/* API Loader with correct key attribute */}
+            {renderApiLoader()}
+
             <gmp-map
               center="50.4501,30.5234"
               zoom="12"
-              map-id="ATLAS_MAP_ID"
+              map-id="ATLAS_CYBERPUNK_MAP"
               style={{ width: '100%', height: '100%' }}
-              ref={mapRef}
             >
               <div slot="control-block-start-inline-start" className="place-picker-container">
-                <gmpx-place-picker placeholder="SEARCH_ADDRESS_IN_DATABASE..."></gmpx-place-picker>
+                <gmpx-place-picker placeholder="SEARCH_TARGET_LOCATION..."></gmpx-place-picker>
               </div>
               <gmp-advanced-marker></gmp-advanced-marker>
             </gmp-map>
 
-            {/* Apply Cyberpunk Style via Script since these are web components */}
-            <script dangerouslySetInnerHTML={{
-              __html: `
-              customElements.whenDefined('gmp-map').then(() => {
-                const map = document.querySelector('gmp-map');
-                if (map) {
-                  map.innerMap.setOptions({
-                    styles: ${JSON.stringify(CYBERPUNK_MAP_STYLE)},
-                    disableDefaultUI: true,
-                    zoomControl: true,
-                  });
-                }
-              });
-            `}} />
+            {/* Loading overlay */}
+            {!mapInitialized && (
+              <div className="map-loading-overlay">
+                <div className="loading-spinner"></div>
+                <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
+              </div>
+            )}
           </div>
-        ) : imageUrl ? (
+        ) : !error && imageUrl ? (
           <div className={`map-image-wrapper ${isLoaded ? 'loaded' : ''}`}>
             <img src={imageUrl} alt="System Map" className="map-display-image" />
 
@@ -180,11 +314,11 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
             <div className="map-corner bl"></div>
             <div className="map-corner br"></div>
           </div>
-        ) : (
+        ) : !error ? (
           <div className="map-placeholder">
             <div className="animate-pulse">WAITING_FOR_SATELLITE_UPLINK...</div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <style>{`
@@ -193,7 +327,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           height: 100%;
           display: flex;
           flex-direction: column;
-          background: rgba(0, 0, 0, 0.4);
+          background: rgba(0, 10, 20, 0.95);
           padding: 20px;
           position: relative;
         }
@@ -203,61 +337,95 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           align-items: center;
           justify-content: space-between;
           margin-bottom: 12px;
-          border-bottom: 1px solid rgba(0, 163, 255, 0.2);
+          border-bottom: 1px solid rgba(0, 163, 255, 0.3);
           padding-bottom: 8px;
         }
 
         .map-type-badge {
           font-family: 'JetBrains Mono', monospace;
           font-size: 10px;
-          color: var(--atlas-blue);
-          background: rgba(0, 163, 255, 0.1);
-          padding: 2px 8px;
-          border: 1px solid var(--atlas-blue);
+          color: #00a3ff;
+          background: rgba(0, 163, 255, 0.15);
+          padding: 4px 12px;
+          border: 1px solid #00a3ff;
           letter-spacing: 2px;
+          text-shadow: 0 0 10px rgba(0, 163, 255, 0.5);
         }
 
         .map-location {
           font-size: 11px;
-          color: var(--user-turquoise);
+          color: #00e5ff;
           text-transform: uppercase;
           letter-spacing: 1px;
+          text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
         }
 
         .map-close-btn {
           background: transparent;
-          border: none;
-          color: var(--atlas-blue);
+          border: 1px solid rgba(0, 163, 255, 0.3);
+          color: #00a3ff;
           cursor: pointer;
-          opacity: 0.6;
-          transition: all 0.2s;
+          opacity: 0.7;
+          transition: all 0.3s;
+          padding: 6px;
+          border-radius: 2px;
         }
 
         .map-close-btn:hover {
           opacity: 1;
-          color: var(--grisha-orange);
+          border-color: #00e5ff;
+          box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
         }
 
         .map-content-container {
           flex: 1;
           position: relative;
-          border: 1px solid rgba(0, 163, 255, 0.1);
-          background: #020202;
+          border: 1px solid rgba(0, 163, 255, 0.2);
+          background: #020a10;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: inset 0 0 50px rgba(0, 163, 255, 0.1);
         }
 
         .map-grid-overlay {
           position: absolute;
           inset: 0;
           background-image: 
-            linear-gradient(rgba(0, 163, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 163, 255, 0.05) 1px, transparent 1px);
+            linear-gradient(rgba(0, 163, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 163, 255, 0.03) 1px, transparent 1px);
           background-size: 30px 30px;
           pointer-events: none;
           z-index: 1;
+        }
+
+        .map-error {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          color: #ff4757;
+          font-family: 'JetBrains Mono', monospace;
+          text-align: center;
+          z-index: 5;
+        }
+
+        .error-icon {
+          font-size: 48px;
+          animation: pulse 2s infinite;
+        }
+
+        .error-text {
+          font-size: 12px;
+          color: #ff6b7a;
+        }
+
+        .error-hint {
+          font-size: 9px;
+          color: rgba(255, 71, 87, 0.6);
+          letter-spacing: 3px;
         }
 
         .map-image-wrapper {
@@ -281,8 +449,8 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           max-width: 100%;
           max-height: 100%;
           object-fit: contain;
-          /* Blue-scale filter if needed, but Swift already does it */
-          filter: drop-shadow(0 0 10px rgba(0, 163, 255, 0.2));
+          filter: drop-shadow(0 0 20px rgba(0, 163, 255, 0.3));
+          border: 1px solid rgba(0, 163, 255, 0.2);
         }
 
         .map-scanline {
@@ -291,7 +459,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           background: linear-gradient(
             to bottom,
             transparent 0%,
-            rgba(0, 163, 255, 0.05) 50%,
+            rgba(0, 163, 255, 0.03) 50%,
             transparent 100%
           );
           background-size: 100% 4px;
@@ -304,10 +472,13 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           top: 15px;
           left: 15px;
           font-family: 'JetBrains Mono', monospace;
-          font-size: 8px;
-          color: var(--atlas-blue);
-          text-shadow: 0 0 5px rgba(0, 163, 255, 0.5);
+          font-size: 9px;
+          color: #00a3ff;
+          text-shadow: 0 0 8px rgba(0, 163, 255, 0.6);
           z-index: 5;
+          background: rgba(0, 10, 20, 0.7);
+          padding: 8px 12px;
+          border-left: 2px solid #00a3ff;
         }
 
         .map-hud-bottom-right {
@@ -316,30 +487,33 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           right: 15px;
           text-align: right;
           font-family: 'JetBrains Mono', monospace;
-          font-size: 8px;
-          color: var(--user-turquoise);
-          text-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
+          font-size: 9px;
+          color: #00e5ff;
+          text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
           z-index: 5;
+          background: rgba(0, 10, 20, 0.7);
+          padding: 8px 12px;
+          border-right: 2px solid #00e5ff;
         }
 
         .hud-line, .hud-status {
-          margin-bottom: 2px;
+          margin-bottom: 3px;
         }
 
         .map-placeholder {
           font-family: 'JetBrains Mono', monospace;
-          font-size: 10px;
-          color: var(--atlas-blue);
-          opacity: 0.4;
+          font-size: 11px;
+          color: #00a3ff;
+          opacity: 0.5;
           letter-spacing: 4px;
         }
 
         .map-corner {
           position: absolute;
-          width: 15px;
-          height: 15px;
-          border: 1px solid var(--atlas-blue);
-          opacity: 0.6;
+          width: 20px;
+          height: 20px;
+          border: 1px solid #00a3ff;
+          opacity: 0.5;
           z-index: 5;
         }
 
@@ -353,30 +527,78 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           to { background-position: 0 100%; }
         }
 
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
         .interactive-map-wrapper {
           width: 100%;
           height: 100%;
           position: relative;
           z-index: 2;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+
+        .interactive-map-wrapper.loaded {
+          opacity: 1;
         }
 
         .place-picker-container {
           padding: 10px;
-          width: 300px;
+          width: 320px;
+        }
+
+        .map-loading-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 10, 20, 0.9);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          z-index: 10;
+        }
+
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 2px solid rgba(0, 163, 255, 0.2);
+          border-top-color: #00a3ff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          color: #00a3ff;
+          letter-spacing: 3px;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         /* Styling for the Google Maps Web Components */
         gmpx-place-picker {
           width: 100%;
-          border: 1px solid var(--atlas-blue) !important;
-          background: rgba(0, 0, 0, 0.8) !important;
-          color: var(--user-turquoise) !important;
-          font-family: 'JetBrains Mono', monospace !important;
-          box-shadow: 0 0 10px rgba(0, 163, 255, 0.3);
+          --gmpx-color-surface: rgba(0, 10, 20, 0.95) !important;
+          --gmpx-color-on-surface: #00e5ff !important;
+          --gmpx-color-on-surface-variant: #00a3ff !important;
+          --gmpx-color-primary: #00a3ff !important;
+          --gmpx-color-on-primary: #020a10 !important;
+          --gmpx-font-family-base: 'JetBrains Mono', monospace !important;
+          --gmpx-font-family-headings: 'JetBrains Mono', monospace !important;
+          border: 1px solid rgba(0, 163, 255, 0.5) !important;
+          box-shadow: 0 0 15px rgba(0, 163, 255, 0.3);
         }
 
         gmp-map {
-          filter: contrast(1.1) brightness(0.9) saturate(1.2);
+          filter: contrast(1.05) brightness(0.95) saturate(1.1);
         }
       `}</style>
     </div>
