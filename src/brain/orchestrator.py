@@ -517,7 +517,9 @@ class Trinity:
 
             # Avoid duplicate messages if this was already in the history (e.g. during resumption)
             # We only append if it's the latest message (real-time generated)
-            self.state["messages"].append(AIMessage(content=final_text, name=agent_id.upper()))
+            msg = AIMessage(content=final_text, name=agent_id.upper())
+            msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
+            self.state["messages"].append(msg)
             asyncio.create_task(self._save_chat_message("ai", final_text, agent_id))
 
         await self._log(final_text, source=agent_id, type="voice")
@@ -812,7 +814,7 @@ class Trinity:
                         {
                             "agent": "USER",
                             "text": m.content,
-                            "timestamp": datetime.now().timestamp(),
+                            "timestamp": m.additional_kwargs.get("timestamp") or datetime.now().timestamp(),
                             "type": "text",
                         },
                     )
@@ -823,7 +825,7 @@ class Trinity:
                         {
                             "agent": agent_name,
                             "text": m.content,
-                            "timestamp": datetime.now().timestamp(),
+                            "timestamp": m.additional_kwargs.get("timestamp") or datetime.now().timestamp(),
                             "type": "voice",
                         },
                     )
@@ -1005,7 +1007,9 @@ class Trinity:
             self.state["_theme"] = user_request[:40] + ("..." if len(user_request) > 40 else "")
 
         await self._verify_db_ids()
-        self.state["messages"].append(HumanMessage(content=user_request))
+        msg = HumanMessage(content=user_request)
+        msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
+        self.state["messages"].append(msg)
         asyncio.create_task(self._save_chat_message("human", user_request))
 
         # DB Session creation
@@ -1135,7 +1139,12 @@ class Trinity:
                 msgs = self.state.get("messages", [])
                 msg_count = len(msgs) if isinstance(msgs, list) else 0
                 await self._handle_post_execution_phase(
-                    user_request, is_subtask, start_time, session_id, msg_count
+                    user_request,
+                    is_subtask,
+                    start_time,
+                    session_id,
+                    msg_count,
+                    intent=plan_or_result.get("type"),
                 )
             return plan_or_result
 
@@ -1145,7 +1154,7 @@ class Trinity:
             msgs = self.state.get("messages", [])
             msg_count = len(msgs) if isinstance(msgs, list) else 0
             await self._handle_post_execution_phase(
-                user_request, is_subtask, start_time, session_id, msg_count
+                user_request, is_subtask, start_time, session_id, msg_count, intent="chat"
             )
             return {"status": "completed", "result": "No plan generated.", "type": "chat"}
 
@@ -1168,14 +1177,20 @@ class Trinity:
         return {"status": "completed", "result": self.state["step_results"]}
 
     async def _handle_post_execution_phase(
-        self, user_request, is_subtask, start_time, session_id, msg_count
+        self,
+        user_request: str,
+        is_subtask: bool,
+        start_time: float,
+        session_id: str,
+        msg_count: int,
+        intent: str | None = None,
     ):
         """Evaluation, memory management and cleanup."""
         duration = asyncio.get_event_loop().time() - start_time
         notifications.show_completion(user_request, True, duration)
 
         if not is_subtask and self.state["system_state"] != SystemState.ERROR.value:
-            await self._evaluate_and_remember(user_request)
+            await self._evaluate_and_remember(user_request, intent=intent)
 
         # Final cleanup tasks
         self.state["system_state"] = SystemState.COMPLETED.value
@@ -1188,8 +1203,13 @@ class Trinity:
         await self._notify_task_finished(session_id)
         self._trigger_backups()
 
-    async def _evaluate_and_remember(self, user_request):
+    async def _evaluate_and_remember(self, user_request: str, intent: str | None = None):
         """Evaluate execution quality and save to LTM."""
+        # Skip evaluation for simple chat/informative intents to avoid duplicated greetings
+        if intent in ["chat", "recall", "status"]:
+            logger.debug(f"[ORCHESTRATOR] Skipping evaluation for intent: {intent}")
+            return
+
         try:
             evaluation = await self.atlas.evaluate_execution(
                 user_request, self.state["step_results"]
