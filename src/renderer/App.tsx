@@ -410,8 +410,13 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/80 backdrop-blur-md">
           <div className="flex flex-col items-center gap-6">
             <div className="w-16 h-16 border-t-2 border-r-2 border-[#00f2ff] rounded-full animate-spin"></div>
-            <div className="text-[10px] tracking-[0.5em] uppercase text-[#00f2ff]/60 animate-pulse">
-              Waiting for neural link...
+            <div className="flex flex-col items-center gap-2">
+              <div className="text-[10px] tracking-[0.5em] uppercase text-[#00f2ff]/60 animate-pulse">
+                Waiting for neural link...
+              </div>
+              <div className="text-[8px] tracking-[0.2em] uppercase text-[#00f2ff]/30 font-mono">
+                Searching for Brain Core at {API_BASE}
+              </div>
             </div>
           </div>
         </div>
