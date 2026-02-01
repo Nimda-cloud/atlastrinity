@@ -201,7 +201,7 @@ class SecureBackupManager:
                 'source': self.config_root / "data" / "golden_fund",
                 'dest': self.backup_dir / "golden_fund",
                 'encrypt': False,  # Vector data - usually no secrets
-                'filter_sqlite': False
+                'filter_sqlite': True  # But SQL may have secrets in metadata
             },
             {
                 'source': self.config_root / "memory" / "chroma",

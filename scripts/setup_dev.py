@@ -375,6 +375,16 @@ def verify_golden_fund():
             print_error(f"Не вдалося створити Golden Fund: {e}")
             return
 
+    # Initialize Golden Fund ChromaDB if it doesn't exist
+    golden_fund_chroma_dir = config_db_dir / "chroma_db"
+    if not golden_fund_chroma_dir.exists():
+        print_info("Створення Golden Fund ChromaDB...")
+        try:
+            golden_fund_chroma_dir.mkdir(parents=True, exist_ok=True)
+            print_success("Golden Fund ChromaDB створено")
+        except Exception as e:
+            print_warning(f"Не вдалося створити Golden Fund ChromaDB: {e}")
+
     # 2. Support Memory Chroma restore
     memory_chroma_dir = CONFIG_ROOT / "memory" / "chroma"
     backup_memory_dir = PROJECT_ROOT / "backups" / "databases" / "memory" / "chroma"
