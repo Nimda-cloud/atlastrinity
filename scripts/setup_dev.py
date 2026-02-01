@@ -348,6 +348,33 @@ def verify_golden_fund():
     # Ensure config directory exists (if not restored)
     config_db_dir.mkdir(parents=True, exist_ok=True)
 
+    # Initialize Golden Fund database if it doesn't exist
+    if not config_db_path.exists():
+        print_info("Створення нової бази даних Golden Fund...")
+        try:
+            import sqlite3
+            with sqlite3.connect(config_db_path) as conn:
+                # Enable WAL mode for better concurrency
+                conn.execute("PRAGMA journal_mode=WAL;")
+                # Create a metadata table to track datasets
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS datasets_metadata (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        dataset_name TEXT UNIQUE,
+                        table_name TEXT,
+                        source_url TEXT,
+                        ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        row_count INTEGER
+                    )
+                    """
+                )
+                conn.commit()
+            print_success("Базу даних Golden Fund успішно створено")
+        except Exception as e:
+            print_error(f"Не вдалося створити Golden Fund: {e}")
+            return
+
     # 2. Support Memory Chroma restore
     memory_chroma_dir = CONFIG_ROOT / "memory" / "chroma"
     backup_memory_dir = PROJECT_ROOT / "backups" / "databases" / "memory" / "chroma"

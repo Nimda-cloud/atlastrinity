@@ -216,6 +216,59 @@ def ensure_chrome(force_check: bool = False) -> bool:
     return False
 
 
+def ensure_golden_fund(force_check: bool = False) -> bool:
+    """Ensure Golden Fund database is initialized."""
+    import sqlite3
+    from pathlib import Path
+    
+    config_root = Path.home() / ".config" / "atlastrinity"
+    golden_fund_dir = config_root / "data" / "golden_fund"
+    golden_fund_db = golden_fund_dir / "golden.db"
+    
+    try:
+        # Ensure directory exists
+        golden_fund_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize database if it doesn't exist
+        if not golden_fund_db.exists() or force_check:
+            logger.info("[Services] Initializing Golden Fund database...")
+            with sqlite3.connect(golden_fund_db) as conn:
+                # Enable WAL mode for better concurrency
+                conn.execute("PRAGMA journal_mode=WAL;")
+                # Create a metadata table to track datasets
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS datasets_metadata (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        dataset_name TEXT UNIQUE,
+                        table_name TEXT,
+                        source_url TEXT,
+                        ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        row_count INTEGER
+                    )
+                    """
+                )
+                conn.commit()
+            logger.info("[Services] Golden Fund database initialized successfully")
+        
+        # Verify database integrity
+        with sqlite3.connect(golden_fund_db) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = [row[0] for row in cursor.fetchall()]
+            
+            if "datasets_metadata" in tables:
+                logger.info("[Services] Golden Fund is ready")
+                return True
+            else:
+                logger.warning("[Services] Golden Fund database structure incomplete")
+                return False
+                
+    except Exception as e:
+        logger.error(f"[Services] Failed to ensure Golden Fund: {e}")
+        return False
+
+
 def ensure_vibe(force_check: bool = False) -> bool:
     """Ensure Mistral Vibe CLI is installed."""
     flag_file = CONFIG_ROOT / ".vibe_ready"
@@ -284,6 +337,11 @@ async def ensure_all_services(force_check: bool = False):
         ServiceStatus.status_message = "Ensuring Vibe CLI is available..."
         vibe_ok = await asyncio.to_thread(ensure_vibe, force_check)
         ServiceStatus.details["vibe"] = "ok" if vibe_ok else "failed"
+
+        # Check Golden Fund
+        ServiceStatus.status_message = "Ensuring Golden Fund is initialized..."
+        golden_fund_ok = await asyncio.to_thread(ensure_golden_fund, force_check)
+        ServiceStatus.details["golden_fund"] = "ok" if golden_fund_ok else "failed"
 
         if redis_ok and db_ok:
             # Critical services are ready
