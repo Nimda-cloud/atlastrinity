@@ -15,7 +15,7 @@ from ..mcp_manager import mcp_manager
 class TourDriver:
     """Controls the automated navigation loop."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.is_active = False
         self.is_paused = False
         self.current_route_points: list[tuple[float, float]] = []  # [(lat, lng)]
