@@ -6,6 +6,11 @@ import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
 // Disable Electron Security Warnings in Dev
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
+// Fix for GPU/Skia errors on macOS (SharedImageManager::ProduceSkia)
+if (process.platform === 'darwin') {
+  app.commandLine.appendSwitch('disable-features', 'Graphite');
+}
+
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs';
