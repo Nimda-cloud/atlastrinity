@@ -244,14 +244,26 @@ def update_env(api_key):
         content = f.read()
     
     key_pattern = r'^GOOGLE_MAPS_API_KEY=.*$'
-    new_line = f"GOOGLE_MAPS_API_KEY={api_key}"
+    vite_key_pattern = r'^VITE_GOOGLE_MAPS_API_KEY=.*$'
     
+    new_line = f"GOOGLE_MAPS_API_KEY={api_key}"
+    vite_new_line = f"VITE_GOOGLE_MAPS_API_KEY={api_key}"
+    
+    # Update or Add GOOGLE_MAPS_API_KEY
     if re.search(key_pattern, content, re.M):
         content = re.sub(key_pattern, new_line, content, flags=re.M)
     else:
         if content and not content.endswith('\n'):
             content += '\n'
         content += new_line + '\n'
+
+    # Update or Add VITE_GOOGLE_MAPS_API_KEY
+    if re.search(vite_key_pattern, content, re.M):
+        content = re.sub(vite_key_pattern, vite_new_line, content, flags=re.M)
+    else:
+        if content and not content.endswith('\n'):
+            content += '\n'
+        content += vite_new_line + '\n'
         
     with open(ENV_FILE, 'w') as f:
         f.write(content)
