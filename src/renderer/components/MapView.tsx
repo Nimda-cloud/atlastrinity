@@ -92,7 +92,7 @@ const CYBERPUNK_MAP_STYLE = [
 
 // Google Maps API Key from environment
 const GOOGLE_MAPS_API_KEY =
-  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8';
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) => {
   const [isLoaded, setIsLoaded] = useState(false);
