@@ -904,6 +904,7 @@ def process_template(src_path: Path, dst_path: Path):
             "${CONFIG_ROOT}": str(CONFIG_ROOT),
             "${PYTHONPATH}": str(PROJECT_ROOT),  # Often same as project root for imports
             "${GITHUB_TOKEN}": os.getenv("GITHUB_TOKEN", "${GITHUB_TOKEN}"),  # Keep if not set
+            "${GOOGLE_MAPS_API_KEY}": os.getenv("GOOGLE_MAPS_API_KEY", "${GOOGLE_MAPS_API_KEY}"),
         }
 
         # Replace known variables
