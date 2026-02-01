@@ -6,76 +6,188 @@
 import React, { useState, useEffect } from 'react';
 
 interface MapViewProps {
-    imageUrl?: string;
-    type: 'STREET' | 'STATIC';
-    location?: string;
-    onClose: () => void;
+  imageUrl?: string;
+  type: 'STREET' | 'STATIC' | 'INTERACTIVE';
+  location?: string;
+  onClose: () => void;
 }
 
+const CYBERPUNK_MAP_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#020202" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#020202" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#00e5ff" }] },
+  {
+    featureType: "administrative",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#00a3ff" }, { weight: 1.2 }],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#050505" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [{ color: "#0a0a0a" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#00e5ff" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#002030" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#00a3ff" }, { weight: 0.5 }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#00e5ff" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#001015" }],
+  },
+];
+
 const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) => {
-    const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const mapRef = React.useRef<any>(null);
 
-    useEffect(() => {
-        if (imageUrl) {
-            setIsLoaded(false);
-            const img = new Image();
-            img.src = imageUrl;
-            img.onload = () => setIsLoaded(true);
+  useEffect(() => {
+    if (imageUrl && type !== 'INTERACTIVE') {
+      setIsLoaded(false);
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => setIsLoaded(true);
+    } else if (type === 'INTERACTIVE') {
+      // Load interactive map logic
+      const initInteractive = async () => {
+        // @ts-ignore
+        if (window.google) {
+          setIsLoaded(true);
         }
-    }, [imageUrl]);
+      };
+      initInteractive();
+    }
+  }, [imageUrl, type]);
 
-    return (
-        <div className="map-view animate-fade-in">
-            {/* Header Info */}
-            <div className="map-header">
-                <div className="map-type-badge">{type}_FEED</div>
-                <div className="map-location">{location || 'TRACKING_COORDINATES...'}</div>
-                <button className="map-close-btn" onClick={onClose}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+  // Handle place changes in interactive mode
+  useEffect(() => {
+    const placePicker = document.querySelector('gmpx-place-picker');
+    const mapElement = document.querySelector('gmp-map') as any;
+
+    if (placePicker && mapElement) {
+      const handlePlaceChange = () => {
+        // @ts-ignore
+        const place = placePicker.value;
+        if (place?.location) {
+          mapElement.center = place.location;
+          mapElement.zoom = 17;
+        }
+      };
+
+      placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
+      return () => placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
+    }
+  }, [isLoaded, type]);
+
+  const googleMapsKey = "AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8"; // User provided key
+
+  return (
+    <div className="map-view animate-fade-in">
+      {/* Extended Components Library Script */}
+      <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
+
+      {/* Header Info */}
+      <div className="map-header">
+        <div className="map-type-badge">{type}_FEED</div>
+        <div className="map-location">{location || (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : 'TRACKING_COORDINATES...')}</div>
+        <button className="map-close-btn" onClick={onClose}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div className="map-content-container">
+        {/* Decorative Grid */}
+        <div className="map-grid-overlay"></div>
+
+        {/* The Map Image / Interactive Map */}
+        {type === 'INTERACTIVE' ? (
+          <div className="interactive-map-wrapper loaded">
+            <gmpx-api-loader key={googleMapsKey}></gmpx-api-loader>
+            <gmp-map
+              center="50.4501,30.5234"
+              zoom="12"
+              map-id="ATLAS_MAP_ID"
+              style={{ width: '100%', height: '100%' }}
+              ref={mapRef}
+            >
+              <div slot="control-block-start-inline-start" className="place-picker-container">
+                <gmpx-place-picker placeholder="SEARCH_ADDRESS_IN_DATABASE..."></gmpx-place-picker>
+              </div>
+              <gmp-advanced-marker></gmp-advanced-marker>
+            </gmp-map>
+
+            {/* Apply Cyberpunk Style via Script since these are web components */}
+            <script dangerouslySetInnerHTML={{
+              __html: `
+              customElements.whenDefined('gmp-map').then(() => {
+                const map = document.querySelector('gmp-map');
+                if (map) {
+                  map.innerMap.setOptions({
+                    styles: ${JSON.stringify(CYBERPUNK_MAP_STYLE)},
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                  });
+                }
+              });
+            `}} />
+          </div>
+        ) : imageUrl ? (
+          <div className={`map-image-wrapper ${isLoaded ? 'loaded' : ''}`}>
+            <img src={imageUrl} alt="System Map" className="map-display-image" />
+
+            {/* Scanline Effect Overlay */}
+            <div className="map-scanline"></div>
+
+            {/* HUD Overlays */}
+            <div className="map-hud-top-left">
+              <div className="hud-line">LAT: 50.4501</div>
+              <div className="hud-line">LNG: 30.5234</div>
+              <div className="hud-line">ALT: 179m</div>
             </div>
 
-            <div className="map-content-container">
-                {/* Decorative Grid */}
-                <div className="map-grid-overlay"></div>
-
-                {/* The Map Image */}
-                {imageUrl ? (
-                    <div className={`map-image-wrapper ${isLoaded ? 'loaded' : ''}`}>
-                        <img src={imageUrl} alt="System Map" className="map-display-image" />
-
-                        {/* Scanline Effect Overlay */}
-                        <div className="map-scanline"></div>
-
-                        {/* HUD Overlays */}
-                        <div className="map-hud-top-left">
-                            <div className="hud-line">LAT: 50.4501</div>
-                            <div className="hud-line">LNG: 30.5234</div>
-                            <div className="hud-line">ALT: 179m</div>
-                        </div>
-
-                        <div className="map-hud-bottom-right">
-                            <div className="hud-status">ENCRYPTED_LINK_ACTIVE</div>
-                            <div className="hud-timestamp">{new Date().toLocaleTimeString()}</div>
-                        </div>
-
-                        {/* Corner Brackets */}
-                        <div className="map-corner tl"></div>
-                        <div className="map-corner tr"></div>
-                        <div className="map-corner bl"></div>
-                        <div className="map-corner br"></div>
-                    </div>
-                ) : (
-                    <div className="map-placeholder">
-                        <div className="animate-pulse">WAITING_FOR_SATELLITE_UPLINK...</div>
-                    </div>
-                )}
+            <div className="map-hud-bottom-right">
+              <div className="hud-status">ENCRYPTED_LINK_ACTIVE</div>
+              <div className="hud-timestamp">{new Date().toLocaleTimeString()}</div>
             </div>
 
-            <style>{`
+            {/* Corner Brackets */}
+            <div className="map-corner tl"></div>
+            <div className="map-corner tr"></div>
+            <div className="map-corner bl"></div>
+            <div className="map-corner br"></div>
+          </div>
+        ) : (
+          <div className="map-placeholder">
+            <div className="animate-pulse">WAITING_FOR_SATELLITE_UPLINK...</div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
         .map-view {
           width: 100%;
           height: 100%;
@@ -240,9 +352,47 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           from { background-position: 0 0; }
           to { background-position: 0 100%; }
         }
+
+        .interactive-map-wrapper {
+          width: 100%;
+          height: 100%;
+          position: relative;
+          z-index: 2;
+        }
+
+        .place-picker-container {
+          padding: 10px;
+          width: 300px;
+        }
+
+        /* Styling for the Google Maps Web Components */
+        gmpx-place-picker {
+          width: 100%;
+          border: 1px solid var(--atlas-blue) !important;
+          background: rgba(0, 0, 0, 0.8) !important;
+          color: var(--user-turquoise) !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          box-shadow: 0 0 10px rgba(0, 163, 255, 0.3);
+        }
+
+        gmp-map {
+          filter: contrast(1.1) brightness(0.9) saturate(1.2);
+        }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
+
+// Add global declarations for Google Maps Web Components to satisfy TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'gmp-map': any;
+      'gmpx-api-loader': any;
+      'gmpx-place-picker': any;
+      'gmp-advanced-marker': any;
+    }
+  }
+}
 
 export default MapView;

@@ -2314,5 +2314,16 @@
       "locations": "str"
     },
     "description": "Get elevation data for locations"
+  },
+  "maps_open_interactive_search": {
+    "server": "googlemaps",
+    "required": [],
+    "optional": [
+      "initial_query"
+    ],
+    "types": {
+      "initial_query": "str"
+    },
+    "description": "Open the interactive map with autocomplete search bar in the Atlas UI"
   }
 }

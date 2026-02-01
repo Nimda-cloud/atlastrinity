@@ -813,6 +813,9 @@ tool_routing:
       - elevation
       - place
       - places
+      - interactive_search
+      - search_bar
+      - search_map
     priority_server: googlemaps
     fallback_server: macos-use
     tool_mapping:
@@ -825,6 +828,8 @@ tool_routing:
       search_places: maps_search_places
       place_details: maps_place_details
       elevation: maps_elevation
+      interactive_search: maps_open_interactive_search
+      search_bar: maps_open_interactive_search
     routing_rules:
       - pattern: 'maps_.*'
         server: googlemaps
@@ -837,6 +842,12 @@ tool_routing:
       - pattern: '.*traffic.*'
         server: googlemaps
         tool: maps_distance_matrix
+      - pattern: '.*search.*bar.*'
+        server: googlemaps
+        tool: maps_open_interactive_search
+      - pattern: '.*interactive.*'
+        server: googlemaps
+        tool: maps_open_interactive_search
 
 # =============================================================================
 # TASK CLASSIFICATION

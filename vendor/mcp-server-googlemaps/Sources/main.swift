@@ -537,6 +537,17 @@ let elevationSchema: Value = .object([
     "required": .array([.string("locations")]),
 ])
 
+let interactiveSearchSchema: Value = .object([
+    "type": .string("object"),
+    "properties": .object([
+        "initial_query": .object([
+            "type": .string("string"),
+            "description": .string("Optional initial search query to pre-fill the search bar"),
+        ])
+    ]),
+    "required": .array([]),
+])
+
 // MARK: - Helper Functions
 
 func getRequiredString(from args: [String: Value]?, key: String) throws -> String {
@@ -624,6 +635,11 @@ func setupAndStartServer() async throws -> Server {
             description: "Get elevation data for specified locations",
             inputSchema: elevationSchema
         ),
+        Tool(
+            name: "maps_open_interactive_search",
+            description: "Open the interactive map with autocomplete search bar in the Atlas UI",
+            inputSchema: interactiveSearchSchema
+        ),
     ]
 
     // Create server
@@ -704,6 +720,10 @@ func setupAndStartServer() async throws -> Server {
             case "maps_elevation":
                 let locations = try getRequiredString(from: args, key: "locations")
                 result = try await getElevation(locations: locations)
+
+            case "maps_open_interactive_search":
+                let query = getOptionalString(from: args, key: "initial_query") ?? ""
+                result = "🌐 INTERACTIVE_MAP_OPEN: \(query)"
 
             default:
                 return .init(content: [.text("Unknown tool: \(params.name)")], isError: true)
