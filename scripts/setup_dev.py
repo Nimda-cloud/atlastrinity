@@ -13,6 +13,7 @@ import asyncio
 import json
 import os
 import platform
+import re
 import select
 import shutil
 import subprocess
@@ -619,26 +620,52 @@ def setup_google_maps():
     """Адаптивне налаштування Google Maps API через gcloud"""
     print_step("Автоматизація Google Cloud / Google Maps...")
     
-    # Провірка чи ключ вже є в .env (локально або в глобальному конфігу)
+    # 1. Провірка чи ключ вже є в .env (локально або в глобальному конфігу)
     env_path = PROJECT_ROOT / ".env"
     global_env_path = CONFIG_ROOT / ".env"
     
-    has_key = False
+    api_key = None
+    has_vite_key = False
+
     for p in [env_path, global_env_path]:
         if p.exists():
             with open(p, encoding="utf-8") as f:
                 content = f.read()
-                if "GOOGLE_MAPS_API_KEY=" in content and "AIza" in content:
-                    has_key = True
+                matches = re.findall(r"GOOGLE_MAPS_API_KEY=(AIza[a-zA-Z0-9_\-]+)", content)
+                if matches:
+                    api_key = matches[0]
+                if api_key and f"VITE_GOOGLE_MAPS_API_KEY={api_key}" in content:
+                    has_vite_key = True
+                if api_key:
                     break
     
-    if has_key:
-        print_success("Google Maps API Key вже налаштовано")
-        return
+    if api_key and has_vite_key:
+        print_success("Google Maps API (Base & Vite) вже налаштовано")
+        return False
+    
+    # 2. Авто-виправлення якщо є base ключ але немає Vite префікса
+    if api_key and not has_vite_key:
+        print_warning("Знайдено API ключ, але відсутній VITE_ префікс для фронтенду.")
+        print_info("Автоматичне виправлення .env файлу...")
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            
+            if "VITE_GOOGLE_MAPS_API_KEY=" in content:
+                content = re.sub(r"VITE_GOOGLE_MAPS_API_KEY=.*", f"VITE_GOOGLE_MAPS_API_KEY={api_key}", content)
+            else:
+                content += f"\nVITE_GOOGLE_MAPS_API_KEY={api_key}\n"
+            
+            with open(env_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            print_success("Префікс VITE_ додано успішно")
+            return True # Потрібен ре-синк
+        except Exception as e:
+            print_error(f"Не вдалося виправити .env: {e}")
 
     print_info("API Ключ не знайдено або він недійсний.")
     print(f"{Colors.BOLD}Бажаєте налаштувати Google Maps автоматично через gcloud? (y/n){Colors.ENDC}")
-    print_info("Це створить проект, увімкне API та згенерує ключ.")
+    print_info("Це автоматично встановить gcloud SDK, створить проект та ключ.")
     
     try:
         # Timed input for non-interactive environments
