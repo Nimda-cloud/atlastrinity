@@ -530,7 +530,7 @@ class Grisha(BaseAgent):
         # Detect if this is an analysis task vs action task
         step_action_lower = step.get("action", "").lower()
 
-        # Analysis task keywords - for these, DB trace is sufficient
+        # Analysis/Discovery task keywords - for these, DB trace is usually sufficient
         is_analysis_task = any(
             keyword in step_action_lower
             for keyword in [
@@ -543,6 +543,15 @@ class Grisha(BaseAgent):
                 "assess",
                 "evaluate",
                 "explore",
+                "search",
+                "find",
+                "locate",
+                "check",
+                "list",
+                "identify",
+                "detect",
+                "scan",
+                "verify",
             ]
         )
 
@@ -552,19 +561,20 @@ class Grisha(BaseAgent):
             logger.info("[GRISHA] Detected ANALYSIS task - relying on DB trace only")
             return tools[:2]  # Only DB check
 
-        # For ACTION tasks, add context-aware verification tools
+        # For ACTION tasks (that are not primarily analysis), add context-aware verification tools
+        is_search_only = any(kw in step_action_lower for kw in ["search", "find", "locate"])
+        
         if (
-            "file" in step_action_lower
-            or "save" in step_action_lower
-            or "create" in step_action_lower
+            not is_search_only 
+            and ("file" in step_action_lower or "save" in step_action_lower or "create" in step_action_lower)
         ):
             # Use dynamic path based on actual home directory
             project_root = os.path.expanduser("~/Documents/GitHub/atlastrinity")
             tools.append(
                 {
-                    "tool": "macos-use_finder_list_files",
+                    "tool": "filesystem.list_directory",
                     "args": {"path": project_root},
-                    "reason": "Check if files were created",
+                    "reason": "Verify file system state changes",
                 }
             )
 
@@ -1245,14 +1255,29 @@ class Grisha(BaseAgent):
 
         # IP/Network
         if "ip" in expected_lower or "network" in expected_lower:
-            if any(kw in cmd_lower for kw in ["ip a", "ifconfig", "ping"]):
+            if any(kw in cmd_lower for kw in ["ip a", "ifconfig", "ping", "netstat", "nmap"]):
                 return True, f"Command '{cmd}' is relevant for network verification"
 
         # VirtualBox VM management
         if "vm" in expected_lower and "virtualbox" in step_lower:
             if any(kw in cmd_lower for kw in ["showvminfo", "list", "getextradata"]):
                 return True, f"Command '{cmd}' is relevant for VM management"
+        
+        # Search / Find / File Operations
+        if any(kw in step_lower for kw in ["search", "find", "locate", "read", "check"]):
+            if any(kw in cmd_lower for kw in ["grep", "find", "ls", "cat", "read", "list"]):
+                return True, f"Command '{cmd}' is relevant for data discovery/analysis"
+
+        # Web / API
+        if any(kw in expected_lower for kw in ["url", "api", "web", "http"]):
+            if any(kw in cmd_lower for kw in ["curl", "wget", "fetch", "http"]):
+                return True, f"Command '{cmd}' is relevant for web/API interaction"
                 
+        # Repository / Project structure
+        if "project" in expected_lower or "structure" in expected_lower or "file" in expected_lower:
+            if any(kw in cmd_lower for kw in ["ls", "find", "tree", "git status"]):
+                return True, f"Command '{cmd}' is relevant for project inspection"
+
         return False, ""
 
     def _detect_repetitive_thinking(self, analysis_text: str) -> bool:
