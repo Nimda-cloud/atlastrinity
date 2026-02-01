@@ -144,6 +144,63 @@ def check_system_tools():
     else:
         print_success(f"Node знайдено ({subprocess.getoutput('node --version').strip()})")
 
+def ensure_frontend_config():
+    """Перевірка та автоматичне виправлення конфігурацій фронтенду (CSP, Vite Env)"""
+    print_step("Валідація конфігурацій фронтенду (Security & Env)...")
+    
+    # 1. Перевірка vite.config.ts
+    vite_config = PROJECT_ROOT / "vite.config.ts"
+    if vite_config.exists():
+        with open(vite_config, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        if 'envDir: "../../"' not in content:
+            print_warning("Vite не налаштований на завантаження .env з кореня. Виправлення...")
+            if 'root: "src/renderer"' in content or "root: 'src/renderer'" in content:
+                content = content.replace("root: 'src/renderer',", "root: 'src/renderer',\n    envDir: '../../',")
+                content = content.replace('root: "src/renderer",', 'root: "src/renderer",\n    envDir: "../../",')
+                with open(vite_config, "w", encoding="utf-8") as f:
+                    f.write(content)
+                print_success("vite.config.ts оновлено (envDir додано)")
+        else:
+            print_success("vite.config.ts: envDir в порядку")
+
+    # 2. Перевірка CSP в index.html
+    index_html = PROJECT_ROOT / "src" / "renderer" / "index.html"
+    if index_html.exists():
+        with open(index_html, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        needs_update = False
+        if "'unsafe-eval'" not in content:
+            content = content.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'")
+            needs_update = True
+        if "connect-src 'self' data:" not in content:
+             content = content.replace("connect-src 'self'", "connect-src 'self' data:")
+             needs_update = True
+        
+        if needs_update:
+            print_warning("Content Security Policy застаріла. Оновлення...")
+            with open(index_html, "w", encoding="utf-8") as f:
+                f.write(content)
+            print_success("index.html: CSP оновлено")
+        else:
+            print_success("index.html: CSP в порядку")
+
+    # 3. Прибирання хардкод-ключів у MapView.tsx
+    map_view = PROJECT_ROOT / "src" / "renderer" / "components" / "MapView.tsx"
+    if map_view.exists():
+        with open(map_view, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        if "AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8" in content:
+            print_warning("Знайдено хардкод-ключ у MapView.tsx. Видалення...")
+            content = content.replace("'AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8'", "''")
+            content = content.replace('"AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8"', "''")
+            with open(map_view, "w", encoding="utf-8") as f:
+                f.write(content)
+            print_success("MapView.tsx: Хардкод-ключ видалено")
+
     # 3. Check other tools
     tools = ["bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly", "gcloud"]
     missing = []
@@ -1479,6 +1536,9 @@ def main():
     if gmaps_updated:
         print_info("Прокидаємо новий API ключ у глобальну конфігурацію...")
         sync_configs()
+
+    # Frontend Security & Env Verification
+    ensure_frontend_config()
 
     setup_xcodebuild_mcp()
 
