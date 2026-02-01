@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { homedir } from 'os';
 import { loadEnv, ConfigEnv } from 'vite';
+import { existsSync } from 'fs';
 
 // Plugin to load global .env from ~/.config/atlastrinity/
 function globalEnvPlugin() {
@@ -10,9 +11,8 @@ function globalEnvPlugin() {
         name: 'global-env',
         config(config: any, { mode }: ConfigEnv) {
             const globalConfigPath = resolve(homedir(), '.config', 'atlastrinity', '.env');
-            const fs = require('fs');
             
-            if (fs.existsSync(globalConfigPath)) {
+            if (existsSync(globalConfigPath)) {
                 console.log(`🌍 Loading global .env from: ${globalConfigPath}`);
                 
                 // Load and parse global .env
