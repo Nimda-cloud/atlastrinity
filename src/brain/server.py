@@ -76,14 +76,11 @@ async def lifespan(app: FastAPI):
     except ImportError:
         logger.warning("Monitoring system not available")
 
-    # Initialize services in background
-    asyncio.create_task(ensure_all_services())
+    # Initialize services in background (handled by startup workflow)
+    # asyncio.create_task(ensure_all_services())
 
     # Initialize components
     await trinity.initialize()
-
-    # Production: copy configs from Resources/ to ~/.config/ if needed
-    run_production_setup()
 
     # Production: copy configs from Resources/ to ~/.config/ if needed
     run_production_setup()

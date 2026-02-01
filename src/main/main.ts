@@ -67,12 +67,7 @@ async function createWindow(): Promise<void> {
     }
   }
 
-  // Check required permissions first
-  const permissionsOk = await checkPermissions();
-  if (!permissionsOk) {
-    await requestPermissions();
-  }
-
+  // Create window immediately to avoid black screen/hang
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -91,16 +86,51 @@ async function createWindow(): Promise<void> {
     },
   });
 
+  // Check required permissions in background after window is created
+  checkPermissions().then(async (ok) => {
+    if (!ok) {
+      await requestPermissions();
+    }
+  });
+
   // Load the app
   if (isDev) {
-    // Delay loading in dev mode to allow Python server to start
-    console.log('[ELECTRON] Waiting for backend to initialize (5s)...');
-    setTimeout(async () => {
-      if (mainWindow) {
-        await mainWindow.loadURL('http://localhost:3000');
-        mainWindow.webContents.openDevTools();
+    // Dynamic port detection for Vite (handles 3000 vs 3001 conflict)
+    const findVitePort = async (): Promise<number> => {
+      const ports = [3000, 3001];
+      for (const port of ports) {
+        try {
+          const response = await fetch(`http://localhost:${port}`, { method: 'HEAD' });
+          if (response.ok) return port;
+        } catch {
+          // Port not active
+        }
       }
-    }, 5000);
+      return 3000; // Fallback
+    };
+
+    console.log('[ELECTRON] Searching for Vite dev server...');
+    const attemptLoad = async (retryCount = 0) => {
+      if (!mainWindow) return;
+
+      const port = await findVitePort();
+      const url = `http://localhost:${port}`;
+
+      console.log(`[ELECTRON] Attempting to load ${url} (Retry ${retryCount})...`);
+      try {
+        await mainWindow.loadURL(url);
+        mainWindow.webContents.openDevTools();
+      } catch (err) {
+        if (retryCount < 10) {
+          console.log(`[ELECTRON] Load failed, retrying in 2s...`);
+          setTimeout(() => attemptLoad(retryCount + 1), 2000);
+        } else {
+          console.error('[ELECTRON] Failed to load renderer after 10 attempts');
+        }
+      }
+    };
+
+    attemptLoad();
   } else {
     await mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 

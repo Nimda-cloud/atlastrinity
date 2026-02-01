@@ -43,10 +43,19 @@ async function checkMicrophonePermission(): Promise<boolean> {
 
 /**
  * Check screen recording permission
+ * Note: getMediaAccessStatus('screen') can be unreliable or missing 'granted' in some type defs.
  */
 async function checkScreenRecordingPermission(): Promise<boolean> {
-  const status = systemPreferences.getMediaAccessStatus('screen');
-  return status === 'granted';
+  if (process.platform !== 'darwin') return true;
+
+  try {
+    // MediaAccessStatus for screen can be: 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown'
+    const status = systemPreferences.getMediaAccessStatus('screen') as any;
+    return status === 'granted';
+  } catch (err) {
+    console.error('[PERMISSIONS] Error checking screen recording status:', err);
+    return false;
+  }
 }
 
 /**
