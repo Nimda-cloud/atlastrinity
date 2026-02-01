@@ -23,6 +23,7 @@
     "python3",
     "pytest",
     "unset",
-    "open"
+    "open",
+    "sleep"
   ]
 }
