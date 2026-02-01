@@ -99,7 +99,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
   const [error, setError] = useState<string | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const apiLoaderRef = useRef<HTMLElement | null>(null);
+  const apiLoaderRef = useRef<HTMLDivElement | null>(null);
 
   // Load the Extended Component Library script
   useEffect(() => {
@@ -145,6 +145,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
         // Small delay to ensure everything is rendered
         await new Promise((resolve) => setTimeout(resolve, 500));
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapElement = document.querySelector('gmp-map') as any;
 
         if (mapElement) {
@@ -190,7 +191,9 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
 
   // Handle place picker changes
   const handlePlaceChange = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const placePicker = document.querySelector('gmpx-place-picker') as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapElement = document.querySelector('gmp-map') as any;
 
     if (placePicker && mapElement?.innerMap) {
@@ -218,7 +221,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
     // Create the element using innerHTML to avoid React's key prop interference
     return (
       <div
-        ref={apiLoaderRef as any}
+        ref={apiLoaderRef}
         dangerouslySetInnerHTML={{
           __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}"></gmpx-api-loader>`,
         }}
@@ -610,9 +613,13 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmp-map': any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmpx-api-loader': any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmpx-place-picker': any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmp-advanced-marker': any;
     }
   }
