@@ -274,6 +274,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
             <gmp-map
               center="50.4501,30.5234"
               zoom="12"
+              rendering-type="raster"
               style={{ width: '100%', height: '100%' }}
             >
               <div slot="control-block-start-inline-start" className="place-picker-container">
