@@ -2349,6 +2349,31 @@
     "types": {
       "initial_query": "str"
     },
-    "description": "Open the interactive map with autocomplete search bar in the Atlas UI"
+    "description": "Open interactive map search interface"
+  },
+  "maps_start_tour": {
+    "server": "local",
+    "required": [
+      "polyline"
+    ],
+    "optional": [],
+    "types": {
+      "polyline": "str"
+    },
+    "description": "Start a guided virtual tour along a route (encoded polyline)"
+  },
+  "maps_tour_control": {
+    "server": "local",
+    "required": [
+      "action"
+    ],
+    "optional": [
+      "value"
+    ],
+    "types": {
+      "action": "str",
+      "value": "float"
+    },
+    "description": "Control active tour: stop, pause, resume, look (heading)"
   }
 }
