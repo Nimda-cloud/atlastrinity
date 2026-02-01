@@ -1293,6 +1293,7 @@ def restore_databases():
     # Definitive mappings for full system restoration
     restores = [
         (backup_dir / "atlastrinity.db", CONFIG_ROOT / "atlastrinity.db"),
+        (backup_dir / "monitoring.db", CONFIG_ROOT / "data" / "monitoring.db"),
         (backup_dir / "golden_fund", CONFIG_ROOT / "data" / "golden_fund"),
         (backup_dir / "memory" / "chroma", CONFIG_ROOT / "memory" / "chroma"),
     ]
