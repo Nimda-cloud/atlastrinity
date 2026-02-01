@@ -40,6 +40,13 @@ export interface MapState {
   zoom: number;
   map_type: string;
   layers: string[];
+  agent_view: {
+    image_path: string;
+    heading: number;
+    pitch: number;
+    fov: number;
+    timestamp: string;
+  } | null;
 }
 
 /**

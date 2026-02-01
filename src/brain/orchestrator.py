@@ -40,6 +40,7 @@ from src.brain.error_router import error_router
 from src.brain.knowledge_graph import knowledge_graph
 from src.brain.logger import logger
 from src.brain.mcp_manager import mcp_manager
+from src.brain.map_state import map_state_manager
 from src.brain.message_bus import AgentMsg, MessageType, message_bus
 from src.brain.metrics import metrics_collector
 from src.brain.navigation.tour_driver import tour_driver
@@ -873,6 +874,7 @@ class Trinity:
             "logs": (self.state.get("logs") or [])[-100:],
             "step_results": self.state.get("step_results") or [],
             "metrics": metrics_collector.get_metrics(),
+            "map_state": map_state_manager.to_dict(),
         }
 
     async def _planning_loop(self, analysis, user_request, is_subtask, history):

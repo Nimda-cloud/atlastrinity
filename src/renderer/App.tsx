@@ -70,6 +70,12 @@ const App: React.FC = () => {
     url?: string;
     type: 'STREET' | 'STATIC' | 'INTERACTIVE';
     location?: string;
+    agentView?: {
+      heading: number;
+      pitch: number;
+      fov: number;
+      timestamp: string;
+    } | null;
   }>({ type: 'STATIC' });
 
   // Command dock auto-hide state
@@ -215,6 +221,28 @@ const App: React.FC = () => {
           setCurrentTask(data.current_task || '');
           setActiveMode(data.active_mode || 'STANDARD');
           if (data.metrics) setMetrics(data.metrics);
+          
+          if (data.map_state && data.map_state.agent_view) {
+            const av = data.map_state.agent_view;
+            if (av.image_path) {
+              setMapData({
+                url: `file://${av.image_path}`,
+                type: 'STREET',
+                location: `AGENT_VIEW @ ${av.heading}°`,
+                agentView: {
+                  heading: av.heading,
+                  pitch: av.pitch,
+                  fov: av.fov,
+                  timestamp: av.timestamp
+                }
+              });
+              setViewMode('MAP');
+            }
+          } else if (data.map_state && data.map_state.center && viewMode === 'MAP') {
+             // Handle potential case where we are in MAP mode but no agent is walking?
+             // Actually, let's just make sure we clear agentView if it's gone from backend
+             setMapData(prev => ({ ...prev, agentView: null }));
+          }
 
           if (data.logs) {
             setLogs(
@@ -686,6 +714,7 @@ const App: React.FC = () => {
               imageUrl={mapData.url}
               type={mapData.type}
               location={mapData.location}
+              agentView={mapData.agentView}
               onClose={() => setViewMode('NEURAL')}
             />
           </div>

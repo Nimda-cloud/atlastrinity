@@ -565,6 +565,10 @@ Ukrainian:"""
 
         self.is_speaking = False
 
+    async def stop_speaking(self):
+        """Alias for stop() for orchestrator compatibility."""
+        self.stop()
+
     async def close(self):
         """Shutdown the voice manager."""
         self.stop()
