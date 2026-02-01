@@ -13,8 +13,9 @@ import os
 import tempfile
 import warnings
 
-# Suppress PyTorch weight_norm deprecation warning (triggered by espnet2/ukrainian-tts)
+# Suppress PyTorch and ESPnet warnings triggered by ukrainian-tts
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
+warnings.filterwarnings("ignore", message=".*make_pad_mask with a list of lengths is not tracable.*")
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
