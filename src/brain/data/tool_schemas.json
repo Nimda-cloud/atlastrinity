@@ -2215,25 +2215,40 @@
     ],
     "optional": [
       "location",
-      "radius"
+      "radius",
+      "type",
+      "min_price",
+      "max_price",
+      "open_now",
+      "rankby"
     ],
     "types": {
       "query": "str",
       "location": "str",
-      "radius": "int"
+      "radius": "int",
+      "type": "str",
+      "min_price": "int",
+      "max_price": "int",
+      "open_now": "bool",
+      "rankby": "str"
     },
-    "description": "Search for places and points of interest"
+    "description": "Search for places with advanced filtering (types, price, open status)"
   },
   "maps_place_details": {
     "server": "googlemaps",
     "required": [
       "place_id"
     ],
-    "optional": [],
+    "optional": [
+      "fields",
+      "language"
+    ],
     "types": {
-      "place_id": "str"
+      "place_id": "str",
+      "fields": "str",
+      "language": "str"
     },
-    "description": "Get detailed information about a place"
+    "description": "Get detailed info including reviews, hours, and photos"
   },
   "maps_directions": {
     "server": "googlemaps",
@@ -2242,14 +2257,24 @@
       "destination"
     ],
     "optional": [
-      "mode"
+      "mode",
+      "waypoints",
+      "alternatives",
+      "avoid",
+      "departure_time",
+      "arrival_time"
     ],
     "types": {
       "origin": "str",
       "destination": "str",
-      "mode": "str"
+      "mode": "str",
+      "waypoints": "str",
+      "alternatives": "bool",
+      "avoid": "str",
+      "departure_time": "str",
+      "arrival_time": "str"
     },
-    "description": "Get directions with live traffic awareness"
+    "description": "Get directions with multi-stop, alternatives, and live traffic"
   },
   "maps_distance_matrix": {
     "server": "googlemaps",

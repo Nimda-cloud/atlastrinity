@@ -508,10 +508,13 @@
     "name": "googlemaps",
     "tier": 2,
     "category": "location",
-    "description": "Google Maps Platform Integration with Cyberpunk Visuals (10 tools)",
+    "description": "Google Maps Platform Integration with Cyberpunk Visuals & Advanced Routing (10 tools)",
     "capabilities": [
       "Visual Monitoring (Street View, Static Maps)",
       "Cyberpunk image filtering (blue/cyan/neon contour)",
+      "Multi-Stop Routing (Waypoints, Alternatives, Avoidance)",
+      "Advanced Search (Radius, Type, Price, Open Status)",
+      "Detailed Place Analytics (Reviews, Hours, Photos)",
       "Live Traffic-aware routing (Directions, Distance Matrix)",
       "Location Services (Geocode, Search, Details)",
       "Environmental analysis (Elevation)",
@@ -524,8 +527,9 @@
       "maps_distance_matrix",
       "maps_geocode",
       "maps_search_places",
+      "maps_place_details",
       "maps_open_interactive_search"
     ],
-    "when_to_use": "Finding locations, planning routes with traffic, visualizing streets in Cyberpunk style, getting elevation data, or opening an interactive map with search."
+    "when_to_use": "Finding locations with specific criteria (price, open now), planning complex multi-stop routes, visualizing streets, or getting detailed place analytics."
   }
 }

@@ -6,6 +6,7 @@ This module now uses the centralized mcp_registry for dynamic catalog generation
 from ..mcp_registry import (
     DATA_PROTOCOL,
     HACKING_PROTOCOL,
+    MAPS_PROTOCOL,
     SDLC_PROTOCOL,
     SEARCH_PROTOCOL,
     STORAGE_PROTOCOL,
@@ -21,6 +22,7 @@ __all__ = [
     "DATA_PROTOCOL",
     "DEFAULT_REALM_CATALOG",
     "HACKING_PROTOCOL",
+    "MAPS_PROTOCOL",
     "SDLC_PROTOCOL",
     "SEARCH_PROTOCOL",
     "STORAGE_PROTOCOL",
