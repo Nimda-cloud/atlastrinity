@@ -120,9 +120,12 @@ echo ""
 echo "📦 Крок 5/8: Видалення Swift компіляції та XcodeBuildMCP..."
 if [ -d "vendor/mcp-server-macos-use/.build" ]; then
     rm -rf vendor/mcp-server-macos-use/.build
-    echo "✅ Swift .build видалено (вихідний код залишається)"
-else
-    echo "ℹ️  Swift .build не існує"
+    echo "✅ Swift .build видалено (macos-use)"
+fi
+
+if [ -d "vendor/mcp-server-googlemaps/.build" ]; then
+    rm -rf vendor/mcp-server-googlemaps/.build
+    echo "✅ Swift .build видалено (googlemaps)"
 fi
 
 if [ -d "vendor/XcodeBuildMCP" ]; then
