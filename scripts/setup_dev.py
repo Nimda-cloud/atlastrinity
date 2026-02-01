@@ -144,7 +144,7 @@ def check_system_tools():
         print_success(f"Node знайдено ({subprocess.getoutput('node --version').strip()})")
 
     # 3. Check other tools
-    tools = ["bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly"]
+    tools = ["bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly", "gcloud"]
     missing = []
 
     for tool in tools:
@@ -210,6 +210,19 @@ def check_system_tools():
                     missing.remove(t)
         except Exception:
             pass
+
+    # Auto-install gcloud if missing
+    if "gcloud" in missing:
+        print_info("gcloud CLI не знайдено. Встановлення Google Cloud SDK через Brew...")
+        try:
+            subprocess.run(["brew", "install", "--cask", "google-cloud-sdk"], check=True)
+            # Brew usually symlinks gcloud to common paths, but we ensure it's in PATH
+            print_success("Google Cloud SDK (gcloud) було встановлено")
+            if "gcloud" in missing:
+                missing.remove("gcloud")
+        except Exception as e:
+            print_warning(f"Не вдалося автоматично встановити Google Cloud SDK: {e}")
+            print_info("Будь ласка, встановіть його вручну: https://cloud.google.com/sdk/docs/install")
 
     if "swift" in missing:
         print_error("Swift необхідний для компіляції macos-use та googlemaps MCP серверів!")
