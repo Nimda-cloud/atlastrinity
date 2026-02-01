@@ -650,7 +650,7 @@ def setup_google_maps():
         print_warning("Знайдено API ключ, але відсутній VITE_ префікс для фронтенду.")
         print_info("Автоматичне виправлення .env файлу...")
         try:
-            with open(env_path, "r", encoding="utf-8") as f:
+            with open(env_path, encoding="utf-8") as f:
                 content = f.read()
             
             if "VITE_GOOGLE_MAPS_API_KEY=" in content:
@@ -1398,7 +1398,7 @@ def ensure_frontend_config():
     # 1. Перевірка vite.config.ts
     vite_config = PROJECT_ROOT / "vite.config.ts"
     if vite_config.exists():
-        with open(vite_config, "r", encoding="utf-8") as f:
+        with open(vite_config, encoding="utf-8") as f:
             content = f.read()
         
         if not re.search(r"envDir:\s*['\"](\.\./){2}['\"]", content):
@@ -1415,7 +1415,7 @@ def ensure_frontend_config():
     # 2. Перевірка CSP в index.html
     index_html = PROJECT_ROOT / "src" / "renderer" / "index.html"
     if index_html.exists():
-        with open(index_html, "r", encoding="utf-8") as f:
+        with open(index_html, encoding="utf-8") as f:
             content = f.read()
         
         needs_update = False
@@ -1437,7 +1437,7 @@ def ensure_frontend_config():
     # 3. Прибирання хардкод-ключів у MapView.tsx
     map_view = PROJECT_ROOT / "src" / "renderer" / "components" / "MapView.tsx"
     if map_view.exists():
-        with open(map_view, "r", encoding="utf-8") as f:
+        with open(map_view, encoding="utf-8") as f:
             content = f.read()
         
         if "AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8" in content:
