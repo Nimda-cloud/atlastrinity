@@ -25,14 +25,14 @@ class TourDriver:
         self.heading_offset = 0  # relative look direction (0 = forward, 90 = right)
         self._task: asyncio.Task | None = None
 
-    async def start_tour(self, route_polyline: str):
+    async def start_tour(self, route_polyline: str) -> None:
         """Start a tour along a polyline."""
         if self.is_active:
             await self.stop_tour()
 
         logger.info("[TourDriver] Starting tour...")
         self.current_route_points = self._decode_polyline(route_polyline)
-        
+
         if not self.current_route_points:
             logger.error("[TourDriver] Failed to decode polyline or empty route.")
             return
@@ -41,11 +41,11 @@ class TourDriver:
         self.is_paused = False
         self.current_step_index = 0
         self.heading_offset = 0
-        
+
         # Start the async drive loop
         self._task = asyncio.create_task(self._drive_loop())
 
-    async def stop_tour(self):
+    async def stop_tour(self) -> None:
         """Stop the tour completely."""
         self.is_active = False
         if self._task:
@@ -57,26 +57,26 @@ class TourDriver:
             self._task = None
         logger.info("[TourDriver] Tour stopped.")
 
-    def pause_tour(self):
+    def pause_tour(self) -> None:
         self.is_paused = True
         logger.info("[TourDriver] Tour paused.")
 
-    def resume_tour(self):
+    def resume_tour(self) -> None:
         self.is_paused = False
         logger.info("[TourDriver] Tour resumed.")
 
-    def look_around(self, angle: int):
+    def look_around(self, angle: int) -> None:
         """Change relative viewing angle (e.g., -90 for left)."""
         self.heading_offset = angle
         # Trigger immediate update if paused
         if self.is_paused:
             asyncio.create_task(self._update_view_at_current_location())
 
-    def set_speed(self, modifier: float):
+    def set_speed(self, modifier: float) -> None:
         """Set speed modifier (0.5 to 3.0)."""
         self.speed_modifier = max(0.5, min(modifier, 3.0))
 
-    async def _drive_loop(self):
+    async def _drive_loop(self) -> None:
         """Main navigation loop."""
         try:
             while self.is_active and self.current_step_index < len(self.current_route_points):
@@ -101,7 +101,7 @@ class TourDriver:
             logger.exception(f"[TourDriver] Error in drive loop: {e}")
             self.is_active = False
 
-    async def _update_view_at_current_location(self):
+    async def _update_view_at_current_location(self) -> None:
         """Fetch and update the view for the current location."""
         if self.current_step_index >= len(self.current_route_points):
             return
@@ -200,7 +200,7 @@ class TourDriver:
 
         return points
 
-    def _calculate_bearing(self, lat1, lng1, lat2, lng2) -> float:
+    def _calculate_bearing(self, lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         """Calculate bearing between two GPS points."""
         # If points are identical, keep previous heading or default to 0
         if lat1 == lat2 and lng1 == lng2:
