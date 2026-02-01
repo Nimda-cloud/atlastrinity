@@ -344,7 +344,9 @@ app.on('before-quit', () => {
     // Attempt to free port 3000 (Vite) if it was spawned by us or is lingering
     try {
       execSync('lsof -ti :3000 | xargs kill -9', { stdio: 'ignore' });
-    } catch {}
+    } catch {
+      // Ignore error if port 3000 is already free
+    }
 
     console.log('Cleanup completed.');
   } catch {
