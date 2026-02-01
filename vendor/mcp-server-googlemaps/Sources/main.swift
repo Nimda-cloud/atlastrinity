@@ -577,6 +577,31 @@ func getOptionalBool(from args: [String: Value]?, key: String, defaultValue: Boo
     return args?[key]?.boolValue ?? defaultValue
 }
 
+func generateMapsLink(location: String, zoom: Int, mapType: String) -> String {
+    // Encode location for URL
+    let encodedLocation = location.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? location
+    
+    // Build Google Maps URL
+    var urlComponents = URLComponents(string: "https://www.google.com/maps")!
+    urlComponents.queryItems = [
+        URLQueryItem(name: "q", value: encodedLocation),
+        URLQueryItem(name: "z", value: String(zoom)),
+        URLQueryItem(name: "maptype", value: mapType)
+    ]
+    
+    guard let url = urlComponents.url else {
+        return "🔗 MAP_LINK_ERROR: Invalid URL parameters"
+    }
+    
+    return """
+        🔗 Google Maps Link Generated!
+        Location: \(location)
+        Zoom: \(zoom)
+        Map Type: \(mapType)
+        URL: \(url.absoluteString)
+        """
+}
+
 // MARK: - Main Server Setup
 
 func setupAndStartServer() async throws -> Server {
@@ -639,6 +664,28 @@ func setupAndStartServer() async throws -> Server {
             name: "maps_open_interactive_search",
             description: "Open the interactive map with autocomplete search bar in the Atlas UI",
             inputSchema: interactiveSearchSchema
+        ),
+        Tool(
+            name: "maps_generate_link",
+            description: "Generate a Google Maps URL for specific coordinates or location",
+            inputSchema: .object([
+                "type": .string("object"),
+                "properties": .object([
+                    "location": .object([
+                        "type": .string("string"),
+                        "description": .string("Location (address or coordinates)"),
+                    ]),
+                    "zoom": .object([
+                        "type": .string("number"), 
+                        "description": .string("Zoom level (1-20, default 15)"),
+                    ]),
+                    "map_type": .object([
+                        "type": .string("string"),
+                        "description": .string("Map type: roadmap, satellite, terrain, hybrid"),
+                    ]),
+                ]),
+                "required": .array([.string("location")]),
+            ])
         ),
     ]
 
@@ -724,6 +771,12 @@ func setupAndStartServer() async throws -> Server {
             case "maps_open_interactive_search":
                 let query = getOptionalString(from: args, key: "initial_query") ?? ""
                 result = "🌐 INTERACTIVE_MAP_OPEN: \(query)"
+
+            case "maps_generate_link":
+                let location = try getRequiredString(from: args, key: "location")
+                let zoom = getOptionalInt(from: args, key: "zoom", defaultValue: 15)
+                let mapType = getOptionalString(from: args, key: "map_type") ?? "roadmap"
+                result = generateMapsLink(location: location, zoom: zoom, mapType: mapType)
 
             default:
                 return .init(content: [.text("Unknown tool: \(params.name)")], isError: true)
