@@ -89,7 +89,8 @@
     "stripe": "^20.1.1"
   },
   "overrides": {
-    "@modelcontextprotocol/sdk": "^1.25.3"
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "lodash-es": "^4.17.21"
   },
   "build": {
     "appId": "com.atlastrinity.app",
