@@ -3,9 +3,9 @@
 Test script for secure backup functionality
 """
 
+import sqlite3
 import sys
 import tempfile
-import sqlite3
 from pathlib import Path
 
 # Add project root to sys.path

@@ -1188,8 +1188,9 @@ class Grisha(BaseAgent):
 
             plan_data = json.loads(cleaned_text)
             
-            from src.brain.agents.atlas import TaskPlan
             import inspect
+
+            from src.brain.agents.atlas import TaskPlan
 
             # Validate and filter
             valid_keys = set(inspect.signature(TaskPlan.__init__).parameters.keys())

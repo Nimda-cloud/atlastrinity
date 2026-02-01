@@ -4,16 +4,18 @@ Secure Backup Utilities for AtlasTrinity
 Provides encryption and secret filtering for backup operations
 """
 
+import hashlib
+import json
 import os
 import re
 import shutil
 import sqlite3
 import tempfile
 from pathlib import Path
+from typing import Any
+
 from cryptography.fernet import Fernet
-from typing import Dict, List, Tuple, Optional
-import json
-import hashlib
+
 
 class SecureBackupManager:
     """Manages secure backups with encryption and secret filtering"""
@@ -182,7 +184,7 @@ class SecureBackupManager:
         key = self.get_backup_key()
         
         # Define backup mappings with security options
-        backup_mappings = [
+        backup_mappings: list[dict[str, Any]] = [
             {
                 'source': self.config_root / "atlastrinity.db",
                 'dest': self.backup_dir / "atlastrinity.db.encrypted",
@@ -290,12 +292,12 @@ class SecureBackupManager:
             print("❌ Backup metadata not found")
             return False
         
-        # Load metadata
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
+        # Load metadata (for future use)
+        with open(metadata_path) as f:
+            json.load(f)  # Metadata loaded but not currently used
         
         # Restore mappings (reverse of backup)
-        restore_mappings = [
+        restore_mappings: list[dict[str, Any]] = [
             {
                 'source': self.backup_dir / "atlastrinity.db.encrypted",
                 'dest': self.config_root / "atlastrinity.db",

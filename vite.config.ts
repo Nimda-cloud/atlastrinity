@@ -8,7 +8,7 @@ import { loadEnv, ConfigEnv } from 'vite';
 function globalEnvPlugin() {
     return {
         name: 'global-env',
-        config(config: any, { command, mode }: ConfigEnv) {
+        config(config: any, { mode }: ConfigEnv) {
             const globalConfigPath = resolve(homedir(), '.config', 'atlastrinity', '.env');
             const fs = require('fs');
             
