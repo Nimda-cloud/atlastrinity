@@ -934,7 +934,11 @@ IMPORTANT:
         if not tool_result.get("success") or str(output_data).strip():
             return
 
-        data_intensive_tools = ["read_file", "search", "list_directory", "execute_command", "vibe_prompt"]
+        data_intensive_tools = [
+            "read_file", "search", "list_directory", "execute_command", 
+            "vibe_prompt", "maps_geocode", "maps_directions", "search_places",
+            "maps_street_view", "fetch_url"
+        ]
         current_tool_name = str(tool_call.get("name", "")).lower()
 
         if any(t in current_tool_name for t in data_intensive_tools):
@@ -1148,10 +1152,9 @@ IMPORTANT:
         if not isinstance(result, dict):
             return {"success": False, "error": "Invalid result type"}
 
-        if "isError" in result:
-            result["success"] = not result["isError"]
+        # Ensure 'success' key is present, defaulting to False if not explicitly True
         if "success" not in result:
-            result["success"] = "error" not in result
+            result["success"] = not result.get("isError", False)
 
         if not result.get("success"):
             self._log_dispatcher_errors(result, tool_name)
@@ -1162,6 +1165,16 @@ IMPORTANT:
                         if isinstance(item, dict) and item.get("type") == "text":
                             content_text += item.get("text", "")
                 result["error"] = content_text or "Unknown tool execution error"
+
+        # Map 'content' to 'output' for compatibility with StepResult and verification logic
+        if "content" in result and isinstance(result["content"], list):
+            output_text = ""
+            for item in result["content"]:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    output_text += item.get("text", "")
+            if output_text and not result.get("output"):
+                result["output"] = output_text
+
         return cast(dict[str, Any], result)
 
     def _log_dispatcher_errors(self, result: dict[str, Any], tool_name: str) -> None:
