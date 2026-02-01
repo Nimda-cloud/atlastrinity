@@ -374,8 +374,8 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           height: 100%;
           display: flex;
           flex-direction: column;
-          background: rgba(0, 10, 20, 0.95);
-          padding: 20px;
+          background: transparent;
+          padding: 0;
           position: relative;
         }
 
@@ -572,15 +572,6 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
           z-index: 2;
           opacity: 0;
           transition: opacity 0.5s ease;
-          /* Edge fade effect - 120px (3-4cm) transparent gradient on all sides */
-          -webkit-mask-image: 
-            linear-gradient(to right, transparent 0, black 120px, black calc(100% - 120px), transparent 100%),
-            linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 120px), transparent 100%);
-          -webkit-mask-composite: source-in;
-          mask-image: 
-            linear-gradient(to right, transparent 0, black 120px, black calc(100% - 120px), transparent 100%),
-            linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 120px), transparent 100%);
-          mask-composite: intersect;
         }
 
         .interactive-map-wrapper.loaded {
@@ -641,6 +632,15 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose }) 
 
         gmp-map {
           filter: contrast(1.05) brightness(0.95) saturate(1.1);
+          /* Edge fade effect - 120px (3-4cm) transparent gradient on all sides */
+          -webkit-mask-image: 
+            linear-gradient(to right, transparent 0, black 120px, black calc(100% - 120px), transparent 100%),
+            linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 120px), transparent 100%);
+          -webkit-mask-composite: source-in;
+          mask-image: 
+            linear-gradient(to right, transparent 0, black 120px, black calc(100% - 120px), transparent 100%),
+            linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 120px), transparent 100%);
+          mask-composite: intersect;
         }
 
         .map-zoom-controls {
