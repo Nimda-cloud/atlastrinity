@@ -497,6 +497,7 @@ class MonitoringSystem:
 # Global monitoring instance - use lazy initialization to avoid duplicate metric registration
 monitoring_system = None
 
+
 def get_monitoring_system():
     """Get the global monitoring system instance (singleton pattern)."""
     global monitoring_system
