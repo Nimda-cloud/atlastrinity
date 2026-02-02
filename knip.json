@@ -24,6 +24,7 @@
     "pytest",
     "unset",
     "open",
-    "sleep"
+    "sleep",
+    "jq"
   ]
 }

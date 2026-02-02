@@ -20,7 +20,7 @@ warnings.filterwarnings(
 )
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, cast
 
 from ..config import MODELS_DIR
 from ..config_loader import config
@@ -37,7 +37,7 @@ def _check_tts_available():
         return TTS_AVAILABLE
 
     try:
-        import ukrainian_tts
+        import ukrainian_tts  # noqa: F401
 
         TTS_AVAILABLE = True
         print("[TTS] Ukrainian TTS available")
@@ -357,9 +357,9 @@ class AgentVoice:
         with open(output_file, mode="wb") as f:
             self.tts.tts(
                 text,
-                self._voice,
+                cast(Any, self._voice),
                 Stress.Dictionary.value,
-                f,
+                cast(Any, f),
             )
         return True
 
@@ -600,7 +600,7 @@ Ukrainian:"""
                 print(f"[TTS] Unknown agent: {agent_id}")
                 return None
 
-            from ukrainian_tts.tts import Stress, Voices
+            from ukrainian_tts.tts import Voices
 
             agent_conf = AGENT_VOICES[agent_id]
             voice_enum = getattr(Voices, agent_conf.voice_id).value
@@ -702,7 +702,9 @@ Ukrainian:"""
         def _do_gen():
             if self.engine:
                 with c_file.open(mode="wb") as f:
-                    self.engine.tts(text, voice_enum, Stress.Dictionary.value, f)
+                    self.engine.tts(
+                        text, cast(Any, voice_enum), Stress.Dictionary.value, cast(Any, f)
+                    )
 
         await asyncio.to_thread(_do_gen)
         return c_file

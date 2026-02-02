@@ -266,7 +266,9 @@ class WhisperSTT:
             )
         except Exception as e:
             print(f"[STT] Transcription error: {e}")
-            return TranscriptionResult(text="", language=language, confidence=0, segments=[])
+            return TranscriptionResult(
+                text="", language=language or "uk", confidence=0, segments=[]
+            )
 
     async def transcribe_with_analysis(
         self,

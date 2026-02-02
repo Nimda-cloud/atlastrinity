@@ -17,16 +17,12 @@ Version: 1.0
 
 from __future__ import annotations
 
-import io
 import json
 import logging
-import os
 import sys
-import tempfile
 import uuid
-from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -111,11 +107,21 @@ def _get_column_stats(series: pd.Series) -> dict[str, Any]:
     if pd.api.types.is_numeric_dtype(series):
         stats.update(
             {
-                "min": float(series.min()) if not pd.isna(series.min()) else None,
-                "max": float(series.max()) if not pd.isna(series.max()) else None,
-                "mean": round(float(series.mean()), 4) if not pd.isna(series.mean()) else None,
-                "median": float(series.median()) if not pd.isna(series.median()) else None,
-                "std": round(float(series.std()), 4) if not pd.isna(series.std()) else None,
+                "min": float(cast(Any, series.min()))
+                if not pd.isna(cast(Any, series.min()))
+                else None,
+                "max": float(cast(Any, series.max()))
+                if not pd.isna(cast(Any, series.max()))
+                else None,
+                "mean": round(float(cast(Any, series.mean())), 4)
+                if not pd.isna(cast(Any, series.mean()))
+                else None,
+                "median": float(cast(Any, series.median()))
+                if not pd.isna(cast(Any, series.median()))
+                else None,
+                "std": round(float(cast(Any, series.std())), 4)
+                if not pd.isna(cast(Any, series.std()))
+                else None,
             }
         )
     elif pd.api.types.is_string_dtype(series) or series.dtype == object:
@@ -161,7 +167,7 @@ async def read_metadata(file_path: str, sheet_name: str | int | None = None) -> 
     # Get schema info
     columns_info = []
     for col in df.columns:
-        col_stats = _get_column_stats(df[col])
+        col_stats = _get_column_stats(cast(pd.Series, df[col]))
         col_stats["name"] = str(col)
         columns_info.append(col_stats)
 
@@ -415,10 +421,10 @@ async def generate_statistics(
                     ci_lower = mean - 1.96 * se
                     ci_upper = mean + 1.96 * se
                     results.setdefault("confidence_intervals", {})[col] = {
-                        "mean": round(float(mean), 4),
-                        "std_error": round(float(se), 4),
-                        "ci_95_lower": round(float(ci_lower), 4),
-                        "ci_95_upper": round(float(ci_upper), 4),
+                        "mean": round(float(cast(Any, mean)), 4),
+                        "std_error": round(float(cast(Any, se)), 4),
+                        "ci_95_lower": round(float(cast(Any, ci_lower)), 4),
+                        "ci_95_upper": round(float(cast(Any, ci_upper)), 4),
                     }
 
     return results
@@ -613,7 +619,7 @@ async def data_cleaning(
     return {
         "success": True,
         "original_shape": {"rows": original_shape[0], "columns": original_shape[1]},
-        "cleaned_shape": {"rows": len(df), "columns": len(df.columns)},
+        "cleaned_shape": {"rows": len(df), "columns": len(getattr(df, "columns", []))},
         "cleaning_log": cleaning_log,
         "output_path": str(save_path),
     }
@@ -799,8 +805,8 @@ async def interpret_column_data(
             "column_name": col_name,
             "data_type": str(series.dtype),
             "total_values": len(series),
-            "null_count": int(series.isna().sum()),
-            "unique_count": int(series.nunique()),
+            "null_count": int(cast(Any, series.isna().sum())),
+            "unique_count": int(cast(Any, series.nunique())),
             "unique_values_with_counts": [[str(k), int(v)] for k, v in value_counts.items()][:100],
         }
 

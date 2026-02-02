@@ -8,7 +8,7 @@ import json
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal, TypedDict, Union, cast
+from typing import Any, Literal, TypedDict, cast
 
 import yaml
 
