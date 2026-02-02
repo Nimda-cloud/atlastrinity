@@ -20,6 +20,8 @@ except ImportError:  # pragma: no cover
 
 # Project root (where the running code is)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+BRAIN_DIR = PROJECT_ROOT / "src" / "brain"
+
 
 # Repository root (where the source code for self-healing lives)
 # In development, it's the same as PROJECT_ROOT.

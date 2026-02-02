@@ -1,0 +1,7 @@
+# User Defined Monitoring Constraints
+# One rule per line. The system will continuously monitor logs for violations.
+# Violations trigger a Priority 2 parallel healing task.
+
+Check if interaction language is English but TTS voice output is in Ukrainian.
+Ensure no API keys are logged in plain text.
+Verify that 'screenshot' tool is not used more than 3 times in a row.

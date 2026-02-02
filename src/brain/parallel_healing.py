@@ -47,6 +47,7 @@ class HealingTask:
     grisha_verdict: dict[str, Any] | None = None
     error_message: str | None = None
     asyncio_task: asyncio.Task | None = field(default=None, repr=False)
+    priority: int = 1  # 1=Standard (Auto-heal), 2=Constraint Violation (Higher)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for persistence."""
@@ -62,6 +63,7 @@ class HealingTask:
             "sandbox_result": self.sandbox_result,
             "grisha_verdict": self.grisha_verdict,
             "error_message": self.error_message,
+            "priority": getattr(self, "priority", 1),
         }
 
 
@@ -87,6 +89,7 @@ class ParallelHealingManager:
 
     def __init__(self) -> None:
         self._tasks: dict[str, HealingTask] = {}
+        self._backlog: list[HealingTask] = []  # Priority queue for pending tasks
         self._fixed_queue: list[FixedStepInfo] = []
         self._max_concurrent = 3
         self._redis_available = False
@@ -108,6 +111,7 @@ class ParallelHealingManager:
         error: str,
         step_context: dict[str, Any],
         log_context: str,
+        priority: int = 1,
     ) -> str:
         """Submit a healing task to run in background.
         
@@ -116,23 +120,11 @@ class ParallelHealingManager:
             error: Error message from the failure
             step_context: Full step context (action, expected_result, etc.)
             log_context: Recent log lines for context
+            priority: 1 (Standard) or 2 (Constraint Violation - Higher)
             
         Returns:
             task_id: Unique identifier for tracking
         """
-        # Check concurrent limit
-        active_count = sum(
-            1 for t in self._tasks.values() 
-            if t.status not in (HealingStatus.READY, HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED)
-        )
-        if active_count >= self._max_concurrent:
-            logger.warning(f"[PARALLEL_HEALING] Max concurrent tasks ({self._max_concurrent}) reached")
-            # Return existing task if one exists for this step
-            for t in self._tasks.values():
-                if t.step_id == step_id and t.status not in (HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED):
-                    return t.task_id
-            raise RuntimeError("Max concurrent healing tasks reached")
-
         task_id = f"heal_{step_id}_{uuid4().hex[:8]}"
         
         task = HealingTask(
@@ -141,26 +133,48 @@ class ParallelHealingManager:
             error=error,
             step_context=step_context,
             log_context=log_context,
+            priority=priority,
         )
         
         self._tasks[task_id] = task
         
-        # Persist to Redis
-        await self._persist_task(task)
+        # Check concurrent limit
+        active_count = sum(
+            1 for t in self._tasks.values() 
+            if t.status not in (HealingStatus.READY, HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED)
+            and t.asyncio_task is not None and not t.asyncio_task.done()
+        )
         
+        if active_count >= self._max_concurrent:
+            logger.info(f"[PARALLEL_HEALING] Max concurrent ({self._max_concurrent}) reached. Queuing task {task_id} (Priority {priority})")
+            self._backlog.append(task)
+            # Sort backlog by priority descending (2 > 1)
+            self._backlog.sort(key=lambda t: t.priority, reverse=True)
+            task.status = HealingStatus.PENDING
+            await self._persist_task(task)
+            return task_id
+
+        # If slot available, start immediately
+        await self._start_task(task)
+        return task_id
+
+    async def _start_task(self, task: HealingTask) -> None:
+        """Internal method to start a task."""
         # Start background healing
         asyncio_task = asyncio.create_task(
             self._run_healing_workflow(task),
-            name=f"healing-{task_id}"
+            name=f"healing-{task.task_id}"
         )
         task.asyncio_task = asyncio_task
+        task.updated_at = datetime.now()
         
-        logger.info(f"[PARALLEL_HEALING] Task {task_id} submitted for step {step_id}")
+        # Persist to Redis
+        await self._persist_task(task)
+        
+        logger.info(f"[PARALLEL_HEALING] Task {task.task_id} started (Priority {task.priority}) for step {task.step_id}")
         
         # Notify via message bus
         await self._notify_healing_started(task)
-        
-        return task_id
 
     async def _run_healing_workflow(self, task: HealingTask) -> None:
         """Execute the full healing workflow in background.
@@ -283,6 +297,28 @@ class ParallelHealingManager:
             task.updated_at = datetime.now()
             await self._persist_task(task)
             logger.error(f"[PARALLEL_HEALING] {task.task_id}: Failed - {e}")
+            
+        finally:
+            # Check backlog for next task
+            await self._process_backlog()
+
+    async def _process_backlog(self) -> None:
+        """Check if slots are available and start backlogged tasks."""
+        if not self._backlog:
+            return
+
+        # Check concurrent limit again
+        active_count = sum(
+            1 for t in self._tasks.values() 
+            if t.status not in (HealingStatus.READY, HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED, HealingStatus.PENDING)
+            and t.asyncio_task is not None and not t.asyncio_task.done()
+        )
+        
+        if active_count < self._max_concurrent:
+            # Get highest priority task
+            next_task = self._backlog.pop(0)
+            logger.info(f"[PARALLEL_HEALING] Starting backlogged task {next_task.task_id} (Priority {next_task.priority})")
+            await self._start_task(next_task)
 
     async def _test_in_sandbox(self, task: HealingTask) -> dict[str, Any]:
         """Test the proposed fix in sandbox if applicable."""

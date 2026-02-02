@@ -2152,6 +2152,24 @@ class Trinity:
             last_error = ""
 
             for attempt in range(1, max_step_retries + 1):
+                # --- CONSTRAINT MONITORING (Async) ---
+                try:
+                    from src.brain.constraint_monitor import constraint_monitor
+                    # Fire and forget check
+                    monitor_logs = await self._get_recent_logs(20)
+                    state_logs = self.state.get("logs", []) if self.state else []
+                    if not isinstance(state_logs, list):
+                        state_logs = []
+                    
+                    asyncio.create_task(
+                        constraint_monitor.check_compliance(
+                            monitor_logs, 
+                            [l for l in state_logs if isinstance(l, dict)][-20:]
+                        )
+                    )
+                except Exception as cm_err:
+                    logger.warning(f"[ORCHESTRATOR] Monitor check trigger failed: {cm_err}")
+
                 await self._log(
                     f"Step {step_id}, Attempt {attempt}: {step.get('action')}",
                     "orchestrator",
