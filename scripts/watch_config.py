@@ -109,7 +109,7 @@ class ConfigHandler(FileSystemEventHandler):
 
         # Get relative path from config source
         try:
-            rel_path = Path(event.src_path).relative_to(CONFIG_SRC)
+            rel_path = Path(str(event.src_path)).relative_to(CONFIG_SRC)
             filename = str(rel_path)
         except ValueError:
             return
@@ -119,7 +119,7 @@ class ConfigHandler(FileSystemEventHandler):
             dst_path = CONFIG_DST_ROOT / dst_rel
             # Add a small delay to ensure write verify
             time.sleep(0.1)
-            process_template(Path(event.src_path), dst_path)
+            process_template(Path(str(event.src_path)), dst_path)
 
 
 def ensure_github_remote_setup():

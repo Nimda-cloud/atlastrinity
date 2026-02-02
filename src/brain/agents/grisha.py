@@ -1944,8 +1944,9 @@ class Grisha(BaseAgent):
                             base64_img = item.get("text")
                             break
                 elif hasattr(result, "content"):  # prompt object
-                    if len(result.content) > 0 and hasattr(result.content[0], "text"):
-                        base64_img = result.content[0].text
+                    content = getattr(result, "content", None)
+                    if content and len(content) > 0 and hasattr(content[0], "text"):
+                        base64_img = content[0].text
 
                 if base64_img:
                     import base64

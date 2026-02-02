@@ -388,9 +388,10 @@ Respond in JSON:
                             if item.get("type") == "text":
                                 base64_img = item.get("text")
                                 break
-                    elif hasattr(result, "content") and len(result.content) > 0:
-                        if hasattr(result.content[0], "text"):
-                            base64_img = result.content[0].text
+                    elif hasattr(result, "content"):
+                        content = getattr(result, "content", None)
+                        if content and len(content) > 0 and hasattr(content[0], "text"):
+                            base64_img = content[0].text
 
                     if base64_img:
                         with open(path, "wb") as f:
@@ -1895,8 +1896,9 @@ IMPORTANT:
             return {"success": False, "error": res["error"]}
 
         output = ""
-        if hasattr(res, "content"):
-            for item in res.content:
+        content = getattr(res, "content", None)
+        if content:
+            for item in content:
                 if hasattr(item, "text"):
                     output += item.text
         elif isinstance(res, dict) and "content" in res:
