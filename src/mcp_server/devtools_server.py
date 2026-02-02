@@ -7,8 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
-from mcp.server import FastMCP, Server
-from mcp.types import TextContent, Tool
+from mcp.server import FastMCP
 
 from .context_check import run_test_suite
 
@@ -941,7 +940,6 @@ def devtools_update_architecture_diagrams(
         Status of diagram updates with file locations, git status, GitHub config,
         and reasoning analysis if enabled
     """
-    import asyncio
 
     # Determine project paths
     if project_path is None:

@@ -3,11 +3,10 @@ Unified Data Format Parsers for Golden Fund
 Ported and consolidated from etl_module/src/parsing/formats/
 """
 
-import csv
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 import pandas as pd
 

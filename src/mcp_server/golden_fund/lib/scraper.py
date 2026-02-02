@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup

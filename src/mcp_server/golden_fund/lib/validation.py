@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("golden_fund.validation")

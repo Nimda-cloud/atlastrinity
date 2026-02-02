@@ -15,7 +15,6 @@ from typing import Any
 # Try importing chromadb, handle failure for CI/Bootstrap
 try:
     import chromadb
-    from chromadb.config import Settings
 
     CHROMA_AVAILABLE = True
 except ImportError:

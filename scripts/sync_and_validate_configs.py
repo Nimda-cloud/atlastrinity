@@ -73,9 +73,9 @@ def validate_yaml(template_content: str, target_path: Path):
     try:
         # Load template removing variable placeholders for structure check
         clean_tpl = re.sub(r"\${[A-Z0-9_]+}", "placeholder", template_content)
-        
+
         # Determine file format and load accordingly
-        if target_path.suffix == '.toml':
+        if target_path.suffix == ".toml":
             if toml is None:
                 print(f"  [!] Cannot validate {target_path.name}: toml library not installed")
                 return

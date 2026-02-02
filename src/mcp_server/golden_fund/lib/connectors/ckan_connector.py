@@ -4,8 +4,7 @@ Handles interaction with CKAN-based open data portals (e.g., data.gov.ua).
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import requests
 

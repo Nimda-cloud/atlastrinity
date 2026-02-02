@@ -4,7 +4,6 @@ Ported from etl_module/src/parsing/data_parser.py
 """
 
 from pathlib import Path
-from typing import Optional, Union, cast
 
 from .formats import (
     CSVParser,
