@@ -1,7 +1,13 @@
 # Plan agent configuration for Vibe
 # Conservative mode for planning and exploration
 
+# Use the default model from main config
+active_model = "devstral-2"
 system_prompt_id = "cli"
+
+# Optimize: Exploration only, no weights or heavy modifications
+enabled_tools = ["bash", "read_file", "grep", "filesystem_read*", "devtools_*", "context7_*", "sequential_thinking_*"]
+disabled_tools = ["write_file", "search_replace"]
 
 [tools.bash]
 permission = "ask"

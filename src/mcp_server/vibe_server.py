@@ -210,7 +210,7 @@ def get_vibe_config() -> VibeConfig:
 
 
 def sync_vibe_configuration() -> None:
-    """Sync active vibe_config.toml to VIBE_HOME/config.toml."""
+    """Sync active vibe_config.toml and support files to VIBE_HOME."""
     try:
         # Load config to resolve paths
         config = get_vibe_config()
@@ -223,38 +223,52 @@ def sync_vibe_configuration() -> None:
         )
         vibe_home_config = vibe_home / "config.toml"
 
-        # Determine Source Config (the one we are loading)
+        # Determine Source Config Root (where templates are synced)
+        source_root = DEFAULT_CONFIG_ROOT
         source_config_path = (
-            Path(VIBE_CONFIG_FILE) if VIBE_CONFIG_FILE else DEFAULT_CONFIG_ROOT / "vibe_config.toml"
+            Path(VIBE_CONFIG_FILE) if VIBE_CONFIG_FILE else source_root / "vibe_config.toml"
         )
 
         if not source_config_path.exists():
             logger.warning(f"Source config not found at {source_config_path}, skipping sync")
             return
 
-        # Ensure VIBE_HOME and subdirectories exist
+        # Ensure VIBE_HOME structure exists
         vibe_home.mkdir(parents=True, exist_ok=True)
         (vibe_home / "prompts").mkdir(exist_ok=True)
         (vibe_home / "agents").mkdir(exist_ok=True)
 
-        # Check if sync is needed
-        should_sync = False
-        if not vibe_home_config.exists():
-            should_sync = True
-            logger.info("VIBE_HOME config missing, will create")
-        else:
-            # Simple size/mtime check or content hash could go here
-            # For now, we trust the source is authoritative if modified recently
+        # 1. Sync main config.toml
+        # Always sync if source is newer or target missing
+        should_sync_main = not vibe_home_config.exists()
+        if not should_sync_main:
             try:
                 if source_config_path.stat().st_mtime > vibe_home_config.stat().st_mtime:
-                    should_sync = True
-                    logger.info("Source config is newer, syncing...")
+                    should_sync_main = True
             except OSError:
-                should_sync = True
+                should_sync_main = True
 
-        if should_sync:
+        if should_sync_main:
             shutil.copy2(source_config_path, vibe_home_config)
             logger.info(f"Synced Vibe config to: {vibe_home_config}")
+
+        # 2. Sync agents and prompts folders from source_root/vibe/
+        # These are usually populated by sync_config_templates.js
+        for folder_name in ["agents", "prompts"]:
+            src_folder = source_root / "vibe" / folder_name
+            dst_folder = vibe_home / folder_name
+
+            if src_folder.exists() and src_folder.is_dir():
+                for src_file in src_folder.glob("*.toml"):
+                    dst_file = dst_folder / src_file.name
+                    
+                    # If it's a symlink in VIBE_HOME, we might want to respect it, 
+                    # but usually we want actual files for Vibe's portability
+                    if not dst_file.exists() or src_file.stat().st_mtime > dst_file.stat().st_mtime:
+                        if dst_file.is_symlink():
+                            dst_file.unlink()
+                        shutil.copy2(src_file, dst_file)
+                        logger.debug(f"Synced Vibe {folder_name}: {src_file.name}")
 
     except Exception as e:
         logger.error(f"Failed to sync Vibe configuration: {e}")

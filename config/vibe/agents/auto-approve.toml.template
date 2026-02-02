@@ -1,6 +1,8 @@
 # Auto-approve agent configuration for Vibe
 # Automatically approves ALL tool executions
 
+# Use the default model from main config
+active_model = "devstral-2"
 system_prompt_id = "cli"
 
 [tools."*"]

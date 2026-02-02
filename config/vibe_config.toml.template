@@ -1,13 +1,17 @@
 # Optimized Vibe Configuration Template
 # Based on official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model alias (devstral-2512 - official Mistral model name)
-active_model = "devstral-2512"
+# Active model alias (devstral-2 - official Mistral model name)
+active_model = "devstral-2"
 
-# System prompt ID
-system_prompt_id = "default"
+# System prompt ID (cli, tests, or filename in prompts/ dir)
+system_prompt_id = "cli"
 
-# Tool Patterns
+# Tool Patterns (supports glob and regex with "re:" prefix)
+# Examples:
+#   enabled_tools = ["serena_*"]           # Glob: only serena tools
+#   enabled_tools = ["re:^serena_.*$"]     # Regex: same as above
+#   disabled_tools = ["mcp_*", "grep"]     # Disable multiple patterns
 enabled_tools = []
 disabled_tools = []
 
@@ -33,14 +37,18 @@ backend = "generic"
 [[models]]
 name = "devstral-2512"
 provider = "mistral"
-alias = "devstral-2512"
+alias = "devstral-2"
 temperature = 0.0
+input_price = 0.0
+output_price = 0.0
 
 [[models]]
 name = "mistralai/devstral-2512:free"
 provider = "openrouter"
 alias = "devstral-openrouter"
 temperature = 0.2
+input_price = 0.0
+output_price = 0.0
 
 # Tool Permissions
 [tools.bash]
@@ -58,5 +66,46 @@ permission = "always"
 [tools.search_replace]
 permission = "ask"
 
-# MCP Servers are loaded from ~/.config/atlastrinity/mcp/config.json
-# See mcp_servers.json.template for full configuration
+# =============================================================================
+# MCP Server Configurations (Vibe-native TOML format)
+# =============================================================================
+# Full server catalog is in mcp_servers.json.template for Brain/Orchestrator
+# Below are critical servers for Vibe CLI self-healing and development
+
+[[mcp_servers]]
+name = "memory"
+transport = "stdio"
+command = "python3"
+args = ["-m", "src.mcp_server.memory_server"]
+env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+[[mcp_servers]]
+name = "devtools"
+transport = "stdio"
+command = "python3"
+args = ["-m", "src.mcp_server.devtools_server"]
+env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+[[mcp_servers]]
+name = "filesystem"
+transport = "stdio"
+command = "npx"
+args = ["@modelcontextprotocol/server-filesystem", "${HOME}", "${PROJECT_ROOT}", "/tmp"]
+
+[[mcp_servers]]
+name = "sequential_thinking"
+transport = "stdio"
+command = "bunx"
+args = ["@modelcontextprotocol/server-sequential-thinking"]
+env = { "MAX_HISTORY_SIZE" = "1000", "PYTHONPATH" = "${PROJECT_ROOT}" }
+startup_timeout_sec = 60
+
+[[mcp_servers]]
+name = "context7"
+transport = "stdio"
+command = "npx"
+args = ["-y", "c7-mcp-server"]

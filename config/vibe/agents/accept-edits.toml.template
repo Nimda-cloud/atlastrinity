@@ -1,7 +1,12 @@
 # Accept-edits agent configuration for Vibe
 # Automatically approves file modification tools
 
+# Use the default model from main config
+active_model = "devstral-2"
 system_prompt_id = "cli"
+
+# Optimize: Only enable tools needed for applying edits
+enabled_tools = ["bash", "write_file", "search_replace", "filesystem_*"]
 
 [tools.bash]
 permission = "ask"
