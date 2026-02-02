@@ -46,7 +46,7 @@
     "lint:py": "npx lefthook run lint:all --commands 02-ruff,03-pyright",
     "lint:ts": "npx lefthook run lint:all --commands 01-biome",
     "lint:unused": "npx lefthook run lint:all --commands 04-knip",
-    "lint:security": ".venv/bin/safety check --policy-file .safety-policy.yml && .venv/bin/detect-secrets scan && npm audit --audit-level=high",
+    "lint:security": ".venv/bin/safety check --policy-file .safety-policy.yml && .venv/bin/detect-secrets scan --baseline .secrets.baseline && npm audit --audit-level=high",
     "format:check": "npx @biomejs/biome check src scripts",
     "format:write": "npx @biomejs/biome check --write src scripts && .venv/bin/ruff format .",
     "mcp:status": "export PYTHONPATH=$PYTHONPATH:. && python scripts/check_mcp_health.py",
