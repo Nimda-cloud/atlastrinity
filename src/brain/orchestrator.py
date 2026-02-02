@@ -936,6 +936,21 @@ class Trinity:
                 await self._speak("grisha", "План перевірено і затверджено. Починаємо.")
                 return plan
 
+            # NEGOTIATION PHASE
+            assessment = await self.atlas.assess_plan_critique(plan, res.description, res.issues)
+            if assessment.get("action") == "DISPUTE":
+                confidence = float(assessment.get("confidence", 0.0))
+                argument = assessment.get("argument", "No argument provided")
+                
+                await self._log(f"Atlas disputes Grisha's critique (Conf: {confidence}): {argument}", "atlas")
+                
+                if confidence > 0.8:
+                    await self._speak("atlas", f"Гріша, я не згоден: {argument}. Я впевнений у плані, тому ми починаємо.")
+                    logger.info("[ORCHESTRATOR] Atlas overrode Grisha's rejection due to high confidence debate.")
+                    return plan
+                else:
+                    await self._log("Atlas debated but decided to accept feedback due to lower confidence.", "atlas")
+
             prefix = (
                 "Гріша знову виявив недоліки: "
                 if attempt > 0

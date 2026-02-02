@@ -277,12 +277,53 @@ class Atlas(BaseAgent):
             logger.info(f"[ATLAS] Deviation Evaluation: {evaluation.get('approved')}")
             return evaluation
         except Exception as e:
-            logger.error(f"[ATLAS] Evaluation failed: {e}")
             return {
                 "approved": False,
                 "reason": "Evaluation failed",
                 "voice_message": "Помилка оцінки.",
             }
+
+    async def assess_plan_critique(
+        self,
+        plan: Any,
+        critique: str,
+        critique_issues: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Assess Grisha's critique of a plan.
+        Decide whether to ACCEPT the critique (and fix) or DISPUTE it (if confident).
+        """
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        plan_str = str(plan.steps) if hasattr(plan, "steps") else str(plan)
+        issues_str = "; ".join(critique_issues) if critique_issues else critique
+
+        prompt = f"""EVALUATE CRITIQUE
+MY PLAN: {plan_str}
+
+CRITIQUE (from Verifier): {issues_str}
+
+Analyze the critique. Is it valid?
+- If VALID: Accept it. Return "action": "ACCEPT".
+- If INVALID or MISUNDERSTOOD: Dispute it. Return "action": "DISPUTE" and provide "argument".
+
+Respond in JSON:
+{{
+    "action": "ACCEPT|DISPUTE",
+    "argument": "Reasoning for dispute (if applicable)",
+    "confidence": 0.0-1.0
+}}
+"""
+        try:
+            messages = [
+                SystemMessage(content="You are a confident Strategist. You value constructive feedback but stand your ground if your plan is correct."),
+                HumanMessage(content=prompt)
+            ]
+            response = await self.llm_deep.ainvoke(messages) # Use deep model for this reasoning
+            result = self._parse_response(str(response.content))
+            return result
+        except Exception as e:
+            logger.error(f"[ATLAS] Critique assessment failed: {e}")
+            return {"action": "ACCEPT", "confidence": 0.5}
 
     async def _gather_context_for_chat(
         self,
