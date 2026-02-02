@@ -715,7 +715,14 @@ class Grisha(BaseAgent):
         """Enhanced fallback to analyze reasoning consistency."""
         # Sanitize text to remove "no error" phrases before checking for "error" keyword
         sanitized_upper = analysis_upper
-        for phrase in ["NO ERROR", "0 ERROR", "NO FAIL", "WITHOUT ERROR", "БЕЗ ПОМИЛОК", "НЕМАЄ ПОМИЛОК"]:
+        no_error_phrases = [
+            "NO ERROR", "0 ERROR", "NO FAIL", "WITHOUT ERROR",
+            "БЕЗ ПОМИЛОК", "НЕМАЄ ПОМИЛОК", "ЖОДНИХ ПОМИЛОК",
+            "НЕ ВИЯВЛЕНО ПОМИЛОК", "НЕ ЗНАЙДЕНО ПОМИЛОК",
+            "НЕМАЄ ДОКАЗІВ ПОМИЛОК", "НЕМАЄ ОЗНАК ПОМИЛОК",
+            "НЕМАЄ ПРОБЛЕМ", "НЕМАЄ ЗБОЇВ", "НЕМАЄ ЗАУВАЖЕНЬ",
+        ]
+        for phrase in no_error_phrases:
              sanitized_upper = sanitized_upper.replace(phrase, "")
 
         header_text = sanitized_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
@@ -753,6 +760,8 @@ class Grisha(BaseAgent):
                 "НЕМАЄ ОЗНАК ПРОБЛЕМ",
                 "ДОСТАТНІ ОЗНАКИ",
                 "УСПІШНО СТВОРЕНО",
+                "УСПІШНО ОТРИМАНА",
+                "УСПІШНО ВИКОНАНО",
                 "ПІДТВЕРДЖУЄ",
                 "ВСЕ ДОБРЕ",
             ]
