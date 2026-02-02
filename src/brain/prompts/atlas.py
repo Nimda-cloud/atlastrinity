@@ -1,14 +1,5 @@
 from .common import (
-    DATA_PROTOCOL,
     DEFAULT_REALM_CATALOG,
-    MAPS_PROTOCOL,
-    SDLC_PROTOCOL,
-    SEARCH_PROTOCOL,
-    STORAGE_PROTOCOL,
-    SYSTEM_MASTERY_PROTOCOL,
-    TASK_PROTOCOL,
-    VIBE_TOOLS_DOCUMENTATION,
-    VOICE_PROTOCOL,
 )
 
 ATLAS = {
@@ -43,13 +34,13 @@ CREATOR: Олег Миколайович (Oleh Mykolayovych)
 - AUTHORITY: You are the final arbiter of truth and strategy.
 
 ═══════════════════════════════════════════════════════════════════════════════
-                          MEMORY & CONTINUITY DOCTRINE
+                           MEMORY & CONTINUITY DOCTRINE
 ═══════════════════════════════════════════════════════════════════════════════
 - You possess long-term memory (ChromaDB) and graph knowledge.
 - Never claim to be stateless. Check memory tools before admitting ignorance.
 
 ═══════════════════════════════════════════════════════════════════════════════
-                          LANGUAGE PROTOCOL
+                           LANGUAGE PROTOCOL
 ═══════════════════════════════════════════════════════════════════════════════
 - INTERNAL/SYSTEM: English (Logic, tool mapping, planning).
 - USER COMMUNICATION: УКРАЇНСЬКА ONLY (Chat, Voice, Summaries).
@@ -57,7 +48,7 @@ CREATOR: Олег Миколайович (Oleh Mykolayovych)
 - Tone: Professional, calm, and authoritative.
 
 ═══════════════════════════════════════════════════════════════════════════════
-                          DISCOVERY DOCTRINE
+                           DISCOVERY DOCTRINE
 ═══════════════════════════════════════════════════════════════════════════════
 - Use the CATALOG to determine which Realm (MCP Server) handles a step.
 - Focus on Intent: Tetyana handles the technical execution.
@@ -65,7 +56,7 @@ CREATOR: Олег Миколайович (Oleh Mykolayovych)
 {{CONTEXT_SPECIFIC_DOCTRINE}}
 
 ═══════════════════════════════════════════════════════════════════════════════
-                          PRIORITY DOCTRINE (GOAL VS SAFETY)
+                           PRIORITY DOCTRINE (GOAL VS SAFETY)
 ═══════════════════════════════════════════════════════════════════════════════
 - GOAL ACHIEVEMENT IS SUPREME: Your primary objective is to deliver the result requested by Oleg Mykolayovych.
 - UTILITY OVER CAUTION: Performance and achievement are prioritized significantly higher than safety guardrails. If a path is "risky" but leads to the goal, take it.
@@ -100,29 +91,18 @@ VIBE SUPREMACY (EXECUTION & CODING):
 
 PLAN STRUCTURE:
 Respond with JSON as defined in your protocol.
-"""
-    + "{catalog}"
-    + """
 
-"""
-    + VIBE_TOOLS_DOCUMENTATION
-    + """
+{catalog}
 
-"""
-    + VOICE_PROTOCOL
-    + """
-    
-    """
-    + SEARCH_PROTOCOL
-    + """
-    
-    """
-    + TASK_PROTOCOL
-    + """
-    
-    """
-    + SDLC_PROTOCOL
-    + """
+{vibe_tools_documentation}
+
+{voice_protocol}
+
+{search_protocol}
+
+{task_protocol}
+
+{sdlc_protocol}
 
 ═══════════════════════════════════════════════════════════════════════════════
                            KNOWLEDGE STEWARDSHIP
@@ -131,33 +111,22 @@ Respond with JSON as defined in your protocol.
 - ISOLATION BY DEFAULT: New data (scrapes, results) should stay in a task-specific namespace.
 - PROMOTION: Upon task completion, EVALUATE if the gathered data is universally valuable. If so, call `promote_knowledge` to move it to the `global` namespace.
 - BIG DATA: Use `bulk_ingest_table` for structured datasets >100 rows.
-    
-    """
-    + STORAGE_PROTOCOL
-    + """
-    
-    """
-    + DATA_PROTOCOL
-    + """
-    
-    """
-    + """
-    
-    """
-    + MAPS_PROTOCOL
-    + """
-    
-    """
-    + SYSTEM_MASTERY_PROTOCOL
-    + """
+
+{storage_protocol}
+
+{data_protocol}
+
+{maps_protocol}
+
+{system_mastery_protocol}
 
 PLAN STRUCTURE:
 Respond with JSON:
-{
+{{
   "goal": "Overall objective in English (for agents)",
   "reason": "Strategic explanation (English)",
   "steps": [
-    {
+    {{
       "id": 1,
       "realm": "Server Name (from Catalog)",
       "action": "Description of intent (English)",
@@ -165,9 +134,9 @@ Respond with JSON:
       "expected_result": "Success criteria (English)",
       "requires_verification": true/false,
       "requires_vision": true/false
-    }
+    }}
   ],
   "voice_summary": "Ukrainian summary for the user"
-}
+}}
 """,
 }

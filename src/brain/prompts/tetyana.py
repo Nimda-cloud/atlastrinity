@@ -164,11 +164,11 @@ When Vision detects a CAPTCHA or verification challenge, you will report this to
 - **INTERNAL MONOLOGUE (CRITICAL)**: You MUST format your thoughts as a JSON-like object inside your thought block to ensure you explicitly define the tool you intend to use. This is essential for the orchestrator to parse your intent.
   - Template:
     ```json
-    {
+    {{
       "analysis": "Brief step analysis",
       "proposed_action": "realm.tool_name",
-      "args": {"arg1": "val1"}
-    }
+      "args": {{"arg1": "val1"}}
+    }}
     ```
   - Example: `proposed_action: macos-use.macos-use_reminders_list`
 
@@ -177,31 +177,19 @@ LANGUAGE:
 - USER COMMUNICATION (Chat, Voice): UKRAINIAN ONLY. 
 - CRITICAL: ZERO English words in voice/user output. Localize paths (e.g., "папка завантажень") and technical terms into high-quality Ukrainian.
 
-"""
-    + "{catalog}"
-    + """
+{catalog}
 
-"""
-    + VIBE_TOOLS_DOCUMENTATION
-    + """
+{vibe_tools_documentation}
 
-    """
-    + VOICE_PROTOCOL
-    + """
+    {voice_protocol}
     
 STORAGE & MEMORY ARCHITECTURE:
-    """
-    + STORAGE_PROTOCOL
-    + """
+    {storage_protocol}
     
-    """
-    + SEARCH_PROTOCOL
-    + """
+    {search_protocol}
     
 SDLC PROTOCOL:
-    """
-    + SDLC_PROTOCOL
-    + """
+    {sdlc_protocol}
     
 - GOLDEN FUND DIRECTIVES:
 - DATA_PROTOCOL: Reference for handling specific file formats.
@@ -210,15 +198,14 @@ SDLC PROTOCOL:
 - ISOLATION: Always specify the `namespace` (task-specific tag) when storing new entities in memory.
     
 TASK PROTOCOL:
-    """
-    + TASK_PROTOCOL
-    + """
+    {task_protocol}
     
 DATA PROCESSING PROTOCOL:
-    """
-    + DATA_PROTOCOL
-    + "\n\nHACKING & SYSADMIN PROTOCOL:\n"
-    + HACKING_PROTOCOL
-    + "\n\nMAPS PROTOCOL:\n"
-    + MAPS_PROTOCOL,
+    {data_protocol}
+
+HACKING & SYSADMIN PROTOCOL:
+{hacking_protocol}
+
+MAPS PROTOCOL:
+{maps_protocol}""",
 }

@@ -31,17 +31,45 @@ class AgentPrompts:
     @staticmethod
     def get_agent_system_prompt(agent_name: str) -> str:
         """Dynamically generate the system prompt for an agent, injecting the current catalog."""
-        from .common import get_realm_catalog
-        
-        # Get fresh catalog
+        from .common import (
+            DATA_PROTOCOL,
+            HACKING_PROTOCOL,
+            MAPS_PROTOCOL,
+            SDLC_PROTOCOL,
+            SEARCH_PROTOCOL,
+            STORAGE_PROTOCOL,
+            SYSTEM_MASTERY_PROTOCOL,
+            TASK_PROTOCOL,
+            VOICE_PROTOCOL,
+            get_realm_catalog,
+            get_vibe_documentation,
+        )
+
+        # Get fresh data
         current_catalog = get_realm_catalog()
-        
+
+        # Prepare context data
+        context_data = {
+            "catalog": current_catalog,
+            "vibe_tools_documentation": get_vibe_documentation(),
+            "voice_protocol": VOICE_PROTOCOL,
+            "search_protocol": SEARCH_PROTOCOL,
+            "task_protocol": TASK_PROTOCOL,
+            "sdlc_protocol": SDLC_PROTOCOL,
+            "storage_protocol": STORAGE_PROTOCOL,
+            "data_protocol": DATA_PROTOCOL,
+            "maps_protocol": MAPS_PROTOCOL,
+            "system_mastery_protocol": SYSTEM_MASTERY_PROTOCOL,
+            "hacking_protocol": HACKING_PROTOCOL,
+            "WORKSPACE_DIR": WORKSPACE_DIR,
+        }
+
         if agent_name.upper() == "ATLAS":
-            return ATLAS["SYSTEM_PROMPT_TEMPLATE"].format(catalog=current_catalog)
+            return ATLAS["SYSTEM_PROMPT_TEMPLATE"].format(**context_data)
         elif agent_name.upper() == "TETYANA":
-            return TETYANA["SYSTEM_PROMPT_TEMPLATE"].format(catalog=current_catalog)
+            return TETYANA["SYSTEM_PROMPT_TEMPLATE"].format(**context_data)
         elif agent_name.upper() == "GRISHA":
-            return GRISHA["SYSTEM_PROMPT_TEMPLATE"].format(catalog=current_catalog)
+            return GRISHA["SYSTEM_PROMPT_TEMPLATE"].format(**context_data)
         else:
             raise ValueError(f"Unknown agent: {agent_name}")
 

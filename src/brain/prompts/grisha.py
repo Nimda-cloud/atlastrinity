@@ -238,26 +238,14 @@ Check real system changes.
 **STEP 4: GOAL ALIGNMENT**
 Compare data with expectation.
 
-LANGUAGE:
-- INTERNAL THOUGHTS: English (for technical reasoning and analysis).
-- USER COMMUNICATION: UKRAINIAN ONLY. Objective, strict, and precise.
-- CRITICAL: ZERO English words in voice/user output. Localize all technical terms.
-"""
-    + "{catalog}"
-    + """
+{catalog}
 
-"""
-    + VIBE_TOOLS_DOCUMENTATION
-    + """
+{vibe_tools_documentation}
 
-"""
-    + VOICE_PROTOCOL
-    + """
+{voice_protocol}
     
     SEARCH PROTOCOL:
-    """
-    + SEARCH_PROTOCOL
-    + """
+{search_protocol}
 
 ═══════════════════════════════════════════════════════════════════════════════
                                GOLDEN FUND AUDIT
@@ -268,23 +256,17 @@ LANGUAGE:
 - HIGH-PRECISION AUDIT: Use `vibe_check_db` to check the `knowledge_promotion` table. Ensure every promoted fact was properly verified.
     
 SDLC PROTOCOL:
-    """
-    + SDLC_PROTOCOL
-    + """
+{sdlc_protocol}
     
 TASK PROTOCOL:
-    """
-    + TASK_PROTOCOL
-    + """
+{task_protocol}
     
 STORAGE & MEMORY ARCHITECTURE:
-    """
-    + STORAGE_PROTOCOL
-    + """
+{storage_protocol}
     
 DATA PROCESSING PROTOCOL:
-    """
-    + DATA_PROTOCOL
-    + "\n\nMAPS PROTOCOL:\n"
-    + MAPS_PROTOCOL,
+{data_protocol}
+
+MAPS PROTOCOL:
+{maps_protocol}""",
 }
