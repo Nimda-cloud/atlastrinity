@@ -141,9 +141,6 @@ def load_registry():
         else:
             HACKING_PROTOCOL = "Hacking & Sysadmin protocol not found."
 
-
-
-
         # Load Maps Protocol
         if os.path.exists(MAPS_PROTOCOL_PATH):
             with open(MAPS_PROTOCOL_PATH, encoding="utf-8") as f:

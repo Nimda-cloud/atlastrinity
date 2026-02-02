@@ -3,7 +3,7 @@
  * Premium "Cyberpunk" Edition
  */
 
-import React from 'react';
+import type React from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
 type SystemState =

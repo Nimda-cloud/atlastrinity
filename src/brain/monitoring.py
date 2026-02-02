@@ -35,7 +35,7 @@ class MonitoringSystem:
     def __init__(
         self,
         prometheus_port: int = 8001,
-        opensearch_enabled: bool = False, # Now defaults to False, acts as "External DB" flag
+        opensearch_enabled: bool = False,  # Now defaults to False, acts as "External DB" flag
         grafana_enabled: bool = True,
         config: dict[str, Any] | None = None,
     ):
@@ -53,9 +53,11 @@ class MonitoringSystem:
 
         # Apply configuration
         self.prometheus_port = self.config.get("prometheus", {}).get("port", prometheus_port)
-        self.storage_enabled = True # Always enable local storage
+        self.storage_enabled = True  # Always enable local storage
         self.grafana_enabled = self.config.get("grafana", {}).get("enabled", grafana_enabled)
-        self.opensearch_enabled = self.config.get("opensearch", {}).get("enabled", opensearch_enabled)
+        self.opensearch_enabled = self.config.get("opensearch", {}).get(
+            "enabled", opensearch_enabled
+        )
 
         # Initialize SQLite for Logs/Metrics
         self.db_path = Path.home() / ".config" / "atlastrinity" / "data" / "monitoring.db"
@@ -96,7 +98,7 @@ class MonitoringSystem:
                         metrics JSON
                     )
                 """)
-                
+
                 # Request Logs
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS request_logs (
@@ -107,7 +109,7 @@ class MonitoringSystem:
                         duration REAL
                     )
                 """)
-                
+
                 # Healing Events (Parallel Self-Healing & Constraints)
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS healing_events (
@@ -129,8 +131,8 @@ class MonitoringSystem:
         """Helper to save dict data to SQLite."""
         try:
             with sqlite3.connect(self.db_path) as conn:
-                columns = ', '.join(data.keys())
-                placeholders = ', '.join(['?'] * len(data))
+                columns = ", ".join(data.keys())
+                placeholders = ", ".join(["?"] * len(data))
                 sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"  # nosec B608
                 conn.execute(sql, list(data.values()))
                 conn.commit()
@@ -266,13 +268,13 @@ class MonitoringSystem:
                 "network_bytes_received": net_io.bytes_recv,
                 "timestamp": datetime.now().isoformat(),
             }
-            
+
             # Save snapshot to SQLite
-            self._save_to_db("metric_snapshots", {
-                "timestamp": metrics["timestamp"],
-                "metrics": json.dumps(metrics)
-            })
-            
+            self._save_to_db(
+                "metric_snapshots",
+                {"timestamp": metrics["timestamp"], "metrics": json.dumps(metrics)},
+            )
+
             return metrics
 
         except Exception as e:
@@ -291,13 +293,16 @@ class MonitoringSystem:
         try:
             self.request_count.labels(request_type=request_type, status=status).inc()
             self.request_latency.labels(request_type=request_type).observe(duration)
-            
-            self._save_to_db("request_logs", {
-                "timestamp": datetime.now().isoformat(),
-                "request_type": request_type,
-                "status": status,
-                "duration": duration
-            })
+
+            self._save_to_db(
+                "request_logs",
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "request_type": request_type,
+                    "status": status,
+                    "duration": duration,
+                },
+            )
 
             logger.info(
                 f"Recorded {request_type} request: status={status}, duration={duration:.2f}s"
@@ -321,7 +326,7 @@ class MonitoringSystem:
             self.etl_records_processed.labels(pipeline_stage=stage).inc(records_processed)
             if errors > 0:
                 self.etl_errors.labels(pipeline_stage=stage, error_type=error_type).inc(errors)
-            
+
             logger.info(
                 f"ETL metrics recorded: stage={stage}, records={records_processed}, errors={errors}"
             )
@@ -335,11 +340,11 @@ class MonitoringSystem:
         step_id: str,
         priority: int,
         status: str,
-        details: dict[str, Any]
+        details: dict[str, Any],
     ) -> None:
         """
         Record a self-healing or constraint violation event.
-        
+
         Args:
             task_id: Unique task ID
             event_type: 'auto_healing' or 'constraint_violation'
@@ -349,24 +354,24 @@ class MonitoringSystem:
             details: Additional context (error, fix description, etc.)
         """
         try:
-            self._save_to_db("healing_events", {
-                "timestamp": datetime.now().isoformat(),
-                "task_id": task_id,
-                "event_type": event_type,
-                "step_id": step_id,
-                "priority": priority,
-                "status": status,
-                "details": json.dumps(details, ensure_ascii=False)
-            })
-            
+            self._save_to_db(
+                "healing_events",
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "task_id": task_id,
+                    "event_type": event_type,
+                    "step_id": step_id,
+                    "priority": priority,
+                    "status": status,
+                    "details": json.dumps(details, ensure_ascii=False),
+                },
+            )
+
             # Also log as a metric
-            self.etl_errors.labels(
-                pipeline_stage="self_healing", 
-                error_type=event_type
-            ).inc()
-            
+            self.etl_errors.labels(pipeline_stage="self_healing", error_type=event_type).inc()
+
             logger.info(f"Healing event recorded: {event_type} for {step_id} (Status: {status})")
-            
+
         except Exception as e:
             logger.error(f"Error recording healing event: {e}")
 
@@ -379,9 +384,7 @@ class MonitoringSystem:
             documents: Number of documents involved
         """
         # Kept for compatibility, logs to stdout mainly
-        logger.info(
-            f"Search metrics recorded: query_type={query_type}, documents={documents}"
-        )
+        logger.info(f"Search metrics recorded: query_type={query_type}, documents={documents}")
 
     def start_request(self) -> None:
         """Increment active request counter."""
@@ -421,15 +424,18 @@ class MonitoringSystem:
         """
         try:
             timestamp = datetime.now().isoformat()
-            
+
             # Save to SQLite
-            self._save_to_db("logs", {
-                "timestamp": timestamp,
-                "level": level,
-                "service": "atlastrinity",
-                "message": message,
-                "data": json.dumps(kwargs, ensure_ascii=False)
-            })
+            self._save_to_db(
+                "logs",
+                {
+                    "timestamp": timestamp,
+                    "level": level,
+                    "service": "atlastrinity",
+                    "message": message,
+                    "data": json.dumps(kwargs, ensure_ascii=False),
+                },
+            )
 
             # Stdout logging
             log_entry = {

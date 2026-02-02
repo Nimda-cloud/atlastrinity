@@ -4,8 +4,8 @@
  * Blue-turquoise theme matching AtlasTrinity design system
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface MapViewProps {
   imageUrl?: string;
@@ -98,17 +98,17 @@ const CYBERPUNK_MAP_STYLE = [
 ];
 
 // Google Maps API Key from environment (loaded from global config via Vite plugin)
-const GOOGLE_MAPS_API_KEY =
-  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 // Debug logging to verify key source
-console.log('🗺️ MapView: VITE_GOOGLE_MAPS_API_KEY loaded:', GOOGLE_MAPS_API_KEY ? '✓ Present' : '✗ Missing');
+console.log(
+  '🗺️ MapView: VITE_GOOGLE_MAPS_API_KEY loaded:',
+  GOOGLE_MAPS_API_KEY ? '✓ Present' : '✗ Missing',
+);
 console.log('🗺️ MapView: Key length:', GOOGLE_MAPS_API_KEY.length);
 if (GOOGLE_MAPS_API_KEY) {
-    console.log('🗺️ MapView: Key starts with:', GOOGLE_MAPS_API_KEY.substring(0, 10) + '...');
+  console.log('🗺️ MapView: Key starts with:', `${GOOGLE_MAPS_API_KEY.substring(0, 10)}...`);
 }
-
-
 
 const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, agentView }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -116,8 +116,6 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const apiLoaderRef = useRef<HTMLDivElement | null>(null);
-  
-
 
   // Load the Extended Component Library script
   useEffect(() => {
@@ -125,8 +123,8 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
 
     // Check for API key first
     if (!GOOGLE_MAPS_API_KEY) {
-      console.error("Critical: VITE_GOOGLE_MAPS_API_KEY is missing!");
-      setError("MISSING_API_KEY");
+      console.error('Critical: VITE_GOOGLE_MAPS_API_KEY is missing!');
+      setError('MISSING_API_KEY');
       return;
     }
 
@@ -139,7 +137,8 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
       return new Promise<void>((resolve, reject) => {
         const script = document.createElement('script');
         script.type = 'module';
-        script.src = 'https://unpkg.com/@googlemaps/extended-component-library@0.6.11/dist/index.min.js';
+        script.src =
+          'https://unpkg.com/@googlemaps/extended-component-library@0.6.11/dist/index.min.js';
         script.onload = () => resolve();
         script.onerror = () =>
           reject(new Error('Failed to load Google Maps Extended Component Library'));
@@ -267,7 +266,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   const handleZoom = (delta: number) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapElement = document.querySelector('gmp-map') as any;
-    if (mapElement && mapElement.innerMap) {
+    if (mapElement?.innerMap) {
       const currentZoom = mapElement.innerMap.getZoom();
       mapElement.innerMap.setZoom(currentZoom + delta);
     }
@@ -276,7 +275,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   // Create API loader element with correct key attribute
   const renderApiLoader = () => {
     if (!GOOGLE_MAPS_API_KEY) return null; // Don't render without key
-    
+
     // Use solution-channel to avoid warnings
     return (
       <div
@@ -350,14 +349,28 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
             {/* Custom Zoom Controls */}
             <div className="map-zoom-controls">
               <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>
               <div className="zoom-separator"></div>
               <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>

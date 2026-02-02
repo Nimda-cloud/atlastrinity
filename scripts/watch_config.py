@@ -32,10 +32,10 @@ MAPPINGS: dict[str, str] = {
     "vibe/agents/accept-edits.toml.template": "vibe/agents/accept-edits.toml",
     "vibe/agents/auto-approve.toml.template": "vibe/agents/auto-approve.toml",
     "vibe/agents/plan.toml.template": "vibe/agents/plan.toml",
-
     "mcp_servers.json.template": "mcp/config.json",
     "prometheus.yml.template": "prometheus.yml",
 }
+
 
 # Load .env if it exists
 def load_env():
@@ -50,7 +50,9 @@ def load_env():
                     key, value = line.split("=", 1)
                     os.environ[key.strip()] = value.strip()
 
+
 load_env()
+
 
 def process_template(src_path: Path, dst_path: Path):
     """Copies template to destination with variable substitution."""
@@ -71,7 +73,7 @@ def process_template(src_path: Path, dst_path: Path):
 
         for key, value in replacements.items():
             content = content.replace(key, value)
-            
+
         # Dynamic replacements for any ${VARIABLE} from .env / environment
         matches = re.findall(r"\${([A-Z0-9_]+)}", content)
         for var_name in set(matches):
@@ -87,9 +89,9 @@ def process_template(src_path: Path, dst_path: Path):
             try:
                 with open(dst_path, encoding="utf-8") as f:
                     if f.read() == content:
-                        return # Content is identical, skip write
+                        return  # Content is identical, skip write
             except Exception:
-                pass # If can't read, proceed to write
+                pass  # If can't read, proceed to write
 
         with open(dst_path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -99,11 +101,12 @@ def process_template(src_path: Path, dst_path: Path):
     except Exception as e:
         print(f"Error syncing {src_path.name}: {e}")
 
+
 class ConfigHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if event.is_directory:
             return
-            
+
         # Get relative path from config source
         try:
             rel_path = Path(event.src_path).relative_to(CONFIG_SRC)
@@ -115,14 +118,15 @@ class ConfigHandler(FileSystemEventHandler):
             dst_rel = MAPPINGS[filename]
             dst_path = CONFIG_DST_ROOT / dst_rel
             # Add a small delay to ensure write verify
-            time.sleep(0.1) 
+            time.sleep(0.1)
             process_template(Path(event.src_path), dst_path)
+
 
 def ensure_github_remote_setup():
     """Ensures git remote 'origin' is configured with GITHUB_TOKEN for passwordless operations."""
     try:
         import subprocess
-        
+
         # 1. Get token from env
         token = os.getenv("GITHUB_TOKEN")
         if not token:
@@ -136,7 +140,7 @@ def ensure_github_remote_setup():
                 cwd=str(PROJECT_ROOT),
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             current_url = result.stdout.strip()
         except subprocess.CalledProcessError:
@@ -152,17 +156,17 @@ def ensure_github_remote_setup():
         # 4. Update remote URL
         new_url = f"https://{token}@github.com/Nimda-cloud/atlastrinity.git"
         subprocess.run(
-            ["git", "remote", "set-url", "origin", new_url],
-            cwd=str(PROJECT_ROOT),
-            check=True
+            ["git", "remote", "set-url", "origin", new_url], cwd=str(PROJECT_ROOT), check=True
         )
         print("[GIT] Remote 'origin' successfully updated with GITHUB_TOKEN.")
 
     except Exception as e:
         print(f"[GIT] Error during remote setup: {e}")
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Watch or sync configs")
     parser.add_argument("--sync-only", action="store_true", help="Sync once and exit")
     args = parser.parse_args()
@@ -171,17 +175,17 @@ def main():
     print(f"Watching: {CONFIG_SRC}")
     print(f"Target:   {CONFIG_DST_ROOT}")
     print("-" * 40)
-    
+
     # Initial sync
     print("Performing sync...")
     for tpl, dst in MAPPINGS.items():
         src = CONFIG_SRC / tpl
         if src.exists():
             process_template(src, CONFIG_DST_ROOT / dst)
-    
+
     # Ensure GitHub remote is set up (Use token from .env)
     ensure_github_remote_setup()
-    
+
     print("Sync completed.")
     print("-" * 40)
 
@@ -191,23 +195,26 @@ def main():
     print("Entering watch mode...")
     event_handler = ConfigHandler()
     observer = Observer()
-    
+
     # Watch config directory
     observer.schedule(event_handler, str(CONFIG_SRC), recursive=True)
-    
+
     # Also watch .env file if it exists
     env_file = PROJECT_ROOT / ".env"
     if env_file.exists():
+
         class EnvHandler(FileSystemEventHandler):
             def on_modified(self, event):
                 if event.src_path == str(env_file):
-                    print(f"[{time.strftime('%H:%M:%S')}] .env modified, reloading and syncing all...")
+                    print(
+                        f"[{time.strftime('%H:%M:%S')}] .env modified, reloading and syncing all..."
+                    )
                     load_env()
                     for tpl, dst in MAPPINGS.items():
                         process_template(CONFIG_SRC / tpl, CONFIG_DST_ROOT / dst)
-        
+
         observer.schedule(EnvHandler(), str(PROJECT_ROOT), recursive=False)
-        
+
     observer.start()
 
     try:
@@ -215,8 +222,9 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
-    
+
     observer.join()
+
 
 if __name__ == "__main__":
     main()

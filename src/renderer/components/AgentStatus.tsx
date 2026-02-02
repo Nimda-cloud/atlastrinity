@@ -2,7 +2,7 @@
  * AgentStatus - Consolidated Bottom Status Bar
  */
 
-import React from 'react';
+import type React from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
 type SystemState =
@@ -52,7 +52,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
   const formatTask = (task: string) => {
     if (!task) return 'CORE_IDLE_PREPARING_RESOURCES';
     const goalMatch = task.match(/goal=['"](.*?)['"]/);
-    if (goalMatch && goalMatch[1]) return goalMatch[1];
+    if (goalMatch?.[1]) return goalMatch[1];
     return task;
   };
 

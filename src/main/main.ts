@@ -3,6 +3,7 @@
  */
 
 import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
+
 // Disable Electron Security Warnings in Dev
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
@@ -15,11 +16,11 @@ if (process.platform === 'darwin') {
   app.commandLine.appendSwitch('disable-gpu-rasterization');
 }
 
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import * as fs from 'fs';
-import * as os from 'os';
-import { spawn, ChildProcess, execSync } from 'child_process';
+import { type ChildProcess, execSync, spawn } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { checkPermissions, requestPermissions } from './permissions.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -263,7 +264,7 @@ function startPythonServer() {
     console.log(`[Python]: ${message}`);
     if (mainWindow) {
       mainWindow.webContents.executeJavaScript(
-        `console.log('[Python]: ' + ${JSON.stringify(message)})`
+        `console.log('[Python]: ' + ${JSON.stringify(message)})`,
       );
     }
   });
@@ -273,7 +274,7 @@ function startPythonServer() {
     console.error(`[Python Err]: ${message}`);
     if (mainWindow) {
       mainWindow.webContents.executeJavaScript(
-        `console.error('[Python Err]: ' + ${JSON.stringify(message)})`
+        `console.error('[Python Err]: ' + ${JSON.stringify(message)})`,
       );
     }
   });
@@ -282,7 +283,7 @@ function startPythonServer() {
     console.error(`Failed to start Python server: ${err}`);
     if (mainWindow) {
       mainWindow.webContents.executeJavaScript(
-        `console.error('CRITICAL: Failed to start Python server: ' + ${JSON.stringify(err.message)})`
+        `console.error('CRITICAL: Failed to start Python server: ' + ${JSON.stringify(err.message)})`,
       );
     }
   });
@@ -291,7 +292,7 @@ function startPythonServer() {
     console.log(`Python process exited with code ${code}`);
     if (mainWindow && code !== 0 && code !== null) {
       mainWindow.webContents.executeJavaScript(
-        `console.error('CRITICAL: Python server exited with code ' + ${code})`
+        `console.error('CRITICAL: Python server exited with code ' + ${code})`,
       );
     }
   });
@@ -341,18 +342,18 @@ app.on('before-quit', () => {
   try {
     // Targeted pkill for core components to avoid "orphans"
     // brain.server handles its own children, but this is a final fail-safe
-    const targets = 'vibe_server vibe brain.server mcp-server memory_server graph_server macos-use watch_config';
-    const command =
-      targets
-        .split(' ')
-        .map((t) => `pkill -9 -f "${t}"`)
-        .join('; ') + '; true';
+    const targets =
+      'vibe_server vibe brain.server mcp-server memory_server graph_server macos-use watch_config';
+    const command = `${targets
+      .split(' ')
+      .map((t) => `pkill -9 -f "${t}"`)
+      .join('; ')}; true`;
 
     execSync(command, {
       stdio: 'ignore',
       timeout: 5000,
     });
-    
+
     // Attempt to free port 3000 (Vite) if it was spawned by us or is lingering
     try {
       execSync('lsof -ti :3000 | xargs kill -9', { stdio: 'ignore' });
@@ -380,7 +381,7 @@ app.on('activate', () => {
 
 // Handle certificate errors in development
 if (isDev) {
-  app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
     event.preventDefault();
     callback(true);
   });

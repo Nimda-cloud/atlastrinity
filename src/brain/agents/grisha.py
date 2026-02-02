@@ -92,11 +92,11 @@ class Grisha(BaseAgent):
     DISPLAY_NAME = AgentPrompts.GRISHA["DISPLAY_NAME"]
     VOICE = AgentPrompts.GRISHA["VOICE"]
     COLOR = AgentPrompts.GRISHA["COLOR"]
+
     @property
     def system_prompt(self) -> str:
         """Dynamically generate system prompt with current catalog."""
         return AgentPrompts.get_agent_system_prompt("GRISHA")
-
 
     # Hardcoded blocklist for critical commands
     BLOCKLIST = [
@@ -421,19 +421,21 @@ class Grisha(BaseAgent):
         """Determines if a UI element is worth including in the summary."""
         if el.get("isVisible") is False and not el.get("label") and not el.get("title"):
             return False
-        
+
         role = el.get("role", "")
         label = el.get("label") or el.get("title") or el.get("description") or el.get("help")
         value = el.get("value") or el.get("stringValue")
-        
-        return bool(label or value or role in ["AXButton", "AXTextField", "AXTextArea", "AXCheckBox"])
+
+        return bool(
+            label or value or role in ["AXButton", "AXTextField", "AXTextArea", "AXCheckBox"]
+        )
 
     def _format_single_element(self, el: dict) -> str:
         """Formats a single UI element into a string."""
         role = el.get("role", "element")
         label = el.get("label") or el.get("title") or el.get("description") or el.get("help")
         value = el.get("value") or el.get("stringValue")
-        
+
         item = f"[{role}"
         if label:
             item += f": '{label}'"
@@ -568,10 +570,11 @@ class Grisha(BaseAgent):
 
         # For ACTION tasks (that are not primarily analysis), add context-aware verification tools
         is_search_only = any(kw in step_action_lower for kw in ["search", "find", "locate"])
-        
-        if (
-            not is_search_only 
-            and ("file" in step_action_lower or "save" in step_action_lower or "create" in step_action_lower)
+
+        if not is_search_only and (
+            "file" in step_action_lower
+            or "save" in step_action_lower
+            or "create" in step_action_lower
         ):
             # Use dynamic path based on actual home directory
             project_root = os.path.expanduser("~/Documents/GitHub/atlastrinity")
@@ -618,7 +621,7 @@ class Grisha(BaseAgent):
             }
         """
         step_id = step.get("id", "unknown")
-        
+
         # Format results for analysis
         results_summary = "\n".join(
             [
@@ -899,7 +902,7 @@ class Grisha(BaseAgent):
         # NEW: Critical actions (creating files, executing code) should always be verified
         critical_keywords = ["write", "save", "create", "implement", "deploy", "fix", "update"]
         if any(kw in step_action for kw in critical_keywords):
-             is_final = True
+            is_final = True
 
         logger.info(
             f"[GRISHA] Step completion check - Final/Critical: {is_final}, Action: {step_action[:50]}"
@@ -924,23 +927,27 @@ class Grisha(BaseAgent):
         logger.info("[GRISHA] Verifying proposed execution plan via Deep Simulation...")
 
         plan_steps_text = self._format_plan_steps(plan)
-        
+
         try:
             analysis_text = await self._run_plan_simulation(user_request, plan_steps_text)
-            
+
             if not analysis_text:
                 return self._create_fallback_verification_result("Plan simulation failed")
 
             # Parse the simulation results
             parsed_sections = self._parse_simulation_sections(analysis_text)
-            issues = self._extract_issues_from_simulation(parsed_sections["core_problems"], analysis_text)
-            
+            issues = self._extract_issues_from_simulation(
+                parsed_sections["core_problems"], analysis_text
+            )
+
             # Construct feedback
             feedback_to_atlas = self._construct_atlas_feedback(parsed_sections)
-            
+
             # Determine verdict
-            verdict = self._determine_plan_verdict(analysis_text, user_request, issues, feedback_to_atlas)
-            
+            verdict = self._determine_plan_verdict(
+                analysis_text, user_request, issues, feedback_to_atlas
+            )
+
             fixed_plan = None
             if not verdict["approved"] and fix_if_rejected:
                 fixed_plan = await self._attempt_plan_fix(
@@ -976,13 +983,13 @@ class Grisha(BaseAgent):
             user_request=user_request,
             plan_steps_text=plan_steps_text,
         )
-        
+
         reasoning_result = await self.use_sequential_thinking(query, total_thoughts=3)
-        
+
         if not reasoning_result.get("success"):
             logger.warning("[GRISHA] Plan simulation failed, falling back to basic check")
             return None
-            
+
         analysis = reasoning_result.get("analysis")
         return str(analysis) if analysis is not None else ""
 
@@ -1004,17 +1011,17 @@ class Grisha(BaseAgent):
             "FEEDBACK TO ATLAS": ("feedback_to_atlas", "SUMMARY_UKRAINIAN:"),
             "ESTABLISHED GOAL": ("established_goal", "SIMULATION LOG"),
             "CORE PROBLEMS": ("core_problems", "STRATEGIC GAP ANALYSIS:"),
-            "SUMMARY_UKRAINIAN": ("summary_ukrainian", None)
+            "SUMMARY_UKRAINIAN": ("summary_ukrainian", None),
         }
-        
+
         results = {
             "gap_analysis": "",
             "feedback_to_atlas": "",
             "established_goal": "",
             "core_problems": "",
-            "summary_ukrainian": ""
+            "summary_ukrainian": "",
         }
-        
+
         for section_key, (result_key, end_marker) in params.items():
             if f"{section_key}:" in analysis_text:
                 parts = analysis_text.split(f"{section_key}:")
@@ -1023,12 +1030,12 @@ class Grisha(BaseAgent):
                     if end_marker:
                         content = content.split(end_marker)[0]
                     results[result_key] = content.strip()
-                    
+
         # Special fallback for core_problems if SIMULATION LOG exists but CORE PROBLEMS doesn't match standard flow or is separate
         if not results["core_problems"] and "SIMULATION LOG" in analysis_text:
-             parts = analysis_text.split("SIMULATION LOG")
-             if len(parts) > 1:
-                 results["core_problems"] = parts[1].split("CORE PROBLEMS:")[0].strip()
+            parts = analysis_text.split("SIMULATION LOG")
+            if len(parts) > 1:
+                results["core_problems"] = parts[1].split("CORE PROBLEMS:")[0].strip()
 
         return results
 
@@ -1041,7 +1048,7 @@ class Grisha(BaseAgent):
                 for line in problems_text.split("\n")
                 if line.strip().startswith("-")
             ]
-        
+
         if not raw_issues:
             return []
 
@@ -1058,7 +1065,7 @@ class Grisha(BaseAgent):
             )
         else:
             issues.extend(cascading)
-            
+
         return issues
 
     def _construct_atlas_feedback(self, sections: dict[str, str]) -> str:
@@ -1076,21 +1083,13 @@ class Grisha(BaseAgent):
         return "\n\n".join(atlas_feedback_parts)
 
     def _determine_plan_verdict(
-        self, 
-        analysis_text: str, 
-        user_request: str, 
-        issues: list[str], 
-        feedback_to_atlas: str
+        self, analysis_text: str, user_request: str, issues: list[str], feedback_to_atlas: str
     ) -> dict[str, Any]:
         """Determines if the plan is approved and generates voice message."""
-        is_approved = (
-            "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
-        )
+        is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
         is_rejected = "VERDICT: REJECT" in analysis_text or "VERDICT: [REJECT]" in analysis_text
 
-        oleg_mentioned = (
-            "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
-        )
+        oleg_mentioned = "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
 
         # If rejected or has feedback to atlas, we treat it as a FAILURE unless Oleg overrides
         approved = is_approved and not is_rejected
@@ -1105,18 +1104,20 @@ class Grisha(BaseAgent):
                 )
 
         voice_msg = self._generate_plan_voice_message(approved, issues, analysis_text)
-        
+
         return {
             "approved": approved,
             "confidence": 1.0 if (approved and oleg_mentioned) else 0.8,
-            "voice_message": voice_msg
+            "voice_message": voice_msg,
         }
 
-    def _generate_plan_voice_message(self, approved: bool, issues: list[str], analysis_text: str) -> str:
+    def _generate_plan_voice_message(
+        self, approved: bool, issues: list[str], analysis_text: str
+    ) -> str:
         """Generates the Ukrainian voice message for the plan verdict."""
         if approved:
             return "План схвалено. Симуляція успішна."
-        
+
         summary_ukrainian = ""
         if "SUMMARY_UKRAINIAN:" in analysis_text:
             summary_ukrainian = analysis_text.split("SUMMARY_UKRAINIAN:")[-1].strip()
@@ -1134,10 +1135,12 @@ class Grisha(BaseAgent):
                 return f"План потребує доопрацювання. Знайдено {issues_count} проблем. Головні: {'; '.join(voice_issues)}. Ще {issues_count - 3} додаткових."
             else:
                 return f"План потребує доопрацювання. Проблеми: {'; '.join(voice_issues)}."
-        
+
         return f"План потребує доопрацювання. {summary_ukrainian}"
 
-    async def _attempt_plan_fix(self, user_request: str, failed_plan_text: str, audit_feedback: str) -> Any | None:
+    async def _attempt_plan_fix(
+        self, user_request: str, failed_plan_text: str, audit_feedback: str
+    ) -> Any | None:
         """Attempts to fix the plan using the Architect Override prompt."""
         logger.info("[GRISHA] Falling back to Architecture Override. Re-constructing plan...")
 
@@ -1159,14 +1162,14 @@ class Grisha(BaseAgent):
         """Parses the JSON response for the fixed plan with extreme resilience."""
         try:
             cleaned_text = str(raw_text).strip()
-            
+
             # 1. Advanced Extraction
             plan_data = self._extract_json_from_potential_blocks(cleaned_text)
 
             # 2. Fallback to original markers
             if not plan_data:
                 plan_data = self._fallback_json_extraction(cleaned_text)
-            
+
             if not plan_data:
                 return None
 
@@ -1185,7 +1188,9 @@ class Grisha(BaseAgent):
             filtered_data.setdefault("steps", [])
 
             fixed_plan = TaskPlan(**filtered_data)
-            logger.info(f"[GRISHA] Successfully reconstructed plan via Architect Override. {len(fixed_plan.steps)} steps.")
+            logger.info(
+                f"[GRISHA] Successfully reconstructed plan via Architect Override. {len(fixed_plan.steps)} steps."
+            )
             return fixed_plan
 
         except Exception as e:
@@ -1210,7 +1215,7 @@ class Grisha(BaseAgent):
         # Instead of failing if a command isn't in a hardcoded list, we default to believing the agent.
         # We only flag if we detect something clearly WRONG (like 'rm -rf' when asked to 'ls').
         # For now, we trust the agent's choice if it's not obviously malicious.
-        
+
         return True, "Command relevance passed (Trusted Agent Mode)"
 
     def _extract_executed_commands(self, verification_results: list) -> list[str]:
@@ -1225,34 +1230,36 @@ class Grisha(BaseAgent):
         return commands
 
     # Deprecated strict checks removed to allow "Intellect Mode"
-    def _is_command_relevant(self, cmd: str, expected_lower: str, step_lower: str) -> tuple[bool, str]:
+    def _is_command_relevant(
+        self, cmd: str, expected_lower: str, step_lower: str
+    ) -> tuple[bool, str]:
         return True, "Trusted"
 
     def _is_network_related(self, expected_lower: str, step_lower: str) -> bool:
         return False
-    
+
     def _is_search_related(self, step_lower: str) -> bool:
         return False
-    
+
     def _is_web_related(self, expected_lower: str) -> bool:
         return False
-    
+
     def _is_project_related(self, expected_lower: str) -> bool:
         return False
-    
+
     def _check_network_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
         return True, ""
-    
+
     def _check_search_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
         return True, ""
-    
+
     def _check_web_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
         """Check web command relevance."""
         web_cmds = ["curl", "wget", "fetch", "http"]
         if any(kw in cmd_lower for kw in web_cmds):
             return True, f"Command '{cmd}' is relevant for web/API interaction"
         return False, ""
-    
+
     def _check_project_relevance(self, cmd_lower: str, cmd: str) -> tuple[bool, str]:
         """Check project command relevance."""
         project_cmds = ["ls", "find", "tree", "git status"]
@@ -1406,8 +1413,9 @@ class Grisha(BaseAgent):
     async def _execute_verification_tools(self, tools: list[dict], step: dict) -> list[dict]:
         """Executes the selected verification tools and returns results."""
         from ..mcp_manager import mcp_manager
+
         verification_results = []
-        
+
         for tool_config in tools:
             tool_name = tool_config.get("tool", "")
             tool_args = tool_config.get("args", {})
@@ -1451,7 +1459,7 @@ class Grisha(BaseAgent):
     def _check_tool_execution_error(self, v_output: Any, v_res_str: str, step: dict) -> bool:
         """Determines if a tool execution resulted in an error."""
         has_error = False
-        
+
         if isinstance(v_output, dict):
             if v_output.get("error") or v_output.get("success") is False:
                 has_error = True
@@ -1460,11 +1468,7 @@ class Grisha(BaseAgent):
                 has_error = self._is_empty_info_result(v_output, v_res_str, step)
         else:
             lower_result = v_res_str.lower()[:500]
-            if (
-                "error:" in lower_result
-                or "exception" in lower_result
-                or "failed:" in lower_result
-            ):
+            if "error:" in lower_result or "exception" in lower_result or "failed:" in lower_result:
                 has_error = True
         return has_error
 
@@ -1491,7 +1495,7 @@ class Grisha(BaseAgent):
             if "error" in res_lower or "failed" in res_lower or "not found" in res_lower:
                 logger.warning("[GRISHA] Empty/Failed result in info-gathering task")
                 return True
-            
+
             # If successful but empty, it's NOT an error for info tasks (discovery)
             logger.info("[GRISHA] Valid empty result in discovery task")
             return False
@@ -1506,14 +1510,14 @@ class Grisha(BaseAgent):
             issues=[],
             voice_message=f"Step {step_id} is intermediate, continuing task execution",
         )
-    
+
     async def _handle_verification_failure(
-        self, 
-        step: dict, 
-        result_obj: VerificationResult, 
-        task_id: str | None, 
-        goal_analysis: dict, 
-        verification_results: list
+        self,
+        step: dict,
+        result_obj: VerificationResult,
+        task_id: str | None,
+        goal_analysis: dict,
+        verification_results: list,
     ):
         step_id = step.get("id", "unknown")
         logger.info(
@@ -1545,28 +1549,36 @@ class Grisha(BaseAgent):
         task_id: str | None = None,
     ) -> VerificationResult:
         """Verifies the result of step execution using Vision and MCP Tools"""
-        
+
         step_id = step.get("id", 0)
-        
+
         if not self._is_final_task_completion(step):
-            # NEW LOGIC: Only skip if the step was SUCCESSFUL. 
+            # NEW LOGIC: Only skip if the step was SUCCESSFUL.
             # If failed, we MUST verify to generate a proper rejection report.
             is_success = True
-            if hasattr(result, "success"): 
+            if hasattr(result, "success"):
                 is_success = result.success
             elif isinstance(result, dict):
                 is_success = result.get("success", True)
-            
+
             # Check for error in result text even if marked success
-            result_str = str(result.get("result", "") if isinstance(result, dict) else getattr(result, "result", ""))
+            result_str = str(
+                result.get("result", "")
+                if isinstance(result, dict)
+                else getattr(result, "result", "")
+            )
             if "error" in result_str.lower() or "failed" in result_str.lower():
                 is_success = False
 
             if is_success:
-                logger.info(f"[GRISHA] Skipping verification for successful intermediate step {step_id}")
+                logger.info(
+                    f"[GRISHA] Skipping verification for successful intermediate step {step_id}"
+                )
                 return self._create_intermediate_success_result(step_id)
             else:
-                logger.info(f"[GRISHA] Intermediate step {step_id} FAILED. Proceeding with verification/diagnosis.")
+                logger.info(
+                    f"[GRISHA] Intermediate step {step_id} FAILED. Proceeding with verification/diagnosis."
+                )
 
         # System check
         system_issues = []
@@ -1575,13 +1587,13 @@ class Grisha(BaseAgent):
             if config_sync["sync_status"] != "ok":
                 system_issues.extend(config_sync["issues"])
                 logger.warning(f"[GRISHA] Config sync issues detected: {config_sync['issues']}")
-        
+
         # Phase 1: Analysis
         logger.info(f"[GRISHA] 🧠 Phase 1: Analyzing verification goal for step {step_id}...")
         goal_analysis = await self._analyze_verification_goal(
             step, goal_context or shared_context.get_goal_context()
         )
-        
+
         # Phase 1.5: Execution
         logger.info("[GRISHA] 🔧 Executing verification tools...")
         verification_results = await self._execute_verification_tools(
@@ -1600,10 +1612,10 @@ class Grisha(BaseAgent):
         # Final Result
         all_issues = verdict.get("issues", [])
         if system_issues:
-             all_issues.extend([f"Config sync: {issue}" for issue in system_issues])
-        
+            all_issues.extend([f"Config sync: {issue}" for issue in system_issues])
+
         is_verified = verdict.get("verified", False) and not system_issues
-        
+
         result_obj = VerificationResult(
             step_id=step_id,
             verified=is_verified,
@@ -1614,7 +1626,9 @@ class Grisha(BaseAgent):
         )
 
         if not is_verified:
-             await self._handle_verification_failure(step, result_obj, task_id, goal_analysis, verification_results)
+            await self._handle_verification_failure(
+                step, result_obj, task_id, goal_analysis, verification_results
+            )
 
         return result_obj
 
@@ -1910,8 +1924,8 @@ class Grisha(BaseAgent):
         # 1. Try Native Swift MCP first (fastest, most reliable)
         path = await self._attempt_mcp_screenshot(str(SCREENSHOTS_DIR))
         if path:
-             return path
-             
+            return path
+
         # 2. Local Fallback
         return await self._attempt_local_screenshot(str(SCREENSHOTS_DIR))
 
@@ -1919,9 +1933,10 @@ class Grisha(BaseAgent):
         """Attempts to take a screenshot using the 'macos-use' MCP tool."""
         try:
             from ..mcp_manager import mcp_manager
+
             if "macos-use" in mcp_manager.config.get("mcpServers", {}):
                 result = await mcp_manager.call_tool("macos-use", "macos-use_take_screenshot", {})
-                
+
                 base64_img = None
                 if isinstance(result, dict) and "content" in result:
                     for item in result["content"]:
@@ -1929,12 +1944,13 @@ class Grisha(BaseAgent):
                             base64_img = item.get("text")
                             break
                 elif hasattr(result, "content"):  # prompt object
-                     if len(result.content) > 0 and hasattr(result.content[0], "text"):
-                         base64_img = result.content[0].text
-                
+                    if len(result.content) > 0 and hasattr(result.content[0], "text"):
+                        base64_img = result.content[0].text
+
                 if base64_img:
                     import base64
                     from datetime import datetime
+
                     os.makedirs(save_dir, exist_ok=True)
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     path = os.path.join(save_dir, f"vision_mcp_{timestamp}.jpg")
@@ -1954,12 +1970,12 @@ class Grisha(BaseAgent):
             logger.warning(f"Combined screenshot failed: {e}. Falling back to simple grab.")
             return self._fallback_screenshot(save_dir)
 
-    def _capture_screen_images(self) -> tuple[Any, Any]: # Returns Image objects
+    def _capture_screen_images(self) -> tuple[Any, Any]:  # Returns Image objects
         import subprocess
-        
+
         display_imgs = []
         consecutive_failures = 0
-        
+
         # Capture displays
         for di in range(1, 17):
             fhandle, path = tempfile.mkstemp(suffix=".png")
@@ -1975,58 +1991,58 @@ class Grisha(BaseAgent):
                         display_imgs.append(img.copy())
                     consecutive_failures = 0
                 else:
-                     consecutive_failures += 1
+                    consecutive_failures += 1
             finally:
                 if os.path.exists(path):
-                     try:
-                         os.unlink(path)
-                     except Exception:
-                         pass
-            
+                    try:
+                        os.unlink(path)
+                    except Exception:
+                        pass
+
             if display_imgs and consecutive_failures >= 2:
                 break
-        
+
         desktop_canvas = None
         if not display_imgs:
-             # Fallback single fullscreen
-             tmp_full = os.path.join(tempfile.gettempdir(), "grisha_full_temp.png")
-             subprocess.run(["screencapture", "-x", tmp_full], check=False, capture_output=True)
-             if os.path.exists(tmp_full):
-                 with Image.open(tmp_full) as img:
-                     desktop_canvas = img.copy()
-                 try:
-                     os.unlink(tmp_full)
-                 except Exception:
-                     pass
+            # Fallback single fullscreen
+            tmp_full = os.path.join(tempfile.gettempdir(), "grisha_full_temp.png")
+            subprocess.run(["screencapture", "-x", tmp_full], check=False, capture_output=True)
+            if os.path.exists(tmp_full):
+                with Image.open(tmp_full) as img:
+                    desktop_canvas = img.copy()
+                try:
+                    os.unlink(tmp_full)
+                except Exception:
+                    pass
         else:
-             # Stitch
-             total_w = sum(img.width for img in display_imgs)
-             max_h = max(img.height for img in display_imgs)
-             desktop_canvas = Image.new("RGB", (total_w, max_h), (0, 0, 0))
-             x_off = 0
-             for d_img in display_imgs:
-                 desktop_canvas.paste(d_img, (x_off, 0))
-                 x_off += d_img.width
+            # Stitch
+            total_w = sum(img.width for img in display_imgs)
+            max_h = max(img.height for img in display_imgs)
+            desktop_canvas = Image.new("RGB", (total_w, max_h), (0, 0, 0))
+            x_off = 0
+            for d_img in display_imgs:
+                desktop_canvas.paste(d_img, (x_off, 0))
+                x_off += d_img.width
 
         if desktop_canvas is None:
             raise RuntimeError("Failed to capture desktop canvas")
 
         # Capture active window (simplified - skipping Quartz complexity for F-rank goal)
         active_win_img = None
-        
+
         return desktop_canvas, active_win_img
 
     def _save_composite_screenshot(self, desktop_canvas, active_win_img, save_dir) -> str:
         from datetime import datetime
-        
+
         target_w = 2048
         scale = target_w / max(1, desktop_canvas.width)
         dt_h = int(desktop_canvas.height * scale)
-        
+
         desktop_small = desktop_canvas.resize((target_w, max(1, dt_h)))
-        
-        final_canvas = desktop_small 
-        
+
+        final_canvas = desktop_small
+
         path = os.path.join(save_dir, f"grisha_vision_{datetime.now().strftime('%H%M%S')}.jpg")
         final_canvas.save(path, "JPEG", quality=85)
         logger.info(f"[GRISHA] Vision composite saved: {path}")
@@ -2036,15 +2052,16 @@ class Grisha(BaseAgent):
         from datetime import datetime
 
         from PIL import ImageGrab
+
         try:
             screenshot = ImageGrab.grab(all_screens=True)
-            path = os.path.join(save_dir, f"grisha_fallback_{datetime.now().strftime('%H%M%S')}.jpg")
+            path = os.path.join(
+                save_dir, f"grisha_fallback_{datetime.now().strftime('%H%M%S')}.jpg"
+            )
             screenshot.save(path, "JPEG", quality=80)
             return path
         except Exception:
             return ""
-
-
 
     async def audit_vibe_fix(
         self,
@@ -2118,9 +2135,10 @@ class Grisha(BaseAgent):
     def _extract_json_from_potential_blocks(self, text: str) -> dict[str, Any] | None:
         """Extract JSON by finding all { } pairs."""
         import json
+
         start_indices = [m.start() for m in re.finditer(r"\{", text)]
         end_indices = [m.start() for m in re.finditer(r"\}", text)]
-        
+
         candidates = []
         for start in start_indices:
             for end in reversed(end_indices):
@@ -2128,7 +2146,7 @@ class Grisha(BaseAgent):
                     block = text[start : end + 1]
                     if "steps" in block.lower():
                         candidates.append(block)
-        
+
         candidates.sort(key=len, reverse=True)
         for block in candidates:
             try:
@@ -2143,6 +2161,7 @@ class Grisha(BaseAgent):
     def _fallback_json_extraction(self, text: str) -> dict[str, Any] | None:
         """Standard backtick and regex fallback."""
         import json
+
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
         elif "```" in text:
@@ -2154,7 +2173,7 @@ class Grisha(BaseAgent):
             json_match = re.search(r"(\{.*\})", text, re.DOTALL)
             if json_match:
                 text = json_match.group(1).strip()
-        
+
         try:
             return cast(dict[str, Any], json.loads(text))
         except (json.JSONDecodeError, ValueError):

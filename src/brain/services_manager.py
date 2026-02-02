@@ -220,15 +220,15 @@ def ensure_golden_fund(force_check: bool = False) -> bool:
     """Ensure Golden Fund database is initialized."""
     import sqlite3
     from pathlib import Path
-    
+
     config_root = Path.home() / ".config" / "atlastrinity"
     golden_fund_dir = config_root / "data" / "golden_fund"
     golden_fund_db = golden_fund_dir / "golden.db"
-    
+
     try:
         # Ensure directory exists
         golden_fund_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize database if it doesn't exist
         if not golden_fund_db.exists() or force_check:
             logger.info("[Services] Initializing Golden Fund database...")
@@ -250,20 +250,20 @@ def ensure_golden_fund(force_check: bool = False) -> bool:
                 )
                 conn.commit()
             logger.info("[Services] Golden Fund database initialized successfully")
-        
+
         # Verify database integrity
         with sqlite3.connect(golden_fund_db) as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = [row[0] for row in cursor.fetchall()]
-            
+
             if "datasets_metadata" in tables:
                 logger.info("[Services] Golden Fund is ready")
                 return True
             else:
                 logger.warning("[Services] Golden Fund database structure incomplete")
                 return False
-                
+
     except Exception as e:
         logger.error(f"[Services] Failed to ensure Golden Fund: {e}")
         return False

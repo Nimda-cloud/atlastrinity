@@ -63,11 +63,11 @@ class Atlas(BaseAgent):
     DISPLAY_NAME = AgentPrompts.ATLAS["DISPLAY_NAME"]
     VOICE = AgentPrompts.ATLAS["VOICE"]
     COLOR = AgentPrompts.ATLAS["COLOR"]
+
     @property
     def system_prompt(self) -> str:
         """Dynamically generate system prompt with current catalog."""
         return AgentPrompts.get_agent_system_prompt("ATLAS")
-
 
     def __init__(self, model_name: str | None = None, llm: Any | None = None):
         # Get model config (config.yaml > parameter)
@@ -315,10 +315,12 @@ Respond in JSON:
 """
         try:
             messages = [
-                SystemMessage(content="You are a confident Strategist. You value constructive feedback but stand your ground if your plan is correct."),
-                HumanMessage(content=prompt)
+                SystemMessage(
+                    content="You are a confident Strategist. You value constructive feedback but stand your ground if your plan is correct."
+                ),
+                HumanMessage(content=prompt),
             ]
-            response = await self.llm_deep.ainvoke(messages) # Use deep model for this reasoning
+            response = await self.llm_deep.ainvoke(messages)  # Use deep model for this reasoning
             result = self._parse_response(str(response.content))
             return result
         except Exception as e:
@@ -436,9 +438,7 @@ Respond in JSON:
                 }
 
                 # Be proactive: try all discovery servers that are in the config, not just "connected" ones
-                active_servers = (
-                    configured_servers | {"filesystem", "memory"}
-                ) & discovery_servers
+                active_servers = (configured_servers | {"filesystem", "memory"}) & discovery_servers
 
                 logger.info(f"[ATLAS] Proactive tool discovery on servers: {active_servers}")
 
@@ -572,7 +572,9 @@ Respond in JSON:
         if not use_deep_persona and (
             classification.get("requires_semantic_verification") or "атлас" in user_request.lower()
         ):
-            logger.info(f"[ATLAS CHAT] Triggering Semantic Essence Analysis for: {user_request[:30]}...")
+            logger.info(
+                f"[ATLAS CHAT] Triggering Semantic Essence Analysis for: {user_request[:30]}..."
+            )
             analysis = await self.analyze_request(user_request, history=history)
             if analysis.get("use_deep_persona"):
                 use_deep_persona = True
@@ -704,6 +706,7 @@ Respond in JSON:
         from langchain_core.messages import ToolMessage
 
         from ..mcp_manager import mcp_manager
+
         tool_executed = False
         for tool_call in tool_calls:
             logical_name = tool_call.get("name")
@@ -716,7 +719,11 @@ Respond in JSON:
             except Exception as err:
                 logger.error(f"[ATLAS CHAT] Tool call failed: {err}")
                 result = {"error": str(err)}
-            final_messages.append(ToolMessage(content=str(result)[:5000], tool_call_id=tool_call.get("id", "chat_call")))
+            final_messages.append(
+                ToolMessage(
+                    content=str(result)[:5000], tool_call_id=tool_call.get("id", "chat_call")
+                )
+            )
         return tool_executed
 
     def _apply_chat_audit_logic(
@@ -728,12 +735,21 @@ Respond in JSON:
     ) -> None:
         """Apply verification logic for solo tasks after tool execution."""
         from langchain_core.messages import SystemMessage
+
         if intent != "solo_task":
             return
         if tool_executed:
-            final_messages.append(SystemMessage(content="INTERNAL AUDIT: Review retrieved data. Does it answer fully? If missing (e.g. snippet too short), use more tools. Don't stop until complete."))
+            final_messages.append(
+                SystemMessage(
+                    content="INTERNAL AUDIT: Review retrieved data. Does it answer fully? If missing (e.g. snippet too short), use more tools. Don't stop until complete."
+                )
+            )
         elif current_turn == 0:
-            final_messages.append(SystemMessage(content="STRICT DIRECTIVE: You announced tools but did NOT call any. You MUST use tools NOW."))
+            final_messages.append(
+                SystemMessage(
+                    content="STRICT DIRECTIVE: You announced tools but did NOT call any. You MUST use tools NOW."
+                )
+            )
 
     async def _execute_chat_turns(
         self,
@@ -746,6 +762,7 @@ Respond in JSON:
     ) -> str:
         """Execute the multi-turn chat loop with tool handling and verification."""
         from src.brain.state_manager import state_manager
+
         current_turn = 0
         MAX_CHAT_TURNS = 5
 
@@ -759,11 +776,20 @@ Respond in JSON:
             await self._handle_chat_preamble(response, on_preamble)
 
             if state_manager and state_manager.available:
-                asyncio.create_task(state_manager.publish_event("logs", {"source": "atlas", "type": "thinking", "content": "Analyzing data..."}))
+                asyncio.create_task(
+                    state_manager.publish_event(
+                        "logs",
+                        {"source": "atlas", "type": "thinking", "content": "Analyzing data..."},
+                    )
+                )
 
             final_messages.append(response)
             if current_turn == 0:
-                final_messages.append(SystemMessage(content="CONTINUITY HINT: Synthesize findings. End with a question."))
+                final_messages.append(
+                    SystemMessage(
+                        content="CONTINUITY HINT: Synthesize findings. End with a question."
+                    )
+                )
 
             tool_executed = await self._process_chat_tool_calls(response.tool_calls, final_messages)
             self._apply_chat_audit_logic(intent, tool_executed, current_turn, final_messages)
@@ -781,9 +807,12 @@ Respond in JSON:
     ) -> str:
         """EntryPoint for Chat: Contextual multi-turn reasoning and interaction."""
         # 1. Determine parameters and fetch context
-        classification, use_deep_persona_resolved, should_fetch, resolved_query = await self._determine_chat_parameters(
-            user_request, history, use_deep_persona
-        )
+        (
+            classification,
+            use_deep_persona_resolved,
+            should_fetch,
+            resolved_query,
+        ) = await self._determine_chat_parameters(user_request, history, use_deep_persona)
         if intent is None:
             intent = classification.get("intent", "solo_task")
         is_simple_chat = classification.get("type") == "simple_chat"
@@ -794,7 +823,9 @@ Respond in JSON:
         )
 
         # 3. Handle Deep Reasoning if necessary
-        analysis_context = await self._handle_chat_deep_reasoning(user_request, is_simple_chat, intent)
+        analysis_context = await self._handle_chat_deep_reasoning(
+            user_request, is_simple_chat, intent
+        )
 
         # 4. Generate system prompt
         system_prompt = self._generate_chat_system_prompt(
@@ -803,7 +834,11 @@ Respond in JSON:
 
         # 5. Build messages
         final_messages = self._construct_chat_messages(
-            user_request, system_prompt, use_deep_persona_resolved, history, f"{graph_ctx}\n{vector_ctx}\n{analysis_context}"
+            user_request,
+            system_prompt,
+            use_deep_persona_resolved,
+            history,
+            f"{graph_ctx}\n{vector_ctx}\n{analysis_context}",
         )
 
         # 6. Execute Turns
@@ -1292,9 +1327,7 @@ Output the corrected plan in the same JSON format as before.
 
         # 6. Self-Verification & Correction
         if steps:
-            goal_text = str(
-                plan_data.get("goal", enriched_request.get("enriched_request", ""))
-            )
+            goal_text = str(plan_data.get("goal", enriched_request.get("enriched_request", "")))
             steps = await self._self_correct_plan(steps, goal_text, dynamic_sys_prompt)
             # Re-check voice_action one last time for fixed steps
             self._standardize_voice_actions(steps)

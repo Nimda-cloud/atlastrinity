@@ -1,0 +1,24 @@
+# Lefthook configuration for modernized local CI
+# Run all linters: npx lefthook run lint:all
+
+lint:all:
+  parallel: true
+  commands:
+    01-biome:
+      run: npx @biomejs/biome check --write src scripts
+    02-ruff:
+      run: .venv/bin/ruff check . --fix && .venv/bin/ruff format .
+    03-pyright:
+      run: npx pyright src scripts
+    04-knip:
+      run: npx knip
+    05-security:
+      run: npm run lint:security
+    06-yaml-sync:
+      run: python3 scripts/sync_and_validate_configs.py
+
+pre-push:
+  parallel: true
+  commands:
+    checks:
+      run: npx lefthook run lint:all

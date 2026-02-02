@@ -10,15 +10,18 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="espnet2.torch_utils.device_funcs")
 # Suppress PyTorch and ESPnet warnings triggered by ukrainian-tts
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
-warnings.filterwarnings("ignore", message=".*make_pad_mask with a list of lengths is not tracable.*")
+warnings.filterwarnings(
+    "ignore", message=".*make_pad_mask with a list of lengths is not tracable.*"
+)
 
 import sys
 
 # Force UTF-8 encoding for stdout/stderr to support Ukrainian characters in terminal
-if sys.stdout.encoding != 'utf-8':
+if sys.stdout.encoding != "utf-8":
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 # Import CONFIG_ROOT before using it
 from .config_loader import config

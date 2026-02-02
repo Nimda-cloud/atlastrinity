@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class MonitoringConfig:
     """
     Monitoring configuration loader and manager.
-    
+
     This class handles loading monitoring configuration from the main config.yaml
     and provides access to monitoring settings.
     """
@@ -35,6 +35,7 @@ class MonitoringConfig:
         """
         # Lazy import to avoid circular dependencies if any
         from .config_loader import config
+
         self.system_config = config
 
     def _get_config_section(self) -> dict[str, Any]:
@@ -89,24 +90,24 @@ class MonitoringConfig:
     def save_config(self, config: dict[str, Any]) -> bool:
         """
         Save monitoring configuration to file.
-        Note: This now updates the main config.yaml file via manual load/dump 
+        Note: This now updates the main config.yaml file via manual load/dump
         since SystemConfig is read-only for now.
         """
         from .config_loader import CONFIG_ROOT
-        
+
         config_path = CONFIG_ROOT / "config.yaml"
-        
+
         try:
             # Load full config
             full_config: dict[str, Any] = {}
             if config_path.exists():
                 with open(config_path, encoding="utf-8") as f:
                     full_config = yaml.safe_load(f) or {}
-            
+
             # Update monitoring section
             if "monitoring" not in full_config:
                 full_config["monitoring"] = {}
-                
+
             # Deep merge or replace? Replace specific sections provided
             if "monitoring" in config:
                 full_config["monitoring"] = config["monitoring"]

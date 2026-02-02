@@ -15,7 +15,9 @@ import warnings
 
 # Suppress PyTorch and ESPnet warnings triggered by ukrainian-tts
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
-warnings.filterwarnings("ignore", message=".*make_pad_mask with a list of lengths is not tracable.*")
+warnings.filterwarnings(
+    "ignore", message=".*make_pad_mask with a list of lengths is not tracable.*"
+)
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -608,9 +610,7 @@ Ukrainian:"""
                 chunks = self._chunk_text_for_tts(text)
 
                 # 2. Start pipelined playback
-                return await self._pipelined_playback(
-                    agent_id, agent_conf, chunks, voice_enum
-                )
+                return await self._pipelined_playback(agent_id, agent_conf, chunks, voice_enum)
             except Exception as e:
                 print(f"[TTS] Error: {e}")
                 return None
@@ -654,9 +654,7 @@ Ukrainian:"""
         """Handle pipelined generation and playback of speech chunks."""
         import time
 
-        print(
-            f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(chunks)} chunks..."
-        )
+        print(f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(chunks)} chunks...")
 
         # Generate first chunk
         current_file = await self._generate_chunk(chunks[0], 0, agent_id, voice_enum)

@@ -52,7 +52,7 @@ class CSVParser:
             except Exception as e:
                 last_error = str(e)
                 break
-        
+
         return ParseResult(False, error=f"CSV parse error: {last_error or 'Unknown encoding'}")
 
 

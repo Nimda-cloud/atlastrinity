@@ -484,15 +484,17 @@ class MCPManager:
             try:
                 if tool_name == "maps_start_tour":
                     from src.brain.navigation.tour_driver import tour_driver
+
                     polyline = (arguments or {}).get("polyline", "")
                     await tour_driver.start_tour(polyline)
                     return {"content": [{"type": "text", "text": "Tour started successfully."}]}
-                
+
                 elif tool_name == "maps_tour_control":
                     from src.brain.navigation.tour_driver import tour_driver
+
                     action = (arguments or {}).get("action", "")
                     val = (arguments or {}).get("value")
-                    
+
                     if action == "stop":
                         await tour_driver.stop_tour()
                         return {"content": [{"type": "text", "text": "Tour stopped."}]}
@@ -506,12 +508,12 @@ class MCPManager:
                         angle = int(val) if val is not None else 0
                         tour_driver.look_around(angle)
                         return {"content": [{"type": "text", "text": f"Looking at {angle}."}]}
-                    
+
                     return {"content": [{"type": "text", "text": f"Unknown tour action: {action}"}]}
 
             except Exception as e:
-                 logger.error(f"[MCP] Local tool {tool_name} failed: {e}")
-                 return {"content": [{"type": "text", "text": f"Error: {e}"}], "isError": True}
+                logger.error(f"[MCP] Local tool {tool_name} failed: {e}")
+                return {"content": [{"type": "text", "text": f"Error: {e}"}], "isError": True}
 
         # --- MCP SERVER CALL ---
         session = await self.get_session(server_name)
@@ -552,12 +554,10 @@ class MCPManager:
                 if hasattr(item, "text"):
                     item_raw = cast("Any", item)
                     if (
-                        isinstance(item_raw.text, str)
-                        and len(item_raw.text) > 200 * 1024 * 1024
+                        isinstance(item_raw.text, str) and len(item_raw.text) > 200 * 1024 * 1024
                     ):  # 200MB limit
                         item_raw.text = (
-                            item_raw.text[: 200 * 1024 * 1024]
-                            + "\n... [TRUNCATED DUE TO SIZE] ..."
+                            item_raw.text[: 200 * 1024 * 1024] + "\n... [TRUNCATED DUE TO SIZE] ..."
                         )
                         logger.warning(f"Truncated large output from {server_name}.{tool_name}")
 
@@ -565,9 +565,7 @@ class MCPManager:
         """Log a warning if tool call execution was slow."""
         duration = asyncio.get_event_loop().time() - start_time
         if duration > 5.0:
-            logger.warning(
-                f"[MCP] Slow tool call: {server_name}.{tool_name} took {duration:.2f}s"
-            )
+            logger.warning(f"[MCP] Slow tool call: {server_name}.{tool_name} took {duration:.2f}s")
 
     async def _handle_call_tool_error(
         self, e: Exception, server_name: str, tool_name: str, arguments: dict[str, Any] | None

@@ -134,7 +134,7 @@ class MapStateManager:
             "heading": heading,
             "pitch": pitch,
             "fov": fov,
-            "timestamp": "now"  # Handled by frontend
+            "timestamp": "now",  # Handled by frontend
         }
 
     def to_dict(self) -> dict[str, Any]:

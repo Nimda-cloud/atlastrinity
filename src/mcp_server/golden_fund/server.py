@@ -120,7 +120,11 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
 def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
     """Helper to find entity matches using vector and keyword search."""
     search_result = vector_store.search(entity_id, limit=5)
-    results = search_result.data.get("results", []) if search_result.success and search_result.data else []
+    results = (
+        search_result.data.get("results", [])
+        if search_result.success and search_result.data
+        else []
+    )
 
     if not results:
         # Try keyword search as fallback
@@ -131,7 +135,9 @@ def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
     return results
 
 
-def _build_entity_profile(entity_id: str, results: list[dict[str, Any]], depth: int) -> dict[str, Any]:
+def _build_entity_profile(
+    entity_id: str, results: list[dict[str, Any]], depth: int
+) -> dict[str, Any]:
     """Helper to build an entity profile from search results."""
     entity_profile: dict[str, Any] = {
         "entity_id": entity_id,
@@ -166,11 +172,7 @@ def _extract_relationships(
 ) -> None:
     """Extract related entities from metadata and add to profile."""
     for key, value in meta.items():
-        if (
-            isinstance(value, str)
-            and len(value) > 2
-            and key not in ["timestamp", "source_format"]
-        ):
+        if isinstance(value, str) and len(value) > 2 and key not in ["timestamp", "source_format"]:
             if value not in seen_entities:
                 seen_entities.add(value)
                 entity_profile["related_entities"].append(

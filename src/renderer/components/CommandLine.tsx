@@ -3,7 +3,8 @@
  * Smart STT з аналізом типу мовлення
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Типи мовлення з бекенду
 type SpeechType = 'same_user' | 'new_phrase' | 'noise' | 'other_voice' | 'silence' | 'off_topic';
@@ -74,7 +75,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     return () => {
       stopListening();
     };
-  }, []);
+  }, [stopListening]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -171,7 +172,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
         case 'same_user':
         case 'new_phrase':
           // Оновлюємо текст
-          if (text && text.trim()) {
+          if (text?.trim()) {
             pendingTextRef.current = combined_text;
             setInput(combined_text);
             setSttStatus(`✅ ${text.slice(0, 30)}...`);
@@ -188,7 +189,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
           break;
       }
     },
-    [scheduleSend, onCommand]
+    [scheduleSend, onCommand],
   );
 
   // Відправка аудіо на розумний STT
@@ -236,7 +237,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
         }
       }
     },
-    [handleSTTResponse]
+    [handleSTTResponse],
   );
 
   // Початок запису
@@ -375,7 +376,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
           // Send the previous slice first (fire and forget)
           // console.log('📎 Attaching pre-buffer context');
           processAudioChunk(lastSkippedChunkRef.current).catch((err) =>
-            console.error('Error sending pre-buffer:', err)
+            console.error('Error sending pre-buffer:', err),
           );
           lastSkippedChunkRef.current = null;
         }
@@ -459,7 +460,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
         case 'NotFoundError':
         case 'DevicesNotFoundError':
           alert(
-            '❌ Мікрофон не знайдено\n\nПеревірте:\n• Мікрофон підключений\n• Мікрофон увімкнений в системі'
+            '❌ Мікрофон не знайдено\n\nПеревірте:\n• Мікрофон підключений\n• Мікрофон увімкнений в системі',
           );
           break;
         case 'NotAllowedError':
@@ -532,7 +533,6 @@ const CommandLine: React.FC<CommandLineProps> = ({
             className="command-textarea-extended"
             spellCheck={false}
             rows={1}
-            autoFocus
           />
           <div className="absolute right-3 bottom-2 flex items-center gap-2">
             {(isProcessing || sttStatus) && (

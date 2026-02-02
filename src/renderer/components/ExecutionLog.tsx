@@ -3,8 +3,8 @@
  * Cyberpunk Terminal Style
  */
 
-import * as React from 'react';
-import { useRef, useLayoutEffect, useState, useEffect, useCallback } from 'react';
+import type * as React from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
 
@@ -23,7 +23,7 @@ interface ExecutionLogProps {
 const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   // Filter out noisy connection logs
   const filteredLogs = logs.filter(
-    (l) => !l.message.includes('Connected to') && !l.message.includes('health check')
+    (l) => !l.message.includes('Connected to') && !l.message.includes('health check'),
   );
 
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -105,7 +105,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
       d = new Date(ts < 10000000000 ? ts * 1000 : ts);
     } else if (typeof ts === 'string') {
       const n = Number(ts);
-      if (!isNaN(n)) {
+      if (!Number.isNaN(n)) {
         d = new Date(n < 10000000000 ? n * 1000 : n);
       } else {
         d = new Date(ts);
@@ -114,7 +114,7 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
       d = new Date();
     }
 
-    if (isNaN(d.getTime())) {
+    if (Number.isNaN(d.getTime())) {
       return '??:??:??';
     }
 

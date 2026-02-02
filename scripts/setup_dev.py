@@ -8,6 +8,7 @@
 - Завантаження AI моделей (STT/TTS)
 - Перевірка системних сервісів (Redis, Vibe CLI)
 """
+
 import argparse
 import asyncio
 import json
@@ -144,8 +145,6 @@ def check_system_tools():
     else:
         print_success(f"Node знайдено ({subprocess.getoutput('node --version').strip()})")
 
-
-
     # 3. Check other tools
     tools = ["bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly", "gcloud"]
     missing = []
@@ -225,7 +224,9 @@ def check_system_tools():
                 missing.remove("gcloud")
         except Exception as e:
             print_warning(f"Не вдалося автоматично встановити Google Cloud SDK: {e}")
-            print_info("Будь ласка, встановіть його вручну: https://cloud.google.com/sdk/docs/install")
+            print_info(
+                "Будь ласка, встановіть його вручну: https://cloud.google.com/sdk/docs/install"
+            )
 
     if "swift" in missing:
         print_error("Swift необхідний для компіляції macos-use та googlemaps MCP серверів!")
@@ -234,21 +235,29 @@ def check_system_tools():
     # 4. Check for Full Xcode (for XcodeBuildMCP)
     xcode_app = Path("/Applications/Xcode.app")
     if shutil.which("xcodebuild"):
-        result = subprocess.run(["xcodebuild", "-version"], capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            ["xcodebuild", "-version"], capture_output=True, text=True, check=False
+        )
         if result.returncode == 0:
             print_success("Повний Xcode знайдено")
         elif xcode_app.exists():
             print_warning("Знайдено тільки Command Line Tools, але Xcode.app існує!")
-            print(f"{Colors.BOLD}Бажаєте переключитись на повний Xcode? (sudo xcode-select -s /Applications/Xcode.app){Colors.ENDC}")
-            print(f"Натисніть {Colors.BOLD}Enter{Colors.ENDC} протягом 5 секунд для підтвердження...")
-            
+            print(
+                f"{Colors.BOLD}Бажаєте переключитись на повний Xcode? (sudo xcode-select -s /Applications/Xcode.app){Colors.ENDC}"
+            )
+            print(
+                f"Натисніть {Colors.BOLD}Enter{Colors.ENDC} протягом 5 секунд для підтвердження..."
+            )
+
             # Timed input
             rlist, _, _ = select.select([sys.stdin], [], [], 5)
             if rlist:
-                sys.stdin.readline() # consume input
+                sys.stdin.readline()  # consume input
                 try:
                     print_info("Запуск sudo xcode-select...")
-                    subprocess.run(["sudo", "xcode-select", "-s", "/Applications/Xcode.app"], check=True)
+                    subprocess.run(
+                        ["sudo", "xcode-select", "-s", "/Applications/Xcode.app"], check=True
+                    )
                     print_success("Переключено на повний Xcode")
                 except Exception as e:
                     print_error(f"Не вдалося переключитись: {e}")
@@ -305,12 +314,12 @@ def prepare_monitoring_db():
     print_step("Налаштування бази даних моніторингу (SQLite)...")
     monitor_db_path = CONFIG_ROOT / "data" / "monitoring.db"
     monitor_db_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     if monitor_db_path.exists():
-         print_success(f"Monitoring DB вже існує: {monitor_db_path}")
+        print_success(f"Monitoring DB вже існує: {monitor_db_path}")
     else:
-         print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
-         
+        print_info(f"Monitoring DB буде створено при першому запуску: {monitor_db_path}")
+
     # Backup restore logic could go here if we persist monitoring data across resets
     backup_path = PROJECT_ROOT / "backups" / "databases" / "monitoring.db"
     if not monitor_db_path.exists() and backup_path.exists():
@@ -319,10 +328,11 @@ def prepare_monitoring_db():
             print_success("Monitoring DB відновлено з бекапу")
         except Exception as e:
             print_warning(f"Не вдалося відновити Monitoring DB: {e}")
-            
+
     # Ensure tables exist (Schema Check)
     try:
         import sqlite3
+
         with sqlite3.connect(monitor_db_path) as conn:
             # Check for healing_events
             conn.execute("""
@@ -337,7 +347,7 @@ def prepare_monitoring_db():
                     details JSON
                 )
             """)
-            
+
             # Also ensure basic logs tables exist (sync with monitoring.py)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS logs (
@@ -387,6 +397,7 @@ def verify_golden_fund():
         print_info("Створення нової бази даних Golden Fund...")
         try:
             import sqlite3
+
             with sqlite3.connect(config_db_path) as conn:
                 # Enable WAL mode for better concurrency
                 conn.execute("PRAGMA journal_mode=WAL;")
@@ -689,14 +700,15 @@ def build_googlemaps_mcp():
         print_error(f"Помилка компіляції Swift: {e}")
         return False
 
+
 def setup_google_maps():
     """Адаптивне налаштування Google Maps API через gcloud"""
     print_step("Автоматизація Google Cloud / Google Maps...")
-    
+
     # 1. Провірка чи ключ вже є в .env (локально або в глобальному конфігу)
     env_path = PROJECT_ROOT / ".env"
     global_env_path = CONFIG_ROOT / ".env"
-    
+
     api_key = None
     has_vite_key = False
 
@@ -710,17 +722,17 @@ def setup_google_maps():
                     # Ignore known placeholder (split to avoid scanner detection)
                     placeholder_part = "AIzaSyBq4tcSGVtpl" + "M3eFdqPOC14lbsBWNxGp_0"
                     if placeholder_part not in potential_key:
-                         api_key = potential_key
+                        api_key = potential_key
 
                 if api_key and f"VITE_GOOGLE_MAPS_API_KEY={api_key}" in content:
                     has_vite_key = True
                 if api_key:
                     break
-    
+
     if api_key and has_vite_key:
         print_success("Google Maps API (Base & Vite) вже налаштовано")
         return False
-    
+
     # 2. Авто-виправлення якщо є base ключ але немає Vite префікса
     if api_key and not has_vite_key:
         print_warning("Знайдено API ключ, але відсутній VITE_ префікс для фронтенду.")
@@ -728,23 +740,27 @@ def setup_google_maps():
         try:
             with open(env_path, encoding="utf-8") as f:
                 content = f.read()
-            
+
             if "VITE_GOOGLE_MAPS_API_KEY=" in content:
-                content = re.sub(r"VITE_GOOGLE_MAPS_API_KEY=.*", f"VITE_GOOGLE_MAPS_API_KEY={api_key}", content)
+                content = re.sub(
+                    r"VITE_GOOGLE_MAPS_API_KEY=.*", f"VITE_GOOGLE_MAPS_API_KEY={api_key}", content
+                )
             else:
                 content += f"\nVITE_GOOGLE_MAPS_API_KEY={api_key}\n"
-            
+
             with open(env_path, "w", encoding="utf-8") as f:
                 f.write(content)
             print_success("Префікс VITE_ додано успішно")
-            return True # Потрібен ре-синк
+            return True  # Потрібен ре-синк
         except Exception as e:
             print_error(f"Не вдалося виправити .env: {e}")
 
     print_info("API Ключ не знайдено або він недійсний.")
-    print(f"{Colors.BOLD}Бажаєте налаштувати Google Maps автоматично через gcloud? (y/n){Colors.ENDC}")
+    print(
+        f"{Colors.BOLD}Бажаєте налаштувати Google Maps автоматично через gcloud? (y/n){Colors.ENDC}"
+    )
     print_info("Це автоматично встановить gcloud SDK, створить проект та ключ.")
-    
+
     try:
         # Timed input for non-interactive environments
         rlist, _, _ = select.select([sys.stdin], [], [], 10)
@@ -754,7 +770,7 @@ def setup_google_maps():
             print_info("Тайм-аут. Пропускаємо автоматичне налаштування.")
             return
 
-        if choice == 'y':
+        if choice == "y":
             script_path = PROJECT_ROOT / "scripts" / "setup_google_maps.py"
             if script_path.exists():
                 subprocess.run([sys.executable, str(script_path)], check=True)
@@ -765,8 +781,9 @@ def setup_google_maps():
             print_info("Пропущено. Ви можете налаштувати ключ вручну в .env")
     except Exception as e:
         print_error(f"Помилка при автоматичному налаштуванні: {e}")
-    
+
     return False
+
 
 def setup_xcodebuild_mcp():
     """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
@@ -926,17 +943,14 @@ def install_deps():
     # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
-        # Step 1: Install major voice components without dependencies. 
-        # Their metadata has old constraints (e.g. importlib-metadata < 5.0) 
-        # which conflict with modern libraries. Installing them first --no-deps 
+        # Step 1: Install major voice components without dependencies.
+        # Their metadata has old constraints (e.g. importlib-metadata < 5.0)
+        # which conflict with modern libraries. Installing them first --no-deps
         # allows us to use modern versions for everything else.
         print_info("Installing Voice stack (no-deps bypass for metadata conflicts)...")
         run_venv_cmd(
-            [
-                "-m", "pip", "install", "--no-deps", 
-                "espnet==202509", "ukrainian-tts>=6.0.2"
-            ], 
-            check=True
+            ["-m", "pip", "install", "--no-deps", "espnet==202509", "ukrainian-tts>=6.0.2"],
+            check=True,
         )
 
         # Step 2: Install remaining core dependencies from requirements.txt.
@@ -1181,7 +1195,6 @@ def download_models():
     # 1. Faster-Whisper: Detect model
     model_name = "large-v3"
     try:
-
         config_path = CONFIG_ROOT / "config.yaml"
         target_path = (
             config_path
@@ -1190,6 +1203,7 @@ def download_models():
         )
         if target_path.exists():
             import yaml
+
             with open(target_path, encoding="utf-8") as f:
                 # Use dynamic lookup to satisfy Pyrefly and Ruff
                 yml_load = getattr(yaml, "safe_loa" + "d")
@@ -1279,19 +1293,19 @@ print('TTS OK')
 def backup_databases():
     """Архівує всі бази даних з шифруванням та фільтрацією секретів"""
     print_step("Створення безпечних резервних копій баз даних...")
-    
+
     try:
         from scripts.secure_backup import SecureBackupManager
-        
+
         backup_manager = SecureBackupManager(PROJECT_ROOT)
         success = backup_manager.create_secure_backup()
-        
+
         if success:
             print_success("Безпечний бекап завершено успішно.")
             print_info(f"Резервні копії збережено в: {PROJECT_ROOT / 'backups' / 'databases'}")
         else:
             print_error("Помилка при створенні безпечного бекапу")
-            
+
     except ImportError as e:
         print_error(f"Модуль безпечного бекапу не знайдено: {e}")
         print_warning("Використання старого методу бекапу...")
@@ -1304,7 +1318,7 @@ def backup_databases():
 def _legacy_backup_databases():
     """Застарілий метод бекапу (без шифрування)"""
     print_warning("Використання застарілого методу бекапу без шифрування...")
-    
+
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     backup_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1459,18 +1473,22 @@ def run_integrity_check():
 def ensure_frontend_config():
     """Перевірка та автоматичне виправлення конфігурацій фронтенду (CSP, Vite Env)"""
     print_step("Валідація конфігурацій фронтенду (Security & Env)...")
-    
+
     # 1. Перевірка vite.config.ts
     vite_config = PROJECT_ROOT / "vite.config.ts"
     if vite_config.exists():
         with open(vite_config, encoding="utf-8") as f:
             content = f.read()
-        
+
         if not re.search(r"envDir:\s*['\"](\.\./){2}['\"]", content):
             print_warning("Vite не налаштований на завантаження .env з кореня. Виправлення...")
             if 'root: "src/renderer"' in content or "root: 'src/renderer'" in content:
-                content = content.replace("root: 'src/renderer',", "root: 'src/renderer',\n    envDir: '../../',")
-                content = content.replace('root: "src/renderer",', 'root: "src/renderer",\n    envDir: "../../",')
+                content = content.replace(
+                    "root: 'src/renderer',", "root: 'src/renderer',\n    envDir: '../../',"
+                )
+                content = content.replace(
+                    'root: "src/renderer",', 'root: "src/renderer",\n    envDir: "../../",'
+                )
                 with open(vite_config, "w", encoding="utf-8") as f:
                     f.write(content)
                 print_success("vite.config.ts оновлено (envDir додано)")
@@ -1482,15 +1500,15 @@ def ensure_frontend_config():
     if index_html.exists():
         with open(index_html, encoding="utf-8") as f:
             content = f.read()
-        
+
         needs_update = False
         if "'unsafe-eval'" not in content:
             content = content.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'")
             needs_update = True
         if "connect-src 'self' data:" not in content:
-             content = content.replace("connect-src 'self'", "connect-src 'self' data:")
-             needs_update = True
-        
+            content = content.replace("connect-src 'self'", "connect-src 'self' data:")
+            needs_update = True
+
         if needs_update:
             print_warning("Content Security Policy застаріла. Оновлення...")
             with open(index_html, "w", encoding="utf-8") as f:
@@ -1504,7 +1522,7 @@ def ensure_frontend_config():
     if map_view.exists():
         with open(map_view, encoding="utf-8") as f:
             content = f.read()
-        
+
         if "AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8" in content:
             print_warning("Знайдено хардкод-ключ у MapView.tsx. Видалення...")
             content = content.replace("'AIzaSyDFLLXp5tsbni0sXxH1IcryTh3OqBhaHF8'", "''")
@@ -1592,7 +1610,7 @@ def main():
 
     build_swift_mcp()
     build_googlemaps_mcp()
-    
+
     # Google Maps Automation
     gmaps_updated = False
     try:
@@ -1619,9 +1637,14 @@ def main():
                 for f in files:
                     fpath = Path(root) / f
                     # If it looks like an executable (Swift binaries, MCP servers, etc)
-                    if ("macos-use" in f or "vibe" in f or "googlemaps" in f or 
-                        "mcp-server" in f or fpath.suffix == "" or 
-                        "xcodebuild" in f.lower()):
+                    if (
+                        "macos-use" in f
+                        or "vibe" in f
+                        or "googlemaps" in f
+                        or "mcp-server" in f
+                        or fpath.suffix == ""
+                        or "xcodebuild" in f.lower()
+                    ):
                         try:
                             os.chmod(fpath, 0o755)
                         except Exception:
@@ -1676,12 +1699,17 @@ def main():
     print_step("Перевірка наявності Watchdog для авто-синхронізації...")
     try:
         import watchdog
+
         print_success("Watchdog вже встановлено")
     except ImportError:
         print_info("Встановлення Watchdog...")
-        subprocess.run([str(VENV_PATH / "bin" / "python"), "-m", "pip", "install", "watchdog"], check=False)
+        subprocess.run(
+            [str(VENV_PATH / "bin" / "python"), "-m", "pip", "install", "watchdog"], check=False
+        )
 
-    print_info(f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'npm run watch:config' для авто-синхронізації конфігів")
+    print_info(
+        f"{Colors.OKCYAN}TIP:{Colors.ENDC} Запустіть 'npm run watch:config' для авто-синхронізації конфігів"
+    )
 
     mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
     enabled_servers = []

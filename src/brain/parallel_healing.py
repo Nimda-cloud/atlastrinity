@@ -1,6 +1,6 @@
 """Parallel Self-Healing Manager
 
-Non-blocking self-healing system that runs Vibe fixes in parallel 
+Non-blocking self-healing system that runs Vibe fixes in parallel
 while Tetyana continues execution. Fixes are validated in sandbox
 and communicated via message_bus.
 """
@@ -21,6 +21,7 @@ logger = logging.getLogger("brain.parallel_healing")
 
 class HealingStatus(Enum):
     """Status of a parallel healing task."""
+
     PENDING = "pending"
     ANALYZING = "analyzing"
     FIXING = "fixing"
@@ -35,6 +36,7 @@ class HealingStatus(Enum):
 @dataclass
 class HealingTask:
     """A parallel healing task."""
+
     task_id: str
     step_id: str
     error: str
@@ -72,6 +74,7 @@ class HealingTask:
 @dataclass
 class FixedStepInfo:
     """Information about a fixed step ready for retry."""
+
     task_id: str
     step_id: str
     fix_description: str
@@ -81,7 +84,7 @@ class FixedStepInfo:
 
 class ParallelHealingManager:
     """Manages parallel self-healing tasks without blocking main execution.
-    
+
     Features:
     - Non-blocking task submission via asyncio.create_task
     - State persistence in Redis for crash recovery
@@ -101,6 +104,7 @@ class ParallelHealingManager:
         """Initialize Redis persistence if available."""
         try:
             from src.brain.state_manager import state_manager
+
             self._redis_available = state_manager.available
             if self._redis_available:
                 logger.info("[PARALLEL_HEALING] Redis persistence enabled")
@@ -116,19 +120,19 @@ class ParallelHealingManager:
         priority: int = 1,
     ) -> str:
         """Submit a healing task to run in background.
-        
+
         Args:
             step_id: The ID of the failed step
             error: Error message from the failure
             step_context: Full step context (action, expected_result, etc.)
             log_context: Recent log lines for context
             priority: 1 (Standard) or 2 (Constraint Violation - Higher)
-            
+
         Returns:
             task_id: Unique identifier for tracking
         """
         task_id = f"heal_{step_id}_{uuid4().hex[:8]}"
-        
+
         task = HealingTask(
             task_id=task_id,
             step_id=step_id,
@@ -137,18 +141,23 @@ class ParallelHealingManager:
             log_context=log_context,
             priority=priority,
         )
-        
+
         self._tasks[task_id] = task
-        
+
         # Check concurrent limit
         active_count = sum(
-            1 for t in self._tasks.values() 
-            if t.status not in (HealingStatus.READY, HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED)
-            and t.asyncio_task is not None and not t.asyncio_task.done()
+            1
+            for t in self._tasks.values()
+            if t.status
+            not in (HealingStatus.READY, HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED)
+            and t.asyncio_task is not None
+            and not t.asyncio_task.done()
         )
-        
+
         if active_count >= self._max_concurrent:
-            logger.info(f"[PARALLEL_HEALING] Max concurrent ({self._max_concurrent}) reached. Queuing task {task_id} (Priority {priority})")
+            logger.info(
+                f"[PARALLEL_HEALING] Max concurrent ({self._max_concurrent}) reached. Queuing task {task_id} (Priority {priority})"
+            )
             self._backlog.append(task)
             # Sort backlog by priority descending (2 > 1)
             self._backlog.sort(key=lambda t: t.priority, reverse=True)
@@ -164,20 +173,21 @@ class ParallelHealingManager:
         """Internal method to start a task."""
         # Start background healing
         asyncio_task = asyncio.create_task(
-            self._run_healing_workflow(task),
-            name=f"healing-{task.task_id}"
+            self._run_healing_workflow(task), name=f"healing-{task.task_id}"
         )
         task.asyncio_task = asyncio_task
         task.updated_at = datetime.now()
-        
+
         # Persist to Redis
         await self._persist_task(task)
-        
-        logger.info(f"[PARALLEL_HEALING] Task {task.task_id} started (Priority {task.priority}) for step {task.step_id}")
-        
+
+        logger.info(
+            f"[PARALLEL_HEALING] Task {task.task_id} started (Priority {task.priority}) for step {task.step_id}"
+        )
+
         # Notify via message bus
         await self._notify_healing_started(task)
-        
+
         # Record to Monitoring DB
         monitoring_system.record_healing_event(
             task_id=task.task_id,
@@ -185,13 +195,12 @@ class ParallelHealingManager:
             step_id=task.step_id,
             priority=task.priority,
             status="started",
-            details={"error": task.error[:500]}
+            details={"error": task.error[:500]},
         )
-        
 
     async def _run_healing_workflow(self, task: HealingTask) -> None:
         """Execute the full healing workflow in background.
-        
+
         Phases:
         1. Vibe Analysis
         2. Vibe Fix Generation
@@ -206,9 +215,9 @@ class ParallelHealingManager:
             task.status = HealingStatus.ANALYZING
             task.updated_at = datetime.now()
             await self._persist_task(task)
-            
+
             logger.info(f"[PARALLEL_HEALING] {task.task_id}: Phase 1 - Analysis & Context")
-            
+
             # 1a. Architecture Analysis (New)
             arch_context = ""
             try:
@@ -219,10 +228,10 @@ class ParallelHealingManager:
                     "devtools_update_architecture_diagrams",
                     {
                         "target_mode": "internal",
-                        "use_reasoning": False # Speed optimization
-                    }
+                        "use_reasoning": False,  # Speed optimization
+                    },
                 )
-                
+
                 if isinstance(arch_result, dict) and arch_result.get("success"):
                     analysis = arch_result.get("analysis", {})
                     affected = analysis.get("affected_components", [])
@@ -245,7 +254,7 @@ class ParallelHealingManager:
                 ),
                 timeout=180,
             )
-            
+
             task.vibe_analysis = self._extract_text(vibe_result)
             if not task.vibe_analysis:
                 raise ValueError("Vibe returned empty analysis")
@@ -254,9 +263,9 @@ class ParallelHealingManager:
             task.status = HealingStatus.FIXING
             task.updated_at = datetime.now()
             await self._persist_task(task)
-            
+
             logger.info(f"[PARALLEL_HEALING] {task.task_id}: Phase 2 - Fix Generation")
-            
+
             # Extract fix description from analysis
             task.fix_description = self._extract_fix_description(task.vibe_analysis)
 
@@ -264,12 +273,12 @@ class ParallelHealingManager:
             task.status = HealingStatus.SANDBOX_TESTING
             task.updated_at = datetime.now()
             await self._persist_task(task)
-            
+
             logger.info(f"[PARALLEL_HEALING] {task.task_id}: Phase 3 - Sandbox Testing")
-            
+
             sandbox_result = await self._test_in_sandbox(task)
             task.sandbox_result = sandbox_result
-            
+
             if not sandbox_result.get("success", False):
                 logger.warning(f"[PARALLEL_HEALING] {task.task_id}: Sandbox test failed")
                 # Don't fail - some fixes can't be sandbox tested
@@ -279,21 +288,24 @@ class ParallelHealingManager:
             task.status = HealingStatus.GRISHA_REVIEW
             task.updated_at = datetime.now()
             await self._persist_task(task)
-            
+
             logger.info(f"[PARALLEL_HEALING] {task.task_id}: Phase 4 - Grisha Verification")
-            
+
             from src.brain.agents.grisha import Grisha
+
             grisha = Grisha()
-            
+
             grisha_result = await grisha.audit_vibe_fix(
                 str(task.error),
                 task.vibe_analysis,
             )
             task.grisha_verdict = grisha_result
-            
+
             if grisha_result.get("audit_verdict") == "REJECT":
                 task.status = HealingStatus.FAILED
-                task.error_message = f"Grisha rejected: {grisha_result.get('reasoning', 'No reason')}"
+                task.error_message = (
+                    f"Grisha rejected: {grisha_result.get('reasoning', 'No reason')}"
+                )
                 task.updated_at = datetime.now()
                 await self._persist_task(task)
                 logger.warning(f"[PARALLEL_HEALING] {task.task_id}: Grisha rejected fix")
@@ -303,9 +315,9 @@ class ParallelHealingManager:
             task.status = HealingStatus.READY
             task.updated_at = datetime.now()
             await self._persist_task(task)
-            
+
             logger.info(f"[PARALLEL_HEALING] {task.task_id}: Fix READY for step {task.step_id}")
-            
+
             # Add to fixed queue
             fixed_info = FixedStepInfo(
                 task_id=task.task_id,
@@ -315,7 +327,7 @@ class ParallelHealingManager:
                 grisha_verdict=grisha_result,
             )
             self._fixed_queue.append(fixed_info)
-            
+
             # Notify Tetyana via message bus
             await self._notify_fix_ready(task)
 
@@ -328,8 +340,8 @@ class ParallelHealingManager:
                 status="fixed",
                 details={
                     "fix_description": task.fix_description,
-                    "grisha_verdict": task.grisha_verdict
-                }
+                    "grisha_verdict": task.grisha_verdict,
+                },
             )
 
         except TimeoutError:
@@ -338,7 +350,7 @@ class ParallelHealingManager:
             task.updated_at = datetime.now()
             await self._persist_task(task)
             logger.error(f"[PARALLEL_HEALING] {task.task_id}: Timeout")
-            
+
         except Exception as e:
             task.status = HealingStatus.FAILED
             task.error_message = str(e)
@@ -353,9 +365,9 @@ class ParallelHealingManager:
                 step_id=task.step_id,
                 priority=task.priority,
                 status="failed",
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
-            
+
         finally:
             # Check backlog for next task
             await self._process_backlog()
@@ -367,28 +379,38 @@ class ParallelHealingManager:
 
         # Check concurrent limit again
         active_count = sum(
-            1 for t in self._tasks.values() 
-            if t.status not in (HealingStatus.READY, HealingStatus.FAILED, HealingStatus.ACKNOWLEDGED, HealingStatus.PENDING)
-            and t.asyncio_task is not None and not t.asyncio_task.done()
+            1
+            for t in self._tasks.values()
+            if t.status
+            not in (
+                HealingStatus.READY,
+                HealingStatus.FAILED,
+                HealingStatus.ACKNOWLEDGED,
+                HealingStatus.PENDING,
+            )
+            and t.asyncio_task is not None
+            and not t.asyncio_task.done()
         )
-        
+
         if active_count < self._max_concurrent:
             # Get highest priority task
             next_task = self._backlog.pop(0)
-            logger.info(f"[PARALLEL_HEALING] Starting backlogged task {next_task.task_id} (Priority {next_task.priority})")
+            logger.info(
+                f"[PARALLEL_HEALING] Starting backlogged task {next_task.task_id} (Priority {next_task.priority})"
+            )
             await self._start_task(next_task)
 
     async def _test_in_sandbox(self, task: HealingTask) -> dict[str, Any]:
         """Test the proposed fix in sandbox if applicable."""
         try:
             from src.brain.mcp_manager import mcp_manager
-            
+
             # Only sandbox-test if we have code changes
             if not task.vibe_analysis or "```" not in task.vibe_analysis:
                 return {"success": True, "note": "No code to sandbox test"}
-            
+
             # Create a simple validation script
-            test_script = f'''
+            test_script = f"""
 # Auto-generated sandbox test for healing {task.task_id}
 import sys
 print("Sandbox test for step: {task.step_id}")
@@ -396,8 +418,8 @@ print("Error being fixed: {task.error[:100]}")
 # Basic syntax/import validation would go here
 print("SANDBOX_TEST_PASSED")
 sys.exit(0)
-'''
-            
+"""
+
             result = await mcp_manager.call_tool(
                 "vibe",
                 "vibe_test_in_sandbox",
@@ -408,9 +430,13 @@ sys.exit(0)
                     "timeout_s": 30.0,
                 },
             )
-            
-            return result if isinstance(result, dict) else {"success": False, "error": "Invalid result"}
-            
+
+            return (
+                result
+                if isinstance(result, dict)
+                else {"success": False, "error": "Invalid result"}
+            )
+
         except Exception as e:
             logger.warning(f"[PARALLEL_HEALING] Sandbox test error: {e}")
             return {"success": False, "error": str(e)}
@@ -419,19 +445,21 @@ sys.exit(0)
         """Notify agents that healing has started."""
         try:
             from src.brain.message_bus import AgentMsg, MessageType, message_bus
-            
-            await message_bus.send(AgentMsg(
-                from_agent="atlas",
-                to_agent="all",
-                message_type=MessageType.HEALING_STATUS,
-                payload={
-                    "event": "started",
-                    "task_id": task.task_id,
-                    "step_id": task.step_id,
-                    "error": task.error[:200],
-                },
-                step_id=task.step_id,
-            ))
+
+            await message_bus.send(
+                AgentMsg(
+                    from_agent="atlas",
+                    to_agent="all",
+                    message_type=MessageType.HEALING_STATUS,
+                    payload={
+                        "event": "started",
+                        "task_id": task.task_id,
+                        "step_id": task.step_id,
+                        "error": task.error[:200],
+                    },
+                    step_id=task.step_id,
+                )
+            )
         except Exception as e:
             logger.warning(f"[PARALLEL_HEALING] Failed to notify start: {e}")
 
@@ -439,23 +467,27 @@ sys.exit(0)
         """Notify Tetyana that a fix is ready."""
         try:
             from src.brain.message_bus import AgentMsg, MessageType, message_bus
-            
-            await message_bus.send(AgentMsg(
-                from_agent="atlas",
-                to_agent="tetyana",
-                message_type=MessageType.HEALING_STATUS,
-                payload={
-                    "event": "fix_ready",
-                    "task_id": task.task_id,
-                    "step_id": task.step_id,
-                    "fix_description": task.fix_description,
-                    "grisha_approved": task.grisha_verdict.get("audit_verdict") == "APPROVE" if task.grisha_verdict else False,
-                },
-                step_id=task.step_id,
-            ))
-            
+
+            await message_bus.send(
+                AgentMsg(
+                    from_agent="atlas",
+                    to_agent="tetyana",
+                    message_type=MessageType.HEALING_STATUS,
+                    payload={
+                        "event": "fix_ready",
+                        "task_id": task.task_id,
+                        "step_id": task.step_id,
+                        "fix_description": task.fix_description,
+                        "grisha_approved": task.grisha_verdict.get("audit_verdict") == "APPROVE"
+                        if task.grisha_verdict
+                        else False,
+                    },
+                    step_id=task.step_id,
+                )
+            )
+
             logger.info(f"[PARALLEL_HEALING] Notified Tetyana: fix ready for {task.step_id}")
-            
+
         except Exception as e:
             logger.warning(f"[PARALLEL_HEALING] Failed to notify fix ready: {e}")
 
@@ -470,11 +502,11 @@ sys.exit(0)
 
     async def acknowledge_fix(self, step_id: str, action: str) -> bool:
         """Tetyana acknowledges a fix.
-        
+
         Args:
             step_id: The step that was fixed
             action: "retry", "skip", or "noted"
-            
+
         Returns:
             True if acknowledged successfully
         """
@@ -482,17 +514,17 @@ sys.exit(0)
         for i, fix_info in enumerate(self._fixed_queue):
             if fix_info.step_id == step_id:
                 self._fixed_queue.pop(i)
-                
+
                 # Update task status
                 task = self._tasks.get(fix_info.task_id)
                 if task:
                     task.status = HealingStatus.ACKNOWLEDGED
                     task.updated_at = datetime.now()
                     await self._persist_task(task)
-                
+
                 logger.info(f"[PARALLEL_HEALING] Fix for {step_id} acknowledged: {action}")
                 return True
-        
+
         return False
 
     async def get_task_by_step(self, step_id: str) -> HealingTask | None:
@@ -506,10 +538,10 @@ sys.exit(0)
         """Persist task state to Redis."""
         if not self._redis_available:
             return
-            
+
         try:
             from src.brain.state_manager import state_manager
-            
+
             if state_manager.redis_client:
                 key = state_manager._key(f"healing:{task.task_id}")
                 await state_manager.redis_client.set(
@@ -540,19 +572,19 @@ sys.exit(0)
         """Extract a concise fix description from Vibe analysis."""
         if not analysis:
             return "Unknown fix"
-        
+
         # Look for common patterns
         lines = analysis.split("\n")
         for line in lines:
             lower = line.lower()
             if any(kw in lower for kw in ["fix:", "solution:", "the fix", "to fix"]):
                 return line.strip()[:200]
-        
+
         # Return first meaningful line
         for line in lines:
             if len(line.strip()) > 20:
                 return line.strip()[:200]
-        
+
         return analysis[:200]
 
 

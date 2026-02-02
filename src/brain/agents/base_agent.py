@@ -13,7 +13,7 @@ class BaseAgent:
     def _parse_response(self, content: str) -> dict[str, Any]:
         """Parse JSON response from LLM with resilience."""
         text = str(content).strip()
-        
+
         # Try markdown JSON extraction
         if "```json" in text:
             blocks = text.split("```json")
@@ -23,7 +23,7 @@ class BaseAgent:
                     return cast(dict[str, Any], json.loads(inner))
                 except json.JSONDecodeError:
                     continue
-        
+
         # Try generic code block extraction
         if "```" in text:
             blocks = text.split("```")
@@ -61,7 +61,7 @@ class BaseAgent:
                 key, value = line.split(":", 1)
                 key = key.strip().lower()
                 value = value.strip()
-                
+
                 # Type conversion
                 if value.lower() == "true":
                     data[key] = True
@@ -71,7 +71,7 @@ class BaseAgent:
                     data[key] = float(value)
                 else:
                     data[key] = value
-        
+
         # Valid if has expected fields
         if any(field in data for field in ["verified", "intent", "success", "steps"]):
             return data

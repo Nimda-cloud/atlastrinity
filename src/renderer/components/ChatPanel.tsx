@@ -3,7 +3,7 @@
  */
 
 import * as React from 'react';
-import { useLayoutEffect, useRef, useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
 

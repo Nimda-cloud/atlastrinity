@@ -2,7 +2,7 @@
  * AtlasTrinity - macOS Permissions Handler
  */
 
-import { systemPreferences, dialog, shell } from 'electron';
+import { dialog, shell, systemPreferences } from 'electron';
 
 interface PermissionStatus {
   accessibility: boolean;
@@ -78,7 +78,7 @@ export async function requestPermissions(): Promise<void> {
 
     if (result.response === 0) {
       await shell.openExternal(
-        'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'
+        'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
       );
     }
   }
@@ -102,7 +102,7 @@ export async function requestPermissions(): Promise<void> {
 
     if (result.response === 0) {
       await shell.openExternal(
-        'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'
+        'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
       );
     }
   }

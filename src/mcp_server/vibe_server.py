@@ -478,11 +478,7 @@ async def _try_parse_structured_vibe_log(line: str, ctx: Context | None) -> bool
     """Try to parse as JSON for structured logging."""
     try:
         obj = json.loads(line)
-        if (
-            not isinstance(obj, dict)
-            or not obj.get("role")
-            or not obj.get("content")
-        ):
+        if not isinstance(obj, dict) or not obj.get("role") or not obj.get("content"):
             return False
 
         role_map = {
@@ -499,9 +495,7 @@ async def _try_parse_structured_vibe_log(line: str, ctx: Context | None) -> bool
         return False
 
 
-async def _format_and_emit_vibe_log(
-    line: str, stream_name: str, ctx: Context | None
-) -> None:
+async def _format_and_emit_vibe_log(line: str, stream_name: str, ctx: Context | None) -> None:
     """Format and emit a standard log line."""
     if any(t in line for t in SPAM_TRIGGERS):
         return
@@ -592,7 +586,9 @@ async def _execute_vibe_with_retries(
                 await asyncio.wait_for(gather_fut, timeout=timeout_s + 20)
                 await _emit_vibe_log(ctx, "info", "✅ [VIBE-LIVE] Vibe завершив роботу успішно")
             except TimeoutError:
-                return await _handle_vibe_timeout(process, argv, timeout_s, stdout_chunks, stderr_chunks, ctx)
+                return await _handle_vibe_timeout(
+                    process, argv, timeout_s, stdout_chunks, stderr_chunks, ctx
+                )
 
             stdout = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
             stderr = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
@@ -634,7 +630,7 @@ async def _handle_vibe_timeout(
     """Handle process timeout by terminating/killing and returning partial output."""
     logger.warning(f"[VIBE] Process timeout ({timeout_s}s), terminating")
     await _emit_vibe_log(ctx, "warning", f"⏱️ [VIBE-LIVE] Перевищено timeout ({timeout_s}s)")
-    
+
     try:
         process.terminate()
         await asyncio.wait_for(process.wait(), timeout=5)
@@ -751,44 +747,40 @@ async def vibe_test_in_sandbox(
             runner_path = os.path.join(sandbox_dir, runner_main)
             with open(runner_path, "w", encoding="utf-8") as f:
                 f.write(test_script)
-            
+
             # 3. Execute
             logger.debug(f"Running sandbox command in {sandbox_dir}")
-            
+
             # Prepare env
             env = os.environ.copy()
-            env["PYTHONPATH"] = sandbox_dir # Add sandbox to path
-            
+            env["PYTHONPATH"] = sandbox_dir  # Add sandbox to path
+
             process = await asyncio.create_subprocess_shell(
                 command,
                 cwd=sandbox_dir,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
-            
+
             stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout_s)
-            
+
             return {
                 "success": process.returncode == 0,
                 "returncode": process.returncode,
                 "stdout": stdout.decode(errors="replace"),
                 "stderr": stderr.decode(errors="replace"),
-                "sandbox_dir_was": sandbox_dir
+                "sandbox_dir_was": sandbox_dir,
             }
-            
+
     except TimeoutError:
         return {
             "success": False,
             "error": f"Sandbox execution timed out after {timeout_s}s",
-            "returncode": -1
+            "returncode": -1,
         }
     except Exception as e:
-            return {
-            "success": False,
-            "error": f"Sandbox internal error: {e}",
-            "returncode": -1
-        }
+        return {"success": False, "error": f"Sandbox internal error: {e}", "returncode": -1}
 
 
 # =============================================================================
@@ -2152,17 +2144,13 @@ if __name__ == "__main__":
     except (BrokenPipeError, KeyboardInterrupt):
         logger.info("[VIBE] Server shutdown requested")
         sys.exit(0)
-    except BaseException as e:
-        # Handle ExceptionGroups that may contain BrokenPipeError
-        def is_broken_pipe(exc: BaseException) -> bool:
-            if isinstance(exc, BrokenPipeError) or "Broken pipe" in str(exc):
-                return True
-            if hasattr(exc, "exceptions"):
-                return any(is_broken_pipe(e) for e in exc.exceptions)
-            return False
-
-        if is_broken_pipe(e):
+    except ExceptionGroup as eg:
+        if any(isinstance(e, BrokenPipeError) or "Broken pipe" in str(e) for e in eg.exceptions):
             sys.exit(0)
-
+        logger.error(f"[VIBE] Unexpected error group: {eg}")
+        raise
+    except BaseException as e:
+        if isinstance(e, BrokenPipeError) or "Broken pipe" in str(e):
+            sys.exit(0)
         logger.error(f"[VIBE] Unexpected error: {e}")
         raise

@@ -608,10 +608,10 @@ class Trinity:
 
     async def _get_recent_logs(self, count: int = 50) -> str:
         """Get recent log entries as a string for context.
-        
+
         Args:
             count: Number of recent log entries to retrieve
-            
+
         Returns:
             Formatted string of recent log entries
         """
@@ -621,16 +621,15 @@ class Trinity:
             return ""
         logs: list[dict] = [l for l in logs_raw if isinstance(l, dict)]
         recent = logs[-count:] if len(logs) > count else logs
-        
+
         lines = []
         for log in recent:
             agent = log.get("agent", "SYSTEM")
             message = log.get("message", "")
             log_type = log.get("type", "info")
             lines.append(f"[{agent}] ({log_type}) {message}")
-        
-        return "\n".join(lines)
 
+        return "\n".join(lines)
 
     async def _save_chat_message(self, role: str, content: str, agent_id: str | None = None):
         """Persist a chat message to the DB for history reconstruction"""
@@ -841,7 +840,8 @@ class Trinity:
                         {
                             "agent": "USER",
                             "text": m.content,
-                            "timestamp": m.additional_kwargs.get("timestamp") or datetime.now().timestamp(),
+                            "timestamp": m.additional_kwargs.get("timestamp")
+                            or datetime.now().timestamp(),
                             "type": "text",
                         },
                     )
@@ -852,7 +852,8 @@ class Trinity:
                         {
                             "agent": agent_name,
                             "text": m.content,
-                            "timestamp": m.additional_kwargs.get("timestamp") or datetime.now().timestamp(),
+                            "timestamp": m.additional_kwargs.get("timestamp")
+                            or datetime.now().timestamp(),
                             "type": "voice",
                         },
                     )
@@ -940,15 +941,25 @@ class Trinity:
             if assessment.get("action") == "DISPUTE":
                 confidence = float(assessment.get("confidence", 0.0))
                 argument = assessment.get("argument", "No argument provided")
-                
-                await self._log(f"Atlas disputes Grisha's critique (Conf: {confidence}): {argument}", "atlas")
-                
+
+                await self._log(
+                    f"Atlas disputes Grisha's critique (Conf: {confidence}): {argument}", "atlas"
+                )
+
                 if confidence > 0.8:
-                    await self._speak("atlas", f"Гріша, я не згоден: {argument}. Я впевнений у плані, тому ми починаємо.")
-                    logger.info("[ORCHESTRATOR] Atlas overrode Grisha's rejection due to high confidence debate.")
+                    await self._speak(
+                        "atlas",
+                        f"Гріша, я не згоден: {argument}. Я впевнений у плані, тому ми починаємо.",
+                    )
+                    logger.info(
+                        "[ORCHESTRATOR] Atlas overrode Grisha's rejection due to high confidence debate."
+                    )
                     return plan
                 else:
-                    await self._log("Atlas debated but decided to accept feedback due to lower confidence.", "atlas")
+                    await self._log(
+                        "Atlas debated but decided to accept feedback due to lower confidence.",
+                        "atlas",
+                    )
 
             prefix = (
                 "Гріша знову виявив недоліки: "
@@ -1853,44 +1864,57 @@ class Trinity:
     ) -> tuple[bool, StepResult | None]:
         """Route the strategy decided by error_router by dispatching to sub-handlers."""
         action = str(strategy.action)
-        
+
         if action in ["RETRY", "WAIT_AND_RETRY"]:
             return await self._handle_strategy_retry(strategy, attempt, step_result)
-            
+
         elif action == "RESTART":
             return await self._handle_strategy_restart(strategy, step_id)
-            
+
         elif action == "ASK_USER":
             return await self._handle_strategy_ask_user(strategy, step_id)
-            
+
         elif action == "VIBE_HEAL":
-            return await self._handle_strategy_vibe_heal(strategy, step, step_id, last_error, step_result, depth)
-            
+            return await self._handle_strategy_vibe_heal(
+                strategy, step, step_id, last_error, step_result, depth
+            )
+
         elif action == "ATLAS_PLAN":
-            return await self._handle_strategy_atlas_plan(strategy, step, step_id, last_error, steps, index)
+            return await self._handle_strategy_atlas_plan(
+                strategy, step, step_id, last_error, steps, index
+            )
 
         return False, step_result
 
-    async def _handle_strategy_retry(self, strategy: Any, attempt: int, result: StepResult | None) -> tuple[bool, StepResult | None]:
+    async def _handle_strategy_retry(
+        self, strategy: Any, attempt: int, result: StepResult | None
+    ) -> tuple[bool, StepResult | None]:
         """Handle standard RETRY and WAIT_AND_RETRY strategies."""
         if attempt >= strategy.max_retries:
             if str(strategy.action) == "WAIT_AND_RETRY":
                 await self._log(f"Persistent infrastructure issue: {strategy.reason}.", "error")
                 return False, StepResult(
-                    step_id="unknown", success=False, error="infrastructure_failure", 
-                    result=f"API issue persisted. {strategy.reason}"
+                    step_id="unknown",
+                    success=False,
+                    error="infrastructure_failure",
+                    result=f"API issue persisted. {strategy.reason}",
                 )
             return False, result
 
-        await self._log(f"Error detected. {strategy.reason}. Retrying in {strategy.backoff}s...", "orchestrator")
+        await self._log(
+            f"Error detected. {strategy.reason}. Retrying in {strategy.backoff}s...", "orchestrator"
+        )
         await asyncio.sleep(strategy.backoff)
         return True, None
 
-    async def _handle_strategy_restart(self, strategy: Any, step_id: str) -> tuple[bool, StepResult | None]:
+    async def _handle_strategy_restart(
+        self, strategy: Any, step_id: str
+    ) -> tuple[bool, StepResult | None]:
         """Handle RESTART strategy by saving state and execv."""
         await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
         try:
             from src.brain.state_manager import state_manager
+
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.save_session(self.current_session_id, self.state)
                 if redis_client := getattr(state_manager, "redis_client", None):
@@ -1901,35 +1925,56 @@ class Trinity:
 
         import os
         import sys
+
         await asyncio.sleep(1.0)
         os.execv(sys.executable, [sys.executable, *sys.argv])
-        return False, StepResult(step_id=step_id, success=False, error="restarting", result="Restart initiated")
+        return False, StepResult(
+            step_id=step_id, success=False, error="restarting", result="Restart initiated"
+        )
 
-    async def _handle_strategy_ask_user(self, strategy: Any, step_id: str) -> tuple[bool, StepResult | None]:
+    async def _handle_strategy_ask_user(
+        self, strategy: Any, step_id: str
+    ) -> tuple[bool, StepResult | None]:
         """Handle ASK_USER strategy."""
         await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
-        return False, StepResult(step_id=step_id, success=False, error="need_user_input", result=f"ASK_USER: {strategy.reason}")
+        return False, StepResult(
+            step_id=step_id,
+            success=False,
+            error="need_user_input",
+            result=f"ASK_USER: {strategy.reason}",
+        )
 
-    async def _handle_strategy_vibe_heal(self, strategy: Any, step: dict, step_id: str, error: str, result: Any, depth: int) -> tuple[bool, StepResult | None]:
+    async def _handle_strategy_vibe_heal(
+        self, strategy: Any, step: dict, step_id: str, error: str, result: Any, depth: int
+    ) -> tuple[bool, StepResult | None]:
         """Handle VIBE_HEAL (Parallel or Blocking)."""
         if config.get("parallel_healing", {}).get("enabled", True):
             try:
                 logs = await self._get_recent_logs(50)
                 tid = await parallel_healing_manager.submit_healing_task(step_id, error, step, logs)
                 await self._log(f"Healing task {tid} submitted. Tetyana continues.", "orchestrator")
-                return False, StepResult(step_id=step_id, success=False, error="healing_initiated", result=f"Parallel healing {tid}")
+                return False, StepResult(
+                    step_id=step_id,
+                    success=False,
+                    error="healing_initiated",
+                    result=f"Parallel healing {tid}",
+                )
             except Exception as e:
                 logger.warning(f"Parallel healing failed, fallback to blocking: {e}")
 
         heal_success, heal_result = await self._self_heal(step, step_id, error, result, depth)
         return (True, None) if heal_success else (False, heal_result)
 
-    async def _handle_strategy_atlas_plan(self, strategy: Any, step: dict, step_id: str, error: str, steps: list, index: int) -> tuple[bool, StepResult | None]:
+    async def _handle_strategy_atlas_plan(
+        self, strategy: Any, step: dict, step_id: str, error: str, steps: list, index: int
+    ) -> tuple[bool, StepResult | None]:
         """Handle ATLAS_PLAN strategy (Re-planning)."""
         await self._log(f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator")
         try:
             q = f"RECOVERY: Goal: {self.state.get('current_goal')}\nStep: {step_id}\nError: {error}"
-            new_plan = await self.atlas.create_plan({"enriched_request": q, "intent": "task", "complexity": "medium"})
+            new_plan = await self.atlas.create_plan(
+                {"enriched_request": q, "intent": "task", "complexity": "medium"}
+            )
             if new_plan and getattr(new_plan, "steps", []):
                 for offset, s in enumerate(new_plan.steps):
                     steps.insert(index + 1 + offset, s)
@@ -2062,6 +2107,7 @@ class Trinity:
         """Update current step progress in shared context."""
         try:
             from src.brain.context import shared_context
+
             shared_context.current_step_id = step_idx
         except (ImportError, NameError, AttributeError):
             pass
@@ -2091,12 +2137,22 @@ class Trinity:
 
         await self._log(f"🔄 Retrying parallel-fixed step {fixed_id}...", "orchestrator")
         if str(fixed_id) == str(current_id):
-            await self._log("Fix applies to CURRENT step. Proceeding with execution.", "orchestrator")
+            await self._log(
+                "Fix applies to CURRENT step. Proceeding with execution.", "orchestrator"
+            )
         else:
-            await self._log(f"Parallel fix acknowledged for {fixed_id}. (Jump-back not fully implemented)", "orchestrator")
+            await self._log(
+                f"Parallel fix acknowledged for {fixed_id}. (Jump-back not fully implemented)",
+                "orchestrator",
+            )
 
     async def _run_step_retry_loop(
-        self, step: dict[str, Any], step_id: str, depth: int, steps: list[dict[str, Any]], index: int
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        depth: int,
+        steps: list[dict[str, Any]],
+        index: int,
     ) -> None:
         """Execute a step with a retry loop and smart healing."""
         max_step_retries = 3
@@ -2104,9 +2160,13 @@ class Trinity:
 
         for attempt in range(1, max_step_retries + 1):
             await self._trigger_async_constraint_monitoring()
-            await self._log(f"Step {step_id}, Attempt {attempt}: {step.get('action')}", "orchestrator")
+            await self._log(
+                f"Step {step_id}, Attempt {attempt}: {step.get('action')}", "orchestrator"
+            )
 
-            step_result = await self.execute_node(cast(Any, self.state), step, step_id, attempt, depth)
+            step_result = await self.execute_node(
+                cast(Any, self.state), step, step_id, attempt, depth
+            )
 
             if step_result.success:
                 logger.info(f"[ORCHESTRATOR] Step {step_id} completed successfully")
@@ -2130,7 +2190,9 @@ class Trinity:
             if await self._validate_with_grisha_failure(step, step_id, step_result, last_error):
                 return
 
-            notifications.send_stuck_alert(self._parse_numeric_id(step_id), str(last_error), max_step_retries)
+            notifications.send_stuck_alert(
+                self._parse_numeric_id(step_id), str(last_error), max_step_retries
+            )
             if await self._atlas_recovery_fallback(step_id, last_error, depth):
                 return
 
@@ -2146,7 +2208,11 @@ class Trinity:
     def _parse_numeric_id(self, step_id: str) -> int:
         """Safely parse a numeric step ID."""
         try:
-            return int(str(step_id).split(".")[-1]) if "." in str(step_id) else (int(step_id) if str(step_id).isdigit() else 0)
+            return (
+                int(str(step_id).split(".")[-1])
+                if "." in str(step_id)
+                else (int(step_id) if str(step_id).isdigit() else 0)
+            )
         except (ValueError, TypeError):
             return 0
 
@@ -2154,8 +2220,11 @@ class Trinity:
         """Fire-and-forget check for environmental constraints."""
         try:
             from src.brain.constraint_monitor import constraint_monitor
+
             monitor_logs = await self._get_recent_logs(20)
-            state_logs = [l for l in (self.state.get("logs", []) or []) if isinstance(l, dict)][-20:]
+            state_logs = [l for l in (self.state.get("logs", []) or []) if isinstance(l, dict)][
+                -20:
+            ]
             asyncio.create_task(constraint_monitor.check_compliance(monitor_logs, state_logs))
         except Exception as cm_err:
             logger.warning(f"[ORCHESTRATOR] Monitor check trigger failed: {cm_err}")
@@ -2696,6 +2765,7 @@ class Trinity:
 
         # 2. Knowledge Graph
         if knowledge_graph:
+
             async def _async_learn_lesson():
                 try:
                     lesson_id = f"lesson:{int(datetime.now().timestamp())}"
@@ -2832,7 +2902,7 @@ class Trinity:
             # Log interaction to Knowledge Graph if successful (Background)
             if result.success and result.tool_call:
                 self._log_tool_usage_background(step_id, result)
-            
+
             if result.voice_message:
                 await self._speak("tetyana", result.voice_message)
 
@@ -2878,9 +2948,9 @@ class Trinity:
         # Update DB Step
         await self._update_db_step_status(db_step_id, result, step_start_time)
 
-        # change from _verify_step_execution to verify_step_execution if typo? 
+        # change from _verify_step_execution to verify_step_execution if typo?
         # Checking previous file content, it IS _verify_step_execution.
-        
+
         # Check verification
         result = await self._verify_step_execution(step, step_id, result)
 

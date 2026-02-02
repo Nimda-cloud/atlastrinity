@@ -300,7 +300,7 @@ class ToolDispatcher:
         "xcodebuild_archive_project",
         "xcodebuild_clean_build",
     ]
-    
+
     MAPS_SYNONYMS = [
         "maps",
         "location",

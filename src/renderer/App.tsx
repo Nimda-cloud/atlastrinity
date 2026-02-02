@@ -3,14 +3,14 @@
  * Premium Design System Integration
  */
 
-import * as React from 'react';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import MapView from './components/MapView';
-import NeuralCore from './components/NeuralCore';
-import ExecutionLog from './components/ExecutionLog.tsx';
+import type * as React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AgentStatus from './components/AgentStatus.tsx';
 import ChatPanel from './components/ChatPanel.tsx';
 import CommandLine from './components/CommandLine.tsx';
+import ExecutionLog from './components/ExecutionLog.tsx';
+import MapView from './components/MapView';
+import NeuralCore from './components/NeuralCore';
 
 // Agent types
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
@@ -50,7 +50,7 @@ const App: React.FC = () => {
   const [activeMode, setActiveMode] = useState<'STANDARD' | 'LIVE'>('STANDARD');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [sessions, setSessions] = useState<Array<{ id: string; theme: string; saved_at: string }>>(
-    []
+    [],
   );
   const [currentSessionId, setCurrentSessionId] = useState<string>('current_session');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -152,7 +152,7 @@ const App: React.FC = () => {
     // Auto-detect map updates in logs
     if (message.includes('Saved to:') && message.includes('.png')) {
       const pathMatch = message.match(/Saved to: (.+\.png)/);
-      if (pathMatch && pathMatch[1]) {
+      if (pathMatch?.[1]) {
         const filePath = pathMatch[1];
         // Convert local path to file:// URL for Electron display
         // Note: In some Electron setups you might need a custom protocol or webSecurity: false
@@ -162,7 +162,8 @@ const App: React.FC = () => {
         setMapData({
           url: fileUrl,
           type: isStreet ? 'STREET' : 'STATIC',
-          location: message.match(/Location: ([^\n]+)/)?.[1] || message.match(/Center: ([^\n]+)/)?.[1]
+          location:
+            message.match(/Location: ([^\n]+)/)?.[1] || message.match(/Center: ([^\n]+)/)?.[1],
         });
         setViewMode('MAP');
       }
@@ -190,11 +191,11 @@ const App: React.FC = () => {
     } catch (err) {
       if (retryCount < 5) {
         // Retry with exponential backoff if server is still starting
-        const delay = Math.pow(2, retryCount) * 1000;
+        const delay = 2 ** retryCount * 1000;
         // Only warn after some retries or it gets annoying
         if (retryCount > 2) {
           console.warn(
-            `[BRAIN] Session fetch still failing, retrying in ${delay}ms... (Attempt ${retryCount + 1}/5)`
+            `[BRAIN] Session fetch still failing, retrying in ${delay}ms... (Attempt ${retryCount + 1}/5)`,
           );
         }
         setTimeout(() => fetchSessions(retryCount + 1), delay);
@@ -221,8 +222,8 @@ const App: React.FC = () => {
           setCurrentTask(data.current_task || '');
           setActiveMode(data.active_mode || 'STANDARD');
           if (data.metrics) setMetrics(data.metrics);
-          
-          if (data.map_state && data.map_state.agent_view) {
+
+          if (data.map_state?.agent_view) {
             const av = data.map_state.agent_view;
             if (av.image_path) {
               setMapData({
@@ -233,15 +234,15 @@ const App: React.FC = () => {
                   heading: av.heading,
                   pitch: av.pitch,
                   fov: av.fov,
-                  timestamp: av.timestamp
-                }
+                  timestamp: av.timestamp,
+                },
               });
               setViewMode('MAP');
             }
-          } else if (data.map_state && data.map_state.center && viewMode === 'MAP') {
-             // Handle potential case where we are in MAP mode but no agent is walking?
-             // Actually, let's just make sure we clear agentView if it's gone from backend
-             setMapData(prev => ({ ...prev, agentView: null }));
+          } else if (data.map_state?.center && viewMode === 'MAP') {
+            // Handle potential case where we are in MAP mode but no agent is walking?
+            // Actually, let's just make sure we clear agentView if it's gone from backend
+            setMapData((prev) => ({ ...prev, agentView: null }));
           }
 
           if (data.logs) {
@@ -256,7 +257,7 @@ const App: React.FC = () => {
                   ts = new Date();
                 }
                 return { ...l, timestamp: ts };
-              })
+              }),
             );
           }
 
@@ -280,7 +281,7 @@ const App: React.FC = () => {
                       ts = new Date();
                     }
                     return { ...m, timestamp: ts };
-                  }
+                  },
                 );
               }
               return prev;
@@ -422,7 +423,7 @@ const App: React.FC = () => {
         timestamp: m.timestamp,
         type: m.type,
       })),
-    [chatHistory]
+    [chatHistory],
   );
 
   return (
@@ -513,7 +514,7 @@ const App: React.FC = () => {
             if (nextMode === 'MAP' && !mapData.url && mapData.type !== 'INTERACTIVE') {
               setMapData({
                 type: 'INTERACTIVE',
-                location: 'INTERACTIVE_SEARCH_ACTIVE'
+                location: 'INTERACTIVE_SEARCH_ACTIVE',
               });
             }
           }}
@@ -701,11 +702,7 @@ const App: React.FC = () => {
       {/* Center Panel: Neural Core / Map View */}
       <main className="panel center-panel relative overflow-hidden">
         {/* Neural Core is always present, but minimized when map is active */}
-        <NeuralCore
-          state={systemState}
-          activeAgent={activeAgent}
-          minimized={viewMode === 'MAP'}
-        />
+        <NeuralCore state={systemState} activeAgent={activeAgent} minimized={viewMode === 'MAP'} />
 
         {/* Map View overlays the core when active */}
         {viewMode === 'MAP' && (

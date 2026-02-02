@@ -31,7 +31,7 @@ def _get_scrape_result(url: str, type: str, scraper: DataScraper):
         return scraper.scrape_api_endpoint(url), ".json"
     elif type == "web_page":
         return scraper.scrape_web_page(url), ".json"
-    
+
     # Generic file download
     result = scraper.download_file(url)
     if type in ["csv", "json", "xml", "parquet"]:
@@ -49,7 +49,7 @@ def _parse_raw_data(raw_file: Path, ext: str, type: str, parser: DataParser):
     format_hint = ext.lstrip(".").lower()
     if format_hint == "bin" and type not in ["file", "web_page", "api"]:
         format_hint = type
-    
+
     return parser.parse(raw_file, format_hint=format_hint)
 
 
@@ -126,9 +126,7 @@ def _perform_parsing(
     return df, f"Parsed {count} records."
 
 
-def _perform_sql_storage(
-    df: pd.DataFrame, run_id: str, url: str, sql_storage: SQLStorage
-) -> str:
+def _perform_sql_storage(df: pd.DataFrame, run_id: str, url: str, sql_storage: SQLStorage) -> str:
     """Helper to store dataset in SQL database."""
     table_name = f"dataset_{run_id}"
     store_res = sql_storage.store_dataset(df, table_name, source_url=url)
@@ -160,12 +158,8 @@ def _perform_vector_storage(
 
 def _perform_validation(df: pd.DataFrame, run_id: str, validator: DataValidator) -> str:
     """Helper to validate ingested data completeness."""
-    val_data = [
-        {str(k): v for k, v in record.items()} for record in df.to_dict(orient="records")
-    ]
-    validation_res = validator.validate_data_completeness(
-        val_data, context=f"ingestion_{run_id}"
-    )
+    val_data = [{str(k): v for k, v in record.items()} for record in df.to_dict(orient="records")]
+    validation_res = validator.validate_data_completeness(val_data, context=f"ingestion_{run_id}")
     if validation_res.success:
         return "Validation passed."
     return f"Validation warning: {validation_res.error}"

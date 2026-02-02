@@ -4,7 +4,7 @@
  * Theme: Cyberpunk
  */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Outfit:wght@200;300;400;500&family=Inter:wght@200;300;400&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Outfit:wght@200;300;400;500&family=Inter:wght@200;300;400&display=swap");
 
 :root {
   /* --- DESIGN SYSTEM TOKENS --- */
@@ -55,7 +55,7 @@
 }
 
 body {
-  font-family: 'Outfit', 'Inter', sans-serif;
+  font-family: "Outfit", "Inter", sans-serif;
   background-color: var(--bg-black);
   color: var(--atlas-blue);
   font-size: 10.5px;
@@ -356,7 +356,7 @@ body {
 }
 
 .scanlines::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
@@ -390,7 +390,7 @@ body {
 
 .corner-brackets::before,
 .corner-brackets::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 12px;
   height: 12px;
@@ -498,8 +498,8 @@ body {
 .glass-panel {
   background: transparent;
   backdrop-filter: blur(20px);
-  border: none !important;
-  box-shadow: none !important;
+  border: none;
+  box-shadow: none;
   transition: all 0.4s ease;
   padding: 10px;
   /* Internal content padding */
@@ -511,7 +511,7 @@ body {
     rgba(0, 0, 0, 0.6) 0%,
     rgba(0, 0, 0, 0.2) 70%,
     transparent 100%
-  ) !important;
+  );
 }
 
 .right-panel {
@@ -520,11 +520,11 @@ body {
     rgba(0, 0, 0, 0.6) 0%,
     rgba(0, 0, 0, 0.2) 70%,
     transparent 100%
-  ) !important;
+  );
 }
 
 .glass-panel:hover {
-  background: rgba(0, 163, 255, 0.02) !important;
+  background: rgba(0, 163, 255, 0.02);
 }
 
 /* Specific Panel Tweaks */
@@ -540,10 +540,10 @@ body {
   justify-content: center;
   position: relative;
   /* Monolithic: No border for center, it merges with background */
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .right-panel {
@@ -677,7 +677,9 @@ body {
   max-width: calc(100vw - 40px);
   z-index: 100;
   box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.4);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s ease;
 }
 
 /* Auto-hide command dock */
@@ -1086,11 +1088,11 @@ body {
 }
 
 .z-100 {
-  z-index: 100 !important;
+  z-index: 100;
 }
 
 .z-50 {
-  z-index: 50 !important;
+  z-index: 50;
 }
 
 .pointer-events-auto {

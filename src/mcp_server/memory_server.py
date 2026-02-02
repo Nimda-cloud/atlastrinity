@@ -331,9 +331,7 @@ def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[di
             if isinstance(meta, dict) and meta.get("type") == "ENTITY":
                 formatted.append(
                     {
-                        "name": str(ids[i]).replace("entity:", "")
-                        if i < len(ids)
-                        else "unknown",
+                        "name": str(ids[i]).replace("entity:", "") if i < len(ids) else "unknown",
                         "entityType": meta.get("entity_type", "ENTITY"),
                         "observations": meta.get("observations", []),
                         "score": 1.0 - (dists[i] if i < len(dists) else 0.5),

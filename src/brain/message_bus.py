@@ -37,7 +37,6 @@ class MessageType(Enum):
     HEALING_STARTED = "heal_start"  # Atlas -> All: parallel healing task started
 
 
-
 @dataclass
 class AgentMsg:
     """Typed message for inter-agent communication"""

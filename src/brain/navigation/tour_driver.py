@@ -91,7 +91,7 @@ class TourDriver:
                 await asyncio.sleep(sleep_time)
 
                 self.current_step_index += 1
-            
+
             logger.info("[TourDriver] Reached destination.")
             self.is_active = False
 
@@ -107,54 +107,52 @@ class TourDriver:
             return
 
         lat, lng = self.current_route_points[self.current_step_index]
-        
+
         # Calculate heading to next point (if available)
         next_lat, next_lng = lat, lng
         if self.current_step_index + 1 < len(self.current_route_points):
-             next_lat, next_lng = self.current_route_points[self.current_step_index + 1]
-        
+            next_lat, next_lng = self.current_route_points[self.current_step_index + 1]
+
         # Determine base navigation heading
         base_heading = self._calculate_bearing(lat, lng, next_lat, next_lng)
-        
+
         # Apply user look offset
         final_heading = (base_heading + self.heading_offset) % 360
-        
+
         # Call Google Maps MCP to get the image (and save it)
         # We assume the MCP tool saves the file and returns the path/info
         try:
             # We use the mcp_manager to call the tool directly
             # Note: We need to format the location string
             location_str = f"{lat},{lng}"
-            
+
             # This calling convention depends on how mcp_manager exposes tools internally
             # For now, we'll assume we can use call_tool from the googlemaps server
             result = await mcp_manager.call_tool(
-                "googlemaps", 
-                "maps_street_view", 
+                "googlemaps",
+                "maps_street_view",
                 {
                     "location": location_str,
                     "heading": int(final_heading),
                     "pitch": 0,
                     "fov": 90,
-                    "cyberpunk": True
-                }
+                    "cyberpunk": True,
+                },
             )
-            
+
             # Parse result to find the file path
             # The MCP tool returns a text string like "Saved to: /path/to/file.png"
             output_text = result.content[0].text if result.content else ""
             import re
+
             match = re.search(r"Saved to: (.+)", output_text)
             if match:
                 image_path = match.group(1).strip()
                 # Update MapState
                 map_state_manager.set_agent_view(
-                    image_path=image_path,
-                    heading=int(final_heading),
-                    pitch=0,
-                    fov=90
+                    image_path=image_path, heading=int(final_heading), pitch=0, fov=90
                 )
-            
+
         except Exception as e:
             logger.error(f"[TourDriver] Failed to fetch Street View: {e}")
 
@@ -170,29 +168,29 @@ class TourDriver:
             b = 0
             shift = 0
             result = 0
-            
+
             while True:
                 b = ord(polyline_str[index]) - 63
                 index += 1
-                result |= (b & 0x1f) << shift
+                result |= (b & 0x1F) << shift
                 shift += 5
                 if b < 0x20:
                     break
-            
+
             dlat = ~(result >> 1) if (result & 1) else (result >> 1)
             lat += dlat
 
             shift = 0
             result = 0
-            
+
             while True:
                 b = ord(polyline_str[index]) - 63
                 index += 1
-                result |= (b & 0x1f) << shift
+                result |= (b & 0x1F) << shift
                 shift += 5
                 if b < 0x20:
                     break
-            
+
             dlng = ~(result >> 1) if (result & 1) else (result >> 1)
             lng += dlng
 
@@ -207,10 +205,10 @@ class TourDriver:
             return 0.0
 
         y = math.sin(math.radians(lng2 - lng1)) * math.cos(math.radians(lat2))
-        x = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - \
-            math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
-            math.cos(math.radians(lng2 - lng1))
-        
+        x = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - math.sin(
+            math.radians(lat1)
+        ) * math.cos(math.radians(lat2)) * math.cos(math.radians(lng2 - lng1))
+
         bearing = math.atan2(y, x)
         return (math.degrees(bearing) + 360) % 360
 

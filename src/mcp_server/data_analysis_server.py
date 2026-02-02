@@ -232,8 +232,7 @@ def _analyze_summary(df, results: dict[str, Any]) -> None:
 
     results["numeric_summary"] = df[numeric_cols].describe().to_dict() if numeric_cols else {}
     results["categorical_summary"] = {
-        col: df[col].value_counts().head(10).to_dict()
-        for col in categorical_cols[:5]
+        col: df[col].value_counts().head(10).to_dict() for col in categorical_cols[:5]
     }
     results["missing_values"] = df.isna().sum().to_dict()
 
@@ -439,6 +438,7 @@ async def create_visualization(
 
     try:
         import matplotlib  # type: ignore[import-not-found]
+
         matplotlib.use("Agg")  # Non-interactive backend
         import matplotlib.pyplot as plt  # type: ignore[import-not-found]
     except ImportError:
@@ -498,7 +498,7 @@ def _plot_histogram(ax, df, x_axis):
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         if len(numeric_cols) > 0:
             target_col = numeric_cols[0]
-    
+
     if target_col:
         df[target_col].hist(ax=ax, bins=30, edgecolor="black")
         ax.set_xlabel(str(target_col))
@@ -518,6 +518,7 @@ def _plot_scatter(ax, df, x_axis, y_axis):
 def _plot_bar(ax, df, x_axis):
     """Helper for bar chart plotting."""
     import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+
     if x_axis and x_axis in df.columns:
         value_counts = df[x_axis].value_counts().head(20)
         value_counts.plot(kind="bar", ax=ax)
@@ -544,6 +545,7 @@ def _plot_line(ax, df, x_axis, y_axis):
 def _plot_box(ax, df):
     """Helper for box plot plotting."""
     import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     if numeric_cols:
         df[numeric_cols[:10]].boxplot(ax=ax)
@@ -553,6 +555,7 @@ def _plot_box(ax, df):
 def _plot_heatmap(ax, df):
     """Helper for heatmap plotting."""
     import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+
     numeric_df = df.select_dtypes(include=[np.number])
     if len(numeric_df.columns) > 1:
         corr = numeric_df.corr()

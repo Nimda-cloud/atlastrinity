@@ -1,0 +1,13 @@
+{
+  "include": ["src", "scripts", "tests"],
+  "exclude": ["**/__pycache__", "**/node_modules", ".venv"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "reportUnknownMemberType": "none",
+  "reportGeneralTypeIssues": "error",
+  "reportPropertyTypeMismatch": "error",
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning"
+}

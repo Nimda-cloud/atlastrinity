@@ -78,12 +78,12 @@ def _execute_protocol_search(rule_name: str, query_val: str, provider_name: str)
 def _extract_from_match(match, seen_urls, results, max_results, is_fallback=False):
     """Extracted logic to process a single regex match."""
     href = html.unescape(match.group(1)).strip()
-    
+
     # Filter DDG internal links
     forbidden = ["duckduckgo.com/", "ad_redirect", "javascript:"]
     if not is_fallback:
         forbidden.append("#")
-        
+
     if any(x in href for x in forbidden):
         if "duckduckgo.com/l/?uddg=" not in href and "uddg=" not in href:
             return False
@@ -103,6 +103,7 @@ def _extract_from_match(match, seen_urls, results, max_results, is_fallback=Fals
         match_real = re.search(r"uddg=([^&]+)", href)
         if match_real:
             from urllib.parse import unquote
+
             href = unquote(match_real.group(1))
 
     if href.startswith("//"):
@@ -136,7 +137,11 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
             timeout=timeout_s,
         )
         resp.raise_for_status()
-        if not resp.text.strip() or "Checking your browser" in resp.text or "Cloudflare" in resp.text:
+        if (
+            not resp.text.strip()
+            or "Checking your browser" in resp.text
+            or "Cloudflare" in resp.text
+        ):
             return []
     except Exception as e:
         logger.error(f"Request error: {e}")
@@ -153,7 +158,9 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
 
     # Method 2: Fallback
     if len(results) < max_results:
-        fallback_pattern = re.compile(r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+        fallback_pattern = re.compile(
+            r'<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL
+        )
         for match in fallback_pattern.finditer(resp.text):
             if _extract_from_match(match, seen_urls, results, max_results, is_fallback=True):
                 break
