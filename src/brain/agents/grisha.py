@@ -550,15 +550,6 @@ class Grisha(BaseAgent):
                 "assess",
                 "evaluate",
                 "explore",
-                "search",
-                "find",
-                "locate",
-                "check",
-                "list",
-                "identify",
-                "detect",
-                "scan",
-                "verify",
             ]
         )
 
@@ -592,6 +583,19 @@ class Grisha(BaseAgent):
                     "tool": "macos-use_get_clipboard",
                     "args": {},
                     "reason": "Check if search results were copied",
+                }
+            )
+
+
+
+        # General system verification fallback (if no specific file/search tool added but it's a verify task)
+        # This ensures Grisha is ACTIVE rather than passive
+        if len(tools) <= 1 and any(kw in step_action_lower for kw in ["verify", "check", "status", "ensure", "validate"]):
+             tools.append(
+                {
+                    "tool": "macos-use.execute_command",
+                    "args": {"command": "ls -la"}, # Placeholder, reasoning will refine this
+                    "reason": "General system state verification (Active Check)",
                 }
             )
 
@@ -709,7 +713,12 @@ class Grisha(BaseAgent):
 
     def _fallback_verdict_analysis(self, analysis_text: str, analysis_upper: str) -> bool:
         """Enhanced fallback to analyze reasoning consistency."""
-        header_text = analysis_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
+        # Sanitize text to remove "no error" phrases before checking for "error" keyword
+        sanitized_upper = analysis_upper
+        for phrase in ["NO ERROR", "0 ERROR", "NO FAIL", "WITHOUT ERROR", "БЕЗ ПОМИЛОК", "НЕМАЄ ПОМИЛОК"]:
+             sanitized_upper = sanitized_upper.replace(phrase, "")
+
+        header_text = sanitized_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
 
         success_indicators = [
             "CONFIRMED",
