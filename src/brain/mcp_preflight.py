@@ -10,7 +10,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Union
 
 
 def _run_cmd(cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
@@ -176,7 +175,7 @@ def check_system_limits() -> list[str]:
 
         # macOS / BSD: check kern.maxproc and kern.maxprocperuid
         try:
-            rc, out, err = _run_cmd(["sysctl", "-n", "kern.maxproc"])
+            rc, out, _ = _run_cmd(["sysctl", "-n", "kern.maxproc"])
             if rc == 0 and out.strip():
                 val = int(out.strip())
                 if val < 2048:

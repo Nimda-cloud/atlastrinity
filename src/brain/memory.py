@@ -15,7 +15,6 @@ from typing import Any, cast
 
 try:
     import chromadb
-    from chromadb.config import Settings
 
     CHROMADB_AVAILABLE = True
 except ImportError:
@@ -648,14 +647,13 @@ class LongTermMemory:
             discoveries = []
             if results and results["ids"]:
                 for i, doc_id in enumerate(results["ids"][0]):
+                    distances = results.get("distances")
                     discoveries.append(
                         {
                             "id": doc_id,
                             "document": results["documents"][0][i] if results["documents"] else "",
                             "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                            "distance": results["distances"][0][i]
-                            if results.get("distances")
-                            else 0,
+                            "distance": distances[0][i] if distances and distances[0] else 0,
                         }
                     )
             return discoveries

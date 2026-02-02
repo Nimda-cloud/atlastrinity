@@ -572,8 +572,9 @@ class MCPManager:
     ) -> Any:
         """Handle exceptions during tool calls, including reconnection attempts."""
         error_msg = str(e)
-        if hasattr(e, "exceptions") and e.exceptions:  # ExceptionGroup
-            error_msg = f"{type(e).__name__}: {', '.join([str(x) for x in e.exceptions])}"
+        if hasattr(e, "exceptions") and getattr(e, "exceptions", None):  # ExceptionGroup
+            exceptions = getattr(e, "exceptions", [])
+            error_msg = f"{type(e).__name__}: {', '.join([str(x) for x in exceptions])}"
 
         logger.error(f"Error calling tool {server_name}.{tool_name}: {error_msg}")
 
@@ -834,6 +835,8 @@ class MCPManager:
             mon_config = behavior_engine.get_background_monitoring("mcp_health")
             interval = mon_config.get("interval", 60)
 
+        # Ensure interval is an int for the function call
+        interval = int(interval) if interval is not None else 60
         self._health_task = asyncio.create_task(self.health_check_loop(interval))
         return self._health_task
 

@@ -342,7 +342,16 @@ class DatabaseManager:
                     d = {}
                     for col_name in df.columns:
                         safe_col = str(col_name).lower().replace(" ", "_").replace("-", "_")
-                        d[safe_col] = row[col_name] if pd.notnull(row[col_name]) else None
+                        cell_value = row[col_name]
+                        # Check if value is not None and not NaN
+                        if cell_value is not None:
+                            import numpy as np
+                            if isinstance(cell_value, float) and np.isnan(cell_value):
+                                d[safe_col] = None
+                            else:
+                                d[safe_col] = cell_value
+                        else:
+                            d[safe_col] = None
                     sanitized_data.append(d)
 
                 # Dynamic insert is tricky with SQLAlchemy async,

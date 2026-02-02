@@ -28,7 +28,7 @@ from .logger import logger
 
 # Import config paths
 try:
-    from .config import CONFIG_ROOT, MCP_DIR, MODELS_DIR, WHISPER_DIR
+    from .config import CONFIG_ROOT, MODELS_DIR, WHISPER_DIR
 except ImportError:
     # Fallback for direct execution
     CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
