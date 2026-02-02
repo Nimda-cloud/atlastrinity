@@ -6,7 +6,7 @@ to inspect extracted data for completeness.
 
 import logging
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
 

@@ -6,12 +6,14 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 from ..lib.parser import DataParser
-from ..lib.scraper import DataScraper, ScrapeFormat
+from ..lib.scraper import DataScraper
 from ..lib.storage import SQLStorage, VectorStorage
 from ..lib.validation import DataValidator
 

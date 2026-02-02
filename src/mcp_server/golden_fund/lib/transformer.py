@@ -5,7 +5,7 @@ Ported from etl_module/src/transformation/data_transformer.py
 
 import logging
 from datetime import datetime
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 from pydantic import BaseModel, Field, ValidationError
 

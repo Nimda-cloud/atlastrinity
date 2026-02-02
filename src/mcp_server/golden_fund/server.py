@@ -1,11 +1,10 @@
-import asyncio
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.fastmcp import FastMCP
 
 from .lib.storage import SearchStorage, VectorStorage
 from .lib.storage.blob import BlobStorage
@@ -353,11 +352,13 @@ async def analyze_and_store(
             for col in numeric_cols[:5]:
                 series = df[col].dropna()
                 if len(series) > 0:
+                    series_any: Any = series
                     dist_meta: dict[str, Any] = {
-                        "mean": round(float(series.mean()), 4),
-                        "median": float(series.median()),
-                        "std": round(float(series.std()), 4),
+                        "mean": round(float(series_any.mean()), 4),
+                        "median": float(series_any.median()),
+                        "std": round(float(series_any.std()), 4),
                     }
+
                     analysis["distributions"][col] = dist_meta
 
         # Store in Golden Fund

@@ -1,11 +1,4 @@
-"""
-Recursive Enrichment Chain for Golden Fund
-Implements "Search -> Miss -> External Fetch -> Ingest -> Link -> Search" loop.
-"""
-
-import asyncio
 import logging
-from typing import Any, Optional
 
 from ..lib.connectors.ckan_connector import CKANConnector
 from ..lib.storage import VectorStorage

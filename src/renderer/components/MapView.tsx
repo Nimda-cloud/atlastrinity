@@ -20,7 +20,19 @@ interface MapViewProps {
   } | null;
 }
 
+interface GmpMapElement extends HTMLElement {
+  innerMap?: google.maps.Map;
+  shadowRoot: ShadowRoot | null;
+}
+
+interface GmpxPlacePickerElement extends HTMLElement {
+  value?: {
+    location?: google.maps.LatLng;
+  };
+}
+
 // AtlasTrinity Cyberpunk Map Style - Blue/Turquoise Theme
+
 const CYBERPUNK_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#020a10' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#020a10' }] },
@@ -169,7 +181,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapElement = document.querySelector('gmp-map') as any;
+        const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
         if (mapElement) {
           // Wait for the inner map to be available
@@ -239,9 +251,9 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   // Handle place picker changes
   const handlePlaceChange = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const placePicker = document.querySelector('gmpx-place-picker') as any;
+    const placePicker = document.querySelector('gmpx-place-picker') as GmpxPlacePickerElement;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapElement = document.querySelector('gmp-map') as any;
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
     if (placePicker && mapElement?.innerMap) {
       const place = placePicker.value;
@@ -265,7 +277,8 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
 
   const handleZoom = (delta: number) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapElement = document.querySelector('gmp-map') as any;
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+
     if (mapElement?.innerMap) {
       const currentZoom = mapElement.innerMap.getZoom();
       mapElement.innerMap.setZoom(currentZoom + delta);
@@ -790,13 +803,28 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'gmp-map': any;
+      'gmp-map': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        center?: string;
+        zoom?: string;
+        'rendering-type'?: string;
+      };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'gmpx-api-loader': any;
+      'gmpx-api-loader': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        key?: string;
+        'solution-channel'?: string;
+      };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'gmpx-place-picker': any;
+      'gmpx-place-picker': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        placeholder?: string;
+      };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'gmp-advanced-marker': any;
+      'gmp-advanced-marker': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >;
     }
   }
 }

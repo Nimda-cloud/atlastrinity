@@ -7,7 +7,6 @@ Analyzes MCP tool execution logs to detect logic issues like:
 - Access denied or repeated failures
 """
 
-import json
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -90,7 +89,8 @@ def analyze_trace_issues(entries: list[LogEntry]) -> list[TraceIssue]:
 
     for sig, count in call_counts.items():
         if count >= 3:
-            tool, args = sig.split(":", 1)
+            tool = sig.split(":", 1)[0]
+
             issues.append(
                 {
                     "type": "loop",

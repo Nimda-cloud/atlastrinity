@@ -7,9 +7,10 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any
 
-import numpy as np
+# import numpy as np  # unused
+
 
 # Try importing chromadb, handle failure for CI/Bootstrap
 try:

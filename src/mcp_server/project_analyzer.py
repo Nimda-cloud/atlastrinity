@@ -242,7 +242,7 @@ def detect_changed_components(
                 affected.add("Main Entry Point")
 
         # Check directory mapping
-        for dir_name, files in project_analysis.get("directories", {}).items():
+        for dir_name in project_analysis.get("directories", {}):
             if dir_name in file_path:
                 affected.add(f"{dir_name.title()} Module")
 
