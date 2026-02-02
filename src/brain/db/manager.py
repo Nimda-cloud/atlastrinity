@@ -346,6 +346,7 @@ class DatabaseManager:
                         # Check if value is not None and not NaN
                         if cell_value is not None:
                             import numpy as np
+
                             if isinstance(cell_value, float) and np.isnan(cell_value):
                                 d[safe_col] = None
                             else:

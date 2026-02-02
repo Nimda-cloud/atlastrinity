@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, cast
 
-from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from providers.copilot import CopilotLLM
 from src.brain.agents.base_agent import BaseAgent
@@ -816,6 +816,9 @@ Respond in JSON:
         if intent is None:
             intent = classification.get("intent", "solo_task")
         is_simple_chat = classification.get("type") == "simple_chat"
+
+        # Ensure intent is not None for type safety
+        assert intent is not None, "Intent should be set after classification"
 
         # 2. Parallel context gathering
         graph_ctx, vector_ctx, tools_info = await self._gather_context_for_chat(

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
 
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from PIL import Image
 
 from providers.copilot import CopilotLLM
@@ -1617,7 +1617,7 @@ class Grisha(BaseAgent):
         is_verified = verdict.get("verified", False) and not system_issues
 
         result_obj = VerificationResult(
-            step_id=step_id,
+            step_id=str(step_id),
             verified=is_verified,
             confidence=verdict.get("confidence", 0.0),
             description=verdict.get("reasoning", "Перевірку завершено"),

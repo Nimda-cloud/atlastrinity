@@ -269,7 +269,6 @@ Respond in JSON:
 
     async def _fetch_feedback_from_notes(self, step_id: int) -> str | None:
         """Attempt to retrieve feedback from macos-use notes."""
-        from ..mcp_manager import mcp_manager
 
         try:
             result = await mcp_manager.dispatch_tool(
@@ -307,7 +306,6 @@ Respond in JSON:
 
     async def _fetch_feedback_from_memory(self, step_id: int) -> str | None:
         """Attempt to retrieve feedback from memory nodes."""
-        from ..mcp_manager import mcp_manager
 
         try:
             result = await mcp_manager.call_tool(

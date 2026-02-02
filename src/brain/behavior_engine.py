@@ -305,7 +305,7 @@ class BehaviorEngine:
         tool_lower = tool_name.lower()
 
         # Check each routing category
-        for category, config in tool_routing.items():
+        for _, config in tool_routing.items():
             synonyms = config.get("synonyms", [])
 
             # Check if tool matches this category
@@ -315,7 +315,7 @@ class BehaviorEngine:
 
                 # Check for special routing rules
                 if "special_routing" in config:
-                    for special_type, special_cfg in config["special_routing"].items():
+                    for _, special_cfg in config["special_routing"].items():
                         keywords = special_cfg.get("keywords", [])
                         if any(kw in str(args).lower() for kw in keywords):
                             server = special_cfg.get("server")
