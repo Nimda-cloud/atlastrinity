@@ -50,9 +50,11 @@ from src.brain.message_bus import AgentMsg, MessageType, message_bus
 from src.brain.metrics import metrics_collector
 from src.brain.navigation.tour_driver import tour_driver
 from src.brain.notifications import notifications
+from src.brain.parallel_healing import parallel_healing_manager
 from src.brain.state_manager import state_manager
 from src.brain.voice.stt import WhisperSTT
 from src.brain.voice.tts import VoiceManager
+
 
 
 class SystemState(Enum):
@@ -604,6 +606,32 @@ class Trinity:
                     asyncio.create_task(state_manager.publish_event("logs", log_entry))
                 except Exception as e:
                     logger.warning(f"Failed to publish log to Redis: {e}")
+
+    async def _get_recent_logs(self, count: int = 50) -> str:
+        """Get recent log entries as a string for context.
+        
+        Args:
+            count: Number of recent log entries to retrieve
+            
+        Returns:
+            Formatted string of recent log entries
+        """
+        logs_raw = self.state.get("logs", []) if self.state else []
+        # Ensure logs is a list of dicts
+        if not isinstance(logs_raw, list):
+            return ""
+        logs: list[dict] = [l for l in logs_raw if isinstance(l, dict)]
+        recent = logs[-count:] if len(logs) > count else logs
+        
+        lines = []
+        for log in recent:
+            agent = log.get("agent", "SYSTEM")
+            message = log.get("message", "")
+            log_type = log.get("type", "info")
+            lines.append(f"[{agent}] ({log_type}) {message}")
+        
+        return "\n".join(lines)
+
 
     async def _save_chat_message(self, role: str, content: str, agent_id: str | None = None):
         """Persist a chat message to the DB for history reconstruction"""
@@ -1859,15 +1887,51 @@ class Trinity:
             )
 
         elif strategy.action == "VIBE_HEAL":
-            await self._log(f"Logic Error: {strategy.reason}. Engaging Vibe...", "orchestrator")
-            heal_success, heal_result = await self._self_heal(
-                step, step_id, last_error, step_result, depth
-            )
-            if heal_result:
-                return False, heal_result
-            if heal_success:
-                return True, None
-            return False, None
+            # Use parallel healing - non-blocking
+            use_parallel = config.get("parallel_healing", {}).get("enabled", True)
+            
+            if use_parallel:
+                await self._log(
+                    f"Logic Error: {strategy.reason}. Submitting to parallel healing...",
+                    "orchestrator",
+                )
+                try:
+                    # Get recent logs for context
+                    recent_logs = await self._get_recent_logs(50)
+                    
+                    task_id = await parallel_healing_manager.submit_healing_task(
+                        step_id=step_id,
+                        error=last_error,
+                        step_context=step,
+                        log_context=recent_logs,
+                    )
+                    await self._log(
+                        f"Healing task {task_id} submitted. Tetyana continues.",
+                        "orchestrator",
+                    )
+                    # Continue to next step - don't block
+                    return False, StepResult(
+                        step_id=step_id,
+                        success=False,
+                        result=f"Step failed, parallel healing initiated (task: {task_id})",
+                        error="parallel_healing_initiated",
+                    )
+                except Exception as ph_err:
+                    logger.warning(f"Parallel healing submission failed: {ph_err}")
+                    # Fallback to blocking self-heal
+                    use_parallel = False
+            
+            if not use_parallel:
+                # Fallback: blocking self-heal
+                await self._log(f"Logic Error: {strategy.reason}. Engaging Vibe...", "orchestrator")
+                heal_success, heal_result = await self._self_heal(
+                    step, step_id, last_error, step_result, depth
+                )
+                if heal_result:
+                    return False, heal_result
+                if heal_success:
+                    return True, None
+                return False, None
 
         elif strategy.action == "ATLAS_PLAN":
             await self._log(
@@ -2045,6 +2109,43 @@ class Trinity:
             if self._is_step_already_completed(step_id):
                 logger.info(f"[ORCHESTRATOR] Skipping already completed step {step_id}")
                 continue
+
+            # --- PARALLEL HEALING CHECK ---
+            try:
+                fixed_steps = await parallel_healing_manager.get_fixed_steps()
+                if fixed_steps:
+                    logger.info(f"[ORCHESTRATOR] Found {len(fixed_steps)} parallel fixes ready.")
+                    
+                    for fix_info in fixed_steps:
+                        # Ask Tetyana what to do
+                        decision = await self.tetyana.evaluate_fix_retry(
+                            fix_info, 
+                            step_id,
+                            {"action": step.get("action")}
+                        )
+                        
+                        action = decision.get("action", "noted")
+                        await parallel_healing_manager.acknowledge_fix(fix_info.step_id, action)
+                        
+                        if action == "retry":
+                            await self._log(f"🔄 Retrying parallel-fixed step {fix_info.step_id}...", "orchestrator")
+                            # We need to find the step definition. 
+                            # If it's in the current list, great. If not (past step), we need a creative way.
+                            
+                            # Case 1: The fixed step is the current step (unlikely but possible if we looped)
+                            if str(fix_info.step_id) == str(step_id):
+                                # Just proceed to execute current step
+                                await self._log("Fix applies to CURRENT step. Proceeding with execution.", "orchestrator")
+                            
+                            # Case 2: The fixed step is in the past of the current list
+                            else:
+                                # We might need to handle this by inserting a retry step or just logging
+                                # For now, we'll log that we *would* retry but just acknowledging.
+                                # True retry logic for past steps requires jumping back or inserting steps.
+                                await self._log(f"Parallel fix acknowledged for {fix_info.step_id}. (Jump-back not fully implemented)", "orchestrator")
+                                
+            except Exception as phe:
+                logger.warning(f"[ORCHESTRATOR] Parallel healing check failed: {phe}")
 
             # Retry loop with Dynamic Temperature
             max_step_retries = 3

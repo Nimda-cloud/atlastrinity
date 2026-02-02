@@ -129,6 +129,16 @@ patterns:
         initial_confidence: 0.9
         success_threshold: 1.0
         usage_priority: highest
+        
+    # Parallel Self-Healing Configuration
+    parallel_healing:
+      enabled: true
+      max_concurrent_tasks: 3
+      sandbox_validation: true
+      auto_retry_threshold: 2
+      notification_channel: "message_bus"
+      notify_on_start: true
+      notify_on_completion: true
 
 # =============================================================================
 # INTENT DETECTION & CLASSIFICATION

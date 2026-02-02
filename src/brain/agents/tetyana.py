@@ -1856,3 +1856,95 @@ IMPORTANT:
             }
         # Use base class parsing
         return super()._parse_response(content)
+
+    async def evaluate_fix_retry(
+        self,
+        fix_info: Any,
+        current_step_id: str,
+        current_progress: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Decide whether to retry a fixed step.
+        
+        Args:
+            fix_info: FixedStepInfo from parallel manager
+            current_step_id: currently executing step
+            current_progress: current system state
+            
+        Returns:
+            dict with:
+                action: "retry", "skip", "noted"
+                reason: decision rationale
+        """
+        from ..logger import logger
+
+        # Basic logic:
+        # 1. If we are far ahead (> 2 steps), probably better to skip/note
+        # 2. If we are on the NEXT step, good to retry
+        # 3. If fix is critical data, might need to retry regardless
+        
+        try:
+            fixed_step = str(fix_info.step_id)
+            curr = str(current_step_id)
+            
+            # Simple distance measure if steps are numeric
+            distance = 100
+            try:
+                # Handle "3" vs "3.1"
+                f_val = float(fixed_step)
+                c_val = float(curr)
+                distance = c_val - f_val
+            except ValueError:
+                pass
+            
+            logger.info(f"[TETYANA] Evaluating fix for {fixed_step} (current: {curr}, dist: {distance})")
+            
+            if distance > 2:
+                # Too far ahead
+                return {
+                    "action": "noted",
+                    "reason": f"System has moved {distance} steps ahead. Retrying might disrupt flow."
+                }
+            
+            if distance < 0:
+                # Weird, we went back?
+                return {
+                    "action": "noted", 
+                    "reason": "Fixed step is in the future?"
+                }
+                
+            # Ask Reasoning LLM for deeper check
+            # We want to know if the current path depends on the missed result
+            prompt = f"""FIX EVALUATION
+            
+            A previously failed step has been fixed in the background.
+            Failed Step ID: {fixed_step}
+            Fix: {fix_info.fix_description}
+            
+            Current Step ID: {curr}
+            Current Action: {current_progress.get('action', 'Unknown')}
+            
+            Decide if we should:
+            1. RETRY the fixed step immediately (interrupting current flow)
+            2. SKIP retrying (current path found alternative or it's too late)
+            
+            JSON Response:
+            {{ "decision": "RETRY" or "SKIP", "reason": "..." }}
+            """
+            
+            messages = [
+                SystemMessage(content="You are a flow controller. Optimize for stability."),
+                HumanMessage(content=prompt)
+            ]
+            response = await self.reasoning_llm.ainvoke(messages)
+            decision_data = self._parse_response(str(response.content))
+            
+            decision = decision_data.get("decision", "SKIP")
+            return {
+                "action": "retry" if decision == "RETRY" else "noted",
+                "reason": decision_data.get("reason", "LLM Decision")
+            }
+            
+        except Exception as e:
+            logger.warning(f"[TETYANA] Fix evaluation failed: {e}")
+            return {"action": "noted", "reason": "Evaluation error"}

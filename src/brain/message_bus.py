@@ -31,6 +31,11 @@ class MessageType(Enum):
     APPROVAL = "approval"  # Grisha/Atlas -> Tetyana: proceed with action
     CORRECTION = "correction"  # Grisha -> Tetyana: specific fix instruction
     HEALING_STATUS = "healing_status"  # Vibe -> All: self-healing progress update
+    # Parallel healing messages (non-blocking)
+    FIX_READY = "fix_ready"  # Atlas -> Tetyana: parallel fix is ready to apply
+    FIX_ACKNOWLEDGED = "fix_ack"  # Tetyana -> Atlas: acknowledged fix decision
+    HEALING_STARTED = "heal_start"  # Atlas -> All: parallel healing task started
+
 
 
 @dataclass
