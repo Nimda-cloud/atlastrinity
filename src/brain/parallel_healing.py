@@ -14,7 +14,7 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from src.brain.monitoring import monitoring_system
+from src.brain.monitoring import get_monitoring_system
 
 logger = logging.getLogger("brain.parallel_healing")
 
@@ -189,7 +189,8 @@ class ParallelHealingManager:
         await self._notify_healing_started(task)
 
         # Record to Monitoring DB
-        monitoring_system.record_healing_event(
+        monitoring = get_monitoring_system()
+        monitoring.record_healing_event(
             task_id=task.task_id,
             event_type="constraint_violation" if task.priority == 2 else "auto_healing",
             step_id=task.step_id,
@@ -332,7 +333,8 @@ class ParallelHealingManager:
             await self._notify_fix_ready(task)
 
             # Record Success
-            monitoring_system.record_healing_event(
+            monitoring = get_monitoring_system()
+            monitoring.record_healing_event(
                 task_id=task.task_id,
                 event_type="constraint_violation" if task.priority == 2 else "auto_healing",
                 step_id=task.step_id,
@@ -359,7 +361,8 @@ class ParallelHealingManager:
             logger.error(f"[PARALLEL_HEALING] {task.task_id}: Failed - {e}")
 
             # Record Failure
-            monitoring_system.record_healing_event(
+            monitoring = get_monitoring_system()
+            monitoring.record_healing_event(
                 task_id=task.task_id,
                 event_type="constraint_violation" if task.priority == 2 else "auto_healing",
                 step_id=task.step_id,

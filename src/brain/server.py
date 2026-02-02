@@ -85,8 +85,9 @@ async def lifespan(app: FastAPI):
 
     # Initialize monitoring system
     try:
-        from .monitoring import monitoring_system
+        from .monitoring import get_monitoring_system
 
+        monitoring_system = get_monitoring_system()
         monitoring_system.log_for_grafana("Server startup initiated", level="info")
     except ImportError:
         logger.warning("Monitoring system not available")
@@ -106,8 +107,9 @@ async def lifespan(app: FastAPI):
 
     # Shutdown monitoring
     try:
-        from .monitoring import monitoring_system
+        from .monitoring import get_monitoring_system
 
+        monitoring_system = get_monitoring_system()
         monitoring_system.log_for_grafana("Server shutdown initiated", level="info")
     except ImportError:
         pass
@@ -138,8 +140,9 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
     # Start monitoring for this request
     start_time = time.time()
     try:
-        from .monitoring import monitoring_system
+        from .monitoring import get_monitoring_system
 
+        monitoring_system = get_monitoring_system()
         monitoring_system.start_request()
         monitoring_system.log_for_grafana(
             f"Chat request started: {task.request}", level="info", request_type="chat"
@@ -154,8 +157,9 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
         # Record successful request
         request_duration = time.time() - start_time
         try:
-            from .monitoring import monitoring_system
+            from .monitoring import get_monitoring_system
 
+            monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "success", request_duration)
             monitoring_system.log_for_grafana(
                 f"Chat request completed: {task.request}",
@@ -174,8 +178,9 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
         # Record cancelled request
         request_duration = time.time() - start_time
         try:
-            from .monitoring import monitoring_system
+            from .monitoring import get_monitoring_system
 
+            monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "cancelled", request_duration)
             monitoring_system.log_for_grafana(
                 f"Chat request cancelled: {task.request}",
@@ -194,8 +199,9 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
         # Record failed request
         request_duration = time.time() - start_time
         try:
-            from .monitoring import monitoring_system
+            from .monitoring import get_monitoring_system
 
+            monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "error", request_duration)
             monitoring_system.log_for_grafana(
                 f"Chat request failed: {task.request}",
@@ -211,8 +217,9 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         try:
-            from .monitoring import monitoring_system
+            from .monitoring import get_monitoring_system
 
+            monitoring_system = get_monitoring_system()
             monitoring_system.end_request()
         except ImportError:
             pass
@@ -228,8 +235,9 @@ async def health():
 async def get_metrics():
     """Get current monitoring metrics"""
     try:
-        from .monitoring import monitoring_system
+        from .monitoring import get_monitoring_system
 
+        monitoring_system = get_monitoring_system()
         metrics = monitoring_system.get_metrics_snapshot()
 
         # Add system health status
@@ -247,8 +255,9 @@ async def get_metrics():
 async def monitoring_health():
     """Check monitoring system health"""
     try:
-        from .monitoring import monitoring_system
+        from .monitoring import get_monitoring_system
 
+        monitoring_system = get_monitoring_system()
         return {
             "status": "healthy" if monitoring_system.is_healthy() else "unhealthy",
             "prometheus_port": monitoring_system.prometheus_port,

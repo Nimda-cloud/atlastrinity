@@ -92,7 +92,9 @@ class MetricsCollector:
 
             # Integrate with monitoring system if available
             try:
-                from .monitoring import monitoring_system
+                from .monitoring import get_monitoring_system
+
+                monitoring_system = get_monitoring_system()
 
                 monitoring_system.log_for_grafana(
                     f"Custom metric: {name} = {value}",
