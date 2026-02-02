@@ -91,7 +91,11 @@ class Grisha(BaseAgent):
     DISPLAY_NAME = AgentPrompts.GRISHA["DISPLAY_NAME"]
     VOICE = AgentPrompts.GRISHA["VOICE"]
     COLOR = AgentPrompts.GRISHA["COLOR"]
-    SYSTEM_PROMPT = AgentPrompts.GRISHA["SYSTEM_PROMPT"]
+    @property
+    def system_prompt(self) -> str:
+        """Dynamically generate system prompt with current catalog."""
+        return AgentPrompts.get_agent_system_prompt("GRISHA")
+
 
     # Hardcoded blocklist for critical commands
     BLOCKLIST = [
@@ -895,8 +899,13 @@ class Grisha(BaseAgent):
         ):
             is_final = True
 
+        # NEW: Critical actions (creating files, executing code) should always be verified
+        critical_keywords = ["write", "save", "create", "implement", "deploy", "fix", "update"]
+        if any(kw in step_action for kw in critical_keywords):
+             is_final = True
+
         logger.info(
-            f"[GRISHA] Step completion check - Final: {is_final}, Action: {step_action[:50]}"
+            f"[GRISHA] Step completion check - Final/Critical: {is_final}, Action: {step_action[:50]}"
         )
         return is_final
 
@@ -1561,8 +1570,24 @@ class Grisha(BaseAgent):
         step_id = step.get("id", 0)
         
         if not self._is_final_task_completion(step):
-            logger.info(f"[GRISHA] Skipping intermediate step {step_id}")
-            return self._create_intermediate_success_result(step_id)
+            # NEW LOGIC: Only skip if the step was SUCCESSFUL. 
+            # If failed, we MUST verify to generate a proper rejection report.
+            is_success = True
+            if hasattr(result, "success"): 
+                is_success = result.success
+            elif isinstance(result, dict):
+                is_success = result.get("success", True)
+            
+            # Check for error in result text even if marked success
+            result_str = str(result.get("result", "") if isinstance(result, dict) else getattr(result, "result", ""))
+            if "error" in result_str.lower() or "failed" in result_str.lower():
+                is_success = False
+
+            if is_success:
+                logger.info(f"[GRISHA] Skipping verification for successful intermediate step {step_id}")
+                return self._create_intermediate_success_result(step_id)
+            else:
+                logger.info(f"[GRISHA] Intermediate step {step_id} FAILED. Proceeding with verification/diagnosis.")
 
         # System check
         system_issues = []
@@ -1893,7 +1918,7 @@ class Grisha(BaseAgent):
         prompt = AgentPrompts.grisha_security_prompt(str(action))
 
         messages = [
-            SystemMessage(content=self.SYSTEM_PROMPT),
+            SystemMessage(content=self.system_prompt),
             HumanMessage(content=prompt),
         ]
 
@@ -2072,7 +2097,7 @@ class Grisha(BaseAgent):
             technical_trace=technical_trace,
         )
 
-        messages = [SystemMessage(content=self.SYSTEM_PROMPT), HumanMessage(content=prompt)]
+        messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=prompt)]
 
         try:
             logger.info("[GRISHA] Auditing Vibe's proposed fix...")

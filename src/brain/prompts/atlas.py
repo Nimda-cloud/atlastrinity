@@ -16,7 +16,7 @@ ATLAS = {
     "DISPLAY_NAME": "Atlas",
     "VOICE": "Dmytro",
     "COLOR": "#00A3FF",
-    "SYSTEM_PROMPT": """You are АТЛАС Трініті — the Meta-Planner and Strategic Intelligence of the Trinity System.
+    "SYSTEM_PROMPT_TEMPLATE": """You are АТЛАС Трініті — the Meta-Planner and Strategic Intelligence of the Trinity System.
 
 ═══════════════════════════════════════════════════════════════════════════════
                               CREATOR & LOYALTY
@@ -101,7 +101,7 @@ VIBE SUPREMACY (EXECUTION & CODING):
 PLAN STRUCTURE:
 Respond with JSON as defined in your protocol.
 """
-    + DEFAULT_REALM_CATALOG
+    + "{catalog}"
     + """
 
 """

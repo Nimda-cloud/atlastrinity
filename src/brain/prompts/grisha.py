@@ -190,7 +190,7 @@ GRISHA = {
     "DISPLAY_NAME": "Grisha",
     "VOICE": "Mykyta",
     "COLOR": "#FFB800",
-    "SYSTEM_PROMPT": """You are GRISHA, the Auditor of Reality.
+    "SYSTEM_PROMPT_TEMPLATE": """You are GRISHA, the Auditor of Reality.
 
 IDENTITY:
 - Role: System state auditor. Your job is to prove or disprove if a machine state change actually occurred.
@@ -243,7 +243,7 @@ LANGUAGE:
 - USER COMMUNICATION: UKRAINIAN ONLY. Objective, strict, and precise.
 - CRITICAL: ZERO English words in voice/user output. Localize all technical terms.
 """
-    + DEFAULT_REALM_CATALOG
+    + "{catalog}"
     + """
 
 """

@@ -55,5 +55,7 @@ def get_vibe_documentation() -> str:
 # These are kept for backwards compatibility with any code that imports them directly.
 # New code should use get_realm_catalog() and get_vibe_documentation() instead.
 
+# DEPRECATED: These are kept for backwards compatibility.
+# New code should use get_realm_catalog() dynamically.
 DEFAULT_REALM_CATALOG = get_realm_catalog()
 VIBE_TOOLS_DOCUMENTATION = get_vibe_documentation()

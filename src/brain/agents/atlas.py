@@ -63,7 +63,11 @@ class Atlas(BaseAgent):
     DISPLAY_NAME = AgentPrompts.ATLAS["DISPLAY_NAME"]
     VOICE = AgentPrompts.ATLAS["VOICE"]
     COLOR = AgentPrompts.ATLAS["COLOR"]
-    SYSTEM_PROMPT = AgentPrompts.ATLAS["SYSTEM_PROMPT"]
+    @property
+    def system_prompt(self) -> str:
+        """Dynamically generate system prompt with current catalog."""
+        return AgentPrompts.get_agent_system_prompt("ATLAS")
+
 
     def __init__(self, model_name: str | None = None, llm: Any | None = None):
         # Get model config (config.yaml > parameter)
@@ -207,7 +211,7 @@ class Atlas(BaseAgent):
             str(resolved_context or "None"),
             str(history or "None"),
         )
-        system_prompt = self.SYSTEM_PROMPT.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
+        system_prompt = self.system_prompt.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=prompt),
@@ -263,7 +267,7 @@ class Atlas(BaseAgent):
         )
 
         # Strip system prompt placeholder
-        system_prompt = self.SYSTEM_PROMPT.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
+        system_prompt = self.system_prompt.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
 
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
 
@@ -1045,7 +1049,7 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
         else:
             doctrine = AgentPrompts.TASK_PROTOCOL
 
-        dynamic_system_prompt = self.SYSTEM_PROMPT.replace(
+        dynamic_system_prompt = self.system_prompt.replace(
             "{{CONTEXT_SPECIFIC_DOCTRINE}}",
             doctrine,
         )
@@ -1379,7 +1383,7 @@ Output the corrected plan in the same JSON format as before.
         )
 
         messages = [
-            SystemMessage(content=self.SYSTEM_PROMPT),
+            SystemMessage(content=self.system_prompt),
             HumanMessage(content=prompt),
         ]
         logger.info(f"[ATLAS] Helping Tetyana with context: {context_info}")
@@ -1407,7 +1411,7 @@ Output the corrected plan in the same JSON format as before.
             context_data,
         )
 
-        messages = [SystemMessage(content=self.SYSTEM_PROMPT), HumanMessage(content=prompt)]
+        messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=prompt)]
 
         try:
             logger.info("[ATLAS] Reviewing self-healing strategy and setting tempo...")
@@ -1553,7 +1557,7 @@ If the user asked to 'count', you MUST state the exact number found.
         try:
             response = await self.llm.ainvoke(
                 [
-                    SystemMessage(content=self.SYSTEM_PROMPT),
+                    SystemMessage(content=self.system_prompt),
                     HumanMessage(content=prompt),
                 ],
             )

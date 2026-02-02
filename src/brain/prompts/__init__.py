@@ -25,7 +25,25 @@ class AgentPrompts:
     GRISHA = GRISHA
 
     SDLC_PROTOCOL = SDLC_PROTOCOL
+    SDLC_PROTOCOL = SDLC_PROTOCOL
     TASK_PROTOCOL = TASK_PROTOCOL
+
+    @staticmethod
+    def get_agent_system_prompt(agent_name: str) -> str:
+        """Dynamically generate the system prompt for an agent, injecting the current catalog."""
+        from .common import get_realm_catalog
+        
+        # Get fresh catalog
+        current_catalog = get_realm_catalog()
+        
+        if agent_name.upper() == "ATLAS":
+            return ATLAS["SYSTEM_PROMPT_TEMPLATE"].format(catalog=current_catalog)
+        elif agent_name.upper() == "TETYANA":
+            return TETYANA["SYSTEM_PROMPT_TEMPLATE"].format(catalog=current_catalog)
+        elif agent_name.upper() == "GRISHA":
+            return GRISHA["SYSTEM_PROMPT_TEMPLATE"].format(catalog=current_catalog)
+        else:
+            raise ValueError(f"Unknown agent: {agent_name}")
 
     @staticmethod
     def tetyana_reasoning_prompt(

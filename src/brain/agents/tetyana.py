@@ -100,7 +100,11 @@ class Tetyana(BaseAgent):
     DISPLAY_NAME = AgentPrompts.TETYANA["DISPLAY_NAME"]
     VOICE = AgentPrompts.TETYANA["VOICE"]
     COLOR = AgentPrompts.TETYANA["COLOR"]
-    SYSTEM_PROMPT = AgentPrompts.TETYANA["SYSTEM_PROMPT"]
+    @property
+    def system_prompt(self) -> str:
+        """Dynamically generate system prompt with current catalog."""
+        return AgentPrompts.get_agent_system_prompt("TETYANA")
+
 
     def __init__(self, model_name: str | None = None):
         # Get model config (config.yaml > parameter)
@@ -653,23 +657,27 @@ IMPORTANT:
         if any(
             kw in action_text for kw in ["implement feature", "deep code", "refactor project"]
         ):
-            return "vibe_implement_feature"
+            return "vibe.vibe_implement_feature"
         elif any(kw in action_text for kw in ["vibe", "code", "debug", "analyze error"]):
-            return "vibe_prompt"
+            return "vibe.vibe_prompt"
         elif any(kw in action_text for kw in ["click", "type", "press", "scroll", "open app"]):
-            return "macos-use_take_screenshot"
+            return "macos-use.macos-use_take_screenshot" # Fallback to start UI interaction
         elif any(
             kw in action_text
             for kw in ["finder", "desktop", "folder", "sort", "trash", "open path"]
         ):
-            return "macos-use_finder_list_files"
-        elif any(kw in action_text for kw in ["read_file", "write_file", "list_directory"]):
-            return "filesystem"
+            return "macos-use.macos-use_finder_list_files"
+        elif "list" in action_text and "directory" in action_text:
+            return "filesystem.list_directory"
+        elif "read" in action_text and "file" in action_text:
+            return "filesystem.read_file"
+        elif "search" in action_text and "file" in action_text:
+            return "filesystem.find_by_name"
         elif any(
             kw in action_text
             for kw in ["run", "execute", "command", "terminal", "bash", "mkdir"]
         ):
-            return "execute_command"
+            return "macos-use.execute_command"
         return None
 
     async def _get_detailed_server_context(self, target_server: str) -> str:
@@ -792,7 +800,7 @@ IMPORTANT:
         from langchain_core.messages import HumanMessage, SystemMessage
         try:
             resp = await self.reasoning_llm.ainvoke([
-                SystemMessage(content="You are a Technical Executor. Think technically in English about tools and arguments."),
+                SystemMessage(content=self.system_prompt),
                 HumanMessage(content=prompt),
             ])
             return self._parse_response(cast("str", resp.content))
@@ -834,17 +842,43 @@ IMPORTANT:
             }, {"thought": f"Executing simple tool '{target_server}' via FAST PATH."}
         return None
 
-    def _finalize_tool_call_normalization(self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str) -> None:
-        """Apply final overrides, server info, and normalization to tool_call."""
+    def _correct_tool_name(self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str) -> None:
+        """Helper to correct invalid tool names using inference."""
+        current_name = tool_call.get("name", "")
+        if not current_name or len(str(current_name)) > 50 or " " in str(current_name):
+            inferred = self._infer_tool_from_action(str(step.get("action", "")))
+            if inferred:
+                 logger.info(f"[TETYANA] Correcting invalid tool name '{current_name}' to '{inferred}'")
+                 tool_call["name"] = inferred
+            elif target_server and target_server != "tetyana":
+                 logger.warning(f"[TETYANA] Tool name '{current_name}' seems invalid but no inference matched.")
+
         if not tool_call.get("name"):
-            name = (step.get("tool") or step.get("server") or step.get("realm")
-                    or self._infer_tool_from_action(str(step.get("action", ""))))
-            if name:
+             tool_raw = step.get("tool")
+             server_raw = step.get("server")
+             
+             candidate_tool = tool_raw if isinstance(tool_raw, str) and " " not in tool_raw else None
+             candidate_server = server_raw if isinstance(server_raw, str) and " " not in server_raw else None
+             
+             name = candidate_tool or candidate_server or step.get("realm")
+             
+             if not name or " " in str(name):
+                  name = self._infer_tool_from_action(str(step.get("action", "")))
+
+             if name:
                 tool_call["name"] = name
 
+    def _finalize_tool_call_normalization(self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str) -> None:
+        """Apply final overrides, server info, and normalization to tool_call."""
+        # 1. Logic to fix "Tool Name Hallucination"
+        self._correct_tool_name(tool_call, step, target_server)
+
+        
+        # 2. Server assignment
         if target_server and "server" not in tool_call:
             tool_call["server"] = target_server
 
+        # 3. Argument normalization
         if isinstance(tool_call.get("args"), dict):
             tool_call["args"]["step_id"] = step.get("id")
             if (str(tool_call.get("name", "")).lower().startswith("macos-use") or tool_call.get("server") == "macos-use"):
