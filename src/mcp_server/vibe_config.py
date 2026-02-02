@@ -517,8 +517,7 @@ class VibeConfig(BaseModel):
         """
         args = ["-p", prompt, "--output", output_format]
 
-        if cwd:
-            args.extend(["--workdir", str(cwd)])
+
 
         # Mode mapping to agent profiles
         effective_mode = mode or self.default_mode
