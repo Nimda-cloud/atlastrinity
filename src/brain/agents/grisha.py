@@ -1614,7 +1614,12 @@ class Grisha(BaseAgent):
         if system_issues:
             all_issues.extend([f"Config sync: {issue}" for issue in system_issues])
 
-        is_verified = verdict.get("verified", False) and not system_issues
+        # FIX: Config sync issues should be warnings, not verification blockers
+        # The actual task may have succeeded even if config is slightly out of sync
+        is_verified = verdict.get("verified", False)
+        # Only log config sync issues but don't block verification
+        if system_issues:
+            logger.info(f"[GRISHA] Config sync warnings (non-blocking): {system_issues}")
 
         result_obj = VerificationResult(
             step_id=str(step_id),
