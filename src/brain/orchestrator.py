@@ -8,16 +8,19 @@ import json
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, TypedDict, cast
+from typing import Annotated, Any, TypedDict, cast
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage  # type: ignore
 from langgraph.graph import END, StateGraph
 
 try:
-    from langgraph.graph.message import add_messages
+    from langgraph.graph.message import add_messages as _add_messages
+
+    def add_messages(left: Any, right: Any) -> Any:
+        return _add_messages(left, right)
 except ImportError:
 
-    def add_messages(left: Any, right: Any) -> Any:  # type: ignore
+    def add_messages(left: Any, right: Any) -> Any:
         return left + right
 
 
@@ -67,7 +70,7 @@ class SystemState(Enum):
 
 
 class TrinityState(TypedDict):
-    messages: list[BaseMessage]
+    messages: Annotated[list[BaseMessage], add_messages]
     system_state: str
     current_plan: Any | None
     step_results: list[dict[str, Any]]
@@ -671,7 +674,6 @@ class Trinity:
                 )
 
                 if session_id == "current":
-                    # Use the most recent session from list_sessions
                     sessions = await state_manager.list_sessions()
                     if sessions:
                         session_id = sessions[0]["id"]
@@ -681,7 +683,6 @@ class Trinity:
                     self.state = saved_state
                     self.current_session_id = session_id
 
-                    # Clear the flag
                     if state_manager.redis_client:
                         await state_manager.redis_client.delete(restart_key)
                     self._resumption_pending = True
@@ -695,21 +696,8 @@ class Trinity:
                         "Я повернувся. Продовжую виконання завдання з того ж місця.",
                     )
         except Exception as e:
-            logger.error(f"Failed to resume after restart: {e}")
-
-            # Implementation: querying Redis for a specific "system:restart_pending" key
-            # which we would have set in tool_dispatcher (we need to update tool_dispatcher to set this!)
-            # WAIT: tool_dispatcher doesn't have access to state_manager directly usually.
-            # We should probably update tool_dispatcher to use state_manager if available.
-
-            # ALTERNATIVE: orchestrator handles the restart tool?
-            # No, dispatcher handles it. Dispatcher needs access to state_manager to set the flag.
-
-            # For now, let's just log that we are booting up.
-            await self._log("System booted. Checking for pending tasks...", "system")
-
-        except Exception as e:
             logger.error(f"[ORCHESTRATOR] Resume check failed: {e}")
+            await self._log("System booted. Checking for pending tasks...", "system")
 
     async def _update_task_metadata(self):
         """Оновлює metadata_blob в Task для збереження поточного рекурсивного контексту."""
@@ -1806,9 +1794,6 @@ class Trinity:
                     f"[ORCHESTRATOR] ✅ Completed recursive level {depth}: {completed_goal}"
                 )
                 await self._update_task_metadata()
-            except Exception as e:
-                logger.warning(f"Failed to pop goal: {e}")
-
             except Exception as e:
                 logger.warning(f"Failed to pop goal: {e}")
 

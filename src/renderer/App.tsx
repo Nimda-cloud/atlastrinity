@@ -724,12 +724,14 @@ const App: React.FC = () => {
       </aside>
 
       {/* Hover zone for auto-revealing command dock */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Hover zone for dock */}
       <div
         className="command-dock-hover-zone"
         onMouseEnter={handleHoverZoneEnter}
         onMouseLeave={handleHoverZoneLeave}
       />
 
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Command dock container */}
       <div
         className={`command-dock command-dock-floating ${isDockVisible ? 'visible' : 'hidden'}`}
         onMouseEnter={handleHoverZoneEnter}

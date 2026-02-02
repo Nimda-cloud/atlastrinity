@@ -1,0 +1,3614 @@
+{
+    "version": "1.1.408",
+    "time": "1770041724590",
+    "generalDiagnostics": [
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/auto_fix.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 7
+                },
+                "end": {
+                    "line": 5,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/auto_fix.py",
+            "severity": "warning",
+            "message": "Import \"re\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 7
+                },
+                "end": {
+                    "line": 7,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/auto_fix.py",
+            "severity": "warning",
+            "message": "Import \"sys\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 7
+                },
+                "end": {
+                    "line": 8,
+                    "character": 10
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/auto_fix.py",
+            "severity": "warning",
+            "message": "Import \"Path\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 20
+                },
+                "end": {
+                    "line": 10,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/auto_fix.py",
+            "severity": "warning",
+            "message": "Variable \"dirnames\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 151,
+                    "character": 33
+                },
+                "end": {
+                    "line": 151,
+                    "character": 41
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/benchmark_atlas_models.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 5
+                },
+                "end": {
+                    "line": 8,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/benchmark_atlas_models.py",
+            "severity": "error",
+            "message": "Import \"brain.tool_dispatcher\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 5
+                },
+                "end": {
+                    "line": 9,
+                    "character": 26
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/benchmark_atlas_models.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 35,
+                    "character": 56
+                },
+                "end": {
+                    "line": 35,
+                    "character": 63
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/check_mcp_health.py",
+            "severity": "error",
+            "message": "Import \"brain.config\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 37,
+                    "character": 9
+                },
+                "end": {
+                    "line": 37,
+                    "character": 21
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/check_mcp_health.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 38,
+                    "character": 9
+                },
+                "end": {
+                    "line": 38,
+                    "character": 26
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/check_mcp_health.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_registry\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 39,
+                    "character": 9
+                },
+                "end": {
+                    "line": 39,
+                    "character": 27
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/check_mcp_health.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_registry\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 79,
+                    "character": 17
+                },
+                "end": {
+                    "line": 79,
+                    "character": 35
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/clean_main.py",
+            "severity": "warning",
+            "message": "Import \"os\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 7
+                },
+                "end": {
+                    "line": 6,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/clear_experience_fixed.py",
+            "severity": "warning",
+            "message": "Import \"os\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 7
+                },
+                "end": {
+                    "line": 8,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/fix_errors.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 7
+                },
+                "end": {
+                    "line": 5,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/fix_vibe_sql.py",
+            "severity": "warning",
+            "message": "Import \"re\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 7
+                },
+                "end": {
+                    "line": 6,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/force_reload_config.py",
+            "severity": "error",
+            "message": "Import \"brain.config_loader\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 23,
+                    "character": 9
+                },
+                "end": {
+                    "line": 23,
+                    "character": 28
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/list_missing_tools.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 7
+                },
+                "end": {
+                    "line": 1,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/list_missing_tools.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 5
+                },
+                "end": {
+                    "line": 9,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/list_schemas.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 5
+                },
+                "end": {
+                    "line": 9,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/mcp_sandbox.py",
+            "severity": "warning",
+            "message": "Import \"Any\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 25,
+                    "character": 19
+                },
+                "end": {
+                    "line": 25,
+                    "character": 22
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/mcp_sandbox.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 422,
+                    "character": 9
+                },
+                "end": {
+                    "line": 422,
+                    "character": 26
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/mcp_self_analyze.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 395,
+                    "character": 9
+                },
+                "end": {
+                    "line": 395,
+                    "character": 26
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/reload_config.py",
+            "severity": "warning",
+            "message": "Import \"sys\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 7
+                },
+                "end": {
+                    "line": 6,
+                    "character": 10
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "error",
+            "message": "Import \"brain.agents.grisha\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 5
+                },
+                "end": {
+                    "line": 6,
+                    "character": 24
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "error",
+            "message": "Import \"brain.agents.tetyana\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 5
+                },
+                "end": {
+                    "line": 7,
+                    "character": 25
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 5
+                },
+                "end": {
+                    "line": 8,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 55,
+                    "character": 50
+                },
+                "end": {
+                    "line": 55,
+                    "character": 57
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 55,
+                    "character": 80
+                },
+                "end": {
+                    "line": 55,
+                    "character": 87
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 60,
+                    "character": 42
+                },
+                "end": {
+                    "line": 60,
+                    "character": 49
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/retry_artifact_collection.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 62,
+                    "character": 31
+                },
+                "end": {
+                    "line": 62,
+                    "character": 38
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/run_logic_tests.py",
+            "severity": "error",
+            "message": "Import \"mcp_server.context_check\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 13,
+                    "character": 5
+                },
+                "end": {
+                    "line": 13,
+                    "character": 29
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/secure_backup.py",
+            "severity": "warning",
+            "message": "Import \"tempfile\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 12,
+                    "character": 7
+                },
+                "end": {
+                    "line": 12,
+                    "character": 15
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/secure_backup.py",
+            "severity": "warning",
+            "message": "Variable \"i\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 143,
+                    "character": 24
+                },
+                "end": {
+                    "line": 143,
+                    "character": 25
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/setup_dev.py",
+            "severity": "warning",
+            "message": "Import \"time\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 21,
+                    "character": 7
+                },
+                "end": {
+                    "line": 21,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/setup_dev.py",
+            "severity": "warning",
+            "message": "Variable \"o\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1241,
+                    "character": 11
+                },
+                "end": {
+                    "line": 1241,
+                    "character": 12
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/setup_dev.py",
+            "severity": "warning",
+            "message": "Import \"watchdog\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1700,
+                    "character": 15
+                },
+                "end": {
+                    "line": 1700,
+                    "character": 23
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/setup_google_maps.py",
+            "severity": "warning",
+            "message": "Import \"os\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 2,
+                    "character": 7
+                },
+                "end": {
+                    "line": 2,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/smoke_test_memory.py",
+            "severity": "warning",
+            "message": "Object of type \"None\" is not subscriptable",
+            "range": {
+                "start": {
+                    "line": 54,
+                    "character": 19
+                },
+                "end": {
+                    "line": 54,
+                    "character": 39
+                }
+            },
+            "rule": "reportOptionalSubscript"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/sync_and_validate_configs.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 7
+                },
+                "end": {
+                    "line": 1,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/sync_and_validate_configs.py",
+            "severity": "warning",
+            "message": "Import \"sys\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 4,
+                    "character": 7
+                },
+                "end": {
+                    "line": 4,
+                    "character": 10
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/system_health_check.py",
+            "severity": "warning",
+            "message": "Import \"re\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 7
+                },
+                "end": {
+                    "line": 9,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/system_health_check.py",
+            "severity": "warning",
+            "message": "Import \"yaml\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 116,
+                    "character": 23
+                },
+                "end": {
+                    "line": 116,
+                    "character": 27
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/test_all_macos_tools.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 76,
+                    "character": 28
+                },
+                "end": {
+                    "line": 76,
+                    "character": 35
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/test_secure_backup.py",
+            "severity": "warning",
+            "message": "Import \"tempfile\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 7
+                },
+                "end": {
+                    "line": 7,
+                    "character": 15
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/test_vibe_optimized.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 5
+                },
+                "end": {
+                    "line": 8,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/test_vibe_optimized.py",
+            "severity": "error",
+            "message": "Import \"brain.message_bus\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 5
+                },
+                "end": {
+                    "line": 9,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/test_vibe_thoughts.py",
+            "severity": "error",
+            "message": "Import \"mcp_server.vibe_server\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 5
+                },
+                "end": {
+                    "line": 7,
+                    "character": 27
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/update_diagrams_mcp.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 14,
+                    "character": 5
+                },
+                "end": {
+                    "line": 14,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_db_tables.py",
+            "severity": "warning",
+            "message": "Import \"Settings\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 73,
+                    "character": 36
+                },
+                "end": {
+                    "line": 73,
+                    "character": 44
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_devtools.py",
+            "severity": "warning",
+            "message": "Import \"Path\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 20
+                },
+                "end": {
+                    "line": 3,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_dom_mcp.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 7
+                },
+                "end": {
+                    "line": 1,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_golden_fund.py",
+            "severity": "warning",
+            "message": "Import \"enricher\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 24,
+                    "character": 51
+                },
+                "end": {
+                    "line": 24,
+                    "character": 59
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_mcp_integrity.py",
+            "severity": "warning",
+            "message": "Import \"Path\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 20
+                },
+                "end": {
+                    "line": 9,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_mcp_integrity.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 15,
+                    "character": 5
+                },
+                "end": {
+                    "line": 15,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_mcp_integrity.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_registry\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 16,
+                    "character": 5
+                },
+                "end": {
+                    "line": 16,
+                    "character": 23
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_mcp_integrity.py",
+            "severity": "warning",
+            "message": "Import \"SERVER_CATALOG\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 16,
+                    "character": 31
+                },
+                "end": {
+                    "line": 16,
+                    "character": 45
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_mcp_restart.py",
+            "severity": "error",
+            "message": "Import \"brain.mcp_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 5
+                },
+                "end": {
+                    "line": 7,
+                    "character": 22
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_resumption.py",
+            "severity": "error",
+            "message": "Import \"brain.orchestrator\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 5
+                },
+                "end": {
+                    "line": 9,
+                    "character": 23
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_resumption.py",
+            "severity": "error",
+            "message": "Import \"brain.state_manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 5
+                },
+                "end": {
+                    "line": 10,
+                    "character": 24
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_storage.py",
+            "severity": "error",
+            "message": "Import \"brain.db.manager\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 5
+                },
+                "end": {
+                    "line": 9,
+                    "character": 21
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_storage.py",
+            "severity": "error",
+            "message": "Import \"brain.db.schema\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 14,
+                    "character": 5
+                },
+                "end": {
+                    "line": 14,
+                    "character": 20
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_storage.py",
+            "severity": "error",
+            "message": "Import \"brain.memory\" could not be resolved",
+            "range": {
+                "start": {
+                    "line": 15,
+                    "character": 5
+                },
+                "end": {
+                    "line": 15,
+                    "character": 17
+                }
+            },
+            "rule": "reportMissingImports"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/verify_vibe_tools.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 7
+                },
+                "end": {
+                    "line": 9,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/watch_config.py",
+            "severity": "warning",
+            "message": "Import \"shutil\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 7
+                },
+                "end": {
+                    "line": 9,
+                    "character": 13
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/watch_config.py",
+            "severity": "warning",
+            "message": "Argument of type \"bytes | str\" cannot be assigned to parameter \"args\" of type \"StrPath\" in function \"__new__\"\n  Type \"bytes | str\" is not assignable to type \"StrPath\"\n    Type \"bytes\" is not assignable to type \"StrPath\"\n      \"bytes\" is not assignable to \"str\"\n      \"bytes\" is incompatible with protocol \"PathLike[str]\"\n        \"__fspath__\" is not present",
+            "range": {
+                "start": {
+                    "line": 111,
+                    "character": 28
+                },
+                "end": {
+                    "line": 111,
+                    "character": 42
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/watch_config.py",
+            "severity": "warning",
+            "message": "Argument of type \"bytes | str\" cannot be assigned to parameter \"args\" of type \"StrPath\" in function \"__init__\"\n  Type \"bytes | str\" is not assignable to type \"StrPath\"\n    Type \"bytes\" is not assignable to type \"StrPath\"\n      \"bytes\" is not assignable to \"str\"\n      \"bytes\" is incompatible with protocol \"PathLike[str]\"\n        \"__fspath__\" is not present",
+            "range": {
+                "start": {
+                    "line": 111,
+                    "character": 28
+                },
+                "end": {
+                    "line": 111,
+                    "character": 42
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/watch_config.py",
+            "severity": "warning",
+            "message": "Argument of type \"bytes | str\" cannot be assigned to parameter \"args\" of type \"StrPath\" in function \"__new__\"\n  Type \"bytes | str\" is not assignable to type \"StrPath\"\n    Type \"bytes\" is not assignable to type \"StrPath\"\n      \"bytes\" is not assignable to \"str\"\n      \"bytes\" is incompatible with protocol \"PathLike[str]\"\n        \"__fspath__\" is not present",
+            "range": {
+                "start": {
+                    "line": 121,
+                    "character": 34
+                },
+                "end": {
+                    "line": 121,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/scripts/watch_config.py",
+            "severity": "warning",
+            "message": "Argument of type \"bytes | str\" cannot be assigned to parameter \"args\" of type \"StrPath\" in function \"__init__\"\n  Type \"bytes | str\" is not assignable to type \"StrPath\"\n    Type \"bytes\" is not assignable to type \"StrPath\"\n      \"bytes\" is not assignable to \"str\"\n      \"bytes\" is incompatible with protocol \"PathLike[str]\"\n        \"__fspath__\" is not present",
+            "range": {
+                "start": {
+                    "line": 121,
+                    "character": 34
+                },
+                "end": {
+                    "line": 121,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py",
+            "severity": "warning",
+            "message": "Import \"AnyMessage\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 23,
+                    "character": 36
+                },
+                "end": {
+                    "line": 23,
+                    "character": 46
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py",
+            "severity": "warning",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"intent\" of type \"str\" in function \"_gather_context_for_chat\"\n  Type \"str | None\" is not assignable to type \"str\"\n    \"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 821,
+                    "character": 12
+                },
+                "end": {
+                    "line": 821,
+                    "character": 18
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py",
+            "severity": "warning",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"intent\" of type \"str\" in function \"_handle_chat_deep_reasoning\"\n  Type \"str | None\" is not assignable to type \"str\"\n    \"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 826,
+                    "character": 42
+                },
+                "end": {
+                    "line": 826,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py",
+            "severity": "warning",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"intent\" of type \"str\" in function \"_generate_chat_system_prompt\"\n  Type \"str | None\" is not assignable to type \"str\"\n    \"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 831,
+                    "character": 26
+                },
+                "end": {
+                    "line": 831,
+                    "character": 32
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py",
+            "severity": "warning",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"intent\" of type \"str\" in function \"_execute_chat_turns\"\n  Type \"str | None\" is not assignable to type \"str\"\n    \"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 845,
+                    "character": 52
+                },
+                "end": {
+                    "line": 845,
+                    "character": 58
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/atlas.py",
+            "severity": "warning",
+            "message": "Import \"re\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1556,
+                    "character": 15
+                },
+                "end": {
+                    "line": 1556,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/grisha.py",
+            "severity": "warning",
+            "message": "Import \"base64\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 17,
+                    "character": 7
+                },
+                "end": {
+                    "line": 17,
+                    "character": 13
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/grisha.py",
+            "severity": "warning",
+            "message": "Import \"BaseMessage\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 26,
+                    "character": 36
+                },
+                "end": {
+                    "line": 26,
+                    "character": 47
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/grisha.py",
+            "severity": "warning",
+            "message": "Argument of type \"Any | Literal[1]\" cannot be assigned to parameter \"step_id\" of type \"str\" in function \"__init__\"\n  Type \"Any | Literal[1]\" is not assignable to type \"str\"\n    \"Literal[1]\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 1619,
+                    "character": 20
+                },
+                "end": {
+                    "line": 1619,
+                    "character": 27
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/grisha.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 1946,
+                    "character": 34
+                },
+                "end": {
+                    "line": 1946,
+                    "character": 41
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/grisha.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 1946,
+                    "character": 66
+                },
+                "end": {
+                    "line": 1946,
+                    "character": 73
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/grisha.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 1947,
+                    "character": 44
+                },
+                "end": {
+                    "line": 1947,
+                    "character": 51
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/tetyana.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 392,
+                    "character": 67
+                },
+                "end": {
+                    "line": 392,
+                    "character": 74
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/tetyana.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 393,
+                    "character": 42
+                },
+                "end": {
+                    "line": 393,
+                    "character": 49
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/tetyana.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 394,
+                    "character": 48
+                },
+                "end": {
+                    "line": 394,
+                    "character": 55
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"mcp_manager\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1619,
+                    "character": 34
+                },
+                "end": {
+                    "line": 1619,
+                    "character": 45
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/agents/tetyana.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 1900,
+                    "character": 28
+                },
+                "end": {
+                    "line": 1900,
+                    "character": 35
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/behavior_engine.py",
+            "severity": "warning",
+            "message": "Variable \"category\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 307,
+                    "character": 12
+                },
+                "end": {
+                    "line": 307,
+                    "character": 20
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/behavior_engine.py",
+            "severity": "warning",
+            "message": "Variable \"special_type\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 317,
+                    "character": 24
+                },
+                "end": {
+                    "line": 317,
+                    "character": 36
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/config.py",
+            "severity": "warning",
+            "message": "Import \"Any\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 23
+                },
+                "end": {
+                    "line": 3,
+                    "character": 26
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/constraint_monitor.py",
+            "severity": "warning",
+            "message": "Import \"asyncio\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 7
+                },
+                "end": {
+                    "line": 6,
+                    "character": 14
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/constraint_monitor.py",
+            "severity": "warning",
+            "message": "Import \"logging\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 7
+                },
+                "end": {
+                    "line": 7,
+                    "character": 14
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/constraint_monitor.py",
+            "severity": "warning",
+            "message": "Import \"datetime\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 21
+                },
+                "end": {
+                    "line": 9,
+                    "character": 29
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/constraint_monitor.py",
+            "severity": "warning",
+            "message": "Import \"Any\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 19
+                },
+                "end": {
+                    "line": 10,
+                    "character": 22
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/db/manager.py",
+            "severity": "warning",
+            "message": "Invalid conditional operand of type \"Series | NDArray[bool_]\"\n  Method __bool__ for type \"Series\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 344,
+                    "character": 55
+                },
+                "end": {
+                    "line": 344,
+                    "character": 80
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/error_router.py",
+            "severity": "warning",
+            "message": "Import \"field\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 35
+                },
+                "end": {
+                    "line": 7,
+                    "character": 40
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/first_run_installer.py",
+            "severity": "warning",
+            "message": "Import \"MCP_DIR\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 30,
+                    "character": 37
+                },
+                "end": {
+                    "line": 30,
+                    "character": 44
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_manager.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"exceptions\" for class \"Exception\"\n  Attribute \"exceptions\" is unknown",
+            "range": {
+                "start": {
+                    "line": 574,
+                    "character": 42
+                },
+                "end": {
+                    "line": 574,
+                    "character": 52
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_manager.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"exceptions\" for class \"Exception\"\n  Attribute \"exceptions\" is unknown",
+            "range": {
+                "start": {
+                    "line": 575,
+                    "character": 76
+                },
+                "end": {
+                    "line": 575,
+                    "character": 86
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_manager.py",
+            "severity": "warning",
+            "message": "Argument of type \"int | None\" cannot be assigned to parameter \"interval\" of type \"int\" in function \"health_check_loop\"\n  Type \"int | None\" is not assignable to type \"int\"\n    \"None\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 836,
+                    "character": 71
+                },
+                "end": {
+                    "line": 836,
+                    "character": 79
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_preflight.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 12,
+                    "character": 19
+                },
+                "end": {
+                    "line": 12,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_preflight.py",
+            "severity": "warning",
+            "message": "Variable \"err\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 178,
+                    "character": 21
+                },
+                "end": {
+                    "line": 178,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/memory.py",
+            "severity": "warning",
+            "message": "Import \"Settings\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 17,
+                    "character": 32
+                },
+                "end": {
+                    "line": 17,
+                    "character": 40
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/memory.py",
+            "severity": "warning",
+            "message": "Object of type \"None\" is not subscriptable",
+            "range": {
+                "start": {
+                    "line": 655,
+                    "character": 40
+                },
+                "end": {
+                    "line": 655,
+                    "character": 60
+                }
+            },
+            "rule": "reportOptionalSubscript"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/metrics.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 2,
+                    "character": 24
+                },
+                "end": {
+                    "line": 2,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring.py",
+            "severity": "warning",
+            "message": "Import \"time\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 7
+                },
+                "end": {
+                    "line": 3,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 24
+                },
+                "end": {
+                    "line": 6,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 34
+                },
+                "end": {
+                    "line": 6,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring.py",
+            "severity": "warning",
+            "message": "Import \"Summary\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 14,
+                    "character": 57
+                },
+                "end": {
+                    "line": 14,
+                    "character": 64
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring_config.py",
+            "severity": "warning",
+            "message": "Import \"os\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 7
+                },
+                "end": {
+                    "line": 7,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring_config.py",
+            "severity": "warning",
+            "message": "Import \"Path\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 20
+                },
+                "end": {
+                    "line": 8,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring_config.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 24
+                },
+                "end": {
+                    "line": 9,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/navigation/tour_driver.py",
+            "severity": "warning",
+            "message": "Import \"time\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 7
+                },
+                "end": {
+                    "line": 6,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/navigation/tour_driver.py",
+            "severity": "warning",
+            "message": "Import \"Any\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 19
+                },
+                "end": {
+                    "line": 7,
+                    "character": 22
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "error",
+            "message": "Type \"(Messages, Messages) -> Messages\" is not assignable to declared type \"(left: Any, right: Any) -> Any\"\n  Type \"(Messages, Messages) -> Messages\" is not assignable to type \"(left: Any, right: Any) -> Any\"\n    Missing keyword parameter \"left\"\n    Missing keyword parameter \"right\"\n      Position-only parameter mismatch; parameter \"left\" is not position-only\n      Position-only parameter mismatch; parameter \"right\" is not position-only\n      Position-only parameter mismatch; expected 2 but received 0",
+            "range": {
+                "start": {
+                    "line": 16,
+                    "character": 40
+                },
+                "end": {
+                    "line": 16,
+                    "character": 52
+                }
+            },
+            "rule": "reportAssignmentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Import \"add_messages\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 16,
+                    "character": 40
+                },
+                "end": {
+                    "line": 16,
+                    "character": 52
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Import \"consolidation_module\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 28,
+                    "character": 36
+                },
+                "end": {
+                    "line": 28,
+                    "character": 56
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Import \"RecoveryAttempt\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 33,
+                    "character": 4
+                },
+                "end": {
+                    "line": 33,
+                    "character": 19
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Import \"DBConvSummary\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 36,
+                    "character": 27
+                },
+                "end": {
+                    "line": 36,
+                    "character": 40
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 196,
+                    "character": 57
+                },
+                "end": {
+                    "line": 196,
+                    "character": 64
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "error",
+            "message": "Except clause is unreachable because exception is already handled\n  \"Exception\" is a subclass of \"Exception\"",
+            "range": {
+                "start": {
+                    "line": 710,
+                    "character": 15
+                },
+                "end": {
+                    "line": 710,
+                    "character": 24
+                }
+            },
+            "rule": "reportUnusedExcept"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Import \"time\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 878,
+                    "character": 19
+                },
+                "end": {
+                    "line": 878,
+                    "character": 23
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "warning",
+            "message": "Import \"shared_context\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1021,
+                    "character": 38
+                },
+                "end": {
+                    "line": 1021,
+                    "character": 52
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/orchestrator.py",
+            "severity": "error",
+            "message": "Except clause is unreachable because exception is already handled\n  \"Exception\" is a subclass of \"Exception\"",
+            "range": {
+                "start": {
+                    "line": 1811,
+                    "character": 19
+                },
+                "end": {
+                    "line": 1811,
+                    "character": 28
+                }
+            },
+            "rule": "reportUnusedExcept"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/parallel_healing.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"content\" for class \"dict[Unknown, Unknown]\"\n  Attribute \"content\" is unknown",
+            "range": {
+                "start": {
+                    "line": 563,
+                    "character": 29
+                },
+                "end": {
+                    "line": 563,
+                    "character": 36
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/production_setup.py",
+            "severity": "warning",
+            "message": "\"_MEIPASS\" is not a known attribute of module \"sys\"",
+            "range": {
+                "start": {
+                    "line": 38,
+                    "character": 24
+                },
+                "end": {
+                    "line": 38,
+                    "character": 32
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/__init__.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 0,
+                    "character": 19
+                },
+                "end": {
+                    "line": 0,
+                    "character": 27
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/atlas.py",
+            "severity": "warning",
+            "message": "Import \"DEFAULT_REALM_CATALOG\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 4
+                },
+                "end": {
+                    "line": 1,
+                    "character": 25
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"DATA_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 4
+                },
+                "end": {
+                    "line": 1,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"DEFAULT_REALM_CATALOG\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 2,
+                    "character": 4
+                },
+                "end": {
+                    "line": 2,
+                    "character": 25
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"MAPS_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 4
+                },
+                "end": {
+                    "line": 3,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"SDLC_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 4,
+                    "character": 4
+                },
+                "end": {
+                    "line": 4,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"SEARCH_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 4
+                },
+                "end": {
+                    "line": 5,
+                    "character": 19
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"STORAGE_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 4
+                },
+                "end": {
+                    "line": 6,
+                    "character": 20
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"TASK_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 4
+                },
+                "end": {
+                    "line": 7,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"VIBE_TOOLS_DOCUMENTATION\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 4
+                },
+                "end": {
+                    "line": 8,
+                    "character": 28
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/grisha.py",
+            "severity": "warning",
+            "message": "Import \"VOICE_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 4
+                },
+                "end": {
+                    "line": 9,
+                    "character": 18
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"DATA_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 4
+                },
+                "end": {
+                    "line": 1,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"DEFAULT_REALM_CATALOG\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 2,
+                    "character": 4
+                },
+                "end": {
+                    "line": 2,
+                    "character": 25
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"HACKING_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 4
+                },
+                "end": {
+                    "line": 3,
+                    "character": 20
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"MAPS_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 4,
+                    "character": 4
+                },
+                "end": {
+                    "line": 4,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"SDLC_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 4
+                },
+                "end": {
+                    "line": 5,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"SEARCH_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 4
+                },
+                "end": {
+                    "line": 6,
+                    "character": 19
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"STORAGE_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 4
+                },
+                "end": {
+                    "line": 7,
+                    "character": 20
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"TASK_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 4
+                },
+                "end": {
+                    "line": 8,
+                    "character": 17
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"VIBE_TOOLS_DOCUMENTATION\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 4
+                },
+                "end": {
+                    "line": 9,
+                    "character": 28
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/prompts/tetyana.py",
+            "severity": "warning",
+            "message": "Import \"VOICE_PROTOCOL\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 4
+                },
+                "end": {
+                    "line": 10,
+                    "character": 18
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/server.py",
+            "severity": "warning",
+            "message": "Import \"ensure_all_services\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 27,
+                    "character": 45
+                },
+                "end": {
+                    "line": 27,
+                    "character": 64
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/server.py",
+            "severity": "warning",
+            "message": "Import \"SpeechType\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 54,
+                    "character": 23
+                },
+                "end": {
+                    "line": 54,
+                    "character": 33
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/server.py",
+            "severity": "error",
+            "message": "Except clause is unreachable because exception is already handled\n  \"Exception\" is a subclass of \"Exception\"",
+            "range": {
+                "start": {
+                    "line": 594,
+                    "character": 11
+                },
+                "end": {
+                    "line": 594,
+                    "character": 20
+                }
+            },
+            "rule": "reportUnusedExcept"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/stt.py",
+            "severity": "warning",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"language\" of type \"str\" in function \"__init__\"\n  Type \"str | None\" is not assignable to type \"str\"\n    \"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 268,
+                    "character": 57
+                },
+                "end": {
+                    "line": 268,
+                    "character": 65
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/tts.py",
+            "severity": "warning",
+            "message": "Import \"Literal\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 22,
+                    "character": 24
+                },
+                "end": {
+                    "line": 22,
+                    "character": 31
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/tts.py",
+            "severity": "warning",
+            "message": "Import \"ukrainian_tts\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 39,
+                    "character": 15
+                },
+                "end": {
+                    "line": 39,
+                    "character": 28
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/tts.py",
+            "severity": "warning",
+            "message": "Argument of type \"Any | str | None\" cannot be assigned to parameter \"voice\" of type \"str\" in function \"tts\"\n  Type \"Any | str | None\" is not assignable to type \"str\"\n    \"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 359,
+                    "character": 16
+                },
+                "end": {
+                    "line": 359,
+                    "character": 27
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/tts.py",
+            "severity": "warning",
+            "message": "Argument of type \"BufferedWriter\" cannot be assigned to parameter \"output_fp\" of type \"BytesIO\" in function \"tts\"\n  \"BufferedWriter\" is not assignable to \"BytesIO\"",
+            "range": {
+                "start": {
+                    "line": 361,
+                    "character": 16
+                },
+                "end": {
+                    "line": 361,
+                    "character": 17
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/tts.py",
+            "severity": "warning",
+            "message": "Import \"Stress\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 602,
+                    "character": 42
+                },
+                "end": {
+                    "line": 602,
+                    "character": 48
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/tts.py",
+            "severity": "warning",
+            "message": "Argument of type \"BufferedWriter\" cannot be assigned to parameter \"output_fp\" of type \"BytesIO\" in function \"tts\"\n  \"BufferedWriter\" is not assignable to \"BytesIO\"",
+            "range": {
+                "start": {
+                    "line": 704,
+                    "character": 79
+                },
+                "end": {
+                    "line": 704,
+                    "character": 80
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/context_check.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 44
+                },
+                "end": {
+                    "line": 10,
+                    "character": 49
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Import \"io\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 19,
+                    "character": 7
+                },
+                "end": {
+                    "line": 19,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Import \"os\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 22,
+                    "character": 7
+                },
+                "end": {
+                    "line": 22,
+                    "character": 9
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Import \"tempfile\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 24,
+                    "character": 7
+                },
+                "end": {
+                    "line": 24,
+                    "character": 15
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Import \"datetime\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 26,
+                    "character": 21
+                },
+                "end": {
+                    "line": 26,
+                    "character": 29
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | float\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | float\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 117,
+                    "character": 35
+                },
+                "end": {
+                    "line": 117,
+                    "character": 47
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | float\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | float\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 117,
+                    "character": 35
+                },
+                "end": {
+                    "line": 117,
+                    "character": 47
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Invalid conditional operand of type \"bool | NDArray[bool_] | NDFrame\"\n  Method __bool__ for type \"NDFrame\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 117,
+                    "character": 60
+                },
+                "end": {
+                    "line": 117,
+                    "character": 81
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Unknown | DataFrame\" cannot be assigned to parameter \"series\" of type \"Series\" in function \"_get_column_stats\"\n  Type \"Series | Unknown | DataFrame\" is not assignable to type \"Series\"\n    \"DataFrame\" is not assignable to \"Series\"",
+            "range": {
+                "start": {
+                    "line": 163,
+                    "character": 38
+                },
+                "end": {
+                    "line": 163,
+                    "character": 45
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Any | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | Any | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 417,
+                    "character": 44
+                },
+                "end": {
+                    "line": 417,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Any | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | Any | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 417,
+                    "character": 44
+                },
+                "end": {
+                    "line": 417,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Cannot access attribute \"columns\" for class \"ndarray[_AnyShape, dtype[Any]]\"\n  Attribute \"columns\" is unknown",
+            "range": {
+                "start": {
+                    "line": 615,
+                    "character": 61
+                },
+                "end": {
+                    "line": 615,
+                    "character": 68
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "error",
+            "message": "No overloads for \"reset_index\" match the provided arguments\n  Argument types: (Literal['count'])",
+            "range": {
+                "start": {
+                    "line": 737,
+                    "character": 17
+                },
+                "end": {
+                    "line": 737,
+                    "character": 70
+                }
+            },
+            "rule": "reportCallIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Unknown | Any | Series\" cannot be assigned to parameter \"x\" of type \"ConvertibleToInt\" in function \"__new__\"\n  Type \"Unknown | Any | Series\" is not assignable to type \"ConvertibleToInt\"\n    Type \"Series\" is not assignable to type \"ConvertibleToInt\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsInt\"\n        \"__int__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 800,
+                    "character": 30
+                },
+                "end": {
+                    "line": 800,
+                    "character": 49
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Unknown | Any | Series\" cannot be assigned to parameter \"x\" of type \"ConvertibleToInt\" in function \"__new__\"\n  Type \"Unknown | Any | Series\" is not assignable to type \"ConvertibleToInt\"\n    Type \"Series\" is not assignable to type \"ConvertibleToInt\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsInt\"\n        \"__int__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 800,
+                    "character": 30
+                },
+                "end": {
+                    "line": 800,
+                    "character": 49
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | int | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToInt\" in function \"__new__\"\n  Type \"Series | int | Unknown\" is not assignable to type \"ConvertibleToInt\"\n    Type \"Series\" is not assignable to type \"ConvertibleToInt\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsInt\"\n        \"__int__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 801,
+                    "character": 32
+                },
+                "end": {
+                    "line": 801,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/data_analysis_server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | int | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToInt\" in function \"__new__\"\n  Type \"Series | int | Unknown\" is not assignable to type \"ConvertibleToInt\"\n    Type \"Series\" is not assignable to type \"ConvertibleToInt\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsInt\"\n        \"__int__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 801,
+                    "character": 32
+                },
+                "end": {
+                    "line": 801,
+                    "character": 48
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/devtools_server.py",
+            "severity": "warning",
+            "message": "Import \"Server\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 32
+                },
+                "end": {
+                    "line": 9,
+                    "character": 38
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/devtools_server.py",
+            "severity": "warning",
+            "message": "Import \"TextContent\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 22
+                },
+                "end": {
+                    "line": 10,
+                    "character": 33
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/devtools_server.py",
+            "severity": "warning",
+            "message": "Import \"Tool\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 35
+                },
+                "end": {
+                    "line": 10,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/devtools_server.py",
+            "severity": "warning",
+            "message": "Import \"asyncio\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 943,
+                    "character": 11
+                },
+                "end": {
+                    "line": 943,
+                    "character": 18
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/connectors/ckan_connector.py",
+            "severity": "warning",
+            "message": "Import \"datetime\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 21
+                },
+                "end": {
+                    "line": 6,
+                    "character": 29
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/connectors/ckan_connector.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 24
+                },
+                "end": {
+                    "line": 7,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/formats.py",
+            "severity": "warning",
+            "message": "Import \"csv\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 7
+                },
+                "end": {
+                    "line": 5,
+                    "character": 10
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/formats.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 24
+                },
+                "end": {
+                    "line": 9,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/formats.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 34
+                },
+                "end": {
+                    "line": 9,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/parser.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 19
+                },
+                "end": {
+                    "line": 6,
+                    "character": 27
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/parser.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 29
+                },
+                "end": {
+                    "line": 6,
+                    "character": 34
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/parser.py",
+            "severity": "warning",
+            "message": "Import \"cast\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 6,
+                    "character": 36
+                },
+                "end": {
+                    "line": 6,
+                    "character": 40
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/scraper.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 14,
+                    "character": 24
+                },
+                "end": {
+                    "line": 14,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/scraper.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 14,
+                    "character": 34
+                },
+                "end": {
+                    "line": 14,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/__init__.py",
+            "severity": "warning",
+            "message": "Import \"SearchStorage\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 0,
+                    "character": 20
+                },
+                "end": {
+                    "line": 0,
+                    "character": 33
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/__init__.py",
+            "severity": "warning",
+            "message": "Import \"SQLStorage\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 17
+                },
+                "end": {
+                    "line": 1,
+                    "character": 27
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/__init__.py",
+            "severity": "warning",
+            "message": "Import \"StorageResult\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 2,
+                    "character": 19
+                },
+                "end": {
+                    "line": 2,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/__init__.py",
+            "severity": "warning",
+            "message": "Import \"VectorStorage\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 20
+                },
+                "end": {
+                    "line": 3,
+                    "character": 33
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/blob.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 24
+                },
+                "end": {
+                    "line": 10,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/blob.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 34
+                },
+                "end": {
+                    "line": 10,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/sql.py",
+            "severity": "warning",
+            "message": "Import \"Any\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 19
+                },
+                "end": {
+                    "line": 3,
+                    "character": 22
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/sql.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 3,
+                    "character": 33
+                },
+                "end": {
+                    "line": 3,
+                    "character": 41
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/sql.py",
+            "severity": "error",
+            "message": "No overloads for \"read_sql_query\" match the provided arguments",
+            "range": {
+                "start": {
+                    "line": 97,
+                    "character": 21
+                },
+                "end": {
+                    "line": 97,
+                    "character": 66
+                }
+            },
+            "rule": "reportCallIssue"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/sql.py",
+            "severity": "warning",
+            "message": "Argument of type \"tuple[Unknown, ...]\" cannot be assigned to parameter \"params\" of type \"list[Any] | Mapping[str, Any] | None\" in function \"read_sql_query\"\n  Type \"tuple[Unknown, ...]\" is not assignable to type \"list[Any] | Mapping[str, Any] | None\"\n    \"tuple[Unknown, ...]\" is not assignable to \"list[Any]\"\n    \"tuple[Unknown, ...]\" is not assignable to \"Mapping[str, Any]\"\n    \"tuple[Unknown, ...]\" is not assignable to \"None\"",
+            "range": {
+                "start": {
+                    "line": 97,
+                    "character": 59
+                },
+                "end": {
+                    "line": 97,
+                    "character": 65
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/types.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 1,
+                    "character": 24
+                },
+                "end": {
+                    "line": 1,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/vector.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 24
+                },
+                "end": {
+                    "line": 9,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/vector.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 34
+                },
+                "end": {
+                    "line": 9,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/vector.py",
+            "severity": "warning",
+            "message": "Import \"cast\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 41
+                },
+                "end": {
+                    "line": 9,
+                    "character": 45
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/vector.py",
+            "severity": "warning",
+            "message": "Import \"np\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 11,
+                    "character": 16
+                },
+                "end": {
+                    "line": 11,
+                    "character": 18
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/storage/vector.py",
+            "severity": "warning",
+            "message": "Import \"Settings\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 16,
+                    "character": 32
+                },
+                "end": {
+                    "line": 16,
+                    "character": 40
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/transformer.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 24
+                },
+                "end": {
+                    "line": 7,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/transformer.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 34
+                },
+                "end": {
+                    "line": 7,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/validation.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 24
+                },
+                "end": {
+                    "line": 8,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/validation.py",
+            "severity": "warning",
+            "message": "Import \"Union\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 34
+                },
+                "end": {
+                    "line": 8,
+                    "character": 39
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/lib/validation.py",
+            "severity": "warning",
+            "message": "Import \"ValidationError\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 10,
+                    "character": 39
+                },
+                "end": {
+                    "line": 10,
+                    "character": 54
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Import \"asyncio\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 0,
+                    "character": 7
+                },
+                "end": {
+                    "line": 0,
+                    "character": 14
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 24
+                },
+                "end": {
+                    "line": 5,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Import \"Context\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 31
+                },
+                "end": {
+                    "line": 7,
+                    "character": 38
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Any | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | Any | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 356,
+                    "character": 44
+                },
+                "end": {
+                    "line": 356,
+                    "character": 57
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Any | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | Any | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 356,
+                    "character": 44
+                },
+                "end": {
+                    "line": 356,
+                    "character": 57
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Any | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | Any | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 357,
+                    "character": 40
+                },
+                "end": {
+                    "line": 357,
+                    "character": 55
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | Any | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | Any | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 357,
+                    "character": 40
+                },
+                "end": {
+                    "line": 357,
+                    "character": 55
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | float | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | float | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"\n  ...",
+            "range": {
+                "start": {
+                    "line": 358,
+                    "character": 43
+                },
+                "end": {
+                    "line": 358,
+                    "character": 55
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/server.py",
+            "severity": "warning",
+            "message": "Argument of type \"Series | float | Unknown\" cannot be assigned to parameter \"x\" of type \"ConvertibleToFloat\" in function \"__new__\"\n  Type \"Series | float | Unknown\" is not assignable to type \"ConvertibleToFloat\"\n    Type \"Series\" is not assignable to type \"ConvertibleToFloat\"\n      \"Series\" is not assignable to \"str\"\n      \"Series\" is incompatible with protocol \"Buffer\"\n        \"__buffer__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsFloat\"\n        \"__float__\" is not present\n      \"Series\" is incompatible with protocol \"SupportsIndex\"",
+            "range": {
+                "start": {
+                    "line": 358,
+                    "character": 43
+                },
+                "end": {
+                    "line": 358,
+                    "character": 55
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/tools/chain.py",
+            "severity": "warning",
+            "message": "Import \"asyncio\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 5,
+                    "character": 7
+                },
+                "end": {
+                    "line": 5,
+                    "character": 14
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/tools/chain.py",
+            "severity": "warning",
+            "message": "Import \"Any\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 19
+                },
+                "end": {
+                    "line": 7,
+                    "character": 22
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/tools/chain.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 7,
+                    "character": 24
+                },
+                "end": {
+                    "line": 7,
+                    "character": 32
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/tools/ingest.py",
+            "severity": "warning",
+            "message": "Import \"Optional\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 8,
+                    "character": 19
+                },
+                "end": {
+                    "line": 8,
+                    "character": 27
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/golden_fund/tools/ingest.py",
+            "severity": "warning",
+            "message": "Import \"ScrapeFormat\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 13,
+                    "character": 39
+                },
+                "end": {
+                    "line": 13,
+                    "character": 51
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/project_analyzer.py",
+            "severity": "warning",
+            "message": "Variable \"files\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 244,
+                    "character": 22
+                },
+                "end": {
+                    "line": 244,
+                    "character": 27
+                }
+            },
+            "rule": "reportUnusedVariable"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/trace_analyzer.py",
+            "severity": "warning",
+            "message": "Import \"json\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 7
+                },
+                "end": {
+                    "line": 9,
+                    "character": 11
+                }
+            },
+            "rule": "reportUnusedImport"
+        },
+        {
+            "file": "/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/trace_analyzer.py",
+            "severity": "warning",
+            "message": "Variable \"args\" is not accessed",
+            "range": {
+                "start": {
+                    "line": 92,
+                    "character": 18
+                },
+                "end": {
+                    "line": 92,
+                    "character": 22
+                }
+            },
+            "rule": "reportUnusedVariable"
+        }
+    ],
+    "summary": {
+        "filesAnalyzed": 176,
+        "errorCount": 33,
+        "warningCount": 192,
+        "informationCount": 0,
+        "timeInSec": 6.8
+    }
+}
+

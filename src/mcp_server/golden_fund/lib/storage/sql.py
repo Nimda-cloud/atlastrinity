@@ -1,7 +1,7 @@
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, cast
 
 import pandas as pd
 
@@ -95,7 +95,7 @@ class SQLStorage:
         """Execute a raw SQL query."""
         try:
             with sqlite3.connect(self.db_path) as conn:
-                df = pd.read_sql_query(query, conn, params=params)
+                df = pd.read_sql_query(query, cast(Any, conn), params=list(params))
                 return StorageResult(
                     success=True, target="query", data=df.to_dict(orient="records")
                 )

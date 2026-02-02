@@ -280,6 +280,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
     return (
       <div
         ref={apiLoaderRef}
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: Google Maps API loader requires this
         dangerouslySetInnerHTML={{
           __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}" solution-channel="GMP_CDN_extended_v0.6.11"></gmpx-api-loader>`,
         }}

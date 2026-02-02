@@ -55,20 +55,54 @@ const CommandLine: React.FC<CommandLineProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastSkippedChunkRef = useRef<Blob | null>(null); // Pre-buffer for context
 
-  // Auto-expand and shrink logic
+  // auto-shrink
   useEffect(() => {
     if (textareaRef.current) {
-      // Temporarily set height to 'auto' to get the true scrollHeight
       textareaRef.current.style.height = 'auto'; // Temporarily reset height to get accurate scrollHeight
       const scrollHeight = textareaRef.current.scrollHeight;
       const newHeight = Math.min(scrollHeight, 200);
       textareaRef.current.style.height = `${newHeight}px`;
-
-      // Track if textarea is expanded (more than single line)
-      // 40px is roughly single line height
       setIsExpanded(newHeight > 40 && input.length > 0);
     }
   }, [input]);
+
+  // Зупинка прослуховування
+  const stopListening = useCallback(() => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    setSttStatus('');
+
+    if (window.volumeChecker) {
+      clearInterval(window.volumeChecker as number);
+      window.volumeChecker = null;
+    }
+
+    if (recordingIntervalRef.current) {
+      clearTimeout(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
+    }
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -271,7 +305,9 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
         // SAFETY CHECK: If user stopped listening while we were waiting for permission
         if (!isListeningRef.current) {
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
           return;
         }
 
@@ -409,48 +445,6 @@ const CommandLine: React.FC<CommandLineProps> = ({
         mediaRecorder.stop();
       }
     }, 2000);
-  };
-
-  // Зупинка прослуховування
-  const stopListening = () => {
-    // console.log('🛑 Stopping listening');
-
-    // КРИТИЧНО: оновлюємо ref СИНХРОННО
-    isListeningRef.current = false;
-    setIsListening(false);
-    setSttStatus('');
-
-    // Зупиняємо перевірку гучності
-    if (window.volumeChecker) {
-      clearInterval(window.volumeChecker as number);
-      window.volumeChecker = null;
-    }
-
-    if (recordingIntervalRef.current) {
-      clearTimeout(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-
-    // Зупиняємо stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-
-    // Закриваємо AudioContext
-    if (audioContextRef.current) {
-      audioContextRef.current.close().catch(console.error);
-      audioContextRef.current = null;
-    }
   };
 
   // Обробка помилок мікрофона

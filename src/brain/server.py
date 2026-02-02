@@ -582,18 +582,6 @@ async def smart_speech_to_text(
 
     except Exception as e:
         logger.error(f"Smart STT error: {e!s}")
-        return {
-            "text": "",
-            "speech_type": "noise",
-            "confidence": 0,
-            "combined_text": previous_text,
-            "should_send": False,
-            "is_continuation": False,
-            "ignored": True,
-        }
-
-    except Exception as e:
-        logger.error(f"Smart STT error: {e!s}")
         # Don't crash client loop, return empty result
         return {
             "text": "",

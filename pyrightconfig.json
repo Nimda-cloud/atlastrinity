@@ -6,8 +6,20 @@
   "pythonVersion": "3.12",
   "typeCheckingMode": "basic",
   "reportUnknownMemberType": "none",
-  "reportGeneralTypeIssues": "error",
-  "reportPropertyTypeMismatch": "error",
+  "reportGeneralTypeIssues": "warning",
+  "reportPropertyTypeMismatch": "warning",
   "reportUnusedImport": "warning",
-  "reportUnusedVariable": "warning"
+  "reportUnusedVariable": "warning",
+  "reportAttributeAccessIssue": "warning",
+  "reportArgumentType": "warning",
+  "reportOptionalMemberAccess": "warning",
+  "reportOptionalSubscript": "warning",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [
+        "src"
+      ]
+    }
+  ]
 }

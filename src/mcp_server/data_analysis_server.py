@@ -735,7 +735,8 @@ async def data_aggregation(
 
     if not numeric_cols:
         # Just count if no numeric columns
-        result = df.groupby(group_by).size().reset_index(name="count")
+        result_any: Any = df.groupby(group_by).size()
+        result = result_any.reset_index(name="count")
     else:
         # Build aggregation dict
         # Cast to Any to satisfy pandas type hints which are sometimes overly strict
