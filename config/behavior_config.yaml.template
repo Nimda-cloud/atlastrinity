@@ -507,6 +507,12 @@ tool_routing:
       - resume
       - reload
       - mode
+      - ci_cd
+      - workflow
+      - github_action
+      - pipeline
+      - configure_ci
+      - fix_workflow
     priority_server: vibe
     fallback_server: null
     tool_mapping:

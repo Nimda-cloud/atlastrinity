@@ -890,10 +890,15 @@ async def vibe_prompt(
 
     config = get_vibe_config()
     eff_timeout = timeout_s if timeout_s is not None else config.timeout_s
-    eff_cwd = cwd or VIBE_WORKSPACE
+    # Default to PROJECT_ROOT for project operations, fall back to workspace
+    eff_cwd = cwd or str(PROJECT_ROOT)
+    if not os.path.exists(eff_cwd):
+        eff_cwd = VIBE_WORKSPACE
 
-    # Ensure workspace exists
-    os.makedirs(eff_cwd, exist_ok=True)
+    # Ensure workspace exists (for instructions/logs)
+    os.makedirs(VIBE_WORKSPACE, exist_ok=True)
+    if eff_cwd != VIBE_WORKSPACE:
+        os.makedirs(eff_cwd, exist_ok=True)
 
     # Check network before proceeding if it's an AI prompt
     if not await is_network_available():
