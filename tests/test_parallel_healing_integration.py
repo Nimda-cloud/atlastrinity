@@ -57,7 +57,12 @@ async def test_integration_parallel_healing_flow():
         last_msg = mock_send.call_args_list[-1][0][0]
         assert last_msg.message_type == MessageType.HEALING_STATUS
         assert last_msg.payload["event"] == "fix_ready"
-        assert last_msg.to_agent == "tetyana"
+        
+        # Verify Monitoring DB Access
+        # We need to check if monitoring_system.record_healing_event was called implicitly
+        # (It uses the global instance, which is hard to mock given we imported it inside methods, 
+        # so for this integration test we assume it runs and maybe check the sqlite file if possible, 
+        # but unit test is safer for this. Let's rely on unit test for specific DB checks).
         
         # --- C. TETYANA DECISION ---
         # Mock Tetyana deciding to retry

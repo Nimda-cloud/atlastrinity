@@ -107,6 +107,20 @@ class MonitoringSystem:
                         duration REAL
                     )
                 """)
+                
+                # Healing Events (Parallel Self-Healing & Constraints)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS healing_events (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT,
+                        task_id TEXT,
+                        event_type TEXT, -- 'auto_healing', 'constraint_violation'
+                        step_id TEXT,
+                        priority INTEGER,
+                        status TEXT,
+                        details JSON
+                    )
+                """)
                 conn.commit()
         except Exception as e:
             logger.error(f"Failed to init monitoring DB: {e}")
@@ -313,6 +327,48 @@ class MonitoringSystem:
             )
         except Exception as e:
             logger.error(f"Error recording ETL metrics: {e}")
+
+    def record_healing_event(
+        self,
+        task_id: str,
+        event_type: str,
+        step_id: str,
+        priority: int,
+        status: str,
+        details: dict[str, Any]
+    ) -> None:
+        """
+        Record a self-healing or constraint violation event.
+        
+        Args:
+            task_id: Unique task ID
+            event_type: 'auto_healing' or 'constraint_violation'
+            step_id: ID of the step where it happened
+            priority: 1 (Standard) or 2 (High/Constraint)
+            status: Current status (started, fixed, failed)
+            details: Additional context (error, fix description, etc.)
+        """
+        try:
+            self._save_to_db("healing_events", {
+                "timestamp": datetime.now().isoformat(),
+                "task_id": task_id,
+                "event_type": event_type,
+                "step_id": step_id,
+                "priority": priority,
+                "status": status,
+                "details": json.dumps(details, ensure_ascii=False)
+            })
+            
+            # Also log as a metric
+            self.etl_errors.labels(
+                pipeline_stage="self_healing", 
+                error_type=event_type
+            ).inc()
+            
+            logger.info(f"Healing event recorded: {event_type} for {step_id} (Status: {status})")
+            
+        except Exception as e:
+            logger.error(f"Error recording healing event: {e}")
 
     def record_opensearch_metrics(self, query_type: str, documents: int = 0) -> None:
         """

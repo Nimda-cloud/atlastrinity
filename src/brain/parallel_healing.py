@@ -15,6 +15,7 @@ from typing import Any
 from uuid import uuid4
 
 logger = logging.getLogger("brain.parallel_healing")
+from src.brain.monitoring import monitoring_system
 
 
 class HealingStatus(Enum):
@@ -175,6 +176,17 @@ class ParallelHealingManager:
         
         # Notify via message bus
         await self._notify_healing_started(task)
+        
+        # Record to Monitoring DB
+        monitoring_system.record_healing_event(
+            task_id=task.task_id,
+            event_type="constraint_violation" if task.priority == 2 else "auto_healing",
+            step_id=task.step_id,
+            priority=task.priority,
+            status="started",
+            details={"error": task.error[:500]}
+        )
+        
 
     async def _run_healing_workflow(self, task: HealingTask) -> None:
         """Execute the full healing workflow in background.
@@ -284,6 +296,19 @@ class ParallelHealingManager:
             # Notify Tetyana via message bus
             await self._notify_fix_ready(task)
 
+            # Record Success
+            monitoring_system.record_healing_event(
+                task_id=task.task_id,
+                event_type="constraint_violation" if task.priority == 2 else "auto_healing",
+                step_id=task.step_id,
+                priority=task.priority,
+                status="fixed",
+                details={
+                    "fix_description": task.fix_description,
+                    "grisha_verdict": task.grisha_verdict
+                }
+            )
+
         except asyncio.TimeoutError:
             task.status = HealingStatus.FAILED
             task.error_message = "Healing workflow timed out"
@@ -297,6 +322,16 @@ class ParallelHealingManager:
             task.updated_at = datetime.now()
             await self._persist_task(task)
             logger.error(f"[PARALLEL_HEALING] {task.task_id}: Failed - {e}")
+
+            # Record Failure
+            monitoring_system.record_healing_event(
+                task_id=task.task_id,
+                event_type="constraint_violation" if task.priority == 2 else "auto_healing",
+                step_id=task.step_id,
+                priority=task.priority,
+                status="failed",
+                details={"error": str(e)}
+            )
             
         finally:
             # Check backlog for next task
