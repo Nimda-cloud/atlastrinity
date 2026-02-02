@@ -1,24 +1,25 @@
-# Optimized Vibe Configuration Template
-# Based on official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
+# Mistral Vibe Configuration (Native Format)
+# Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model alias (devstral-2 - official Mistral model name)
+# Active model for Vibe (Mistral's Devstral 2 is the default)
 active_model = "devstral-2"
 
-# System prompt ID (cli, tests, or filename in prompts/ dir)
+# System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
 
-# Tool Patterns (supports glob and regex with "re:" prefix)
-# Examples:
-#   enabled_tools = ["serena_*"]           # Glob: only serena tools
-#   enabled_tools = ["re:^serena_.*$"]     # Regex: same as above
-#   disabled_tools = ["mcp_*", "grep"]     # Disable multiple patterns
-enabled_tools = []
-disabled_tools = []
-
-# Auto-Update
+# Enable/Disable auto-updates
 enable_auto_update = true
 
-# Providers
+# =============================================================================
+# Tool Availability Patterns
+# =============================================================================
+# Exact names, glob patterns, or re: prefix for regex
+enabled_tools = [] # Empty = all enabled
+disabled_tools = []
+
+# =============================================================================
+# Provider Configuration
+# =============================================================================
 [[providers]]
 name = "mistral"
 api_base = "https://api.mistral.ai/v1"
@@ -33,7 +34,9 @@ api_key_env_var = "OPENROUTER_API_KEY"
 api_style = "openai"
 backend = "generic"
 
-# Models
+# =============================================================================
+# Model Presets
+# =============================================================================
 [[models]]
 name = "devstral-2512"
 provider = "mistral"
@@ -50,7 +53,9 @@ temperature = 0.2
 input_price = 0.0
 output_price = 0.0
 
-# Tool Permissions
+# =============================================================================
+# Built-in Tool Permissions
+# =============================================================================
 [tools.bash]
 permission = "ask"
 
@@ -67,45 +72,7 @@ permission = "always"
 permission = "ask"
 
 # =============================================================================
-# MCP Server Configurations (Vibe-native TOML format)
+# MCP Server Configuration (Optional)
 # =============================================================================
-# NOTE: All custom MCP servers are commented out to minimize Token usage (Anti-Rate Limit).
-# Vibe will use its native tools (bash, read_file, write_file, grep) instead.
-
-# [[mcp_servers]]
-# name = "memory"
-# transport = "stdio"
-# command = "python3"
-# args = ["-m", "src.mcp_server.memory_server"]
-# env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
-# startup_timeout_sec = 30
-# tool_timeout_sec = 120
-
-# [[mcp_servers]]
-# name = "devtools"
-# transport = "stdio"
-# command = "python3"
-# args = ["-m", "src.mcp_server.devtools_server"]
-# env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
-# startup_timeout_sec = 30
-# tool_timeout_sec = 120
-
-# [[mcp_servers]]
-# name = "filesystem"
-# transport = "stdio"
-# command = "npx"
-# args = ["@modelcontextprotocol/server-filesystem", "${HOME}", "${PROJECT_ROOT}", "/tmp"]
-
-# [[mcp_servers]]
-# name = "sequential_thinking"
-# transport = "stdio"
-# command = "bunx"
-# args = ["@modelcontextprotocol/server-sequential-thinking"]
-# env = { "MAX_HISTORY_SIZE" = "1000", "PYTHONPATH" = "${PROJECT_ROOT}" }
-# startup_timeout_sec = 60
-
-# [[mcp_servers]]
-# name = "context7"
-# transport = "stdio"
-# command = "npx"
-# args = ["-y", "c7-mcp-server"]
+# You can add [[mcp_servers]] here to extend Vibe's capabilities.
+# NOTE: Keeping this empty by default to maximize TPM (Anti-Rate Limit).

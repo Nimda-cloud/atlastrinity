@@ -874,16 +874,16 @@ IMPORTANT:
     ) -> None:
         """Helper to correct invalid tool names using inference."""
         current_name = str(tool_call.get("name", "") or "").strip()
-        
+
         # FIX: Detect hallucinated/invalid tool names from LLM responses
         INVALID_TOOL_NAMES = {"none", "null", "", "undefined", "unknown", "n/a", "na"}
         is_invalid = (
-            not current_name 
+            not current_name
             or current_name.lower() in INVALID_TOOL_NAMES
-            or len(current_name) > 50 
+            or len(current_name) > 50
             or " " in current_name
         )
-        
+
         if is_invalid:
             inferred = self._infer_tool_from_action(str(step.get("action", "")))
             if inferred:
