@@ -28,6 +28,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -694,6 +695,86 @@ async def _handle_vibe_rate_limit(
     }
 
 
+
+@server.tool()
+async def vibe_test_in_sandbox(
+    ctx: Context,
+    test_script: str,
+    target_files: dict[str, str],
+    command: str,
+    dependencies: list[str] | None = None,
+    timeout_s: float = 30.0,
+) -> dict[str, Any]:
+    """Execute a test script in an isolated temporary sandbox.
+
+    Args:
+        test_script: Content of the test script (e.g., Python unit test)
+        target_files: Dictionary of {filename: content} to mock/create in sandbox
+        command: Command to run (e.g., "python test_script.py")
+        dependencies: (Optional) Mock dependencies or instructions
+        timeout_s: Execution timeout (default: 30s)
+
+    Returns:
+        Execution results (stdout, stderr, returncode)
+    """
+    logger.info(f"[VIBE] Sandbox execution requested: {command}")
+
+    # Create temp directory
+    try:
+        with tempfile.TemporaryDirectory(prefix="vibe_sandbox_") as sandbox_dir:
+            # 1. Write target files
+            for fname, content in target_files.items():
+                fpath = os.path.join(sandbox_dir, fname)
+                os.makedirs(os.path.dirname(fpath), exist_ok=True)
+                with open(fpath, "w", encoding="utf-8") as f:
+                    f.write(content)
+
+            # 2. Write test script to checking file
+            # If command references a specific file, stick to it, otherwise default
+            runner_main = "vibe_test_runner.py"
+            runner_path = os.path.join(sandbox_dir, runner_main)
+            with open(runner_path, "w", encoding="utf-8") as f:
+                f.write(test_script)
+            
+            # 3. Execute
+            logger.debug(f"Running sandbox command in {sandbox_dir}")
+            
+            # Prepare env
+            env = os.environ.copy()
+            env["PYTHONPATH"] = sandbox_dir # Add sandbox to path
+            
+            process = await asyncio.create_subprocess_shell(
+                command,
+                cwd=sandbox_dir,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env
+            )
+            
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout_s)
+            
+            return {
+                "success": process.returncode == 0,
+                "returncode": process.returncode,
+                "stdout": stdout.decode(errors="replace"),
+                "stderr": stderr.decode(errors="replace"),
+                "sandbox_dir_was": sandbox_dir
+            }
+            
+    except TimeoutError:
+        return {
+            "success": False,
+            "error": f"Sandbox execution timed out after {timeout_s}s",
+            "returncode": -1
+        }
+    except Exception as e:
+            return {
+            "success": False,
+            "error": f"Sandbox internal error: {e}",
+            "returncode": -1
+        }
+
+
 # =============================================================================
 # MCP TOOLS - CORE (6 tools)
 # =============================================================================
@@ -1041,6 +1122,12 @@ async def vibe_analyze_error(
                 "  2.3. Ensure the fix addresses the ROOT CAUSE, not symptoms",
                 f"  2.4. Follow DYNAMIC VERIFICATION: {DYNAMIC_VERIFICATION_PROTOCOL}",
                 "",
+                "PHASE 2.5 - SANDBOX VERIFICATION (CRITICAL):",
+                "  2.5.1. Before applying any fix to the main codebase, TRY to reproduce the fix in a sandbox.",
+                "  2.5.2. Use the 'vibe_test_in_sandbox' tool if available.",
+                "  2.5.3. Create a minimal reproduction script and verify your fix actually works.",
+                "  2.5.4. If sandbox test passes, ONLY THEN apply the fix to the main codebase.",
+                "",
                 "PHASE 3 - VERIFY:",
                 "  3.1. Verify the fix works by running appropriate checks",
                 "  3.2. Confirm no new issues were introduced",
@@ -1057,6 +1144,7 @@ async def vibe_analyze_error(
                 "- FIX_APPLIED: [what was changed now]",
                 "- PREVENTION_MEASURE: [what was changed to prevent recurrence]",
                 "- VERIFICATION: [evidence of success]",
+                "- voice_message: [Direct speech to the user in Ukrainian, explaining what you did]",
                 "- STATUS: SUCCESS | PARTIAL | FAILED",
             ],
         )
@@ -1166,6 +1254,7 @@ After initial implementation, follow this loop (max {max_iterations} iterations)
 
 1. RUN DYNAMIC VERIFICATION:
    - {DYNAMIC_VERIFICATION_PROTOCOL}
+   - IF APPLICABLE: Use 'vibe_test_in_sandbox' to verify isolated logic before integration.
    
 2. SELF-REVIEW:
    - Verify compliance with: {MACOS_DEVELOPMENT_GUIDELINES}

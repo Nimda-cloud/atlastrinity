@@ -1048,6 +1048,10 @@ IMPORTANT:
                 v_res_raw = await self._call_mcp_direct("vibe", "vibe_analyze_error", {"error_message": error_msg, "auto_fix": True})
                 v_res = self._format_mcp_result(v_res_raw) if v_res_raw else {}
                 if v_res.get("success"):
+                    if "voice_message" in v_res:
+                        logger.info(f"[VIBE_VOICE] 🇺🇦 {v_res['voice_message']}")
+                    
+                    # Retry the original tool call now that the environment might be fixed
                     tool_result.update(await self._execute_tool(tool_call))
                     if tool_result.get("success"):
                         return None
