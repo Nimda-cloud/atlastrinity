@@ -319,6 +319,40 @@ def prepare_monitoring_db():
             print_success("Monitoring DB відновлено з бекапу")
         except Exception as e:
             print_warning(f"Не вдалося відновити Monitoring DB: {e}")
+            
+    # Ensure tables exist (Schema Check)
+    try:
+        import sqlite3
+        with sqlite3.connect(monitor_db_path) as conn:
+            # Check for healing_events
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS healing_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    task_id TEXT,
+                    event_type TEXT, -- 'auto_healing', 'constraint_violation'
+                    step_id TEXT,
+                    priority INTEGER,
+                    status TEXT,
+                    details JSON
+                )
+            """)
+            
+            # Also ensure basic logs tables exist (sync with monitoring.py)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    level TEXT,
+                    service TEXT,
+                    message TEXT,
+                    data JSON
+                )
+            """)
+            conn.commit()
+        print_success("Схема Monitoring DB (включаючи healing_events) перевірена")
+    except Exception as e:
+        print_warning(f"Не вдалося оновити схему Monitoring DB: {e}")
 
 
 def verify_golden_fund():
