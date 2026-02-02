@@ -20,6 +20,9 @@ def clean_main():
         CONFIG_ROOT / "memory",
         CONFIG_ROOT / "logs",
         CONFIG_ROOT / "cache",
+        CONFIG_ROOT / "vibe" / "agents",  # ← Vibe агенти конфігурації
+        CONFIG_ROOT / "data",  # ← Вся data директорія (включно search, analysis_cache)
+        CONFIG_ROOT / "mcp",  # ← MCP конфігурація
     ]
 
     for target in targets:
