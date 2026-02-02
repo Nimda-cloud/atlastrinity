@@ -56,7 +56,6 @@ from src.brain.voice.stt import WhisperSTT
 from src.brain.voice.tts import VoiceManager
 
 
-
 class SystemState(Enum):
     IDLE = "IDLE"
     PLANNING = "PLANNING"
@@ -1609,13 +1608,27 @@ class Trinity:
                     "auto_approve": True,
                 },
             )
-            logger.info(f"[ORCHESTRATOR] Vibe healing applied for {step_id}")
+
+            # --- Post-Fix: Run Global Lint ---
+            await self._log("[FIX] Running global lint verification...", "system")
+            lint_result = await mcp_manager.call_tool("devtools", "devtools_run_global_lint", {})
+
+            if isinstance(lint_result, dict):
+                if lint_result.get("success"):
+                    await self._log("[FIX] Global lint passed successfully! ✅", "system")
+                else:
+                    await self._log(
+                        f"[FIX] Global lint found issues (Exit {lint_result.get('exit_code')}). Check logs. ⚠️",
+                        "system",
+                    )
+
+            logger.info(f"[ORCHESTRATOR] Vibe healing applied and verified for {step_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to apply Vibe fix: {e}")
             return False
 
-    async def _update_diagrams_after_fix(self) -> None:
+    async def _refresh_architecture_diagrams(self) -> None:
         """Update architecture diagrams if enabled."""
         if (
             not config.get("self_healing", {})
@@ -1655,6 +1668,10 @@ class Trinity:
         success = False
         updated_result = None
         db_step_id = cast("str | None", self.state.get("db_step_id"))
+
+        # --- Phase 1: Pre-Diagnosis Diagram Refresh ---
+        # Ensure Vibe has latest architectural context
+        await self._refresh_architecture_diagrams()
 
         # --- Phase 2: Context Building ---
         log_context, error_context, step_recovery_history = await self._build_self_heal_context(
@@ -1704,8 +1721,8 @@ class Trinity:
                     if await self._apply_vibe_fix(step_id, error, vibe_text, healing_decision):
                         success = True
 
-                        # --- Phase 6: Diagram Update ---
-                        await self._update_diagrams_after_fix()
+                        # --- Phase 6: Diagram Update (Post-Apply) ---
+                        await self._refresh_architecture_diagrams()
 
                         # DB Update: Success
                         if recovery_attempt_id:
@@ -1834,158 +1851,92 @@ class Trinity:
         steps: list[dict[str, Any]],
         index: int,
     ) -> tuple[bool, StepResult | None]:
-        """Route the strategy decided by error_router."""
-        if strategy.action == "RETRY":
-            if attempt < strategy.max_retries:
-                await self._log(
-                    f"Transient error detected. {strategy.reason}. Retrying in {strategy.backoff}s...",
-                    "orchestrator",
-                )
-                await asyncio.sleep(strategy.backoff)
-                return True, None
-            return False, step_result
-
-        elif strategy.action == "WAIT_AND_RETRY":
-            if attempt < strategy.max_retries:
-                await self._log(
-                    f"Infrastructure issue detected. {strategy.reason}. Waiting {strategy.backoff}s...",
-                    "orchestrator",
-                )
-                await asyncio.sleep(strategy.backoff)
-                return True, None
-            else:
-                await self._log(f"Persistent infrastructure issue: {strategy.reason}.", "error")
-                return False, StepResult(
-                    step_id=step_id,
-                    success=False,
-                    error="infrastructure_failure",
-                    result=f"API issue persisted after {attempt} attempts. {strategy.reason}",
-                )
-
-        elif strategy.action == "RESTART":
-            await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
-            try:
-                from src.brain.state_manager import state_manager
-
-                if state_manager and state_manager.available:
-                    await state_manager.save_session(self.current_session_id, self.state)
-                    redis_client = getattr(state_manager, "redis_client", None)
-                    if redis_client:
-                        restart_metadata = {
-                            "reason": strategy.reason,
-                            "timestamp": datetime.now().isoformat(),
-                            "source": "orchestrator_self_healing",
-                        }
-                        await redis_client.set("restart_pending", json.dumps(restart_metadata))
-            except Exception as e:
-                logger.error(f"Restart preparation failed: {e}")
-
-            import os
-            import sys
-
-            await asyncio.sleep(1.0)
-            os.execv(sys.executable, [sys.executable, *sys.argv])
-            return False, StepResult(
-                step_id=step_id,
-                success=False,
-                error="restarting",
-                result="Restaring due to strategy",
-            )
-
-        elif strategy.action == "ASK_USER":
-            await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
-            return False, StepResult(
-                step_id=step_id,
-                success=False,
-                error="need_user_input",
-                result=f"ASK_USER: {strategy.reason}",
-            )
-
-        elif strategy.action == "VIBE_HEAL":
-            # Use parallel healing - non-blocking
-            use_parallel = config.get("parallel_healing", {}).get("enabled", True)
+        """Route the strategy decided by error_router by dispatching to sub-handlers."""
+        action = str(strategy.action)
+        
+        if action in ["RETRY", "WAIT_AND_RETRY"]:
+            return await self._handle_strategy_retry(strategy, attempt, step_result)
             
-            if use_parallel:
-                await self._log(
-                    f"Logic Error: {strategy.reason}. Submitting to parallel healing...",
-                    "orchestrator",
-                )
-                try:
-                    # Get recent logs for context
-                    recent_logs = await self._get_recent_logs(50)
-                    
-                    task_id = await parallel_healing_manager.submit_healing_task(
-                        step_id=step_id,
-                        error=last_error,
-                        step_context=step,
-                        log_context=recent_logs,
-                    )
-                    await self._log(
-                        f"Healing task {task_id} submitted. Tetyana continues.",
-                        "orchestrator",
-                    )
-                    # Continue to next step - don't block
-                    return False, StepResult(
-                        step_id=step_id,
-                        success=False,
-                        result=f"Step failed, parallel healing initiated (task: {task_id})",
-                        error="parallel_healing_initiated",
-                    )
-                except Exception as ph_err:
-                    logger.warning(f"Parallel healing submission failed: {ph_err}")
-                    # Fallback to blocking self-heal
-                    use_parallel = False
+        elif action == "RESTART":
+            return await self._handle_strategy_restart(strategy, step_id)
             
-            if not use_parallel:
-                # Fallback: blocking self-heal
-                await self._log(f"Logic Error: {strategy.reason}. Engaging Vibe...", "orchestrator")
-                heal_success, heal_result = await self._self_heal(
-                    step, step_id, last_error, step_result, depth
-                )
-                if heal_result:
-                    return False, heal_result
-                if heal_success:
-                    return True, None
-                return False, None
-
-        elif strategy.action == "ATLAS_PLAN":
-            await self._log(
-                f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator"
-            )
-            try:
-                # Include more context in the replan query: the error, the step content, and explicit instruction to fix it
-                replan_query = (
-                    f"RECOVERY STRATEGY NEEDED.\n"
-                    f"Goal: {self.state.get('current_goal')}.\n"
-                    f"FAILED STEP ID: {step_id}\n"
-                    f"ACTION: {step.get('action')}\n"
-                    f"ERROR/FEEDBACK: {last_error}\n"
-                    f"GRISHA FEEDBACK: {step.get('grisha_feedback', 'None')}\n"
-                    f"INSTRUCTION: Create a corrected set of steps to achieve the goal of the failed step, tackling the specific error reported."
-                )
-                
-                new_plan = await self.atlas.create_plan(
-                    {"enriched_request": replan_query, "intent": "task", "complexity": "medium"}
-                )
-                
-                if new_plan and getattr(new_plan, "steps", []):
-                    # We inject the new steps RIGHT AFTER the current failed step index
-                    # This effectively replaces the strategy for the immediate future
-                    logger.info(f"[ORCHESTRATOR] Atlas provided {len(new_plan.steps)} recovery steps.")
-                    
-                    # Log the new plan for visibility
-                    await self._log(f"Recovery Plan: {[s.get('action') for s in new_plan.steps]}", "atlas")
-                    
-                    for offset, s in enumerate(new_plan.steps):
-                        steps.insert(index + 1 + offset, s)
-                    return True, None
-                else:
-                    logger.warning("[ORCHESTRATOR] Atlas returned empty recovery plan.")
-            except Exception as e:
-                logger.error(f"Atlas re-planning failed: {e}")
-            return False, None
+        elif action == "ASK_USER":
+            return await self._handle_strategy_ask_user(strategy, step_id)
+            
+        elif action == "VIBE_HEAL":
+            return await self._handle_strategy_vibe_heal(strategy, step, step_id, last_error, step_result, depth)
+            
+        elif action == "ATLAS_PLAN":
+            return await self._handle_strategy_atlas_plan(strategy, step, step_id, last_error, steps, index)
 
         return False, step_result
+
+    async def _handle_strategy_retry(self, strategy: Any, attempt: int, result: StepResult | None) -> tuple[bool, StepResult | None]:
+        """Handle standard RETRY and WAIT_AND_RETRY strategies."""
+        if attempt >= strategy.max_retries:
+            if str(strategy.action) == "WAIT_AND_RETRY":
+                await self._log(f"Persistent infrastructure issue: {strategy.reason}.", "error")
+                return False, StepResult(
+                    step_id="unknown", success=False, error="infrastructure_failure", 
+                    result=f"API issue persisted. {strategy.reason}"
+                )
+            return False, result
+
+        await self._log(f"Error detected. {strategy.reason}. Retrying in {strategy.backoff}s...", "orchestrator")
+        await asyncio.sleep(strategy.backoff)
+        return True, None
+
+    async def _handle_strategy_restart(self, strategy: Any, step_id: str) -> tuple[bool, StepResult | None]:
+        """Handle RESTART strategy by saving state and execv."""
+        await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
+        try:
+            from src.brain.state_manager import state_manager
+            if state_manager and getattr(state_manager, "available", False):
+                await state_manager.save_session(self.current_session_id, self.state)
+                if redis_client := getattr(state_manager, "redis_client", None):
+                    meta = {"reason": strategy.reason, "timestamp": datetime.now().isoformat()}
+                    await redis_client.set("restart_pending", json.dumps(meta))
+        except Exception as e:
+            logger.error(f"Restart preparation failed: {e}")
+
+        import os
+        import sys
+        await asyncio.sleep(1.0)
+        os.execv(sys.executable, [sys.executable, *sys.argv])
+        return False, StepResult(step_id=step_id, success=False, error="restarting", result="Restart initiated")
+
+    async def _handle_strategy_ask_user(self, strategy: Any, step_id: str) -> tuple[bool, StepResult | None]:
+        """Handle ASK_USER strategy."""
+        await self._log(f"Permission/Input required: {strategy.reason}", "orchestrator")
+        return False, StepResult(step_id=step_id, success=False, error="need_user_input", result=f"ASK_USER: {strategy.reason}")
+
+    async def _handle_strategy_vibe_heal(self, strategy: Any, step: dict, step_id: str, error: str, result: Any, depth: int) -> tuple[bool, StepResult | None]:
+        """Handle VIBE_HEAL (Parallel or Blocking)."""
+        if config.get("parallel_healing", {}).get("enabled", True):
+            try:
+                logs = await self._get_recent_logs(50)
+                tid = await parallel_healing_manager.submit_healing_task(step_id, error, step, logs)
+                await self._log(f"Healing task {tid} submitted. Tetyana continues.", "orchestrator")
+                return False, StepResult(step_id=step_id, success=False, error="healing_initiated", result=f"Parallel healing {tid}")
+            except Exception as e:
+                logger.warning(f"Parallel healing failed, fallback to blocking: {e}")
+
+        heal_success, heal_result = await self._self_heal(step, step_id, error, result, depth)
+        return (True, None) if heal_success else (False, heal_result)
+
+    async def _handle_strategy_atlas_plan(self, strategy: Any, step: dict, step_id: str, error: str, steps: list, index: int) -> tuple[bool, StepResult | None]:
+        """Handle ATLAS_PLAN strategy (Re-planning)."""
+        await self._log(f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator")
+        try:
+            q = f"RECOVERY: Goal: {self.state.get('current_goal')}\nStep: {step_id}\nError: {error}"
+            new_plan = await self.atlas.create_plan({"enriched_request": q, "intent": "task", "complexity": "medium"})
+            if new_plan and getattr(new_plan, "steps", []):
+                for offset, s in enumerate(new_plan.steps):
+                    steps.insert(index + 1 + offset, s)
+                return True, None
+        except Exception as e:
+            logger.error(f"Atlas re-planning failed: {e}")
+        return False, None
 
     async def _validate_with_grisha_failure(
         self, step: dict[str, Any], step_id: str, step_result: StepResult | None, last_error: str
@@ -2077,175 +2028,137 @@ class Trinity:
         parent_prefix: str | None = None,
         depth: int = 0,
     ) -> bool:
-        """Recursively execute steps with proper goal context management.
-
-        IMPORTANT: This function manages the goal stack:
-        - push_goal at the START (entering sub-task)
-        - pop_goal at the END (leaving sub-task)
-        - Each recursive level represents a goal in the hierarchy
-
-        Supports hierarchical numbering (e.g. 3.1, 3.2) and deep recovery.
-        """
+        """Recursively execute steps with proper goal context management."""
         MAX_RECURSION_DEPTH = 5
 
         if depth > MAX_RECURSION_DEPTH:
             raise RecursionError("Max task recursion depth reached. Failing task.")
 
-        # Exponential backoff
         await self._handle_recursion_backoff(depth)
-
-        # Track recursion metrics for analytics
         metrics_collector.record("recursion_depth", depth, tags={"parent": parent_prefix or "root"})
 
-        # PUSH GOAL
         goal_pushed = await self._push_recursive_goal(parent_prefix, depth, steps)
 
         for i, step in enumerate(steps):
-            # Generate hierarchical ID: "1", "2" or "3.1", "3.2"
-            if parent_prefix:
-                step_id = f"{parent_prefix}.{i + 1}"
-            else:
-                step_id = str(i + 1)
-
-            # Update step object with this dynamic ID (for logging/recovery context)
+            step_id = f"{parent_prefix}.{i + 1}" if parent_prefix else str(i + 1)
             step["id"] = step_id
 
             notifications.show_progress(i + 1, len(steps), f"[{step_id}] {step.get('action')}")
+            self._update_current_step_id(i + 1)
 
-            # Update current step progress in shared context (не push_goal!)
-            try:
-                from src.brain.context import shared_context
-
-                shared_context.current_step_id = i + 1
-            except (ImportError, NameError, AttributeError):
-                pass
-
-            # --- SKIP ALREADY COMPLETED STEPS ---
             if self._is_step_already_completed(step_id):
                 logger.info(f"[ORCHESTRATOR] Skipping already completed step {step_id}")
                 continue
 
-            # --- PARALLEL HEALING CHECK ---
-            try:
-                fixed_steps = await parallel_healing_manager.get_fixed_steps()
-                if fixed_steps:
-                    logger.info(f"[ORCHESTRATOR] Found {len(fixed_steps)} parallel fixes ready.")
-                    
-                    for fix_info in fixed_steps:
-                        # Ask Tetyana what to do
-                        decision = await self.tetyana.evaluate_fix_retry(
-                            fix_info, 
-                            step_id,
-                            {"action": step.get("action")}
-                        )
-                        
-                        action = decision.get("action", "noted")
-                        await parallel_healing_manager.acknowledge_fix(fix_info.step_id, action)
-                        
-                        if action == "retry":
-                            await self._log(f"🔄 Retrying parallel-fixed step {fix_info.step_id}...", "orchestrator")
-                            # We need to find the step definition. 
-                            # If it's in the current list, great. If not (past step), we need a creative way.
-                            
-                            # Case 1: The fixed step is the current step (unlikely but possible if we looped)
-                            if str(fix_info.step_id) == str(step_id):
-                                # Just proceed to execute current step
-                                await self._log("Fix applies to CURRENT step. Proceeding with execution.", "orchestrator")
-                            
-                            # Case 2: The fixed step is in the past of the current list
-                            else:
-                                # We might need to handle this by inserting a retry step or just logging
-                                # For now, we'll log that we *would* retry but just acknowledging.
-                                # True retry logic for past steps requires jumping back or inserting steps.
-                                await self._log(f"Parallel fix acknowledged for {fix_info.step_id}. (Jump-back not fully implemented)", "orchestrator")
-                                
-            except Exception as phe:
-                logger.warning(f"[ORCHESTRATOR] Parallel healing check failed: {phe}")
+            await self._check_and_handle_parallel_fixes(step_id, step)
 
-            # Retry loop with Dynamic Temperature
-            max_step_retries = 3
-            last_error = ""
+            # Retry loop for THIS step
+            await self._run_step_retry_loop(step, step_id, depth, steps, i)
 
-            for attempt in range(1, max_step_retries + 1):
-                # --- CONSTRAINT MONITORING (Async) ---
-                try:
-                    from src.brain.constraint_monitor import constraint_monitor
-                    # Fire and forget check
-                    monitor_logs = await self._get_recent_logs(20)
-                    state_logs = self.state.get("logs", []) if self.state else []
-                    if not isinstance(state_logs, list):
-                        state_logs = []
-                    
-                    asyncio.create_task(
-                        constraint_monitor.check_compliance(
-                            monitor_logs, 
-                            [l for l in state_logs if isinstance(l, dict)][-20:]
-                        )
-                    )
-                except Exception as cm_err:
-                    logger.warning(f"[ORCHESTRATOR] Monitor check trigger failed: {cm_err}")
-
-                await self._log(
-                    f"Step {step_id}, Attempt {attempt}: {step.get('action')}",
-                    "orchestrator",
-                )
-
-                step_result = await self._execute_step_attempt(step, step_id, attempt, depth)
-
-                if step_result and step_result.success:
-                    logger.info(f"[ORCHESTRATOR] Step {step_id} completed successfully")
-                    break
-
-                if step_result:
-                    last_error = step_result.error or "Step failed without error message"
-                    logger.warning(f"[ORCHESTRATOR] Step {step_id} failed. Error: {last_error}.")
-                else:
-                    last_error = "Execution error (timeout or crash)"
-                    logger.error(f"[ORCHESTRATOR] Step {step_id} failed on attempt {attempt}")
-
-                await self._log(
-                    f"Step {step_id} Attempt {attempt} failed: {last_error}",
-                    "warning",
-                )
-
-                # === SMART SELF-HEALING ROUTER ===
-                strategy = error_router.decide(last_error, attempt)
-                logger.info(
-                    f"[ORCHESTRATOR] Recovery Strategy: {strategy.action} ({strategy.reason})"
-                )
-
-                should_retry, override_result = await self._handle_step_error_strategy(
-                    strategy, step, step_id, attempt, last_error, step_result, depth, steps, i
-                )
-                if should_retry:
-                    continue
-                if override_result:
-                    step_result = override_result
-                    break
-
-                # === GRISHA VALIDATION FALLBACK ===
-                if await self._validate_with_grisha_failure(step, step_id, step_result, last_error):
-                    break
-
-                notifications.send_stuck_alert(
-                    int(str(step_id).split(".")[-1])
-                    if "." in str(step_id)
-                    else (int(step_id) if str(step_id).isdigit() else 0),
-                    str(last_error or "Unknown error"),
-                    max_step_retries,
-                )
-
-                # === ATLAS RECOVERY FALLBACK ===
-                if await self._atlas_recovery_fallback(step_id, last_error, depth):
-                    break
-
-            # End of retry loop for THIS step
-            # НЕ викликаємо pop_goal тут - він викликається тільки в кінці рекурсії
-
-        # POP GOAL
         await self._pop_recursive_goal(goal_pushed, depth)
-
         return True
+
+    def _update_current_step_id(self, step_idx: int) -> None:
+        """Update current step progress in shared context."""
+        try:
+            from src.brain.context import shared_context
+            shared_context.current_step_id = step_idx
+        except (ImportError, NameError, AttributeError):
+            pass
+
+    async def _check_and_handle_parallel_fixes(self, step_id: str, step: dict[str, Any]) -> None:
+        """Check for and apply any ready parallel fixes."""
+        try:
+            fixed_steps = await parallel_healing_manager.get_fixed_steps()
+            if not fixed_steps:
+                return
+
+            logger.info(f"[ORCHESTRATOR] Found {len(fixed_steps)} parallel fixes ready.")
+            for fix_info in fixed_steps:
+                decision = await self.tetyana.evaluate_fix_retry(
+                    fix_info, step_id, {"action": step.get("action")}
+                )
+                action = decision.get("action", "noted")
+                await parallel_healing_manager.acknowledge_fix(fix_info.step_id, action)
+                await self._log_parallel_fix_outcome(fix_info.step_id, step_id, action)
+        except Exception as phe:
+            logger.warning(f"[ORCHESTRATOR] Parallel healing check failed: {phe}")
+
+    async def _log_parallel_fix_outcome(self, fixed_id: str, current_id: str, action: str) -> None:
+        """Log the result of evaluating a parallel fix."""
+        if action != "retry":
+            return
+
+        await self._log(f"🔄 Retrying parallel-fixed step {fixed_id}...", "orchestrator")
+        if str(fixed_id) == str(current_id):
+            await self._log("Fix applies to CURRENT step. Proceeding with execution.", "orchestrator")
+        else:
+            await self._log(f"Parallel fix acknowledged for {fixed_id}. (Jump-back not fully implemented)", "orchestrator")
+
+    async def _run_step_retry_loop(
+        self, step: dict[str, Any], step_id: str, depth: int, steps: list[dict[str, Any]], index: int
+    ) -> None:
+        """Execute a step with a retry loop and smart healing."""
+        max_step_retries = 3
+        last_error = ""
+
+        for attempt in range(1, max_step_retries + 1):
+            await self._trigger_async_constraint_monitoring()
+            await self._log(f"Step {step_id}, Attempt {attempt}: {step.get('action')}", "orchestrator")
+
+            step_result = await self.execute_node(cast(Any, self.state), step, step_id, attempt, depth)
+
+            if step_result.success:
+                logger.info(f"[ORCHESTRATOR] Step {step_id} completed successfully")
+                return
+
+            last_error = self._format_step_error(step_id, attempt, step_result)
+            await self._log(f"Step {step_id} Attempt {attempt} failed: {last_error}", "warning")
+
+            # Strategy Routing
+            strategy = error_router.decide(last_error, attempt)
+            logger.info(f"[ORCHESTRATOR] Recovery Strategy: {strategy.action} ({strategy.reason})")
+
+            should_retry, override_result = await self._handle_step_error_strategy(
+                strategy, step, step_id, attempt, last_error, step_result, depth, steps, index
+            )
+            if should_retry:
+                continue
+            if override_result and override_result.success:
+                return
+
+            if await self._validate_with_grisha_failure(step, step_id, step_result, last_error):
+                return
+
+            notifications.send_stuck_alert(self._parse_numeric_id(step_id), str(last_error), max_step_retries)
+            if await self._atlas_recovery_fallback(step_id, last_error, depth):
+                return
+
+    def _format_step_error(self, step_id: str, attempt: int, result: StepResult) -> str:
+        """Format a step error message for logging."""
+        if result:
+            err = result.error or "Step failed without error message"
+            logger.warning(f"[ORCHESTRATOR] Step {step_id} failed. Error: {err}.")
+            return err
+        logger.error(f"[ORCHESTRATOR] Step {step_id} failed on attempt {attempt} (no result)")
+        return "Execution error (timeout or crash)"
+
+    def _parse_numeric_id(self, step_id: str) -> int:
+        """Safely parse a numeric step ID."""
+        try:
+            return int(str(step_id).split(".")[-1]) if "." in str(step_id) else (int(step_id) if str(step_id).isdigit() else 0)
+        except (ValueError, TypeError):
+            return 0
+
+    async def _trigger_async_constraint_monitoring(self) -> None:
+        """Fire-and-forget check for environmental constraints."""
+        try:
+            from src.brain.constraint_monitor import constraint_monitor
+            monitor_logs = await self._get_recent_logs(20)
+            state_logs = [l for l in (self.state.get("logs", []) or []) if isinstance(l, dict)][-20:]
+            asyncio.create_task(constraint_monitor.check_compliance(monitor_logs, state_logs))
+        except Exception as cm_err:
+            logger.warning(f"[ORCHESTRATOR] Monitor check trigger failed: {cm_err}")
 
     async def _announce_step_start(self, step: dict[str, Any], step_id: str, attempt: int) -> None:
         """Handle starting messages and state publishing for a step."""

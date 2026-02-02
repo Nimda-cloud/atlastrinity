@@ -643,6 +643,29 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
 
 
 @server.tool()
+def devtools_run_global_lint() -> dict[str, Any]:
+    """Run the complete system linting suite (npm run lint:all).
+    This includes Python (ruff, pyrefly, mypy, bandit, xenon) and
+    JS/TS (oxlint, eslint) checks.
+    """
+    try:
+        # npm run lint:all is defined in package.json at project root
+        cmd = ["npm", "run", "lint:all"]
+        result = subprocess.run(
+            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+        )
+
+        return {
+            "success": result.returncode == 0,
+            "stdout": result.stdout.strip(),
+            "stderr": result.stderr.strip(),
+            "exit_code": result.returncode,
+        }
+    except Exception as e:
+        return {"error": str(e), "success": False}
+
+
+@server.tool()
 def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
     """Run 'knip' to find unused files, dependencies, and exports.
     Requires 'knip' to be installed in the project (usually via npm).

@@ -691,7 +691,6 @@ class Grisha(BaseAgent):
 
     def _extract_verdict(self, analysis_text: str, analysis_upper: str) -> bool:
         """Determines verification success or failure from text."""
-        import re
 
         verdict_match = re.search(
             r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)",
@@ -757,7 +756,6 @@ class Grisha(BaseAgent):
 
     def _extract_confidence(self, analysis_text: str, verified: bool) -> float:
         """Extracts confidence percentage from analysis."""
-        import re
 
         confidence_match = re.search(
             r"(?:CONFIDENCE|ВПЕВНЕНІСТЬ)[:\s]*(\d+\.?\d*)\%?", analysis_text, re.IGNORECASE
@@ -771,7 +769,6 @@ class Grisha(BaseAgent):
 
     def _extract_reasoning(self, analysis_text: str) -> str:
         """Extracts reasoning text block."""
-        import re
 
         reasoning_match = re.search(
             r"(?:REASONING|ОБҐРУНТУВАННЯ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
@@ -782,7 +779,6 @@ class Grisha(BaseAgent):
 
     def _extract_issues(self, analysis_text: str, verified: bool) -> list[str]:
         """Extracts and filters potential issues."""
-        import re
 
         issues_match = re.search(
             r"(?:ISSUES|ПРОБЛЕМИ)[:\s]*(.*?)(?=\n- \*\*|\Z)",
@@ -1164,54 +1160,16 @@ class Grisha(BaseAgent):
         try:
             cleaned_text = str(raw_text).strip()
             
-            # 1. Advanced Extraction: Find all potential JSON objects
-            # We look for all substrings starting with { and ending with }
-            potential_blocks = []
-            start_indices = [m.start() for m in re.finditer(r"\{", cleaned_text)]
-            end_indices = [m.start() for m in re.finditer(r"\}", cleaned_text)]
+            # 1. Advanced Extraction
+            plan_data = self._extract_json_from_potential_blocks(cleaned_text)
 
-            for start in start_indices:
-                for end in reversed(end_indices):
-                    if end > start:
-                        block = cleaned_text[start : end + 1]
-                        # Quick heuristic: must contain "steps" to be a plan
-                        if "steps" in block.lower():
-                            potential_blocks.append(block)
-
-            # Sort by length (descending) to find the most complete block first
-            potential_blocks.sort(key=len, reverse=True)
-
-            plan_data = None
-            for block in potential_blocks:
-                try:
-                    # Clean block from internal triple backticks if any (sometimes models nest them)
-                    clean_block = block.replace("```json", "").replace("```", "").strip()
-                    data = json.loads(clean_block)
-                    if isinstance(data, dict) and "steps" in data:
-                        plan_data = data
-                        break
-                except json.JSONDecodeError:
-                    continue
-
-            # 2. Fallback to original markers if advanced extraction failed
+            # 2. Fallback to original markers
             if not plan_data:
-                if "```json" in cleaned_text:
-                    cleaned_text = cleaned_text.split("```json")[1].split("```")[0].strip()
-                elif "```" in cleaned_text:
-                    parts = cleaned_text.split("```")
-                    json_candidates = [p.strip() for p in parts if "{" in p and "}" in p]
-                    if json_candidates:
-                        cleaned_text = max(json_candidates, key=len)
-                    else:
-                        cleaned_text = parts[1].strip()
-
-                if not (cleaned_text.startswith("{") and cleaned_text.endswith("}")):
-                    json_match = re.search(r"(\{.*\})", cleaned_text, re.DOTALL)
-                    if json_match:
-                        cleaned_text = json_match.group(1).strip()
-                
-                plan_data = json.loads(cleaned_text)
+                plan_data = self._fallback_json_extraction(cleaned_text)
             
+            if not plan_data:
+                return None
+
             import inspect
 
             from src.brain.agents.atlas import TaskPlan
@@ -1712,7 +1670,6 @@ class Grisha(BaseAgent):
         analysis_text = reasoning.get("analysis", "Deep analysis unavailable.")
 
         # Enhanced extraction for Ukrainian fields
-        import re
 
         def extract_field(pattern, text, default):
             match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
@@ -2157,3 +2114,48 @@ class Grisha(BaseAgent):
             "approved": "Підтверджую. Можна продовжувати.",
         }
         return messages.get(action, "")
+
+    def _extract_json_from_potential_blocks(self, text: str) -> dict[str, Any] | None:
+        """Extract JSON by finding all { } pairs."""
+        import json
+        start_indices = [m.start() for m in re.finditer(r"\{", text)]
+        end_indices = [m.start() for m in re.finditer(r"\}", text)]
+        
+        candidates = []
+        for start in start_indices:
+            for end in reversed(end_indices):
+                if end > start:
+                    block = text[start : end + 1]
+                    if "steps" in block.lower():
+                        candidates.append(block)
+        
+        candidates.sort(key=len, reverse=True)
+        for block in candidates:
+            try:
+                clean_block = block.replace("```json", "").replace("```", "").strip()
+                data = json.loads(clean_block)
+                if isinstance(data, dict) and "steps" in data:
+                    return data
+            except (json.JSONDecodeError, ValueError):
+                continue
+        return None
+
+    def _fallback_json_extraction(self, text: str) -> dict[str, Any] | None:
+        """Standard backtick and regex fallback."""
+        import json
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            parts = text.split("```")
+            json_candidates = [p.strip() for p in parts if "{" in p and "}" in p]
+            text = max(json_candidates, key=len) if json_candidates else parts[1].strip()
+
+        if not (text.startswith("{") and text.endswith("}")):
+            json_match = re.search(r"(\{.*\})", text, re.DOTALL)
+            if json_match:
+                text = json_match.group(1).strip()
+        
+        try:
+            return cast(dict[str, Any], json.loads(text))
+        except (json.JSONDecodeError, ValueError):
+            return None

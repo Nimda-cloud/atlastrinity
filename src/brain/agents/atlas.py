@@ -276,7 +276,7 @@ class Atlas(BaseAgent):
             evaluation = self._parse_response(cast("str", response.content))
             logger.info(f"[ATLAS] Deviation Evaluation: {evaluation.get('approved')}")
             return evaluation
-        except Exception as e:
+        except Exception:
             return {
                 "approved": False,
                 "reason": "Evaluation failed",

@@ -1888,7 +1888,7 @@ IMPORTANT:
             curr = str(current_step_id)
             
             # Simple distance measure if steps are numeric
-            distance = 100
+            distance = 100.0
             try:
                 # Handle "3" vs "3.1"
                 f_val = float(fixed_step)

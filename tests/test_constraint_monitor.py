@@ -1,8 +1,11 @@
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from src.brain.constraint_monitor import constraint_monitor, ConstraintMonitor
+
+from src.brain.constraint_monitor import ConstraintMonitor, constraint_monitor
 from src.brain.parallel_healing import HealingStatus, parallel_healing_manager
+
 
 @pytest.mark.asyncio
 async def test_constraint_monitor_violations():

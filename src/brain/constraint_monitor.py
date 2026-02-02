@@ -6,14 +6,14 @@ Triggers priority parallel healing if violations are detected.
 """
 
 import asyncio
-import os
 import logging
+import os
 from datetime import datetime
 from typing import Any
 
+from src.brain.config import BRAIN_DIR
 from src.brain.logger import logger
 from src.brain.parallel_healing import parallel_healing_manager
-from src.brain.config import BRAIN_DIR
 
 CONSTRAINTS_FILE = os.path.join(BRAIN_DIR, "data", "user_constraints.txt")
 
@@ -108,7 +108,7 @@ class ConstraintMonitor:
             return []
         
         try:
-            with open(CONSTRAINTS_FILE, "r") as f:
+            with open(CONSTRAINTS_FILE) as f:
                 lines = f.readlines()
             # Filter comments and empty lines
             return [l.strip() for l in lines if l.strip() and not l.strip().startswith("#")]

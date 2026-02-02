@@ -1,8 +1,10 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.brain.parallel_healing import ParallelHealingManager, HealingStatus, HealingTask
+import pytest
+
+from src.brain.parallel_healing import HealingStatus, HealingTask, ParallelHealingManager
+
 
 @pytest.fixture
 def manager():
@@ -96,7 +98,7 @@ async def test_run_healing_workflow_success(manager):
         await manager._run_healing_workflow(task)
         
         assert task.status == HealingStatus.READY
-        assert "Use the foo bar" in task.fix_description
+        assert task.fix_description is not None and "Use the foo bar" in task.fix_description
         assert len(manager._fixed_queue) == 1
         mock_notify.assert_called_once()
 
@@ -119,5 +121,5 @@ async def test_run_healing_workflow_grisha_reject(manager):
         await manager._run_healing_workflow(task)
         
         assert task.status == HealingStatus.FAILED
-        assert "Grisha rejected" in task.error_message
+        assert task.error_message is not None and "Grisha rejected" in task.error_message
         assert len(manager._fixed_queue) == 0

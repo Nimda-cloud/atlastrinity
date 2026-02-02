@@ -30,6 +30,9 @@ requirements.txt.filtered
 # Logs
 logs/
 *.log
+brain_*.txt
+vibe_server_*.txt
+*.errors.txt
 
 # Environment
 .env
@@ -67,5 +70,7 @@ vendor/XcodeBuildMCP/
 
 # Database Backups Strategy:
 # - Local databases in ~/.config/atlastrinity/ are never committed
-# - backups/databases/ is now TRACKED to allow sharing state/knowledge
-# backups/databases/
+# - backups/databases/ is now IGNORED due to security scanning and size
+backups/databases/
+*.encrypted
+*.sqlite3

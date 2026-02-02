@@ -1615,6 +1615,12 @@
     },
     "description": "Run the 'ruff' linter on a specific file or directory. Returns structured JSON results."
   },
+  "devtools_run_global_lint": {
+    "server": "devtools",
+    "required": [],
+    "optional": [],
+    "description": "Run the complete system linting suite (npm run lint:all). This includes Python (ruff, pyrefly, mypy, bandit, xenon) and JS/TS (oxlint, eslint) checks."
+  },
   "devtools_lint_js": {
     "server": "devtools",
     "required": [],

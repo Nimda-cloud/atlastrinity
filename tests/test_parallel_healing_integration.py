@@ -1,8 +1,11 @@
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from src.brain.parallel_healing import parallel_healing_manager, HealingStatus
-from src.brain.message_bus import message_bus, MessageType, AgentMsg
+
+from src.brain.message_bus import AgentMsg, MessageType, message_bus
+from src.brain.parallel_healing import HealingStatus, parallel_healing_manager
+
 
 @pytest.mark.asyncio
 async def test_integration_parallel_healing_flow():
@@ -55,10 +58,11 @@ async def test_integration_parallel_healing_flow():
         # --- B. EXECUTION ---
         # Wait for the background task to complete
         task = parallel_healing_manager._tasks[task_id]
-        await task.asyncio_task
+        if task.asyncio_task:
+            await task.asyncio_task
         
         assert task.status == HealingStatus.READY
-        assert "Increase timeout" in task.fix_description
+        assert task.fix_description is not None and "Increase timeout" in task.fix_description
         
         # Verify completion notification
         assert mock_send.call_count >= 2

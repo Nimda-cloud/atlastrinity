@@ -319,11 +319,13 @@
       "Complexity analysis (Xenon)",
       "Type checking (MyPy, tsc)",
       "Logic validation (ContextCheck)",
-      "Log analysis (TraceAnalyzer)"
+      "Log analysis (TraceAnalyzer)",
+      "Global system linting (devtools_run_global_lint)"
     ],
     "key_tools": [
       "devtools_lint_python",
       "devtools_lint_js",
+      "devtools_run_global_lint",
       "devtools_find_dead_code",
       "devtools_check_integrity",
       "devtools_check_mcp_health",

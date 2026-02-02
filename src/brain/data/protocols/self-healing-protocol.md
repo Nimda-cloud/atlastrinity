@@ -278,9 +278,7 @@ if "test_changes" in result:
 
 ```python
 # Run tests to verify fix
-test_result = await manager.call_tool("devtools", "devtools_lint_python", {
-    "target": "all"
-})
+test_result = await manager.call_tool("devtools", "devtools_run_global_lint", {})
 
 if not test_result["success"]:
     # Retry fix generation

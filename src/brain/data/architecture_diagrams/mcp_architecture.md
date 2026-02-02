@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-02T10:22:08.626528 -->
+<!-- Modified: src/brain/monitoring.py, src/brain/parallel_healing.py, tests/test_parallel_healing_integration.py -->
+
+
 <!-- AUTO-UPDATED: 2026-01-29T19:26:02.991706 -->
 <!-- Modified: .docs/model_usage_policy.md, config/vibe_config.toml.template -->
 

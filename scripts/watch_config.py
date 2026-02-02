@@ -118,6 +118,49 @@ class ConfigHandler(FileSystemEventHandler):
             time.sleep(0.1) 
             process_template(Path(event.src_path), dst_path)
 
+def ensure_github_remote_setup():
+    """Ensures git remote 'origin' is configured with GITHUB_TOKEN for passwordless operations."""
+    try:
+        import subprocess
+        
+        # 1. Get token from env
+        token = os.getenv("GITHUB_TOKEN")
+        if not token:
+            print("[GIT] GITHUB_TOKEN not found in environment. Skipping remote setup.")
+            return
+
+        # 2. Check current remote
+        try:
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                cwd=str(PROJECT_ROOT),
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            current_url = result.stdout.strip()
+        except subprocess.CalledProcessError:
+            print("[GIT] Failed to get remote URL. Is this a git repository?")
+            return
+
+        # 3. Check if token is already in URL
+        # Format: https://TOKEN@github.com/Nimda-cloud/atlastrinity.git
+        if token in current_url:
+            print("[GIT] Remote 'origin' already configured with token.")
+            return
+
+        # 4. Update remote URL
+        new_url = f"https://{token}@github.com/Nimda-cloud/atlastrinity.git"
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", new_url],
+            cwd=str(PROJECT_ROOT),
+            check=True
+        )
+        print("[GIT] Remote 'origin' successfully updated with GITHUB_TOKEN.")
+
+    except Exception as e:
+        print(f"[GIT] Error during remote setup: {e}")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Watch or sync configs")
@@ -135,6 +178,10 @@ def main():
         src = CONFIG_SRC / tpl
         if src.exists():
             process_template(src, CONFIG_DST_ROOT / dst)
+    
+    # Ensure GitHub remote is set up (Use token from .env)
+    ensure_github_remote_setup()
+    
     print("Sync completed.")
     print("-" * 40)
 

@@ -613,6 +613,8 @@ tool_routing:
       - oxlint
       - knip
       - pyrefly
+      - global_lint
+      - lint_all
       - check
       - validate
       - health
@@ -630,6 +632,8 @@ tool_routing:
       validate: devtools_validate_config
       update_diagram: devtools_update_architecture_diagrams
       architecture: devtools_update_architecture_diagrams
+      global_lint: devtools_run_global_lint
+      lint_all: devtools_run_global_lint
       self_heal: devtools_update_architecture_diagrams  # Update diagrams during self-healing
     routing_rules:
       - pattern: 'lint.*python'

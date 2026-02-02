@@ -14,8 +14,9 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-logger = logging.getLogger("brain.parallel_healing")
 from src.brain.monitoring import monitoring_system
+
+logger = logging.getLogger("brain.parallel_healing")
 
 
 class HealingStatus(Enum):
@@ -331,7 +332,7 @@ class ParallelHealingManager:
                 }
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             task.status = HealingStatus.FAILED
             task.error_message = "Healing workflow timed out"
             task.updated_at = datetime.now()
@@ -417,7 +418,7 @@ sys.exit(0)
     async def _notify_healing_started(self, task: HealingTask) -> None:
         """Notify agents that healing has started."""
         try:
-            from src.brain.message_bus import message_bus, AgentMsg, MessageType
+            from src.brain.message_bus import AgentMsg, MessageType, message_bus
             
             await message_bus.send(AgentMsg(
                 from_agent="atlas",
@@ -437,7 +438,7 @@ sys.exit(0)
     async def _notify_fix_ready(self, task: HealingTask) -> None:
         """Notify Tetyana that a fix is ready."""
         try:
-            from src.brain.message_bus import message_bus, AgentMsg, MessageType
+            from src.brain.message_bus import AgentMsg, MessageType, message_bus
             
             await message_bus.send(AgentMsg(
                 from_agent="atlas",
@@ -532,7 +533,7 @@ sys.exit(0)
             if isinstance(content, list) and content:
                 first = content[0]
                 if hasattr(first, "text"):
-                    return first.text
+                    return str(first.text)
         return str(result) if result else None
 
     def _extract_fix_description(self, analysis: str) -> str:

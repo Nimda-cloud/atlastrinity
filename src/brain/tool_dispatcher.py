@@ -175,6 +175,7 @@ class ToolDispatcher:
         "oxlint",
         "knip",
         "pyrefly",
+        "devtools_run_global_lint",
     ]
 
     CONTEXT7_SYNONYMS = [
