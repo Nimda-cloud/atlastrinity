@@ -665,6 +665,8 @@ async def _handle_vibe_rate_limit(
     ctx: Context | None,
 ) -> bool | dict[str, Any]:
     """Handle rate limit errors with backoff or report failure."""
+    global _current_model
+
     if attempt < max_retries - 1:
         wait_time = backoff_delays[attempt]
         logger.warning(
@@ -677,6 +679,21 @@ async def _handle_vibe_rate_limit(
         )
         await asyncio.sleep(wait_time)
         return True
+
+    # Try OpenRouter fallback before giving up
+    config = get_vibe_config()
+    openrouter_model = config.get_model_by_alias("devstral-openrouter")
+    if openrouter_model and _current_model != "devstral-openrouter":
+        provider = config.get_provider("openrouter")
+        if provider and provider.is_available():
+            logger.info("[VIBE] Mistral rate limit exhausted. Switching to OpenRouter fallback...")
+            await _emit_vibe_log(
+                ctx,
+                "info",
+                "🔄 [VIBE-FALLBACK] Переключаюсь на OpenRouter (безкоштовний devstral)...",
+            )
+            _current_model = "devstral-openrouter"
+            return True  # Signal retry with new model
 
     error_msg = (
         f"Mistral API rate limit exceeded after {max_retries} attempts. "
@@ -693,7 +710,6 @@ async def _handle_vibe_rate_limit(
         "stderr": truncate_output(stderr),
         "command": argv,
     }
-
 
 
 @server.tool()

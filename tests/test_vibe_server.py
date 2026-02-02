@@ -27,7 +27,9 @@ class TestVibeConfig:
         """Default configuration should load without errors."""
         from src.mcp_server.vibe_config import VibeConfig
 
-        config = VibeConfig()
+        # Load config from file (actual usage path)
+        config = VibeConfig.load()
+        # Config file should specify devstral-2 as active_model
         assert config.active_model == "devstral-2"
         assert config.max_turns == 10
         assert config.timeout_s == 600.0
@@ -101,7 +103,9 @@ class TestVibeConfig:
         assert "Test prompt" in args
         assert "--output" in args
         assert "streaming" in args
-        assert "--auto-approve" in args
+        # Mode is passed via --agent profile, not as --auto-approve flag
+        assert "--agent" in args
+        assert "auto-approve" in args
 
     def test_cli_args_model_override(self):
         """Model override is not supported in current Vibe CLI."""

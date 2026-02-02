@@ -1,8 +1,8 @@
 # Optimized Vibe Configuration Template
 # Based on official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model alias
-active_model = "codestral-latest"
+# Active model alias (devstral-2 recommended - lower rate limits than codestral-latest)
+active_model = "devstral-2"
 
 # System prompt ID
 system_prompt_id = "default"
@@ -22,12 +22,25 @@ api_key_env_var = "MISTRAL_API_KEY"
 api_style = "mistral"
 backend = "mistral"
 
+[[providers]]
+name = "openrouter"
+api_base = "https://openrouter.ai/api/v1"
+api_key_env_var = "OPENROUTER_API_KEY"
+api_style = "openai"
+backend = "generic"
+
 # Models
 [[models]]
-name = "codestral-latest"
+name = "devstral-2"
 provider = "mistral"
-alias = "codestral-latest"
+alias = "devstral-2"
 temperature = 0.0
+
+[[models]]
+name = "mistralai/devstral-2512:free"
+provider = "openrouter"
+alias = "devstral-openrouter"
+temperature = 0.2
 
 # Tool Permissions
 [tools.bash]
