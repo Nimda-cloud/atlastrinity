@@ -1874,14 +1874,34 @@ class Trinity:
                 f"Strategic Recovery: {strategy.reason}. Re-planning...", "orchestrator"
             )
             try:
-                replan_query = f"RECOVERY STRATEGY NEEDED. Goal: {self.state.get('current_goal')}. Step {step_id} failed: {last_error}."
+                # Include more context in the replan query: the error, the step content, and explicit instruction to fix it
+                replan_query = (
+                    f"RECOVERY STRATEGY NEEDED.\n"
+                    f"Goal: {self.state.get('current_goal')}.\n"
+                    f"FAILED STEP ID: {step_id}\n"
+                    f"ACTION: {step.get('action')}\n"
+                    f"ERROR/FEEDBACK: {last_error}\n"
+                    f"GRISHA FEEDBACK: {step.get('grisha_feedback', 'None')}\n"
+                    f"INSTRUCTION: Create a corrected set of steps to achieve the goal of the failed step, tackling the specific error reported."
+                )
+                
                 new_plan = await self.atlas.create_plan(
                     {"enriched_request": replan_query, "intent": "task", "complexity": "medium"}
                 )
+                
                 if new_plan and getattr(new_plan, "steps", []):
+                    # We inject the new steps RIGHT AFTER the current failed step index
+                    # This effectively replaces the strategy for the immediate future
+                    logger.info(f"[ORCHESTRATOR] Atlas provided {len(new_plan.steps)} recovery steps.")
+                    
+                    # Log the new plan for visibility
+                    await self._log(f"Recovery Plan: {[s.get('action') for s in new_plan.steps]}", "atlas")
+                    
                     for offset, s in enumerate(new_plan.steps):
                         steps.insert(index + 1 + offset, s)
                     return True, None
+                else:
+                    logger.warning("[ORCHESTRATOR] Atlas returned empty recovery plan.")
             except Exception as e:
                 logger.error(f"Atlas re-planning failed: {e}")
             return False, None

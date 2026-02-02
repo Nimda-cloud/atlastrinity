@@ -227,7 +227,6 @@ def generate_atlas_solo_task_prompt(
 
     return f"""
 ═══════════════════════════════════════════════════════════════════════════════
-
                         MODE: SOLO RESEARCH & EXECUTION
 ═══════════════════════════════════════════════════════════════════════════════
 - You are in SOLO mode. You handle research, information retrieval, and system inspection.
