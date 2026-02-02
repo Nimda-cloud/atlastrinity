@@ -20,8 +20,16 @@ async def test_integration_parallel_healing_flow():
             
         # Setup Vibe analysis & fix
         mock_mcp.side_effect = [
-            "Analysis: Database connection timeout. Fix: Increase timeout to 30s.", # vibe_analyze_error result
-            {"success": True} # vibe_test_in_sandbox result
+            # 1. DevTools Analysis (Phase 1a)
+            {
+                "success": True, 
+                "analysis": {"affected_components": ["DB", "Core"]}, 
+                "project_type": "python"
+            },
+            # 2. Vibe Analysis (Phase 1b)
+            "Analysis: Database connection timeout. Fix: Increase timeout to 30s.", 
+            # 3. Vibe Sandbox (Phase 3)
+            {"success": True} 
         ]
         
         # Setup Grisha approval

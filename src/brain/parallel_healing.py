@@ -201,20 +201,42 @@ class ParallelHealingManager:
         try:
             from src.brain.mcp_manager import mcp_manager
 
-            # Phase 1: Analysis
+            # Phase 1: Analysis & Context Gathering
             task.status = HealingStatus.ANALYZING
             task.updated_at = datetime.now()
             await self._persist_task(task)
             
-            logger.info(f"[PARALLEL_HEALING] {task.task_id}: Phase 1 - Vibe Analysis")
+            logger.info(f"[PARALLEL_HEALING] {task.task_id}: Phase 1 - Analysis & Context")
             
+            # 1a. Architecture Analysis (New)
+            arch_context = ""
+            try:
+                # Ask DevTools to analyze current state/changes
+                # This helps Vibe understand *where* the error fits in the system
+                arch_result = await mcp_manager.call_tool(
+                    "devtools",
+                    "devtools_update_architecture_diagrams",
+                    {
+                        "target_mode": "internal",
+                        "use_reasoning": False # Speed optimization
+                    }
+                )
+                
+                if isinstance(arch_result, dict) and arch_result.get("success"):
+                    analysis = arch_result.get("analysis", {})
+                    affected = analysis.get("affected_components", [])
+                    arch_context = f"\n\nARCHITECTURE CONTEXT:\nAffected Components: {', '.join(affected)}\nProject Type: {arch_result.get('project_type')}"
+            except Exception as e:
+                logger.warning(f"[PARALLEL_HEALING] Architecture analysis failed (non-fatal): {e}")
+
+            # 1b. Vibe Analysis
             vibe_result = await asyncio.wait_for(
                 mcp_manager.call_tool(
                     "vibe",
                     "vibe_analyze_error",
                     {
                         "error_message": task.error,
-                        "log_context": task.log_context[:5000],
+                        "log_context": task.log_context[:5000] + arch_context,
                         "auto_fix": True,
                         "step_action": task.step_context.get("action", ""),
                         "expected_result": task.step_context.get("expected_result", ""),
