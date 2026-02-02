@@ -67,6 +67,22 @@ SPAM_TRIGGERS = [
     "[1A",
     "Press Enter",
     "↵",
+    "ListToolsRequest",
+    "Processing request of type",
+    "Secure MCP Filesystem Server",
+    "Client does not support MCP Roots",
+    "Resolving dependencies",
+    "Resolved, downloaded and extracted",
+    "Saved lockfile",
+    "Sequential Thinking MCP Server",
+    "Starting Context7 MCP Server",
+    "Context7 MCP Server connected via stdio",
+    "Redis connected via URL",
+    "Lessons:",
+    "Strategies:",
+    "Discoveries:",
+    "brain - INFO - [MEMORY]",
+    "brain - INFO - [STATE]",
 ]
 
 logger = logging.getLogger("vibe_mcp")
@@ -198,6 +214,11 @@ _vibe_config: VibeConfig | None = None
 _current_mode: AgentMode = AgentMode.AUTO_APPROVE
 _current_model: str | None = None
 
+# Concurrency Control (Queueing)
+# Vibe is heavy on tokens and resources. We serialize calls to avoid Rate Limit collisions.
+VIBE_LOCK = asyncio.Lock()
+VIBE_QUEUE_SIZE = 0
+
 
 def get_vibe_config() -> VibeConfig:
     """Get or load the Vibe configuration."""
@@ -261,8 +282,8 @@ def sync_vibe_configuration() -> None:
             if src_folder.exists() and src_folder.is_dir():
                 for src_file in src_folder.glob("*.toml"):
                     dst_file = dst_folder / src_file.name
-                    
-                    # If it's a symlink in VIBE_HOME, we might want to respect it, 
+
+                    # If it's a symlink in VIBE_HOME, we might want to respect it,
                     # but usually we want actual files for Vibe's portability
                     if not dst_file.exists() or src_file.stat().st_mtime > dst_file.stat().st_mtime:
                         if dst_file.is_symlink():
@@ -420,6 +441,16 @@ def handle_long_prompt(prompt: str, cwd: str | None = None) -> tuple[str, str | 
         return prompt, None
 
 
+def _generate_task_session_id(prompt: str) -> str:
+    """Generate a stable session ID from prompt content to enable context reuse."""
+    import hashlib
+    # We hash the first 500 chars of the prompt to create a 'task key'
+    # This ensures that related calls for the same task use the same session
+    clean_prompt = prompt.strip()[:500]
+    h = hashlib.md5(clean_prompt.encode()).hexdigest()
+    return f"task-{h[:12]}"
+
+
 async def run_vibe_subprocess(
     argv: list[str],
     cwd: str | None,
@@ -428,19 +459,30 @@ async def run_vibe_subprocess(
     ctx: Context | None = None,
     prompt_preview: str | None = None,
 ) -> dict[str, Any]:
-    """Execute Vibe CLI subprocess with streaming output."""
+    """Execute Vibe CLI subprocess with streaming output and global queueing."""
+    global VIBE_QUEUE_SIZE
     process_env = _prepare_vibe_env(env)
-    logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
+    
+    # Queue Management
+    VIBE_QUEUE_SIZE += 1
+    if VIBE_LOCK.locked():
+        msg = f"⏳ [VIBE-QUEUE] Task queued (Position: {VIBE_QUEUE_SIZE - 1}). Waiting for active task to complete..."
+        logger.info(msg)
+        await _emit_vibe_log(ctx, "info", msg)
 
-    if prompt_preview:
-        await _emit_vibe_log(ctx, "info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
+    async with VIBE_LOCK:
+        VIBE_QUEUE_SIZE -= 1
+        logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
 
-    try:
-        return await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
-    except Exception as outer_e:
-        error_msg = f"Outer subprocess error: {outer_e}"
-        logger.error(f"[VIBE] {error_msg}")
-        return {"success": False, "error": error_msg, "command": argv}
+        if prompt_preview:
+            await _emit_vibe_log(ctx, "info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
+
+        try:
+            return await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
+        except Exception as outer_e:
+            error_msg = f"Outer subprocess error: {outer_e}"
+            logger.error(f"[VIBE] {error_msg}")
+            return {"success": False, "error": error_msg, "command": argv}
 
 
 def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
@@ -925,6 +967,9 @@ async def vibe_prompt(
 
     final_prompt, prompt_file_to_clean = handle_long_prompt(prompt, eff_cwd)
 
+    # Automatic Session Persistence (if not provided)
+    eff_session_id = session_id or _generate_task_session_id(prompt)
+
     try:
         # Determine effective mode
         effective_mode = AgentMode(mode) if mode else _current_mode
@@ -934,10 +979,11 @@ async def vibe_prompt(
             vibe_path,
             *config.to_cli_args(
                 prompt=final_prompt,
+                cwd=eff_cwd,
                 mode=effective_mode,
                 model=model or _current_model,
                 agent=agent,
-                session_id=session_id,
+                session_id=eff_session_id,
                 max_turns=max_turns,
                 max_price=max_price,
                 output_format=output_format,
@@ -990,6 +1036,7 @@ async def vibe_analyze_error(
     cwd: str | None = None,
     timeout_s: float | None = None,
     auto_fix: bool = True,
+    session_id: str | None = None,
     # Enhanced context for better self-healing
     step_action: str | None = None,
     expected_result: str | None = None,
@@ -1107,20 +1154,37 @@ async def vibe_analyze_error(
             [
                 "",
                 "FULL PLAN CONTEXT:",
-                str(full_plan_context)[:2000],  # Limit for token efficiency
+                str(full_plan_context)[:1000],  # More aggressive limit
+            ],
+        )
+
+    if log_context:
+        # Instead of embedding logs, we tell Vibe where to find them and give a tiny snippet
+        prompt_parts.extend(
+            [
+                "",
+                "2.1 RECENT LOGS (Pointer-based Context)",
+                "=" * 40,
+                f"Full log file: {DEFAULT_CONFIG_ROOT}/logs/vibe_server.log",
+                "ACTION: Use your 'read_file' or 'filesystem_read' tool to inspect this file.",
+                "",
+                "BRIEF LOG SNIPPET (for quick orientation):",
+                str(log_context)[-2000:], # Only last 2k for orientation
             ],
         )
 
     if file_path and os.path.exists(file_path):
         try:
             with open(file_path, encoding="utf-8") as f:
-                content = f.read()[:5000]  # Limit
+                content = f.read()
+                # If file is huge, take just the relevant part if we can guess line number
+                # For now, just take a smaller chunk to be safe
                 prompt_parts.extend(
                     [
                         "",
                         f"RELEVANT FILE: {file_path}",
                         "```",
-                        content,
+                        content[:3000], 
                         "```",
                     ],
                 )
@@ -1205,6 +1269,7 @@ async def vibe_analyze_error(
             timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
             model=AGENT_MODEL_OVERRIDE,
             mode="auto-approve" if auto_fix else "plan",
+            session_id=session_id,
             max_turns=15,
         ),
     )
@@ -1218,6 +1283,7 @@ async def vibe_implement_feature(
     constraints: str | None = None,
     cwd: str | None = None,
     timeout_s: float | None = 1200,
+    session_id: str | None = None,
     # Enhanced options for software development
     quality_checks: bool = True,
     iterative_review: bool = True,
@@ -1255,7 +1321,7 @@ async def vibe_implement_feature(
             if os.path.exists(fpath):
                 try:
                     with open(fpath, encoding="utf-8") as f:
-                        content = f.read()[:5000]  # Limit per file
+                        content = f.read()[:3000]  # Reduced limit for token efficiency
                         file_contents.append(f"FILE: {fpath}\n```\n{content}\n```")
                 except Exception as e:
                     file_contents.append(f"FILE: {fpath} (Error: {e})")
@@ -1377,6 +1443,7 @@ EXECUTE NOW
             timeout_s=timeout_s or 1200,
             model=AGENT_MODEL_OVERRIDE,
             mode="auto-approve",
+            session_id=session_id,
             max_turns=30 + (max_iterations * 5 if iterative_review else 0),
         ),
     )
@@ -1389,6 +1456,7 @@ async def vibe_code_review(
     focus_areas: str | None = None,
     cwd: str | None = None,
     timeout_s: float | None = None,
+    session_id: str | None = None,
 ) -> dict[str, Any]:
     """Request a code review from Vibe AI for a specific file.
 
@@ -1442,6 +1510,7 @@ async def vibe_code_review(
             timeout_s=timeout_s or 300,
             model=AGENT_MODEL_OVERRIDE,
             mode="plan",  # Read-only mode
+            session_id=session_id,
             max_turns=5,
         ),
     )
@@ -1454,6 +1523,7 @@ async def vibe_smart_plan(
     context: str | None = None,
     cwd: str | None = None,
     timeout_s: float | None = None,
+    session_id: str | None = None,
 ) -> dict[str, Any]:
     """Generate a smart execution plan for a complex objective.
 
@@ -1495,6 +1565,7 @@ async def vibe_smart_plan(
             cwd=cwd,
             timeout_s=timeout_s or 300,
             mode="plan",
+            session_id=session_id,
             max_turns=5,
         ),
     )

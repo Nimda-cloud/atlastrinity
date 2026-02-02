@@ -6,7 +6,7 @@ active_model = "devstral-2"
 system_prompt_id = "cli"
 
 # Optimize: Only enable tools needed for applying edits
-enabled_tools = ["bash", "write_file", "search_replace", "filesystem_*"]
+enabled_tools = ["bash", "write_file", "search_replace"]
 
 [tools.bash]
 permission = "ask"

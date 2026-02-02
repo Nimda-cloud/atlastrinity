@@ -69,43 +69,43 @@ permission = "ask"
 # =============================================================================
 # MCP Server Configurations (Vibe-native TOML format)
 # =============================================================================
-# Full server catalog is in mcp_servers.json.template for Brain/Orchestrator
-# Below are critical servers for Vibe CLI self-healing and development
+# NOTE: All custom MCP servers are commented out to minimize Token usage (Anti-Rate Limit).
+# Vibe will use its native tools (bash, read_file, write_file, grep) instead.
 
-[[mcp_servers]]
-name = "memory"
-transport = "stdio"
-command = "python3"
-args = ["-m", "src.mcp_server.memory_server"]
-env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
-startup_timeout_sec = 30
-tool_timeout_sec = 120
+# [[mcp_servers]]
+# name = "memory"
+# transport = "stdio"
+# command = "python3"
+# args = ["-m", "src.mcp_server.memory_server"]
+# env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
+# startup_timeout_sec = 30
+# tool_timeout_sec = 120
 
-[[mcp_servers]]
-name = "devtools"
-transport = "stdio"
-command = "python3"
-args = ["-m", "src.mcp_server.devtools_server"]
-env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
-startup_timeout_sec = 30
-tool_timeout_sec = 120
+# [[mcp_servers]]
+# name = "devtools"
+# transport = "stdio"
+# command = "python3"
+# args = ["-m", "src.mcp_server.devtools_server"]
+# env = { "PYTHONPATH" = "${PROJECT_ROOT}" }
+# startup_timeout_sec = 30
+# tool_timeout_sec = 120
 
-[[mcp_servers]]
-name = "filesystem"
-transport = "stdio"
-command = "npx"
-args = ["@modelcontextprotocol/server-filesystem", "${HOME}", "${PROJECT_ROOT}", "/tmp"]
+# [[mcp_servers]]
+# name = "filesystem"
+# transport = "stdio"
+# command = "npx"
+# args = ["@modelcontextprotocol/server-filesystem", "${HOME}", "${PROJECT_ROOT}", "/tmp"]
 
-[[mcp_servers]]
-name = "sequential_thinking"
-transport = "stdio"
-command = "bunx"
-args = ["@modelcontextprotocol/server-sequential-thinking"]
-env = { "MAX_HISTORY_SIZE" = "1000", "PYTHONPATH" = "${PROJECT_ROOT}" }
-startup_timeout_sec = 60
+# [[mcp_servers]]
+# name = "sequential_thinking"
+# transport = "stdio"
+# command = "bunx"
+# args = ["@modelcontextprotocol/server-sequential-thinking"]
+# env = { "MAX_HISTORY_SIZE" = "1000", "PYTHONPATH" = "${PROJECT_ROOT}" }
+# startup_timeout_sec = 60
 
-[[mcp_servers]]
-name = "context7"
-transport = "stdio"
-command = "npx"
-args = ["-y", "c7-mcp-server"]
+# [[mcp_servers]]
+# name = "context7"
+# transport = "stdio"
+# command = "npx"
+# args = ["-y", "c7-mcp-server"]

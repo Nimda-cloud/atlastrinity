@@ -490,6 +490,7 @@ class VibeConfig(BaseModel):
     def to_cli_args(
         self,
         prompt: str,
+        cwd: str | None = None,
         mode: AgentMode | None = None,
         agent: str | None = None,
         model: str | None = None,
@@ -502,6 +503,7 @@ class VibeConfig(BaseModel):
 
         Args:
             prompt: The prompt to send
+            cwd: Working directory for Vibe (maps to --workdir)
             mode: Operational mode override
             agent: Agent profile name
             session_id: Session to resume
@@ -514,6 +516,9 @@ class VibeConfig(BaseModel):
 
         """
         args = ["-p", prompt, "--output", output_format]
+
+        if cwd:
+            args.extend(["--workdir", str(cwd)])
 
         # Mode mapping to agent profiles
         effective_mode = mode or self.default_mode
@@ -538,7 +543,7 @@ class VibeConfig(BaseModel):
 
         # Session resume
         if session_id:
-            args.extend(["--session", session_id])
+            args.extend(["--resume", session_id])
 
         # Limits
         effective_max_turns = max_turns or self.max_turns
