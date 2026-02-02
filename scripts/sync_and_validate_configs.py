@@ -8,6 +8,11 @@ from typing import Any
 
 import yaml
 
+try:
+    import toml
+except ImportError:
+    toml = None
+
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_SRC_ROOT = PROJECT_ROOT / "config"
@@ -59,8 +64,8 @@ def substitute_vars(content: str) -> str:
 
 def validate_yaml(template_content: str, target_path: Path):
     """
-    Validates that the target YAML has all keys present in the template.
-    This is the 'Logic Check'.
+    Validates that the target file has all keys present in the template.
+    This is the 'Logic Check'. Works for both YAML and TOML files.
     """
     if not target_path.exists():
         return
@@ -68,10 +73,20 @@ def validate_yaml(template_content: str, target_path: Path):
     try:
         # Load template removing variable placeholders for structure check
         clean_tpl = re.sub(r"\${[A-Z0-9_]+}", "placeholder", template_content)
-        tpl_data = yaml.safe_load(clean_tpl)
-
-        with open(target_path, encoding="utf-8") as f:
-            target_data = yaml.safe_load(f)
+        
+        # Determine file format and load accordingly
+        if target_path.suffix == '.toml':
+            if toml is None:
+                print(f"  [!] Cannot validate {target_path.name}: toml library not installed")
+                return
+            tpl_data = toml.loads(clean_tpl)
+            with open(target_path, encoding="utf-8") as f:
+                target_data = toml.loads(f.read())
+        else:
+            # Default to YAML
+            tpl_data = yaml.safe_load(clean_tpl)
+            with open(target_path, encoding="utf-8") as f:
+                target_data = yaml.safe_load(f)
 
         def check_structure(tpl: Any, tgt: Any, path: str = ""):
             if isinstance(tpl, dict):
