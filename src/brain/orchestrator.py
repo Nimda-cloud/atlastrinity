@@ -2722,6 +2722,84 @@ class Trinity:
         self._background_tasks.add(kg_task)
         kg_task.add_done_callback(self._background_tasks.discard)
 
+    def _log_tool_usage_background(self, step_id: str, result: StepResult):
+        """Log tool usage to Knowledge Graph in background."""
+        if not knowledge_graph:
+            return
+
+        async def _log_graph_async():
+            try:
+                # Fix lint error by checking tool_call
+                tool_call = result.tool_call or {}
+                t_name = tool_call.get("name")
+                if not t_name:
+                    return
+                # Use background methods directly
+                knowledge_graph.add_node_background(
+                    node_type="TOOL",
+                    node_id=f"tool:{t_name}",
+                    attributes={"last_used_step": str(step_id), "success": True},
+                )
+                knowledge_graph.add_edge_background(
+                    source_id=f"task:{self.state.get('db_task_id', 'unknown')}",
+                    target_id=f"tool:{t_name}",
+                    relation="USED",
+                )
+            except Exception as e:
+                logger.warning(f"[ORCHESTRATOR] Async graph update failed: {e}")
+
+        asyncio.create_task(_log_graph_async())
+
+    async def _execute_tetyana_flow(
+        self,
+        step: dict[str, Any],
+        step_id: str,
+        attempt: int,
+        depth: int,
+        db_step_id: str | None,
+    ) -> StepResult:
+        """Encapsulates the try-except logic for Tetyana's execution."""
+        try:
+            # Inject context and prepare execution
+            step_copy = await self._prepare_step_context(step)
+            result = await self.tetyana.execute_step(step_copy, attempt=attempt)
+
+            # --- RESTART DETECTION ---
+            await self._handle_imminent_restart()
+
+            # --- DYNAMIC AGENCY: Check for Strategy Deviation ---
+            deviation_result = await self._handle_strategy_deviation(step, step_id, result)
+            if deviation_result:
+                return deviation_result
+
+            # Handle need_user_input signal (New Autonomous Timeout Logic)
+            result = await self._handle_user_input_request(step, step_id, result)
+
+            # Log tool execution to DB for Grisha's audit
+            if db_step_id:
+                await self._log_tool_execution_db(result, db_step_id)
+
+            # Handle proactive help requested by Tetyana
+            result = await self._handle_proactive_help_request(step, step_id, result, depth)
+
+            # Log interaction to Knowledge Graph if successful (Background)
+            if result.success and result.tool_call:
+                self._log_tool_usage_background(step_id, result)
+            
+            if result.voice_message:
+                await self._speak("tetyana", result.voice_message)
+
+            return result
+
+        except Exception as e:
+            logger.exception("Tetyana execution crashed")
+            return StepResult(
+                step_id=str(step.get("id") or step_id),
+                success=False,
+                result="Crashed",
+                error=str(e),
+            )
+
     async def execute_node(
         self,
         state: TrinityState,
@@ -2742,64 +2820,20 @@ class Trinity:
         if step.get("type") == "subtask" or step.get("tool") == "subtask":
             result = await self._handle_subtask_node(step, step_id)
         else:
-            try:
-                # Inject context and prepare execution
-                step_copy = await self._prepare_step_context(step)
-                result = await self.tetyana.execute_step(step_copy, attempt=attempt)
-
-                # --- RESTART DETECTION ---
-                await self._handle_imminent_restart()
-
-                # --- DYNAMIC AGENCY: Check for Strategy Deviation ---
-                deviation_result = await self._handle_strategy_deviation(step, step_id, result)
-                if deviation_result:
-                    return deviation_result
-
-                # Handle need_user_input signal (New Autonomous Timeout Logic)
-                result = await self._handle_user_input_request(step, step_id, result)
-
-                # Log tool execution to DB for Grisha's audit
-                await self._log_tool_execution_db(result, db_step_id)
-
-                # Handle proactive help requested by Tetyana
-                result = await self._handle_proactive_help_request(step, step_id, result, depth)
-
-                # Log interaction to Knowledge Graph if successful
-                # Log interaction to Knowledge Graph if successful (Background)
-                if result.success and result.tool_call:
-                    async def _log_graph_async():
-                        try:
-                            t_name = result.tool_call.get("name")
-                            if not t_name: 
-                                return
-                            await knowledge_graph.add_node(
-                                node_type="TOOL",
-                                node_id=f"tool:{t_name}",
-                                attributes={"last_used_step": str(step_id), "success": True},
-                            )
-                            await knowledge_graph.add_edge(
-                                source_id=f"task:{self.state.get('db_task_id', 'unknown')}",
-                                target_id=f"tool:{t_name}",
-                                relation="USED",
-                            )
-                        except Exception as e:
-                            logger.warning(f"[ORCHESTRATOR] Async graph update failed: {e}")
-
-                    asyncio.create_task(_log_graph_async())
-                if result.voice_message:
-                    await self._speak("tetyana", result.voice_message)
-            except Exception as e:
-                logger.exception("Tetyana execution crashed")
-                result = StepResult(
-                    step_id=str(step.get("id") or step_id),
-                    success=False,
-                    result="Crashed",
-                    error=str(e),
-                )
+            result = await self._execute_tetyana_flow(
+                step=step,
+                step_id=step_id,
+                attempt=attempt,
+                depth=depth,
+                db_step_id=db_step_id,
+            )
 
         # Update DB Step
         await self._update_db_step_status(db_step_id, result, step_start_time)
 
+        # change from _verify_step_execution to verify_step_execution if typo? 
+        # Checking previous file content, it IS _verify_step_execution.
+        
         # Check verification
         result = await self._verify_step_execution(step, step_id, result)
 
