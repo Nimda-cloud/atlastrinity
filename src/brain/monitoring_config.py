@@ -5,9 +5,7 @@ Loads and manages monitoring configuration for Prometheus, Grafana, and OpenSear
 """
 
 import logging
-import os
-from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import yaml
 

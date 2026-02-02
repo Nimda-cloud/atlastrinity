@@ -36,7 +36,7 @@ def is_production():
 def get_resources_path():
     """Отримує шлях до Resources/ в .app bundle"""
     if hasattr(sys, "_MEIPASS"):
-        return Path(sys._MEIPASS)
+        return Path(sys._MEIPASS)  # type: ignore  # PyInstaller attribute
     elif getattr(sys, "frozen", False):
         return Path(sys.executable).parent.parent / "Resources"
     else:

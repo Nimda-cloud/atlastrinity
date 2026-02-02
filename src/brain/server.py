@@ -25,7 +25,7 @@ if sys.stdout.encoding != "utf-8":
 
 # Import CONFIG_ROOT before using it
 from .config_loader import config
-from .services_manager import ServiceStatus, ensure_all_services
+from .services_manager import ServiceStatus
 
 # Step 1: Ensure core system services (Redis, Docker) are running
 # We'll run this in the background to avoid blocking server binding
@@ -52,7 +52,7 @@ from .logger import logger
 from .mcp_manager import mcp_manager
 from .orchestrator import Trinity
 from .production_setup import run_production_setup
-from .voice.stt import SpeechType, WhisperSTT
+from .voice.stt import WhisperSTT
 
 # Global instances (Trinity will now find Redis running)
 trinity = Trinity()

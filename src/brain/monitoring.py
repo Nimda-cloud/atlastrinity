@@ -1,10 +1,9 @@
 import json
 import logging
 import sqlite3
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 import psutil
 from opentelemetry import trace
@@ -12,7 +11,7 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from prometheus_client import Counter, Gauge, Histogram, Summary, start_http_server
+from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 # Set up logging
 logging.basicConfig(

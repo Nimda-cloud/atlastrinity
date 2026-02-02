@@ -29,15 +29,10 @@ from src.brain.agents.tetyana import StepResult
 from src.brain.behavior_engine import workflow_engine
 from src.brain.config import IS_MACOS, PLATFORM_NAME
 from src.brain.config_loader import config
-from src.brain.consolidation import consolidation_module
 from src.brain.context import shared_context
 from src.brain.db.manager import db_manager
 from src.brain.db.schema import (
     ChatMessage,
-    RecoveryAttempt,
-)
-from src.brain.db.schema import (
-    ConversationSummary as DBConvSummary,
 )
 from src.brain.db.schema import LogEntry as DBLog
 from src.brain.db.schema import Session as DBSession
@@ -197,7 +192,7 @@ class Trinity:
                             isinstance(m, dict) and m.get("type") == "human"
                         ):
                             if hasattr(m, "content"):
-                                original_request = str(m.content)
+                                original_request = str(getattr(m, "content", ""))
                             elif isinstance(m, dict):
                                 original_request = str(m.get("content", ""))
                             else:
@@ -864,8 +859,6 @@ class Trinity:
         plan = None
 
         async def keep_alive_logging():
-            import time
-
             while True:
                 await asyncio.sleep(15)
                 await self._log("Atlas is thinking... (Planning logic flow)", "system")
@@ -1007,7 +1000,6 @@ class Trinity:
 
     async def _initialize_run_state(self, user_request: str, session_id: str) -> str:
         """Initialize session state and DB records for a run."""
-        from src.brain.context import shared_context
 
         is_subtask = getattr(self, "_in_subtask", False)
         if is_subtask:

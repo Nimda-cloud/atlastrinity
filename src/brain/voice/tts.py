@@ -37,11 +37,17 @@ def _check_tts_available():
         return TTS_AVAILABLE
 
     try:
-        import ukrainian_tts  # noqa: F401
+        import importlib.util
 
-        TTS_AVAILABLE = True
-        print("[TTS] Ukrainian TTS available")
-    except ImportError:
+        if importlib.util.find_spec("ukrainian_tts") is not None:
+            TTS_AVAILABLE = True
+            print("[TTS] Ukrainian TTS available")
+        else:
+            TTS_AVAILABLE = False
+            print(
+                "[TTS] Warning: ukrainian-tts not installed. Run: pip install git+https://github.com/robinhad/ukrainian-tts.git",
+            )
+    except Exception:
         TTS_AVAILABLE = False
         print(
             "[TTS] Warning: ukrainian-tts not installed. Run: pip install git+https://github.com/robinhad/ukrainian-tts.git",

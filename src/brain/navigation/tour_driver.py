@@ -4,8 +4,6 @@ Manages the "physical" movement of the agent through the virtual world (Street V
 
 import asyncio
 import math
-import time
-from typing import Any
 
 from ..logger import logger
 from ..map_state import map_state_manager

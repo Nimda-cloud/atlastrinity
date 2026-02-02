@@ -561,11 +561,14 @@ sys.exit(0)
                 if key in result:
                     return str(result[key])
         if hasattr(result, "content"):
-            content = result.content
-            if isinstance(content, list) and content:
-                first = content[0]
-                if hasattr(first, "text"):
-                    return str(first.text)
+            content = getattr(result, "content", None)
+            if content is not None:
+                if isinstance(content, list) and content:
+                    first = content[0]
+                    if hasattr(first, "text"):
+                        return str(first.text)
+                else:
+                    return str(content)
         return str(result) if result else None
 
     def _extract_fix_description(self, analysis: str) -> str:
