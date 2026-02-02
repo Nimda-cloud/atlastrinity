@@ -444,6 +444,7 @@ def handle_long_prompt(prompt: str, cwd: str | None = None) -> tuple[str, str | 
 def _generate_task_session_id(prompt: str) -> str:
     """Generate a stable session ID from prompt content to enable context reuse."""
     import hashlib
+
     # We hash the first 500 chars of the prompt to create a 'task key'
     # This ensures that related calls for the same task use the same session
     clean_prompt = prompt.strip()[:500]
@@ -462,7 +463,7 @@ async def run_vibe_subprocess(
     """Execute Vibe CLI subprocess with streaming output and global queueing."""
     global VIBE_QUEUE_SIZE
     process_env = _prepare_vibe_env(env)
-    
+
     # Queue Management
     VIBE_QUEUE_SIZE += 1
     if VIBE_LOCK.locked():
@@ -475,7 +476,9 @@ async def run_vibe_subprocess(
         logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
 
         if prompt_preview:
-            await _emit_vibe_log(ctx, "info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}...")
+            await _emit_vibe_log(
+                ctx, "info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}..."
+            )
 
         try:
             return await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
@@ -1169,7 +1172,7 @@ async def vibe_analyze_error(
                 "ACTION: Use your 'read_file' or 'filesystem_read' tool to inspect this file.",
                 "",
                 "BRIEF LOG SNIPPET (for quick orientation):",
-                str(log_context)[-2000:], # Only last 2k for orientation
+                str(log_context)[-2000:],  # Only last 2k for orientation
             ],
         )
 
@@ -1184,7 +1187,7 @@ async def vibe_analyze_error(
                         "",
                         f"RELEVANT FILE: {file_path}",
                         "```",
-                        content[:3000], 
+                        content[:3000],
                         "```",
                     ],
                 )
