@@ -6,6 +6,7 @@ Redis-based state persistence for:
 - Session recovery
 """
 
+import asyncio
 import json
 import os
 from datetime import datetime
@@ -197,10 +198,21 @@ class StateManager:
         if not self.available or self.redis_client is None:
             return
         try:
+            # Check if event loop is running before awaiting
+            try:
+                loop = asyncio.get_running_loop()
+                if not loop.is_running() or loop.is_closed():
+                    return
+            except RuntimeError:
+                # No running loop, cannot publish async event
+                return
+
             full_channel = self._key(f"events:{channel}")
             await self.redis_client.publish(full_channel, json.dumps(message, default=str))  # type: ignore
         except Exception as e:
-            logger.error(f"[STATE] Failed to publish event: {e}")
+            # Avoid logging if it's just a loop closure error
+            if "Event loop is closed" not in str(e):
+                logger.error(f"[STATE] Failed to publish event: {e}")
 
 
 # Singleton instance

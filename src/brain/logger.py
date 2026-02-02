@@ -71,8 +71,15 @@ def setup_logging(name: str = "brain"):
 
                     # Use fire-and-forget task if loop is running
                     try:
-                        loop = asyncio.get_running_loop()
-                        if loop.is_running() and not loop.is_closed():
+                        # Try to get the current loop, if it exists and is running
+                        loop = None
+                        try:
+                            loop = asyncio.get_running_loop()
+                        except RuntimeError:
+                            # No running loop in this thread
+                            pass
+
+                        if loop and loop.is_running() and not loop.is_closed():
                             loop.create_task(state_manager.publish_event("logs", log_entry))
                     except (RuntimeError, AttributeError):
                         # Fallback for synchronous contexts or closed loop

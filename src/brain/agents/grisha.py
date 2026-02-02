@@ -11,8 +11,9 @@ import sys
 
 # Robust path handling for both Dev and Production (Packaged)
 current_dir = os.path.dirname(os.path.abspath(__file__))
-root = os.path.join(current_dir, "..", "..")
-sys.path.insert(0, os.path.abspath(root))
+# src/brain/agents -> src -> project_root
+project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+sys.path.insert(0, project_root)
 
 import base64
 import json
@@ -1163,39 +1164,53 @@ class Grisha(BaseAgent):
         try:
             cleaned_text = str(raw_text).strip()
             
-            # 1. Look for JSON block markers
-            if "```json" in cleaned_text:
-                cleaned_text = cleaned_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in cleaned_text:
-                # Handle cases where model uses generic code blocks
-                parts = cleaned_text.split("```")
-                # Find the largest part that starts with {
-                json_candidates = [p.strip() for p in parts if "{" in p and "}" in p]
-                if json_candidates:
-                    cleaned_text = max(json_candidates, key=len)
-                else:
-                    cleaned_text = parts[1].strip()
+            # 1. Advanced Extraction: Find all potential JSON objects
+            # We look for all substrings starting with { and ending with }
+            potential_blocks = []
+            start_indices = [m.start() for m in re.finditer(r"\{", cleaned_text)]
+            end_indices = [m.start() for m in re.finditer(r"\}", cleaned_text)]
 
-            # 2. Heuristic extraction if no markers are found or if they were incomplete
-            if not (cleaned_text.startswith("{") and cleaned_text.endswith("}")):
-                json_match = re.search(r"(\{.*\})", cleaned_text, re.DOTALL)
-                if json_match:
-                    cleaned_text = json_match.group(1).strip()
-            
-            # 3. Last resort: find first { and last }
-            if "{" in cleaned_text and "}" in cleaned_text:
-                start = cleaned_text.find("{")
-                end = cleaned_text.rfind("}")
-                cleaned_text = cleaned_text[start : end + 1]
+            for start in start_indices:
+                for end in reversed(end_indices):
+                    if end > start:
+                        block = cleaned_text[start : end + 1]
+                        # Quick heuristic: must contain "steps" to be a plan
+                        if "steps" in block.lower():
+                            potential_blocks.append(block)
 
-            # 4. Filter out common reasoning prefixes inside the potential JSON text
-            # Some models might output "Analysis: { ... }"
-            prefixes = ["Thought:", "Thought PROCESS:", "Analysis:", "Plan:", "Final Plan:", "Fixed Plan:"]
-            for prefix in prefixes:
-                if cleaned_text.lower().startswith(prefix.lower()):
-                    cleaned_text = cleaned_text[len(prefix):].strip()
+            # Sort by length (descending) to find the most complete block first
+            potential_blocks.sort(key=len, reverse=True)
 
-            plan_data = json.loads(cleaned_text)
+            plan_data = None
+            for block in potential_blocks:
+                try:
+                    # Clean block from internal triple backticks if any (sometimes models nest them)
+                    clean_block = block.replace("```json", "").replace("```", "").strip()
+                    data = json.loads(clean_block)
+                    if isinstance(data, dict) and "steps" in data:
+                        plan_data = data
+                        break
+                except json.JSONDecodeError:
+                    continue
+
+            # 2. Fallback to original markers if advanced extraction failed
+            if not plan_data:
+                if "```json" in cleaned_text:
+                    cleaned_text = cleaned_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in cleaned_text:
+                    parts = cleaned_text.split("```")
+                    json_candidates = [p.strip() for p in parts if "{" in p and "}" in p]
+                    if json_candidates:
+                        cleaned_text = max(json_candidates, key=len)
+                    else:
+                        cleaned_text = parts[1].strip()
+
+                if not (cleaned_text.startswith("{") and cleaned_text.endswith("}")):
+                    json_match = re.search(r"(\{.*\})", cleaned_text, re.DOTALL)
+                    if json_match:
+                        cleaned_text = json_match.group(1).strip()
+                
+                plan_data = json.loads(cleaned_text)
             
             import inspect
 
@@ -1316,7 +1331,7 @@ class Grisha(BaseAgent):
         """Verify if config templates are synchronized with global config folder"""
         try:
             config_root = os.path.join(os.path.expanduser("~"), ".config", "atlastrinity")
-            project_config_dir = os.path.join(root, "..", "config")
+            project_config_dir = os.path.join(project_root, "config")
 
             sync_issues = []
 
@@ -1348,7 +1363,7 @@ class Grisha(BaseAgent):
 
             # Try to run sync script to check
             try:
-                sync_script = os.path.join(root, "scripts", "sync_config_templates.js")
+                sync_script = os.path.join(project_root, "scripts", "sync_config_templates.js")
                 if os.path.exists(sync_script):
                     result = subprocess.run(
                         ["node", sync_script, "--dry-run"],
@@ -1512,10 +1527,16 @@ class Grisha(BaseAgent):
             or (isinstance(results, list) and len(results) == 0)
             or (len(v_res_str.strip()) == 0)
         ):
-            logger.warning(
-                "[GRISHA] Empty result in info-gathering task"
-            )
-            return True
+            # Check if this was a SUCCESSFUL empty result (valid discovery)
+            # We only treat it as error if it specifically denotes failure
+            res_lower = v_res_str.lower()
+            if "error" in res_lower or "failed" in res_lower or "not found" in res_lower:
+                logger.warning("[GRISHA] Empty/Failed result in info-gathering task")
+                return True
+            
+            # If successful but empty, it's NOT an error for info tasks (discovery)
+            logger.info("[GRISHA] Valid empty result in discovery task")
+            return False
         return False
 
     def _create_intermediate_success_result(self, step_id: str) -> VerificationResult:
