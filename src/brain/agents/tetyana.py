@@ -152,6 +152,9 @@ class Tetyana(BaseAgent):
 
         # Track current PID for Vision analysis
         self._current_pid: int | None = None
+        
+        # Cache for specific server tool specs to avoid repetitive MCP calls
+        self._server_tools_cache: dict[str, str] = {}
 
     async def _validate_goal_alignment(
         self,
@@ -681,6 +684,11 @@ IMPORTANT:
             and target_server in configured_servers
             and not target_server.startswith("_")
         ):
+            # Check cache first
+            if target_server in self._server_tools_cache:
+                logger.debug(f"[TETYANA] Using cached specs for server: {target_server}")
+                return self._server_tools_cache[target_server]
+
             logger.info(f"[TETYANA] Dynamically inspecting server: {target_server}")
             try:
                 tools = await mcp_manager.list_tools(target_server)
@@ -692,6 +700,9 @@ IMPORTANT:
                     desc = getattr(t, "description", "")
                     schema = getattr(t, "inputSchema", {})
                     tools_summary += f"- {name}: {desc}\n  Schema: {json.dumps(schema, ensure_ascii=False)}\n"
+                
+                # Cache the result
+                self._server_tools_cache[target_server] = tools_summary
                 return tools_summary
             except Exception as e:
                 logger.warning(f"[TETYANA] Failed to list tools for {target_server}: {e}")

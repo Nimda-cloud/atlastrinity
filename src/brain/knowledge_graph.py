@@ -169,6 +169,16 @@ class KnowledgeGraph:
             logger.error(f"[GRAPH] Failed to add edge: {e}")
             return False
 
+    def add_node_background(self, *args, **kwargs):
+        """Fire-and-forget version of add_node."""
+        import asyncio
+        asyncio.create_task(self.add_node(*args, **kwargs))
+
+    def add_edge_background(self, *args, **kwargs):
+        """Fire-and-forget version of add_edge."""
+        import asyncio
+        asyncio.create_task(self.add_edge(*args, **kwargs))
+
     async def batch_add_nodes(
         self,
         nodes: list[dict[str, Any]],

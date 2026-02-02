@@ -1317,9 +1317,9 @@ class Trinity:
             except Exception as e:
                 logger.error(f"Failed to store summary in DB: {e}")
 
-            # C. Add entities to Knowledge Graph
+            # C. Add entities to Knowledge Graph (Background)
             for ent_name in entities:
-                await knowledge_graph.add_node(
+                knowledge_graph.add_node_background(
                     node_type="CONCEPT",
                     node_id=f"concept:{ent_name.lower().replace(' ', '_')}",
                     attributes={
@@ -2649,33 +2649,36 @@ class Trinity:
 
         # 2. Knowledge Graph
         if knowledge_graph:
-            try:
-                lesson_id = f"lesson:{int(datetime.now().timestamp())}"
-                await knowledge_graph.add_node(
-                    node_type="LESSON",
-                    node_id=lesson_id,
-                    attributes={
-                        "name": f"Successful Deviation: {str(evaluation.get('reason') or '')[:50]}",
-                        "intent": str(step.get("action") or ""),
-                        "outcome": "Verified Success",
-                        "reason": str(evaluation.get("reason") or ""),
-                    },
-                )
-                if self.state.get("db_task_id"):
-                    await knowledge_graph.add_edge(
-                        f"task:{self.state.get('db_task_id')}", lesson_id, "learned_lesson"
-                    )
-
-                for f_name, f_val in factors.items():
-                    factor_node_id = f"factor:{f_name}:{str(f_val).lower().replace(' ', '_')}"
+            async def _async_learn_lesson():
+                try:
+                    lesson_id = f"lesson:{int(datetime.now().timestamp())}"
                     await knowledge_graph.add_node(
-                        "FACTOR",
-                        factor_node_id,
-                        {"name": f_name, "value": f_val, "type": "environmental_factor"},
+                        node_type="LESSON",
+                        node_id=lesson_id,
+                        attributes={
+                            "name": f"Successful Deviation: {str(evaluation.get('reason') or '')[:50]}",
+                            "intent": str(step.get("action") or ""),
+                            "outcome": "Verified Success",
+                            "reason": str(evaluation.get("reason") or ""),
+                        },
                     )
-                    await knowledge_graph.add_edge(lesson_id, factor_node_id, "CONTINGENT_ON")
-            except Exception as g_err:
-                logger.error(f"[ORCHESTRATOR] Error linking factors in graph: {g_err}")
+                    if self.state.get("db_task_id"):
+                        await knowledge_graph.add_edge(
+                            f"task:{self.state.get('db_task_id')}", lesson_id, "learned_lesson"
+                        )
+
+                    for f_name, f_val in factors.items():
+                        factor_node_id = f"factor:{f_name}:{str(f_val).lower().replace(' ', '_')}"
+                        await knowledge_graph.add_node(
+                            "FACTOR",
+                            factor_node_id,
+                            {"name": f_name, "value": f_val, "type": "environmental_factor"},
+                        )
+                        await knowledge_graph.add_edge(lesson_id, factor_node_id, "CONTINGENT_ON")
+                except Exception as g_err:
+                    logger.error(f"[ORCHESTRATOR] Error linking factors in graph: {g_err}")
+
+            asyncio.create_task(_async_learn_lesson())
 
     async def _finalize_node_execution(
         self, step: dict[str, Any], step_id: str, result: StepResult
@@ -2762,17 +2765,27 @@ class Trinity:
                 result = await self._handle_proactive_help_request(step, step_id, result, depth)
 
                 # Log interaction to Knowledge Graph if successful
+                # Log interaction to Knowledge Graph if successful (Background)
                 if result.success and result.tool_call:
-                    await knowledge_graph.add_node(
-                        node_type="TOOL",
-                        node_id=f"tool:{result.tool_call.get('name')}",
-                        attributes={"last_used_step": str(step_id), "success": True},
-                    )
-                    await knowledge_graph.add_edge(
-                        source_id=f"task:{self.state.get('db_task_id', 'unknown')}",
-                        target_id=f"tool:{result.tool_call.get('name')}",
-                        relation="USED",
-                    )
+                    async def _log_graph_async():
+                        try:
+                            t_name = result.tool_call.get("name")
+                            if not t_name: 
+                                return
+                            await knowledge_graph.add_node(
+                                node_type="TOOL",
+                                node_id=f"tool:{t_name}",
+                                attributes={"last_used_step": str(step_id), "success": True},
+                            )
+                            await knowledge_graph.add_edge(
+                                source_id=f"task:{self.state.get('db_task_id', 'unknown')}",
+                                target_id=f"tool:{t_name}",
+                                relation="USED",
+                            )
+                        except Exception as e:
+                            logger.warning(f"[ORCHESTRATOR] Async graph update failed: {e}")
+
+                    asyncio.create_task(_log_graph_async())
                 if result.voice_message:
                     await self._speak("tetyana", result.voice_message)
             except Exception as e:
