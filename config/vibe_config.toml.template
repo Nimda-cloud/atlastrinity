@@ -1,8 +1,8 @@
 # Optimized Vibe Configuration Template
 # Based on official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model alias (devstral-2 recommended - lower rate limits than codestral-latest)
-active_model = "devstral-2"
+# Active model alias (devstral-2512 - official Mistral model name)
+active_model = "devstral-2512"
 
 # System prompt ID
 system_prompt_id = "default"
@@ -31,9 +31,9 @@ backend = "generic"
 
 # Models
 [[models]]
-name = "devstral-2"
+name = "devstral-2512"
 provider = "mistral"
-alias = "devstral-2"
+alias = "devstral-2512"
 temperature = 0.0
 
 [[models]]
