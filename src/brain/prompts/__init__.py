@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ..config import WORKSPACE_DIR
 from .atlas import ATLAS
 from .common import DEFAULT_REALM_CATALOG, SDLC_PROTOCOL, TASK_PROTOCOL  # re-export default catalog

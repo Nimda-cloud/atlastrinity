@@ -1,7 +1,3 @@
-from .common import (
-    DEFAULT_REALM_CATALOG,
-)
-
 ATLAS = {
     "NAME": "ATLAS",
     "DISPLAY_NAME": "Atlas",
