@@ -133,11 +133,15 @@ const MapView: React.FC<MapViewProps> = memo(
     const [streetViewActive, setStreetViewActive] = useState(false);
     const [streetViewCooldown, setStreetViewCooldown] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const apiLoaderRef = useRef<HTMLDivElement | null>(null);
   const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
   const streetViewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load the Extended Component Library script
+  useEffect(() => {
+    console.log('🗺️ MapView mounted/updated', { type, isLoaded, mapInitialized });
+    return () => console.log('🗺️ MapView unmounted');
+  }, []);
+
   useEffect(() => {
     if (type !== 'INTERACTIVE') return;
 
@@ -370,26 +374,8 @@ const MapView: React.FC<MapViewProps> = memo(
     setTimeout(() => setStreetViewCooldown(false), 2000);
   }, [streetViewActive, streetViewCooldown]);
 
-  // Create API loader element with correct key attribute
-  const renderApiLoader = () => {
-    if (!GOOGLE_MAPS_API_KEY) return null; // Don't render without key
-
-    // Check if a loader already exists globally to avoid multiple initialization warnings
-    if (document.querySelector('gmpx-api-loader')) {
-      return null;
-    }
-
-    // Use solution-channel to avoid warnings
-    return (
-      <div
-        ref={apiLoaderRef}
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: Google Maps API loader requires this
-        dangerouslySetInnerHTML={{
-          __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}" solution-channel="GMP_CDN_extended_v0.6.11" version="beta"></gmpx-api-loader>`,
-        }}
-      />
-    );
-  };
+  // API loader is now handled at App level to prevent redundant initializations and 429 errors
+  const renderApiLoader = () => null;
 
   return (
     <div className="map-view animate-fade-in">
@@ -1156,6 +1142,7 @@ declare global {
       'gmpx-api-loader': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         key?: string;
         'solution-channel'?: string;
+        version?: string;
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmpx-place-picker': React.DetailedHTMLProps<

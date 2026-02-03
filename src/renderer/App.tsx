@@ -41,6 +41,7 @@ interface SystemMetrics {
 }
 
 const API_BASE = 'http://localhost:8000';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 const App: React.FC = () => {
   const [systemState, setSystemState] = useState<SystemState>('IDLE');
@@ -331,7 +332,7 @@ const App: React.FC = () => {
     const startupTimeout = setTimeout(() => {
       pollState();
       fetchSessions();
-      interval = setInterval(pollState, 1500); // Polling every 1.5s
+      interval = setInterval(pollState, 3000); // Polling every 3s to reduce re-render pressure
     }, 1000);
 
     return () => {
@@ -517,6 +518,16 @@ const App: React.FC = () => {
       onDragEnter={handleDragEnter}
       role="application"
     >
+      {/* Top Level Google Maps API Loader - Prevents 429 errors by staying mounted */}
+      {GOOGLE_MAPS_API_KEY && (
+        <div style={{ display: 'none' }}>
+           <gmpx-api-loader 
+             key={GOOGLE_MAPS_API_KEY} 
+             solution-channel="GMP_CDN_extended_v0.6.11" 
+             version="beta"
+           ></gmpx-api-loader>
+        </div>
+      )}
       {/* Pulsing Borders */}
       <div className="pulsing-border top"></div>
       <div className="pulsing-border bottom"></div>
@@ -851,3 +862,36 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+// Add global declarations for Google Maps Web Components to satisfy TypeScript
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'gmp-map': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        center?: string;
+        zoom?: string;
+        'rendering-type'?: string;
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'gmpx-api-loader': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        key?: string;
+        'solution-channel'?: string;
+        version?: string;
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'gmpx-place-picker': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        placeholder?: string;
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'gmp-advanced-marker': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >;
+    }
+  }
+}
