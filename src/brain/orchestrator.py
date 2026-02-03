@@ -998,7 +998,9 @@ class Trinity:
         except Exception as e:
             logger.error(f"DB Task creation failed: {e}")
 
-    async def _initialize_run_state(self, user_request: str, session_id: str) -> str:
+    async def _initialize_run_state(
+        self, user_request: str, session_id: str, images: list[dict[str, Any]] | None = None
+    ) -> str:
         """Initialize session state and DB records for a run."""
 
         is_subtask = getattr(self, "_in_subtask", False)
@@ -1040,7 +1042,21 @@ class Trinity:
             self.state["_theme"] = user_request[:40] + ("..." if len(user_request) > 40 else "")
 
         await self._verify_db_ids()
-        msg = HumanMessage(content=user_request)
+        
+        # Handle multi-modal request if images are present
+        if images:
+            content: list[dict[str, Any]] = [{"type": "text", "text": user_request}]
+            for img in images:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{img['content_type']};base64,{img['data_b64']}"}
+                })
+            msg = HumanMessage(content=cast(Any, content))
+            self.state["current_images"] = images  # Temporary store for Atlas
+        else:
+            msg = HumanMessage(content=user_request)
+            self.state["current_images"] = []
+
         msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
         self.state["messages"].append(msg)
         asyncio.create_task(self._save_chat_message("human", user_request))
@@ -1067,7 +1083,9 @@ class Trinity:
 
         return session_id
 
-    async def _get_run_plan(self, user_request: str, is_subtask: bool) -> Any:
+    async def _get_run_plan(
+        self, user_request: str, is_subtask: bool, images: list[dict[str, Any]] | None = None
+    ) -> Any:
         """Retrieve or create a plan for the current run."""
         from src.brain.context import shared_context
 
@@ -1091,7 +1109,7 @@ class Trinity:
             if not isinstance(messages_raw, list):
                 messages_raw = []
             history: list[Any] = messages_raw[-25:-1] if len(messages_raw) > 1 else []
-            analysis = await self.atlas.analyze_request(user_request, history=history)
+            analysis = await self.atlas.analyze_request(user_request, history=history, images=images)
             intent = analysis.get("intent")
 
             # Workflow routing
@@ -1121,6 +1139,7 @@ class Trinity:
                     use_deep_persona=analysis.get("use_deep_persona", False),
                     intent=intent,
                     on_preamble=self._speak,
+                    images=images,
                 )
                 if response != "__ESCALATE__":
                     await self._speak("atlas", response)
@@ -1146,7 +1165,7 @@ class Trinity:
             self.state["system_state"] = SystemState.ERROR.value
             return {"status": "error", "error": str(e)}
 
-    async def run(self, user_request: str) -> dict[str, Any]:
+    async def run(self, user_request: str, images: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
         from src.brain.context import shared_context
 
@@ -1159,11 +1178,11 @@ class Trinity:
         if not IS_MACOS:
             await self._log(f"WARNING: Running on {PLATFORM_NAME}.", "system", type="warning")
 
-        session_id = await self._initialize_run_state(user_request, session_id)
+        session_id = await self._initialize_run_state(user_request, session_id, images=images)
         shared_context.push_goal(user_request)
 
         # Plan Resolution
-        plan_or_result = await self._get_run_plan(user_request, is_subtask)
+        plan_or_result = await self._get_run_plan(user_request, is_subtask, images=images)
         if isinstance(plan_or_result, dict):
             # Already handled (e.g. chat response, workflow result)
             self.active_task = None
@@ -2460,7 +2479,7 @@ class Trinity:
             await self._log(f"User responded: {user_response}", "system")
             messages = self.state.get("messages")
             if messages is not None and isinstance(messages, list):
-                messages.append(HumanMessage(content=user_response))
+                messages.append(HumanMessage(content=cast(Any, user_response)))
                 self.state["messages"] = messages
             try:
                 from src.brain.state_manager import state_manager

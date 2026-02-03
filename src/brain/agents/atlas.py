@@ -166,6 +166,7 @@ class Atlas(BaseAgent):
         user_request: str,
         context: dict[str, Any] | None = None,
         history: list[Any] | None = None,
+        images: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Analyzes user request: determines intent (chat vs task)"""
         request_lower = user_request.lower().strip()
@@ -212,9 +213,22 @@ class Atlas(BaseAgent):
             str(history or "None"),
         )
         system_prompt = self.system_prompt.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
+        
+        # Handle multi-modal classification
+        if images:
+            content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+            for img in images:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{img['content_type']};base64,{img['data_b64']}"}
+                })
+            hum_msg = HumanMessage(content=cast(Any, content))
+        else:
+            hum_msg = HumanMessage(content=prompt)
+
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=prompt),
+            hum_msg,
         ]
 
         try:
@@ -519,6 +533,7 @@ Respond in JSON:
         use_deep_persona: bool,
         history: list[Any] | None,
         analysis_context: str,
+        images: list[dict[str, Any]] | None = None,
     ) -> list[BaseMessage]:
         """Constructs the initial message list for the chat."""
 
@@ -547,7 +562,17 @@ Respond in JSON:
                 )
             )
 
-        messages.append(HumanMessage(content=user_request))
+        if images:
+            content: list[dict[str, Any]] = [{"type": "text", "text": user_request}]
+            for img in images:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{img['content_type']};base64,{img['data_b64']}"}
+                })
+            messages.append(HumanMessage(content=cast(Any, content)))
+        else:
+            messages.append(HumanMessage(content=user_request))
+            
         return messages
 
     async def _determine_chat_parameters(
@@ -804,6 +829,7 @@ Respond in JSON:
         on_preamble: Callable[[str, str], Any] | None = None,
         use_deep_persona: bool = False,
         intent: str | None = None,
+        images: list[dict[str, Any]] | None = None,
     ) -> str:
         """EntryPoint for Chat: Contextual multi-turn reasoning and interaction."""
         # 1. Determine parameters and fetch context
@@ -842,6 +868,7 @@ Respond in JSON:
             use_deep_persona_resolved,
             history,
             f"{graph_ctx}\n{vector_ctx}\n{analysis_context}",
+            images=images,
         )
 
         # 6. Execute Turns

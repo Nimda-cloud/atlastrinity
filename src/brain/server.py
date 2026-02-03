@@ -42,7 +42,7 @@ if github_token:
     print("[Server] ✓ GITHUB_TOKEN loaded from global context")
 
 import asyncio
-from typing import Any
+from typing import Any, cast
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -141,11 +141,14 @@ async def chat(
         raise HTTPException(status_code=409, detail="System is busy")
 
     # Process files if any
-    file_context = ""
+    file_info = {"text": "", "images": []}
     if files:
         logger.info(f"[SERVER] Processing {len(files)} uploaded files...")
-        file_context = await FileProcessor.process_files(files)
+        file_info = await FileProcessor.process_files(files)
         logger.info("[SERVER] File processing complete.")
+
+    file_context = cast(str, file_info.get("text", ""))
+    images = cast(list[dict[str, Any]], file_info.get("images", []))
 
     # Combine request with file context
     full_request = request
@@ -170,8 +173,8 @@ async def chat(
 
     # Run orchestration in background/loop
     try:
-        # Pass the FULL request including file content to Trinity
-        result = await trinity.run(full_request)
+        # Pass the FULL request including file content and images to Trinity
+        result = await trinity.run(full_request, images=images)
 
         # Record successful request
         request_duration = time.time() - start_time

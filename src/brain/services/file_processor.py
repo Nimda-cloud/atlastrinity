@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import UploadFile
 
@@ -11,28 +11,47 @@ class FileProcessor:
     """Service to process uploaded files and extract text content."""
 
     @staticmethod
-    async def process_files(files: list[UploadFile]) -> str:
-        """Process a list of uploaded files and return a combined text summary."""
+    async def process_files(files: list[UploadFile]) -> dict[str, Any]:
+        """Process a list of uploaded files and return structured content."""
         if not files:
-            return ""
+            return {"text": "", "images": []}
 
         context_parts = []
+        images = []
         for file in files:
             try:
-                content = await FileProcessor._extract_content(file)
-                if content:
+                content_type = file.content_type or ""
+                filename = file.filename or "unknown"
+                
+                # Extract content
+                content, is_image = await FileProcessor._extract_content(file)
+                
+                if is_image and isinstance(content, bytes):
+                    import base64
+                    data_b64 = base64.b64encode(content).decode("utf-8")
+                    images.append({
+                        "filename": filename,
+                        "content_type": content_type,
+                        "data_b64": data_b64
+                    })
+                    # Also add a placeholder in text context so Atlas knows it exists
+                    context_parts.append(f"[Image Attachment: {filename}]")
+                elif content:
                     context_parts.append(
-                        f"--- [START FILE: {file.filename}] ---\n{content}\n--- [END FILE: {file.filename}] ---"
+                        f"--- [START FILE: {filename}] ---\n{content}\n--- [END FILE: {filename}] ---"
                     )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {e}")
                 context_parts.append(f"[ERROR] Could not process file {file.filename}: {e!s}")
 
-        return "\n\n".join(context_parts)
+        return {
+            "text": "\n\n".join(context_parts),
+            "images": images
+        }
 
     @staticmethod
-    async def _extract_content(file: UploadFile) -> str:
-        """Extract text content based on file type."""
+    async def _extract_content(file: UploadFile) -> tuple[str | bytes, bool]:
+        """Extract content based on file type. Returns (content, is_image)."""
         content_type = file.content_type or ""
         filename = file.filename.lower() if file.filename else ""
 
@@ -59,27 +78,27 @@ class FileProcessor:
             ]
         ):
             try:
-                return file_bytes.decode("utf-8")
+                return file_bytes.decode("utf-8"), False
             except UnicodeDecodeError:
-                return file_bytes.decode("latin-1", errors="replace")
+                return file_bytes.decode("latin-1", errors="replace"), False
 
         # 2. PDF Files
         if content_type == "application/pdf" or filename.endswith(".pdf"):
-            return FileProcessor._read_pdf(file_bytes)
+            return FileProcessor._read_pdf(file_bytes), False
 
         # 3. Word Documents (DOCX)
         if "wordprocessingml" in content_type or filename.endswith(".docx"):
-            return FileProcessor._read_docx(file_bytes)
+            return FileProcessor._read_docx(file_bytes), False
 
         # 4. Excel Files (XLSX)
         if "spreadsheetml" in content_type or filename.endswith(".xlsx"):
-            return FileProcessor._read_excel(file_bytes)
+            return FileProcessor._read_excel(file_bytes), False
 
         # 5. Images (OCR placeholder)
         if content_type.startswith("image/"):
-            return FileProcessor._process_image(file_bytes, filename)
+            return file_bytes, True
 
-        return f"[Binary or Unsupported File Type: {content_type} / {len(file_bytes)} bytes]"
+        return f"[Binary or Unsupported File Type: {content_type} / {len(file_bytes)} bytes]", False
 
     @staticmethod
     def _read_pdf(data: bytes) -> str:
@@ -123,6 +142,5 @@ class FileProcessor:
 
     @staticmethod
     def _process_image(data: bytes, filename: str) -> str:
-        # Placeholder for OCR
-        # We could use pytesseract here if requested
+        # Legacy/unused but keeping for compatibility if ever needed
         return f"[Image Attachment: {filename} - OCR not yet implemented]"
