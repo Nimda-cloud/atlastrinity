@@ -30,6 +30,50 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+class SimpleMistralLLM:
+    def __init__(self, api_key=None, model="mistral-large-latest"):
+        self.api_key = api_key or os.getenv("MISTRAL_API_KEY")
+        self.model = model
+        if not self.api_key:
+            # Try loading from config if env var invalid
+            try:
+                config_path = Path.home() / ".config" / "atlastrinity" / "vibe_config.toml"
+                if config_path.exists():
+                     with open(config_path) as f:
+                        for line in f:
+                            if "api_key_env_var" in line and "MISTRAL_API_KEY" in line:
+                                pass # This doesn't help get value
+            except:
+                pass
+
+    async def ainvoke(self, prompt: str) -> Any:
+        import httpx
+        if not self.api_key:
+             raise ValueError("MISTRAL_API_KEY not found in env")
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7,
+            "response_format": {"type": "json_object"} if "JSON" in prompt else None
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post("https://api.mistral.ai/v1/chat/completions", json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            # Mock object to match LangChain interface slightly
+            class MockResponse:
+                def __str__(self): return content
+            r = MockResponse()
+            r.content = content
+            return r
+
 # Sandbox configuration
 SANDBOX_ROOT = Path("/tmp/atlas_sandbox")
 SANDBOX_HOME = SANDBOX_ROOT / "home"
@@ -243,9 +287,16 @@ Return ONLY a JSON object with this structure:
 Generate the test scenario:"""
 
     response_text = ""
+    response_text = ""
     try:
-        llm = CopilotLLM(model_name="gpt-4.1")
-        response = await llm.ainvoke(prompt)
+        try:
+            llm = CopilotLLM(model_name="gpt-4.1")
+            response = await llm.ainvoke(prompt)
+        except Exception:
+            # Fallback to Mistral
+            llm = SimpleMistralLLM()
+            response = await llm.ainvoke(prompt)
+
         response_text = response.content if hasattr(response, "content") else str(response)
 
         # Handle list response
@@ -339,8 +390,14 @@ Did this test PASS or FAIL? Consider:
 Respond with: PASS or FAIL followed by a brief explanation (max 30 words)."""
 
     try:
-        llm = CopilotLLM(model_name="gpt-4.1")
-        response = await llm.ainvoke(prompt)
+        try:
+            llm = CopilotLLM(model_name="gpt-4.1")
+            response = await llm.ainvoke(prompt)
+        except Exception:
+             # Fallback to Mistral
+            llm = SimpleMistralLLM()
+            response = await llm.ainvoke(prompt)
+
         verdict = response.content if hasattr(response, "content") else str(response)
 
         if isinstance(verdict, list):
