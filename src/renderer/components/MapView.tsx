@@ -131,9 +131,11 @@ const MapView: React.FC<MapViewProps> = memo(
     const [mapInitialized, setMapInitialized] = useState(false);
     const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
     const [streetViewActive, setStreetViewActive] = useState(false);
+    const [streetViewCooldown, setStreetViewCooldown] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const apiLoaderRef = useRef<HTMLDivElement | null>(null);
   const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
+  const streetViewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load the Extended Component Library script
   useEffect(() => {
@@ -309,10 +311,27 @@ const MapView: React.FC<MapViewProps> = memo(
     }
   }, []);
 
-  // Toggle Street View mode
+  // Toggle Street View mode with rate limiting
   const handleStreetViewToggle = useCallback(() => {
+    // Prevent rapid clicking that causes 429 errors
+    if (streetViewCooldown) {
+      console.warn('🛰️ Street View: Please wait before toggling again');
+      return;
+    }
+
     const mapElement = document.querySelector('gmp-map') as GmpMapElement;
     if (!mapElement?.innerMap) return;
+
+    // Check if using placeholder API key
+    const isPlaceholder = GOOGLE_MAPS_API_KEY.includes('AIzaSyBq4tcSGVtpl');
+    if (isPlaceholder && !streetViewActive) {
+      console.error(
+        '⚠️  PLACEHOLDER API KEY DETECTED! Street View requires a real Google Cloud API key with billing enabled.'
+      );
+      console.info('Please run: python3 scripts/setup_google_maps.py');
+      setError('PLACEHOLDER_API_KEY: Street View unavailable. Configure real API key.');
+      return;
+    }
 
     if (streetViewActive) {
       // Exit Street View
@@ -322,19 +341,34 @@ const MapView: React.FC<MapViewProps> = memo(
         streetViewRef.current = null;
       }
       setStreetViewActive(false);
+      setError(null); // Clear any previous errors
     } else {
-      // Enter Street View at current map center
-      const center = mapElement.innerMap.getCenter();
-      if (center) {
-        const streetView = mapElement.innerMap.getStreetView();
-        streetView.setPosition(center);
-        streetView.setPov({ heading: 0, pitch: 0 });
-        streetView.setVisible(true);
-        streetViewRef.current = streetView;
-        setStreetViewActive(true);
+      if (streetViewDebounceRef.current) {
+        clearTimeout(streetViewDebounceRef.current);
       }
+
+      streetViewDebounceRef.current = setTimeout(() => {
+        // Re-query mapElement inside timeout to ensure it's still valid
+        const mapEl = document.querySelector('gmp-map') as GmpMapElement;
+        if (!mapEl?.innerMap) return;
+
+        // Enter Street View at current map center
+        const center = mapEl.innerMap.getCenter();
+        if (center) {
+          const streetView = mapEl.innerMap.getStreetView();
+          streetView.setPosition(center);
+          streetView.setPov({ heading: 0, pitch: 0 });
+          streetView.setVisible(true);
+          streetViewRef.current = streetView;
+          setStreetViewActive(true);
+        }
+      }, 500); // 500ms debounce to prevent spam
     }
-  }, [streetViewActive]);
+
+    // Set cooldown for 2 seconds
+    setStreetViewCooldown(true);
+    setTimeout(() => setStreetViewCooldown(false), 2000);
+  }, [streetViewActive, streetViewCooldown]);
 
   // Create API loader element with correct key attribute
   const renderApiLoader = () => {
