@@ -386,12 +386,12 @@
     "capabilities": [
       "Fetch official documentation for libraries (e.g., Pydantic, LangChain)",
       "Search for code examples and patterns",
-      "Get version-specific API references"
+      "Get version-specific API references",
+      "Resolve library names to Context7-compatible IDs"
     ],
     "key_tools": [
-      "c7_search",
-      "c7_query",
-      "c7_info"
+      "resolve-library-id",
+      "get-library-docs"
     ],
     "when_to_use": "When you need to look up documentation, API references, or examples for external libraries."
   },

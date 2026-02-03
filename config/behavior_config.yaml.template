@@ -668,10 +668,19 @@ tool_routing:
     priority_server: context7
     fallback_server: duckduckgo-search
     tool_mapping:
-      c7_search: c7_search
-      c7_query: c7_query
-      c7_info: c7_info
+      c7_search: resolve-library-id
+      c7_query: get-library-docs
+      c7_info: get-library-docs
     routing_rules:
+      - pattern: 'c7_search'
+        server: context7
+        tool: resolve-library-id
+      - pattern: 'c7_query'
+        server: context7
+        tool: get-library-docs
+      - pattern: 'c7_info'
+        server: context7
+        tool: get-library-docs
       - pattern: 'c7_.*'
         server: context7
       - pattern: '.*docs.*'

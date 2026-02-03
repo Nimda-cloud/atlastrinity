@@ -129,51 +129,52 @@
   },
   "c7_query": {
     "server": "context7",
-    "required": [
-      "projectIdentifier",
-      "query"
-    ],
-    "optional": [
-      "format",
-      "tokens"
-    ],
-    "types": {
-      "projectIdentifier": "str",
-      "query": "str",
-      "format": "str",
-      "tokens": "int"
-    },
-    "description": "Query Context7 for library info"
+    "alias_for": "get-library-docs"
   },
   "c7_get_context": {
     "server": "context7",
-    "alias_for": "c7_query"
+    "alias_for": "get-library-docs"
   },
   "c7_search": {
     "server": "context7",
-    "required": [
-      "term"
-    ],
-    "optional": [],
-    "types": {
-      "term": "str"
-    },
-    "description": "Search Context7 for projects"
+    "alias_for": "resolve-library-id"
   },
   "c7_info": {
     "server": "context7",
-    "required": [
-      "projectIdentifier"
-    ],
-    "optional": [],
-    "types": {
-      "projectIdentifier": "str"
-    },
-    "description": "Get metadata for a Context7 project"
+    "alias_for": "get-library-docs"
   },
   "c7_list_libraries": {
     "server": "context7",
-    "alias_for": "c7_info"
+    "alias_for": "resolve-library-id"
+  },
+  "resolve-library-id": {
+    "server": "context7",
+    "required": [
+      "libraryName"
+    ],
+    "optional": [],
+    "types": {
+      "libraryName": "str"
+    },
+    "description": "Resolves a library name to a Context7-compatible ID. Use this first to get the exact ID for get-library-docs."
+  },
+  "get-library-docs": {
+    "server": "context7",
+    "required": [
+      "context7CompatibleLibraryID"
+    ],
+    "optional": [
+      "topic",
+      "mode",
+      "page"
+    ],
+    "types": {
+      "context7CompatibleLibraryID": "str",
+      "topic": "str",
+      "mode": "str",
+      "page": "int"
+    },
+    "description": "Fetches documentation for a library. Requires a Context7-compatible library ID (e.g., /org/project)."
   },
   "vibe_analyze_error": {
     "server": "vibe",

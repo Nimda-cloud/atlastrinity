@@ -187,6 +187,11 @@ class ToolDispatcher:
         "library_search",
         "api_docs",
         "lookup",
+        "c7_search",
+        "c7_query",
+        "c7_info",
+        "c7_list_libraries",
+        "c7_get_context",
     ]
 
     GOLDEN_FUND_SYNONYMS = [
@@ -949,7 +954,25 @@ class ToolDispatcher:
                 args,
             )
 
-            if server and server != resolved_tool:
+            if server:
+                # Still pass through server-specific handlers if they exist for normalized handling
+                handlers = {
+                    "macos-use": self._handle_macos_use,
+                    "filesystem": self._handle_filesystem,
+                    "terminal": self._handle_terminal,
+                    "vibe": self._handle_vibe,
+                    "puppeteer": self._handle_browser,
+                    "browser": self._handle_browser,
+                    "devtools": self._handle_devtools,
+                    "context7": self._handle_context7,
+                    "golden-fund": self._handle_golden_fund,
+                    "data-analysis": self._handle_data_analysis,
+                    "xcodebuild": self._handle_xcodebuild,
+                }
+                if server in handlers:
+                    logger.debug(f"[DISPATCHER] Delegating {server}.{resolved_tool} to specialized handler")
+                    return handlers[server](resolved_tool, normalized_args)
+                
                 logger.debug(
                     f"[DISPATCHER] BehaviorEngine routing: {tool_name} -> {server}.{resolved_tool}",
                 )
@@ -1492,10 +1515,33 @@ class ToolDispatcher:
     def _handle_context7(
         self, tool_name: str, args: dict[str, Any]
     ) -> tuple[str, str, dict[str, Any]]:
-        """Maps Context7 synonyms to canonical tools."""
-        if tool_name in ["docs", "documentation", "lookup", "library"]:
-            return "context7", "c7_search", args
-        return "context7", tool_name, args
+        """Maps Context7 synonyms and legacy tools to working canonical tools."""
+        # 1. Map synonyms and legacy tools to new working names
+        if tool_name in ["docs", "documentation", "lookup", "library", "c7_search", "c7_list_libraries"]:
+            resolved_tool = "resolve-library-id"
+        elif tool_name in ["c7_query", "c7_info", "get_context", "c7_get_context"]:
+            resolved_tool = "get-library-docs"
+        else:
+            resolved_tool = tool_name
+
+        # 2. Argument normalization/mapping
+        if resolved_tool == "resolve-library-id":
+            if "term" in args:
+                args["libraryName"] = args.pop("term")
+            elif "projectIdentifier" in args: # Some agents might use this incorrectly
+                args["libraryName"] = args.pop("projectIdentifier")
+
+        elif resolved_tool == "get-library-docs":
+            if "projectIdentifier" in args:
+                args["context7CompatibleLibraryID"] = args.pop("projectIdentifier")
+            elif "libraryID" in args:
+                args["context7CompatibleLibraryID"] = args.pop("libraryID")
+            
+            # Legacy c7_query used 'query'
+            if "query" in args and "topic" not in args:
+                args["topic"] = args.pop("query")
+
+        return "context7", resolved_tool, args
 
     def _handle_golden_fund(
         self, tool_name: str, args: dict[str, Any]
