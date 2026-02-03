@@ -209,23 +209,73 @@ def get_or_create_project():
 
 
 def create_project():
+    """Створення нового GCP проекту з обробкою помилок"""
     suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
     project_id = f"atlastrinity-maps-{suffix}"
     print_step(f"Створення нового проекту: {project_id}...")
-    run_command(["gcloud", "projects", "create", project_id, "--name=AtlasTrinity Maps"])
-    run_command(["gcloud", "config", "set", "project", project_id])
-    print_success(f"Проект {project_id} створено і встановлено як активний")
-
-    print_warning(
-        "ВАЖЛИВО: Необхідно увімкнути Billing для цього проекту в Google Cloud Console."
-    )
-    print_warning(
-        "Без білінгу карти матимуть watermark 'for development purposes only' і будуть темними."
-    )
-    print(f"URL: https://console.cloud.google.com/billing/linkedaccount?project={project_id}")
-    input("\nНатисніть Enter після підключення Billing account...")
-
-    return project_id
+    
+    try:
+        # Try to create project (may fail if user doesn't have org permissions)
+        result = run_command(
+            ["gcloud", "projects", "create", project_id, "--name=AtlasTrinityMaps"],
+            check=False
+        )
+        
+        if result.returncode != 0:
+            # Show the actual error
+            print_error("Не вдалося створити проект автоматично.")
+            print_warning("Деталі помилки:")
+            print(result.stderr if result.stderr else "Невідома помилка")
+            
+            print_info("\n📌 Можливі причини:")
+            print("  • Потрібна організація Google Cloud (Organization)")
+            print("  • Недостатньо прав для створення проектів")
+            print("  • Досягнуто ліміт проектів для акаунту")
+            
+            print_info("\n💡 Рішення:")
+            print("  1) Створіть проект вручну: https://console.cloud.google.com/projectcreate")
+            print("  2) Або зверніться до адміністратора організації для надання прав\n")
+            
+            choice = input("Ви вже створили проект вручну? (y/n): ").lower()
+            if choice == "y":
+                manual_project_id = input("Введіть Project ID (наприклад, 'my-project-123'): ").strip()
+                if manual_project_id:
+                    # Verify project exists
+                    verify = run_command(
+                        ["gcloud", "projects", "describe", manual_project_id, "--format=json"],
+                        check=False
+                    )
+                    if verify.returncode == 0:
+                        run_command(["gcloud", "config", "set", "project", manual_project_id])
+                        print_success(f"Проект {manual_project_id} встановлено як активний")
+                        return manual_project_id
+                    else:
+                        print_error(f"Проект '{manual_project_id}' не знайдено.")
+                        print_info("Перевірте Project ID в консолі: https://console.cloud.google.com")
+                        sys.exit(1)
+            else:
+                print_info("Створіть проект і запустіть скрипт знову.")
+                sys.exit(1)
+        else:
+            # Project created successfully
+            run_command(["gcloud", "config", "set", "project", project_id])
+            print_success(f"Проект {project_id} створено і встановлено як активний")
+            
+            print_warning(
+                "ВАЖЛИВО: Необхідно увімкнути Billing для цього проекту в Google Cloud Console."
+            )
+            print_warning(
+                "Без білінгу карти матимуть watermark 'for development purposes only' і будуть темними."
+            )
+            print(f"URL: https://console.cloud.google.com/billing/linkedaccount?project={project_id}")
+            input("\nНатисніть Enter після підключення Billing account...")
+            
+            return project_id
+            
+    except Exception as e:
+        print_error(f"Несподівана помилка: {e}")
+        print_info("Будь ласка, створіть проект вручну: https://console.cloud.google.com/projectcreate")
+        sys.exit(1)
 
 
 def check_billing(project_id):
