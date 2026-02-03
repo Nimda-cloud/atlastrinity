@@ -28,6 +28,7 @@ DEFAULT_SERVERS = [
     "time",
     "sequential-thinking",
     "docker",
+    "devtools",
 ]
 
 
@@ -86,6 +87,18 @@ def test_cases(server_name):
                     ],
                 },
                 "description": "Create entities",
+            },
+        ],
+        "devtools": [
+            {
+                "tool": "devtools_validate_config",
+                "args": {},
+                "description": "Validate MCP config",
+            },
+            {
+                "tool": "devtools_lint_python",
+                "args": {"file_path": "tests/conftest.py"},
+                "description": "Lint self with ruff",
             },
         ],
     }

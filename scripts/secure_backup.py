@@ -207,16 +207,34 @@ class SecureBackupManager:
                 "filter_sqlite": True,
             },
             {
-                "source": self.config_root / "data" / "golden_fund",
-                "dest": self.backup_dir / "golden_fund",
-                "encrypt": False,  # Vector data - usually no secrets
-                "filter_sqlite": True,  # But SQL may have secrets in metadata
+                "source": self.config_root / "data" / "trinity.db",
+                "dest": self.backup_dir / "trinity.db.encrypted",
+                "encrypt": True,
+                "filter_sqlite": True,
+            },
+            {
+                "source": self.config_root / "data" / "golden_fund" / "golden.db",
+                "dest": self.backup_dir / "golden_fund.db.encrypted",
+                "encrypt": True,
+                "filter_sqlite": True,
+            },
+            {
+                "source": self.config_root / "data" / "search" / "golden_fund_index.db",
+                "dest": self.backup_dir / "golden_fund_index.db.encrypted",
+                "encrypt": True,
+                "filter_sqlite": True,
+            },
+            {
+                "source": self.config_root / "data" / "golden_fund" / "chroma_db",
+                "dest": self.backup_dir / "golden_fund" / "chroma_db",
+                "encrypt": False,
+                "filter_sqlite": False, # Directory
             },
             {
                 "source": self.config_root / "memory" / "chroma",
                 "dest": self.backup_dir / "memory" / "chroma",
-                "encrypt": False,  # Vector embeddings - no direct secrets
-                "filter_sqlite": True,  # But documents/metadata may contain secrets!
+                "encrypt": False,
+                "filter_sqlite": False, # Directory
             },
         ]
 
@@ -318,8 +336,23 @@ class SecureBackupManager:
                 "encrypted": True,
             },
             {
-                "source": self.backup_dir / "golden_fund",
-                "dest": self.config_root / "data" / "golden_fund",
+                "source": self.backup_dir / "trinity.db.encrypted",
+                "dest": self.config_root / "data" / "trinity.db",
+                "encrypted": True,
+            },
+            {
+                "source": self.backup_dir / "golden_fund.db.encrypted",
+                "dest": self.config_root / "data" / "golden_fund" / "golden.db",
+                "encrypted": True,
+            },
+            {
+                "source": self.backup_dir / "golden_fund_index.db.encrypted",
+                "dest": self.config_root / "data" / "search" / "golden_fund_index.db",
+                "encrypted": True,
+            },
+            {
+                "source": self.backup_dir / "golden_fund" / "chroma_db",
+                "dest": self.config_root / "data" / "golden_fund" / "chroma_db",
                 "encrypted": False,
             },
             {

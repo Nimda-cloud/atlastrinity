@@ -7,6 +7,55 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// Minimal Google Maps type declarations for TypeScript
+declare namespace google.maps {
+  class Map {
+    setOptions(options: MapOptions): void;
+    setMapTypeId(mapTypeId: string): void;
+    getStreetView(): StreetViewPanorama;
+    getCenter(): LatLng | undefined;
+    getZoom(): number;
+    setZoom(zoom: number): void;
+    panTo(latLng: LatLng | LatLngLiteral): void;
+  }
+  
+  class LatLng {
+    lat(): number;
+    lng(): number;
+  }
+  
+  interface LatLngLiteral {
+    lat: number;
+    lng: number;
+  }
+  
+  interface MapOptions {
+    styles?: MapTypeStyle[];
+    disableDefaultUI?: boolean;
+    zoomControl?: boolean;
+    mapTypeControl?: boolean;
+    streetViewControl?: boolean;
+    fullscreenControl?: boolean;
+  }
+  
+  interface MapTypeStyle {
+    elementType?: string;
+    featureType?: string;
+    stylers: { [key: string]: string | number | undefined }[];
+  }
+  
+  class StreetViewPanorama {
+    setPosition(latLng: LatLng | LatLngLiteral): void;
+    setPov(pov: StreetViewPov): void;
+    setVisible(visible: boolean): void;
+  }
+  
+  interface StreetViewPov {
+    heading: number;
+    pitch: number;
+  }
+}
+
 interface MapViewProps {
   imageUrl?: string;
   type: 'STREET' | 'STATIC' | 'INTERACTIVE';
@@ -126,8 +175,11 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
+  const [streetViewActive, setStreetViewActive] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const apiLoaderRef = useRef<HTMLDivElement | null>(null);
+  const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
 
   // Load the Extended Component Library script
   useEffect(() => {
@@ -285,6 +337,49 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
     }
   };
 
+  // Handle map type change (roadmap/satellite/hybrid)
+  const handleMapTypeChange = useCallback((newType: 'roadmap' | 'satellite' | 'hybrid') => {
+    setMapType(newType);
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+    if (mapElement?.innerMap) {
+      mapElement.innerMap.setMapTypeId(newType);
+      // Re-apply custom styles only for roadmap type
+      if (newType === 'roadmap') {
+        mapElement.innerMap.setOptions({ styles: CYBERPUNK_MAP_STYLE });
+      } else {
+        // For satellite/hybrid, remove custom styles but keep some settings
+        mapElement.innerMap.setOptions({ styles: [] });
+      }
+    }
+  }, []);
+
+  // Toggle Street View mode
+  const handleStreetViewToggle = useCallback(() => {
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+    if (!mapElement?.innerMap) return;
+
+    if (streetViewActive) {
+      // Exit Street View
+      const streetView = mapElement.innerMap.getStreetView();
+      if (streetView) {
+        streetView.setVisible(false);
+        streetViewRef.current = null;
+      }
+      setStreetViewActive(false);
+    } else {
+      // Enter Street View at current map center
+      const center = mapElement.innerMap.getCenter();
+      if (center) {
+        const streetView = mapElement.innerMap.getStreetView();
+        streetView.setPosition(center);
+        streetView.setPov({ heading: 0, pitch: 0 });
+        streetView.setVisible(true);
+        streetViewRef.current = streetView;
+        setStreetViewActive(true);
+      }
+    }
+  }, [streetViewActive]);
+
   // Create API loader element with correct key attribute
   const renderApiLoader = () => {
     if (!GOOGLE_MAPS_API_KEY) return null; // Don't render without key
@@ -387,6 +482,67 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
                 >
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
+              </button>
+            </div>
+
+            {/* Map Type Controls */}
+            <div className="map-type-controls">
+              <button
+                className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
+                onClick={() => handleMapTypeChange('roadmap')}
+                aria-label="Map View"
+                title="TACTICAL_MAP"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+              </button>
+              <div className="map-type-separator"></div>
+              <button
+                className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
+                onClick={() => handleMapTypeChange('satellite')}
+                aria-label="Satellite View"
+                title="SATELLITE_FEED"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="4"></circle>
+                  <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                  <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                  <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+                </svg>
+              </button>
+              <div className="map-type-separator"></div>
+              <button
+                className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
+                onClick={() => handleMapTypeChange('hybrid')}
+                aria-label="Hybrid View"
+                title="HYBRID_OVERLAY"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="12" cy="12" r="4"></circle>
+                </svg>
+              </button>
+            </div>
+
+            {/* Street View Toggle */}
+            <div className="street-view-controls">
+              <button
+                className={`street-view-btn ${streetViewActive ? 'active' : ''}`}
+                onClick={handleStreetViewToggle}
+                aria-label={streetViewActive ? 'Exit Street View' : 'Enter Street View'}
+                title={streetViewActive ? 'EXIT_STREET_VIEW' : 'AGENT_POV_MODE'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="7" r="4"></circle>
+                  <path d="M5.5 21a8.38 8.38 0 0 1 0 -6"></path>
+                  <path d="M18.5 21a8.38 8.38 0 0 0 0 -6"></path>
+                  <path d="M12 11v10"></path>
+                </svg>
+                <span className="control-label">{streetViewActive ? 'EXIT' : 'POV'}</span>
               </button>
             </div>
           </div>
@@ -791,6 +947,171 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
         .telemetry-value {
           color: #ff00ff;
           text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
+        }
+
+        /* Map Type Controls */
+        .map-type-controls {
+          position: absolute;
+          top: 60px;
+          right: 20px;
+          display: flex;
+          flex-direction: column;
+          background: rgba(0, 10, 20, 0.9);
+          border: 1px solid rgba(0, 163, 255, 0.5);
+          border-radius: 2px;
+          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+          z-index: 10;
+        }
+
+        .map-type-btn {
+          width: 32px;
+          height: 32px;
+          background: transparent;
+          border: none;
+          color: rgba(0, 229, 255, 0.6);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .map-type-btn:hover {
+          background: rgba(0, 163, 255, 0.2);
+          color: #fff;
+        }
+
+        .map-type-btn.active {
+          background: rgba(0, 163, 255, 0.25);
+          color: #00e5ff;
+          box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+
+        .map-type-separator {
+          height: 1px;
+          background: rgba(0, 163, 255, 0.3);
+          width: 100%;
+        }
+
+        /* Street View Controls */
+        .street-view-controls {
+          position: absolute;
+          top: 180px;
+          right: 20px;
+          z-index: 10;
+        }
+
+        .street-view-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 8px;
+          background: rgba(0, 10, 20, 0.9);
+          border: 1px solid rgba(0, 163, 255, 0.5);
+          border-radius: 2px;
+          color: rgba(0, 229, 255, 0.6);
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+        }
+
+        .street-view-btn:hover {
+          background: rgba(0, 163, 255, 0.2);
+          color: #fff;
+          border-color: #00a3ff;
+        }
+
+        .street-view-btn.active {
+          background: rgba(255, 140, 0, 0.15);
+          border-color: #ff8c00;
+          color: #ff8c00;
+          box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
+        }
+
+        .control-label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 8px;
+          letter-spacing: 1px;
+        }
+      `}</style>
+
+      {/* Global styles for Google Places Autocomplete dropdown - injected into document */}
+      <style>{`
+        /* Google Places Autocomplete Dropdown - Dark Theme */
+        .pac-container {
+          background-color: rgba(2, 10, 16, 0.98) !important;
+          border: 1px solid rgba(0, 163, 255, 0.5) !important;
+          border-top: none !important;
+          border-radius: 0 0 4px 4px !important;
+          box-shadow: 0 4px 20px rgba(0, 163, 255, 0.3) !important;
+          font-family: 'JetBrains Mono', 'Outfit', sans-serif !important;
+          z-index: 10000 !important;
+          margin-top: -1px !important;
+        }
+
+        .pac-item {
+          background-color: transparent !important;
+          border-bottom: 1px solid rgba(0, 163, 255, 0.15) !important;
+          padding: 10px 12px !important;
+          color: #00e5ff !important;
+          cursor: pointer !important;
+          line-height: 1.4 !important;
+        }
+
+        .pac-item:hover,
+        .pac-item-selected {
+          background-color: rgba(0, 163, 255, 0.15) !important;
+        }
+
+        .pac-item:last-child {
+          border-bottom: none !important;
+        }
+
+        .pac-item-query {
+          color: #00a3ff !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+        }
+
+        .pac-icon {
+          filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg) brightness(1.2) !important;
+          margin-right: 10px !important;
+        }
+
+        .pac-icon-marker {
+          background-position: -1px -161px !important;
+        }
+
+        .pac-matched {
+          color: #00e5ff !important;
+          font-weight: 600 !important;
+        }
+
+        /* Secondary text (address details) */
+        .pac-item span:not(.pac-item-query):not(.pac-matched) {
+          color: rgba(0, 163, 255, 0.7) !important;
+          font-size: 11px !important;
+        }
+
+        /* "Powered by Google" footer styling */
+        .pac-container::after {
+          background-color: rgba(2, 10, 16, 0.95) !important;
+          background-image: none !important;
+          border-top: 1px solid rgba(0, 163, 255, 0.2) !important;
+          padding: 8px 12px !important;
+          color: rgba(0, 163, 255, 0.4) !important;
+          font-size: 9px !important;
+        }
+
+        .pac-logo::after {
+          filter: invert(1) grayscale(1) brightness(1.5) hue-rotate(180deg) !important;
+        }
+
+        /* Hide "powered by Google" text, keep only logo filtered */
+        .hdpi.pac-logo::after {
+          background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=) !important;
         }
       `}</style>
     </div>

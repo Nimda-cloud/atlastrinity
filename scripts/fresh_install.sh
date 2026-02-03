@@ -224,6 +224,15 @@ if confirm "Бажаєте запустити налаштування (setup_de
     
     echo "🚀 Запуск $PYTHON_CMD scripts/setup_dev.py $SETUP_ARGS..."
     $PYTHON_CMD scripts/setup_dev.py $SETUP_ARGS
+
+    # Sync secrets to GitHub if possible
+    echo ""
+    echo "🔗 Перевірка можливості синхронізації секретів з GitHub..."
+    if [ -f "scripts/sync_secrets.sh" ]; then
+        bash "scripts/sync_secrets.sh"
+    else
+        echo "⚠️ scripts/sync_secrets.sh не знайдено, пропускаємо синхронізацію."
+    fi
 else
     echo "👋 Ви можете запустити налаштування пізніше."
 fi

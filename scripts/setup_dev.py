@@ -1309,11 +1309,13 @@ def _legacy_backup_databases():
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     backup_dir.mkdir(parents=True, exist_ok=True)
 
-    # Definitive mappings for full system backup
     backups = [
         (CONFIG_ROOT / "atlastrinity.db", backup_dir / "atlastrinity.db"),
         (CONFIG_ROOT / "data" / "monitoring.db", backup_dir / "monitoring.db"),
-        (CONFIG_ROOT / "data" / "golden_fund", backup_dir / "golden_fund"),
+        (CONFIG_ROOT / "data" / "trinity.db", backup_dir / "trinity.db"),
+        (CONFIG_ROOT / "data" / "golden_fund" / "golden.db", backup_dir / "golden.db"),
+        (CONFIG_ROOT / "data" / "search" / "golden_fund_index.db", backup_dir / "golden_fund_index.db"),
+        (CONFIG_ROOT / "data" / "golden_fund" / "chroma_db", backup_dir / "golden_fund" / "chroma_db"),
         (CONFIG_ROOT / "memory" / "chroma", backup_dir / "memory" / "chroma"),
     ]
 
@@ -1339,9 +1341,31 @@ def _legacy_backup_databases():
 
 
 def restore_databases():
-    """Відновлює всі бази даних та вектори з архіву репозиторію"""
+    """Відновлює всі бази даних та вектори з архіву репозиторію (Secure Restore)"""
     print_step("Відновлення баз даних з резервних копій...")
 
+    try:
+        from scripts.secure_backup import SecureBackupManager
+
+        backup_manager = SecureBackupManager(PROJECT_ROOT)
+        success = backup_manager.restore_secure_backup()
+
+        if success:
+            print_success("Відновлення з безпечного бекапу завершено.")
+        else:
+            print_warning("Безпечне відновлення не вдалося або бекапів немає.")
+            print_info("Спроба використати старий метод відновлення...")
+            _legacy_restore_databases()
+
+    except ImportError:
+        print_warning("Модуль безпечного бекапу не знайдено. Використання legacy методу...")
+        _legacy_restore_databases()
+    except Exception as e:
+        print_error(f"Помилка при відновленні: {e}")
+
+
+def _legacy_restore_databases():
+    """Застарілий метод відновлення (без розшифрування)"""
     backup_dir = PROJECT_ROOT / "backups" / "databases"
     if not backup_dir.exists():
         print_warning("Резервні копії не знайдено.")
@@ -1351,7 +1375,10 @@ def restore_databases():
     restores = [
         (backup_dir / "atlastrinity.db", CONFIG_ROOT / "atlastrinity.db"),
         (backup_dir / "monitoring.db", CONFIG_ROOT / "data" / "monitoring.db"),
-        (backup_dir / "golden_fund", CONFIG_ROOT / "data" / "golden_fund"),
+        (backup_dir / "trinity.db", CONFIG_ROOT / "data" / "trinity.db"),
+        (backup_dir / "golden.db", CONFIG_ROOT / "data" / "golden_fund" / "golden.db"),
+        (backup_dir / "golden_fund_index.db", CONFIG_ROOT / "data" / "search" / "golden_fund_index.db"),
+        (backup_dir / "golden_fund" / "chroma_db", CONFIG_ROOT / "data" / "golden_fund" / "chroma_db"),
         (backup_dir / "memory" / "chroma", CONFIG_ROOT / "memory" / "chroma"),
     ]
 

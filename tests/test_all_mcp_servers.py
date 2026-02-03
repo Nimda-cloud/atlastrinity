@@ -210,6 +210,18 @@ async def main():
                 "description": "Navigate to example.com",
             },
         ],
+        "devtools": [
+            {
+                "tool": "devtools_validate_config",
+                "args": {},
+                "description": "Validate MCP config",
+            },
+            {
+                "tool": "devtools_lint_python",
+                "args": {"file_path": "tests/test_all_mcp_servers.py"},
+                "description": "Lint self with ruff",
+            },
+        ],
     }
 
     all_results = []

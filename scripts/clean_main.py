@@ -16,12 +16,17 @@ def clean_main():
     targets = [
         CONFIG_ROOT / "atlastrinity.db",
         CONFIG_ROOT / "data" / "monitoring.db",
+        CONFIG_ROOT / "data" / "trinity.db",
         CONFIG_ROOT / "memory",
         CONFIG_ROOT / "logs",
         CONFIG_ROOT / "cache",
-        CONFIG_ROOT / "vibe" / "agents",  # ← Vibe агенти конфігурації
-        CONFIG_ROOT / "data",  # ← Вся data директорія (включно search, analysis_cache)
-        CONFIG_ROOT / "mcp",  # ← MCP конфігурація
+        CONFIG_ROOT / "data",  # ← All data (search, analysis, etc.)
+        CONFIG_ROOT / "mcp",   # ← All MCP configs
+        CONFIG_ROOT / "vibe",  # ← Vibe agents folder
+        CONFIG_ROOT / "config.yaml",
+        CONFIG_ROOT / "behavior_config.yaml",
+        CONFIG_ROOT / "vibe_config.toml",
+        CONFIG_ROOT / "prometheus.yml",
     ]
 
     for target in targets:

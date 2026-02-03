@@ -119,6 +119,12 @@ class ConfigHandler(FileSystemEventHandler):
             # Add a small delay to ensure write verify
             time.sleep(0.1)
             process_template(Path(str(event.src_path)), dst_path)
+        elif "vibe/agents/" in filename and filename.endswith(".template"):
+            # Dynamic agent sync
+            dst_name = Path(filename).stem
+            dst_path = CONFIG_DST_ROOT / "vibe" / "agents" / dst_name
+            time.sleep(0.1)
+            process_template(Path(str(event.src_path)), dst_path)
 
 
 def ensure_github_remote_setup():
@@ -177,10 +183,18 @@ def main():
 
     # Initial sync
     print("Performing sync...")
+    # Standard mappings
     for tpl, dst in MAPPINGS.items():
         src = CONFIG_SRC / tpl
         if src.exists():
             process_template(src, CONFIG_DST_ROOT / dst)
+    
+    # Dynamic Agent templates
+    agent_tpl_dir = CONFIG_SRC / "vibe" / "agents"
+    if agent_tpl_dir.exists():
+        for tpl in agent_tpl_dir.glob("*.template"):
+            dst_name = tpl.stem
+            process_template(tpl, CONFIG_DST_ROOT / "vibe" / "agents" / dst_name)
 
     # Ensure GitHub remote is set up (Use token from .env)
     ensure_github_remote_setup()

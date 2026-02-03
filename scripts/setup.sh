@@ -20,6 +20,16 @@ fi
 pushd "$(dirname "$0")/.." >/dev/null
 export PYTHONPATH="$(pwd)"
 python3 "scripts/setup_dev.py"
+
+# Sync secrets to GitHub if possible
+echo ""
+echo "🔗 Перевірка можливості синхронізації секретів з GitHub..."
+if [ -f "scripts/sync_secrets.sh" ]; then
+    bash "scripts/sync_secrets.sh"
+else
+    echo "⚠️ scripts/sync_secrets.sh не знайдено, пропускаємо синхронізацію."
+fi
+
 popd >/dev/null
 
 echo ""
