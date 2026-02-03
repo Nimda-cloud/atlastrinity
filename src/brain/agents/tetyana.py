@@ -318,6 +318,15 @@ Respond in JSON:
                             f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}"
                         )
                         return cast(str, item.text)
+            elif isinstance(result, dict) and "results" in result:
+                results = result["results"]
+                if results and len(results) > 0:
+                    logger.info(
+                        f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}"
+                    )
+                    # Results from memory search contain 'observations' list
+                    observations = results[0].get("observations", [])
+                    return observations[0] if observations else ""
             elif isinstance(result, dict) and "entities" in result:
                 entities = result["entities"]
                 if entities and len(entities) > 0:
@@ -664,7 +673,7 @@ IMPORTANT:
         grisha_feedback = step.get("grisha_feedback", "")
         if not grisha_feedback and attempt > 1:
             logger.info(
-                f"[TETYANA] Attempt {attempt} - fetching Grisha's rejection feedback from memory...",
+                f"[TETYANA] Attempt {attempt} - fetching Grisha's rejection report (step {step_id})...",
             )
             grisha_feedback = await self.get_grisha_feedback(step_id) or ""
         return cast("str", grisha_feedback)

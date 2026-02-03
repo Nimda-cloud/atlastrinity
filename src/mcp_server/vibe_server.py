@@ -661,6 +661,19 @@ async def _execute_vibe_with_retries(
                     continue
                 return cast(dict[str, Any], res)
 
+            # Check for Session not found (failed resume)
+            if "not found" in stderr.lower() and "session" in stderr.lower() and "--resume" in argv:
+                logger.warning("[VIBE] Session not found. Retrying without --resume.")
+                try:
+                    idx = argv.index("--resume")
+                    argv.pop(idx)  # remove --resume
+                    if idx < len(argv):
+                        argv.pop(idx)  # remove session_id
+                    # Continue loop to retry immediately with updated argv
+                    continue
+                except (ValueError, IndexError):
+                    pass
+
             return {
                 "success": process.returncode == 0,
                 "returncode": process.returncode,

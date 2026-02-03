@@ -629,7 +629,7 @@ class Grisha(BaseAgent):
         # Format results for analysis
         results_summary = "\n".join(
             [
-                f"Tool {i + 1}: {r['tool']}\n  Success: {not r.get('error', False)}\n  Result: {r.get('result', 'N/A')[:500]}\n"
+                f"Tool {i + 1}: {r['tool']}\n  Success: {not r.get('error', False)}\n  Result: {r.get('result', 'N/A')[:2000]}\n"
                 for i, r in enumerate(verification_results)
             ]
         )
@@ -700,14 +700,14 @@ class Grisha(BaseAgent):
         """Determines verification success or failure from text."""
 
         verdict_match = re.search(
-            r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО)",
+            r"(?:VERDICT|ВЕРДИКТ)[:\s]*(CONFIRMED|FAILED|ПІДТВЕРДЖЕНО|ПРОВАЛЕНО|УСПІШНО|APPROVED|REJECTED|ПРИЙНЯТО|ВІДХИЛЕНО|PASS|FAIL)",
             analysis_text,
             re.IGNORECASE,
         )
 
         if verdict_match:
             verdict_val = verdict_match.group(1).upper()
-            return any(word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО"])
+            return any(word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО", "APPROVED", "ПРИЙНЯТО", "PASS"])
 
         return self._fallback_verdict_analysis(analysis_text, analysis_upper)
 
@@ -740,8 +740,11 @@ class Grisha(BaseAgent):
             "CONFIRMED",
             "SUCCESS",
             "VERIFIED",
+            "APPROVED",
+            "PASS",
             "ПІДТВЕРДЖЕНО",
             "УСПІШНО",
+            "ПРИЙНЯТО",
             "КРОК ПІДТВЕРДЖЕНО",
             "УСПІШНО ВИКОНАНО",
             "ЗАВДАННЯ ВИКОНАНО",
@@ -749,8 +752,11 @@ class Grisha(BaseAgent):
         failure_indicators = [
             "FAILED",
             "ERROR",
+            "REJECTED",
+            "FAIL",
             "ПРОВАЛЕНО",
             "ПОМИЛКА",
+            "ВІДХИЛЕНО",
             "НЕ ВИКОНАНО",
             "КРОК НЕ ПРОЙШОВ",
             "ЗАВДАННЯ НЕ ВИКОНАНО",
@@ -1401,7 +1407,7 @@ class Grisha(BaseAgent):
                     ORDER BY te.created_at DESC 
                     LIMIT 5;
                 """
-                params = {"seq": str(step_id), "task_id": task_id}
+                params = {"seq": int(str(step_id).split(".")[-1]) if "." in str(step_id) else int(step_id), "task_id": task_id}
             else:
                 sql = """
                     SELECT te.tool_name, te.arguments, te.result, ts.status as step_status, te.created_at 
@@ -1411,7 +1417,7 @@ class Grisha(BaseAgent):
                     ORDER BY te.created_at DESC 
                     LIMIT 5;
                 """
-                params = {"seq": str(step_id)}
+                params = {"seq": int(str(step_id).split(".")[-1]) if "." in str(step_id) else int(step_id)}
 
             rows = await mcp_manager.query_db(sql, params)
 
@@ -1519,8 +1525,8 @@ class Grisha(BaseAgent):
             # Check if this was a SUCCESSFUL empty result (valid discovery)
             # We only treat it as error if it specifically denotes failure
             res_lower = v_res_str.lower()
-            if "error" in res_lower or "failed" in res_lower or "not found" in res_lower:
-                logger.warning("[GRISHA] Empty/Failed result in info-gathering task")
+            if "error" in res_lower or "failed" in res_lower:
+                logger.warning("[GRISHA] Failed result in info-gathering task")
                 return True
 
             # If successful but empty, it's NOT an error for info tasks (discovery)
