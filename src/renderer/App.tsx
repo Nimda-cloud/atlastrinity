@@ -173,9 +173,13 @@ const App: React.FC = () => {
       // Auto-detect interactive map signal
       if (message.includes('🌐 INTERACTIVE_MAP_OPEN:')) {
         const query = message.replace('🌐 INTERACTIVE_MAP_OPEN:', '').trim();
-        setMapData({
-          type: 'INTERACTIVE',
-          location: query || 'SEARCH_MODE_ACTIVE',
+        setMapData((prev) => {
+          const newData = {
+            type: 'INTERACTIVE' as const,
+            location: query || 'SEARCH_MODE_ACTIVE',
+          };
+          if (prev.type === newData.type && prev.location === newData.location) return prev;
+          return newData;
         });
         setViewMode('MAP');
       }
@@ -229,16 +233,26 @@ const App: React.FC = () => {
           if (data.map_state?.agent_view) {
             const av = data.map_state.agent_view;
             if (av.image_path) {
-              setMapData({
-                url: `file://${av.image_path}`,
-                type: 'STREET',
-                location: `AGENT_VIEW @ ${av.heading}°`,
-                agentView: {
-                  heading: av.heading,
-                  pitch: av.pitch,
-                  fov: av.fov,
-                  timestamp: av.timestamp,
-                },
+              const fileUrl = `file://${av.image_path}`;
+              setMapData((prev) => {
+                if (
+                  prev.url === fileUrl &&
+                  prev.type === 'STREET' &&
+                  prev.agentView?.timestamp === av.timestamp
+                ) {
+                  return prev;
+                }
+                return {
+                  url: fileUrl,
+                  type: 'STREET',
+                  location: `AGENT_VIEW @ ${av.heading}°`,
+                  agentView: {
+                    heading: av.heading,
+                    pitch: av.pitch,
+                    fov: av.fov,
+                    timestamp: av.timestamp,
+                  },
+                };
               });
               setViewMode('MAP');
             }
@@ -439,6 +453,8 @@ const App: React.FC = () => {
   const handleToggleVoice = useCallback(() => {
     setIsVoiceEnabled((prev) => !prev);
   }, []);
+
+  const handleCloseMap = useCallback(() => setViewMode('NEURAL'), []);
 
   const handleNewSession = async () => {
     console.log('Starting new session...');
@@ -785,7 +801,7 @@ const App: React.FC = () => {
               type={mapData.type}
               location={mapData.location}
               agentView={mapData.agentView}
-              onClose={() => setViewMode('NEURAL')}
+              onClose={handleCloseMap}
             />
           </div>
         )}

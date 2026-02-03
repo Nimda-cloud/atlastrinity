@@ -7,7 +7,7 @@
 /// <reference types="google.maps" />
 
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 interface MapViewProps {
   imageUrl?: string;
@@ -124,12 +124,13 @@ if (GOOGLE_MAPS_API_KEY) {
   console.log('🗺️ MapView: Key starts with:', `${GOOGLE_MAPS_API_KEY.substring(0, 10)}...`);
 }
 
-const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, agentView }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
-  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
-  const [streetViewActive, setStreetViewActive] = useState(false);
+const MapView: React.FC<MapViewProps> = memo(
+  ({ imageUrl, type, location, onClose, agentView }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [mapInitialized, setMapInitialized] = useState(false);
+    const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
+    const [streetViewActive, setStreetViewActive] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const apiLoaderRef = useRef<HTMLDivElement | null>(null);
   const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
@@ -1104,7 +1105,7 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
       `}</style>
     </div>
   );
-};
+});
 
 // Add global declarations for Google Maps Web Components to satisfy TypeScript
 declare global {
