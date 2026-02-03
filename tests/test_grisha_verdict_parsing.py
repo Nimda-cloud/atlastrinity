@@ -1,7 +1,7 @@
 """Unit tests for Grisha verdict parsing logic."""
 
-import sys
 import os
+import sys
 
 # Add src path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -92,7 +92,7 @@ def run_tests():
     """Run all tests."""
     test = TestGrishaVerdictParsing()
     test.setup_method()
-    
+
     tests = [
         ("explicit_success_with_error_context", test.test_explicit_success_with_error_context),
         ("explicit_success_verdict_english", test.test_explicit_success_verdict_english),
@@ -105,10 +105,10 @@ def run_tests():
         ("conflicting_indicators_success_wins", test.test_conflicting_indicators_success_wins),
         ("no_clear_indicators_defaults_to_false", test.test_no_clear_indicators_defaults_to_false),
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for name, test_func in tests:
         try:
             test_func()
@@ -120,8 +120,8 @@ def run_tests():
         except Exception as e:
             print(f"💥 {name}: {e}")
             failed += 1
-    
-    print(f"\n{'='*50}")
+
+    print(f"\n{'=' * 50}")
     print(f"Results: {passed} passed, {failed} failed")
     return failed == 0
 

@@ -716,7 +716,7 @@ class Grisha(BaseAgent):
 
     def _fallback_verdict_analysis(self, analysis_text: str, analysis_upper: str) -> bool:
         """Enhanced fallback to analyze reasoning consistency.
-        
+
         PRIORITY ORDER (highest to lowest):
         1. Explicit verdict markers (КРОК ПІДТВЕРДЖЕНО, VERDICT: CONFIRMED)
         2. Success indicators without contradicting failure markers
@@ -786,11 +786,11 @@ class Grisha(BaseAgent):
             "STEP FAILED",
             "ЗАВДАННЯ НЕ ВИКОНАНО",
         ]
-        
+
         # Check explicit verdicts FIRST - these have highest priority
         has_explicit_success = any(v in analysis_upper for v in explicit_success_verdicts)
         has_explicit_failure = any(v in analysis_upper for v in explicit_failure_verdicts)
-        
+
         # If explicit success verdict exists, return True (even if "ПОМИЛКА" appears in context)
         if has_explicit_success and not has_explicit_failure:
             return True
