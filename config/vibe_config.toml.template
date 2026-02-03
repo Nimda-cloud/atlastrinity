@@ -1,8 +1,8 @@
 # Mistral Vibe Configuration (Native Format)
 # Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model for Vibe (Mistral Vibe CLI Latest is the default)
-active_model = "mistral-vibe-cli-latest"
+# Active model for Vibe (Codestral Latest is the default)
+active_model = "codestral-latest"
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
@@ -38,9 +38,9 @@ backend = "generic"
 # Model Presets
 # =============================================================================
 [[models]]
-name = "mistral-vibe-cli-latest"
+name = "codestral-latest"
 provider = "mistral"
-alias = "vibe-cli"
+alias = "codestral-latest"
 temperature = 0.0
 input_price = 0.0
 output_price = 0.0
