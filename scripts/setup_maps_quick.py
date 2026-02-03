@@ -3,6 +3,7 @@
 Unified Google Maps API Setup Script
 Об'єднує автоматичне (gcloud) та ручне налаштування Google Maps API
 """
+
 import json
 import os
 import random
@@ -98,41 +99,40 @@ def check_gcloud():
     print_step("Перевірка gcloud installation...")
     if subprocess.run(["which", "gcloud"], capture_output=True).returncode != 0:
         print_warning("gcloud CLI не знайдено.")
-        
+
         # Check if Homebrew is available for installation
         if shutil.which("brew"):
             print_info("Знайдено Homebrew. Пропоную встановити Google Cloud SDK...")
             choice = input("Встановити gcloud CLI через Homebrew? (y/n): ").lower()
-            
+
             if choice == "y":
                 try:
                     print_info("Встановлення google-cloud-sdk...")
-                    subprocess.run(
-                        ["brew", "install", "--cask", "google-cloud-sdk"], 
-                        check=True
-                    )
+                    subprocess.run(["brew", "install", "--cask", "google-cloud-sdk"], check=True)
                     print_success("Google Cloud SDK встановлено успішно!")
-                    
+
                     # Add to PATH for current session
                     gcloud_paths = [
                         "/opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin",
-                        "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin"
+                        "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin",
                     ]
                     for gcloud_path in gcloud_paths:
                         if Path(gcloud_path).exists():
                             os.environ["PATH"] = gcloud_path + ":" + os.environ.get("PATH", "")
                             print_info(f"Додано до PATH: {gcloud_path}")
                             break
-                    
+
                     # Verify installation
                     if subprocess.run(["which", "gcloud"], capture_output=True).returncode == 0:
                         print_success("gcloud тепер доступний!")
                         return True
                     else:
                         print_warning("gcloud встановлено, але потребує перезапуску термінала")
-                        print_info("Після перезапуску запустіть: python3 scripts/setup_maps_quick.py")
+                        print_info(
+                            "Після перезапуску запустіть: python3 scripts/setup_maps_quick.py"
+                        )
                         return False
-                        
+
                 except subprocess.CalledProcessError as e:
                     print_error(f"Не вдалося встановити gcloud: {e}")
                     return False
@@ -143,7 +143,7 @@ def check_gcloud():
             print_warning("Homebrew не знайдено. Не можу автоматично встановити gcloud.")
             print_info("Встановіть вручну: https://cloud.google.com/sdk/docs/install")
             return False
-            
+
     print_success("gcloud знайдено")
     return True
 
@@ -213,51 +213,54 @@ def create_project():
     suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
     project_id = f"atlastrinity-maps-{suffix}"
     print_step(f"Створення нового проекту: {project_id}...")
-    
+
     try:
         # Try to create project (may fail if user doesn't have org permissions)
         result = run_command(
-            ["gcloud", "projects", "create", project_id, "--name=AtlasTrinityMaps"],
-            check=False
+            ["gcloud", "projects", "create", project_id, "--name=AtlasTrinityMaps"], check=False
         )
-        
+
         if result.returncode != 0:
             stderr = result.stderr if result.stderr else "Невідома помилка"
-            
+
             # Check for Terms of Service error specifically
             if "Terms of Service" in stderr or "TOS" in stderr:
                 print_error("Помилка: Необхідно прийняти Умови використання Google Cloud.")
                 print_warning("\n⚠️  КРИТИЧНА ДІЯ:")
                 print("CLI не може прийняти Умови використання за вас з юридичних причин.")
-                print(f"\n1. Відкрийте це посилання: {Colors.BOLD}{Colors.OKCYAN}https://console.cloud.google.com/terms{Colors.ENDC}")
+                print(
+                    f"\n1. Відкрийте це посилання: {Colors.BOLD}{Colors.OKCYAN}https://console.cloud.google.com/terms{Colors.ENDC}"
+                )
                 print("2. Виберіть вашу країну та натисніть 'Agree and Continue'")
                 print("3. Поверніться сюди та натисніть Enter\n")
                 input("Натисніть Enter ПІСЛЯ того як приймете умови в браузері...")
-                
+
                 # Retry project creation after TOS acceptance
                 return create_project()
 
             print_error("Не вдалося створити проект автоматично.")
             print_warning("Деталі помилки:")
             print(stderr)
-            
+
             print_info("\n📌 Можливі причини:")
             print("  • Потрібна організація Google Cloud (Organization)")
             print("  • Недостатньо прав для створення проектів")
             print("  • Досягнуто ліміт проектів для акаунту")
-            
+
             print_info("\n💡 Рішення:")
             print("  1) Створіть проект вручну: https://console.cloud.google.com/projectcreate")
             print("  2) Або зверніться до адміністратора організації для надання прав\n")
-            
+
             choice = input("Ви вже створили проект вручну? (y/n): ").lower()
             if choice == "y":
-                manual_project_id = input("Введіть Project ID (наприклад, 'my-project-123'): ").strip()
+                manual_project_id = input(
+                    "Введіть Project ID (наприклад, 'my-project-123'): "
+                ).strip()
                 if manual_project_id:
                     # Verify project exists
                     verify = run_command(
                         ["gcloud", "projects", "describe", manual_project_id, "--format=json"],
-                        check=False
+                        check=False,
                     )
                     if verify.returncode == 0:
                         run_command(["gcloud", "config", "set", "project", manual_project_id])
@@ -265,7 +268,9 @@ def create_project():
                         return manual_project_id
                     else:
                         print_error(f"Проект '{manual_project_id}' не знайдено.")
-                        print_info("Перевірте Project ID в консолі: https://console.cloud.google.com")
+                        print_info(
+                            "Перевірте Project ID в консолі: https://console.cloud.google.com"
+                        )
                         sys.exit(1)
             else:
                 print_info("Створіть проект і запустіть скрипт знову.")
@@ -274,21 +279,25 @@ def create_project():
             # Project created successfully
             run_command(["gcloud", "config", "set", "project", project_id])
             print_success(f"Проект {project_id} створено і встановлено як активний")
-            
+
             print_warning(
                 "ВАЖЛИВО: Необхідно увімкнути Billing для цього проекту в Google Cloud Console."
             )
             print_warning(
                 "Без білінгу карти матимуть watermark 'for development purposes only' і будуть темними."
             )
-            print(f"URL: https://console.cloud.google.com/billing/linkedaccount?project={project_id}")
+            print(
+                f"URL: https://console.cloud.google.com/billing/linkedaccount?project={project_id}"
+            )
             input("\nНатисніть Enter після підключення Billing account...")
-            
+
             return project_id
-            
+
     except Exception as e:
         print_error(f"Несподівана помилка: {e}")
-        print_info("Будь ласка, створіть проект вручну: https://console.cloud.google.com/projectcreate")
+        print_info(
+            "Будь ласка, створіть проект вручну: https://console.cloud.google.com/projectcreate"
+        )
         sys.exit(1)
 
 

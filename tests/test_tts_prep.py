@@ -43,8 +43,8 @@ async def test_prepare_speech_text(mock_config):
     vm.translate_to_ukrainian = AsyncMock(return_value="Перекладений текст")
 
     # Enable force_ukrainian
-    mock_config.get.side_effect = (
-        lambda key, default=None: True if key == "voice.tts.force_ukrainian" else default
+    mock_config.get.side_effect = lambda key, default=None: (
+        True if key == "voice.tts.force_ukrainian" else default
     )
 
     # Test input
@@ -67,8 +67,8 @@ async def test_prepare_speech_text_no_translation(mock_config):
     vm.translate_to_ukrainian = AsyncMock()
 
     # Disable force_ukrainian
-    mock_config.get.side_effect = (
-        lambda key, default=None: False if key == "voice.tts.force_ukrainian" else default
+    mock_config.get.side_effect = lambda key, default=None: (
+        False if key == "voice.tts.force_ukrainian" else default
     )
 
     text = "Hello world"

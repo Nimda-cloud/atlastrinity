@@ -521,11 +521,11 @@ const App: React.FC = () => {
       {/* Top Level Google Maps API Loader - Prevents 429 errors by staying mounted */}
       {GOOGLE_MAPS_API_KEY && (
         <div style={{ display: 'none' }}>
-           <gmpx-api-loader 
-             key={GOOGLE_MAPS_API_KEY} 
-             solution-channel="GMP_CDN_extended_v0.6.11" 
-             version="beta"
-           ></gmpx-api-loader>
+          <gmpx-api-loader
+            key={GOOGLE_MAPS_API_KEY}
+            solution-channel="GMP_CDN_extended_v0.6.11"
+            version="beta"
+          ></gmpx-api-loader>
         </div>
       )}
       {/* Pulsing Borders */}

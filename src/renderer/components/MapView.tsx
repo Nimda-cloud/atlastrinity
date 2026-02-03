@@ -124,14 +124,13 @@ if (GOOGLE_MAPS_API_KEY) {
   console.log('🗺️ MapView: Key starts with:', `${GOOGLE_MAPS_API_KEY.substring(0, 10)}...`);
 }
 
-const MapView: React.FC<MapViewProps> = memo(
-  ({ imageUrl, type, location, onClose, agentView }) => {
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [mapInitialized, setMapInitialized] = useState(false);
-    const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
-    const [streetViewActive, setStreetViewActive] = useState(false);
-    const [streetViewCooldown, setStreetViewCooldown] = useState(false);
+const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClose, agentView }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
+  const [streetViewActive, setStreetViewActive] = useState(false);
+  const [streetViewCooldown, setStreetViewCooldown] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
   const streetViewDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -140,7 +139,7 @@ const MapView: React.FC<MapViewProps> = memo(
   useEffect(() => {
     console.log('🗺️ MapView mounted/updated', { type, isLoaded, mapInitialized });
     return () => console.log('🗺️ MapView unmounted');
-  }, []);
+  }, [type, isLoaded, mapInitialized]);
 
   useEffect(() => {
     if (type !== 'INTERACTIVE') return;
@@ -330,7 +329,7 @@ const MapView: React.FC<MapViewProps> = memo(
     const isPlaceholder = GOOGLE_MAPS_API_KEY.includes('AIzaSyBq4tcSGVtpl');
     if (isPlaceholder && !streetViewActive) {
       console.error(
-        '⚠️  PLACEHOLDER API KEY DETECTED! Street View requires a real Google Cloud API key with billing enabled.'
+        '⚠️  PLACEHOLDER API KEY DETECTED! Street View requires a real Google Cloud API key with billing enabled.',
       );
       console.info('Please run: python3 scripts/setup_google_maps.py');
       setError('PLACEHOLDER_API_KEY: Street View unavailable. Configure real API key.');

@@ -743,9 +743,7 @@ def setup_google_maps():
             print_error(f"Не вдалося виправити .env: {e}")
 
     print_info("API Ключ не знайдено або він недійсний.")
-    print(
-        f"{Colors.BOLD}Бажаєте налаштувати Google Maps зараз? (y/n){Colors.ENDC}"
-    )
+    print(f"{Colors.BOLD}Бажаєте налаштувати Google Maps зараз? (y/n){Colors.ENDC}")
     print_info("Скрипт підтримує як автоматичне (gcloud), так і ручне налаштування.")
 
     try:

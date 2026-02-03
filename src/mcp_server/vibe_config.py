@@ -17,7 +17,7 @@ import fnmatch
 import logging
 import os
 import re
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
 from re import Pattern
 from typing import Any

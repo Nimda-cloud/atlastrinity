@@ -8,7 +8,7 @@ import asyncio
 import os
 import tempfile
 from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import Any, cast
 
 from ..config import CONFIG_ROOT
