@@ -323,15 +323,56 @@ const App: React.FC = () => {
     };
   }, [fetchSessions, pollState]);
 
-  const handleCommand = async (cmd: string) => {
+  // Handle file drops
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // We can't easily pass files to CommandLine state from here without a context or prop.
+    // However, if we drop on the app, we likely want to add them to the command line input.
+    // For now, let's just log it or maybe focus the input.
+    // A better approach would be to have selectedFiles lifted to App state, but 
+    // to keep changes localized, we might rely on the CommandLine's own drop zone 
+    // or just the paperclip for now if global drag-n-drop is too complex to wire up 
+    // without refactoring state.
+    
+    // Actually, looking at the plan: "Modify chat input to allow file selection".
+    // "Implement a drag-and-drop area in the chat UI".
+    // CommandLine component is the natural place for this state. 
+    // If we want global drop, we need to lift state.
+    // Let's stick to the plan: CommandLine handles it. 
+    // But wait, CommandLine is instantiated here.
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+       // We'll leave global drop for a future refactor to lift state.
+       // For now, users can drop directly onto the expanded command line or click paperclip.
+       console.log('Files dropped on app container:', e.dataTransfer.files);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleCommand = async (cmd: string, files: File[] = []) => {
     // 1. Log user action
-    addLog('ATLAS', `Command: ${cmd}`, 'action');
+    const fileMsg = files.length > 0 ? ` [${files.length} files]` : '';
+    addLog('ATLAS', `Command: ${cmd}${fileMsg}`, 'action');
     setSystemState('PROCESSING');
     try {
+      // Use FormData if files exist or just always for consistency now
+      const formData = new FormData();
+      formData.append('request', cmd);
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+
       const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request: cmd }),
+        // Content-Type: multipart/form-data is set automatically by browser when body is FormData
+        // Do NOT set it manually or boundary will be missing
+        body: formData,
       });
 
       if (!response.ok) throw new Error(`Server Error: ${response.status}`);
@@ -427,7 +468,11 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="app-container scanlines">
+    <div 
+      className="app-container scanlines"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       {/* Pulsing Borders */}
       <div className="pulsing-border top"></div>
       <div className="pulsing-border bottom"></div>

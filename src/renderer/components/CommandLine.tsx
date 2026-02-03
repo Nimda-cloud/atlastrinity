@@ -1,12 +1,12 @@
 /**
  * CommandLine - Bottom command input with integrated controls
- * Smart STT з аналізом типу мовлення
+ * Smart STT with speech type analysis
  */
 
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Типи мовлення з бекенду
+// Speech types from backend
 type SpeechType = 'same_user' | 'new_phrase' | 'noise' | 'other_voice' | 'silence' | 'off_topic';
 
 interface SmartSTTResponse {
@@ -19,7 +19,7 @@ interface SmartSTTResponse {
 }
 
 interface CommandLineProps {
-  onCommand: (command: string) => void;
+  onCommand: (command: string, files?: File[]) => void;
   isVoiceEnabled?: boolean;
   onToggleVoice?: () => void;
   isProcessing?: boolean;
@@ -41,17 +41,20 @@ const CommandLine: React.FC<CommandLineProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const [sttStatus, setSttStatus] = useState<string>(''); // Для показу статусу STT
+  const [sttStatus, setSttStatus] = useState<string>(''); // For STT status display
   const [isExpanded, setIsExpanded] = useState(false); // Track if textarea is expanded
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // New file state
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for hidden file input
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingTextRef = useRef<string>(''); // Накопичений текст
+  const pendingTextRef = useRef<string>(''); // Accumulated text
   const isListeningRef = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const maxVolumeRef = useRef<number>(0); // Для простого VAD
+  const maxVolumeRef = useRef<number>(0); // For simple VAD
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastSkippedChunkRef = useRef<Blob | null>(null); // Pre-buffer for context
 
@@ -66,7 +69,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     }
   }, [input]);
 
-  // Зупинка прослуховування
+  // Stop listening
   const stopListening = useCallback(() => {
     isListeningRef.current = false;
     setIsListening(false);
@@ -113,9 +116,11 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (input.trim()) {
-      onCommand(input.trim());
+    if (input.trim() || selectedFiles.length > 0) {
+      onCommand(input.trim(), selectedFiles);
       setInput('');
+      setSelectedFiles([]); // Clear files after send
+      if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
       pendingTextRef.current = '';
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     }
@@ -128,54 +133,59 @@ const CommandLine: React.FC<CommandLineProps> = ({
     }
   };
 
-  // Планування автоматичної відправки після мовчання
-  // ВАЖЛИВО: ця функція повинна бути визначена ПЕРЕД handleSTTResponse
+  // Schedule auto-send after silence
+  // IMPORTANT: This function must be defined BEFORE handleSTTResponse
   const scheduleSend = useCallback(() => {
-    // Скидаємо попередній таймер
+    // Reset previous timer
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
     }
 
     silenceTimeoutRef.current = setTimeout(() => {
       const textToSend = pendingTextRef.current.trim();
+      const filesToSend = selectedFiles;
 
-      if (textToSend) {
-        setSttStatus('🚀 Відправка...');
-        onCommand(textToSend);
+      if (textToSend || filesToSend.length > 0) {
+        setSttStatus('🚀 Sending...');
+        onCommand(textToSend, filesToSend);
         setInput('');
+        setSelectedFiles([]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         pendingTextRef.current = '';
 
-        // Миттєве відновлення статусу "Слухаю", оскільки Full Duplex працює
+        // Instant resume of "Listening" status since Full Duplex works
         if (isListeningRef.current) {
-          setSttStatus('🎙️ Слухаю...');
+          setSttStatus('🎙️ Listening...');
         } else {
           setSttStatus('');
         }
 
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
       }
-    }, 8000); // 8 секунд мовчання перед відправкою (узгоджено з бекендом)
-  }, [onCommand]);
+    }, 8000); // 8 seconds of silence before sending (aligned with backend)
+  }, [onCommand, selectedFiles]); // Added selectedFiles dependency
 
-  // Обробка відповіді від Smart STT
+  // Handle Smart STT response
   const handleSTTResponse = useCallback(
     (data: SmartSTTResponse) => {
       const { speech_type, combined_text, text, should_send } = data;
 
-      // Якщо сервер явно каже відправити (наприклад, довга пауза на сервері)
+      // If server explicitly says to send (e.g. long pause on server)
       if (should_send && combined_text.trim()) {
         pendingTextRef.current = combined_text;
-        scheduleSend(); // Виклик негайно (через існуючий механізм таймера з 0 затримкою або просто викликати логіку submit)
-        // Насправді краще просто форсувати таймер
+        scheduleSend(); // Call immediately logic
+        // Actually better to just force timer expiration
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
         const textToSend = combined_text.trim();
-        setSttStatus('🚀 Відправка (Server Trigger)...');
-        onCommand(textToSend);
+        setSttStatus('🚀 Sending (Server Trigger)...');
+        onCommand(textToSend, selectedFiles);
         setInput('');
+        setSelectedFiles([]);
+         if (fileInputRef.current) fileInputRef.current.value = '';
         pendingTextRef.current = '';
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
         if (isListeningRef.current) {
-          setSttStatus('🎙️ Слухаю...');
+          setSttStatus('🎙️ Listening...');
         }
         return;
       }
@@ -183,20 +193,20 @@ const CommandLine: React.FC<CommandLineProps> = ({
       switch (speech_type) {
         case 'silence':
           if (isListeningRef.current) {
-            setSttStatus('Mw... (Тиша)');
+            setSttStatus('Mw... (Silence)');
           }
-          // При тиші відправляємо накопичений текст
+          // On silence send accumulated text
           if (pendingTextRef.current.trim()) {
             scheduleSend();
           }
           break;
 
         case 'noise':
-          // setSttStatus('🔊 ...'); // Менш нав'язливий статус для шуму
+          // setSttStatus('🔊 ...'); // Less intrusive status for noise
           break;
 
         case 'other_voice':
-          setSttStatus('👤 Інший голос');
+          setSttStatus('👤 Other Voice');
           break;
 
         case 'off_topic':
@@ -205,13 +215,13 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
         case 'same_user':
         case 'new_phrase':
-          // Оновлюємо текст
+          // Update text
           if (text?.trim()) {
             pendingTextRef.current = combined_text;
             setInput(combined_text);
             setSttStatus(`✅ ${text.slice(0, 30)}...`);
 
-            // Перезапускаємо таймер для відправки
+            // Restart send timer
             scheduleSend();
           } else {
             setSttStatus('✅ ...');
@@ -223,15 +233,15 @@ const CommandLine: React.FC<CommandLineProps> = ({
           break;
       }
     },
-    [scheduleSend, onCommand],
+    [scheduleSend, onCommand, selectedFiles],
   );
 
-  // Відправка аудіо на розумний STT
+  // Send audio to smart STT
   const processAudioChunk = useCallback(
     async (audioBlob: Blob) => {
       // console.log('🎤 Processing audio chunk:', audioBlob.size, 'bytes, type:', audioBlob.type);
 
-      // Визначаємо розширення файлу
+      // Determine file extension
       let fileExtension = 'wav';
       if (audioBlob.type.includes('webm')) {
         fileExtension = 'webm';
@@ -258,39 +268,39 @@ const CommandLine: React.FC<CommandLineProps> = ({
         } else {
           const errorText = await response.text();
           console.error('❌ STT server error:', response.status, response.statusText, errorText);
-          setSttStatus('❌ Помилка STT');
+          setSttStatus('❌ STT Error');
         }
       } catch (error) {
         // Suppress "Failed to fetch" errors to reduce console spam
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
           // Silent fail for connection issues
-          setSttStatus('🔌 Підключення...');
+          setSttStatus('🔌 Connecting...');
         } else {
           console.error('❌ Smart STT error:', error);
-          setSttStatus("❌ Помилка з'єднання");
+          setSttStatus("❌ Connection Error");
         }
       }
     },
     [handleSTTResponse],
   );
 
-  // Початок запису
+  // Start listening
   const startListening = async () => {
-    // КРИТИЧНО: оновлюємо ref СИНХРОННО на самому початку
+    // CRITICAL: update ref SYNCHRONOUSLY at start
     isListeningRef.current = true;
     setIsListening(true);
-    setSttStatus('⌛ Ініціалізація...');
+    setSttStatus('⌛ Init...');
 
     try {
       // console.log('🎙️ Starting to listen...');
 
-      // Якщо TTS вимкнено, автоматично вмикаємо
+      // If TTS disabled, auto-enable
       if (!isVoiceEnabled && onToggleVoice) {
         // console.log('🔊 Enabling voice...');
         onToggleVoice();
       }
 
-      // Отримуємо stream
+      // Get stream
       let stream = streamRef.current;
       if (!stream || !stream.active) {
         // console.log('🎤 Requesting microphone access...');
@@ -298,7 +308,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
           audio: {
             echoCancellation: true,
             noiseSuppression: false,
-            autoGainControl: true, // Вмикаємо автоматичну регулювання гучності
+            autoGainControl: true, // Enable AGC
             sampleRate: 48000,
           },
         });
@@ -314,7 +324,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
         streamRef.current = stream;
         // console.log('✅ Microphone access granted, stream active:', stream.active);
 
-        // Перевіряємо гучність
+        // Check volume
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
         const source = audioContext.createMediaStreamSource(stream);
@@ -332,23 +342,23 @@ const CommandLine: React.FC<CommandLineProps> = ({
           // console.log('🔊 Audio level:', average);
         };
 
-        // Перевіряємо гучність кожні 100мс
+        // Check volume every 100ms
         const volumeChecker = setInterval(checkVolume, 100);
 
-        // Зберігаємо для очищення
+        // Save for cleanup
         window.volumeChecker = volumeChecker;
       } else {
         // console.log('♻️ Reusing existing stream');
       }
 
-      setSttStatus('🎙️ Слухаю...');
+      setSttStatus('🎙️ Listening...');
       // console.log('🎙️ Started listening, isListeningRef:', isListeningRef.current);
 
-      // Запускаємо циклічний запис (2 секунди на чанк для Smart STT)
+      // Start recording cycle (2 seconds per chunk for Smart STT)
       startRecordingCycle();
     } catch (error) {
       console.error('❌ Microphone access error:', error);
-      // При помилці скидаємо стан
+      // On error reset state
       isListeningRef.current = false;
       setIsListening(false);
       setSttStatus('');
@@ -356,7 +366,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     }
   };
 
-  // Циклічний запис
+  // Recording cycle
   const startRecordingCycle = () => {
     // console.log(
     //   '🔄 Starting recording cycle, isListening:',
@@ -366,7 +376,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     // );
     if (!streamRef.current?.active || !isListeningRef.current) return;
 
-    // Примусово використовуємо WAV формат
+    // Force WAV
     let mimeType = 'audio/webm';
     if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
       mimeType = 'audio/webm;codecs=opus';
@@ -378,7 +388,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType });
     mediaRecorderRef.current = mediaRecorder;
     audioChunksRef.current = [];
-    maxVolumeRef.current = 0; // Скидаємо перед новим чанком
+    maxVolumeRef.current = 0; // Reset before new chunk
 
     mediaRecorder.ondataavailable = (event) => {
       // console.log('📊 Audio data available:', event.data.size, 'bytes');
@@ -395,11 +405,11 @@ const CommandLine: React.FC<CommandLineProps> = ({
       //   maxVolumeRef.current
       // );
 
-      // Простий VAD: якщо було дуже тихо (тиша/шум), не відправляємо
+      // Simple VAD: if too quiet, don't send
       if (maxVolumeRef.current < 12) {
         // console.log('🔇 Chunk too quiet, skipping STT');
         if (isListeningRef.current) {
-          setSttStatus('🔇 Тиша...');
+          setSttStatus('🔇 Silence...');
         }
         // Save as context for next chunk if needed
         if (audioChunksRef.current.length > 0) {
@@ -424,11 +434,11 @@ const CommandLine: React.FC<CommandLineProps> = ({
         // We launch processing in background.
         processAudioChunk(audioBlob).catch(console.error);
       } else {
-        console.log('⚠️ No audio chunks recorded');
+        // console.log('⚠️ No audio chunks recorded');
       }
 
-      // Продовжуємо цикл якщо ще слухаємо
-      // ВАЖЛИВО: Запускаємо негайно, не чекаючи processAudioChunk
+      // Continue cycle if still listening
+      // IMPORTANT: Start immediate, not waiting for processAudioChunk
       if (isListeningRef.current && streamRef.current?.active) {
         // console.log('🔄 Continuing recording cycle...');
         startRecordingCycle();
@@ -438,7 +448,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     // console.log('▶️ Starting MediaRecorder...');
     mediaRecorder.start();
 
-    // Зупиняємо запис через 2 секунди для обробки (оптимально для частоти оновлень)
+    // Stop recording after 2 seconds for processing (optimal for update frequency)
     recordingIntervalRef.current = setTimeout(() => {
       // console.log('⏱️ Stopping MediaRecorder after 2 seconds...');
       if (mediaRecorder.state === 'recording') {
@@ -447,26 +457,26 @@ const CommandLine: React.FC<CommandLineProps> = ({
     }, 2000);
   };
 
-  // Обробка помилок мікрофона
+  // Handle mic errors
   const handleMicError = (error: unknown) => {
     if (error instanceof DOMException) {
       switch (error.name) {
         case 'NotFoundError':
         case 'DevicesNotFoundError':
           alert(
-            '❌ Мікрофон не знайдено\n\nПеревірте:\n• Мікрофон підключений\n• Мікрофон увімкнений в системі',
+            '❌ Microphone not found\n\nCheck:\n• Microphone connected\n• Microphone enabled in system',
           );
           break;
         case 'NotAllowedError':
         case 'PermissionDeniedError':
-          alert('❌ Доступ заблоковано\n\nДозвольте доступ до мікрофона');
+          alert('❌ Access blocked\n\nAllow access to microphone');
           break;
         case 'NotReadableError':
         case 'TrackStartError':
-          alert('❌ Мікрофон зайнятий\n\nЗакрийте інші програми');
+          alert('❌ Microphone busy\n\nClose other apps');
           break;
         default:
-          alert(`❌ Помилка: ${error.message}`);
+          alert(`❌ Error: ${error.message}`);
       }
     }
   };
@@ -479,11 +489,95 @@ const CommandLine: React.FC<CommandLineProps> = ({
     }
   };
 
+  // File handling
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setSelectedFiles((prev) => [...prev, ...filesArray]);
+      e.target.value = ''; // Reset input to allow selecting same file again
+      if (textareaRef.current) textareaRef.current.focus();
+    }
+  };
+
+  const handleContainerDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files);
+      setSelectedFiles((prev) => [...prev, ...filesArray]);
+      if (textareaRef.current) textareaRef.current.focus();
+    }
+  }, []);
+
+  const handleContainerDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   return (
-    <div className="command-line-container font-mono">
+    <div 
+      className="command-line-container font-mono flex flex-col gap-1"
+      onDrop={handleContainerDrop}
+      onDragOver={handleContainerDragOver}
+    >
+      {/* File Preview Zone */}
+      {selectedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-3 pb-1">
+          {selectedFiles.map((file, idx) => (
+            <div
+              key={`${file.name}-${idx}`}
+              className="flex items-center gap-2 bg-[#00f2ff]/10 border border-[#00f2ff]/30 rounded px-2 py-1 text-[10px]"
+            >
+              <span className="text-[#00f2ff] truncate max-w-[150px]">{file.name}</span>
+              <button
+                onClick={() => removeFile(idx)}
+                className="text-[#00f2ff]/60 hover:text-[#00f2ff]"
+                title="Remove file"
+              >
+                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                   <line x1="18" y1="6" x2="6" y2="18"></line>
+                   <line x1="6" y1="6" x2="18" y2="18"></line>
+                 </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div
-        className={`flex items-start gap-2 pt-2 bg-transparent pb-0 ${isExpanded ? 'items-start' : 'items-baseline'}`}
+        className={`flex items-start gap-2 pt-2 bg-transparent pb-0 ${isExpanded ? 'items-start' : 'items-center'}`}
       >
+        {/* Paperclip Button */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="control-btn"
+          title="Attach File"
+        >
+          <svg
+             width="14"
+             height="14"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             strokeWidth="1.5"
+             strokeLinecap="round"
+             strokeLinejoin="round"
+           >
+             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+           </svg>
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          className="hidden"
+          multiple
+        />
+
         {/* Left Controls - Only TTS (hidden when expanded) */}
         {!isExpanded && (
           <div className="flex items-center gap-1">
@@ -533,11 +627,11 @@ const CommandLine: React.FC<CommandLineProps> = ({
               <span
                 className={`text-[9px] tracking-wider animate-pulse ${isProcessing ? 'text-amber-400' : 'text-cyan-400/70'}`}
               >
-                {isProcessing ? '🤔 Думаю...' : sttStatus}
+                {isProcessing ? '🤔 Thinking...' : sttStatus}
               </span>
             )}
             <span className="text-blue-500/20 text-[9px] pointer-events-none tracking-widest">
-              {input.length > 0 ? 'ENTER ' : ''}⏎
+              {(input.length > 0 || selectedFiles.length > 0) ? 'ENTER ' : ''}⏎
             </span>
           </div>
         </div>
@@ -609,8 +703,8 @@ const CommandLine: React.FC<CommandLineProps> = ({
           {/* Send Button */}
           <button
             onClick={() => handleSubmit()}
-            disabled={!input.trim()}
-            className={`send-btn ${input.trim() ? 'active' : ''}`}
+            disabled={!input.trim() && selectedFiles.length === 0}
+            className={`send-btn ${input.trim() || selectedFiles.length > 0 ? 'active' : ''}`}
             title="Send Command (Enter)"
           >
             <svg
