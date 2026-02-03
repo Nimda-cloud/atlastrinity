@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-03T22:01:31.150887 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/ci-core.yml, lefthook.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T21:45:35.683133 -->
 <!-- Modified: .secrets.baseline, lefthook.yml, pyproject.toml -->
 

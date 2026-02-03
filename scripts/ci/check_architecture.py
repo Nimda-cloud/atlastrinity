@@ -1,13 +1,14 @@
 
 import asyncio
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add project root to path
 sys.path.append(os.getcwd())
 
 from src.mcp_server.devtools_server import devtools_update_architecture_diagrams
+
 
 def check_architecture():
     print("🔍 Checking architecture diagram freshness...")
@@ -36,7 +37,7 @@ def check_architecture():
             
         if result.get("updates_made"):
             updates = result.get("files_updated", [])
-            print(f"❌ Architecture diagrams are out of sync! The following files need updates:")
+            print("❌ Architecture diagrams are out of sync! The following files need updates:")
             for f in updates:
                 print(f"  - {f}")
             print("\nPlease run 'npm run diagram:auto-update' to regenerate them.")
