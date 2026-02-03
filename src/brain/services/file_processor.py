@@ -1,16 +1,17 @@
-
 import io
 import logging
-from typing import List, Optional
+from typing import Optional
+
 from fastapi import UploadFile
 
 logger = logging.getLogger("brain.services.file_processor")
+
 
 class FileProcessor:
     """Service to process uploaded files and extract text content."""
 
     @staticmethod
-    async def process_files(files: List[UploadFile]) -> str:
+    async def process_files(files: list[UploadFile]) -> str:
         """Process a list of uploaded files and return a combined text summary."""
         if not files:
             return ""
@@ -20,10 +21,12 @@ class FileProcessor:
             try:
                 content = await FileProcessor._extract_content(file)
                 if content:
-                    context_parts.append(f"--- [START FILE: {file.filename}] ---\n{content}\n--- [END FILE: {file.filename}] ---")
+                    context_parts.append(
+                        f"--- [START FILE: {file.filename}] ---\n{content}\n--- [END FILE: {file.filename}] ---"
+                    )
             except Exception as e:
                 logger.error(f"Failed to process file {file.filename}: {e}")
-                context_parts.append(f"[ERROR] Could not process file {file.filename}: {str(e)}")
+                context_parts.append(f"[ERROR] Could not process file {file.filename}: {e!s}")
 
         return "\n\n".join(context_parts)
 
@@ -32,12 +35,29 @@ class FileProcessor:
         """Extract text content based on file type."""
         content_type = file.content_type or ""
         filename = file.filename.lower() if file.filename else ""
-        
+
         # Read file content safely
         file_bytes = await file.read()
-        
+
         # 1. Text / Code Files
-        if content_type.startswith("text/") or any(filename.endswith(ext) for ext in [".txt", ".py", ".js", ".ts", ".tsx", ".md", ".json", ".html", ".css", ".csv", ".xml", ".yml", ".yaml"]):
+        if content_type.startswith("text/") or any(
+            filename.endswith(ext)
+            for ext in [
+                ".txt",
+                ".py",
+                ".js",
+                ".ts",
+                ".tsx",
+                ".md",
+                ".json",
+                ".html",
+                ".css",
+                ".csv",
+                ".xml",
+                ".yml",
+                ".yaml",
+            ]
+        ):
             try:
                 return file_bytes.decode("utf-8")
             except UnicodeDecodeError:
@@ -65,6 +85,7 @@ class FileProcessor:
     def _read_pdf(data: bytes) -> str:
         try:
             import pypdf
+
             reader = pypdf.PdfReader(io.BytesIO(data))
             text = []
             for page in reader.pages:
@@ -79,6 +100,7 @@ class FileProcessor:
     def _read_docx(data: bytes) -> str:
         try:
             import docx
+
             doc = docx.Document(io.BytesIO(data))
             return "\n".join([para.text for para in doc.paragraphs])
         except ImportError:
@@ -90,8 +112,9 @@ class FileProcessor:
     def _read_excel(data: bytes) -> str:
         try:
             import pandas as pd
+
             # Read first sheet, limited rows to avoid token explosion
-            df = pd.read_excel(io.BytesIO(data), nrows=50) 
+            df = pd.read_excel(io.BytesIO(data), nrows=50)
             return f"[First 50 rows of Excel Sheet]\n{df.to_markdown(index=False)}"
         except ImportError:
             return "[ERROR] pandas/openpyxl not installed. Cannot read Excel."

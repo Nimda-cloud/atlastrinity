@@ -139,46 +139,49 @@ const App: React.FC = () => {
   }, []);
 
   // Add log entry
-  const addLog = (agent: AgentName, message: string, type: LogEntry['type'] = 'info') => {
-    const entry: LogEntry = {
-      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date(),
-      agent,
-      message,
-      type,
-    };
-    setLogs((prev) => [...prev.slice(-100), entry]); // Keep last 100 entries
+  const addLog = useCallback(
+    (agent: AgentName, message: string, type: LogEntry['type'] = 'info') => {
+      const entry: LogEntry = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date(),
+        agent,
+        message,
+        type,
+      };
+      setLogs((prev) => [...prev.slice(-100), entry]); // Keep last 100 entries
 
-    // Auto-detect map updates in logs
-    if (message.includes('Saved to:') && message.includes('.png')) {
-      const pathMatch = message.match(/Saved to: (.+\.png)/);
-      if (pathMatch?.[1]) {
-        const filePath = pathMatch[1];
-        // Convert local path to file:// URL for Electron display
-        // Note: In some Electron setups you might need a custom protocol or webSecurity: false
-        const fileUrl = `file://${filePath}`;
-        const isStreet = message.toLowerCase().includes('street');
+      // Auto-detect map updates in logs
+      if (message.includes('Saved to:') && message.includes('.png')) {
+        const pathMatch = message.match(/Saved to: (.+\.png)/);
+        if (pathMatch?.[1]) {
+          const filePath = pathMatch[1];
+          // Convert local path to file:// URL for Electron display
+          // Note: In some Electron setups you might need a custom protocol or webSecurity: false
+          const fileUrl = `file://${filePath}`;
+          const isStreet = message.toLowerCase().includes('street');
 
+          setMapData({
+            url: fileUrl,
+            type: isStreet ? 'STREET' : 'STATIC',
+            location:
+              message.match(/Location: ([^\n]+)/)?.[1] || message.match(/Center: ([^\n]+)/)?.[1],
+          });
+          setViewMode('MAP');
+        }
+      }
+
+      // Auto-detect interactive map signal
+      if (message.includes('🌐 INTERACTIVE_MAP_OPEN:')) {
+        const query = message.replace('🌐 INTERACTIVE_MAP_OPEN:', '').trim();
         setMapData({
-          url: fileUrl,
-          type: isStreet ? 'STREET' : 'STATIC',
-          location:
-            message.match(/Location: ([^\n]+)/)?.[1] || message.match(/Center: ([^\n]+)/)?.[1],
+          type: 'INTERACTIVE',
+          location: query || 'SEARCH_MODE_ACTIVE',
         });
         setViewMode('MAP');
       }
-    }
-
-    // Auto-detect interactive map signal
-    if (message.includes('🌐 INTERACTIVE_MAP_OPEN:')) {
-      const query = message.replace('🌐 INTERACTIVE_MAP_OPEN:', '').trim();
-      setMapData({
-        type: 'INTERACTIVE',
-        location: query || 'SEARCH_MODE_ACTIVE',
-      });
-      setViewMode('MAP');
-    }
-  };
+    },
+    [],
+  );
 
   const [currentTask, setCurrentTask] = useState<string>('');
 
@@ -327,26 +330,26 @@ const App: React.FC = () => {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // We can't easily pass files to CommandLine state from here without a context or prop.
     // However, if we drop on the app, we likely want to add them to the command line input.
     // For now, let's just log it or maybe focus the input.
-    // A better approach would be to have selectedFiles lifted to App state, but 
-    // to keep changes localized, we might rely on the CommandLine's own drop zone 
-    // or just the paperclip for now if global drag-n-drop is too complex to wire up 
+    // A better approach would be to have selectedFiles lifted to App state, but
+    // to keep changes localized, we might rely on the CommandLine's own drop zone
+    // or just the paperclip for now if global drag-n-drop is too complex to wire up
     // without refactoring state.
-    
+
     // Actually, looking at the plan: "Modify chat input to allow file selection".
     // "Implement a drag-and-drop area in the chat UI".
-    // CommandLine component is the natural place for this state. 
+    // CommandLine component is the natural place for this state.
     // If we want global drop, we need to lift state.
-    // Let's stick to the plan: CommandLine handles it. 
+    // Let's stick to the plan: CommandLine handles it.
     // But wait, CommandLine is instantiated here.
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-       // We'll leave global drop for a future refactor to lift state.
-       // For now, users can drop directly onto the expanded command line or click paperclip.
-       console.log('Files dropped on app container:', e.dataTransfer.files);
+      // We'll leave global drop for a future refactor to lift state.
+      // For now, users can drop directly onto the expanded command line or click paperclip.
+      console.log('Files dropped on app container:', e.dataTransfer.files);
     }
   }, []);
 
@@ -361,71 +364,77 @@ const App: React.FC = () => {
     setIsDockVisible(true);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Keep dock visible during drag
-    if (!isDockVisible) {
-      setIsDockVisible(true);
-    }
-  }, [isDockVisible]);
-
-  const handleCommand = useCallback(async (cmd: string, files: File[] = []) => {
-    // 1. Log user action
-    const fileMsg = files.length > 0 ? ` [${files.length} files]` : '';
-    addLog('ATLAS', `Command: ${cmd}${fileMsg}`, 'action');
-    setSystemState('PROCESSING');
-    try {
-      // Use FormData if files exist or just always for consistency now
-      const formData = new FormData();
-      formData.append('request', cmd);
-      files.forEach((file) => {
-        formData.append('files', file);
-      });
-
-      const response = await fetch(`${API_BASE}/api/chat`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error(`Server Error: ${response.status}`);
-
-      const data = await response.json();
-
-      // 3. Handle Result
-      if (data.status === 'completed' || data.status === 'success') {
-        const result = data.result || data.response;
-        // Safely handle object results by stringifying them
-        let message = '';
-        if (typeof result === 'string') {
-          message = result;
-        } else if (typeof result === 'object') {
-          // Check if it's the specific step results array and format it nicely
-          if (Array.isArray(result)) {
-            const steps = result.filter((r: any) => r.success).length;
-            message = `Task completed successfully: ${steps} steps executed.`;
-          } else if (result.result) {
-            message =
-              typeof result.result === 'string' ? result.result : JSON.stringify(result.result);
-          } else {
-            message = JSON.stringify(result);
-          }
-        } else {
-          message = String(result);
-        }
-
-        addLog('ATLAS', message, 'success');
-        setSystemState('IDLE');
-      } else {
-        addLog('TETYANA', 'Task execution finished', 'info');
-        setSystemState('IDLE');
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Keep dock visible during drag
+      if (!isDockVisible) {
+        setIsDockVisible(true);
       }
-    } catch (error) {
-      console.error(error);
-      addLog('ATLAS', 'Failed to reach Neural Core. Is Python server running?', 'error');
-      setSystemState('ERROR');
-    }
-  }, [addLog, API_BASE]);
+    },
+    [isDockVisible],
+  );
+
+  const handleCommand = useCallback(
+    async (cmd: string, files: File[] = []) => {
+      // 1. Log user action
+      const fileMsg = files.length > 0 ? ` [${files.length} files]` : '';
+      addLog('ATLAS', `Command: ${cmd}${fileMsg}`, 'action');
+      setSystemState('PROCESSING');
+      try {
+        // Use FormData if files exist or just always for consistency now
+        const formData = new FormData();
+        formData.append('request', cmd);
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        const response = await fetch(`${API_BASE}/api/chat`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+
+        const data = await response.json();
+
+        // 3. Handle Result
+        if (data.status === 'completed' || data.status === 'success') {
+          const result = data.result || data.response;
+          // Safely handle object results by stringifying them
+          let message = '';
+          if (typeof result === 'string') {
+            message = result;
+          } else if (typeof result === 'object') {
+            // Check if it's the specific step results array and format it nicely
+            if (Array.isArray(result)) {
+              const steps = result.filter((r: { success: boolean }) => r.success).length;
+              message = `Task completed successfully: ${steps} steps executed.`;
+            } else if (result.result) {
+              message =
+                typeof result.result === 'string' ? result.result : JSON.stringify(result.result);
+            } else {
+              message = JSON.stringify(result);
+            }
+          } else {
+            message = String(result);
+          }
+
+          addLog('ATLAS', message, 'success');
+          setSystemState('IDLE');
+        } else {
+          addLog('TETYANA', 'Task execution finished', 'info');
+          setSystemState('IDLE');
+        }
+      } catch (error) {
+        console.error(error);
+        addLog('ATLAS', 'Failed to reach Neural Core. Is Python server running?', 'error');
+        setSystemState('ERROR');
+      }
+    },
+    [addLog],
+  );
 
   const handleToggleVoice = useCallback(() => {
     setIsVoiceEnabled((prev) => !prev);
@@ -485,11 +494,12 @@ const App: React.FC = () => {
   );
 
   return (
-    <div 
+    <div
       className="app-container scanlines"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
+      role="application"
     >
       {/* Pulsing Borders */}
       <div className="pulsing-border top"></div>

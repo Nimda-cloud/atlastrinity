@@ -181,7 +181,7 @@ async def chat(
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "success", request_duration)
             monitoring_system.log_for_grafana(
-                f"Chat request completed",
+                "Chat request completed",
                 level="info",
                 request_type="chat",
                 duration=request_duration,
@@ -192,7 +192,7 @@ async def chat(
 
         return {"status": "completed", "result": result}
     except asyncio.CancelledError:
-        logger.info(f"Request interrupted/cancelled")
+        logger.info("Request interrupted/cancelled")
 
         # Record cancelled request
         request_duration = time.time() - start_time
@@ -202,7 +202,7 @@ async def chat(
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "cancelled", request_duration)
             monitoring_system.log_for_grafana(
-                f"Chat request cancelled",
+                "Chat request cancelled",
                 level="warning",
                 request_type="chat",
                 duration=request_duration,
@@ -223,7 +223,7 @@ async def chat(
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "error", request_duration)
             monitoring_system.log_for_grafana(
-                f"Chat request failed",
+                "Chat request failed",
                 level="error",
                 request_type="chat",
                 duration=request_duration,
