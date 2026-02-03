@@ -668,10 +668,10 @@ async def _execute_vibe_with_retries(
                 r"not found in .*logs/session",
                 r"failed to resume session",
             ]
-            
+
             session_error = any(
-                re.search(p, stderr, re.IGNORECASE | re.DOTALL) or 
-                re.search(p, stdout, re.IGNORECASE | re.DOTALL)
+                re.search(p, stderr, re.IGNORECASE | re.DOTALL)
+                or re.search(p, stdout, re.IGNORECASE | re.DOTALL)
                 for p in session_patterns
             )
 
@@ -693,9 +693,7 @@ async def _execute_vibe_with_retries(
                 logger.debug(
                     f"[VIBE-FAIL-DIAG] Code {process.returncode}. Out length: {len(stdout)}. Err length: {len(stderr)}"
                 )
-                logger.debug(
-                    f"[VIBE-FAIL-SNIPPET] Stderr snippet: {stderr[-500:]}"
-                )
+                logger.debug(f"[VIBE-FAIL-SNIPPET] Stderr snippet: {stderr[-500:]}")
 
             return {
                 "success": process.returncode == 0,
