@@ -328,9 +328,14 @@ def enable_apis(project_id):
         if service in enabled_names:
             print_success(f"Сервіс {service} вже увімкнений")
         else:
-            print(f"  Увімкнення {service}...")
-            run_command(["gcloud", "services", "enable", service, "--project", project_id])
-    print_success("Всі необхідні API увімкнено")
+            try:
+                print(f"  Увімкнення {service}...")
+                run_command(["gcloud", "services", "enable", service, "--project", project_id])
+                print_success(f"Сервіс {service} увімкнено")
+            except Exception as e:
+                print_warning(f"Не вдалося увімкнути {service}. Можливо, потрібен Білінг.")
+                print_info(f"Продовжуємо налаштування інших API...")
+    print_success("Процес увімкнення API завершено")
 
 
 def ensure_key_unrestricted(project_id, key_name):
