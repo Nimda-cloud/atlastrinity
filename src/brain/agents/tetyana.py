@@ -939,9 +939,8 @@ IMPORTANT:
             if (
                 str(tool_call.get("name", "")).lower().startswith("macos-use")
                 or tool_call.get("server") == "macos-use"
-            ):
-                if not tool_call["args"].get("pid") and self._current_pid:
-                    tool_call["args"]["pid"] = self._current_pid
+            ) and not tool_call["args"].get("pid") and self._current_pid:
+                tool_call["args"]["pid"] = self._current_pid
 
     async def _determine_tool_action(
         self,

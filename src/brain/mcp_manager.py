@@ -157,27 +157,26 @@ class MCPManager:
                 getattr(sys, "frozen", False)
                 or "Resources/app.asar" in result
                 or "/Resources/brain" in result
-            ):
-                if not os.path.exists(result):
-                    # Robust resolution for packaged binary
-                    from .config import PROJECT_ROOT
+            ) and not os.path.exists(result):
+                # Robust resolution for packaged binary
+                from .config import PROJECT_ROOT
 
-                    binary_name = result.split("/")[-1]
+                binary_name = result.split("/")[-1]
 
-                    # Search order for binary:
-                    # 1. Directly in bin/
-                    # 2. In Resources/bin/ (Electron specific)
-                    # 3. Path relative to current executable
-                    possible_paths = [
-                        PROJECT_ROOT / "bin" / binary_name,
-                        PROJECT_ROOT / "Resources" / "bin" / binary_name,
-                        Path(sys.executable).parent / binary_name,
-                    ]
+                # Search order for binary:
+                # 1. Directly in bin/
+                # 2. In Resources/bin/ (Electron specific)
+                # 3. Path relative to current executable
+                possible_paths = [
+                    PROJECT_ROOT / "bin" / binary_name,
+                    PROJECT_ROOT / "Resources" / "bin" / binary_name,
+                    Path(sys.executable).parent / binary_name,
+                ]
 
-                    for p in possible_paths:
-                        if p.exists():
-                            logger.info(f"[MCP] Redirected {binary_name} -> {p}")
-                            return str(p)
+                for p in possible_paths:
+                    if p.exists():
+                        logger.info(f"[MCP] Redirected {binary_name} -> {p}")
+                        return str(p)
 
             return result
 

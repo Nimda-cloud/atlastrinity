@@ -64,7 +64,7 @@ def test_mcp_servers_connect_and_list_tools():
 
     base_mgr = MCPManager()
     servers = base_mgr.config.get("mcpServers", {}) or {}
-    server_names = [name for name in servers.keys() if not name.startswith("_")]
+    server_names = [name for name in servers if not name.startswith("_")]
 
     selected = _selected_servers()
     if selected is not None:

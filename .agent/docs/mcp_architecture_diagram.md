@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-03T22:12:47.959047 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/check_mcp_health.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-03T22:06:26.225089 -->
+<!-- Modified: .githuworkflows/ci-core.yml -->
+
+
+<!-- AUTO-UPDATED: 2026-02-03T22:05:59.397486 -->
+<!-- Modified: .githuworkflows/ci-core.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T22:01:31.150887 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/ci-core.yml, lefthook.yml -->
 

@@ -197,10 +197,7 @@ class ConsolidationModule:
             return True
 
         # Nighttime (3 AM)
-        if now.hour == 3 and (now - self.last_consolidation).total_seconds() > 3600:
-            return True
-
-        return False
+        return bool(now.hour == 3 and (now - self.last_consolidation).total_seconds() > 3600)
 
 
 # Singleton instance

@@ -47,7 +47,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
     if check_all:
         # Use full catalog as source
         servers_to_check = []
-        for name in SERVER_CATALOG.keys():
+        for name in SERVER_CATALOG:
             if name.startswith("_"):
                 continue
             # Use data from config if available, else catalog info

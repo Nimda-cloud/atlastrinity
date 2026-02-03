@@ -928,10 +928,7 @@ class ToolDispatcher:
             return True
 
         # Check MACOS_MAP
-        if tool_lower in self.MACOS_MAP:
-            return True
-
-        return False
+        return tool_lower in self.MACOS_MAP
 
     def _intelligent_routing(
         self,

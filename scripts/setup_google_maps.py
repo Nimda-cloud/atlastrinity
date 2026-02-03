@@ -65,7 +65,7 @@ def run_command(cmd, capture_output=True, check=True):
 
 def check_gcloud():
     print_step("Checking gcloud installation...")
-    if not subprocess.run(["which", "gcloud"], capture_output=True).returncode == 0:
+    if subprocess.run(["which", "gcloud"], capture_output=True).returncode != 0:
         print_error("gcloud CLI not found. Please install Google Cloud SDK first.")
         print("Install link: https://cloud.google.com/sdk/docs/install")
         sys.exit(1)

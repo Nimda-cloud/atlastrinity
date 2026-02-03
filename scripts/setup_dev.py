@@ -479,10 +479,7 @@ def _brew_cask_installed(cask: str, app_name: str) -> bool:
         f"/Applications/{app_name}.app",
         f"{os.path.expanduser('~/Applications')}/{app_name}.app",
     ]
-    for p in app_paths:
-        if os.path.exists(p):
-            return True
-    return False
+    return any(os.path.exists(p) for p in app_paths)
 
 
 def install_brew_deps():
@@ -534,10 +531,7 @@ def install_brew_deps():
             f"/Applications/{app_name}.app",
             f"{os.path.expanduser('~/Applications')}/{app_name}.app",
         ]
-        for p in app_paths:
-            if os.path.exists(p):
-                return True
-        return False
+        return any(os.path.exists(p) for p in app_paths)
 
     for cask, app_name in casks.items():
         if _brew_cask_installed(cask, app_name):
@@ -1422,15 +1416,14 @@ def check_services():
                 continue
 
             # Fallback: check functional ping (Redis only)
-            if service == "redis" and shutil.which("redis-cli"):
-                if (
-                    subprocess.run(
-                        ["redis-cli", "ping"], check=False, capture_output=True
-                    ).returncode
-                    == 0
-                ):
-                    print_success(f"{label} запущено (CLI)")
-                    continue
+            if service == "redis" and shutil.which("redis-cli") and (
+                subprocess.run(
+                    ["redis-cli", "ping"], check=False, capture_output=True
+                ).returncode
+                == 0
+            ):
+                print_success(f"{label} запущено (CLI)")
+                continue
 
             print_warning(f"{label} НЕ запущено. Спробуйте: brew services start {service}")
 

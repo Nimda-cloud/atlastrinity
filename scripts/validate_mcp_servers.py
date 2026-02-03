@@ -60,7 +60,7 @@ def load_mcp_config() -> dict[str, Any]:
 def validate_python_server(name: str, config: dict) -> bool:
     """Перевіряє Python MCP сервер"""
     args = config.get("args", [])
-    if not args or not args[0] == "-m":
+    if not args or args[0] != "-m":
         print_error(f"{name}: Неправильна конфігурація Python модуля")
         return False
 

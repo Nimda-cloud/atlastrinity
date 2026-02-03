@@ -131,9 +131,8 @@ def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
 
     # Find common entry points
     for pattern in ["index.js", "index.ts", "app.js", "app.ts", "server.js", "main.js"]:
-        if (project_path / pattern).exists():
-            if pattern not in info["entry_points"]:
-                info["entry_points"].append(pattern)
+        if (project_path / pattern).exists() and pattern not in info["entry_points"]:
+            info["entry_points"].append(pattern)
 
     # Analyze src/ structure
     src_path = project_path / "src"

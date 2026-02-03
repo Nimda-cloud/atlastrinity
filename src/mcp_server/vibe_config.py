@@ -313,11 +313,7 @@ class VibeConfig(BaseModel):
             return True
 
         # Must match at least one enabled pattern
-        for pattern in self._enabled_patterns:
-            if self._matches_pattern(tool_name, pattern):
-                return True
-
-        return False
+        return any(self._matches_pattern(tool_name, pattern) for pattern in self._enabled_patterns)
 
     @staticmethod
     def _matches_pattern(tool_name: str, pattern: Pattern | str) -> bool:

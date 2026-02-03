@@ -312,10 +312,7 @@ class Grisha(BaseAgent):
 
     def _check_blocklist(self, action_desc: str) -> bool:
         """Check if action contains blocked commands"""
-        for blocked in self.dangerous_commands:
-            if blocked in action_desc:
-                return True
-        return False
+        return any(blocked in action_desc for blocked in self.dangerous_commands)
 
     def _get_environment_capabilities(self) -> str:
         """Collects raw facts about the environment to inform the strategist.

@@ -25,7 +25,7 @@ def test_brew_cask_installed_app_path(monkeypatch, tmp_path):
     # brew reports not installed but app exists in /Applications
     monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: Mock(returncode=1))
     # fake app path
-    monkeypatch.setattr(os.path, "exists", lambda p: True if "Docker.app" in p else False)
+    monkeypatch.setattr(os.path, "exists", lambda p: "Docker.app" in p)
     assert s._brew_cask_installed("docker", "Docker")
 
 

@@ -111,9 +111,8 @@ class SharedContext:
                         self.recent_files = self.recent_files[-20:]
 
             # Track directories
-            if operation == "create_directory":
-                if path not in self.created_directories:
-                    self.created_directories.append(path)
+            if operation == "create_directory" and path not in self.created_directories:
+                self.created_directories.append(path)
 
             self.operation_count += 1
             self.last_operation = f"{operation}: {path}"

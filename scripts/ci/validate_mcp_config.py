@@ -37,9 +37,8 @@ def validate_server_config(name: str, config: dict[str, Any]) -> list[str]:
                     errors.append(f"{name}: Invalid agent '{agent}', must be one of {valid_agents}")
 
     # Validate environment variables format
-    if "env" in config:
-        if not isinstance(config["env"], dict):
-            errors.append(f"{name}: 'env' must be a dictionary")
+    if "env" in config and not isinstance(config["env"], dict):
+        errors.append(f"{name}: 'env' must be a dictionary")
 
     return errors
 

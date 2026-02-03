@@ -92,7 +92,7 @@ class DataTransformer:
             else:
                 res = self._transform_item(data, source_format)
                 return TransformResult(
-                    True if res else False, data=res, error="Validation failed" if not res else None
+                    bool(res), data=res, error="Validation failed" if not res else None
                 )
         except Exception as e:
             return TransformResult(False, error=f"Transformation error: {e}")

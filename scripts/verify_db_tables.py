@@ -23,7 +23,7 @@ async def verify_database_tables():
 
         async with await db_manager.get_session() as session:
             print(f"[DB] Found {len(Base.metadata.tables)} tables in schema.")
-            for table_name in Base.metadata.tables.keys():
+            for table_name in Base.metadata.tables:
                 try:
                     table = Base.metadata.tables[table_name]
                     stmt = select(func.count()).select_from(table)
