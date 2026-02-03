@@ -38,6 +38,7 @@ async def main():
         elif hasattr(result, "content") and result.content:
             # Try to parse text content as JSON if it's a list of TextContent
             import json
+
             try:
                 res_data = json.loads(result.content[0].text)
             except (IndexError, AttributeError, json.JSONDecodeError):
