@@ -41,6 +41,9 @@ models:
   # Fallbacks (used when primary unavailable)
   fallback: "gpt-4o"                   # Fallback model
   
+  # Sandbox model (used by mcp_sandbox.py)
+  sandbox: "gpt-4o"
+
   # Agents inherit from models.default unless overridden
 
 agents:

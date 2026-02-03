@@ -199,12 +199,22 @@ def run_inspector_cmd(
     if extra_args:
         inspector_cmd.extend(extra_args)
 
-    # Prepare environment
+    # Prepare environment with virtual environment support
     env = os.environ.copy()
+    
+    # Ensure we use the same Python environment as the main program
+    venv_python = str(PROJECT_ROOT / ".venv" / "bin" / "python")
+    if Path(venv_python).exists():
+        # Update PATH to include venv bin directory
+        venv_bin = str(PROJECT_ROOT / ".venv" / "bin")
+        env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+        env["VIRTUAL_ENV"] = str(PROJECT_ROOT / ".venv")
+        print(f"{Colors.CYAN}🔧 Using virtual environment: {PROJECT_ROOT / '.venv'}{Colors.ENDC}")
+    
     for k, v in env_vars.items():
         val = v.replace("${GITHUB_TOKEN}", env.get("GITHUB_TOKEN", ""))
-        val = val.replace("${HOME}", str(Path.home()))
-        val = val.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+        val = v.replace("${HOME}", str(Path.home()))
+        val = v.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
         env[k] = val
 
     try:
@@ -297,16 +307,21 @@ Return ONLY a JSON object with this structure:
 Generate the test scenario:"""
 
     response_text = ""
-    response_text = ""
     try:
+        # Ensure system config is loaded (this loads .env from global config correctly)
+        from src.brain.config_loader import config
+        # Force load if not already done (singleton handles it, but good to be sure)
+        
         try:
-            llm = CopilotLLM(model_name="gpt-4.1")
+            # Get model from config, fallback to gpt-4o if not set
+            llm = CopilotLLM(model_name=config.get("models.sandbox"))
             response = await llm.ainvoke(prompt)
-        except Exception:
+        except Exception as copilot_err:
+            print(f"{Colors.YELLOW}⚠ Copilot failed: {copilot_err}. Falling back to Mistral...{Colors.ENDC}")
             # Fallback to Mistral
             llm = SimpleMistralLLM()
             response = await llm.ainvoke(prompt)
-
+        
         response_text = response.content if hasattr(response, "content") else str(response)
 
         # Handle list response
@@ -379,9 +394,12 @@ async def analyze_test_result(
 ) -> dict:
     """Use LLM to determine if test step passed."""
     from providers.copilot import CopilotLLM
+    # Ensure config loaded
+    from src.brain.config_loader import config
 
     result_str = json.dumps(step_result.get("result", {}), indent=2, ensure_ascii=False)[:800]
-
+    
+    # ... prompt definition omitted for brevity ...
     prompt = f"""Analyze this MCP tool test result.
 
 Context: {scenario_context}
@@ -401,7 +419,8 @@ Respond with: PASS or FAIL followed by a brief explanation (max 30 words)."""
 
     try:
         try:
-            llm = CopilotLLM(model_name="gpt-4.1")
+            # Get model from config, fallback to gpt-4o if not set
+            llm = CopilotLLM(model_name=config.get("models.sandbox"))
             response = await llm.ainvoke(prompt)
         except Exception:
             # Fallback to Mistral
