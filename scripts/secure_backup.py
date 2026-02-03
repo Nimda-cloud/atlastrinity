@@ -228,13 +228,13 @@ class SecureBackupManager:
                 "source": self.config_root / "data" / "golden_fund" / "chroma_db",
                 "dest": self.backup_dir / "golden_fund" / "chroma_db",
                 "encrypt": False,
-                "filter_sqlite": False, # Directory
+                "filter_sqlite": False,  # Directory
             },
             {
                 "source": self.config_root / "memory" / "chroma",
                 "dest": self.backup_dir / "memory" / "chroma",
                 "encrypt": False,
-                "filter_sqlite": False, # Directory
+                "filter_sqlite": False,  # Directory
             },
         ]
 

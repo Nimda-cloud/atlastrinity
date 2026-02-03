@@ -1314,8 +1314,14 @@ def _legacy_backup_databases():
         (CONFIG_ROOT / "data" / "monitoring.db", backup_dir / "monitoring.db"),
         (CONFIG_ROOT / "data" / "trinity.db", backup_dir / "trinity.db"),
         (CONFIG_ROOT / "data" / "golden_fund" / "golden.db", backup_dir / "golden.db"),
-        (CONFIG_ROOT / "data" / "search" / "golden_fund_index.db", backup_dir / "golden_fund_index.db"),
-        (CONFIG_ROOT / "data" / "golden_fund" / "chroma_db", backup_dir / "golden_fund" / "chroma_db"),
+        (
+            CONFIG_ROOT / "data" / "search" / "golden_fund_index.db",
+            backup_dir / "golden_fund_index.db",
+        ),
+        (
+            CONFIG_ROOT / "data" / "golden_fund" / "chroma_db",
+            backup_dir / "golden_fund" / "chroma_db",
+        ),
         (CONFIG_ROOT / "memory" / "chroma", backup_dir / "memory" / "chroma"),
     ]
 
@@ -1377,8 +1383,14 @@ def _legacy_restore_databases():
         (backup_dir / "monitoring.db", CONFIG_ROOT / "data" / "monitoring.db"),
         (backup_dir / "trinity.db", CONFIG_ROOT / "data" / "trinity.db"),
         (backup_dir / "golden.db", CONFIG_ROOT / "data" / "golden_fund" / "golden.db"),
-        (backup_dir / "golden_fund_index.db", CONFIG_ROOT / "data" / "search" / "golden_fund_index.db"),
-        (backup_dir / "golden_fund" / "chroma_db", CONFIG_ROOT / "data" / "golden_fund" / "chroma_db"),
+        (
+            backup_dir / "golden_fund_index.db",
+            CONFIG_ROOT / "data" / "search" / "golden_fund_index.db",
+        ),
+        (
+            backup_dir / "golden_fund" / "chroma_db",
+            CONFIG_ROOT / "data" / "golden_fund" / "chroma_db",
+        ),
         (backup_dir / "memory" / "chroma", CONFIG_ROOT / "memory" / "chroma"),
     ]
 

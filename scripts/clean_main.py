@@ -21,7 +21,7 @@ def clean_main():
         CONFIG_ROOT / "logs",
         CONFIG_ROOT / "cache",
         CONFIG_ROOT / "data",  # ← All data (search, analysis, etc.)
-        CONFIG_ROOT / "mcp",   # ← All MCP configs
+        CONFIG_ROOT / "mcp",  # ← All MCP configs
         CONFIG_ROOT / "vibe",  # ← Vibe agents folder
         CONFIG_ROOT / "config.yaml",
         CONFIG_ROOT / "behavior_config.yaml",

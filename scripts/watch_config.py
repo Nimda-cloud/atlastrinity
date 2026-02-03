@@ -188,7 +188,7 @@ def main():
         src = CONFIG_SRC / tpl
         if src.exists():
             process_template(src, CONFIG_DST_ROOT / dst)
-    
+
     # Dynamic Agent templates
     agent_tpl_dir = CONFIG_SRC / "vibe" / "agents"
     if agent_tpl_dir.exists():
