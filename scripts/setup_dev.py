@@ -744,9 +744,9 @@ def setup_google_maps():
 
     print_info("API Ключ не знайдено або він недійсний.")
     print(
-        f"{Colors.BOLD}Бажаєте налаштувати Google Maps автоматично через gcloud? (y/n){Colors.ENDC}"
+        f"{Colors.BOLD}Бажаєте налаштувати Google Maps зараз? (y/n){Colors.ENDC}"
     )
-    print_info("Це автоматично встановить gcloud SDK, створить проект та ключ.")
+    print_info("Скрипт підтримує як автоматичне (gcloud), так і ручне налаштування.")
 
     try:
         # Timed input for non-interactive environments
@@ -754,20 +754,22 @@ def setup_google_maps():
         if rlist:
             choice = sys.stdin.readline().strip().lower()
         else:
-            print_info("Тайм-аут. Пропускаємо автоматичне налаштування.")
-            return
+            print_info("Тайм-аут. Пропускаємо налаштування Google Maps.")
+            print_info("Ви можете запустити пізніше: python3 scripts/setup_maps_quick.py")
+            return False
 
         if choice == "y":
-            script_path = PROJECT_ROOT / "scripts" / "setup_google_maps.py"
+            script_path = PROJECT_ROOT / "scripts" / "setup_maps_quick.py"
             if script_path.exists():
                 subprocess.run([sys.executable, str(script_path)], check=True)
                 return True
             else:
                 print_error(f"Скрипт {script_path} не знайдено!")
+                print_info("Ви можете налаштувати ключ вручну в .env")
         else:
-            print_info("Пропущено. Ви можете налаштувати ключ вручну в .env")
+            print_info("Пропущено. Запустіть пізніше: python3 scripts/setup_maps_quick.py")
     except Exception as e:
-        print_error(f"Помилка при автоматичному налаштуванні: {e}")
+        print_error(f"Помилка при налаштуванні: {e}")
 
     return False
 
