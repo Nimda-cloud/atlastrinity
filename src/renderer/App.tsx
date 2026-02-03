@@ -350,12 +350,27 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Reveal dock immediately on drag
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+    setIsDockVisible(true);
+  }, []);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-  }, []);
+    // Keep dock visible during drag
+    if (!isDockVisible) {
+      setIsDockVisible(true);
+    }
+  }, [isDockVisible]);
 
-  const handleCommand = async (cmd: string, files: File[] = []) => {
+  const handleCommand = useCallback(async (cmd: string, files: File[] = []) => {
     // 1. Log user action
     const fileMsg = files.length > 0 ? ` [${files.length} files]` : '';
     addLog('ATLAS', `Command: ${cmd}${fileMsg}`, 'action');
@@ -370,8 +385,6 @@ const App: React.FC = () => {
 
       const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
-        // Content-Type: multipart/form-data is set automatically by browser when body is FormData
-        // Do NOT set it manually or boundary will be missing
         body: formData,
       });
 
@@ -380,8 +393,8 @@ const App: React.FC = () => {
       const data = await response.json();
 
       // 3. Handle Result
-      if (data.status === 'completed') {
-        const result = data.result;
+      if (data.status === 'completed' || data.status === 'success') {
+        const result = data.result || data.response;
         // Safely handle object results by stringifying them
         let message = '';
         if (typeof result === 'string') {
@@ -389,7 +402,7 @@ const App: React.FC = () => {
         } else if (typeof result === 'object') {
           // Check if it's the specific step results array and format it nicely
           if (Array.isArray(result)) {
-            const steps = result.filter((r: { success: boolean }) => r.success).length;
+            const steps = result.filter((r: any) => r.success).length;
             message = `Task completed successfully: ${steps} steps executed.`;
           } else if (result.result) {
             message =
@@ -412,7 +425,11 @@ const App: React.FC = () => {
       addLog('ATLAS', 'Failed to reach Neural Core. Is Python server running?', 'error');
       setSystemState('ERROR');
     }
-  };
+  }, [addLog, API_BASE]);
+
+  const handleToggleVoice = useCallback(() => {
+    setIsVoiceEnabled((prev) => !prev);
+  }, []);
 
   const handleNewSession = async () => {
     console.log('Starting new session...');
@@ -472,6 +489,7 @@ const App: React.FC = () => {
       className="app-container scanlines"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
     >
       {/* Pulsing Borders */}
       <div className="pulsing-border top"></div>
@@ -785,7 +803,7 @@ const App: React.FC = () => {
         <CommandLine
           onCommand={handleCommand}
           isVoiceEnabled={isVoiceEnabled}
-          onToggleVoice={() => setIsVoiceEnabled(!isVoiceEnabled)}
+          onToggleVoice={handleToggleVoice}
           isProcessing={['PLANNING', 'EXECUTING', 'VERIFYING', 'CHAT'].includes(systemState)}
           onFocusChange={setIsInputFocused}
         />

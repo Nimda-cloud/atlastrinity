@@ -586,15 +586,15 @@ class Grisha(BaseAgent):
                 }
             )
 
-
-
         # General system verification fallback (if no specific file/search tool added but it's a verify task)
         # This ensures Grisha is ACTIVE rather than passive
-        if len(tools) <= 1 and any(kw in step_action_lower for kw in ["verify", "check", "status", "ensure", "validate"]):
-             tools.append(
+        if len(tools) <= 1 and any(
+            kw in step_action_lower for kw in ["verify", "check", "status", "ensure", "validate"]
+        ):
+            tools.append(
                 {
                     "tool": "macos-use.execute_command",
-                    "args": {"command": "ls -la"}, # Placeholder, reasoning will refine this
+                    "args": {"command": "ls -la"},  # Placeholder, reasoning will refine this
                     "reason": "General system state verification (Active Check)",
                 }
             )
@@ -716,14 +716,23 @@ class Grisha(BaseAgent):
         # Sanitize text to remove "no error" phrases before checking for "error" keyword
         sanitized_upper = analysis_upper
         no_error_phrases = [
-            "NO ERROR", "0 ERROR", "NO FAIL", "WITHOUT ERROR",
-            "БЕЗ ПОМИЛОК", "НЕМАЄ ПОМИЛОК", "ЖОДНИХ ПОМИЛОК",
-            "НЕ ВИЯВЛЕНО ПОМИЛОК", "НЕ ЗНАЙДЕНО ПОМИЛОК",
-            "НЕМАЄ ДОКАЗІВ ПОМИЛОК", "НЕМАЄ ОЗНАК ПОМИЛОК",
-            "НЕМАЄ ПРОБЛЕМ", "НЕМАЄ ЗБОЇВ", "НЕМАЄ ЗАУВАЖЕНЬ",
+            "NO ERROR",
+            "0 ERROR",
+            "NO FAIL",
+            "WITHOUT ERROR",
+            "БЕЗ ПОМИЛОК",
+            "НЕМАЄ ПОМИЛОК",
+            "ЖОДНИХ ПОМИЛОК",
+            "НЕ ВИЯВЛЕНО ПОМИЛОК",
+            "НЕ ЗНАЙДЕНО ПОМИЛОК",
+            "НЕМАЄ ДОКАЗІВ ПОМИЛОК",
+            "НЕМАЄ ОЗНАК ПОМИЛОК",
+            "НЕМАЄ ПРОБЛЕМ",
+            "НЕМАЄ ЗБОЇВ",
+            "НЕМАЄ ЗАУВАЖЕНЬ",
         ]
         for phrase in no_error_phrases:
-             sanitized_upper = sanitized_upper.replace(phrase, "")
+            sanitized_upper = sanitized_upper.replace(phrase, "")
 
         header_text = sanitized_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
 

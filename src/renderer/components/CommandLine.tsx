@@ -42,7 +42,6 @@ const CommandLine: React.FC<CommandLineProps> = ({
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [sttStatus, setSttStatus] = useState<string>(''); // For STT status display
-  const [isExpanded, setIsExpanded] = useState(false); // Track if textarea is expanded
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // New file state
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -65,7 +64,6 @@ const CommandLine: React.FC<CommandLineProps> = ({
       const scrollHeight = textareaRef.current.scrollHeight;
       const newHeight = Math.min(scrollHeight, 200);
       textareaRef.current.style.height = `${newHeight}px`;
-      setIsExpanded(newHeight > 40 && input.length > 0);
     }
   }, [input]);
 
@@ -520,7 +518,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
   return (
     <div 
-      className="command-line-container font-mono flex flex-col gap-1"
+      className="command-line-container font-mono flex flex-col gap-1 w-full"
       onDrop={handleContainerDrop}
       onDragOver={handleContainerDragOver}
     >
@@ -549,67 +547,10 @@ const CommandLine: React.FC<CommandLineProps> = ({
       )}
 
       <div
-        className={`flex items-start gap-2 pt-2 bg-transparent pb-0 ${isExpanded ? 'items-start' : 'items-center'}`}
+        className="flex items-start gap-2 pt-2 bg-transparent pb-0 w-full"
       >
-        {/* Paperclip Button */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="control-btn"
-          title="Attach File"
-        >
-          <svg
-             width="14"
-             height="14"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             strokeWidth="1.5"
-             strokeLinecap="round"
-             strokeLinejoin="round"
-           >
-             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-           </svg>
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          className="hidden"
-          multiple
-        />
-
-        {/* Left Controls - Only TTS (hidden when expanded) */}
-        {!isExpanded && (
-          <div className="flex items-center gap-1">
-            {/* TTS Toggle */}
-            <button
-              onClick={onToggleVoice}
-              className={`control-btn ${isVoiceEnabled ? 'active' : ''}`}
-              title="Toggle Voice (TTS)"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                {isVoiceEnabled ? (
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                ) : (
-                  <line x1="23" y1="9" x2="17" y2="15"></line>
-                )}
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Input Field with STT Status */}
-        <div className="flex-1 relative">
+        {/* Input Field with STT Status in the bottom-left */}
+        <div className="flex-1 relative min-w-0">
           <textarea
             ref={textareaRef}
             value={input}
@@ -622,7 +563,8 @@ const CommandLine: React.FC<CommandLineProps> = ({
             spellCheck={false}
             rows={1}
           />
-          <div className="absolute right-3 bottom-2 flex items-center gap-2">
+          {/* Status Indicators - Bottom Left */}
+          <div className="absolute left-3 bottom-2 flex items-center gap-2 pointer-events-none">
             {(isProcessing || sttStatus) && (
               <span
                 className={`text-[9px] tracking-wider animate-pulse ${isProcessing ? 'text-amber-400' : 'text-cyan-400/70'}`}
@@ -630,40 +572,65 @@ const CommandLine: React.FC<CommandLineProps> = ({
                 {isProcessing ? '🤔 Thinking...' : sttStatus}
               </span>
             )}
-            <span className="text-blue-500/20 text-[9px] pointer-events-none tracking-widest">
+            <span className="text-blue-500/20 text-[9px] tracking-widest">
               {(input.length > 0 || selectedFiles.length > 0) ? 'ENTER ' : ''}⏎
             </span>
           </div>
         </div>
 
-        {/* Right Controls - All buttons stacked vertically when expanded */}
-        <div className={`flex ${isExpanded ? 'flex-col gap-2' : 'items-center gap-2'}`}>
-          {/* TTS Toggle - moved to right when expanded */}
-          {isExpanded && (
-            <button
-              onClick={onToggleVoice}
-              className={`control-btn ${isVoiceEnabled ? 'active' : ''}`}
-              title="Toggle Voice (TTS)"
+        {/* Right Controls - Vertical Stack */}
+        <div className="flex flex-col gap-2 items-center">
+          {/* Paperclip Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="control-btn"
+            title="Attach File"
+          >
+            <svg
+               width="14"
+               height="14"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               strokeWidth="1.5"
+               strokeLinecap="round"
+               strokeLinejoin="round"
+             >
+               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+             </svg>
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+            multiple
+          />
+
+          {/* Voice Toggle */}
+          <button
+            onClick={onToggleVoice}
+            className={`control-btn ${isVoiceEnabled ? 'active' : ''}`}
+            title="Toggle Voice (TTS)"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                {isVoiceEnabled ? (
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                ) : (
-                  <line x1="23" y1="9" x2="17" y2="15"></line>
-                )}
-              </svg>
-            </button>
-          )}
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              {isVoiceEnabled ? (
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              ) : (
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+              )}
+            </svg>
+          </button>
 
           {/* STT/Mic Button */}
           <button
@@ -723,6 +690,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
             </svg>
           </button>
         </div>
+
       </div>
     </div>
   );

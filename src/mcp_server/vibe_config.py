@@ -517,8 +517,6 @@ class VibeConfig(BaseModel):
         """
         args = ["-p", prompt, "--output", output_format]
 
-
-
         # Mode mapping to agent profiles
         effective_mode = mode or self.default_mode
 
