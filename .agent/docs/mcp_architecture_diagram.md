@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-03T23:28:55.013466 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/clean_main.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T23:27:15.401919 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/auto-dependency-fix.yml, .githuworkflows/ci-core.yml -->
 

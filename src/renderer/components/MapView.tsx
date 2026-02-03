@@ -284,7 +284,9 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
 
     if (mapElement?.innerMap) {
       const currentZoom = mapElement.innerMap.getZoom();
-      mapElement.innerMap.setZoom(currentZoom + delta);
+      if (currentZoom !== undefined) {
+        mapElement.innerMap.setZoom(currentZoom + delta);
+      }
     }
   };
 
