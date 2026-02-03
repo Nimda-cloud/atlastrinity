@@ -10,6 +10,9 @@ system_prompt_id = "cli"
 # Enable/Disable auto-updates
 enable_auto_update = true
 
+# Execution limits
+max_turns = 100
+
 # =============================================================================
 # Tool Availability Patterns
 # =============================================================================

@@ -970,9 +970,11 @@ class ToolDispatcher:
                     "xcodebuild": self._handle_xcodebuild,
                 }
                 if server in handlers:
-                    logger.debug(f"[DISPATCHER] Delegating {server}.{resolved_tool} to specialized handler")
+                    logger.debug(
+                        f"[DISPATCHER] Delegating {server}.{resolved_tool} to specialized handler"
+                    )
                     return handlers[server](resolved_tool, normalized_args)
-                
+
                 logger.debug(
                     f"[DISPATCHER] BehaviorEngine routing: {tool_name} -> {server}.{resolved_tool}",
                 )
@@ -1517,7 +1519,14 @@ class ToolDispatcher:
     ) -> tuple[str, str, dict[str, Any]]:
         """Maps Context7 synonyms and legacy tools to working canonical tools."""
         # 1. Map synonyms and legacy tools to new working names
-        if tool_name in ["docs", "documentation", "lookup", "library", "c7_search", "c7_list_libraries"]:
+        if tool_name in [
+            "docs",
+            "documentation",
+            "lookup",
+            "library",
+            "c7_search",
+            "c7_list_libraries",
+        ]:
             resolved_tool = "resolve-library-id"
         elif tool_name in ["c7_query", "c7_info", "get_context", "c7_get_context"]:
             resolved_tool = "get-library-docs"
@@ -1528,7 +1537,7 @@ class ToolDispatcher:
         if resolved_tool == "resolve-library-id":
             if "term" in args:
                 args["libraryName"] = args.pop("term")
-            elif "projectIdentifier" in args: # Some agents might use this incorrectly
+            elif "projectIdentifier" in args:  # Some agents might use this incorrectly
                 args["libraryName"] = args.pop("projectIdentifier")
 
         elif resolved_tool == "get-library-docs":
@@ -1536,7 +1545,7 @@ class ToolDispatcher:
                 args["context7CompatibleLibraryID"] = args.pop("projectIdentifier")
             elif "libraryID" in args:
                 args["context7CompatibleLibraryID"] = args.pop("libraryID")
-            
+
             # Legacy c7_query used 'query'
             if "query" in args and "topic" not in args:
                 args["topic"] = args.pop("query")

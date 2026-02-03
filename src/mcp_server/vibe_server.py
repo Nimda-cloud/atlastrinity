@@ -1320,7 +1320,7 @@ async def vibe_analyze_error(
             model=AGENT_MODEL_OVERRIDE,
             mode="auto-approve" if auto_fix else "plan",
             session_id=session_id,
-            max_turns=15,
+            max_turns=config.max_turns,
         ),
     )
 

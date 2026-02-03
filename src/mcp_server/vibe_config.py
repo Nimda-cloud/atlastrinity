@@ -247,7 +247,7 @@ class VibeConfig(BaseModel):
     mcp_servers: list[McpServerConfig] = Field(default_factory=list)
 
     # Execution limits
-    max_turns: int = Field(10, ge=1, le=100, description="Default max turns")
+    max_turns: int = Field(10, ge=1, le=1000, description="Default max turns")
     max_price: float | None = Field(None, ge=0.0, description="Max cost per conversation (USD)")
     timeout_s: float = Field(600.0, ge=10.0, description="Default timeout in seconds")
 
