@@ -222,10 +222,24 @@ def create_project():
         )
         
         if result.returncode != 0:
-            # Show the actual error
+            stderr = result.stderr if result.stderr else "Невідома помилка"
+            
+            # Check for Terms of Service error specifically
+            if "Terms of Service" in stderr or "TOS" in stderr:
+                print_error("Помилка: Необхідно прийняти Умови використання Google Cloud.")
+                print_warning("\n⚠️  КРИТИЧНА ДІЯ:")
+                print("CLI не може прийняти Умови використання за вас з юридичних причин.")
+                print(f"\n1. Відкрийте це посилання: {Colors.BOLD}{Colors.OKCYAN}https://console.cloud.google.com/terms{Colors.ENDC}")
+                print("2. Виберіть вашу країну та натисніть 'Agree and Continue'")
+                print("3. Поверніться сюди та натисніть Enter\n")
+                input("Натисніть Enter ПІСЛЯ того як приймете умови в браузері...")
+                
+                # Retry project creation after TOS acceptance
+                return create_project()
+
             print_error("Не вдалося створити проект автоматично.")
             print_warning("Деталі помилки:")
-            print(result.stderr if result.stderr else "Невідома помилка")
+            print(stderr)
             
             print_info("\n📌 Можливі причини:")
             print("  • Потрібна організація Google Cloud (Organization)")
