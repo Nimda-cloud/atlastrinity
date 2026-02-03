@@ -662,7 +662,12 @@ async def _execute_vibe_with_retries(
                 return cast(dict[str, Any], res)
 
             # Check for Session not found (failed resume)
-            if "not found" in stderr.lower() and "session" in stderr.lower() and "--resume" in argv:
+            session_error = "not found" in stderr.lower() and "session" in stderr.lower()
+            if not session_error:
+                # Also check stdout since Vibe CLI might report it there in streaming mode
+                session_error = "not found" in stdout.lower() and "/logs/session" in stdout.lower()
+
+            if session_error and "--resume" in argv:
                 logger.warning("[VIBE] Session not found. Retrying without --resume.")
                 try:
                     idx = argv.index("--resume")

@@ -2731,12 +2731,33 @@ class Trinity:
             )
 
             if not verify_result.verified:
+                # Add check for verification attempts to avoid infinite loops
+                # (Simple heuristic using step results)
+                rejections = [
+                    res
+                    for res in (self.state.get("step_results") or [])
+                    if isinstance(res, dict) and res.get("step_id") == step_id and "rejected" in str(res.get("error", ""))
+                ]
+                
+                if len(rejections) >= 3:
+                    await self._log(f"Verification for step {step_id} failed multiple times. Escalating.", "error")
+                    result.success = False
+                    result.error = f"Persistent verification failure: {verify_result.description}"
+                    await self._speak("atlas", "Я не можу отримати підтвердження виконання цього кроку. Мені потрібна допомога.")
+                    return result
+
                 result.success = False
                 result.error = f"Grisha rejected: {verify_result.description}"
-                if verify_result.issues:
+                if verify_result.issues and isinstance(verify_result.issues, list):
                     result.error += f" Issues: {', '.join(verify_result.issues)}"
 
-                await self._speak("grisha", verify_result.voice_message or "Результат не прийнято.")
+                # Provide rich feedback for the next execution attempt
+                feedback = f"Крок не пройшов перевірку. {verify_result.voice_message or verify_result.description}"
+                await self._log(f"Verification rejected step {step_id}: {verify_result.description}", "orchestrator")
+                await self._speak("grisha", feedback)
+                
+                # Update current_plan step description if possible to include feedback for Tetyana
+                # (Optional but useful for self-correction)
             else:
                 await self._speak("grisha", verify_result.voice_message or "Підтверджую виконання.")
                 if result.is_deviation and result.success and result.deviation_info:
