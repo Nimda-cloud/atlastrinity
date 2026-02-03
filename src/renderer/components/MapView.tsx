@@ -7,55 +7,6 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Minimal Google Maps type declarations for TypeScript
-declare namespace google.maps {
-  class Map {
-    setOptions(options: MapOptions): void;
-    setMapTypeId(mapTypeId: string): void;
-    getStreetView(): StreetViewPanorama;
-    getCenter(): LatLng | undefined;
-    getZoom(): number;
-    setZoom(zoom: number): void;
-    panTo(latLng: LatLng | LatLngLiteral): void;
-  }
-  
-  class LatLng {
-    lat(): number;
-    lng(): number;
-  }
-  
-  interface LatLngLiteral {
-    lat: number;
-    lng: number;
-  }
-  
-  interface MapOptions {
-    styles?: MapTypeStyle[];
-    disableDefaultUI?: boolean;
-    zoomControl?: boolean;
-    mapTypeControl?: boolean;
-    streetViewControl?: boolean;
-    fullscreenControl?: boolean;
-  }
-  
-  interface MapTypeStyle {
-    elementType?: string;
-    featureType?: string;
-    stylers: { [key: string]: string | number | undefined }[];
-  }
-  
-  class StreetViewPanorama {
-    setPosition(latLng: LatLng | LatLngLiteral): void;
-    setPov(pov: StreetViewPov): void;
-    setVisible(visible: boolean): void;
-  }
-  
-  interface StreetViewPov {
-    heading: number;
-    pitch: number;
-  }
-}
-
 interface MapViewProps {
   imageUrl?: string;
   type: 'STREET' | 'STATIC' | 'INTERACTIVE';
@@ -493,7 +444,14 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
                 aria-label="Map View"
                 title="TACTICAL_MAP"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                   <line x1="3" y1="9" x2="21" y2="9"></line>
                   <line x1="9" y1="21" x2="9" y2="9"></line>
@@ -506,7 +464,14 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
                 aria-label="Satellite View"
                 title="SATELLITE_FEED"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="12" r="10"></circle>
                   <circle cx="12" cy="12" r="4"></circle>
                   <line x1="21.17" y1="8" x2="12" y2="8"></line>
@@ -521,7 +486,14 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
                 aria-label="Hybrid View"
                 title="HYBRID_OVERLAY"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                   <circle cx="12" cy="12" r="4"></circle>
                 </svg>
@@ -536,7 +508,14 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
                 aria-label={streetViewActive ? 'Exit Street View' : 'Enter Street View'}
                 title={streetViewActive ? 'EXIT_STREET_VIEW' : 'AGENT_POV_MODE'}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="7" r="4"></circle>
                   <path d="M5.5 21a8.38 8.38 0 0 1 0 -6"></path>
                   <path d="M18.5 21a8.38 8.38 0 0 0 0 -6"></path>
