@@ -544,7 +544,9 @@ def main():
             # Automated gcloud setup
             check_auth()
             project_id = get_or_create_project()
-            check_billing(project_id)
+            if not check_billing(project_id):
+                print_warning("Налаштування перервано користувачем через відсутність білінгу.")
+                return
             enable_apis(project_id)
             api_key = get_or_create_api_key(project_id)
         else:
