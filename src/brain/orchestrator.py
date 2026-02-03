@@ -1033,6 +1033,19 @@ class Trinity:
                 "logs": [],
             }
 
+        # Language Guard: Detect English input while TTS is in Ukrainian
+        if config.get("voice.tts.interaction_language_guard", False):
+            import re
+
+            latin_chars = len(re.findall(r"[a-zA-Z]", user_request))
+            total_chars = len(user_request.strip())
+            if total_chars > 5 and (latin_chars / total_chars) > 0.3:
+                await self._log(
+                    "⚠️ Виявлено англійську мову взаємодії. Система AtlasTrinity синхронізована для українського TTS.",
+                    "system",
+                    "warning",
+                )
+
         try:
             from src.brain.state_manager import state_manager
 

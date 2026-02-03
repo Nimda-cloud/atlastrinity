@@ -75,6 +75,7 @@ class MCPManager:
         self._connection_tasks: dict[str, asyncio.Task] = {}
         self._close_events: dict[str, asyncio.Event] = {}
         self._session_futures: dict[str, asyncio.Future] = {}
+        self._shutting_down = False
 
         from src.brain.behavior_engine import behavior_engine
 
@@ -371,12 +372,6 @@ class MCPManager:
 
         async def connection_runner():
             try:
-                # Clean up previous instances before starting
-                # (Added to address user feedback about too many servers)
-                # self._kill_orphans(server_name, command)
-                # Wait, better not to kill during connect_server if it's already managed.
-                # Only do it in restart_server.
-
                 logger.info(f"Connecting to MCP server: {server_name}...")
                 logger.debug(f"[MCP] Command: {command}, Args: {args}")
                 async with cast("Any", stdio_client)(server_params) as (read, write):
@@ -388,16 +383,6 @@ class MCPManager:
 
                         # Format message
                         msg = data
-
-                        # Log to main brain logger - DISABLED to avoid duplication with Orchestrator callback
-                        # if level_str in ["debug", "trace"]:
-                        #     logger.debug(msg)
-                        # elif level_str in ["warning", "warn"]:
-                        #     logger.warning(msg)
-                        # elif level_str in ["error", "critical", "fatal"]:
-                        #     logger.error(msg)
-                        # else:
-                        #     logger.info(msg)
 
                         # Notify callbacks (e.g. for WebSocket limits)
                         for cb in self._log_callbacks:
@@ -434,20 +419,37 @@ class MCPManager:
                         logger.info(f"Connected to {server_name}")
                         # keep the connection alive until asked to close
                         await close_event.wait()
-            except Exception as e:
+            except asyncio.CancelledError:
+                # Normal path for task cancellation
                 if not session_future.done():
-                    session_future.set_exception(e)
-                logger.error(
-                    f"Failed to run connection for {server_name}: {type(e).__name__}: {e}",
-                    exc_info=True,
-                )
+                    session_future.set_exception(asyncio.CancelledError())
+                logger.info(f"[MCP] Connection task for {server_name} cancelled")
+            except Exception as e:
+                # Handle ExceptionGroup if it contains the SDK race condition
+                import traceback
+
+                if (
+                    "RuntimeError: dictionary changed size during iteration"
+                    in traceback.format_exc()
+                ):
+                    logger.debug(
+                        f"[MCP] Ignored SDK race condition during shutdown for {server_name}"
+                    )
+                elif not self._shutting_down:
+                    if not session_future.done():
+                        session_future.set_exception(e)
+                    logger.error(
+                        f"Failed to run connection for {server_name}: {type(e).__name__}: {e}",
+                        exc_info=True,
+                    )
             finally:
                 # ensure cleanup from the connection's own task
                 self.sessions.pop(server_name, None)
                 self._connection_tasks.pop(server_name, None)
                 self._close_events.pop(server_name, None)
                 self._session_futures.pop(server_name, None)
-                logger.info(f"Connection task for {server_name} exited")
+                if not self._shutting_down:
+                    logger.info(f"Connection task for {server_name} exited")
 
         task = asyncio.create_task(connection_runner(), name=f"mcp-{server_name}")
         self._connection_tasks[server_name] = task
@@ -579,7 +581,7 @@ class MCPManager:
         logger.error(f"Error calling tool {server_name}.{tool_name}: {error_msg}")
 
         # Reconnection logic
-        if self._is_connection_error(error_msg):
+        if self._is_connection_error(error_msg) and not self._shutting_down:
             return await self._attempt_reconnection(server_name, tool_name, arguments)
 
         return {
@@ -606,6 +608,9 @@ class MCPManager:
         self, server_name: str, tool_name: str, arguments: dict[str, Any] | None
     ) -> Any:
         """Attempt to reconnect to a server and retry the tool call."""
+        if self._shutting_down:
+            return {"error": "Shutdown in progress", "success": False}
+
         logger.warning(f"[MCP] Connection lost to {server_name}, attempting reconnection...")
 
         # Exponential backoff retries
@@ -918,6 +923,7 @@ class MCPManager:
         """Coordinated shutdown of all MCP server connections.
         Ensures all tasks are cancelled and orphan processes are killed.
         """
+        self._shutting_down = True
         logger.info("[MCP] Initiating shutdown of all server connections...")
 
         # 1. Signal all connections to close gracefully

@@ -161,40 +161,65 @@ class MonitoringSystem:
             return {}
 
     def _initialize_metrics(self) -> None:
-        """Initialize Prometheus metrics collectors."""
+        """Initialize Prometheus metrics collectors with safety checks for duplicate registration."""
+        from prometheus_client import REGISTRY
+
+        def create_gauge(name, label):
+            if name in REGISTRY._names_to_collectors:
+                return cast(Any, REGISTRY._names_to_collectors[name])
+            return Gauge(name, label)
+
+        def create_counter(name, label, labels=None):
+            if name in REGISTRY._names_to_collectors:
+                return cast(Any, REGISTRY._names_to_collectors[name])
+            return Counter(name, label, labels or [])
+
+        def create_histogram(name, label, labels=None):
+            if name in REGISTRY._names_to_collectors:
+                return cast(Any, REGISTRY._names_to_collectors[name])
+            return Histogram(name, label, labels or [])
+
         # System metrics
-        self.cpu_usage = Gauge("atlastrinity_cpu_usage_percent", "Current CPU usage percentage")
-        self.memory_usage = Gauge(
+        self.cpu_usage = create_gauge(
+            "atlastrinity_cpu_usage_percent", "Current CPU usage percentage"
+        )
+        self.memory_usage = create_gauge(
             "atlastrinity_memory_usage_bytes", "Current memory usage in bytes"
         )
-        self.disk_usage = Gauge("atlastrinity_disk_usage_bytes", "Current disk usage in bytes")
+        self.disk_usage = create_gauge(
+            "atlastrinity_disk_usage_bytes", "Current disk usage in bytes"
+        )
 
         # Network metrics
-        self.network_bytes_sent = Counter("atlastrinity_network_bytes_sent", "Total bytes sent")
-        self.network_bytes_received = Counter(
+        self.network_bytes_sent = create_counter(
+            "atlastrinity_network_bytes_sent", "Total bytes sent"
+        )
+        self.network_bytes_received = create_counter(
             "atlastrinity_network_bytes_received", "Total bytes received"
         )
 
         # Application metrics
-        self.request_count = Counter(
+        self.request_count = create_counter(
             "atlastrinity_requests_total",
             "Total number of requests processed",
             ["request_type", "status"],
         )
-        self.request_latency = Histogram(
+        self.request_latency = create_histogram(
             "atlastrinity_request_latency_seconds",
             "Request processing latency in seconds",
             ["request_type"],
         )
-        self.active_requests = Gauge("atlastrinity_active_requests", "Number of active requests")
+        self.active_requests = create_gauge(
+            "atlastrinity_active_requests", "Number of active requests"
+        )
 
         # ETL pipeline metrics
-        self.etl_records_processed = Counter(
+        self.etl_records_processed = create_counter(
             "atlastrinity_etl_records_processed",
             "Number of records processed by ETL",
             ["pipeline_stage"],
         )
-        self.etl_errors = Counter(
+        self.etl_errors = create_counter(
             "atlastrinity_etl_errors",
             "Number of ETL processing errors",
             ["pipeline_stage", "error_type"],

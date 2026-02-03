@@ -420,6 +420,7 @@ voice:
     device: cpu
     enabled: true
     force_ukrainian: true               # Forces translation of English text to Ukrainian
+    interaction_language_guard: true    # Detects and warns about language mismatch
 
 # =============================================================================
 # MONITORING CONFIGURATION

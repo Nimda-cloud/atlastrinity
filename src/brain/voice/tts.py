@@ -10,6 +10,7 @@ NOTE: TTS models must be set up before first use via setup_dev.py
 
 import asyncio
 import os
+import re
 import tempfile
 import warnings
 
@@ -503,12 +504,24 @@ class VoiceManager:
 
     async def translate_to_ukrainian(self, text: str) -> str:
         """Translates English-heavy text to Ukrainian as a last defense."""
-        # Simple heuristic to detect if translation is needed
-        import re
+        # Skip translation if text is empty
+        if not text.strip():
+            return text
+
+        # Count Latin vs Cyrillic to avoid redundant translation of Ukrainian text
+        latin_chars = len(re.findall(r"[a-zA-Z]", text))
+        cyrillic_chars = len(re.findall(r"[а-яА-ЯёЁіІєЄїЇґҐ]", text))
+        total_chars = len(text.strip())
+
+        # If it's mostly Cyrillic, skip translation
+        if cyrillic_chars > latin_chars * 2 or (
+            total_chars > 0 and cyrillic_chars / total_chars > 0.7
+        ):
+            return text
 
         english_words = re.findall(r"[a-zA-Z]{3,}", text)
-        # If more than 2 English words or significant portions are English
-        if len(english_words) < 2:
+        # If very few English words and low Latin ratio, skip
+        if len(english_words) < 2 and (total_chars > 0 and latin_chars / total_chars < 0.2):
             return text
 
         logger.info(f"[TTS] 🔄 Translating English-heavy text to Ukrainian: {text[:50]}...")

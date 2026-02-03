@@ -42,8 +42,33 @@ class ConstraintMonitor:
 
             self._last_check_logs = recent_logs[-20:]  # Keep small history to detect duplicates
 
+            # 3. Check if system is configured for Ukrainian voice output (bilingual operation)
+            # If so, skip the language constraint check as Ukrainian voice is expected and legitimate
+            from src.brain.config_loader import config
+
+            voice_language = config.get("voice.language", "uk")
+
+            # Filter out language-related constraints if Ukrainian voice is configured
+            filtered_constraints = []
+            for constraint in constraints:
+                # Skip language constraint if system is designed for Ukrainian voice
+                if (
+                    "language" in constraint.lower()
+                    and "ukrainian" in constraint.lower()
+                    and voice_language == "uk"
+                ):
+                    logger.debug(
+                        f"[CONSTRAINT_MONITOR] Skipping language constraint - Ukrainian voice is configured: {constraint}"
+                    )
+                    continue
+                filtered_constraints.append(constraint)
+
+            if not filtered_constraints:
+                logger.debug("[CONSTRAINT_MONITOR] No applicable constraints after filtering")
+                return
+
             # Prepare check prompt
-            constraints_str = "\n".join([f"- {c}" for c in constraints])
+            constraints_str = "\n".join([f"- {c}" for c in filtered_constraints])
 
             prompt = f"""CONSTRAINT CHECK
             

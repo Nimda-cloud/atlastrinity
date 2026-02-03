@@ -19,6 +19,8 @@ const __dirname = path.dirname(__filename);
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const CONFIG_ROOT = path.join(os.homedir(), '.config', 'atlastrinity');
+const VIBE_ROOT = path.join(os.homedir(), '.vibe');
+const VIBE_AGENTS_DIR = path.join(VIBE_ROOT, 'agents');
 const MCP_DIR = path.join(CONFIG_ROOT, 'mcp');
 
 // Configuration mappings: template -> destination
@@ -63,6 +65,27 @@ const CONFIG_MAPPINGS = [
     template: path.join(PROJECT_ROOT, 'config', 'prometheus.yml.template'),
     destination: path.join(CONFIG_ROOT, 'prometheus.yml'),
     description: 'Prometheus metrics configuration',
+  },
+  // Native Vibe home directory mappings
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe_config.toml.template'),
+    destination: path.join(VIBE_ROOT, 'config.toml'),
+    description: 'Native Vibe CLI configuration (Home)',
+  },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe', 'agents', 'accept-edits.toml.template'),
+    destination: path.join(VIBE_AGENTS_DIR, 'accept-edits.toml'),
+    description: 'Native Vibe Agent: Accept Edits (Home)',
+  },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe', 'agents', 'auto-approve.toml.template'),
+    destination: path.join(VIBE_AGENTS_DIR, 'auto-approve.toml'),
+    description: 'Native Vibe Agent: Auto Approve (Home)',
+  },
+  {
+    template: path.join(PROJECT_ROOT, 'config', 'vibe', 'agents', 'plan.toml.template'),
+    destination: path.join(VIBE_AGENTS_DIR, 'plan.toml'),
+    description: 'Native Vibe Agent: Plan (Home)',
   },
 ];
 

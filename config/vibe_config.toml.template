@@ -2,7 +2,7 @@
 # Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
 # Active model for Vibe (Devstral 2 is the default)
-active_model = "devstral-2"
+active_model = "devstral-2512"
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
@@ -81,6 +81,7 @@ permission = "always"
 
 [[mcp_servers]]
 name = "devtools"
+transport = "stdio"
 command = "python3"
 args = ["-m", "src.mcp_server.devtools_server"]
 env = { PYTHONPATH = "${PROJECT_ROOT}" }
