@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-03T22:19:16.433689 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, lefthook.yml -->
+
+
+<!-- AUTO-UPDATED: 2026-02-03T22:18:54.436363 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, lefthook.yml -->
+
+
+<!-- AUTO-UPDATED: 2026-02-03T22:18:29.471955 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, lefthook.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T22:13:19.725428 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/check_mcp_health.py -->
 

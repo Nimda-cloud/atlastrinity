@@ -31,21 +31,33 @@ async def main():
             },
         )
 
-        if isinstance(result, dict):
-            if result.get("success"):
-                print("✅ Architecture diagrams updated successfully")
-                if result.get("files_updated"):
-                    print("📝 Updated files:")
-                    for file_path in result["files_updated"]:
-                        print(f"   - {file_path}")
-                if not result.get("updates_made"):
-                    print("ℹ️  No changes detected requiring diagram updates")
-            else:
-                error = result.get("error", "Unknown error")
-                print(f"❌ Failed to update diagrams: {error}")
+        if hasattr(result, "structuredContent") and result.structuredContent:
+            res_data = result.structuredContent
+        elif isinstance(result, dict):
+            res_data = result
+        elif hasattr(result, "content") and result.content:
+            # Try to parse text content as JSON if it's a list of TextContent
+            import json
+            try:
+                res_data = json.loads(result.content[0].text)
+            except (IndexError, AttributeError, json.JSONDecodeError):
+                print(f"❌ Unexpected result format: {result}")
                 sys.exit(1)
         else:
             print(f"❌ Unexpected result: {result}")
+            sys.exit(1)
+
+        if res_data.get("success"):
+            print("✅ Architecture diagrams updated successfully")
+            if res_data.get("files_updated"):
+                print("📝 Updated files:")
+                for file_path in res_data["files_updated"]:
+                    print(f"   - {file_path}")
+            if not res_data.get("updates_made"):
+                print("ℹ️  No changes detected requiring diagram updates")
+        else:
+            error = res_data.get("error", "Unknown error")
+            print(f"❌ Failed to update diagrams: {error}")
             sys.exit(1)
 
     except Exception as e:
