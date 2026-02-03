@@ -819,10 +819,21 @@ class Trinity:
         if isinstance(msg_list, list):
             for m in msg_list:
                 if isinstance(m, HumanMessage):
+                    # Handle multi-modal content (list of dicts)
+                    display_text = ""
+                    if isinstance(m.content, list):
+                        for item in m.content:
+                            if isinstance(item, dict) and item.get("type") == "text":
+                                display_text += item.get("text", "")
+                            elif isinstance(item, dict) and item.get("type") == "image_url":
+                                display_text += "\n[Зображення додано]"
+                    else:
+                        display_text = str(m.content)
+
                     messages.append(
                         {
                             "agent": "USER",
-                            "text": m.content,
+                            "text": display_text,
                             "timestamp": m.additional_kwargs.get("timestamp")
                             or datetime.now().timestamp(),
                             "type": "text",
