@@ -46,7 +46,7 @@ def load_config() -> dict[str, Any]:
 
             env_vars = dotenv_values(env_path)
             for key, value in (env_vars or {}).items():
-                if value is not None and key not in os.environ:
+                if value is not None:
                     os.environ[key] = value
         except ImportError:
             pass

@@ -42,10 +42,6 @@ class ConstraintMonitor:
 
             self._last_check_logs = recent_logs[-20:]  # Keep small history to detect duplicates
 
-            # 3. Analyze with Vibe (using a specific tool or just prompt)
-            # We'll use a fast check via Vibe prompt
-            from src.brain.mcp_manager import mcp_manager
-
             # Prepare check prompt
             constraints_str = "\n".join([f"- {c}" for c in constraints])
 
@@ -66,19 +62,46 @@ class ConstraintMonitor:
             EVIDENCE: [Log line or observation]
             """
 
-            # Use 'vibe_ask' (or similar fast query)
-            result = await mcp_manager.call_tool("vibe", "vibe_prompt", {"prompt": prompt})
-
-            result_text = str(result)
+            # 3. Analyze with a generic LLM (not Vibe, to save rate limits)
+            # We'll use the Atlas agent's LLM or a generic one from shared_context
+            from src.brain.agents.atlas import Atlas
+            audit_agent = Atlas()
+            
+            # Use a lighter/cheaper model for auditing if possible, 
+            # or just the default one which usually has higher limits than Mistral Vibe
+            result_text = await audit_agent.llm.ainvoke(prompt)
+            if hasattr(result_text, "content"):
+                result_text = str(result_text.content)
+            else:
+                result_text = str(result_text)
+            
+            # Check for API errors first
+            if "Invalid model:" in result_text or "API error" in result_text:
+                logger.error(f"[CONSTRAINT_MONITOR] Vibe API error: {result_text[:200]}...")
+                # Don't submit healing task for API errors - this is a configuration issue
+                return
+            
             if "VIOLATION:" in result_text:
                 logger.warning(f"[CONSTRAINT_MONITOR] Violation detected: {result_text[:100]}...")
 
-                # Extract violation details
+                # Extract violation details - improved parsing
                 violation = "Unknown Violation"
                 for line in result_text.split("\n"):
                     if line.startswith("VIOLATION:"):
                         violation = line.replace("VIOLATION:", "").strip()
                         break
+                    elif "VIOLATION:" in line:  # Handle cases where VIOLATION: is not at start
+                        parts = line.split("VIOLATION:")
+                        if len(parts) > 1:
+                            violation = parts[1].strip()
+                            break
+
+                # If we still have "Unknown Violation", try to extract more context
+                if violation == "Unknown Violation":
+                    for line in result_text.split("\n"):
+                        if any(keyword in line.lower() for keyword in ["violation", "constraint", "error"]):
+                            violation = line.strip()[:100]  # Limit length
+                            break
 
                 # Submit Priority 2 Healing Task
                 await parallel_healing_manager.submit_healing_task(

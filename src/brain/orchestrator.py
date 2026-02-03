@@ -2237,10 +2237,17 @@ class Trinity:
             return 0
 
     async def _trigger_async_constraint_monitoring(self) -> None:
-        """Fire-and-forget check for environmental constraints."""
+        """Fire-and-forget check for environmental constraints with throttling."""
         try:
             from src.brain.constraint_monitor import constraint_monitor
+            
+            # Cooldown to prevent rate limits (max once every 30 seconds)
+            now = datetime.now().timestamp()
+            last_check = getattr(self, "_last_constraint_check_time", 0)
+            if now - last_check < 30:
+                return
 
+            self._last_constraint_check_time = now
             monitor_logs = await self._get_recent_logs(20)
             state_logs = [l for l in (self.state.get("logs", []) or []) if isinstance(l, dict)][
                 -20:
