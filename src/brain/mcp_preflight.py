@@ -70,10 +70,7 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
                 versions = meta.get("versions", {}) or {}
                 if ver in dist:
                     # ensure the referenced version exists in versions
-                    if dist[ver] in versions:
-                        return True
-                    # sometimes dist-tags may include a tag pointing to a non-published version, treat as False
-                    return False
+                    return dist[ver] in versions
                 # fallback: if 'latest' requested and versions has entries, accept
                 if ver == "latest" and "latest" in dist:
                     return dist["latest"] in versions

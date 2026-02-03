@@ -937,9 +937,13 @@ IMPORTANT:
         if isinstance(tool_call.get("args"), dict):
             tool_call["args"]["step_id"] = step.get("id")
             if (
-                str(tool_call.get("name", "")).lower().startswith("macos-use")
-                or tool_call.get("server") == "macos-use"
-            ) and not tool_call["args"].get("pid") and self._current_pid:
+                (
+                    str(tool_call.get("name", "")).lower().startswith("macos-use")
+                    or tool_call.get("server") == "macos-use"
+                )
+                and not tool_call["args"].get("pid")
+                and self._current_pid
+            ):
                 tool_call["args"]["pid"] = self._current_pid
 
     async def _determine_tool_action(

@@ -32,7 +32,8 @@ async def test_grisha_saves_rejection_report():
     assert len(files) > 0, "No rejection report found in filesystem"
 
     latest_report = files[-1]
-    content = open(latest_report).read()
+    with open(latest_report, encoding="utf-8") as f:
+        content = f.read()
     assert "Fake description" in content
     assert "issue1" in content
 

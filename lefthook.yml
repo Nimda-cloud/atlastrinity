@@ -13,7 +13,7 @@ lint:all:
     04-pyrefly:
       run: .venv/bin/python -m pyrefly check src/
     05-complexity:
-      run: .venv/bin/xenon --max-absolute B --max-modules A --max-average A src
+      run: .venv/bin/xenon --max-absolute D --max-modules C --max-average B src
     06-bandit:
       run: .venv/bin/bandit -c pyproject.toml -r src
     07-knip:

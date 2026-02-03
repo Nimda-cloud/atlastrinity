@@ -107,11 +107,7 @@ class MonitoringConfig:
                 full_config["monitoring"] = {}
 
             # Deep merge or replace? Replace specific sections provided
-            if "monitoring" in config:
-                full_config["monitoring"] = config["monitoring"]
-            else:
-                # Assume passed config IS the monitoring block
-                full_config["monitoring"] = config
+            full_config["monitoring"] = config.get("monitoring", config)
 
             # Save back
             with open(config_path, "w", encoding="utf-8") as f:

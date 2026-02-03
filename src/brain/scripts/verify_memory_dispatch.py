@@ -38,7 +38,10 @@ async def verify():
         # Check if result looks like search results
         res_str = str(res)
         if (
-            "results" in res_str or "entities" in res_str or "Atlas" in res_str or isinstance(res, (list, dict))
+            "results" in res_str
+            or "entities" in res_str
+            or "Atlas" in res_str
+            or isinstance(res, (list, dict))
         ):
             print("SUCCESS: Dispatcher handled 'memory.memory' call!")
             print(f"Result Preview: {res_str[:200]}")

@@ -1416,11 +1416,15 @@ def check_services():
                 continue
 
             # Fallback: check functional ping (Redis only)
-            if service == "redis" and shutil.which("redis-cli") and (
-                subprocess.run(
-                    ["redis-cli", "ping"], check=False, capture_output=True
-                ).returncode
-                == 0
+            if (
+                service == "redis"
+                and shutil.which("redis-cli")
+                and (
+                    subprocess.run(
+                        ["redis-cli", "ping"], check=False, capture_output=True
+                    ).returncode
+                    == 0
+                )
             ):
                 print_success(f"{label} запущено (CLI)")
                 continue

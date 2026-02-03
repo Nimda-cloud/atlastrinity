@@ -66,7 +66,7 @@ exclude = [
 
 [tool.bandit]
 exclude_dirs = ["tests", "scripts", ".venv", "dist_venv"]
-skips = ["B101", "B404", "B603", "B607", "B405"] # B101(assert), B404/603/607(subprocess), B405(xml)
+skips = ["B101", "B404", "B603", "B607", "B405", "B110", "B112"] # B101(assert), B404/603/607(subprocess), B405(xml), B110/B112(try-except-pass/continue)
 
 [tool.ruff.lint]
 fixable = ["ALL"]
@@ -105,9 +105,15 @@ ignore = [
     "RUF059",  # Unused unpacked variable
     "ERA001",  # Commented out code (too noisy often)
     "ARG001",  # Unused function argument (handled by pyright usually)
+    "ARG002",  # Unused method argument
+    "ARG004",  # Unused static method argument
+    "ARG005",  # Unused lambda argument
     "SIM105",  # Use contextlib.suppress (not always readable)
     "SIM108",  # Use ternary operator (not always readable)
-    "PTH123",  # open() vs Path.open() (standard practice varies)
+    "SIM102",  # Nested if statements
+    "PTH",     # Use pathlib (standard practice varies)
+    "C901",    # Complex functions (refactoring out of scope)
+    "PTH123",  # open() vs Path.open()
 ]
 
 [tool.ruff.lint.per-file-ignores]

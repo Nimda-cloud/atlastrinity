@@ -15,8 +15,11 @@ def test_servers_use_mcp_package():
         imports = [n for n in tree.body if isinstance(n, ast.Import | ast.ImportFrom)]
         found = False
         for imp in imports:
-            if isinstance(imp, ast.ImportFrom):
-                if imp.module and imp.module.startswith("mcp.server"):
-                    found = True
-                    break
+            if (
+                isinstance(imp, ast.ImportFrom)
+                and imp.module
+                and imp.module.startswith("mcp.server")
+            ):
+                found = True
+                break
         assert found, f"{p} does not import from 'mcp.server' (migration incomplete)"
