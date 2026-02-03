@@ -2,6 +2,7 @@
   "mcpServers": {
     "_comment_tier1": "=== TIER 1: MUST-HAVE (Ядро системи) ===",
     "macos-use": {
+      "transport": "stdio",
       "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use",
       "connect_timeout": 3600,
       "description": "UNIVERSAL macOS control (42+ tools): GUI automation, Vision/OCR, System Monitoring, Terminal, Fetch URL, Time, AppleScript, Calendar, Reminders, Notes, Mail, Finder, Spotlight, Notifications. PRIMARY server for ALL macOS interactions.",
@@ -18,6 +19,7 @@
       "note": "Compiled Swift binary. Replaces: fetch, time, apple-mcp, applescript, terminal."
     },
     "filesystem": {
+      "transport": "stdio",
       "command": "npx",
       "args": [
         "@modelcontextprotocol/server-filesystem",
@@ -35,6 +37,7 @@
       ]
     },
     "sequential-thinking": {
+      "transport": "stdio",
       "command": "bunx",
       "connect_timeout": 60,
       "args": [
@@ -53,6 +56,7 @@
       ]
     },
     "googlemaps": {
+      "transport": "stdio",
       "command": "${PROJECT_ROOT}/vendor/mcp-server-googlemaps/.build/release/mcp-server-googlemaps",
       "connect_timeout": 60,
       "description": "Google Maps (12 tools): geocode, reverse_geocode, search_places, place_details, directions, maps_start_tour, maps_tour_control, distance_matrix, street_view, static_map, elevation, interactive_search. Includes Cyberpunk image filter.",
@@ -70,6 +74,7 @@
     },
     "_comment_tier2": "=== TIER 2: HIGH PRIORITY (Рекомендовані) ===",
     "xcodebuild": {
+      "transport": "stdio",
       "command": "node",
       "args": [
         "${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"
@@ -86,6 +91,7 @@
       "note": "Requires: macOS 14.5+, Xcode 16.x+ (full, not just Command Line Tools), Node.js 18.x+. Provides 94+ tools across 14 workflows for comprehensive iOS/macOS development."
     },
     "chrome-devtools": {
+      "transport": "stdio",
       "command": "bunx",
       "args": [
         "chrome-devtools-mcp",
@@ -114,6 +120,7 @@
       ]
     },
     "vibe": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 3600,
       "args": [
@@ -131,6 +138,7 @@
       "note": "Runs in programmatic CLI mode (--output json), not interactive TUI. Max output: 500KB."
     },
     "memory": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -147,6 +155,7 @@
       ]
     },
     "graph": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -163,6 +172,7 @@
       ]
     },
     "puppeteer": {
+      "transport": "stdio",
       "command": "npx",
       "args": [
         "@modelcontextprotocol/server-puppeteer",
@@ -182,6 +192,7 @@
       "note": "For web tasks: searching info, checking weather, scraping data, interacting with websites"
     },
     "duckduckgo-search": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -197,6 +208,7 @@
       ]
     },
     "golden-fund": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -213,6 +225,7 @@
       ]
     },
     "context7": {
+      "transport": "stdio",
       "command": "npx",
       "args": [
         "-y",
@@ -228,6 +241,7 @@
       ]
     },
     "whisper-stt": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -242,6 +256,7 @@
       ]
     },
     "devtools": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -260,6 +275,7 @@
       ]
     },
     "github": {
+      "transport": "stdio",
       "command": "npx",
       "connect_timeout": 60,
       "args": [
@@ -279,6 +295,7 @@
       ]
     },
     "redis": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -295,6 +312,7 @@
       ]
     },
     "data-analysis": {
+      "transport": "stdio",
       "command": "python3",
       "connect_timeout": 60,
       "args": [
@@ -311,6 +329,7 @@
       ]
     },
     "postgres": {
+      "transport": "stdio",
       "command": "python3",
       "args": [
         "-m",
@@ -326,6 +345,7 @@
       "note": "Disabled by default. Used for structured data querying when SQLite is insufficient."
     },
     "react-devtools": {
+      "transport": "stdio",
       "command": "node",
       "args": [
         "${PROJECT_ROOT}/src/mcp_server/react_devtools_mcp.js"
@@ -341,15 +361,15 @@
     }
   },
   "_metadata": {
-    "version": "5.0",
-    "last_updated": "2026-01-31",
+    "version": "5.1",
+    "last_updated": "2026-02-03",
     "description": "Single source of truth for MCP server configuration. Used by Brain, Vibe, and all agents.",
-    "active_servers": 17,
-    "total_servers": 18,
+    "active_servers": 19,
+    "total_servers": 20,
     "notes": [
       "Servers with 'disabled': true are not loaded by default",
       "Tier 1-2 servers load at startup, Tier 3-4 on-demand",
-      "XcodeBuildMCP added for iOS/macOS development automation"
+      "Ensured all servers use explicit 'stdio' transport for stability"
     ]
   }
 }
