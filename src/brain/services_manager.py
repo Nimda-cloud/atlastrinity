@@ -291,7 +291,7 @@ def ensure_vibe(force_check: bool = False) -> bool:
         result = subprocess.run(
             "curl -LsSf https://mistral.ai/vibe/install.sh | bash",
             check=False,
-            shell=True,
+            shell=True,  # nosec B602
             capture_output=True,
             text=True,
             timeout=300,

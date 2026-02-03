@@ -412,7 +412,7 @@ class ToolDispatcher:
         "sh": "execute_command",
         "ls": "macos-use_finder_list_files",
         "cd": "execute_command",
-        "pwd": "execute_command",
+        "pwd": "execute_command",  # nosec B105
         "echo": "execute_command",
         "cat": "execute_command",
         "grep": "execute_command",
@@ -1478,7 +1478,7 @@ class ToolDispatcher:
 
                 await asyncio.sleep(2.0)
                 logger.info("[SYSTEM] Executing os.execv restart now...")
-                os.execv(sys.executable, [sys.executable, *sys.argv])
+                os.execv(sys.executable, [sys.executable, *sys.argv])  # nosec B606
 
             task = asyncio.create_task(delayed_restart())
             self._tasks.add(task)

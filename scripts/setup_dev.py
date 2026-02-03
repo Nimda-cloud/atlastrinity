@@ -161,10 +161,7 @@ def check_system_tools():
                     print_success(f"{tool} знайдено у .venv")
                     continue
 
-            if tool in ["bun", "swift", "npm"]:
-                print_warning(f"{tool} НЕ знайдено")
-                missing.append(tool)
-            elif tool == "vibe":
+            if tool in ["bun", "swift", "npm"] or tool == "vibe":
                 print_warning(f"{tool} НЕ знайдено")
                 missing.append(tool)
             else:

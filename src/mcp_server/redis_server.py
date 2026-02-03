@@ -63,7 +63,7 @@ async def redis_get(key: str) -> dict[str, Any]:
             if val.startswith("{") or val.startswith("["):
                 val = json.loads(val)
         except Exception:
-            pass
+            pass  # nosec B110
 
         return {"success": True, "key": key, "value": val, "found": True}
     except Exception as e:

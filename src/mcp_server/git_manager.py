@@ -182,7 +182,7 @@ def _get_github_token_from_env(project_path: Path) -> str | None:
                         if token:
                             return token
             except Exception:
-                pass
+                pass  # nosec B110
     else:
         # External project - check project .env first, then global
         project_env = project_path / ".env"
@@ -195,7 +195,7 @@ def _get_github_token_from_env(project_path: Path) -> str | None:
                         if token:
                             return token
             except Exception:
-                pass
+                pass  # nosec B110
 
     # Fallback to environment variable
     return os.environ.get("GITHUB_TOKEN")
@@ -214,7 +214,7 @@ def _get_existing_remote(project_path: Path) -> str | None:
         if result.returncode == 0:
             return result.stdout.strip()
     except Exception:
-        pass
+        pass  # nosec B110
     return None
 
 
@@ -260,7 +260,7 @@ def _configure_git_user(project_path: Path) -> None:
                 check=False,
             )
     except Exception:
-        pass
+        pass  # nosec B110
 
 
 def get_git_changes(project_path: Path, commits_back: int = 1) -> dict[str, Any]:

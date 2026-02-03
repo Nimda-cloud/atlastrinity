@@ -360,11 +360,9 @@ async def execute_test_step(
     if use_sandbox:
         sandboxed_args = {}
         for key, value in args.items():
-            if isinstance(value, str) and (
+            if (isinstance(value, str) and (
                 "path" in key.lower() or "file" in key.lower() or "dir" in key.lower()
-            ):
-                sandboxed_args[key] = sandbox_path(value)
-            elif isinstance(value, str) and value.startswith("/"):
+            )) or (isinstance(value, str) and value.startswith("/")):
                 sandboxed_args[key] = sandbox_path(value)
             else:
                 sandboxed_args[key] = value

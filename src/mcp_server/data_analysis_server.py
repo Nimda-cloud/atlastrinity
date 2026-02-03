@@ -167,7 +167,7 @@ async def read_metadata(file_path: str, sheet_name: str | int | None = None) -> 
     # Get schema info
     columns_info = []
     for col in df.columns:
-        col_stats = _get_column_stats(cast(pd.Series, df[col]))
+        col_stats = _get_column_stats(df[col])
         col_stats["name"] = str(col)
         columns_info.append(col_stats)
 

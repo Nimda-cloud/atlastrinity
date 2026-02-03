@@ -441,8 +441,8 @@ async def delete_entity(name: str, namespace: str | None = None) -> dict[str, An
     if long_term_memory.available:
         try:
             long_term_memory.knowledge.delete(ids=[node_id])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to delete from vector memory: {e}")  # nosec B608
 
     return {"success": True, "deleted": True}
 

@@ -486,7 +486,7 @@ async def _convert_to_wav(temp_file_path: str, suffix: str) -> str:
             try:
                 os.unlink(temp_file_path)
             except Exception:
-                pass
+                pass  # nosec B110
             return wav_path
     except Exception as e:
         logger.error(f"[STT] FFmpeg error: {e}")

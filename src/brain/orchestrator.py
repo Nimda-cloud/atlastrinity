@@ -1059,7 +1059,7 @@ class Trinity:
                 if saved_state:
                     self.state = saved_state
         except Exception:
-            pass
+            pass  # nosec B110
 
         if session_id == "current_session" and isinstance(self.state.get("session_id"), str):
             session_id = self.state["session_id"]
@@ -1352,7 +1352,7 @@ class Trinity:
                     {"type": "task_finished", "status": "completed", "session_id": session_id},
                 )
         except Exception:
-            pass
+            pass  # nosec B110
 
     def _trigger_backups(self):
         """Trigger background database backups."""
@@ -1361,7 +1361,7 @@ class Trinity:
 
             asyncio.create_task(asyncio.to_thread(backup_databases))
         except Exception:
-            pass
+            pass  # nosec B110
 
     async def _persist_session_summary(self, session_id: str):
         """Generates a professional summary and stores it in DB and Vector memory."""
@@ -1388,7 +1388,7 @@ class Trinity:
                         metadata={"entities": entities},
                     )
             except Exception:
-                pass
+                pass  # nosec B110
 
             # B. Store in Structured DB
             try:
@@ -1465,7 +1465,7 @@ class Trinity:
                     try:
                         action = action.split("]", 1)[1].strip()
                     except:
-                        pass
+                        pass  # nosec B110
 
                 if not action:
                     action = str(item.get("result", ""))[:100]
@@ -1960,7 +1960,7 @@ class Trinity:
         import sys
 
         await asyncio.sleep(1.0)
-        os.execv(sys.executable, [sys.executable, *sys.argv])
+        os.execv(sys.executable, [sys.executable, *sys.argv])  # nosec B606
         return False, StepResult(
             step_id=step_id, success=False, error="restarting", result="Restart initiated"
         )

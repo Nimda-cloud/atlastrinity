@@ -448,7 +448,7 @@ def _generate_task_session_id(prompt: str) -> str:
     # We hash the first 500 chars of the prompt to create a 'task key'
     # This ensures that related calls for the same task use the same session
     clean_prompt = prompt.strip()[:500]
-    h = hashlib.md5(clean_prompt.encode()).hexdigest()
+    h = hashlib.sha256(clean_prompt.encode()).hexdigest()
     return f"task-{h[:12]}"
 
 

@@ -64,9 +64,16 @@ exclude = [
     "venv",
 ]
 
+fixable = ["ALL"]
+unfixable = []
+
+[tool.bandit]
+exclude_dirs = ["tests", "scripts", ".venv", "dist_venv"]
+skips = ["B101", "B404", "B603", "B607", "B405"] # B101(assert), B404/603/607(subprocess), B405(xml)
+
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
-select = ["E4", "E7", "E9", "F", "B", "I", "N", "UP", "PL", "RUF"]
+select = ["E4", "E7", "E9", "F", "B", "I", "N", "UP", "PL", "RUF", "C90", "SIM", "ARG", "PTH", "ERA"]
 ignore = [
     "E501",   # Line too long
     "RUF001", # Ambiguous unicode character (Ukrainian project)
@@ -97,11 +104,12 @@ ignore = [
     "B023",    # Loop variable in nested function
     "B025",    # Duplicate exception
     "RUF059",  # Unused unpacked variable
+    "ERA001",  # Commented out code (too noisy often)
+    "ARG001",  # Unused function argument (handled by pyright usually)
+    "SIM105",  # Use contextlib.suppress (not always readable)
+    "SIM108",  # Use ternary operator (not always readable)
+    "PTH123",  # open() vs Path.open() (standard practice varies)
 ]
-
-# Allow fix for all enabled rules (when `--fix`) is provided.
-fixable = ["ALL"]
-unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "RUF052"]

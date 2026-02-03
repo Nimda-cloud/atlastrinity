@@ -109,7 +109,7 @@ def python_module_importable(module: str) -> bool:
         if importlib.util.find_spec(module) is not None:
             return True
     except Exception:
-        pass
+        pass  # nosec B110
     # Fallback: try invoking python interpreter
     py = shutil.which("python3") or shutil.which("python") or sys.executable or "python"
     rc, _out, _err = _run_cmd([py, "-c", f"import {module}"], timeout=5)
@@ -171,7 +171,7 @@ def check_system_limits() -> list[str]:
                 )
         except Exception:
             # Not available on all platforms
-            pass
+            pass  # nosec B110
 
         # macOS / BSD: check kern.maxproc and kern.maxprocperuid
         try:
@@ -183,7 +183,7 @@ def check_system_limits() -> list[str]:
                         f"kern.maxproc is low: {val} (global max procs). Consider increasing via sysctl)",
                     )
         except Exception:
-            pass
+            pass  # nosec B110
         try:
             rc, out, _err = _run_cmd(["sysctl", "-n", "kern.maxprocperuid"])
             if rc == 0 and out.strip():
@@ -193,10 +193,10 @@ def check_system_limits() -> list[str]:
                         f"kern.maxprocperuid is low: {val} (per-UID max). Consider increasing via sysctl)",
                     )
         except Exception:
-            pass
+            pass  # nosec B110
     except Exception:
         # Best-effort; nothing to do if environment doesn't support checks
-        pass
+        pass  # nosec B110
 
     return issues
 
