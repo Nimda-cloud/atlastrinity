@@ -4,6 +4,7 @@ Unified Google Maps API Setup Script
 Об'єднує автоматичне (gcloud) та ручне налаштування Google Maps API
 """
 import json
+import os
 import random
 import re
 import shutil
@@ -93,10 +94,56 @@ def check_current_key():
 
 
 def check_gcloud():
+    """Перевірка та встановлення gcloud CLI якщо потрібно"""
     print_step("Перевірка gcloud installation...")
     if subprocess.run(["which", "gcloud"], capture_output=True).returncode != 0:
         print_warning("gcloud CLI не знайдено.")
-        return False
+        
+        # Check if Homebrew is available for installation
+        if shutil.which("brew"):
+            print_info("Знайдено Homebrew. Пропоную встановити Google Cloud SDK...")
+            choice = input("Встановити gcloud CLI через Homebrew? (y/n): ").lower()
+            
+            if choice == "y":
+                try:
+                    print_info("Встановлення google-cloud-sdk...")
+                    subprocess.run(
+                        ["brew", "install", "--cask", "google-cloud-sdk"], 
+                        check=True
+                    )
+                    print_success("Google Cloud SDK встановлено успішно!")
+                    
+                    # Add to PATH for current session
+                    gcloud_paths = [
+                        "/opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin",
+                        "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin"
+                    ]
+                    for gcloud_path in gcloud_paths:
+                        if Path(gcloud_path).exists():
+                            os.environ["PATH"] = gcloud_path + ":" + os.environ.get("PATH", "")
+                            print_info(f"Додано до PATH: {gcloud_path}")
+                            break
+                    
+                    # Verify installation
+                    if subprocess.run(["which", "gcloud"], capture_output=True).returncode == 0:
+                        print_success("gcloud тепер доступний!")
+                        return True
+                    else:
+                        print_warning("gcloud встановлено, але потребує перезапуску термінала")
+                        print_info("Після перезапуску запустіть: python3 scripts/setup_maps_quick.py")
+                        return False
+                        
+                except subprocess.CalledProcessError as e:
+                    print_error(f"Не вдалося встановити gcloud: {e}")
+                    return False
+            else:
+                print_info("Встановлення gcloud пропущено.")
+                return False
+        else:
+            print_warning("Homebrew не знайдено. Не можу автоматично встановити gcloud.")
+            print_info("Встановіть вручну: https://cloud.google.com/sdk/docs/install")
+            return False
+            
     print_success("gcloud знайдено")
     return True
 
