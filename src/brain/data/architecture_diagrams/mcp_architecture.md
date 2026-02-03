@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-03T23:29:48.715013 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/components/MapView.tsx -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T23:28:55.013466 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/clean_main.py -->
 
