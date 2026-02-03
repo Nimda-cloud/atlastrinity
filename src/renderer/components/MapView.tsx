@@ -4,6 +4,8 @@
  * Blue-turquoise theme matching AtlasTrinity design system
  */
 
+/// <reference types="google.maps" />
+
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
