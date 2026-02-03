@@ -209,7 +209,7 @@ def run_inspector_cmd(
         venv_bin = str(PROJECT_ROOT / ".venv" / "bin")
         env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
         env["VIRTUAL_ENV"] = str(PROJECT_ROOT / ".venv")
-        print(f"{Colors.CYAN}🔧 Using virtual environment: {PROJECT_ROOT / '.venv'}{Colors.ENDC}")
+        # print(f"{Colors.CYAN}🔧 Using virtual environment: {PROJECT_ROOT / '.venv'}{Colors.ENDC}")
 
     for k, v in env_vars.items():
         val = v.replace("${GITHUB_TOKEN}", env.get("GITHUB_TOKEN", ""))
