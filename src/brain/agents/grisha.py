@@ -707,7 +707,10 @@ class Grisha(BaseAgent):
 
         if verdict_match:
             verdict_val = verdict_match.group(1).upper()
-            return any(word in verdict_val for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО", "APPROVED", "ПРИЙНЯТО", "PASS"])
+            return any(
+                word in verdict_val
+                for word in ["CONFIRMED", "ПІДТВЕРДЖЕНО", "УСПІШНО", "APPROVED", "ПРИЙНЯТО", "PASS"]
+            )
 
         return self._fallback_verdict_analysis(analysis_text, analysis_upper)
 
@@ -1407,7 +1410,12 @@ class Grisha(BaseAgent):
                     ORDER BY te.created_at DESC 
                     LIMIT 5;
                 """
-                params = {"seq": int(str(step_id).split(".")[-1]) if "." in str(step_id) else int(step_id), "task_id": task_id}
+                params = {
+                    "seq": int(str(step_id).split(".")[-1])
+                    if "." in str(step_id)
+                    else int(step_id),
+                    "task_id": task_id,
+                }
             else:
                 sql = """
                     SELECT te.tool_name, te.arguments, te.result, ts.status as step_status, te.created_at 
@@ -1417,7 +1425,9 @@ class Grisha(BaseAgent):
                     ORDER BY te.created_at DESC 
                     LIMIT 5;
                 """
-                params = {"seq": int(str(step_id).split(".")[-1]) if "." in str(step_id) else int(step_id)}
+                params = {
+                    "seq": int(str(step_id).split(".")[-1]) if "." in str(step_id) else int(step_id)
+                }
 
             rows = await mcp_manager.query_db(sql, params)
 
