@@ -715,14 +715,28 @@ class Grisha(BaseAgent):
         return self._fallback_verdict_analysis(analysis_text, analysis_upper)
 
     def _fallback_verdict_analysis(self, analysis_text: str, analysis_upper: str) -> bool:
-        """Enhanced fallback to analyze reasoning consistency."""
-        # Sanitize text to remove "no error" phrases before checking for "error" keyword
+        """Enhanced fallback to analyze reasoning consistency.
+        
+        PRIORITY ORDER (highest to lowest):
+        1. Explicit verdict markers (КРОК ПІДТВЕРДЖЕНО, VERDICT: CONFIRMED)
+        2. Success indicators without contradicting failure markers
+        3. Failure indicators
+        4. Reasoning context analysis
+        """
+        # Sanitize text to remove "acceptable error" phrases before checking for "error" keyword
         sanitized_upper = analysis_upper
         no_error_phrases = [
+            # English
             "NO ERROR",
             "0 ERROR",
             "NO FAIL",
             "WITHOUT ERROR",
+            "ERROR IS ACCEPTABLE",
+            "ERROR IS VALID",
+            "VALID ERROR",
+            "ACCEPTABLE ERROR",
+            "EXPECTED ERROR",
+            # Ukrainian
             "БЕЗ ПОМИЛОК",
             "НЕМАЄ ПОМИЛОК",
             "ЖОДНИХ ПОМИЛОК",
@@ -733,12 +747,58 @@ class Grisha(BaseAgent):
             "НЕМАЄ ПРОБЛЕМ",
             "НЕМАЄ ЗБОЇВ",
             "НЕМАЄ ЗАУВАЖЕНЬ",
+            # NEW: Phrases indicating error is acceptable in context
+            "ПОМИЛКА Є ПРИЙНЯТНОЮ",
+            "ПОМИЛКА Є ВАЛІДНОЮ",
+            "ПОМИЛКА НЕ КРИТИЧНА",
+            "ПОМИЛКА ОЧІКУВАНА",
+            "ПРИЙНЯТНА ПОМИЛКА",
+            "ВАЛІДНА ПОМИЛКА",
+            "ПОМИЛКА МСП",  # MCP error context
+            "ПОМИЛКА MCP",
+            "ЦЯ ПОМИЛКА",
+            "ТАКА ПОМИЛКА",
         ]
         for phrase in no_error_phrases:
             sanitized_upper = sanitized_upper.replace(phrase, "")
 
         header_text = sanitized_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
 
+        # EXPLICIT verdict markers - highest priority
+        explicit_success_verdicts = [
+            "КРОК ПІДТВЕРДЖЕНО",
+            "VERDICT: CONFIRMED",
+            "VERDICT:CONFIRMED",
+            "ВЕРДИКТ: ПІДТВЕРДЖЕНО",
+            "ВЕРДИКТ:ПІДТВЕРДЖЕНО",
+            "STEP CONFIRMED",
+            "STEP VERIFIED",
+            "ЗАВДАННЯ ВИКОНАНО",
+            "УСПІШНО ВИКОНАНО",
+        ]
+        explicit_failure_verdicts = [
+            "КРОК НЕ ПРОЙШОВ",
+            "КРОК ПРОВАЛЕНО",
+            "VERDICT: FAILED",
+            "VERDICT:FAILED",
+            "ВЕРДИКТ: ПРОВАЛЕНО",
+            "ВЕРДИКТ:ПРОВАЛЕНО",
+            "STEP FAILED",
+            "ЗАВДАННЯ НЕ ВИКОНАНО",
+        ]
+        
+        # Check explicit verdicts FIRST - these have highest priority
+        has_explicit_success = any(v in analysis_upper for v in explicit_success_verdicts)
+        has_explicit_failure = any(v in analysis_upper for v in explicit_failure_verdicts)
+        
+        # If explicit success verdict exists, return True (even if "ПОМИЛКА" appears in context)
+        if has_explicit_success and not has_explicit_failure:
+            return True
+        # If explicit failure verdict exists, return False
+        if has_explicit_failure and not has_explicit_success:
+            return False
+
+        # General success/failure indicators (lower priority)
         success_indicators = [
             "CONFIRMED",
             "SUCCESS",
@@ -748,9 +808,6 @@ class Grisha(BaseAgent):
             "ПІДТВЕРДЖЕНО",
             "УСПІШНО",
             "ПРИЙНЯТО",
-            "КРОК ПІДТВЕРДЖЕНО",
-            "УСПІШНО ВИКОНАНО",
-            "ЗАВДАННЯ ВИКОНАНО",
         ]
         failure_indicators = [
             "FAILED",
@@ -761,8 +818,6 @@ class Grisha(BaseAgent):
             "ПОМИЛКА",
             "ВІДХИЛЕНО",
             "НЕ ВИКОНАНО",
-            "КРОК НЕ ПРОЙШОВ",
-            "ЗАВДАННЯ НЕ ВИКОНАНО",
         ]
 
         has_success = any(word in header_text for word in success_indicators)
@@ -782,16 +837,19 @@ class Grisha(BaseAgent):
                 "УСПІШНО ВИКОНАНО",
                 "ПІДТВЕРДЖУЄ",
                 "ВСЕ ДОБРЕ",
+                "CONFIRMED AS COMPLETED",
+                "STEP IS CONFIRMED",
             ]
         )
 
-        if has_success and not has_failure:
+        # NEW PRIORITY: Success wins if explicitly stated
+        if has_success:
             return True
-        if reasoning_confirms_success and not has_failure:
+        if reasoning_confirms_success:
             return True
         if has_failure:
             return False
-        return reasoning_confirms_success
+        return False  # Default to failure if nothing clear
 
     def _extract_confidence(self, analysis_text: str, verified: bool) -> float:
         """Extracts confidence percentage from analysis."""
