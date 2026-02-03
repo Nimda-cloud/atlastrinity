@@ -639,7 +639,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
               strokeWidth="1.2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ transform: 'rotate(45deg) translateY(-2px) translateX(2px)' }}
+              style={{ transform: 'rotate(45deg) translateY(1px) translateX(-2px)' }}
             >
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
