@@ -69,9 +69,10 @@ class SimpleMistralLLM:
             content = data["choices"][0]["message"]["content"]
             # Mock object to match LangChain interface slightly
             class MockResponse:
-                def __str__(self): return content
-            r = MockResponse()
-            r.content = content
+                def __init__(self, content):
+                    self.content = content
+                def __str__(self): return self.content
+            r = MockResponse(content)
             return r
 
 # Sandbox configuration
