@@ -64,14 +64,13 @@ exclude = [
     "venv",
 ]
 
-fixable = ["ALL"]
-unfixable = []
-
 [tool.bandit]
 exclude_dirs = ["tests", "scripts", ".venv", "dist_venv"]
 skips = ["B101", "B404", "B603", "B607", "B405"] # B101(assert), B404/603/607(subprocess), B405(xml)
 
 [tool.ruff.lint]
+fixable = ["ALL"]
+unfixable = []
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 select = ["E4", "E7", "E9", "F", "B", "I", "N", "UP", "PL", "RUF", "C90", "SIM", "ARG", "PTH", "ERA"]
 ignore = [
@@ -112,8 +111,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "RUF052"]
-"scripts/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741"]
+"tests/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "RUF052", "PTH", "ARG002", "C901"]
+"scripts/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "PTH"]
 "example_vibe_prompt_usage.py" = ["E402"]
 "src/mcp_server/*.py" = ["PLC0415"] # Late imports for performance
 "src/brain/voice/tts.py" = ["E402", "F401"] # Special initialization and lazy checks
