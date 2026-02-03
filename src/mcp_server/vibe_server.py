@@ -662,13 +662,20 @@ async def _execute_vibe_with_retries(
                 return cast(dict[str, Any], res)
 
             # Check for Session not found (failed resume)
-            session_error = "not found" in stderr.lower() and "session" in stderr.lower()
-            if not session_error:
-                # Also check stdout since Vibe CLI might report it there in streaming mode
-                session_error = "not found" in stdout.lower() and "/logs/session" in stdout.lower()
+            # Use regex for more robust detection of Vibe session errors
+            session_patterns = [
+                r"session '.*' not found",
+                r"not found in .*/logs/session",
+                r"failed to resume session",
+            ]
+            
+            session_error = any(
+                re.search(p, stderr, re.IGNORECASE) or re.search(p, stdout, re.IGNORECASE)
+                for p in session_patterns
+            )
 
             if session_error and "--resume" in argv:
-                logger.warning("[VIBE] Session not found. Retrying without --resume.")
+                logger.warning(f"[VIBE] Session error detected (patterns matched). Output: {stderr[:100]}... Retrying without --resume.")
                 try:
                     idx = argv.index("--resume")
                     argv.pop(idx)  # remove --resume
@@ -678,6 +685,9 @@ async def _execute_vibe_with_retries(
                     continue
                 except (ValueError, IndexError):
                     pass
+
+            if process.returncode != 0:
+                logger.debug(f"[VIBE] Command failed with code {process.returncode}. Stderr snippet: {stderr[-500:]}")
 
             return {
                 "success": process.returncode == 0,
