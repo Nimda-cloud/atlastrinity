@@ -232,9 +232,9 @@ class MCPManager:
             # We look for processes running the same command/module
             search_str = ""
             if "src.mcp_server" in command:
-                search_str = command.split(".")[-1]
+                search_str = command.rsplit(".", maxsplit=1)[-1]
             elif "mcp-server-" in command:
-                search_str = command.split("/")[-1]
+                search_str = command.rsplit("/", maxsplit=1)[-1]
             else:
                 search_str = server_name
 

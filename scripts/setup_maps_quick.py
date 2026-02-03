@@ -332,9 +332,9 @@ def enable_apis(project_id):
                 print(f"  Увімкнення {service}...")
                 run_command(["gcloud", "services", "enable", service, "--project", project_id])
                 print_success(f"Сервіс {service} увімкнено")
-            except Exception as e:
+            except Exception:
                 print_warning(f"Не вдалося увімкнути {service}. Можливо, потрібен Білінг.")
-                print_info(f"Продовжуємо налаштування інших API...")
+                print_info("Продовжуємо налаштування інших API...")
     print_success("Процес увімкнення API завершено")
 
 

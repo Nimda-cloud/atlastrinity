@@ -222,13 +222,13 @@ def _extract_repo_name(remote_url: str) -> str | None:
     """Extract 'user/repo' from git remote URL."""
     # Handle HTTPS URLs
     if "github.com/" in remote_url:
-        parts = remote_url.split("github.com/")[-1]
+        parts = remote_url.rsplit("github.com/", maxsplit=1)[-1]
         parts = parts.replace(".git", "").strip("/")
         return parts if "/" in parts else None
 
     # Handle SSH URLs
     if "git@github.com:" in remote_url:
-        parts = remote_url.split("git@github.com:")[-1]
+        parts = remote_url.rsplit("git@github.com:", maxsplit=1)[-1]
         parts = parts.replace(".git", "").strip("/")
         return parts if "/" in parts else None
 

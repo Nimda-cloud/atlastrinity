@@ -17,7 +17,7 @@ import fnmatch
 import logging
 import os
 import re
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 from re import Pattern
 from typing import Any
@@ -36,7 +36,7 @@ logger = logging.getLogger("vibe_config")
 # =============================================================================
 
 
-class ToolPermission(str, Enum):
+class ToolPermission(StrEnum):
     """Tool permission levels matching Vibe CLI."""
 
     ALWAYS = "always"  # Auto-approve without asking
@@ -44,7 +44,7 @@ class ToolPermission(str, Enum):
     NEVER = "never"  # Disabled
 
 
-class ApiStyle(str, Enum):
+class ApiStyle(StrEnum):
     """API styles for LLM providers."""
 
     MISTRAL = "mistral"
@@ -52,7 +52,7 @@ class ApiStyle(str, Enum):
     ANTHROPIC = "anthropic"
 
 
-class Backend(str, Enum):
+class Backend(StrEnum):
     """Backend types for LLM providers."""
 
     MISTRAL = "mistral"
@@ -60,7 +60,7 @@ class Backend(str, Enum):
     ANTHROPIC = "anthropic"
 
 
-class AgentMode(str, Enum):
+class AgentMode(StrEnum):
     """Operational modes for Vibe agent."""
 
     DEFAULT = "default"  # Requires approval for tools
@@ -69,7 +69,7 @@ class AgentMode(str, Enum):
     AUTO_APPROVE = "auto-approve"  # Auto-approve all tools
 
 
-class McpTransport(str, Enum):
+class McpTransport(StrEnum):
     """MCP server transport types."""
 
     HTTP = "http"

@@ -8,7 +8,7 @@ import asyncio
 import os
 import tempfile
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, cast
 
 from ..config import CONFIG_ROOT
@@ -60,7 +60,7 @@ def _check_audio_available():
     return AUDIO_AVAILABLE
 
 
-class SpeechType(str, Enum):
+class SpeechType(StrEnum):
     """Type of detected speech"""
 
     SAME_USER = "same_user"  # Same user continues

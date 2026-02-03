@@ -1226,7 +1226,7 @@ class Grisha(BaseAgent):
 
         summary_ukrainian = ""
         if "SUMMARY_UKRAINIAN:" in analysis_text:
-            summary_ukrainian = analysis_text.split("SUMMARY_UKRAINIAN:")[-1].strip()
+            summary_ukrainian = analysis_text.rsplit("SUMMARY_UKRAINIAN:", maxsplit=1)[-1].strip()
 
         if issues:
             issues_count = len(issues)
