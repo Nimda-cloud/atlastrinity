@@ -129,13 +129,31 @@ app.add_middleware(
 
 
 @app.post("/api/chat")
-async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
-    """Send a user request to the system with monitoring"""
+async def chat(
+    request: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
+    background_tasks: BackgroundTasks = None,  # type: ignore
+):
+    """Send a user request to the system with monitoring and file support"""
+    from .services.file_processor import FileProcessor
+
     if current_task and not current_task.done():
         raise HTTPException(status_code=409, detail="System is busy")
 
-    print(f"[SERVER] Received request: {task.request}")
-    logger.info(f"Received request: {task.request}")
+    # Process files if any
+    file_context = ""
+    if files:
+        logger.info(f"[SERVER] Processing {len(files)} uploaded files...")
+        file_context = await FileProcessor.process_files(files)
+        logger.info("[SERVER] File processing complete.")
+
+    # Combine request with file context
+    full_request = request
+    if file_context:
+        full_request = f"{request}\n\n{file_context}"
+
+    print(f"[SERVER] Received request: {full_request[:100]}...")  # Log truncated
+    logger.info(f"Received request: {full_request[:200]}...")
 
     # Start monitoring for this request
     start_time = time.time()
@@ -145,14 +163,15 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
         monitoring_system = get_monitoring_system()
         monitoring_system.start_request()
         monitoring_system.log_for_grafana(
-            f"Chat request started: {task.request}", level="info", request_type="chat"
+            f"Chat request started: {request[:50]}...", level="info", request_type="chat"
         )
     except ImportError:
         pass
 
     # Run orchestration in background/loop
     try:
-        result = await trinity.run(task.request)
+        # Pass the FULL request including file content to Trinity
+        result = await trinity.run(full_request)
 
         # Record successful request
         request_duration = time.time() - start_time
@@ -162,7 +181,7 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "success", request_duration)
             monitoring_system.log_for_grafana(
-                f"Chat request completed: {task.request}",
+                f"Chat request completed",
                 level="info",
                 request_type="chat",
                 duration=request_duration,
@@ -173,7 +192,7 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
 
         return {"status": "completed", "result": result}
     except asyncio.CancelledError:
-        logger.info(f"Request interrupted/cancelled: {task.request}")
+        logger.info(f"Request interrupted/cancelled")
 
         # Record cancelled request
         request_duration = time.time() - start_time
@@ -183,7 +202,7 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "cancelled", request_duration)
             monitoring_system.log_for_grafana(
-                f"Chat request cancelled: {task.request}",
+                f"Chat request cancelled",
                 level="warning",
                 request_type="chat",
                 duration=request_duration,
@@ -194,7 +213,7 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
 
         return {"status": "interrupted", "detail": "Task was cancelled by a new request"}
     except Exception as e:
-        logger.exception(f"Error processing request: {task.request}")
+        logger.exception(f"Error processing request: {request[:50]}...")
 
         # Record failed request
         request_duration = time.time() - start_time
@@ -204,7 +223,7 @@ async def chat(task: TaskRequest, background_tasks: BackgroundTasks):
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "error", request_duration)
             monitoring_system.log_for_grafana(
-                f"Chat request failed: {task.request}",
+                f"Chat request failed",
                 level="error",
                 request_type="chat",
                 duration=request_duration,
