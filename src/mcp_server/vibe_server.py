@@ -782,6 +782,19 @@ async def _handle_vibe_rate_limit(
                 "🔄 [VIBE-FALLBACK] Переключаюсь на OpenRouter (безкоштовний devstral)...",
             )
             _current_model = "devstral-openrouter"
+            # Update argv to use the new model for retry
+            # Find and update --model argument, or append if not present
+            model_found = False
+            for i, arg in enumerate(argv):
+                if arg == "--model" and i + 1 < len(argv):
+                    argv[i + 1] = "devstral-openrouter"
+                    model_found = True
+                    break
+            if not model_found:
+                # Insert --model after the vibe binary path
+                argv.insert(1, "--model")
+                argv.insert(2, "devstral-openrouter")
+            logger.debug(f"[VIBE] Updated argv for OpenRouter: {' '.join(argv[:5])}...")
             return True  # Signal retry with new model
 
     error_msg = (

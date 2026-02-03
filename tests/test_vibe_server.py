@@ -133,8 +133,8 @@ class TestVibeConfig:
             session_id="abc123",
         )
 
-        assert "--session" in args
-        idx = args.index("--session")
+        assert "--resume" in args
+        idx = args.index("--resume")
         assert args[idx + 1] == "abc123"
 
     def test_provider_api_key_check(self):

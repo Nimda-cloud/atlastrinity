@@ -38,7 +38,7 @@ backend = "generic"
 # Model Presets
 # =============================================================================
 [[models]]
-name = "devstral-2512"
+name = "mistral-vibe-cli-latest"
 provider = "mistral"
 alias = "devstral-2"
 temperature = 0.0
