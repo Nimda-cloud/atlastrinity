@@ -1143,19 +1143,17 @@ class Grisha(BaseAgent):
         # If not approved, but confidence > 0.9 (from Atlas or Self-Correction), we might allow it
         # providing there are no "Critical" keywords in issues.
         if not approved and not is_rejected:
-             critical_keywords = ["CRITICAL", "BLOCKER", "SECURITY", "DANGEROUS", "HARM"]
-             has_critical = any(
-                 any(k in i.upper() for k in critical_keywords) for i in issues
-             )
-             if not has_critical:
-                 logger.info("[GRISHA] Issues found but not critical. Giving benefit of doubt.")
-                 approved = True
-                 # Lower confidence slightly to reflect we are taking a risk
-                 return {
+            critical_keywords = ["CRITICAL", "BLOCKER", "SECURITY", "DANGEROUS", "HARM"]
+            has_critical = any(any(k in i.upper() for k in critical_keywords) for i in issues)
+            if not has_critical:
+                logger.info("[GRISHA] Issues found but not critical. Giving benefit of doubt.")
+                approved = True
+                # Lower confidence slightly to reflect we are taking a risk
+                return {
                     "approved": True,
                     "confidence": 0.85,
-                    "voice_message": self._generate_plan_voice_message(True, issues, analysis_text)
-                 }
+                    "voice_message": self._generate_plan_voice_message(True, issues, analysis_text),
+                }
 
         voice_msg = self._generate_plan_voice_message(approved, issues, analysis_text)
 
@@ -1212,7 +1210,9 @@ class Grisha(BaseAgent):
         raw_text = fix_result.get("last_thought") or fix_result.get("analysis", "")
         return self._parse_fixed_plan_json(str(raw_text), user_request)
 
-    def _parse_fixed_plan_json(self, raw_text: str, user_request: str = "Unknown Goal") -> Any | None:
+    def _parse_fixed_plan_json(
+        self, raw_text: str, user_request: str = "Unknown Goal"
+    ) -> Any | None:
         """Parses the JSON response for the fixed plan with extreme resilience."""
         fixed_plan = None
         try:
@@ -1249,25 +1249,25 @@ class Grisha(BaseAgent):
             return fixed_plan
 
         except Exception as e:
-    
             logger.error(f"[GRISHA] Failed to parse reconstructed plan: {e}")
             logger.debug(f"[GRISHA] Raw text causing failure: {raw_text[:2000]}")
-            
+
             # EMERGENCY FALLBACK:
             # If we failed to parse the JSON, we still want to Override because the original plan was bad.
             # We create a simple plan that forces a human check or safely proceeds.
             from src.brain.agents.atlas import TaskPlan
+
             fallback_plan = TaskPlan(
                 id="grisha_fallback_override",
                 goal=user_request,
                 steps=[
                     {
                         "id": "1",
-                        "action": "notify_user", 
-                        "voice_action": "Повідомлення", 
-                        "description": "Critical planning error. Please review logs."
+                        "action": "notify_user",
+                        "voice_action": "Повідомлення",
+                        "description": "Critical planning error. Please review logs.",
                     }
-                ]
+                ],
             )
             return fallback_plan
 

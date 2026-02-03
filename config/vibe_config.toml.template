@@ -15,7 +15,7 @@ enable_auto_update = true
 # =============================================================================
 # Exact names, glob patterns, or re: prefix for regex
 enabled_tools = [] # Empty = all enabled
-disabled_tools = []
+disabled_tools = [] # No tools disabled
 
 # =============================================================================
 # Provider Configuration
@@ -57,7 +57,7 @@ output_price = 0.0
 # Built-in Tool Permissions
 # =============================================================================
 [tools.bash]
-permission = "ask"
+permission = "always"
 
 [tools.write_file]
 permission = "ask"
