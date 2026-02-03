@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-03T12:07:09.340098 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe_config.toml.template, src/brain/constraint_monitor.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T11:57:10.589344 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe_config.toml.template, src/brain/agents/grisha.py -->
 
