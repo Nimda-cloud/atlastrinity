@@ -213,15 +213,19 @@ class Atlas(BaseAgent):
             str(history or "None"),
         )
         system_prompt = self.system_prompt.replace("{{CONTEXT_SPECIFIC_DOCTRINE}}", "")
-        
+
         # Handle multi-modal classification
         if images:
             content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
             for img in images:
-                content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{img['content_type']};base64,{img['data_b64']}"}
-                })
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{img['content_type']};base64,{img['data_b64']}"
+                        },
+                    }
+                )
             hum_msg = HumanMessage(content=cast(Any, content))
         else:
             hum_msg = HumanMessage(content=prompt)
@@ -565,14 +569,18 @@ Respond in JSON:
         if images:
             content: list[dict[str, Any]] = [{"type": "text", "text": user_request}]
             for img in images:
-                content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{img['content_type']};base64,{img['data_b64']}"}
-                })
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{img['content_type']};base64,{img['data_b64']}"
+                        },
+                    }
+                )
             messages.append(HumanMessage(content=cast(Any, content)))
         else:
             messages.append(HumanMessage(content=user_request))
-            
+
         return messages
 
     async def _determine_chat_parameters(

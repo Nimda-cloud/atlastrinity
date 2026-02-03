@@ -1042,15 +1042,19 @@ class Trinity:
             self.state["_theme"] = user_request[:40] + ("..." if len(user_request) > 40 else "")
 
         await self._verify_db_ids()
-        
+
         # Handle multi-modal request if images are present
         if images:
             content: list[dict[str, Any]] = [{"type": "text", "text": user_request}]
             for img in images:
-                content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{img['content_type']};base64,{img['data_b64']}"}
-                })
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{img['content_type']};base64,{img['data_b64']}"
+                        },
+                    }
+                )
             msg = HumanMessage(content=cast(Any, content))
             self.state["current_images"] = images  # Temporary store for Atlas
         else:
@@ -1109,7 +1113,9 @@ class Trinity:
             if not isinstance(messages_raw, list):
                 messages_raw = []
             history: list[Any] = messages_raw[-25:-1] if len(messages_raw) > 1 else []
-            analysis = await self.atlas.analyze_request(user_request, history=history, images=images)
+            analysis = await self.atlas.analyze_request(
+                user_request, history=history, images=images
+            )
             intent = analysis.get("intent")
 
             # Workflow routing
@@ -1165,7 +1171,9 @@ class Trinity:
             self.state["system_state"] = SystemState.ERROR.value
             return {"status": "error", "error": str(e)}
 
-    async def run(self, user_request: str, images: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    async def run(
+        self, user_request: str, images: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
         from src.brain.context import shared_context
 

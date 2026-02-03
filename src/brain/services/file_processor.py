@@ -22,18 +22,17 @@ class FileProcessor:
             try:
                 content_type = file.content_type or ""
                 filename = file.filename or "unknown"
-                
+
                 # Extract content
                 content, is_image = await FileProcessor._extract_content(file)
-                
+
                 if is_image and isinstance(content, bytes):
                     import base64
+
                     data_b64 = base64.b64encode(content).decode("utf-8")
-                    images.append({
-                        "filename": filename,
-                        "content_type": content_type,
-                        "data_b64": data_b64
-                    })
+                    images.append(
+                        {"filename": filename, "content_type": content_type, "data_b64": data_b64}
+                    )
                     # Also add a placeholder in text context so Atlas knows it exists
                     context_parts.append(f"[Image Attachment: {filename}]")
                 elif content:
@@ -44,10 +43,7 @@ class FileProcessor:
                 logger.error(f"Failed to process file {file.filename}: {e}")
                 context_parts.append(f"[ERROR] Could not process file {file.filename}: {e!s}")
 
-        return {
-            "text": "\n\n".join(context_parts),
-            "images": images
-        }
+        return {"text": "\n\n".join(context_parts), "images": images}
 
     @staticmethod
     async def _extract_content(file: UploadFile) -> tuple[str | bytes, bool]:
