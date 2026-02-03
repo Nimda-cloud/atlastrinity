@@ -5,9 +5,7 @@
 active_model = "devstral-2"
 system_prompt_id = "cli"
 
-# Optimize: Exploration only, no weights or heavy modifications
-enabled_tools = ["bash", "read_file", "grep"]
-disabled_tools = ["write_file", "search_replace"]
+# Optimize: Unrestricted access to all native tools for exploration
 
 [tools.bash]
 permission = "always"

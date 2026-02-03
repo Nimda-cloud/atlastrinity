@@ -78,4 +78,12 @@ permission = "always"
 # MCP Server Configuration (Optional)
 # =============================================================================
 # You can add [[mcp_servers]] here to extend Vibe's capabilities.
-# NOTE: Keeping this empty by default to maximize TPM (Anti-Rate Limit).
+
+[[mcp_servers]]
+name = "devtools"
+command = "python3"
+args = ["-m", "src.mcp_server.devtools_server"]
+env = { PYTHONPATH = "${PROJECT_ROOT}" }
+description = "Developer Tools (Linter, Analysis, MCP Inspector CLI & Sandbox)"
+
+# NOTE: Minimal MCP list by default to maximize TPM (Anti-Rate Limit).
