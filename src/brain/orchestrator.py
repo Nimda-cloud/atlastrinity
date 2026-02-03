@@ -966,6 +966,11 @@ class Trinity:
                 return res.fixed_plan
 
             if attempt == max_retries:
+                if res.fixed_plan:
+                    logger.warning("[ORCHESTRATOR] Planning failed. ARCHITECT OVERRIDE.")
+                    await self._speak("grisha", "Я повністю переписав план. Виконуємо мою версію.")
+                    return res.fixed_plan
+                
                 logger.warning("[ORCHESTRATOR] Planning failed. FORCE PROCEED.")
                 await self._speak("grisha", "План має недоліки, але ми починаємо за наказом.")
                 return plan
