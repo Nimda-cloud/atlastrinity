@@ -13,6 +13,8 @@ console.warn = (...args) => {
   if (typeof message === 'string') {
     // Suppress Google Maps depreciation warning
     if (message.includes('google.maps.places.Autocomplete is not available')) return;
+    // Suppress Google Maps API Loader multiple instances warning
+    if (message.includes('gmpx-api-loader') && message.includes('multiple instances')) return;
     // Suppress Electron Security Warning in renderer console
     if (message.includes('Insecure Content-Security-Policy')) return;
   }

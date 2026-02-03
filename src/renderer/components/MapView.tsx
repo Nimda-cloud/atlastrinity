@@ -339,13 +339,18 @@ const MapView: React.FC<MapViewProps> = ({ imageUrl, type, location, onClose, ag
   const renderApiLoader = () => {
     if (!GOOGLE_MAPS_API_KEY) return null; // Don't render without key
 
+    // Check if a loader already exists globally to avoid multiple initialization warnings
+    if (document.querySelector('gmpx-api-loader')) {
+      return null;
+    }
+
     // Use solution-channel to avoid warnings
     return (
       <div
         ref={apiLoaderRef}
         // biome-ignore lint/security/noDangerouslySetInnerHtml: Google Maps API loader requires this
         dangerouslySetInnerHTML={{
-          __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}" solution-channel="GMP_CDN_extended_v0.6.11"></gmpx-api-loader>`,
+          __html: `<gmpx-api-loader key="${GOOGLE_MAPS_API_KEY}" solution-channel="GMP_CDN_extended_v0.6.11" version="beta"></gmpx-api-loader>`,
         }}
       />
     );
