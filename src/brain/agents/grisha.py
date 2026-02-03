@@ -1533,14 +1533,22 @@ class Grisha(BaseAgent):
             or (len(v_res_str.strip()) == 0)
         ):
             # Check if this was a SUCCESSFUL empty result (valid discovery)
-            # We only treat it as error if it specifically denotes failure
+            # CRITICAL ENHANCEMENT: Treat empty result as ERROR if we are specifically looking for 
+            # something the user provided or something mandatory (e.g., "attachment", "target image").
+            CRITICAL_KEYWORDS = ["attachment", "attached", "provided", "image", "target", "important", "essential"]
+            is_critical_search = any(kw in step_action_lower for kw in CRITICAL_KEYWORDS)
+            
             res_lower = v_res_str.lower()
             if "error" in res_lower or "failed" in res_lower:
                 logger.warning("[GRISHA] Failed result in info-gathering task")
                 return True
+            
+            if is_critical_search:
+                logger.warning(f"[GRISHA] Critical search '{step_action_lower}' returned empty result. Marking as FAIL.")
+                return True
 
-            # If successful but empty, it's NOT an error for info tasks (discovery)
-            logger.info("[GRISHA] Valid empty result in discovery task")
+            # If successful but empty, it's NOT an error for general info tasks (discovery)
+            logger.info("[GRISHA] Valid empty result in non-critical discovery task")
             return False
         return False
 
