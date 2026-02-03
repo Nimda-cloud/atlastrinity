@@ -662,20 +662,23 @@ async def _execute_vibe_with_retries(
                 return cast(dict[str, Any], res)
 
             # Check for Session not found (failed resume)
-            # Use regex for more robust detection of Vibe session errors
+            # Use regex for more robust detection of Vibe session errors (Iteration 3)
             session_patterns = [
                 r"session '.*' not found",
-                r"not found in .*/logs/session",
+                r"not found in .*logs/session",
                 r"failed to resume session",
             ]
             
             session_error = any(
-                re.search(p, stderr, re.IGNORECASE) or re.search(p, stdout, re.IGNORECASE)
+                re.search(p, stderr, re.IGNORECASE | re.DOTALL) or 
+                re.search(p, stdout, re.IGNORECASE | re.DOTALL)
                 for p in session_patterns
             )
 
             if session_error and "--resume" in argv:
-                logger.warning(f"[VIBE] Session error detected (patterns matched). Output: {stderr[:100]}... Retrying without --resume.")
+                logger.warning(
+                    f"[VIBE-RETRY-DIAG] Session error detected. Retrying without --resume. ID: {uuid.uuid4().hex[:8]}"
+                )
                 try:
                     idx = argv.index("--resume")
                     argv.pop(idx)  # remove --resume
@@ -687,7 +690,12 @@ async def _execute_vibe_with_retries(
                     pass
 
             if process.returncode != 0:
-                logger.debug(f"[VIBE] Command failed with code {process.returncode}. Stderr snippet: {stderr[-500:]}")
+                logger.debug(
+                    f"[VIBE-FAIL-DIAG] Code {process.returncode}. Out length: {len(stdout)}. Err length: {len(stderr)}"
+                )
+                logger.debug(
+                    f"[VIBE-FAIL-SNIPPET] Stderr snippet: {stderr[-500:]}"
+                )
 
             return {
                 "success": process.returncode == 0,
