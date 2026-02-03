@@ -10,13 +10,13 @@ enabled_tools = ["bash", "read_file", "grep"]
 disabled_tools = ["write_file", "search_replace"]
 
 [tools.bash]
-permission = "ask"
+permission = "always"
 
 [tools.write_file]
-permission = "ask"
+permission = "always"
 
 [tools.search_replace]
-permission = "ask"
+permission = "always"
 
 [tools.read_file]
 permission = "always"
@@ -25,4 +25,4 @@ permission = "always"
 permission = "always"
 
 [tools."*"]
-permission = "ask"
+permission = "always"

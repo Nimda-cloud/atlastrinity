@@ -60,7 +60,7 @@ output_price = 0.0
 permission = "always"
 
 [tools.write_file]
-permission = "ask"
+permission = "always"
 
 [tools.read_file]
 permission = "always"
@@ -69,7 +69,7 @@ permission = "always"
 permission = "always"
 
 [tools.search_replace]
-permission = "ask"
+permission = "always"
 
 # =============================================================================
 # MCP Server Configuration (Optional)
