@@ -65,22 +65,23 @@ class ConstraintMonitor:
             # 3. Analyze with a generic LLM (not Vibe, to save rate limits)
             # We'll use the Atlas agent's LLM or a generic one from shared_context
             from src.brain.agents.atlas import Atlas
+
             audit_agent = Atlas()
-            
-            # Use a lighter/cheaper model for auditing if possible, 
+
+            # Use a lighter/cheaper model for auditing if possible,
             # or just the default one which usually has higher limits than Mistral Vibe
             result_text = await audit_agent.llm.ainvoke(prompt)
             if hasattr(result_text, "content"):
                 result_text = str(result_text.content)
             else:
                 result_text = str(result_text)
-            
+
             # Check for API errors first
             if "Invalid model:" in result_text or "API error" in result_text:
                 logger.error(f"[CONSTRAINT_MONITOR] Vibe API error: {result_text[:200]}...")
                 # Don't submit healing task for API errors - this is a configuration issue
                 return
-            
+
             if "VIOLATION:" in result_text:
                 logger.warning(f"[CONSTRAINT_MONITOR] Violation detected: {result_text[:100]}...")
 
@@ -99,7 +100,10 @@ class ConstraintMonitor:
                 # If we still have "Unknown Violation", try to extract more context
                 if violation == "Unknown Violation":
                     for line in result_text.split("\n"):
-                        if any(keyword in line.lower() for keyword in ["violation", "constraint", "error"]):
+                        if any(
+                            keyword in line.lower()
+                            for keyword in ["violation", "constraint", "error"]
+                        ):
                             violation = line.strip()[:100]  # Limit length
                             break
 

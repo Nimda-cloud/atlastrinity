@@ -2240,7 +2240,7 @@ class Trinity:
         """Fire-and-forget check for environmental constraints with throttling."""
         try:
             from src.brain.constraint_monitor import constraint_monitor
-            
+
             # Cooldown to prevent rate limits (max once every 30 seconds)
             now = datetime.now().timestamp()
             last_check = getattr(self, "_last_constraint_check_time", 0)
