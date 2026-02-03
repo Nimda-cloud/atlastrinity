@@ -8,6 +8,7 @@ Model: Configured model
 
 import asyncio
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -1395,8 +1396,6 @@ IMPORTANT:
 
     async def _run_terminal_command(self, args: dict[str, Any]) -> dict[str, Any]:
         """Executes a bash command using Terminal MCP"""
-        import re
-
         from ..mcp_manager import mcp_manager
 
         command = args.get("command", "") or args.get("cmd", "") or ""
@@ -1638,7 +1637,6 @@ IMPORTANT:
 
         from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR
         from ..logger import logger
-        from ..mcp_manager import mcp_manager
 
         try:
             ts = _time.strftime("%Y%m%d_%H%M%S")
@@ -1951,8 +1949,6 @@ IMPORTANT:
 
     def _extract_voice_essence(self, desc: str) -> str:
         """Extract the 'essence' of a description using regex."""
-        import re
-
         if len(desc) <= 60:
             return desc.lower()
         match = re.search(r"^(.{10,50})[.;,]", desc)

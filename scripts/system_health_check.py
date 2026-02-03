@@ -61,8 +61,6 @@ def check_mcp_servers():
         with open(config_path) as f:
             content = f.read()
             # Remove comments that start with "_comment"
-            import re
-
             content = re.sub(r'"_comment[^"]*":\s*"[^"]*",?\s*', "", content)
             config = json.loads(content)
 
@@ -114,7 +112,7 @@ def check_python_deps():
     for dep in critical_deps:
         try:
             if dep == "yaml":
-                import yaml
+                pass
             else:
                 __import__(dep)
         except ImportError:

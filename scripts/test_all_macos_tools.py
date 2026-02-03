@@ -74,12 +74,14 @@ async def test_tools():
         if isinstance(open_res, dict) and "openResult" in open_res:
             pid = open_res["openResult"].get("pid")
         elif hasattr(open_res, "content"):
-            text = open_res.content[0].text
-            try:
-                data = json.loads(text)
-                pid = data.get("traversalPid")
-            except:
-                pass
+            content = getattr(open_res, "content", [])
+            if content and len(content) > 0:
+                text = getattr(content[0], "text", "")
+                try:
+                    data = json.loads(text)
+                    pid = data.get("traversalPid")
+                except:
+                    pass
 
         if pid:
             logger.info(f"✅ App launched with PID: {pid}")

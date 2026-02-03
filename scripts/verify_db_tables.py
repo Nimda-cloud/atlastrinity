@@ -71,7 +71,6 @@ async def verify_chromadb():
     print("\n[DB CHECK] Verifying ChromaDB (Vector Store)...")
     try:
         import chromadb
-        from chromadb.config import Settings
 
         # Determine path from config or default
         # Assuming typical path: ~/.config/atlastrinity/memory

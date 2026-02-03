@@ -4,7 +4,6 @@ Clean Main System Data (Learning & Experience)
 Removes atlastrinity.db and memory chroma vectors.
 """
 
-import os
 import shutil
 from pathlib import Path
 

@@ -4,7 +4,6 @@ Patch for vibe_check_db SQL query issues
 """
 
 import os
-import re
 import sqlite3
 
 

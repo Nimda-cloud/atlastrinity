@@ -3,7 +3,6 @@
 Fix critical errors found in logs
 """
 
-import json
 import os
 import sqlite3
 import sys

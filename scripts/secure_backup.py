@@ -10,7 +10,6 @@ import os
 import re
 import shutil
 import sqlite3
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -141,7 +140,7 @@ class SecureBackupManager:
                 clean_rows = []
                 for row in rows:
                     clean_row = []
-                    for i, value in enumerate(row):
+                    for value in row:
                         if isinstance(value, str):
                             # Apply secret filtering
                             cleaned_value = self._filter_secrets_from_text(value)

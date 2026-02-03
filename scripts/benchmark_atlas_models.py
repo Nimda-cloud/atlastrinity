@@ -32,8 +32,9 @@ async def benchmark():
     print(
         f"Resolved to: {res.get('server', 'unknown')}.{res.get('tool', 'unknown') if isinstance(res, dict) else '?'}"
     )
-    if hasattr(res, "content"):
-        print(f"Output type: Content list (len={len(res.content)})")
+    content = getattr(res, "content", [])
+    if content:
+        print(f"Output type: Content list (len={len(content)})")
     else:
         print(f"Result preview: {str(res)[:100]}...")
 

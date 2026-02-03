@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+import json
 import re
 import sys
 
@@ -52,17 +53,20 @@ async def run():
         note = await mcp_manager.call_tool("notes", "read_note", {"note_id": note_id})
         if isinstance(note, dict) and note.get("success"):
             content = note.get("content", "")
-        elif (
-            hasattr(note, "content") and len(note.content) > 0 and hasattr(note.content[0], "text")
-        ):
-            import json
-
-            try:
-                content = json.loads(note.content[0].text).get("content", "")
-            except Exception:
-                content = note.content[0].text
         else:
-            content = ""
+            note_content_list = getattr(note, "content", [])
+            if (
+                isinstance(note_content_list, list)
+                and len(note_content_list) > 0
+                and hasattr(note_content_list[0], "text")
+            ):
+                text_content = getattr(note_content_list[0], "text", "")
+                try:
+                    content = json.loads(text_content).get("content", "")
+                except Exception:
+                    content = text_content
+            else:
+                content = ""
         m = re.search(r"(/[^\s]+\.png)", content)
         if m:
             screenshot_path = m.group(1)

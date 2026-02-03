@@ -3,12 +3,8 @@
 Auto-fix script for common AtlasTrinity issues
 """
 
-import json
 import os
-import re
-import sys
 from datetime import datetime
-from pathlib import Path
 
 
 def fix_vibe_rate_limit():
@@ -149,7 +145,7 @@ def fix_memory_usage():
             if os.path.exists(node_modules):
                 cache_size = sum(
                     os.path.getsize(os.path.join(dirpath, filename))
-                    for dirpath, dirnames, filenames in os.walk(node_modules)
+                    for dirpath, _, filenames in os.walk(node_modules)
                     for filename in filenames
                 ) / (1024 * 1024)
                 if cache_size > 1000:  # If node_modules > 1GB

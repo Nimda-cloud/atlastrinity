@@ -22,7 +22,6 @@ sys.path.append(str(PROJECT_ROOT))
 from src.mcp_server.golden_fund.lib.storage.blob import BlobStorage
 from src.mcp_server.golden_fund.lib.storage.vector import VectorStorage
 from src.mcp_server.golden_fund.lib.transformer import DataTransformer
-from src.mcp_server.golden_fund.tools.chain import enricher
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")

@@ -6,7 +6,6 @@ This script properly clears cached data, memory, and temporary files.
 """
 
 import asyncio
-import os
 import shutil
 import subprocess
 import sys

@@ -7,7 +7,6 @@ specifically checking for xcodebuild and devtools integration.
 """
 
 import asyncio
-import json
 import logging
 import sys
 from pathlib import Path

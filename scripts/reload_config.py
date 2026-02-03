@@ -4,7 +4,6 @@ Reload AtlasTrinity configuration
 """
 
 import os
-import sys
 import time
 
 

@@ -622,8 +622,6 @@ def build_swift_mcp():
     binary_path = mcp_path / ".build" / "release" / "mcp-server-macos-use"
     if binary_path.exists():
         # Check if binary is recent (modified in last 7 days)
-        import time
-
         binary_age = time.time() - binary_path.stat().st_mtime
         if binary_age < 7 * 24 * 3600:  # 7 days
             print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
@@ -664,8 +662,6 @@ def build_googlemaps_mcp():
     # Check if binary already exists and is recent
     binary_path = mcp_path / ".build" / "release" / "mcp-server-googlemaps"
     if binary_path.exists():
-        import time
-
         binary_age = time.time() - binary_path.stat().st_mtime
         if binary_age < 7 * 24 * 3600:  # 7 days
             print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
@@ -1230,7 +1226,7 @@ def download_models():
             f"{Colors.OKCYAN}❓ Бажаєте перекачати моделі? У вас є 5 секунд для вибору: [s]kip (default), [a]ll, [stt], [tts]{Colors.ENDC}"
         )
 
-        i, o, e = select.select([sys.stdin], [], [], 5)
+        i, _, _ = select.select([sys.stdin], [], [], 5)
         choice = sys.stdin.readline().strip().lower() if i else "s"
     else:
         choice = "a"  # Download all if any missing
@@ -1694,6 +1690,7 @@ def main():
     try:
         import watchdog
 
+        _ = watchdog
         print_success("Watchdog вже встановлено")
     except ImportError:
         print_info("Встановлення Watchdog...")

@@ -7,6 +7,7 @@ Model: Configured model
 """
 
 import os
+import re
 import sys
 
 # Set up paths first
@@ -1050,8 +1051,6 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
                 ]
 
             # Parse confidence
-            import re
-
             confidence = 0.7  # default
             conf_match = re.search(r"CONFIDENCE:\s*([\d.]+)", analysis)
             if conf_match:
@@ -1211,7 +1210,6 @@ CRITICAL PLANNING RULES:
 
     def _standardize_voice_actions(self, steps: list[dict[str, Any]]) -> int:
         """Ensures all steps have valid Ukrainian voice actions."""
-        import re
 
         fixed_count = 0
         for step in steps:
@@ -1592,7 +1590,6 @@ Output the corrected plan in the same JSON format as before.
         Determines if the goal was REALLY achieved and if the strategy is worth remembering.
         """
         import os
-        import re
 
         from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -1746,7 +1743,6 @@ If the user asked to 'count', you MUST state the exact number found.
     def _extract_artifact_paths(self, goal: str, results: list[dict[str, Any]]) -> list[str]:
         """Extract file paths that should have been created based on goal and execution results.
         Returns list of absolute paths that were mentioned as outputs."""
-        import re
 
         artifacts = []
 

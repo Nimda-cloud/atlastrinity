@@ -45,14 +45,17 @@ async def smoke_test():
         print("Searching for node in ChromaDB...")
         results = long_term_memory.knowledge.query(query_texts=["agent interaction"], n_results=1)
 
+        distances = results.get("distances") if results else None
         if (
             results
             and results.get("ids")
-            and results.get("distances")
+            and distances
             and results["ids"]
             and node_id in results["ids"][0]
+            and len(distances) > 0
+            and len(distances[0]) > 0
         ):
-            dist = results["distances"][0][0]
+            dist = distances[0][0]
             print(f"✅ Node FOUND in ChromaDB vectors! (Distance: {dist:.4f})")
 
             # 5. Add Edge

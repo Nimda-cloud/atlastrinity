@@ -11,7 +11,6 @@ if str(project_root) not in sys.path:
 async def test_servers():
     import logging
 
-    from src.brain.logger import logger
     from src.brain.mcp_manager import mcp_manager
 
     # Set logger to info to see results
