@@ -356,7 +356,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         clearTimeout(streetViewDebounceRef.current);
       }
 
-      streetViewDebounceRef.current = setTimeout(() => {
+      streetViewDebounceRef.current = setTimeout(async () => {
         // Re-query mapElement inside timeout to ensure it's still valid
         const mapEl = document.querySelector('gmp-map') as GmpMapElement;
         if (!mapEl?.innerMap) return;
@@ -364,19 +364,46 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         // Enter Street View at current map center
         const center = mapEl.innerMap.getCenter();
         if (center) {
-          const streetView = mapEl.innerMap.getStreetView();
-          streetView.setPosition(center);
-          streetView.setPov({ heading: 0, pitch: 0 });
-          streetView.setVisible(true);
-          streetViewRef.current = streetView;
-          setStreetViewActive(true);
+          // Check Street View coverage before activating to avoid wasted requests
+          const streetViewService = new google.maps.StreetViewService();
+          try {
+            const response = await streetViewService.getPanorama({
+              location: center,
+              radius: 50, // Search within 50m radius
+              preference: google.maps.StreetViewPreference.NEAREST,
+              source: google.maps.StreetViewSource.OUTDOOR,
+            });
+
+            if (response.data?.location?.latLng) {
+              const streetView = mapEl.innerMap.getStreetView();
+              // Optimize Street View settings to reduce tile requests
+              streetView.setOptions({
+                position: response.data.location.latLng,
+                pov: { heading: 0, pitch: 0 },
+                zoom: 0, // Lowest zoom = fewer tiles
+                motionTracking: false, // Disable device motion tracking
+                motionTrackingControl: false,
+                addressControl: false, // Reduce UI elements
+                linksControl: true, // Keep navigation arrows
+                enableCloseButton: true,
+                clickToGo: true,
+              });
+              streetView.setVisible(true);
+              streetViewRef.current = streetView;
+              setStreetViewActive(true);
+            }
+          } catch {
+            console.warn('🛰️ Street View: No coverage at this location');
+            setError('No Street View coverage at this location');
+            setTimeout(() => setError(null), 3000);
+          }
         }
-      }, 1500); // Increased from 500ms to reduce 429 errors
+      }, 1500); // Debounce to reduce 429 errors
     }
 
-    // Set cooldown for 4 seconds (increased from 2s)
+    // Set cooldown for 5 seconds (increased from 4s)
     setStreetViewCooldown(true);
-    setTimeout(() => setStreetViewCooldown(false), 4000);
+    setTimeout(() => setStreetViewCooldown(false), 5000);
   }, [streetViewActive, streetViewCooldown]);
 
   // API loader is now handled at App level to prevent redundant initializations and 429 errors

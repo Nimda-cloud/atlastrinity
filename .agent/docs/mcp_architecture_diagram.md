@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T02:33:19.798884 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, package.json -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T02:19:44.611049 -->
 <!-- Modified: src/main/main.ts, src/renderer/App.tsx, src/renderer/components/MapView.tsx -->
 
