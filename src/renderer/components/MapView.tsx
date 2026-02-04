@@ -791,23 +791,180 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           transition: opacity 0.5s ease;
         }
 
+
+        /* Cyberpunk overrides for Google Maps internals */
+        
+        /* SEARCH BOX (gmpx-place-picker) */
+        gmpx-place-picker {
+          --gmpx-color-surface: rgba(0, 10, 20, 0.9);
+          --gmpx-color-on-surface: #00e5ff;
+          --gmpx-color-on-surface-variant: #00a3ff;
+          --gmpx-color-primary: #00e5ff;
+          --gmpx-font-family-base: 'JetBrains Mono', monospace;
+          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+          border: 1px solid #00a3ff;
+          border-radius: 4px;
+        }
+
+        gmpx-place-picker::part(input) {
+          background: rgba(0, 10, 20, 0.9);
+          color: #00e5ff;
+          font-family: 'JetBrains Mono', monospace;
+          border: none;
+        }
+        
+        /* Fix internal input styles if part doesn't catch everything */
+        gmpx-place-picker input {
+          background-color: transparent !important;
+          color: #00e5ff !important;
+        }
+
+        /* AUTOCOMPLETE DROPDOWN (.pac-container) */
+        /* Note: This might attach to body, so we use global selector in App.tsx usually, 
+           but if it's scoped here we try deep selecting or rely on global styles */
+        
+        /* INFO WINDOW (.gm-style-iw) */
+        /* We need deep selectors or global styles for this as it renders in the map container */
+        .gm-style .gm-style-iw-c {
+          background-color: rgba(0, 10, 20, 0.95) !important;
+          border: 1px solid #00a3ff !important;
+          border-radius: 2px !important;
+          box-shadow: 0 0 20px rgba(0, 163, 255, 0.3) !important;
+          padding: 12px !important;
+        }
+
+        .gm-style .gm-style-iw-tc::after {
+          background: rgba(0, 10, 20, 0.95) !important;
+          border: 1px solid #00a3ff !important;
+          border-top: none;
+          border-left: none;
+        }
+
+        .gm-style .gm-style-iw-d {
+          overflow: hidden !important;
+          color: #00e5ff !important;
+          font-family: 'JetBrains Mono', monospace !important;
+        }
+
+        /* Info Window Content */
+        .gm-style .gm-title {
+          color: #00e5ff !important;
+          font-size: 14px !important;
+          font-weight: bold !important;
+          text-shadow: 0 0 5px rgba(0, 229, 255, 0.5);
+        }
+
+        .gm-style .gm-basicinfo {
+          color: #00a3ff !important;
+          line-height: 1.4 !important;
+        }
+        
+        /* Close Button */
+        .gm-style .gm-ui-hover-effect {
+          background-color: rgba(0, 0, 0, 0.5) !important;
+          border-radius: 50% !important;
+          top: 4px !important;
+          right: 4px !important;
+        }
+        
+        .gm-style .gm-ui-hover-effect > span {
+          background-color: #00e5ff !important;
+        }
+
+        /* HIDE DEFAULT CONTROLS/LOGOS FILTER */
+        a[href^="http://maps.google.com/maps"] {
+          display: none !important;
+        }
+        
+        .gmnoprint a, .gmnoprint span, .gm-style-cc {
+           display: none;
+        }
+
         .interactive-map-wrapper.loaded {
           opacity: 1;
         }
-
-        .place-picker-container {
-          padding: 10px;
-          width: 320px;
+        
+        /* Zoom & Map Type Controls Styling */
+        .map-zoom-controls, .map-type-controls, .street-view-controls {
+          position: absolute;
+          display: flex;
+          flex-direction: column;
+          background: rgba(0, 10, 20, 0.9);
+          border: 1px solid rgba(0, 163, 255, 0.3);
+          border-radius: 4px;
+          padding: 2px;
+          backdrop-filter: blur(4px);
+          z-index: 10;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
+        .map-zoom-controls {
+          bottom: 24px;
+          right: 24px;
+        }
+
+        .map-type-controls {
+          top: 24px;
+          right: 24px;
+        }
+
+        .street-view-controls {
+          top: 140px;
+          right: 24px;
+        }
+
+        .zoom-btn, .map-type-btn, .street-view-btn {
+          background: transparent;
+          border: none;
+          color: #00a3ff;
+          padding: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 2px;
+        }
+
+        .zoom-btn:hover, .map-type-btn:hover, .street-view-btn:hover {
+          color: #00e5ff;
+          background: rgba(0, 163, 255, 0.1);
+          text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+        }
+
+        .zoom-btn:active, .map-type-btn:active, .street-view-btn:active {
+          transform: scale(0.95);
+        }
+
+        .map-type-btn.active, .street-view-btn.active {
+          color: #00e5ff;
+          background: rgba(0, 163, 255, 0.2);
+          box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+          border: 1px solid rgba(0, 163, 255, 0.5);
+        }
+
+        .zoom-separator, .map-type-separator {
+          height: 1px;
+          background: rgba(0, 163, 255, 0.2);
+          margin: 2px 4px;
+        }
+        
+        .street-view-btn {
+           flex-direction: column;
+           gap: 4px;
+           padding: 10px 6px;
+        }
+        
+        .control-label {
+           font-size: 9px;
+           font-family: 'JetBrains Mono', monospace;
+           font-weight: bold;
+        }
+
+        /* Loading Overlay */
         .map-loading-overlay {
           position: absolute;
           inset: 0;
-          background: rgba(0, 10, 20, 0.9);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
           gap: 16px;
           z-index: 10;
         }
