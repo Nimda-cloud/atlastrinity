@@ -814,28 +814,39 @@ const App: React.FC = () => {
       </aside>
 
       {/* Center Panel: Neural Core / Map View */}
-      <main className="panel center-panel relative overflow-hidden">
+      <main 
+        className="panel center-panel relative overflow-hidden"
+        style={{ pointerEvents: viewMode === 'MAP' ? 'none' : 'auto' }}
+      >
         {/* Neural Core is always present, but minimized when map is active */}
         <NeuralCore state={systemState} activeAgent={activeAgent} minimized={viewMode === 'MAP'} />
-
-        {/* Map View overlays the core when active */}
-        {viewMode === 'MAP' && (
-          <div className="absolute inset-0 z-10 animate-fade-in">
-            <MapView
-              imageUrl={mapData.url}
-              type={mapData.type}
-              location={mapData.location}
-              agentView={mapData.agentView}
-              onClose={handleCloseMap}
-            />
-          </div>
-        )}
       </main>
 
       {/* Right Panel: Chat Panel */}
       <aside className="panel glass-panel right-panel">
         <ChatPanel messages={chatMessages} />
       </aside>
+
+      {/* Map View - Fixed overlay above all panels */}
+      {viewMode === 'MAP' && (
+        <div 
+          className="fixed z-[1000] animate-fade-in" 
+          style={{ 
+            top: '32px', 
+            bottom: '24px', 
+            left: '129px',   /* 2/3 overlap on left panel (388px - 388*2/3) */
+            right: '129px'   /* 2/3 overlap on right panel */
+          }}
+        >
+          <MapView
+            imageUrl={mapData.url}
+            type={mapData.type}
+            location={mapData.location}
+            agentView={mapData.agentView}
+            onClose={handleCloseMap}
+          />
+        </div>
+      )}
 
       {/* Hover zone for auto-revealing command dock */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: Hover zone for dock */}

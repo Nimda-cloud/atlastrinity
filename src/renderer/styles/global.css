@@ -472,7 +472,7 @@ body {
   height: 100%;
   min-height: 0;
   position: relative;
-  z-index: 20;
+  z-index: 10; /* Lower than center-panel to allow map to overlap */
   pointer-events: auto; /* Ensure panels always receive events */
 }
 
@@ -494,10 +494,10 @@ body {
   flex-shrink: 0;
 }
 
-/* Glass Panel - Monolithic Integration */
+/* Glass Panel - Now fully transparent */
 .glass-panel {
   background: transparent;
-  backdrop-filter: blur(20px);
+  backdrop-filter: none;
   border: none;
   box-shadow: none;
   transition: all 0.4s ease;
@@ -506,25 +506,15 @@ body {
 }
 
 .left-panel {
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.2) 70%,
-    transparent 100%
-  );
+  background: transparent;
 }
 
 .right-panel {
-  background: linear-gradient(
-    to left,
-    rgba(0, 0, 0, 0.6) 0%,
-    rgba(0, 0, 0, 0.2) 70%,
-    transparent 100%
-  );
+  background: transparent;
 }
 
 .glass-panel:hover {
-  background: rgba(0, 163, 255, 0.02);
+  background: transparent;
 }
 
 /* Specific Panel Tweaks */
@@ -546,7 +536,7 @@ body {
   backdrop-filter: none;
   /* Allow map to overlap side panels */
   overflow: visible;
-  z-index: 30;
+  z-index: 50; /* Higher than side panels for map overlay */
 }
 
 .right-panel {

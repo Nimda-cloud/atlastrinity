@@ -946,8 +946,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-left: -194px; /* Half of side panel width */
-          margin-right: -194px;
+          /* No margins needed - map is now a fixed overlay */
           z-index: 50;
         }
 
@@ -955,10 +954,15 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           position: absolute;
           inset: 0;
           z-index: 0;
-          /* CSS Masking for true edge transparency - SMOOTHER GRADIENT */
-          /* Using radial gradient for softer vignette to avoid banding lines */
-          -webkit-mask-image: radial-gradient(ellipse at center, black 60%, transparent 98%);
-          mask-image: radial-gradient(ellipse at center, black 60%, transparent 98%);
+          /* Professional edge fade - 1/3 of width on each side for horizontal */
+          /* Creates very smooth transition to transparency with no visible edges */
+          -webkit-mask-image: 
+            linear-gradient(to right, transparent 0%, black 33%, black 67%, transparent 100%),
+            linear-gradient(to bottom, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%);
+          mask-image: 
+            linear-gradient(to right, transparent 0%, black 33%, black 67%, transparent 100%),
+            linear-gradient(to bottom, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%);
+          -webkit-mask-composite: source-in;
           mask-composite: intersect;
           pointer-events: auto; /* Allow map interactions */
         }

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T15:59:57.384034 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/copilot.py, src/brain/config.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T15:24:00.040063 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/verify_fallback_chain.py -->
 
