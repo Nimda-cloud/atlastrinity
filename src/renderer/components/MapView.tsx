@@ -35,12 +35,94 @@ interface GmpxPlacePickerElement extends HTMLElement {
   };
 }
 
-// AtlasTrinity Cyberpunk Map Style - Blue/Turquoise Theme
+// AtlasTrinity - Standard Night Style (Neutral, High Contrast, No Cyan Tint)
+const NEUTRAL_NIGHT_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+  {
+    featureType: 'administrative.locality',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#d59563' }],
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#d59563' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#263c3f' }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#6b9a76' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#38414e' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#212a37' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#9ca5b3' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#746855' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#1f2835' }],
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#f3d19c' }],
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#2f3948' }],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#d59563' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#17263c' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#515c6d' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: '#17263c' }],
+  },
+];
 
+// AtlasTrinity Cyberpunk Map Style - Blue/Turquoise Theme
 const CYBERPUNK_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#020a10' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#020a10' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#00e5ff' }] },
+  // ... (rest of cyberpunk style kept as is, effectively)
   {
     featureType: 'administrative',
     elementType: 'geometry.stroke',
@@ -138,21 +220,30 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   const [streetViewActive, setStreetViewActive] = useState(false);
   // Track Pegman dragging state for road highlighting
   const [isDraggingPegman, setIsDraggingPegman] = useState(false);
-  // Cyberpunk filter toggle - enabled by default for satellite/hybrid, roadmap always uses night style
+  // Cyberpunk filter toggle - enabled by default
   const [cyberpunkFilterEnabled, setCyberpunkFilterEnabled] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // Force update attributes on gmp-map when filter state changes to ensure web component reacts
-  // Using useLayoutEffect to ensure updates happen synchronously before paint if possible
+  // Force update attributes and STYLES on gmp-map when filter state changes
   useLayoutEffect(() => {
-    const mapElement = document.querySelector('gmp-map');
-    if (mapElement) {
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+    if (mapElement && mapElement.innerMap) {
       // Direct DOM manipulation to ensure attribute is updated
-      const filterValue = cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled';
+      // For roadmap, 'enabled' attribute doesn't change CSS filters, but we toggle JSON styles below
+      const filterValue = cyberpunkFilterEnabled ? 'enabled' : 'disabled';
       mapElement.setAttribute('data-cyberpunk-filter', filterValue);
 
       // Update Street View active state on the element for CSS targeting
       mapElement.setAttribute('data-street-view', streetViewActive ? 'active' : 'inactive');
+      
+      // Update JSON Styles for Roadmap/Hybrid based on filter
+      if (mapType === 'roadmap' || mapType === 'hybrid') {
+        const styleToUse = cyberpunkFilterEnabled ? CYBERPUNK_MAP_STYLE : NEUTRAL_NIGHT_STYLE;
+        mapElement.innerMap.setOptions({ styles: styleToUse });
+      } else {
+        // Satellite pure - no styles
+        mapElement.innerMap.setOptions({ styles: [] });
+      }
     }
   }, [cyberpunkFilterEnabled, mapType, streetViewActive]);
 
@@ -634,9 +725,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 street-view-control
                 style={{ width: '100%', height: '100%' }}
               >
-                <div slot="control-block-start-inline-start" className="place-picker-container">
+                {/* MOVED TO CONTROL PANEL */}
+                {/* <div slot="control-block-start-inline-start" className="place-picker-container">
                   <gmpx-place-picker placeholder="SEARCH_TARGET_LOCATION..."></gmpx-place-picker>
-                </div>
+                </div> */}
               </gmp-map>
             </div>
 
@@ -799,17 +891,15 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 <div className="control-section filter-section">
                   <div className="control-separator-vertical"></div>
                   <button
-                    className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''} ${mapType === 'roadmap' ? 'disabled' : ''}`}
+                    className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''}`}
                     onClick={() => setCyberpunkFilterEnabled(!cyberpunkFilterEnabled)}
                     aria-label="Toggle Cyberpunk Filter"
                     title={
-                      mapType === 'roadmap'
-                        ? 'FILTER_N/A_ROADMAP'
-                        : cyberpunkFilterEnabled
-                          ? 'FILTER_ENABLED'
-                          : 'FILTER_DISABLED'
+                      cyberpunkFilterEnabled
+                        ? 'FILTER_ENABLED'
+                        : 'FILTER_DISABLED'
                     }
-                    disabled={mapType === 'roadmap'}
+                    disabled={false}
                   >
                     <svg
                       width="14"
@@ -825,6 +915,20 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                       <circle cx="12" cy="12" r="4"></circle>
                     </svg>
                   </button>
+                </div>
+
+                {/* Search Field - Integrated into Control Panel with Offset */}
+                <div className="control-section search-section">
+                   <div className="control-separator-vertical"></div>
+                   <div className="search-wrapper">
+                      <gmpx-place-picker id="panel-search" placeholder="SEARCH_TARGET..."></gmpx-place-picker>
+                      <div className="search-icon-overlay">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                           <circle cx="11" cy="11" r="8"></circle>
+                           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                      </div>
+                   </div>
                 </div>
               </div>
             </div>
@@ -955,7 +1059,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           inset: -50px -150px;
           z-index: 0;
           pointer-events: auto;
-          /* No mask - just extends naturally */
+          /* Smooth horizontal fade - 1/3 on each side */
+          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 33%, black 67%, transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0%, black 33%, black 67%, transparent 100%);
         }
         
         .map-controls-layer {
@@ -1241,23 +1347,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         
         /* Zoom & Map Type Controls Styling */
         /* Unified Control Group - Horizontal Row at Top */
-        .map-controls-group {
-          position: absolute;
-          top: 0px; /* User requested 0px */
-          right: 190px; /* User requested 190px */
-          display: flex;
-          flex-direction: row;
-          gap: 0;
-          background: rgba(0, 10, 20, 0.2); /* More transparent per request (was 0.9 then 0.4) */
-          border: 1px solid rgba(0, 163, 255, 0.3);
-          border-top: none; /* Look like it hangs from top */
-          border-radius: 0 0 4px 4px;
-          padding: 2px 4px;
-          backdrop-filter: blur(4px);
-          z-index: 10;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          align-items: center;
-        }
+        /* Duplicate .map-controls-group Removed */
 
         .map-zoom-controls {
           bottom: 24px;
@@ -1421,41 +1511,83 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Unified Control Row - Horizontal with slide animation */
         .map-controls-group {
           position: absolute;
-          top: -44px; /* Fully hidden behind top bar */
-          left: 220px; /* Positioned near INTERACTIVE_FEED label */
+          top: -50px; /* Hidden state - higher up */
+          right: 100px; /* Positioned slightly more right to accommodate search */
           transform: none;
           display: flex;
           flex-direction: row; /* Horizontal */
           gap: 0;
           width: fit-content; /* Size to content only */
-          background: transparent; 
-          border: none; /* No border */
+          background: rgba(0, 10, 20, 0.1); /* Even MORE transparent (was 0.2/0.15) */
+          border: 1px solid rgba(0, 163, 255, 0.2); /* Thinner border */
+          border-top: none;
           border-radius: 0 0 8px 8px;
-          box-shadow: none;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
           overflow: visible;
-          z-index: 100;
+          z-index: 1000; /* Ensure it's on top of everything */
           pointer-events: auto;
-          backdrop-filter: blur(8px);
-          transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
-          opacity: 0.15; /* Almost invisible when hidden */
+          backdrop-filter: blur(4px);
+          transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, background 0.3s;
+          opacity: 0.8; /* Visible enough to see "handle" area if any */
         }
         
-        /* Hover trigger area - extends above the panel */
+        /* Hover trigger area - significantly expanded to prevent "running away" */
         .map-controls-group::before {
           content: '';
           position: absolute;
-          top: -30px;
-          left: -30px;
-          right: -30px;
-          height: 80px; /* Extended hover area */
+          /* Cover the area ABOVE the panel to catch mouse approach */
+          top: -60px; 
+          left: -40px;
+          right: -40px;
+          bottom: -40px; /* Extend below to catch mouse overshooting */
           z-index: -1;
+          /* debug: background: rgba(255,0,0,0.1); */
         }
         
         /* Slide in on hover */
         .map-controls-group:hover,
-        .map-content-container:hover .map-controls-group {
+        /* Keep it open if we are editing search */
+        .map-controls-group:focus-within {
           top: 0px; /* Slide down into view */
-          opacity: 1; /* Fully visible when shown */
+          opacity: 1; /* Fully visible */
+          background: rgba(0, 10, 20, 0.85); /* Darken when active for legibility */
+        }
+
+        .search-section {
+          position: relative;
+          margin-left: 12px; /* Horizontal offset requested */
+          padding-left: 8px;
+          border-left: 1px solid rgba(0, 163, 255, 0.3);
+        }
+
+        .search-wrapper {
+           position: relative;
+           width: 180px;
+           height: 32px;
+           display: flex;
+           align-items: center;
+        }
+
+        #panel-search {
+           width: 100%;
+           height: 100%;
+           --gmpx-color-surface: transparent;
+           --gmpx-color-on-surface: #00e5ff;
+           border: none;
+           background: transparent;
+        }
+
+        /* Customizing the place picker input inside shadow DOM is hard, 
+           so we rely on transparency vars and overlays */
+        
+        .search-icon-overlay {
+           position: absolute;
+           right: 8px;
+           top: 50%;
+           transform: translateY(-50%);
+           pointer-events: none;
+           color: #00a3ff;
+           opacity: 0.7;
         }
 
         .control-section {
