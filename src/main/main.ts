@@ -10,7 +10,7 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 // Fix for GPU/Skia errors on macOS (SharedImageManager::ProduceSkia)
 // These errors are common in Electron 28+ with transparency/vibrancy enabled.
 if (process.platform === 'darwin') {
-  app.commandLine.appendSwitch('disable-features', 'Graphite,SkiaGraphite');
+  app.commandLine.appendSwitch('disable-features', 'Graphite,SkiaGraphite,UseSkiaRenderer');
   app.commandLine.appendSwitch('disable-gpu-memory-buffer-video-frames');
   app.commandLine.appendSwitch('disable-gpu-rasterization');
 }

@@ -1562,8 +1562,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           filter: sepia(1) hue-rotate(160deg) saturate(1.8) contrast(1.1) brightness(1.2);
         }
         
-        /* Force Cyberpunk filter when Street View is active, even if on Roadmap */
-        gmp-map[data-street-view="active"] {
+        /* Force Cyberpunk filter when Street View is active AND filter is ENABLED */
+        /* Respects the toggle button now */
+        gmp-map[data-street-view="active"][data-cyberpunk-filter="enabled"] {
            filter: sepia(1) hue-rotate(160deg) saturate(1.8) contrast(1.1) brightness(1.2) !important;
         }
         
