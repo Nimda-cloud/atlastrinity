@@ -829,9 +829,9 @@ async def _handle_vibe_rate_limit(
 
     # Tier 1 Fallback: Mistral -> OpenRouter
     # Triggered immediately on first failure if current model is Mistral (default)
-    if (
-        (attempt == 0 or attempt >= max_retries - 1)
-        and _current_model not in ("devstral-openrouter", "gpt-4o")
+    if (attempt == 0 or attempt >= max_retries - 1) and _current_model not in (
+        "devstral-openrouter",
+        "gpt-4o",
     ):
         openrouter_model = config.get_model_by_alias("devstral-openrouter")
         if openrouter_model:

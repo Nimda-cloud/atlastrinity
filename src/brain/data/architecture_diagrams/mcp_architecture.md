@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T14:39:28.979648 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe_config.toml.template, scripts/verify_fallback_chain.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T14:36:42.213880 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe_config.toml.template, scripts/verify_fallback_chain.py -->
 
