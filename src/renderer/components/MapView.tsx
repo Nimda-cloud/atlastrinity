@@ -235,19 +235,20 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   a[href^="https://maps.google.com/maps"] img {
                     filter: invert(1) grayscale(1) brightness(2) drop-shadow(0 0 2px #00e5ff);
                   }
-                  /* Pegman control - reposition directly under controls */
+                  /* Pegman control - reposition directly under zoom controls */
                   .gm-svpc {
                     position: absolute !important;
                     display: block !important;
                     right: 20px !important;
-                    bottom: 80px !important; /* Immediately below zoom controls (40px bottom + height) */
+                    top: 230px !important; /* Fixed position under zoom controls */
+                    bottom: auto !important;
                     z-index: 100000 !important;
-                    width: 40px !important;
-                    height: 48px !important;
+                    width: 32px !important; /* Match zoom button width */
+                    height: 32px !important;
                     background: rgba(0, 10, 20, 0.95) !important;
-                    border: 1px solid rgba(0, 229, 255, 0.3) !important;
-                    border-radius: 4px !important;
-                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 229, 255, 0.05) !important;
+                    border: 1px solid rgba(0, 229, 255, 0.6) !important;
+                    border-radius: 2px !important;
+                    box-shadow: 0 0 20px rgba(0, 163, 255, 0.3), inset 0 0 10px rgba(0, 229, 255, 0.1) !important;
                     transition: all 0.3s ease !important;
                     transform: scale(1) !important;
                     filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.3)) !important;
@@ -256,19 +257,22 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   /* Highlight the iconic part of Pegman */
                   .gm-svpc img {
                      filter: invert(1) drop-shadow(0 0 2px #00e5ff) !important;
-                     opacity: 0.8 !important;
+                     opacity: 1 !important;
+                     width: 20px !important;
+                     height: 20px !important;
+                     margin: 6px !important;
                   }
 
                   /* Hover state */
                   .gm-svpc:hover {
                     border-color: #00e5ff !important;
-                    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3), inset 0 0 10px rgba(0, 229, 255, 0.1) !important;
+                    background: rgba(0, 163, 255, 0.2) !important;
+                    box-shadow: 0 0 25px rgba(0, 163, 255, 0.5), inset 0 0 15px rgba(0, 229, 255, 0.2) !important;
                     transform: translateY(-2px) !important;
                   }
 
                   .gm-svpc:hover img {
-                    opacity: 1 !important;
-                    filter: invert(1) drop-shadow(0 0 5px #00e5ff) !important;
+                    filter: invert(1) drop-shadow(0 0 5px #fff) !important;
                   }
 
                   /* Creating "POV" label below via pseudo-element is tricky in shadow DOM, assume basic icon styling first */
@@ -489,7 +493,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
             <gmp-map
               center="50.4501,30.5234"
               zoom="12"
-              rendering-type="raster"
+              rendering-type="vector"
               data-map-type={mapType}
               data-lighting-mode={lightingMode}
               style={{ width: '100%', height: '100%' }}
@@ -1118,12 +1122,15 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           /* CSS Masking for true edge transparency */
           /* Horizontal: 60px full transparent -> 300px fade */
           /* Vertical: 20px full transparent -> 100px fade */
+          /* CSS Masking for true edge transparency */
+          /* Horizontal: 100px full transparent -> 400px fade (Wide transition) */
+          /* Vertical: 20px full transparent -> 100px fade */
           -webkit-mask-image: 
-            linear-gradient(to right, transparent 0px, transparent 60px, black 350px, black calc(100% - 350px), transparent calc(100% - 60px), transparent 100%),
+            linear-gradient(to right, transparent 0px, transparent 100px, black 500px, black calc(100% - 500px), transparent calc(100% - 100px), transparent 100%),
             linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
           -webkit-mask-composite: source-in;
           mask-image: 
-            linear-gradient(to right, transparent 0px, transparent 60px, black 350px, black calc(100% - 350px), transparent calc(100% - 60px), transparent 100%),
+            linear-gradient(to right, transparent 0px, transparent 100px, black 500px, black calc(100% - 500px), transparent calc(100% - 100px), transparent 100%),
             linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
           mask-composite: intersect;
           transition: filter 0.8s ease;
@@ -1188,14 +1195,14 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
         .map-zoom-controls {
           position: absolute;
-          bottom: 40px;
+          top: 140px; /* Moved to top, below map type controls */
           right: 20px;
           display: flex;
           flex-direction: column;
-          background: rgba(0, 10, 20, 0.9);
-          border: 1px solid #00a3ff;
+          background: rgba(0, 10, 20, 0.95);
+          border: 1px solid rgba(0, 229, 255, 0.6); /* Brighter border */
           border-radius: 2px;
-          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+          box-shadow: 0 0 20px rgba(0, 163, 255, 0.3); /* Stronger shadow */
           z-index: 10;
         }
 
