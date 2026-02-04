@@ -37,6 +37,13 @@ api_key_env_var = "OPENROUTER_API_KEY"
 api_style = "openai"
 backend = "generic"
 
+[[providers]]
+name = "copilot"
+api_base = "http://localhost:8085"
+api_key_env_var = "COPILOT_SESSION_TOKEN"
+api_style = "openai"
+backend = "generic"
+
 # =============================================================================
 # Model Presets
 # =============================================================================
@@ -53,6 +60,14 @@ name = "mistralai/devstral-2512:free"
 provider = "openrouter"
 alias = "devstral-openrouter"
 temperature = 0.2
+input_price = 0.0
+output_price = 0.0
+
+[[models]]
+name = "gpt-4o"
+provider = "copilot"
+alias = "gpt-4o"
+temperature = 0.1
 input_price = 0.0
 output_price = 0.0
 

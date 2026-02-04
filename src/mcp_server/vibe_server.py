@@ -22,6 +22,7 @@ Version: 3.0 (Hyper-Refactored)
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 import os
@@ -30,7 +31,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import atexit
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -42,7 +42,6 @@ from mcp.server.fastmcp import Context
 
 from .vibe_config import (
     AgentMode,
-    ProviderConfig,
     ProviderConfig,
     VibeConfig,
 )
@@ -359,7 +358,6 @@ def _start_copilot_proxy() -> None:
 
 def _cleanup_copilot_proxy() -> None:
     """Terminate the Copilot proxy subprocess."""
-    global _proxy_process
     if _proxy_process:
         logger.info(f"[VIBE] Terminating Copilot Proxy (PID: {_proxy_process.pid})...")
         try:
@@ -833,8 +831,7 @@ async def _handle_vibe_rate_limit(
     # Triggered immediately on first failure if current model is Mistral (default)
     if (
         (attempt == 0 or attempt >= max_retries - 1)
-        and _current_model != "devstral-openrouter"
-        and _current_model != "gpt-4o-copilot"
+        and _current_model not in ("devstral-openrouter", "gpt-4o")
     ):
         openrouter_model = config.get_model_by_alias("devstral-openrouter")
         if openrouter_model:
@@ -855,7 +852,7 @@ async def _handle_vibe_rate_limit(
     # Tier 2 Fallback: OpenRouter -> Copilot
     # Triggered if we are already on OpenRouter and it fails (or if we skipped Mistral)
     if _current_model == "devstral-openrouter":
-        copilot_model = config.get_model_by_alias("gpt-4o-copilot")
+        copilot_model = config.get_model_by_alias("gpt-4o")
         if copilot_model:
             provider = config.get_provider("copilot")
             # We assume copilot is available if configured (proxy is managed by server)
@@ -868,11 +865,10 @@ async def _handle_vibe_rate_limit(
                     "info",
                     "🔄 [VIBE-FALLBACK] OpenRouter ліміт. Переключаюсь на Copilot (GPT-4o)...",
                 )
-                _current_model = "gpt-4o-copilot"
-                _update_argv_model(argv, "gpt-4o-copilot")
+                _current_model = "gpt-4o"
+                _update_argv_model(argv, "gpt-4o")
 
                 # Verify proxy is running
-                global _proxy_process
                 if not _proxy_process or _proxy_process.poll() is not None:
                     logger.warning(
                         "[VIBE] Copilot proxy not running during fallback, attempting start..."
