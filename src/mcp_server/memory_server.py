@@ -442,7 +442,7 @@ async def delete_entity(name: str, namespace: str | None = None) -> dict[str, An
         try:
             long_term_memory.knowledge.delete(ids=[node_id])
         except Exception as e:
-            logger.warning(f"Failed to delete from vector memory: {e}")  # nosec B608
+            logger.warning(f"Failed to delete from vector memory: {e}")
 
     return {"success": True, "deleted": True}
 
@@ -655,7 +655,7 @@ async def trace_data_chain(
                 for col in cols:
                     safe_col = str(col).lower().replace(" ", "_").replace("-", "_")
                     try:
-                        sql = f'SELECT * FROM "{table_name}" WHERE "{safe_col}" = :val'  # nosec B608
+                        sql = f'SELECT * FROM "{table_name}" WHERE "{safe_col}" = :val'
                         res = await session.execute(text(sql), {"val": value})
                         row = res.fetchone()
                         if row:

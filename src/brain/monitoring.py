@@ -132,7 +132,7 @@ class MonitoringSystem:
             with sqlite3.connect(self.db_path) as conn:
                 columns = ", ".join(data.keys())
                 placeholders = ", ".join(["?"] * len(data))
-                sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"  # nosec B608
+                sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
                 conn.execute(sql, list(data.values()))
                 conn.commit()
         except Exception as e:

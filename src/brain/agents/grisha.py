@@ -524,7 +524,7 @@ class Grisha(BaseAgent):
             {
                 "tool": "vibe.vibe_check_db",
                 "args": {
-                    "query": f"SELECT te.tool_name, te.arguments, te.result, te.created_at FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = '{step_id}' ORDER BY te.created_at DESC LIMIT 5"  # nosec B608
+                    "query": f"SELECT te.tool_name, te.arguments, te.result, te.created_at FROM tool_executions te JOIN task_steps ts ON te.step_id = ts.id WHERE ts.sequence_number = '{step_id}' ORDER BY te.created_at DESC LIMIT 5"
                 },
                 "reason": "Primary source of truth - database audit",
             }

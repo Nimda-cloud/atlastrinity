@@ -84,7 +84,7 @@ class SearchStorage:
                     source_json = json.dumps(item, ensure_ascii=False)
 
                     conn.execute(
-                        f"INSERT OR REPLACE INTO {self.index_name} (id, title, content, description, source_json) VALUES (?, ?, ?, ?, ?)",  # nosec B608
+                        f"INSERT OR REPLACE INTO {self.index_name} (id, title, content, description, source_json) VALUES (?, ?, ?, ?, ?)",
                         (doc_id, title, content, description, source_json),
                     )
                     doc_count += 1
@@ -115,7 +115,7 @@ class SearchStorage:
 
                 safe_query = query.replace('"', '""')
                 cursor = conn.execute(
-                    f"SELECT id, source_json, rank FROM {self.index_name} WHERE {self.index_name} MATCH ? ORDER BY rank LIMIT ?",  # nosec B608
+                    f"SELECT id, source_json, rank FROM {self.index_name} WHERE {self.index_name} MATCH ? ORDER BY rank LIMIT ?",
                     (safe_query, limit),
                 )
 

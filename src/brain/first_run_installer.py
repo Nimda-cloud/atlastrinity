@@ -471,7 +471,7 @@ class FirstRunInstaller:
         """Ensure the specified role exists in Postgres."""
         try:
             _rc, out, _ = _run_command(
-                ["psql", "-tAc", f"SELECT 1 FROM pg_roles WHERE rolname='{username}';"],  # nosec B608
+                ["psql", "-tAc", f"SELECT 1 FROM pg_roles WHERE rolname='{username}';"],
             )
             if "1" not in out:
                 self._report(SetupStep.CREATE_DATABASE, 0.1, f"Створення ролі '{username}'...")
@@ -546,7 +546,7 @@ class FirstRunInstaller:
                 "postgres",
                 "-t",
                 "-c",
-                f"SELECT 1 FROM pg_database WHERE datname='{db_name}';",  # nosec B608
+                f"SELECT 1 FROM pg_database WHERE datname='{db_name}';",
             ],
         )
 

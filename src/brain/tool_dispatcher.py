@@ -412,7 +412,7 @@ class ToolDispatcher:
         "sh": "execute_command",
         "ls": "macos-use_finder_list_files",
         "cd": "execute_command",
-        "pwd": "execute_command",  # nosec B105
+        "pwd": "execute_command",
         "echo": "execute_command",
         "cat": "execute_command",
         "grep": "execute_command",

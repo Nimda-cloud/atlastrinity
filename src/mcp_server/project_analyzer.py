@@ -127,7 +127,7 @@ def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
             # Get dependencies
             info["dependencies"] = pkg_data.get("dependencies", {})
         except Exception:
-            pass  # nosec B110
+            pass
 
     # Find common entry points
     for pattern in ["index.js", "index.ts", "app.js", "app.ts", "server.js", "main.js"]:

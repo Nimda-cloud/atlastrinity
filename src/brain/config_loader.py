@@ -246,7 +246,7 @@ class SystemConfig:
     def get_api_key(self, key_name: str) -> str:
         env_map = {
             "copilot_api_key": "COPILOT_API_KEY",
-            "github_token": "GITHUB_TOKEN",  # nosec B105
+            "github_token": "GITHUB_TOKEN",
             "openai_api_key": "OPENAI_API_KEY",
         }
 

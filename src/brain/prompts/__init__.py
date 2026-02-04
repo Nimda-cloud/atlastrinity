@@ -239,7 +239,7 @@ class AgentPrompts:
         goal_context: str = "",
         tetyana_thought: str = "",
     ) -> str:
-        return f"""Verify the result of the following step, prioritizing MCP tools first and Vision only when necessary.  # nosec B608
+        return f"""Verify the result of the following step, prioritizing MCP tools first and Vision only when necessary.
 
     GENERAL CONTEXT:
     {goal_context}
@@ -301,7 +301,7 @@ class AgentPrompts:
           "step": "Check DB",
           "server": "vibe",
           "tool": "vibe_check_db",
-          "args": {{"query": "SEL" "ECT * FROM tool_executions WHERE step_id = '{step_id}'"}}  # nosec B608
+          "args": {{"query": "SEL" "ECT * FROM tool_executions WHERE step_id = '{step_id}'"}}
         }}
       ]
     }}

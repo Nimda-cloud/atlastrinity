@@ -466,7 +466,7 @@ class MCPManager:
                 close_event.set()
                 await task
             except Exception:
-                pass  # nosec B110
+                pass
             # Re-raise to allow callers (eg. restart_server) to decide on retry behavior
             raise
 
@@ -740,14 +740,14 @@ class MCPManager:
                     try:
                         self._close_events[server_name].set()
                     except Exception:
-                        pass  # nosec B110
+                        pass
                     # await the connection task to exit
                     task = self._connection_tasks.get(server_name)
                     if task:
                         try:
                             await task
                         except Exception:
-                            pass  # nosec B110
+                            pass
                 # Remove any remaining session reference
                 if server_name in self.sessions:
                     del self.sessions[server_name]
@@ -784,7 +784,7 @@ class MCPManager:
                             await asyncio.sleep(wait)
                             continue
                     except Exception:
-                        pass  # nosec B110
+                        pass
 
                     # For other exceptions, small backoff then retry
                     wait = min(10.0, self._restart_backoff_base * (2 ** (attempt - 1)))
@@ -932,7 +932,7 @@ class MCPManager:
                 try:
                     self._close_events[name].set()
                 except Exception:
-                    pass  # nosec B110
+                    pass
 
         # 2. Give tasks a moment to exit
         if self._connection_tasks:
@@ -954,7 +954,7 @@ class MCPManager:
                 for sig in sigs:
                     subprocess.run(["pkill", "-9", "-f", sig], check=False, capture_output=True)
             except Exception:
-                pass  # nosec B110
+                pass
 
             self.sessions.clear()
             self._connection_tasks.clear()
@@ -1176,12 +1176,12 @@ class MCPManager:
             try:
                 ev.set()
             except Exception:
-                pass  # nosec B110
+                pass
         for task in tasks:
             try:
                 await task
             except Exception:
-                pass  # nosec B110
+                pass
         # Clear sessions and internal maps
         self.sessions.clear()
         self._connection_tasks.clear()

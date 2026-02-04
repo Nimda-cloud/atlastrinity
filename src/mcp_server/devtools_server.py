@@ -1188,7 +1188,7 @@ def _export_diagrams(target_mode: str, project_path: Path) -> None:
 
     except Exception:
         # Export is optional, don't fail on errors
-        pass  # nosec B110
+        pass
 
 
 if __name__ == "__main__":

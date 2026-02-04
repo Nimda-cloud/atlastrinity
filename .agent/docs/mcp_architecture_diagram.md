@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T22:39:52.849090 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/copilot_proxy.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T22:20:34.261152 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
