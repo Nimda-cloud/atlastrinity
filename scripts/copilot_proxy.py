@@ -68,15 +68,27 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
 
 
 def run(port=8085):
+    import signal
+
     server_address = ("127.0.0.1", port)
     # Enable address reuse to avoid "Address already in use" errors
     socketserver.TCPServer.allow_reuse_address = True
     httpd = socketserver.TCPServer(server_address, CopilotProxyHandler)
     log(f"Serving at http://127.0.0.1:{port}")
+
+    def handle_signal(sig, frame):
+        log(f"Received signal {sig}, shutting down...")
+        httpd.server_close()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, handle_signal)
+    signal.signal(signal.SIGINT, handle_signal)
+
     try:
         httpd.serve_forever()
-    except KeyboardInterrupt:
-        log("Shutting down")
+    except Exception as e:
+        log(f"Server error: {e}")
+    finally:
         httpd.server_close()
 
 

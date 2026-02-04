@@ -39,7 +39,8 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
     if (!container) return true;
     const { scrollTop, scrollHeight, clientHeight } = container;
     // Using a more robust threshold and Math.ceil for fractional values
-    return Math.ceil(scrollHeight - scrollTop - clientHeight) <= 50;
+    // Increased threshold to 150px to be more forgiving
+    return Math.ceil(scrollHeight - scrollTop - clientHeight) <= 150;
   }, []);
 
   // Handle scroll events to detect user scrolling
@@ -59,9 +60,11 @@ const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
         setUserScrolledUp(true);
       }
 
-      // Resumes auto-scroll if user scrolls down and IS near bottom
-      if (e.deltaY > 0 && isNearBottom()) {
-        setUserScrolledUp(false);
+      // Resumes auto-scroll if user scrolls down
+      if (e.deltaY > 0) {
+         if (isNearBottom()) {
+            setUserScrolledUp(false);
+         }
       }
     };
 

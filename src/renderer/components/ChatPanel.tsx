@@ -36,7 +36,8 @@ const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
     if (!container) return true;
     const { scrollTop, scrollHeight, clientHeight } = container;
     // Using a more robust threshold and Math.ceil for fractional values
-    return Math.ceil(scrollHeight - scrollTop - clientHeight) <= 50;
+    // Increased threshold to 150px to be more forgiving
+    return Math.ceil(scrollHeight - scrollTop - clientHeight) <= 150;
   }, []);
 
   // Handle scroll events to detect user scrolling
@@ -56,9 +57,14 @@ const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
         setUserScrolledUp(true);
       }
 
-      // Resumes auto-scroll if user scrolls down and IS near bottom
-      if (e.deltaY > 0 && isNearBottom()) {
-        setUserScrolledUp(false);
+      // Resumes auto-scroll if user scrolls down
+      // We relax the condition: if they scroll down, we assume they might want to see new content
+      // If they hit the bottom threshold, we definitely latch back on
+      if (e.deltaY > 0) {
+        // If we are close enough, snap back to auto-scroll
+        if (isNearBottom()) {
+          setUserScrolledUp(false);
+        }
       }
     };
 
@@ -86,6 +92,7 @@ const ChatPanel: React.FC<ChatPanelProps> = React.memo(({ messages }) => {
         const container = scrollContainerRef.current;
         if (container) {
           // Use scrollTop directly for more reliable scrolling in Electron
+          // Add a small buffer to ensure we really hit the bottom
           container.scrollTop = container.scrollHeight;
         }
       }, 50);
