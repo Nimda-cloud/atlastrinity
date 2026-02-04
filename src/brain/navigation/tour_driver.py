@@ -1,17 +1,35 @@
 """Tour Driver for Automated Virtual Navigation
 Manages the "physical" movement of the agent through the virtual world (Street View).
+Optimized with image prefetching for smooth tour experience.
 """
 
 import asyncio
 import math
+import re
+from dataclasses import dataclass
 
 from ..logger import logger
 from ..map_state import map_state_manager
 from ..mcp_manager import mcp_manager
 
 
+@dataclass
+class PrefetchedImage:
+    """Represents a prefetched Street View image."""
+
+    index: int
+    lat: float
+    lng: float
+    heading: int
+    image_path: str
+
+
 class TourDriver:
-    """Controls the automated navigation loop."""
+    """Controls the automated navigation loop with image prefetching."""
+
+    # Configuration
+    PREFETCH_AHEAD = 3  # Number of images to prefetch ahead
+    MAX_PREFETCH_CONCURRENT = 2  # Max concurrent prefetch requests
 
     def __init__(self) -> None:
         self.is_active = False
@@ -22,6 +40,24 @@ class TourDriver:
         self.base_step_duration = 2.0  # seconds between frames
         self.heading_offset = 0  # relative look direction (0 = forward, 90 = right)
         self._task: asyncio.Task | None = None
+        self._prefetch_task: asyncio.Task | None = None
+
+        # Prefetch buffer: stores ready-to-display images
+        self._prefetch_buffer: dict[int, PrefetchedImage] = {}
+        self._prefetch_lock = asyncio.Lock()
+        self._prefetch_in_progress: set[int] = set()
+
+    @property
+    def progress(self) -> tuple[int, int]:
+        """Returns (current_step, total_steps) for progress tracking."""
+        return (self.current_step_index, len(self.current_route_points))
+
+    @property
+    def progress_percent(self) -> float:
+        """Returns tour progress as percentage (0-100)."""
+        if not self.current_route_points:
+            return 0.0
+        return (self.current_step_index / len(self.current_route_points)) * 100
 
     async def start_tour(self, route_polyline: str) -> None:
         """Start a tour along a polyline."""
@@ -35,17 +71,35 @@ class TourDriver:
             logger.error("[TourDriver] Failed to decode polyline or empty route.")
             return
 
+        logger.info(f"[TourDriver] Route decoded: {len(self.current_route_points)} points")
+
         self.is_active = True
         self.is_paused = False
         self.current_step_index = 0
         self.heading_offset = 0
+        self._prefetch_buffer.clear()
+        self._prefetch_in_progress.clear()
 
-        # Start the async drive loop
+        # Start prefetching first images before drive loop
+        await self._prefetch_initial_images()
+
+        # Start the async drive loop and continuous prefetching
         self._task = asyncio.create_task(self._drive_loop())
+        self._prefetch_task = asyncio.create_task(self._prefetch_loop())
 
     async def stop_tour(self) -> None:
         """Stop the tour completely."""
         self.is_active = False
+
+        # Cancel prefetch task first
+        if self._prefetch_task:
+            self._prefetch_task.cancel()
+            try:
+                await self._prefetch_task
+            except asyncio.CancelledError:
+                pass
+            self._prefetch_task = None
+
         if self._task:
             self._task.cancel()
             try:
@@ -53,6 +107,11 @@ class TourDriver:
             except asyncio.CancelledError:
                 pass
             self._task = None
+
+        # Clear prefetch buffer
+        self._prefetch_buffer.clear()
+        self._prefetch_in_progress.clear()
+
         logger.info("[TourDriver] Tour stopped.")
 
     def pause_tour(self) -> None:
@@ -64,8 +123,18 @@ class TourDriver:
         logger.info("[TourDriver] Tour resumed.")
 
     def look_around(self, angle: int) -> None:
-        """Change relative viewing angle (e.g., -90 for left)."""
+        """Change relative viewing angle (e.g., -90 for left).
+        Note: This invalidates prefetch buffer as heading changes.
+        """
+        old_offset = self.heading_offset
         self.heading_offset = angle
+
+        # If heading changed significantly, clear prefetch buffer
+        if abs(old_offset - angle) > 10:
+            self._prefetch_buffer.clear()
+            self._prefetch_in_progress.clear()
+            logger.debug("[TourDriver] Cleared prefetch buffer due to heading change")
+
         # Trigger immediate update if paused
         if self.is_paused:
             asyncio.create_task(self._update_view_at_current_location())
@@ -73,16 +142,137 @@ class TourDriver:
     def set_speed(self, modifier: float) -> None:
         """Set speed modifier (0.5 to 3.0)."""
         self.speed_modifier = max(0.5, min(modifier, 3.0))
+        logger.info(f"[TourDriver] Speed set to {self.speed_modifier}x")
+
+    async def _prefetch_initial_images(self) -> None:
+        """Prefetch first few images before starting the drive loop."""
+        logger.info("[TourDriver] Prefetching initial images...")
+        tasks = []
+        for i in range(min(self.PREFETCH_AHEAD, len(self.current_route_points))):
+            tasks.append(self._prefetch_single_image(i))
+        await asyncio.gather(*tasks, return_exceptions=True)
+        logger.info(f"[TourDriver] Prefetched {len(self._prefetch_buffer)} initial images")
+
+    async def _prefetch_loop(self) -> None:
+        """Continuous background prefetching loop."""
+        try:
+            while self.is_active:
+                if self.is_paused:
+                    await asyncio.sleep(0.5)
+                    continue
+
+                # Determine which indices need prefetching
+                current = self.current_step_index
+                needed_indices = []
+
+                for offset in range(1, self.PREFETCH_AHEAD + 1):
+                    idx = current + offset
+                    if idx < len(self.current_route_points):
+                        if idx not in self._prefetch_buffer and idx not in self._prefetch_in_progress:
+                            needed_indices.append(idx)
+
+                # Limit concurrent prefetches
+                needed_indices = needed_indices[: self.MAX_PREFETCH_CONCURRENT]
+
+                if needed_indices:
+                    tasks = [self._prefetch_single_image(idx) for idx in needed_indices]
+                    await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Clean up old buffer entries (behind current position)
+                async with self._prefetch_lock:
+                    old_keys = [k for k in self._prefetch_buffer if k < current - 1]
+                    for k in old_keys:
+                        del self._prefetch_buffer[k]
+
+                await asyncio.sleep(0.3)  # Small delay between prefetch checks
+
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"[TourDriver] Prefetch loop error: {e}")
+
+    async def _prefetch_single_image(self, index: int) -> None:
+        """Prefetch a single image for the given route index."""
+        if index in self._prefetch_buffer or index in self._prefetch_in_progress:
+            return
+
+        if index >= len(self.current_route_points):
+            return
+
+        self._prefetch_in_progress.add(index)
+
+        try:
+            lat, lng = self.current_route_points[index]
+
+            # Calculate heading to next point
+            next_lat, next_lng = lat, lng
+            if index + 1 < len(self.current_route_points):
+                next_lat, next_lng = self.current_route_points[index + 1]
+
+            base_heading = self._calculate_bearing(lat, lng, next_lat, next_lng)
+            final_heading = int((base_heading + self.heading_offset) % 360)
+
+            location_str = f"{lat},{lng}"
+
+            result = await mcp_manager.call_tool(
+                "googlemaps",
+                "maps_street_view",
+                {
+                    "location": location_str,
+                    "heading": final_heading,
+                    "pitch": 0,
+                    "fov": 90,
+                    "cyberpunk": True,
+                },
+            )
+
+            output_text = result.content[0].text if result.content else ""
+            match = re.search(r"Saved to: (.+)", output_text)
+
+            if match:
+                image_path = match.group(1).strip()
+                async with self._prefetch_lock:
+                    self._prefetch_buffer[index] = PrefetchedImage(
+                        index=index,
+                        lat=lat,
+                        lng=lng,
+                        heading=final_heading,
+                        image_path=image_path,
+                    )
+                logger.debug(f"[TourDriver] Prefetched image for step {index}")
+
+        except Exception as e:
+            logger.warning(f"[TourDriver] Prefetch failed for step {index}: {e}")
+        finally:
+            self._prefetch_in_progress.discard(index)
 
     async def _drive_loop(self) -> None:
-        """Main navigation loop."""
+        """Main navigation loop with prefetch utilization."""
         try:
             while self.is_active and self.current_step_index < len(self.current_route_points):
                 if self.is_paused:
                     await asyncio.sleep(0.5)
                     continue
 
-                await self._update_view_at_current_location()
+                # Try to use prefetched image first
+                prefetched = self._prefetch_buffer.get(self.current_step_index)
+
+                if prefetched:
+                    # Use prefetched image - instant display!
+                    map_state_manager.set_center(prefetched.lat, prefetched.lng)
+                    map_state_manager.set_agent_view(
+                        image_path=prefetched.image_path,
+                        heading=prefetched.heading,
+                        pitch=0,
+                        fov=90,
+                        lat=prefetched.lat,
+                        lng=prefetched.lng,
+                    )
+                    logger.debug(f"[TourDriver] Used prefetched image for step {self.current_step_index}")
+                else:
+                    # Fallback: fetch synchronously (slower path)
+                    logger.debug(f"[TourDriver] No prefetch for step {self.current_step_index}, fetching...")
+                    await self._update_view_at_current_location()
 
                 # Calculate variable sleep based on speed
                 sleep_time = self.base_step_duration / self.speed_modifier
@@ -100,7 +290,7 @@ class TourDriver:
             self.is_active = False
 
     async def _update_view_at_current_location(self) -> None:
-        """Fetch and update the view for the current location."""
+        """Fetch and update the view for the current location (fallback path)."""
         if self.current_step_index >= len(self.current_route_points):
             return
 
@@ -117,15 +307,9 @@ class TourDriver:
         # Apply user look offset
         final_heading = (base_heading + self.heading_offset) % 360
 
-        # Call Google Maps MCP to get the image (and save it)
-        # We assume the MCP tool saves the file and returns the path/info
         try:
-            # We use the mcp_manager to call the tool directly
-            # Note: We need to format the location string
             location_str = f"{lat},{lng}"
 
-            # This calling convention depends on how mcp_manager exposes tools internally
-            # For now, we'll assume we can use call_tool from the googlemaps server
             result = await mcp_manager.call_tool(
                 "googlemaps",
                 "maps_street_view",
@@ -138,18 +322,11 @@ class TourDriver:
                 },
             )
 
-            # Parse result to find the file path
-            # The MCP tool returns a text string like "Saved to: /path/to/file.png"
             output_text = result.content[0].text if result.content else ""
-            import re
-
             match = re.search(r"Saved to: (.+)", output_text)
             if match:
                 image_path = match.group(1).strip()
-                # Update MapState
-                # Sync map center to agent location so interactive map follows
                 map_state_manager.set_center(lat, lng)
-
                 map_state_manager.set_agent_view(
                     image_path=image_path,
                     heading=int(final_heading),

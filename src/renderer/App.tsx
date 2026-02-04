@@ -335,7 +335,11 @@ const App: React.FC = () => {
     }
   }, [viewMode]);
 
-  // Initialize & Poll State
+  // Initialize & Poll State with dynamic interval
+  // Faster polling (1s) during active tours, slower (3s) otherwise
+  const isTourActive = Boolean(mapData.agentView);
+  const pollInterval = isTourActive ? 1000 : 3000;
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -344,14 +348,14 @@ const App: React.FC = () => {
     const startupTimeout = setTimeout(() => {
       pollState();
       fetchSessions();
-      interval = setInterval(pollState, 3000); // Polling every 3s to reduce re-render pressure
+      interval = setInterval(pollState, pollInterval);
     }, 1000);
 
     return () => {
       clearTimeout(startupTimeout);
       if (interval) clearInterval(interval);
     };
-  }, [fetchSessions, pollState]);
+  }, [fetchSessions, pollState, pollInterval]);
 
   // Handle file drops
   const handleDrop = useCallback((e: React.DragEvent) => {

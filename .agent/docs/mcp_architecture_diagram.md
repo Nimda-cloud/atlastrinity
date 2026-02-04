@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T20:04:43.382932 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/mcp_server/golden_fund/listorage/search.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T19:47:02.625847 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/components/MapView.tsx -->
 
