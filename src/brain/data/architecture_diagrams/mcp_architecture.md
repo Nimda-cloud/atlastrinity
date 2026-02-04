@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T05:54:15.555125 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/validate_mcp_servers.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T05:53:21.548612 -->
 <!-- Modified: src/mcp_server/golden_fund/tools/ingest.py -->
 
