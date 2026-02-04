@@ -60,7 +60,7 @@ class SearchStorage:
                     description, 
                     source_json UNINDEXED
                 )
-            """)  # nosec B608
+            """)
             conn.commit()
 
     def index_documents(self, data: dict[str, Any] | list[dict[str, Any]]) -> StorageResult:
@@ -83,7 +83,6 @@ class SearchStorage:
                     description = item.get("description", "")
                     source_json = json.dumps(item, ensure_ascii=False)
 
-                    # REPLACE INTO helps updating existing docs
                     conn.execute(
                         f"INSERT OR REPLACE INTO {self.index_name} (id, title, content, description, source_json) VALUES (?, ?, ?, ?, ?)",  # nosec B608
                         (doc_id, title, content, description, source_json),
@@ -114,11 +113,7 @@ class SearchStorage:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
 
-                # FTS5 Query
-                # Simple match query.
-                # Note: FTS5 query syntax is strict, might need sanitization for production
                 safe_query = query.replace('"', '""')
-
                 cursor = conn.execute(
                     f"SELECT id, source_json, rank FROM {self.index_name} WHERE {self.index_name} MATCH ? ORDER BY rank LIMIT ?",  # nosec B608
                     (safe_query, limit),
