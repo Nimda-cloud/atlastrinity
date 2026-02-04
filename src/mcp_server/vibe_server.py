@@ -827,43 +827,51 @@ async def _handle_vibe_rate_limit(
 
     config = get_vibe_config()
 
-    # Tier 1 Fallback: Mistral -> OpenRouter
+    # Tier 1 Fallback: Mistral -> OpenRouter (or Copilot if OpenRouter unavailable)
     # Triggered immediately on first failure if current model is Mistral (default)
     if (attempt == 0 or attempt >= max_retries - 1) and _current_model not in (
         "devstral-openrouter",
         "gpt-4o",
     ):
         openrouter_model = config.get_model_by_alias("devstral-openrouter")
-        if openrouter_model:
-            provider = config.get_provider("openrouter")
-            if provider and provider.is_available():
-                logger.info(
-                    "[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)..."
-                )
-                await _emit_vibe_log(
-                    ctx,
-                    "info",
-                    "🔄 [VIBE-FALLBACK] Mistral API ліміт. Переключаюсь на OpenRouter (devstral)...",
-                )
-                _current_model = "devstral-openrouter"
-                _update_argv_model(argv, "devstral-openrouter")
-                return True  # Signal retry with new model
+        openrouter_provider = config.get_provider("openrouter")
+        
+        # Check if OpenRouter is actually usable
+        if openrouter_model and openrouter_provider and openrouter_provider.is_available():
+            logger.info(
+                "[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)..."
+            )
+            await _emit_vibe_log(
+                ctx,
+                "info",
+                "🔄 [VIBE-FALLBACK] Mistral API ліміт. Переключаюсь на OpenRouter (devstral)...",
+            )
+            _current_model = "devstral-openrouter"
+            _update_argv_model(argv, "devstral-openrouter")
+            return True  # Signal retry with new model
+        
+        # If OpenRouter is NOT available, try falling through directly to Copilot
+        logger.info("[VIBE] OpenRouter not available for fallback, checking Copilot...")
+        # Fallthrough to Tier 2 logic below which checks for Copilot
 
     # Tier 2 Fallback: OpenRouter -> Copilot
-    # Triggered if we are already on OpenRouter and it fails (or if we skipped Mistral)
-    if _current_model == "devstral-openrouter":
+    # Triggered if we are already on OpenRouter and it fails (or if we skipped Mistral/OpenRouter above)
+    # logic: If we are on OpenRouter OR if we just fell through from Mistral (and OpenRouter was skipped)
+    if _current_model == "devstral-openrouter" or (
+        attempt == 0 and _current_model not in ("devstral-openrouter", "gpt-4o")
+    ):
         copilot_model = config.get_model_by_alias("gpt-4o")
         if copilot_model:
             provider = config.get_provider("copilot")
             # We assume copilot is available if configured (proxy is managed by server)
             if provider:
                 logger.info(
-                    "[VIBE] OpenRouter rate limit. Switching to Copilot fallback (Tier 3)..."
+                    "[VIBE] OpenRouter rate limit (or unavailable). Switching to Copilot fallback (Tier 3)..."
                 )
                 await _emit_vibe_log(
                     ctx,
                     "info",
-                    "🔄 [VIBE-FALLBACK] OpenRouter ліміт. Переключаюсь на Copilot (GPT-4o)...",
+                    "🔄 [VIBE-FALLBACK] OpenRouter ліміт/недоступний. Переключаюсь на Copilot (GPT-4o)...",
                 )
                 _current_model = "gpt-4o"
                 _update_argv_model(argv, "gpt-4o")
