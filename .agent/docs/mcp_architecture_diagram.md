@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T02:19:44.611049 -->
+<!-- Modified: src/main/main.ts, src/renderer/App.tsx, src/renderer/components/MapView.tsx -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T01:58:29.559057 -->
 <!-- Modified: scripts/setup_dev.py, scripts/setup_maps_quick.py, src/brain/voice/stt.py -->
 

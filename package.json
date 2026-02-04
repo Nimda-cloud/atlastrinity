@@ -80,6 +80,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "knip": "^5.82.1",
     "lefthook": "^2.0.16",
+    "oxlint": "^1.43.0",
     "pyright": "^1.1.408",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.3.3",

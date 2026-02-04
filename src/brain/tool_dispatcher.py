@@ -1032,7 +1032,7 @@ class ToolDispatcher:
             "golden-fund": self._handle_golden_fund,
             "golden_fund": self._handle_golden_fund,
         }
-        if explicit_server in handlers:
+        if explicit_server and explicit_server in handlers:
             return handlers[explicit_server](tool_name, args)
         return None
 

@@ -2,7 +2,7 @@
  * AtlasTrinity - Electron Main Process
  */
 
-import { app, BrowserWindow, ipcMain, Menu, MenuItem, systemPreferences } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, systemPreferences } from 'electron';
 
 // Disable Electron Security Warnings in Dev
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
@@ -72,6 +72,7 @@ async function runFirstRunSetup(): Promise<boolean> {
 function createAppMenu() {
   const isMac = process.platform === 'darwin';
 
+  // biome-ignore lint/suspicious/noExplicitAny: Electron menu templates are complex nested objects
   const template: any[] = [
     // { role: 'appMenu' }
     ...(isMac
@@ -161,7 +162,7 @@ function createAppMenu() {
     },
   ];
 
-  const menu = Menu.buildFromTemplate(template as any);
+  const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
 

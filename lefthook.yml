@@ -22,6 +22,8 @@ lint:all:
       run: npm run lint:security
     09-yaml-sync:
       run: python3 scripts/sync_and_validate_configs.py
+    10-oxlint:
+      run: npx oxlint src scripts --deny-warnings --fix
 
 pre-push:
   parallel: true

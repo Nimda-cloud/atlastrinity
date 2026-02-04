@@ -530,6 +530,7 @@ const App: React.FC = () => {
       {GOOGLE_MAPS_API_KEY && (
         <div style={{ display: 'none' }}>
           <gmpx-api-loader
+            // biome-ignore lint/suspicious/noExplicitAny: custom element ref needs any cast in some react versions
             ref={loaderRef as any}
             api-key={GOOGLE_MAPS_API_KEY}
             solution-channel="GMP_CDN_extended_v0.6.11"

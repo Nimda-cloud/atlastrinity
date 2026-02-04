@@ -115,7 +115,9 @@ class CopilotLLM(BaseChatModel):
             # Dynamic import to avoid circular dependency
             import os
 
-            from langchain_google_genai import ChatGoogleGenerativeAI
+            from langchain_google_genai import (
+                ChatGoogleGenerativeAI,  # pyrefly: ignore[missing-import]
+            )
 
             api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_LIVE_API_KEY")
             if not api_key:
@@ -145,7 +147,7 @@ class CopilotLLM(BaseChatModel):
             import os
             import tempfile
 
-            from vision_module import get_vision_module
+            from vision_module import get_vision_module  # pyrefly: ignore[missing-import]
 
             # Find the image in messages
             image_b64 = None
@@ -211,11 +213,13 @@ class CopilotLLM(BaseChatModel):
 
                 # Call LLM with text-only message
 
-                text_only_messages: list[BaseMessage] = [
-                    msg for msg in messages if isinstance(msg, SystemMessage)
-                ] + [
-                    HumanMessage(content=new_prompt),
-                ]
+                text_only_messages: list[BaseMessage] = cast(
+                    list[BaseMessage],
+                    [msg for msg in messages if isinstance(msg, SystemMessage)]
+                    + [
+                        HumanMessage(content=new_prompt),
+                    ],
+                )
 
                 return self._internal_text_invoke(text_only_messages)
 
@@ -378,10 +382,10 @@ class CopilotLLM(BaseChatModel):
                     resampling = Image.Resampling.LANCZOS  # type: ignore
                 except AttributeError:
                     resampling = Image.LANCZOS  # type: ignore
-                img = cast(Image.Image, img.resize(new_size, resampling))
+                img = img.resize(new_size, resampling)
 
             if img.mode in ("RGBA", "P"):
-                img = cast(Image.Image, img.convert("RGB"))
+                img = img.convert("RGB")
 
             buffered = BytesIO()
             img.save(buffered, format="JPEG", quality=80)

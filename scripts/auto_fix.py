@@ -107,6 +107,9 @@ def fix_memory_usage():
     """Fix high memory usage issues"""
     print("🔧 Checking memory usage...")
 
+    HOME = os.path.expanduser("~")
+    PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
+
     try:
         import psutil
 
@@ -118,8 +121,6 @@ def fix_memory_usage():
             import subprocess
 
             try:
-                HOME = os.path.expanduser("~")
-                PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
                 subprocess.run(
                     [
                         "find",
