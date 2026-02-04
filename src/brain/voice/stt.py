@@ -6,6 +6,7 @@ Fallback: Browser Web Speech API (handled in frontend)
 
 import asyncio
 import os
+import sys
 import tempfile
 from dataclasses import dataclass
 from enum import StrEnum
@@ -32,7 +33,10 @@ def _check_whisper_available():
         WHISPER_AVAILABLE = True
     except ImportError:
         WHISPER_AVAILABLE = False
-        print("[STT] Warning: faster-whisper not installed. Run: pip install faster-whisper")
+        print(
+            "[STT] Warning: faster-whisper not installed. Run: pip install faster-whisper",
+            file=sys.stderr,
+        )
     return WHISPER_AVAILABLE
 
 
@@ -56,7 +60,10 @@ def _check_audio_available():
         AUDIO_AVAILABLE = True
     except ImportError:
         AUDIO_AVAILABLE = False
-        print("[STT] Warning: sounddevice/soundfile not installed. Audio recording disabled.")
+        print(
+            "[STT] Warning: sounddevice/soundfile not installed. Audio recording disabled.",
+            file=sys.stderr,
+        )
     return AUDIO_AVAILABLE
 
 
@@ -196,7 +203,10 @@ class WhisperSTT:
                     logger.error("[STT] faster-whisper is not installed. Cannot load WhisperModel.")
                     return None
 
-                print(f"[STT] Loading Faster-Whisper model: {self.model_name} on {self.device}...")
+                print(
+                    f"[STT] Loading Faster-Whisper model: {self.model_name} on {self.device}...",
+                    file=sys.stderr,
+                )
                 self.download_root.mkdir(parents=True, exist_ok=True)
 
                 def load():
@@ -208,7 +218,7 @@ class WhisperSTT:
                     )
 
                 self._model = await asyncio.to_thread(load)
-                print(f"[STT] Model loaded successfully from {self.download_root}")
+                print(f"[STT] Model loaded successfully from {self.download_root}", file=sys.stderr)
             return self._model
 
     async def transcribe_file(
@@ -265,7 +275,7 @@ class WhisperSTT:
                 ),
             )
         except Exception as e:
-            print(f"[STT] Transcription error: {e}")
+            print(f"[STT] Transcription error: {e}", file=sys.stderr)
             return TranscriptionResult(
                 text="", language=language or "uk", confidence=0, segments=[]
             )
@@ -437,7 +447,7 @@ class WhisperSTT:
             )
 
         fs = 16000
-        print(f"[STT] Recording for {duration} seconds...")
+        print(f"[STT] Recording for {duration} seconds...", file=sys.stderr)
         recording = await asyncio.to_thread(
             cast("Any", sd).rec,
             int(duration * fs),
@@ -473,4 +483,4 @@ class WhisperMCPServer:
 
 
 if __name__ == "__main__":
-    print("Whisper STT Module Loaded")
+    print("Whisper STT Module Loaded", file=sys.stderr)

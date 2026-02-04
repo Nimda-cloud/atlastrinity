@@ -1,5 +1,39 @@
 import logging
+import re
+import sys
 from logging.handlers import RotatingFileHandler
+
+
+class SecretFilter(logging.Filter):
+    """Filter that masks sensitive information in logs."""
+
+    def __init__(self, name: str = ""):
+        super().__init__(name)
+        # Patterns to mask: ghu_..., ghp_..., mistral keys, etc.
+        self.patterns = [
+            re.compile(r"gh[up]_[a-zA-Z0-9]{30,60}"),  # GitHub tokens
+            re.compile(r"AIzaSy[a-zA-Z0-9_-]{33}"),  # Google API Keys
+            re.compile(r"Bearer\s+[a-zA-Z0-9._-]+"),  # Bearer tokens
+        ]
+
+    def filter(self, record):
+        if not isinstance(record.msg, str):
+            return True
+
+        for pattern in self.patterns:
+            record.msg = pattern.sub("[MASKED]", record.msg)
+
+        # Also check arguments if they are strings
+        if record.args:
+            new_args = []
+            for arg in record.args:
+                if isinstance(arg, str):
+                    for pattern in self.patterns:
+                        arg = pattern.sub("[MASKED]", arg)
+                new_args.append(arg)
+            record.args = tuple(new_args)
+
+        return True
 
 
 def setup_logging(name: str = "brain"):
@@ -31,6 +65,7 @@ def setup_logging(name: str = "brain"):
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(file_formatter)
+    file_handler.addFilter(SecretFilter())
     logger.addHandler(file_handler)
 
     # Stream Handler (Console)
@@ -38,6 +73,7 @@ def setup_logging(name: str = "brain"):
     stream_handler.setLevel(logging.INFO)
     stream_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     stream_handler.setFormatter(stream_formatter)
+    stream_handler.addFilter(SecretFilter())
     logger.addHandler(stream_handler)
 
     # UI Log Handler (Streams to Redis for Electron)
@@ -94,9 +130,10 @@ def setup_logging(name: str = "brain"):
         # Cleaner formatter for UI: [SOURCE] MESSAGE
         ui_formatter = logging.Formatter("[%(name)s] %(message)s")
         ui_handler.setFormatter(ui_formatter)
+        ui_handler.addFilter(SecretFilter())
         logger.addHandler(ui_handler)
     except Exception as e:
-        print(f"Failed to setup UI Log Handler: {e}")
+        print(f"Failed to setup UI Log Handler: {e}", file=sys.stderr)
 
     return logger
 

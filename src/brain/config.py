@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 from pathlib import Path
 from typing import IO
 
@@ -105,7 +106,7 @@ def ensure_dirs():
         except Exception as e:
             # Don't print warning for user folders like Developer/Trinity if chmod fails
             if ws != project_ws:
-                print(f"Warning: Failed to set 777 permissions on {ws.name}: {e}")
+                print(f"Warning: Failed to set 777 permissions on {ws.name}: {e}", file=sys.stderr)
 
 
 # Initialize directories on import to ensure they exist for logger/agents

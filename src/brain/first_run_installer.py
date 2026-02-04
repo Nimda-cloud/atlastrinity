@@ -109,9 +109,10 @@ class FirstRunInstaller:
         icon = "✓" if progress.success else "✗"
         print(
             f"[{icon}] {progress.step.value}: {progress.message} ({progress.progress * 100:.0f}%)",
+            file=sys.stderr,
         )
         if progress.error:
-            print(f"    Error: {progress.error}")
+            print(f"    Error: {progress.error}", file=sys.stderr)
 
     def _report(
         self,
@@ -216,15 +217,21 @@ class FirstRunInstaller:
         )
 
         if not permissions["accessibility"] or not permissions["screen_recording"]:
-            print("\n" + "!" * 40)
-            print("⚠️  PERMISSION ACTION REQUIRED:")
+            print("\n" + "!" * 40, file=sys.stderr)
+            print("⚠️  PERMISSION ACTION REQUIRED:", file=sys.stderr)
             if not permissions["accessibility"]:
-                print("   1. Open System Settings > Privacy & Security > Accessibility")
-                print("   2. Click [+] and add AtlasTrinity")
+                print(
+                    "   1. Open System Settings > Privacy & Security > Accessibility",
+                    file=sys.stderr,
+                )
+                print("   2. Click [+] and add AtlasTrinity", file=sys.stderr)
             if not permissions["screen_recording"]:
-                print("   1. Open System Settings > Privacy & Security > Screen Recording")
-                print("   2. Ensure AtlasTrinity is enabled")
-            print("!" * 40 + "\n")
+                print(
+                    "   1. Open System Settings > Privacy & Security > Screen Recording",
+                    file=sys.stderr,
+                )
+                print("   2. Ensure AtlasTrinity is enabled", file=sys.stderr)
+            print("!" * 40 + "\n", file=sys.stderr)
             # Open the settings pane automatically
             _run_command(
                 [
@@ -273,7 +280,7 @@ class FirstRunInstaller:
             if process.stdout:
                 for line in iter(process.stdout.readline, ""):
                     if line:
-                        print(f"[Homebrew] {line.strip()}")
+                        print(f"[Homebrew] {line.strip()}", file=sys.stderr)
 
             process.wait()
 
@@ -658,9 +665,9 @@ class FirstRunInstaller:
         """Run complete first-run setup.
         Returns True if all critical steps succeeded.
         """
-        print("\n" + "=" * 60)
-        print("🔱 AtlasTrinity First Run Setup")
-        print("=" * 60 + "\n")
+        print("\n" + "=" * 60, file=sys.stderr)
+        print("🔱 AtlasTrinity First Run Setup", file=sys.stderr)
+        print("=" * 60 + "\n", file=sys.stderr)
 
         # 1. System check (critical)
         if not self.check_system():
@@ -669,10 +676,10 @@ class FirstRunInstaller:
         # 2. Permissions check (informational)
         permissions = self.check_permissions()
         if not permissions.get("accessibility") or not permissions.get("screen_recording"):
-            print("\n⚠️  Відкрийте System Settings > Privacy & Security")
-            print("   та надайте дозволи для AtlasTrinity:")
-            print("   - Accessibility")
-            print("   - Screen Recording\n")
+            print("\n⚠️  Відкрийте System Settings > Privacy & Security", file=sys.stderr)
+            print("   та надайте дозволи для AtlasTrinity:", file=sys.stderr)
+            print("   - Accessibility", file=sys.stderr)
+            print("   - Screen Recording\n", file=sys.stderr)
 
         # 3. Homebrew (critical)
         if not self.install_homebrew():
@@ -719,14 +726,14 @@ class FirstRunInstaller:
 
         self._report(SetupStep.SETUP_COMPLETE, 1.0, "Налаштування завершено!")
 
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 60, file=sys.stderr)
         if self.errors:
-            print(f"⚠️  Завершено з {len(self.errors)} помилками:")
+            print(f"⚠️  Завершено з {len(self.errors)} помилками:", file=sys.stderr)
             for err in self.errors:
-                print(f"   - {err}")
+                print(f"   - {err}", file=sys.stderr)
         else:
-            print("✅ Всі налаштування успішно виконані!")
-        print("=" * 60 + "\n")
+            print("✅ Всі налаштування успішно виконані!", file=sys.stderr)
+        print("=" * 60 + "\n", file=sys.stderr)
 
         return len(self.errors) == 0
 
@@ -743,7 +750,7 @@ async def main():
     installer = FirstRunInstaller()
 
     if installer.is_setup_complete():
-        print("✓ Setup already complete. Use --force to re-run.")
+        print("✓ Setup already complete. Use --force to re-run.", file=sys.stderr)
         if "--force" not in sys.argv:
             return
 

@@ -36,10 +36,10 @@ github_token = config.get_api_key("github_token")
 
 if copilot_key:
     os.environ["COPILOT_API_KEY"] = copilot_key
-    print("[Server] ✓ COPILOT_API_KEY loaded from global context")
+    print("[Server] ✓ COPILOT_API_KEY loaded from global context", file=sys.stderr)
 if github_token:
     os.environ["GITHUB_TOKEN"] = github_token
-    print("[Server] ✓ GITHUB_TOKEN loaded from global context")
+    print("[Server] ✓ GITHUB_TOKEN loaded from global context", file=sys.stderr)
 
 import asyncio
 from typing import Any, cast
@@ -98,6 +98,21 @@ async def lifespan(app: FastAPI):
     # Initialize components
     await trinity.initialize()
 
+    # Start stdin watchdog to ensure we die when parent dies
+    def watchdog():
+        try:
+            sys.stdin.read()
+        except EOFError:
+            pass
+        logger.info("[Server] Parent process disconnected (stdin EOF), shutting down...")
+        import os
+
+        os._exit(0)
+
+    import threading
+
+    threading.Thread(target=watchdog, daemon=True).start()
+
     # Production: copy configs from Resources/ to ~/.config/ if needed
     run_production_setup()
 
@@ -155,7 +170,7 @@ async def chat(
     if file_context:
         full_request = f"{request}\n\n{file_context}"
 
-    print(f"[SERVER] Received request: {full_request[:100]}...")  # Log truncated
+    print(f"[SERVER] Received request: {full_request[:100]}...", file=sys.stderr)  # Log truncated
     logger.info(f"Received request: {full_request[:200]}...")
 
     # Start monitoring for this request

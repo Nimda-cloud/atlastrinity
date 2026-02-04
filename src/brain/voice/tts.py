@@ -11,6 +11,7 @@ NOTE: TTS models must be set up before first use via setup_dev.py
 import asyncio
 import os
 import re
+import sys
 import tempfile
 import warnings
 
@@ -42,7 +43,7 @@ def _check_tts_available():
 
         if importlib.util.find_spec("ukrainian_tts") is not None:
             TTS_AVAILABLE = True
-            print("[TTS] Ukrainian TTS available")
+            print("[TTS] Ukrainian TTS available", file=sys.stderr)
         else:
             TTS_AVAILABLE = False
             print(
@@ -78,7 +79,10 @@ def _patch_tts_config(cache_dir: Path):
             prefix = match.group(1)
             current_val = match.group(2)
             if current_val != abs_stats_path:
-                print(f"[TTS] Updating stats_file from '{current_val}' to '{abs_stats_path}'")
+                print(
+                    f"[TTS] Updating stats_file from '{current_val}' to '{abs_stats_path}'",
+                    file=sys.stderr,
+                )
                 return f"{prefix}{abs_stats_path}"
             return match.group(0)
 
@@ -86,12 +90,17 @@ def _patch_tts_config(cache_dir: Path):
 
         if count > 0 and new_content != content:
             config_path.write_text(new_content)
-            print(f"[TTS] Patched {config_path.name}: {count} occurrences updated.")
+            print(
+                f"[TTS] Patched {config_path.name}: {count} occurrences updated.", file=sys.stderr
+            )
         else:
-            print(f"[TTS] {config_path.name} is already up to date or no stats_file found.")
+            print(
+                f"[TTS] {config_path.name} is already up to date or no stats_file found.",
+                file=sys.stderr,
+            )
 
     except Exception as e:
-        print(f"[TTS] Warning: Failed to patch config.yaml: {e}")
+        print(f"[TTS] Warning: Failed to patch config.yaml: {e}", file=sys.stderr)
 
 
 def sanitize_text_for_tts(text: str) -> str:
@@ -271,7 +280,7 @@ class AgentVoice:
                 else:
                     self._voice = "Dmytro"
             except Exception as e:
-                print(f"[TTS] Failed to import Voices: {e}")
+                print(f"[TTS] Failed to import Voices: {e}", file=sys.stderr)
                 # Set default voice
                 self._voice = "Dmytro"
         else:
@@ -288,34 +297,35 @@ class AgentVoice:
                 global TTS
                 TTS = UkrainianTTS
             except Exception as e:
-                print(f"[TTS] Failed to import Ukrainian TTS: {e}")
+                print(f"[TTS] Failed to import Ukrainian TTS: {e}", file=sys.stderr)
                 return None
 
             # Models should already be in MODELS_DIR from setup_dev.py
             if not MODELS_DIR.exists():
-                print(f"[TTS] ⚠️  Models directory not found: {MODELS_DIR}")
-                print("[TTS] Run setup_dev.py first to download TTS models")
+                print(f"[TTS] ⚠️  Models directory not found: {MODELS_DIR}", file=sys.stderr)
+                print("[TTS] Run setup_dev.py first to download TTS models", file=sys.stderr)
                 return None
 
             required_files = ["model.pth", "feats_stats.npz", "spk_xvector.ark"]
             missing = [f for f in required_files if not (MODELS_DIR / f).exists()]
 
             if missing:
-                print(f"[TTS] ⚠️  Missing TTS model files: {missing}")
-                print("[TTS] Run setup_dev.py to download them")
+                print(f"[TTS] ⚠️  Missing TTS model files: {missing}", file=sys.stderr)
+                print("[TTS] Run setup_dev.py to download them", file=sys.stderr)
                 return None
 
             try:
-                print("[TTS] Initializing engine on " + str(self.device) + "...")
+                print("[TTS] Initializing engine on " + str(self.device) + "...", file=sys.stderr)
                 print(
                     "downloading https://github.com/robinhad/ukrainian-tts/releases/download/v6.0.0",
+                    file=sys.stderr,
                 )
                 _patch_tts_config(MODELS_DIR)
                 self._tts = TTS(cache_folder=str(MODELS_DIR))
-                print("downloaded.")
-                print(f"[TTS] ✅ {self.config.name} voice ready on {self.device}")
+                print("downloaded.", file=sys.stderr)
+                print(f"[TTS] ✅ {self.config.name} voice ready on {self.device}", file=sys.stderr)
             except Exception as e:
-                print(f"[TTS] Error: {e}")
+                print(f"[TTS] Error: {e}", file=sys.stderr)
                 import traceback
 
                 traceback.print_exc()
@@ -326,7 +336,7 @@ class AgentVoice:
         """Generate speech from text."""
         if not _check_tts_available() or not text:
             if not _check_tts_available() and text:
-                print(f"[TTS] [{self.config.name}]: {text}")
+                print(f"[TTS] [{self.config.name}]: {text}", file=sys.stderr)
             return None
 
         # Clean text for better pronunciation
@@ -340,11 +350,11 @@ class AgentVoice:
         try:
             success = self._perform_tts_generation(text, output_file)
             if success:
-                print(f"[TTS] [{self.config.name}]: {text}")
+                print(f"[TTS] [{self.config.name}]: {text}", file=sys.stderr)
                 return output_file
             return None
         except Exception as e:
-            print(f"[TTS] Error generating speech: {e}")
+            print(f"[TTS] Error generating speech: {e}", file=sys.stderr)
             return None
 
     def _get_default_output_path(self, text: str) -> str:
@@ -395,7 +405,7 @@ class AgentVoice:
             subprocess.run(["afplay", file_path], check=True, capture_output=True)
             return True
         except Exception as e:
-            print(f"[TTS] Error playing audio: {e}")
+            print(f"[TTS] Error playing audio: {e}", file=sys.stderr)
             return False
 
 
@@ -425,7 +435,7 @@ class VoiceManager:
 
     async def get_engine(self):
         if not self.enabled:
-            print("[TTS] TTS is disabled in config")
+            print("[TTS] TTS is disabled in config", file=sys.stderr)
             return None
         await self._initialize_if_needed_async()
         return self._tts
@@ -442,16 +452,16 @@ class VoiceManager:
             try:
                 self._load_engine_sync()
             except Exception as e:
-                print(f"[TTS] Sync initialization error: {e}")
+                print(f"[TTS] Sync initialization error: {e}", file=sys.stderr)
 
     async def _initialize_if_needed_async(self):
         if self._tts is None:
             available = await asyncio.to_thread(_check_tts_available)
             if available:
-                print(f"[TTS] Initializing engine on {self.device} (Async)...")
+                print(f"[TTS] Initializing engine on {self.device} (Async)...", file=sys.stderr)
                 await asyncio.to_thread(self._load_engine_sync)
             else:
-                print("[TTS] Voice engine skip: ukrainian-tts not installed.")
+                print("[TTS] Voice engine skip: ukrainian-tts not installed.", file=sys.stderr)
 
     def _load_engine_sync(self):
         if self._tts is not None:
@@ -461,7 +471,7 @@ class VoiceManager:
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            print("[TTS] Loading ukrainian-tts and Stanza resources...")
+            print("[TTS] Loading ukrainian-tts and Stanza resources...", file=sys.stderr)
             import os
             from contextlib import contextmanager
 
@@ -477,12 +487,12 @@ class VoiceManager:
                     os.chdir(old_path)
 
             with tmp_cwd(str(cache_dir)):
-                print("[TTS] Downloading/Verifying models in models/tts...")
+                print("[TTS] Downloading/Verifying models in models/tts...", file=sys.stderr)
                 _patch_tts_config(cache_dir)
                 self._tts = UkrainianTTS(cache_folder=str(cache_dir), device=self.device)
-                print("[TTS] Engine object created successfully.")
+                print("[TTS] Engine object created successfully.", file=sys.stderr)
         except Exception as e:
-            print(f"[TTS] Failed to initialize engine: {e}")
+            print(f"[TTS] Failed to initialize engine: {e}", file=sys.stderr)
             self._tts = None
 
     async def _get_translator(self):
@@ -579,7 +589,7 @@ Ukrainian:"""
         if self._current_process:
             try:
                 self._current_process.terminate()
-                print("[TTS] 🛑 Playback interrupted.")
+                print("[TTS] 🛑 Playback interrupted.", file=sys.stderr)
             except Exception as e:
                 # Ignore errors during process termination
                 logger.debug(f"[TTS] Error terminating playback process: {e}")
@@ -606,7 +616,7 @@ Ukrainian:"""
                 return None
 
             if not _check_tts_available() or not text:
-                print(f"[TTS] [{agent_id.upper()}] (Text-only): {text}")
+                print(f"[TTS] [{agent_id.upper()}] (Text-only): {text}", file=sys.stderr)
                 return None
 
             # Prepare text (sanitize + translate)
@@ -616,7 +626,7 @@ Ukrainian:"""
 
             agent_id = agent_id.lower()
             if agent_id not in AGENT_VOICES:
-                print(f"[TTS] Unknown agent: {agent_id}")
+                print(f"[TTS] Unknown agent: {agent_id}", file=sys.stderr)
                 return None
 
             from ukrainian_tts.tts import Voices
@@ -631,7 +641,7 @@ Ukrainian:"""
                 # 2. Start pipelined playback
                 return await self._pipelined_playback(agent_id, agent_conf, chunks, voice_enum)
             except Exception as e:
-                print(f"[TTS] Error: {e}")
+                print(f"[TTS] Error: {e}", file=sys.stderr)
                 return None
 
     def _chunk_text_for_tts(self, text: str) -> list[str]:
@@ -673,7 +683,10 @@ Ukrainian:"""
         """Handle pipelined generation and playback of speech chunks."""
         import time
 
-        print(f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(chunks)} chunks...")
+        print(
+            f"[TTS] [{agent_conf.name}] Starting pipelined playback for {len(chunks)} chunks...",
+            file=sys.stderr,
+        )
 
         # Generate first chunk
         current_file = await self._generate_chunk(chunks[0], 0, agent_id, voice_enum)
@@ -682,7 +695,7 @@ Ukrainian:"""
 
         for idx, chunk_text in enumerate(chunks):
             if self._stop_event.is_set():
-                print(f"[TTS] [{agent_conf.name}] 🛑 Sequence cancelled.")
+                print(f"[TTS] [{agent_conf.name}] 🛑 Sequence cancelled.", file=sys.stderr)
                 return "cancelled"
 
             # Start generating next chunk while playing current one
@@ -732,7 +745,10 @@ Ukrainian:"""
         self, idx: int, total: int, text: str, file_path: Path, agent_conf: Any
     ) -> None:
         """Play a single chunk of audio and manage state."""
-        print(f"[TTS] [{agent_conf.name}] 🔊 Speaking chunk {idx + 1}/{total}: {text[:50]}...")
+        print(
+            f"[TTS] [{agent_conf.name}] 🔊 Speaking chunk {idx + 1}/{total}: {text[:50]}...",
+            file=sys.stderr,
+        )
         self.last_text = text.strip().lower()
         self.history.append(self.last_text)
         self.is_speaking = True
@@ -746,12 +762,12 @@ Ukrainian:"""
             )
             await self._current_process.communicate()
         except asyncio.CancelledError:
-            print(f"[TTS] [{agent_conf.name}] 🛑 Playback cancelled.")
+            print(f"[TTS] [{agent_conf.name}] 🛑 Playback cancelled.", file=sys.stderr)
             if self._current_process:
                 self._current_process.terminate()
             raise
         except Exception as e:
-            print(f"[TTS] [{agent_conf.name}] ⚠ Playback error: {e}")
+            print(f"[TTS] [{agent_conf.name}] ⚠ Playback error: {e}", file=sys.stderr)
         finally:
             self.is_speaking = False
             self._current_process = None

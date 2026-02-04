@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import sys
 from collections.abc import Callable
 from io import BytesIO
 from typing import Any, cast
@@ -65,17 +66,19 @@ class CopilotLLM(BaseChatModel):
 
         if api_key:
             self.api_key = api_key
-            print(f"[COPILOT] Using API key from parameter: {self.api_key[:10]}...", flush=True)
+            print("[COPILOT] Using API key from parameter", file=sys.stderr, flush=True)
         elif uses_vision_key and vision_key:
             self.api_key = vision_key
             print(
-                f"[COPILOT] Using VISION_API_KEY for model '{self.model_name}': {self.api_key[:10]}...",
+                f"[COPILOT] Using VISION_API_KEY ([MASKED]) for model '{self.model_name}'",
+                file=sys.stderr,
                 flush=True,
             )
         elif copilot_key:
             self.api_key = copilot_key
             print(
-                f"[COPILOT] Using COPILOT_API_KEY for model '{self.model_name}': {self.api_key[:10]}...",
+                f"[COPILOT] Using COPILOT_API_KEY ([MASKED]) for model '{self.model_name}'",
+                file=sys.stderr,
                 flush=True,
             )
         else:

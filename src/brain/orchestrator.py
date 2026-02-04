@@ -5,6 +5,7 @@ LangGraph-based state machine that coordinates Agents (Atlas, Tetyana, Grisha)
 import ast
 import asyncio
 import json
+import sys
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
@@ -507,7 +508,7 @@ class Trinity:
         if not final_text:
             return
 
-        print(f"[{agent_id.upper()}] Speaking: {final_text}")
+        print(f"[{agent_id.upper()}] Speaking: {final_text}", file=sys.stderr)
 
         # 3. Synchronize with UI chat log
         if hasattr(self, "state") and self.state is not None:
@@ -529,7 +530,7 @@ class Trinity:
             # Re-raise to allow the task cancellation to proceed
             raise
         except Exception as e:
-            print(f"TTS Error: {e}")
+            print(f"TTS Error: {e}", file=sys.stderr)
 
     async def _mcp_log_voice_callback(self, msg: str, server_name: str, level: str):
         """Callback to handle live log notifications from MCP servers for voice feedback."""
@@ -3205,7 +3206,13 @@ IMPORTANT: Extract ONLY concrete values, not descriptions. If nothing critical, 
                     step_action=step_action,
                 )
 
-                logger.info(f"[ORCHESTRATOR] LLM extracted {category}:{key}={value[:50]}...")
+                # Security: Mask values that look like credentials
+                display_value = (
+                    "[MASKED]"
+                    if any(kw in key.upper() for kw in ["KEY", "TOKEN", "SECRET", "PASS"])
+                    else value[:50]
+                )
+                logger.info(f"[ORCHESTRATOR] LLM extracted {category}:{key}={display_value}...")
 
         except json.JSONDecodeError as e:
             logger.debug(f"[ORCHESTRATOR] Discovery extraction returned no valid JSON: {e}")

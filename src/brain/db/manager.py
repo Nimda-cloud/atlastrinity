@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -72,16 +73,17 @@ class DatabaseManager:
             # Ensure seed data exists
             await self.ensure_seed_data()
 
-            print("[DB] Database initialized successfully.")
+            print("[DB] Database initialized successfully.", file=sys.stderr)
         except Exception as e:
             # Helpful guidance for common driver issues (aiosqlite missing when using sqlite+aiosqlite)
             err_str = str(e)
             if "No module named 'aiosqlite'" in err_str or "aiosqlite" in err_str:
                 print(
                     f"[DB] Failed to initialize database: {e}\n[DB] Hint: The async SQLite driver 'aiosqlite' is not installed. Install it via 'pip install aiosqlite' or set DATABASE_URL to a supported DB backend.",
+                    file=sys.stderr,
                 )
             else:
-                print(f"[DB] Failed to initialize database: {e}")
+                print(f"[DB] Failed to initialize database: {e}", file=sys.stderr)
             self.available = False
 
     async def verify_schema(self, fix: bool = True):
@@ -98,7 +100,7 @@ class DatabaseManager:
 
             inspector = inspect(connection)
             if not inspector:
-                print("[DB] Critical Error: SQLAlchemy inspector is None")
+                print("[DB] Critical Error: SQLAlchemy inspector is None", file=sys.stderr)
                 return
 
             # 1. Get existing tables
@@ -117,6 +119,7 @@ class DatabaseManager:
                     if column.name not in existing_col_map:
                         print(
                             f"[DB] Mismatch: Missing column '{column.name}' in table '{table_name}'",
+                            file=sys.stderr,
                         )
                         if fix:
                             try:
@@ -145,9 +148,15 @@ class DatabaseManager:
 
                                 sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {col_type} {nullable}{default_val};'
                                 connection.execute(text(sql))
-                                print(f"[DB] FIXED: Added column '{column.name}' to '{table_name}'")
+                                print(
+                                    f"[DB] FIXED: Added column '{column.name}' to '{table_name}'",
+                                    file=sys.stderr,
+                                )
                             except Exception as e:
-                                print(f"[DB] FAILED to add column '{column.name}': {e}")
+                                print(
+                                    f"[DB] FAILED to add column '{column.name}': {e}",
+                                    file=sys.stderr,
+                                )
                     else:
                         # TYPE CHECK (Improved)
                         # We compare the compiled string representation of types and handle common aliases.
@@ -189,6 +198,7 @@ class DatabaseManager:
                         ):
                             print(
                                 f"[DB] Type Warning: Column '{column.name}' in '{table_name}' type mismatch. Found: {raw_existing_type} (norm: {norm_existing}), Expected: {expected_type} (norm: {norm_expected})",
+                                file=sys.stderr,
                             )
                             if fix:
                                 try:
@@ -197,9 +207,10 @@ class DatabaseManager:
                                     connection.execute(text(sql))
                                     print(
                                         f"[DB] FIXED: Altered column '{column.name}' type to {col_type}",
+                                        file=sys.stderr,
                                     )
                                 except Exception as e:
-                                    print(f"[DB] FAILED to alter type: {e}")
+                                    print(f"[DB] FAILED to alter type: {e}", file=sys.stderr)
 
                 # 4. Check for missing indexes
                 existing_indexes = {idx["name"] for idx in inspector.get_indexes(table_name)}
@@ -207,13 +218,14 @@ class DatabaseManager:
                     if index.name not in existing_indexes:
                         print(
                             f"[DB] Mismatch: Missing index '{index.name}' on table '{table_name}'",
+                            file=sys.stderr,
                         )
                         if fix:
                             try:
                                 index.create(connection)
-                                print(f"[DB] FIXED: Created index '{index.name}'")
+                                print(f"[DB] FIXED: Created index '{index.name}'", file=sys.stderr)
                             except Exception as e:
-                                print(f"[DB] FAILED to create index: {e}")
+                                print(f"[DB] FAILED to create index: {e}", file=sys.stderr)
 
                 # 5. Check for missing Foreign Keys
                 existing_fks = {
@@ -234,11 +246,13 @@ class DatabaseManager:
                     if fk_data not in existing_fks:
                         print(
                             f"[DB] Mismatch: Missing Foreign Key on '{table_name}' referencing '{fk_data[1]}'",
+                            file=sys.stderr,
                         )
                         if fix:
                             if connection.dialect.name == "sqlite":
                                 print(
                                     f"[DB] Info: Foreign Key missing on '{table_name}' referencing '{fk_data[1]}'. SQLite doesn't support adding FKs via ALTER TABLE. This is normal for initial setups.",
+                                    file=sys.stderr,
                                 )
                                 continue
                             try:
@@ -250,9 +264,10 @@ class DatabaseManager:
                                 connection.execute(text(sql))
                                 print(
                                     f"[DB] FIXED: Added Foreign Key constraint '{constraint_name}'",
+                                    file=sys.stderr,
                                 )
                             except Exception as e:
-                                print(f"[DB] FAILED to add Foreign Key: {e}")
+                                print(f"[DB] FAILED to add Foreign Key: {e}", file=sys.stderr)
 
         async with self._engine.begin() as conn:
             await conn.run_sync(_sync_verify)
@@ -272,7 +287,7 @@ class DatabaseManager:
             stmt = select(KGNode).where(cast("Any", KGNode.id == "entity:trinity"))
             res = await session.execute(stmt)
             if not res.scalar():
-                print("[DB] Seeding core Knowledge Graph nodes...")
+                print("[DB] Seeding core Knowledge Graph nodes...", file=sys.stderr)
                 trinity = KGNode(
                     id="entity:trinity",
                     type="CONCEPT",
@@ -283,7 +298,7 @@ class DatabaseManager:
                 )
                 session.add(trinity)
                 await session.commit()
-                print("[DB] Seeding complete.")
+                print("[DB] Seeding complete.", file=sys.stderr)
 
     async def create_table_from_df(self, table_name: str, df: pd.DataFrame) -> bool:
         """Dynamically create a table in the database matching the DataFrame schema.
@@ -328,7 +343,7 @@ class DatabaseManager:
 
         try:
             if not self._engine:
-                print("[DB] Error: Cannot create table, engine not initialized.")
+                print("[DB] Error: Cannot create table, engine not initialized.", file=sys.stderr)
                 return False
 
             async with self._engine.begin() as conn:
@@ -370,10 +385,13 @@ class DatabaseManager:
                 await session.execute(text(sql), sanitized_data)
                 await session.commit()
 
-            print(f"[DB] Dynamic table '{table_name}' created and populated with {len(df)} rows.")
+            print(
+                f"[DB] Dynamic table '{table_name}' created and populated with {len(df)} rows.",
+                file=sys.stderr,
+            )
             return True
         except Exception as e:
-            print(f"[DB] Failed to create dynamic table '{table_name}': {e}")
+            print(f"[DB] Failed to create dynamic table '{table_name}': {e}", file=sys.stderr)
             return False
 
     async def get_session(self) -> AsyncSession:

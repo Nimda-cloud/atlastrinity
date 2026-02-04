@@ -48,7 +48,10 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
     Додає нові ключі з bundle, зберігає значення користувача.
     """
     if not YAML_AVAILABLE:
-        print("[Production Setup] ⚠️  PyYAML not available, copying instead of merging")
+        print(
+            "[Production Setup] ⚠️  PyYAML not available, copying instead of merging",
+            file=sys.stderr,
+        )
         shutil.copy2(src_path, dst_path)
         return True
 
@@ -68,7 +71,7 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
                     default_flow_style=False,
                     sort_keys=False,
                 )
-            print(f"[Production Setup] ✓ Created: {dst_path.name}")
+            print(f"[Production Setup] ✓ Created: {dst_path.name}", file=sys.stderr)
             return True
 
         # Файл існує - merge
@@ -90,11 +93,14 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
             )
             yaml.dump(merged, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
-        print(f"[Production Setup] ✓ Merged: {dst_path.name} (backup: {backup_path.name})")
+        print(
+            f"[Production Setup] ✓ Merged: {dst_path.name} (backup: {backup_path.name})",
+            file=sys.stderr,
+        )
         return True
 
     except Exception as e:
-        print(f"[Production Setup] ✗ Error merging YAML: {e}")
+        print(f"[Production Setup] ✗ Error merging YAML: {e}", file=sys.stderr)
         return False
 
 
@@ -109,7 +115,7 @@ def sync_json_config(src_path: Path, dst_path: Path) -> bool:
         if not dst_path.exists():
             with open(dst_path, "w", encoding="utf-8") as f:
                 json.dump(bundle_config, f, ensure_ascii=False, indent=2)
-            print(f"[Production Setup] ✓ Created: {dst_path.name}")
+            print(f"[Production Setup] ✓ Created: {dst_path.name}", file=sys.stderr)
             return True
 
         with open(dst_path, encoding="utf-8") as f:
@@ -121,13 +127,16 @@ def sync_json_config(src_path: Path, dst_path: Path) -> bool:
             shutil.copy2(dst_path, backup_path)
             with open(dst_path, "w", encoding="utf-8") as f:
                 json.dump(merged, f, ensure_ascii=False, indent=2)
-            print(f"[Production Setup] ✓ Merged: {dst_path.name} (backup: {backup_path.name})")
+            print(
+                f"[Production Setup] ✓ Merged: {dst_path.name} (backup: {backup_path.name})",
+                file=sys.stderr,
+            )
         else:
-            print(f"[Production Setup] ✓ Up-to-date: {dst_path.name}")
+            print(f"[Production Setup] ✓ Up-to-date: {dst_path.name}", file=sys.stderr)
 
         return True
     except Exception as e:
-        print(f"[Production Setup] ✗ Error copying JSON: {e}")
+        print(f"[Production Setup] ✗ Error copying JSON: {e}", file=sys.stderr)
         return False
 
 
@@ -138,11 +147,11 @@ def copy_config_if_needed():
     - .env: SKIP if exists (API ключі користувача)
     """
     if not is_production():
-        print("[Production Setup] Skipping - running in development mode")
+        print("[Production Setup] Skipping - running in development mode", file=sys.stderr)
         return
 
     resources_path = get_resources_path()
-    print(f"[Production Setup] Resources path: {resources_path}")
+    print(f"[Production Setup] Resources path: {resources_path}", file=sys.stderr)
 
     # 1. .env - тільки якщо не існує (API ключі користувача)
     env_src = resources_path / ".env"
@@ -150,9 +159,9 @@ def copy_config_if_needed():
     if env_src.exists() and not env_dst.exists():
         env_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(env_src, env_dst)
-        print("[Production Setup] ✓ Created: .env")
+        print("[Production Setup] ✓ Created: .env", file=sys.stderr)
     elif env_dst.exists():
-        print("[Production Setup] ✓ Preserved: .env (user API keys)")
+        print("[Production Setup] ✓ Preserved: .env (user API keys)", file=sys.stderr)
 
     # 2. config.yaml - SMART MERGE
     yaml_src = resources_path / "config.yaml"
@@ -160,7 +169,7 @@ def copy_config_if_needed():
     if yaml_src.exists():
         sync_yaml_config(yaml_src, yaml_dst)
     else:
-        print(f"[Production Setup] ⚠️  Source not found: {yaml_src}")
+        print(f"[Production Setup] ⚠️  Source not found: {yaml_src}", file=sys.stderr)
 
     # 3. mcp/config.json - REPLACE (системний)
     mcp_src = resources_path / "mcp" / "config.json"
@@ -168,7 +177,7 @@ def copy_config_if_needed():
     if mcp_src.exists():
         sync_json_config(mcp_src, mcp_dst)
     else:
-        print(f"[Production Setup] ⚠️  Source not found: {mcp_src}")
+        print(f"[Production Setup] ⚠️  Source not found: {mcp_src}", file=sys.stderr)
 
     # 4. vibe_config.toml - Simple copy if missing (Vibe manages its own defaults)
     vibe_src = resources_path / "mcp_server" / "templates" / "vibe_config.toml.template"
@@ -176,11 +185,11 @@ def copy_config_if_needed():
     if vibe_src.exists() and not vibe_dst.exists():
         vibe_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(vibe_src, vibe_dst)
-        print("[Production Setup] ✓ Created: vibe_config.toml")
+        print("[Production Setup] ✓ Created: vibe_config.toml", file=sys.stderr)
     elif vibe_dst.exists():
-        print("[Production Setup] ✓ Preserved: vibe_config.toml")
+        print("[Production Setup] ✓ Preserved: vibe_config.toml", file=sys.stderr)
 
-    print("[Production Setup] ✓ Config files synchronized")
+    print("[Production Setup] ✓ Config files synchronized", file=sys.stderr)
 
 
 def ensure_tts_models():
@@ -191,20 +200,28 @@ def ensure_tts_models():
     missing = [f for f in required_files if not (MODELS_DIR / f).exists()]
 
     if missing:
-        print("[Production Setup] ℹ️  TTS models will be downloaded automatically on first use")
-        print(f"[Production Setup] Missing files: {missing}")
-        print(f"[Production Setup] Target directory: {MODELS_DIR}")
+        print(
+            "[Production Setup] ℹ️  TTS models will be downloaded automatically on first use",
+            file=sys.stderr,
+        )
+        print(f"[Production Setup] Missing files: {missing}", file=sys.stderr)
+        print(f"[Production Setup] Target directory: {MODELS_DIR}", file=sys.stderr)
     else:
-        print(f"[Production Setup] ✓ TTS models present in {MODELS_DIR}")
+        print(f"[Production Setup] ✓ TTS models present in {MODELS_DIR}", file=sys.stderr)
 
 
 def ensure_stt_models():
     """Перевіряє наявність Faster-Whisper моделей в ~/.config/atlastrinity/models/faster-whisper/"""
     if not WHISPER_DIR.exists() or not any(WHISPER_DIR.iterdir()):
-        print("[Production Setup] ℹ️  Whisper models will be downloaded automatically on first use")
-        print(f"[Production Setup] Target directory: {WHISPER_DIR}")
+        print(
+            "[Production Setup] ℹ️  Whisper models will be downloaded automatically on first use",
+            file=sys.stderr,
+        )
+        print(f"[Production Setup] Target directory: {WHISPER_DIR}", file=sys.stderr)
     else:
-        print(f"[Production Setup] ✓ Faster-Whisper models present in {WHISPER_DIR}")
+        print(
+            f"[Production Setup] ✓ Faster-Whisper models present in {WHISPER_DIR}", file=sys.stderr
+        )
 
 
 def run_production_setup():
@@ -212,17 +229,17 @@ def run_production_setup():
     if not is_production():
         return
 
-    print("\n" + "=" * 60)
-    print("🔱 AtlasTrinity Production First-Run Setup")
-    print("=" * 60)
+    print("\n" + "=" * 60, file=sys.stderr)
+    print("🔱 AtlasTrinity Production First-Run Setup", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
 
     copy_config_if_needed()
     ensure_tts_models()
     ensure_stt_models()
 
-    print("=" * 60)
-    print("✅ Production setup complete")
-    print("=" * 60 + "\n")
+    print("=" * 60, file=sys.stderr)
+    print("✅ Production setup complete", file=sys.stderr)
+    print("=" * 60 + "\n", file=sys.stderr)
 
 
 if __name__ == "__main__":

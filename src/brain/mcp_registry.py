@@ -9,6 +9,7 @@ to prevent language server (Pyrefly) stack overflow crashes.
 
 import json
 import os
+import sys
 from typing import Any
 
 # Paths to data files
@@ -71,14 +72,20 @@ def load_registry():
             with open(CATALOG_PATH, encoding="utf-8") as f:
                 SERVER_CATALOG = json.load(f)
         else:
-            print(f"[Here be Dragons] Warning: Catalog file not found at {CATALOG_PATH}")
+            print(
+                f"[Here be Dragons] Warning: Catalog file not found at {CATALOG_PATH}",
+                file=sys.stderr,
+            )
 
         # Load Schemas
         if os.path.exists(SCHEMAS_PATH):
             with open(SCHEMAS_PATH, encoding="utf-8") as f:
                 TOOL_SCHEMAS = json.load(f)
         else:
-            print(f"[Here be Dragons] Warning: Schemas file not found at {SCHEMAS_PATH}")
+            print(
+                f"[Here be Dragons] Warning: Schemas file not found at {SCHEMAS_PATH}",
+                file=sys.stderr,
+            )
 
         # Load Vibe Docs
         if os.path.exists(VIBE_DOCS_PATH):
@@ -149,7 +156,7 @@ def load_registry():
             MAPS_PROTOCOL = "Maps protocol not found."
 
     except Exception as e:
-        print(f"[Here be Dragons] Error loading MCP registry: {e}")
+        print(f"[Here be Dragons] Error loading MCP registry: {e}", file=sys.stderr)
 
 
 # Load data immediately on import

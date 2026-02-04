@@ -1,4 +1,20 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T15:24:00.040063 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/verify_fallback_chain.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T15:17:02.699554 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/verify_fallback_chain.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T15:06:32.236075 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/verify_fallback_chain.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T15:05:18.569311 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/verify_fallback_chain.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T14:44:27.904060 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/copilot_proxy.py -->
 
