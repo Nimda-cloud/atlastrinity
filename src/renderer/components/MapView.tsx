@@ -136,6 +136,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   const [streetViewActive, setStreetViewActive] = useState(false);
   // Track Pegman dragging state for road highlighting
   const [isDraggingPegman, setIsDraggingPegman] = useState(false);
+  // Cyberpunk filter toggle - enabled by default for satellite/hybrid, roadmap always uses night style
+  const [cyberpunkFilterEnabled, setCyberpunkFilterEnabled] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate time-based lighting mode for adaptive filters
@@ -574,6 +576,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 rendering-type="raster"
                 data-map-type={mapType}
                 data-lighting-mode={lightingMode}
+                data-cyberpunk-filter={cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled'}
                 street-view-control
                 style={{ width: '100%', height: '100%' }}
               >
@@ -735,6 +738,32 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                       <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
                     </svg>
                   </div>
+                </div>
+
+                {/* Cyberpunk Filter Toggle - only for satellite/hybrid */}
+                <div className="control-section filter-section">
+                  <div className="control-separator-vertical"></div>
+                  <button
+                    className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''} ${mapType === 'roadmap' ? 'disabled' : ''}`}
+                    onClick={() => setCyberpunkFilterEnabled(!cyberpunkFilterEnabled)}
+                    aria-label="Toggle Cyberpunk Filter"
+                    title={mapType === 'roadmap' ? 'FILTER_N/A_ROADMAP' : (cyberpunkFilterEnabled ? 'FILTER_ENABLED' : 'FILTER_DISABLED')}
+                    disabled={mapType === 'roadmap'}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      {/* Filter/Adjustment icon */}
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M12 2v20M2 12h20"></path>
+                      <circle cx="12" cy="12" r="4"></circle>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1463,6 +1492,57 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         @keyframes pegman-float {
           from { transform: translateY(0px) scale(1); }
           to { transform: translateY(-3px) scale(1.05); }
+        }
+        
+        /* Filter Toggle Button Styles */
+        .filter-toggle-btn {
+          width: 32px;
+          height: 32px;
+          background: transparent;
+          border: none;
+          color: rgba(0, 229, 255, 0.6);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          border-radius: 2px;
+        }
+        
+        .filter-toggle-btn:hover:not(.disabled) {
+          background: rgba(0, 163, 255, 0.3);
+          color: #00e5ff;
+          filter: drop-shadow(0 0 5px #00e5ff);
+        }
+        
+        .filter-toggle-btn.active {
+          color: #00e5ff;
+          background: rgba(0, 163, 255, 0.4);
+          box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.4);
+        }
+        
+        .filter-toggle-btn.disabled {
+          color: rgba(100, 100, 100, 0.4);
+          cursor: not-allowed;
+          opacity: 0.4;
+        }
+        
+        /* Cyberpunk filter for satellite/hybrid maps when enabled */
+        gmp-map[data-map-type="satellite"][data-cyberpunk-filter="enabled"],
+        gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="enabled"] {
+          filter: hue-rotate(180deg) saturate(1.5) brightness(0.9) contrast(1.1);
+        }
+        
+        /* Natural view - no filter */
+        gmp-map[data-map-type="satellite"][data-cyberpunk-filter="disabled"],
+        gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="disabled"] {
+          filter: none;
+        }
+        
+        /* Roadmap always uses night style, no additional filter needed */
+        gmp-map[data-map-type="roadmap"] {
+          /* Night style applied via Google Maps JSON styles */
+          filter: none;
         }
         
         /* Native Pegman Control - Styled via shadow DOM injection */
