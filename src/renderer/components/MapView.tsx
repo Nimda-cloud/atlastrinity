@@ -1543,9 +1543,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Cyberpunk filter for satellite/hybrid maps when enabled */
         gmp-map[data-map-type="satellite"][data-cyberpunk-filter="enabled"],
         gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="enabled"] {
-          /* Sepia(1) + 150deg = Bright Cyan / Light Blue (Turquoise) */
-          /* Increased brightness to 1.1 to make it 'lighter' as requested */
-          filter: sepia(1) hue-rotate(150deg) saturate(3) contrast(1.1) brightness(1.1);
+          /* Sepia(1) + 140deg = Sky Blue / Light Cyan */
+          /* Increased brightness to 1.3 and lowered saturation slightly for 'lighter' look */
+          filter: sepia(1) hue-rotate(140deg) saturate(2.5) contrast(1.1) brightness(1.3);
         }
         
         /* Natural view - no filter */
