@@ -443,12 +443,12 @@ app.on('before-quit', () => {
       'vibe_server vibe brain.server mcp-server memory_server graph_server macos-use watch_config';
     const command = `${targets
       .split(' ')
-      .map((t) => `pkill -9 -f "${t}"`)
+      .map((t) => `pkill -15 -f "${t}"`)
       .join('; ')}; true`;
 
     execSync(command, {
       stdio: 'ignore',
-      timeout: 5000,
+      timeout: 2000, // Shorter timeout for graceful cleanup
     });
 
     // Attempt to free port 3000 (Vite) if it was spawned by us or is lingering

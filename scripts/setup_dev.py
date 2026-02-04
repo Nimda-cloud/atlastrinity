@@ -305,6 +305,21 @@ def ensure_database():
     except Exception as e:
         print_warning(f"Помилка при налаштуванні БД: {e}")
 
+    # 4. Ensure legacy trinity.db exists for backup consistency
+    trinity_db_path = CONFIG_ROOT / "data" / "trinity.db"
+    trinity_db_path.parent.mkdir(parents=True, exist_ok=True)
+    if not trinity_db_path.exists():
+        print_info("Створення порожньої legacy бази trinity.db...")
+        try:
+            import sqlite3
+
+            with sqlite3.connect(trinity_db_path) as conn:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                conn.commit()
+            print_success("Legacy trinity.db створено")
+        except Exception as e:
+            print_warning(f"Не вдалося створити legacy trinity.db: {e}")
+
 
 def prepare_monitoring_db():
     """Initialize Monitoring SQLite database"""
@@ -462,6 +477,23 @@ def verify_golden_fund():
 
     except Exception as e:
         print_warning(f"Не вдалося перевірити структуру Golden Fund: {e}")
+
+    # 3. Ensure Search Index DB exists
+    search_index_path = CONFIG_ROOT / "data" / "search" / "golden_fund_index.db"
+    search_index_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not search_index_path.exists():
+        print_info("Створення бази індексу пошуку (FTS5)...")
+        try:
+            import sqlite3
+
+            with sqlite3.connect(search_index_path) as conn:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                # FTS table will be created by the ingest tool, but we ensure the file exists
+                conn.commit()
+            print_success("Search Index DB створено")
+        except Exception as e:
+            print_warning(f"Не вдалося створити Search Index DB: {e}")
 
 
 def _brew_formula_installed(formula: str) -> bool:

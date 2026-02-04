@@ -26,8 +26,8 @@ class SecureBackupManager:
 
         # Secret patterns to filter/remove
         self.secret_patterns = [
-            r"AIza[a-zA-Z0-9_-]{35}",  # Google Maps API keys
-            r"ghp_[a-zA-Z0-9]{36}",  # GitHub personal access tokens
+            r"AIza[a-zA-Z0-9_-]{30,40}",  # Google Maps API keys (typically 39, but can vary)
+            r"ghp_[a-zA-Z0-9_]{20,40}",  # GitHub personal access tokens
             r"ghu_[a-zA-Z0-9]{36}",  # GitHub user tokens
             r"gho_[a-zA-Z0-9]{36}",  # GitHub OAuth tokens
             r"ghr_[a-zA-Z0-9]{36}",  # GitHub refresh tokens
@@ -122,6 +122,17 @@ class SecureBackupManager:
             tables = [row[0] for row in cursor.fetchall()]
 
             for table in tables:
+                # SKIP shadow tables or already created tables
+                # FTS5 shadow tables: *_data, *_idx, *_content, *_docsize, *_config
+                # SQLite virtual tables create these automatically
+                cursor_check = clean_conn.cursor()
+                cursor_check.execute(
+                    f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}';"
+                )
+                if cursor_check.fetchone():
+                    # Table already created (likely a shadow table from a virtual table definition)
+                    continue
+
                 # Get table schema
                 cursor.execute(
                     f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table}';"
@@ -402,3 +413,13 @@ class SecureBackupManager:
 
         print(f"🔓 Secure restore completed: {success_count} items restored")
         return True
+
+
+if __name__ == "__main__":
+    import sys
+
+    manager = SecureBackupManager(Path(__file__).resolve().parent.parent)
+    if "--restore" in sys.argv:
+        manager.restore_secure_backup()
+    else:
+        manager.create_secure_backup()
