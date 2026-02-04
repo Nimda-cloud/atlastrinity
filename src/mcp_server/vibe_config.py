@@ -514,17 +514,18 @@ class VibeConfig(BaseModel):
         args = ["-p", prompt, "--output", output_format]
 
         # Mode mapping to agent profiles
-        effective_mode = mode or self.default_mode
-
-        # If explicit agent is provided, use it; otherwise map mode to agent profile
-        if agent:
-            args.extend(["--agent", agent])
-        elif effective_mode == AgentMode.AUTO_APPROVE:
-            args.extend(["--agent", "auto-approve"])
-        elif effective_mode == AgentMode.PLAN:
-            args.extend(["--agent", "plan"])
-        elif effective_mode == AgentMode.ACCEPT_EDITS:
-            args.extend(["--agent", "accept-edits"])
+        # In programmatic mode (-p), agent profile is ignored as tools are auto-approved.
+        # Providing --agent can sometimes trigger TUI, so we omit it for -p.
+        if not prompt or args[0] != "-p":
+            effective_mode = mode or self.default_mode
+            if agent:
+                args.extend(["--agent", agent])
+            elif effective_mode == AgentMode.AUTO_APPROVE:
+                args.extend(["--agent", "auto-approve"])
+            elif effective_mode == AgentMode.PLAN:
+                args.extend(["--agent", "plan"])
+            elif effective_mode == AgentMode.ACCEPT_EDITS:
+                args.extend(["--agent", "accept-edits"])
         # Default mode doesn't need --agent (uses builtin default)
 
         # Model override - only if CLI supports it (handled via config heuristic)

@@ -340,14 +340,15 @@ def _start_copilot_proxy() -> None:
             proxy_script = PROJECT_ROOT / "scripts" / "copilot_proxy.py"
             if proxy_script.exists():
                 logger.info(f"[VIBE] Starting Copilot Proxy: {proxy_script}")
-                # Start as a daemon subprocess
+                # Start as a daemon subprocess, redirecting output to log file
+                proxy_log = log_dir / "copilot_proxy.log"
                 _proxy_process = subprocess.Popen(
                     [sys.executable, str(proxy_script)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
+                    stdout=open(proxy_log, "a"),
+                    stderr=subprocess.STDOUT,
                     start_new_session=True,
                 )
-                logger.info(f"[VIBE] Copilot Proxy started (PID: {_proxy_process.pid})")
+                logger.info(f"[VIBE] Copilot Proxy started (PID: {_proxy_process.pid}, Log: {proxy_log})")
             else:
                 logger.warning(
                     f"[VIBE] Copilot provider configured but proxy script not found at {proxy_script}"
@@ -427,6 +428,134 @@ def resolve_vibe_binary() -> str | None:
 
     logger.warning(f"Vibe binary '{VIBE_BINARY}' not found")
     return None
+
+
+def _prepare_temp_vibe_home(model_alias: str) -> str:
+    """Prepare a temporary VIBE_HOME with a custom config.toml for model switching."""
+    temp_dir = tempfile.mkdtemp(prefix="vibe_home_")
+    temp_path = Path(temp_dir)
+
+    try:
+        config = get_vibe_config()
+        # Find real VIBE_HOME
+        vibe_home = Path(config.vibe_home or os.getenv("VIBE_HOME", str(Path.home() / ".vibe")))
+
+        # 1. Create directory structure
+        (temp_path / "prompts").mkdir(parents=True, exist_ok=True)
+        (temp_path / "agents").mkdir(parents=True, exist_ok=True)
+
+        # 2. Link/Copy support folders (prompts are essential, agents are omitted for -p)
+        for folder in ["prompts"]:
+            src = vibe_home / folder
+            dst = temp_path / folder
+            if src.exists():
+                dst.mkdir(parents=True, exist_ok=True)
+                for item in src.glob("*"):
+                    if item.is_file():
+                        dst_item = dst / item.name
+                        try:
+                            os.symlink(item, dst_item)
+                        except (OSError, FileExistsError):
+                            shutil.copy2(item, dst_item)
+
+        # 3. Generate custom config.toml
+        # We generate a fresh TOML matching the VibeConfig object
+        # This ensures all provider overrides and MCP servers are propagated
+        def get_val(obj, key, default):
+            """Safely get value from object, handling MagicMocks."""
+            val = getattr(obj, key, default)
+            # If it's a MagicMock, it won't be in the expected type
+            from unittest.mock import MagicMock
+            if isinstance(val, MagicMock):
+                return default
+            return val
+
+        toml_lines = [
+            "# Generated Vibe Configuration for Temp Session",
+            f'active_model = "{model_alias}"',
+            f'system_prompt_id = "{str(get_val(config, "system_prompt_id", "cli"))}"',
+            f"enable_auto_update = false",
+            f"max_turns = {int(get_val(config, 'max_turns', 100))}",
+            f"disable_welcome_banner_animation = {str(get_val(config, 'disable_welcome_banner_animation', True)).lower()}",
+            "",
+        ]
+
+        # Add providers
+        for provider in config.providers:
+            # Skip if it's the default placeholder or redundant
+            if not provider.name or not provider.api_base:
+                continue
+            toml_lines.extend([
+                "[[providers]]",
+                f'name = "{provider.name}"',
+                f'api_base = "{provider.api_base}"',
+                f'api_key_env_var = "{provider.api_key_env_var}"',
+                f'api_style = "{provider.api_style}"',
+                f'backend = "{provider.backend}"',
+                ""
+            ])
+
+        # Add models
+        for model in config.models:
+            # Handle potential mocks or non-string types safely
+            m_name = str(model.name)
+            m_provider = str(model.provider)
+            m_alias = str(model.alias)
+            m_temp = float(model.temperature)
+            m_in_p = float(model.input_price)
+            m_out_p = float(model.output_price)
+
+            toml_lines.extend([
+                "[[models]]",
+                f'name = "{m_name}"',
+                f'provider = "{m_provider}"',
+                f'alias = "{m_alias}"',
+                f'temperature = {m_temp}',
+                f'input_price = {m_in_p}',
+                f'output_price = {m_out_p}',
+                ""
+            ])
+
+        # Add MCP servers (Documentation: supported transports and fields)
+        for mcp in config.mcp_servers:
+            toml_lines.extend([
+                "[[mcp_servers]]",
+                f'name = "{mcp.name}"',
+                f'transport = "{mcp.transport}"',
+            ])
+            if hasattr(mcp, "url") and mcp.url:
+                toml_lines.append(f'url = "{mcp.url}"')
+            if hasattr(mcp, "command") and mcp.command:
+                toml_lines.append(f'command = "{mcp.command}"')
+            if hasattr(mcp, "args") and mcp.args:
+                toml_lines.append(f"args = {list(mcp.args)}")
+            if hasattr(mcp, "env") and mcp.env:
+                toml_lines.append(f"env = {dict(mcp.env)}")
+            toml_lines.append("")
+
+        # Add tool patterns and permissions
+        if config.enabled_tools:
+            toml_lines.append(f"enabled_tools = {list(config.enabled_tools)}")
+        if config.disabled_tools:
+            toml_lines.append(f"disabled_tools = {list(config.disabled_tools)}")
+
+        for tool_name, tool_conf in config.tools.items():
+            toml_lines.extend([
+                f"[tools.{tool_name}]",
+                f'permission = "{tool_conf.permission}"'
+            ])
+
+        config_text = "\n".join(toml_lines)
+        (temp_path / "config.toml").write_text(config_text, encoding="utf-8")
+        logger.debug(f"[VIBE] Prepared temp VIBE_HOME at {temp_dir} with model={model_alias}")
+        logger.debug(f"[VIBE] Generated TOML:\n{config_text}")
+        return temp_dir
+
+    except Exception as e:
+        logger.error(f"[VIBE] Failed to prepare temp VIBE_HOME: {e}")
+        # Clean up on failure
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        return ""
 
 
 def prepare_workspace_and_instructions() -> None:
@@ -514,10 +643,15 @@ async def run_vibe_subprocess(
     env: dict[str, str] | None = None,
     ctx: Context | None = None,
     prompt_preview: str | None = None,
+    vibe_home_override: str | None = None,
 ) -> dict[str, Any]:
     """Execute Vibe CLI subprocess with streaming output and global queueing."""
     global VIBE_QUEUE_SIZE
     process_env = _prepare_vibe_env(env)
+
+    # Apply VIBE_HOME override if provided
+    if vibe_home_override:
+        process_env["VIBE_HOME"] = vibe_home_override
 
     # Queue Management
     VIBE_QUEUE_SIZE += 1
@@ -529,6 +663,7 @@ async def run_vibe_subprocess(
     async with VIBE_LOCK:
         VIBE_QUEUE_SIZE -= 1
         logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
+        logger.debug(f"[VIBE] Full argv: {argv}")
 
         if prompt_preview:
             await _emit_vibe_log(
@@ -536,17 +671,35 @@ async def run_vibe_subprocess(
             )
 
         try:
-            return await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
+            result = await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
+            return result
         except Exception as outer_e:
             error_msg = f"Outer subprocess error: {outer_e}"
             logger.error(f"[VIBE] {error_msg}")
             return {"success": False, "error": error_msg, "command": argv}
+        finally:
+            # Clean up temp VIBE_HOME if it was an override
+            if vibe_home_override and "vibe_home_" in vibe_home_override:
+                try:
+                    # We give a small delay to ensure file handles are closed
+                    await asyncio.sleep(0.5)
+                    shutil.rmtree(vibe_home_override, ignore_errors=True)
+                    logger.debug(f"[VIBE] Cleaned up temp VIBE_HOME: {vibe_home_override}")
+                except Exception as e:
+                    logger.warning(f"[VIBE] Failed to cleanup temp home {vibe_home_override}: {e}")
 
 
 def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
     """Prepare environment variables for Vibe subprocess."""
     config = get_vibe_config()
     process_env = os.environ.copy()
+    # Force non-interactive/programmatic mode for Vibe (Textual-based)
+    process_env["TERM"] = "dumb"
+    process_env["PAGER"] = "cat"
+    process_env["NO_COLOR"] = "1"
+    process_env["PYTHONUNBUFFERED"] = "1"
+    process_env["TEXTUAL_ALLOW_NON_INTERACTIVE"] = "1"
+    process_env["VIBE_DEBUG_RAW"] = "false"
     process_env.update(config.get_environment())
     if env:
         process_env.update({k: str(v) for k, v in env.items()})
@@ -649,22 +802,27 @@ async def _read_vibe_stream(
     timeout_s: float,
     ctx: Context | None,
 ) -> None:
-    """Read from Vibe stream and process lines."""
-    buffer = b""
+    """Read stream in chunks to handle TUI artifacts and provide real-time logging."""
     try:
         while True:
-            data = await stream.read(8192)
+            # Use read() instead of readline() to handle status lines without newlines
+            data = await stream.read(1024)
             if not data:
                 break
             chunks.append(data)
-            buffer += data
-            while b"\n" in buffer:
-                line_bytes, buffer = buffer.split(b"\n", 1)
-                line = strip_ansi(line_bytes.decode(errors="replace")).strip()
-                await _handle_vibe_line(line, stream_name, ctx)
-        if buffer:
-            line = strip_ansi(buffer.decode(errors="replace")).strip()
-            await _handle_vibe_line(line, stream_name, ctx)
+            
+            # For logging, we still try to process lines if they exist in the chunk
+            text = data.decode(errors="replace")
+            for line in text.split("\n"):
+                if line.strip():
+                    await _handle_vibe_line(line, stream_name, ctx)
+    except Exception as e:
+        logger.debug(f"[VIBE] Error reading {stream_name} stream: {e}")
+        # The original code had a 'buffer' variable here, but the new logic doesn't maintain one.
+        # This part of the fallback logic is removed as it would cause a NameError.
+        # if buffer:
+        #     line = strip_ansi(buffer.decode(errors="replace")).strip()
+        #     await _handle_vibe_line(line, stream_name, ctx)
     except TimeoutError:
         logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
     except Exception as e:
@@ -691,27 +849,48 @@ async def _execute_vibe_with_retries(
                 env=process_env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.DEVNULL,
+                stdin=asyncio.subprocess.PIPE,
             )
 
             stdout_chunks: list[bytes] = []
             stderr_chunks: list[bytes] = []
 
-            tasks: list[Any] = []
-            if process.stdout:
-                tasks.append(
-                    _read_vibe_stream(process.stdout, stdout_chunks, "OUT", timeout_s, ctx)
-                )
-            if process.stderr:
-                tasks.append(
-                    _read_vibe_stream(process.stderr, stderr_chunks, "ERR", timeout_s, ctx)
-                )
-            tasks.append(process.wait())
+            # Heartbeat to push through Vibe's 'Press Enter' TUI hangs
+            async def send_heartbeat():
+                if process.stdin is None:
+                    return
+                while process.returncode is None:
+                    try:
+                        # Only send if we think it's stuck or just as a proactive nudge
+                        process.stdin.write(b"\n")
+                        await process.stdin.drain()
+                        logger.debug("[VIBE] Sent heartbeat newline to stdin")
+                        await asyncio.sleep(5) # Proactive nudge every 5s
+                    except Exception as e:
+                        logger.debug(f"[VIBE] Heartbeat stopped: {e}")
+                        break
+            
+            heartbeat_task = asyncio.create_task(send_heartbeat())
+            
+            try:
+                streams_to_read = []
+                if process.stdout:
+                    streams_to_read.append(_read_vibe_stream(process.stdout, stdout_chunks, "OUT", timeout_s, ctx))
+                if process.stderr:
+                    streams_to_read.append(_read_vibe_stream(process.stderr, stderr_chunks, "ERR", timeout_s, ctx))
+                
+                if streams_to_read:
+                    await asyncio.gather(*streams_to_read)
+            finally:
+                heartbeat_task.cancel()
+                try:
+                    await heartbeat_task
+                except asyncio.CancelledError:
+                    pass
 
             try:
-                # Cast to Any to avoid strict Awaitable[tuple] vs Awaitable[list] mismatch in some Pyrefly versions
-                gather_fut = cast(Any, asyncio.gather(*tasks))
-                await asyncio.wait_for(gather_fut, timeout=timeout_s + 20)
+                # Wait for the process to finish, with a timeout
+                await asyncio.wait_for(process.wait(), timeout=timeout_s + 20)
                 await _emit_vibe_log(ctx, "info", "✅ [VIBE-LIVE] Vibe завершив роботу успішно")
             except TimeoutError:
                 return await _handle_vibe_timeout(
@@ -721,12 +900,29 @@ async def _execute_vibe_with_retries(
             stdout = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
             stderr = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
 
-            # Check for API rate limits
-            if "Rate limit exceeded" in stderr or "Rate limit exceeded" in stdout:
+            # Check for API rate limits and other fallback triggers
+            rate_limit_patterns = [
+                r"Rate limit[s]? exceeded",
+                r"Upgrade to Pro",
+                r"429 Too Many Requests",
+                r"Insufficient quota",
+            ]
+            is_rate_limit = any(
+                re.search(p, stderr, re.IGNORECASE) or re.search(p, stdout, re.IGNORECASE)
+                for p in rate_limit_patterns
+            )
+
+            if is_rate_limit:
                 res = await _handle_vibe_rate_limit(
                     attempt, MAX_RETRIES, BACKOFF_DELAYS, stdout, stderr, argv, ctx
                 )
-                if isinstance(res, bool) and res is True:  # Continue to next retry
+                if isinstance(res, tuple) and res[0] is True:
+                    # Model switched, update VIBE_HOME for next attempt
+                    new_home = res[1]
+                    if new_home:
+                        process_env["VIBE_HOME"] = new_home
+                    continue
+                if isinstance(res, bool) and res is True:
                     continue
                 return cast(dict[str, Any], res)
 
@@ -821,22 +1017,17 @@ async def _handle_vibe_rate_limit(
     stderr: str,
     argv: list[str],
     ctx: Context | None,
-) -> bool | dict[str, Any]:
+) -> bool | tuple[bool, str | None] | dict[str, Any]:
     """Handle rate limit errors with multi-tier backoff or report failure."""
     global _current_model
 
     config = get_vibe_config()
 
-    # Tier 1 Fallback: Mistral -> OpenRouter (or Copilot if OpenRouter unavailable)
-    # Triggered immediately on first failure if current model is Mistral (default)
-    if (attempt == 0 or attempt >= max_retries - 1) and _current_model not in (
-        "devstral-openrouter",
-        "gpt-4o",
-    ):
+    # Tier 1 Fallback: Mistral -> OpenRouter
+    if _current_model not in ("devstral-openrouter", "gpt-4o"):
         openrouter_model = config.get_model_by_alias("devstral-openrouter")
         openrouter_provider = config.get_provider("openrouter")
 
-        # Check if OpenRouter is actually usable
         if openrouter_model and openrouter_provider and openrouter_provider.is_available():
             logger.info("[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)...")
             await _emit_vibe_log(
@@ -845,23 +1036,14 @@ async def _handle_vibe_rate_limit(
                 "🔄 [VIBE-FALLBACK] Mistral API ліміт. Переключаюсь на OpenRouter (devstral)...",
             )
             _current_model = "devstral-openrouter"
-            _update_argv_model(argv, "devstral-openrouter")
-            return True  # Signal retry with new model
-
-        # If OpenRouter is NOT available, try falling through directly to Copilot
-        logger.info("[VIBE] OpenRouter not available for fallback, checking Copilot...")
-        # Fallthrough to Tier 2 logic below which checks for Copilot
+            new_home = _prepare_temp_vibe_home("devstral-openrouter")
+            return True, new_home
 
     # Tier 2 Fallback: OpenRouter -> Copilot
-    # Triggered if we are already on OpenRouter and it fails (or if we skipped Mistral/OpenRouter above)
-    # logic: If we are on OpenRouter OR if we just fell through from Mistral (and OpenRouter was skipped)
-    if _current_model == "devstral-openrouter" or (
-        attempt == 0 and _current_model not in ("devstral-openrouter", "gpt-4o")
-    ):
+    if _current_model == "devstral-openrouter" or (_current_model and _current_model != "gpt-4o"):
         copilot_model = config.get_model_by_alias("gpt-4o")
         if copilot_model:
             provider = config.get_provider("copilot")
-            # We assume copilot is available if configured (proxy is managed by server)
             if provider:
                 logger.info(
                     "[VIBE] OpenRouter rate limit (or unavailable). Switching to Copilot fallback (Tier 3)..."
@@ -872,17 +1054,13 @@ async def _handle_vibe_rate_limit(
                     "🔄 [VIBE-FALLBACK] OpenRouter ліміт/недоступний. Переключаюсь на Copilot (GPT-4o)...",
                 )
                 _current_model = "gpt-4o"
-                _update_argv_model(argv, "gpt-4o")
-
-                # Verify proxy is running
+                
                 if not _proxy_process or _proxy_process.poll() is not None:
-                    logger.warning(
-                        "[VIBE] Copilot proxy not running during fallback, attempting start..."
-                    )
                     _start_copilot_proxy()
-
-                return True
-
+                
+                new_home = _prepare_temp_vibe_home("gpt-4o")
+                return True, new_home
+                
     error_msg = (
         f"API rate limit exceeded after {max_retries} attempts and all fallbacks. "
         f"Current model: {_current_model}"
@@ -894,21 +1072,6 @@ async def _handle_vibe_rate_limit(
         "error": error_msg,
         "error_type": "RATE_LIMIT",
     }
-
-
-def _update_argv_model(argv: list[str], new_model: str) -> None:
-    """Helper to safely replace the --model argument in argv."""
-    model_found = False
-    for i, arg in enumerate(argv):
-        if arg == "--model" and i + 1 < len(argv):
-            argv[i + 1] = new_model
-            model_found = True
-            break
-    if not model_found:
-        # Insert --model after the vibe binary path (index 1)
-        argv.insert(1, "--model")
-        argv.insert(2, new_model)
-    logger.debug(f"[VIBE] Updated argv model to: {new_model}")
 
 
 @server.tool()
@@ -1121,14 +1284,28 @@ async def vibe_prompt(
         # Determine effective mode
         effective_mode = AgentMode(mode) if mode else _current_mode
 
-        # Build command using config
+        # Prepare temp VIBE_HOME if we have a specific model or override
+        # We always do this for model switching since Vibe CLI doesn't support --model
+        target_model = model or _current_model
+        vibe_home_override = None
+        if target_model and target_model != "default":
+            # Ensure proxy is running if the target model uses copilot
+            m_conf = config.get_model_by_alias(target_model)
+            if m_conf and m_conf.provider == "copilot":
+                if not _proxy_process or _proxy_process.poll() is not None:
+                    logger.info(f"[VIBE] Initial model is Copilot-based, starting proxy...")
+                    _start_copilot_proxy()
+            
+            vibe_home_override = _prepare_temp_vibe_home(target_model)
+
+        # Build command using config (Model switching is handled via VIBE_HOME override)
         argv = [
             vibe_path,
             *config.to_cli_args(
                 prompt=final_prompt,
                 cwd=eff_cwd,
                 mode=effective_mode,
-                model=model or _current_model,
+                model="default",  # We handle model override via VIBE_HOME
                 agent=agent,
                 session_id=eff_session_id,
                 max_turns=max_turns,
@@ -1145,6 +1322,7 @@ async def vibe_prompt(
             timeout_s=eff_timeout,
             ctx=ctx,
             prompt_preview=prompt,
+            vibe_home_override=vibe_home_override,
         )
 
         # Try to parse JSON response
