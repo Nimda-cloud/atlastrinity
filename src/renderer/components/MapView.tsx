@@ -399,11 +399,11 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   const handlePegmanDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     setIsDraggingPegman(true);
-    
+
     // Get initial position
     const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+
     // Create draggable Pegman clone that follows cursor
     const dragClone = document.createElement('div');
     dragClone.id = 'pegman-drag-clone';
@@ -424,71 +424,76 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
       transition: transform 0.1s ease;
     `;
     document.body.appendChild(dragClone);
-    
+
     // Add class to map for visual road highlighting effect
     const mapElement = document.querySelector('gmp-map');
     if (mapElement) {
       mapElement.classList.add('pegman-drag-active');
     }
-    
+
     // Track mouse/touch position and update clone position
     const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
       moveEvent.preventDefault();
       const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
       const clientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
-      
+
       // Update clone position
       dragClone.style.left = `${clientX - 16}px`;
       dragClone.style.top = `${clientY - 16}px`;
     };
-    
+
     const handleEnd = (endEvent: MouseEvent | TouchEvent) => {
       setIsDraggingPegman(false);
-      
+
       // Remove clone
       const clone = document.getElementById('pegman-drag-clone');
       if (clone) {
         clone.remove();
       }
-      
+
       // Remove highlighting class
       const map = document.querySelector('gmp-map');
       if (map) {
         map.classList.remove('pegman-drag-active');
       }
-      
+
       // Get drop position
-      const clientX = 'touches' in endEvent ? endEvent.changedTouches[0]?.clientX : endEvent.clientX;
-      const clientY = 'touches' in endEvent ? endEvent.changedTouches[0]?.clientY : endEvent.clientY;
-      
+      const clientX =
+        'touches' in endEvent ? endEvent.changedTouches[0]?.clientX : endEvent.clientX;
+      const clientY =
+        'touches' in endEvent ? endEvent.changedTouches[0]?.clientY : endEvent.clientY;
+
       if (clientX === undefined || clientY === undefined) return;
-      
+
       // Check if dropped on the map
       const mapEl = document.querySelector('gmp-map') as GmpMapElement;
       if (mapEl?.innerMap) {
         const mapBounds = mapEl.getBoundingClientRect();
-        
-        if (clientX >= mapBounds.left && clientX <= mapBounds.right &&
-            clientY >= mapBounds.top && clientY <= mapBounds.bottom) {
-          
+
+        if (
+          clientX >= mapBounds.left &&
+          clientX <= mapBounds.right &&
+          clientY >= mapBounds.top &&
+          clientY <= mapBounds.bottom
+        ) {
           // Convert screen coordinates to map coordinates
           const projection = mapEl.innerMap.getProjection();
           const bounds = mapEl.innerMap.getBounds();
-          
+
           if (projection && bounds) {
             const ne = bounds.getNorthEast();
             const sw = bounds.getSouthWest();
-            
+
             const xPercent = (clientX - mapBounds.left) / mapBounds.width;
             const yPercent = (clientY - mapBounds.top) / mapBounds.height;
-            
+
             const lng = sw.lng() + xPercent * (ne.lng() - sw.lng());
             const lat = ne.lat() - yPercent * (ne.lat() - sw.lat());
-            
+
             // Check for Street View coverage and activate
             const streetViewService = new google.maps.StreetViewService();
             const dropLocation = new google.maps.LatLng(lat, lng);
-            
+
             streetViewService.getPanorama(
               {
                 location: dropLocation,
@@ -506,19 +511,19 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 } else {
                   console.warn('No Street View coverage at drop location');
                 }
-              }
+              },
             );
           }
         }
       }
-      
+
       // Cleanup listeners
       document.removeEventListener('mousemove', handleMove);
       document.removeEventListener('mouseup', handleEnd);
       document.removeEventListener('touchmove', handleMove);
       document.removeEventListener('touchend', handleEnd);
     };
-    
+
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleMove, { passive: false });
@@ -576,7 +581,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 rendering-type="raster"
                 data-map-type={mapType}
                 data-lighting-mode={lightingMode}
-                data-cyberpunk-filter={cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled'}
+                data-cyberpunk-filter={
+                  cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled'
+                }
                 street-view-control
                 style={{ width: '100%', height: '100%' }}
               >
@@ -719,7 +726,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 {/* Draggable Pegman Icon for Street View */}
                 <div className="control-section pegman-section">
                   <div className="control-separator-vertical"></div>
-                  <div 
+                  <div
                     className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''}`}
                     title="Drag to road for Street View"
                     aria-label="Drag Pegman to Street View"
@@ -747,7 +754,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''} ${mapType === 'roadmap' ? 'disabled' : ''}`}
                     onClick={() => setCyberpunkFilterEnabled(!cyberpunkFilterEnabled)}
                     aria-label="Toggle Cyberpunk Filter"
-                    title={mapType === 'roadmap' ? 'FILTER_N/A_ROADMAP' : (cyberpunkFilterEnabled ? 'FILTER_ENABLED' : 'FILTER_DISABLED')}
+                    title={
+                      mapType === 'roadmap'
+                        ? 'FILTER_N/A_ROADMAP'
+                        : cyberpunkFilterEnabled
+                          ? 'FILTER_ENABLED'
+                          : 'FILTER_DISABLED'
+                    }
                     disabled={mapType === 'roadmap'}
                   >
                     <svg
@@ -1530,7 +1543,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Cyberpunk filter for satellite/hybrid maps when enabled */
         gmp-map[data-map-type="satellite"][data-cyberpunk-filter="enabled"],
         gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="enabled"] {
-          filter: hue-rotate(180deg) saturate(1.5) brightness(0.9) contrast(1.1);
+          /* Use sepia to unify colors first, then rotate to Cyan (Electron Blue) */
+          /* Sepia(1) is ~40-50 hue. Adding ~140-150 brings it to ~180-190 (Cyan/Blue) */
+          filter: sepia(0.6) hue-rotate(145deg) saturate(3.5) contrast(1.2) brightness(0.85);
         }
         
         /* Natural view - no filter */
