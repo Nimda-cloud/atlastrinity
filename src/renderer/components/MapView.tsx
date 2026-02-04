@@ -134,6 +134,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   const [lightingMode, setLightingMode] = useState<'night' | 'day' | 'twilight'>('night');
   // Track street view active state for the custom toggle button
   const [streetViewActive, setStreetViewActive] = useState(false);
+  // Track Pegman dragging state for road highlighting
+  const [isDraggingPegman, setIsDraggingPegman] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate time-based lighting mode for adaptive filters
@@ -229,22 +231,29 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   }
                   
                   /* Native Pegman Control Styling - Injected into Shadow DOM */
-                  /* INVISIBLE OVERLAY - Sits exactly on top of the placeholder */
+                  /* Position at center-top to align with centered control bar */
                   .gm-svpc {
                      position: absolute !important;
-                     top: 2px !important; 
-                     right: 194px !important; /* Match placeholder pos */
+                     top: 4px !important; 
+                     left: 50% !important;
+                     transform: translateX(66px) !important; /* Offset to align with last button */
+                     right: auto !important;
    
-                     /* Invisible but clickable/draggable */
-                     opacity: 0.01 !important;
+                     /* Visible and draggable */
+                     opacity: 1 !important;
                      background: transparent !important;
                      
                      border: none !important;
                      box-shadow: none !important;
-                     width: 38px !important;
-                     height: 32px !important; 
-                     z-index: 100 !important;
+                     width: 42px !important;
+                     height: 36px !important; 
+                     z-index: 200 !important;
                      cursor: grab !important;
+                     transition: transform 0.2s, opacity 0.2s;
+                  }
+                  
+                  .gm-svpc:hover {
+                     transform: translateX(66px) scale(1.1) !important;
                   }
                   
                   .gm-svpc:active {
@@ -383,6 +392,136 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
       }
     }
   }, [streetViewActive]);
+
+  // Pegman drag handlers for Street View activation with road highlighting
+  const handlePegmanDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDraggingPegman(true);
+    
+    // Get initial position
+    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    // Create draggable Pegman clone that follows cursor
+    const dragClone = document.createElement('div');
+    dragClone.id = 'pegman-drag-clone';
+    dragClone.innerHTML = `
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#ff9800" stroke="none">
+        <circle cx="12" cy="4" r="3" />
+        <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
+      </svg>
+    `;
+    dragClone.style.cssText = `
+      position: fixed;
+      left: ${startX - 16}px;
+      top: ${startY - 16}px;
+      z-index: 10000;
+      pointer-events: none;
+      filter: drop-shadow(0 0 10px #ff9800) drop-shadow(0 0 20px rgba(255,152,0,0.6));
+      animation: pegman-float 0.3s ease infinite alternate;
+      transition: transform 0.1s ease;
+    `;
+    document.body.appendChild(dragClone);
+    
+    // Add class to map for visual road highlighting effect
+    const mapElement = document.querySelector('gmp-map');
+    if (mapElement) {
+      mapElement.classList.add('pegman-drag-active');
+    }
+    
+    // Track mouse/touch position and update clone position
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      moveEvent.preventDefault();
+      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const clientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
+      
+      // Update clone position
+      dragClone.style.left = `${clientX - 16}px`;
+      dragClone.style.top = `${clientY - 16}px`;
+    };
+    
+    const handleEnd = (endEvent: MouseEvent | TouchEvent) => {
+      setIsDraggingPegman(false);
+      
+      // Remove clone
+      const clone = document.getElementById('pegman-drag-clone');
+      if (clone) {
+        clone.remove();
+      }
+      
+      // Remove highlighting class
+      const map = document.querySelector('gmp-map');
+      if (map) {
+        map.classList.remove('pegman-drag-active');
+      }
+      
+      // Get drop position
+      const clientX = 'touches' in endEvent ? endEvent.changedTouches[0]?.clientX : endEvent.clientX;
+      const clientY = 'touches' in endEvent ? endEvent.changedTouches[0]?.clientY : endEvent.clientY;
+      
+      if (clientX === undefined || clientY === undefined) return;
+      
+      // Check if dropped on the map
+      const mapEl = document.querySelector('gmp-map') as GmpMapElement;
+      if (mapEl?.innerMap) {
+        const mapBounds = mapEl.getBoundingClientRect();
+        
+        if (clientX >= mapBounds.left && clientX <= mapBounds.right &&
+            clientY >= mapBounds.top && clientY <= mapBounds.bottom) {
+          
+          // Convert screen coordinates to map coordinates
+          const projection = mapEl.innerMap.getProjection();
+          const bounds = mapEl.innerMap.getBounds();
+          
+          if (projection && bounds) {
+            const ne = bounds.getNorthEast();
+            const sw = bounds.getSouthWest();
+            
+            const xPercent = (clientX - mapBounds.left) / mapBounds.width;
+            const yPercent = (clientY - mapBounds.top) / mapBounds.height;
+            
+            const lng = sw.lng() + xPercent * (ne.lng() - sw.lng());
+            const lat = ne.lat() - yPercent * (ne.lat() - sw.lat());
+            
+            // Check for Street View coverage and activate
+            const streetViewService = new google.maps.StreetViewService();
+            const dropLocation = new google.maps.LatLng(lat, lng);
+            
+            streetViewService.getPanorama(
+              {
+                location: dropLocation,
+                radius: 50,
+                preference: google.maps.StreetViewPreference.NEAREST,
+              },
+              (data, status) => {
+                if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+                  const streetView = mapEl.innerMap?.getStreetView();
+                  if (streetView) {
+                    streetView.setPosition(data.location.latLng);
+                    streetView.setVisible(true);
+                    setStreetViewActive(true);
+                  }
+                } else {
+                  console.warn('No Street View coverage at drop location');
+                }
+              }
+            );
+          }
+        }
+      }
+      
+      // Cleanup listeners
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+    };
+    
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
+  }, []);
 
   // API loader is now handled at App level to prevent redundant initializations and 429 errors
   const renderApiLoader = () => null;
@@ -574,20 +713,28 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   </button>
                 </div>
 
-                {/* Native Pegman PlaceHolder - Style target for .gm-svpc */}
-                <div className="control-section pov-section-placeholder">
-                  {/* Fake Pegman Icon (Visual Only) */}
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+                {/* Draggable Pegman Icon for Street View */}
+                <div className="control-section pegman-section">
+                  <div className="control-separator-vertical"></div>
+                  <div 
+                    className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''}`}
+                    title="Drag to road for Street View"
+                    aria-label="Drag Pegman to Street View"
+                    onMouseDown={handlePegmanDragStart}
+                    onTouchStart={handlePegmanDragStart}
                   >
-                    <circle cx="12" cy="7" r="4" />
-                    <path d="M12 11c-4 0-7 2-7 5v4h14v-4c0-3-3-5-7-5z" />
-                  </svg>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      {/* Pegman-style person icon */}
+                      <circle cx="12" cy="4" r="3" />
+                      <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1186,85 +1333,146 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           filter: grayscale(0.3) brightness(0.9) contrast(1.1) sepia(0.3) hue-rotate(180deg) saturate(2) !important;
         }
 
-        /* Unified Control Row - Horizontal */
+        /* Unified Control Row - Horizontal with slide animation */
         .map-controls-group {
           position: absolute;
-          top: 10px; /* Aligned with map header/close button */
-          right: 60px; /* Left of the Close button (which is likely at ~20px) */
+          top: -44px; /* Fully hidden behind top bar */
+          left: 220px; /* Positioned near INTERACTIVE_FEED label */
+          transform: none;
           display: flex;
           flex-direction: row; /* Horizontal */
           gap: 0;
-          background: rgba(0, 10, 20, 0.4); 
-          border: 1px solid #00a3ff;
-          border-radius: 4px;
-          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
-          overflow: hidden;
-          z-index: 10;
+          width: fit-content; /* Size to content only */
+          background: rgba(0, 10, 20, 0.7); 
+          border: none; /* No border */
+          border-radius: 0 0 8px 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+          overflow: visible;
+          z-index: 100;
           pointer-events: auto;
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(8px);
+          transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+          opacity: 0.15; /* Almost invisible when hidden */
+        }
+        
+        /* Hover trigger area - extends above the panel */
+        .map-controls-group::before {
+          content: '';
+          position: absolute;
+          top: -30px;
+          left: -30px;
+          right: -30px;
+          height: 80px; /* Extended hover area */
+          z-index: -1;
+        }
+        
+        /* Slide in on hover */
+        .map-controls-group:hover,
+        .map-content-container:hover .map-controls-group {
+          top: 0px; /* Slide down into view */
+          opacity: 1; /* Fully visible when shown */
         }
 
         .control-section {
-          padding: 2px 4px;
+          padding: 2px 6px;
           display: flex;
           flex-direction: row; /* Horizontal within sections too */
           align-items: center;
+          height: 40px;
+        }
+
+        /* Pegman section styling */
+        .pegman-section {
+          padding-right: 8px;
+        }
+        
+        /* Draggable Pegman Icon */
+        .pegman-draggable {
+          width: 36px;
           height: 36px;
-        }
-        /* Native Pegman PlaceHolder - Visual Anchor */
-        .pov-section-placeholder {
-           width: 38px;
-           height: 32px;
-           border-left: 1px solid rgba(0, 163, 255, 0.3);
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           flex-shrink: 0;
-           color: #00e5ff; /* Cyan color for the fake icon */
-           transition: color 0.3s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ff9800;
+          cursor: grab;
+          border-radius: 4px;
+          transition: all 0.25s ease;
+          position: relative;
         }
         
-        .pov-section-placeholder svg {
-           filter: drop-shadow(0 0 2px #00e5ff);
+        .pegman-draggable:hover {
+          color: #ffb74d;
+          background: rgba(255, 152, 0, 0.2);
+          transform: scale(1.15);
+          box-shadow: 0 0 15px rgba(255, 152, 0, 0.4);
         }
         
-        /* Native Pegman Control Styling Override - INVISIBLE OVERLAY */
-        /* It sits exactly on top of the placeholder to capture clicks/drags */
+        .pegman-draggable:active {
+          cursor: grabbing;
+          transform: scale(0.9);
+          color: #ffa726;
+        }
+        
+        .pegman-draggable svg {
+          filter: drop-shadow(0 0 3px currentColor);
+          transition: filter 0.2s;
+        }
+        
+        .pegman-draggable:hover svg {
+          filter: drop-shadow(0 0 8px currentColor);
+        }
+        
+        /* Pegman dragging state */
+        .pegman-draggable.dragging {
+          cursor: grabbing;
+          color: #ff5722;
+          transform: scale(1.2);
+          box-shadow: 0 0 20px rgba(255, 87, 34, 0.6);
+          animation: pegman-pulse 0.5s ease infinite alternate;
+        }
+        
+        @keyframes pegman-pulse {
+          from { box-shadow: 0 0 15px rgba(255, 152, 0, 0.5); }
+          to { box-shadow: 0 0 25px rgba(255, 87, 34, 0.8); }
+        }
+
+        /* Road highlighting when Pegman is being dragged */
+        /* Orange glow effect on the entire map to emphasize roads */
+        gmp-map.pegman-drag-active {
+          filter: contrast(1.1) saturate(1.2) brightness(1.05) !important;
+          /* Add orange tint overlay via box-shadow workaround */
+        }
+        
+        /* Orange road overlay via pseudo-element on container */
+        .map-content-container:has(gmp-map.pegman-drag-active)::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at center, transparent 30%, rgba(255, 152, 0, 0.1) 100%);
+          pointer-events: none;
+          z-index: 50;
+          animation: road-glow 1s ease infinite alternate;
+        }
+        
+        @keyframes road-glow {
+          from { opacity: 0.5; }
+          to { opacity: 0.9; }
+        }
+        
+        /* Pegman floating animation when being dragged */
+        @keyframes pegman-float {
+          from { transform: translateY(0px) scale(1); }
+          to { transform: translateY(-3px) scale(1.05); }
+        }
+        
+        /* Native Pegman Control - Styled via shadow DOM injection */
+        /* These are fallback styles in case shadow DOM injection fails */
         .gm-svpc {
-           position: absolute !important;
-           top: 2px !important; 
-           right: 194px !important; /* Positions it over the placeholder */
-           
-           /* Make it invisible but interactive */
-           opacity: 0.01 !important;
-           background: transparent !important;
-           
-           border: none !important;
-           width: 38px !important;
-           height: 32px !important;
-           z-index: 100 !important;
            cursor: grab !important;
         }
         
-        /* Ensure the pegman icon is centered */
-        .gm-svpc img {
-           top: 6px !important;
-           left: 6px !important;
-           position: absolute !important;
-        }
-        
-        /* The inner pegman icon */
-        .gm-svpc img {
-           width: 24px !important;
-           height: 24px !important;
-           margin: 6px !important;
-           filter: invert(1) drop-shadow(0 0 2px #ff9800) sepia(1) saturate(5) hue-rotate(-30deg) !important; /* Orange */
-        }
-        
-        /* Hover effect on native pegman */
-        .gm-svpc:hover img {
-           filter: invert(1) drop-shadow(0 0 5px #ff9800) brightness(1.2) !important;
-           transform: scale(1.1);
+        .gm-svpc:active {
+           cursor: grabbing !important;
         }
 
         .control-separator-vertical {
