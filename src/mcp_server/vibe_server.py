@@ -344,7 +344,7 @@ def _start_copilot_proxy() -> None:
                 proxy_log = log_dir / "copilot_proxy.log"
                 _proxy_process = subprocess.Popen(
                     [sys.executable, str(proxy_script)],
-                    stdout=open(proxy_log, "a"),
+                    stdout=open(proxy_log, "a"),  # noqa: SIM115
                     stderr=subprocess.STDOUT,
                     start_new_session=True,
                 )
@@ -820,7 +820,7 @@ async def _read_vibe_stream(
             for line in text.split("\n"):
                 if line.strip():
                     await _handle_vibe_line(line, stream_name, ctx)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
     except Exception as e:
         logger.debug(f"[VIBE] Error reading {stream_name} stream: {e}")
