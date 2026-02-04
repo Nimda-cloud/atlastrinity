@@ -48,7 +48,7 @@ backend = "generic"
 # Model Presets
 # =============================================================================
 [[models]]
-name = "mistral-vibe-cli-latest"
+name = "devstral-2512"
 provider = "mistral"
 alias = "devstral-2"
 temperature = 0.0
@@ -56,7 +56,7 @@ input_price = 0.0
 output_price = 0.0
 
 [[models]]
-name = "mistralai/mistral-large-2411"
+name = "mistralai/devstral-2512:free"
 provider = "openrouter"
 alias = "devstral-openrouter"
 temperature = 0.2
