@@ -151,31 +151,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
       return;
     }
 
-    const loadScript = () => {
-      // Check if script already loaded
-      if (document.querySelector('script[src*="@googlemaps/extended-component-library"]')) {
-        return Promise.resolve();
-      }
-
-      return new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.src =
-          'https://unpkg.com/@googlemaps/extended-component-library@0.6.11/dist/index.min.js';
-        script.onload = () => resolve();
-        script.onerror = () =>
-          reject(new Error('Failed to load Google Maps Extended Component Library'));
-        document.head.appendChild(script);
-      });
-    };
-
-    loadScript()
-      .then(() => {
-        setIsLoaded(true);
-      })
-      .catch((err) => {
-        setError(err.message);
-      });
+    // Script is now loaded globally in index.html for stability
+    setIsLoaded(true);
   }, [type]);
 
   // Initialize the interactive map with cyberpunk styling

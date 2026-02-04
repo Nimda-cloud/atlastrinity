@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T01:58:29.559057 -->
+<!-- Modified: scripts/setup_dev.py, scripts/setup_maps_quick.py, src/brain/voice/stt.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-03T23:29:48.715013 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/components/MapView.tsx -->
 
