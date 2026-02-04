@@ -20,10 +20,11 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
 
         try:
             import json
+
             payload = json.loads(post_data)
             requested_model = payload.get("model", "unknown")
             log(f"Request model: {requested_model}")
-            
+
             # 2. Add required headers
             # Authenticate with session token from environment or header
             auth_header = self.headers.get("Authorization")

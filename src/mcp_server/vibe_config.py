@@ -163,7 +163,9 @@ class McpServerConfig(BaseModel):
         None,
         description="Format for API key (e.g., 'Bearer {token}')",
     )
-    env: dict[str, str] = Field(default_factory=dict, description="Environment variables for the server")
+    env: dict[str, str] = Field(
+        default_factory=dict, description="Environment variables for the server"
+    )
     startup_timeout_sec: int | None = Field(None, description="Startup timeout in seconds")
     tool_timeout_sec: int | None = Field(None, description="Tool execution timeout in seconds")
 

@@ -348,7 +348,9 @@ def _start_copilot_proxy() -> None:
                     stderr=subprocess.STDOUT,
                     start_new_session=True,
                 )
-                logger.info(f"[VIBE] Copilot Proxy started (PID: {_proxy_process.pid}, Log: {proxy_log})")
+                logger.info(
+                    f"[VIBE] Copilot Proxy started (PID: {_proxy_process.pid}, Log: {proxy_log})"
+                )
             else:
                 logger.warning(
                     f"[VIBE] Copilot provider configured but proxy script not found at {proxy_script}"
@@ -466,6 +468,7 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
             val = getattr(obj, key, default)
             # If it's a MagicMock, it won't be in the expected type
             from unittest.mock import MagicMock
+
             if isinstance(val, MagicMock):
                 return default
             return val
@@ -485,15 +488,17 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
             # Skip if it's the default placeholder or redundant
             if not provider.name or not provider.api_base:
                 continue
-            toml_lines.extend([
-                "[[providers]]",
-                f'name = "{provider.name}"',
-                f'api_base = "{provider.api_base}"',
-                f'api_key_env_var = "{provider.api_key_env_var}"',
-                f'api_style = "{provider.api_style}"',
-                f'backend = "{provider.backend}"',
-                ""
-            ])
+            toml_lines.extend(
+                [
+                    "[[providers]]",
+                    f'name = "{provider.name}"',
+                    f'api_base = "{provider.api_base}"',
+                    f'api_key_env_var = "{provider.api_key_env_var}"',
+                    f'api_style = "{provider.api_style}"',
+                    f'backend = "{provider.backend}"',
+                    "",
+                ]
+            )
 
         # Add models
         for model in config.models:
@@ -505,24 +510,28 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
             m_in_p = float(model.input_price)
             m_out_p = float(model.output_price)
 
-            toml_lines.extend([
-                "[[models]]",
-                f'name = "{m_name}"',
-                f'provider = "{m_provider}"',
-                f'alias = "{m_alias}"',
-                f'temperature = {m_temp}',
-                f'input_price = {m_in_p}',
-                f'output_price = {m_out_p}',
-                ""
-            ])
+            toml_lines.extend(
+                [
+                    "[[models]]",
+                    f'name = "{m_name}"',
+                    f'provider = "{m_provider}"',
+                    f'alias = "{m_alias}"',
+                    f"temperature = {m_temp}",
+                    f"input_price = {m_in_p}",
+                    f"output_price = {m_out_p}",
+                    "",
+                ]
+            )
 
         # Add MCP servers (Documentation: supported transports and fields)
         for mcp in config.mcp_servers:
-            toml_lines.extend([
-                "[[mcp_servers]]",
-                f'name = "{mcp.name}"',
-                f'transport = "{mcp.transport}"',
-            ])
+            toml_lines.extend(
+                [
+                    "[[mcp_servers]]",
+                    f'name = "{mcp.name}"',
+                    f'transport = "{mcp.transport}"',
+                ]
+            )
             if mcp.url:
                 toml_lines.append(f'url = "{mcp.url}"')
             if mcp.command:
@@ -544,10 +553,7 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
             toml_lines.append(f"disabled_tools = {list(config.disabled_tools)}")
 
         for tool_name, tool_conf in config.tools.items():
-            toml_lines.extend([
-                f"[tools.{tool_name}]",
-                f'permission = "{tool_conf.permission}"'
-            ])
+            toml_lines.extend([f"[tools.{tool_name}]", f'permission = "{tool_conf.permission}"'])
 
         config_text = "\n".join(toml_lines)
         (temp_path / "config.toml").write_text(config_text, encoding="utf-8")
@@ -814,7 +820,7 @@ async def _read_vibe_stream(
             if not data:
                 break
             chunks.append(data)
-            
+
             # For logging, we still try to process lines if they exist in the chunk
             text = data.decode(errors="replace")
             for line in text.split("\n"):
@@ -862,20 +868,24 @@ async def _execute_vibe_with_retries(
                         process.stdin.write(b"\n")
                         await process.stdin.drain()
                         logger.debug("[VIBE] Sent heartbeat newline to stdin")
-                        await asyncio.sleep(5) # Proactive nudge every 5s
+                        await asyncio.sleep(5)  # Proactive nudge every 5s
                     except Exception as e:
                         logger.debug(f"[VIBE] Heartbeat stopped: {e}")
                         break
-            
+
             heartbeat_task = asyncio.create_task(send_heartbeat())
-            
+
             try:
                 streams_to_read = []
                 if process.stdout:
-                    streams_to_read.append(_read_vibe_stream(process.stdout, stdout_chunks, "OUT", timeout_s, ctx))
+                    streams_to_read.append(
+                        _read_vibe_stream(process.stdout, stdout_chunks, "OUT", timeout_s, ctx)
+                    )
                 if process.stderr:
-                    streams_to_read.append(_read_vibe_stream(process.stderr, stderr_chunks, "ERR", timeout_s, ctx))
-                
+                    streams_to_read.append(
+                        _read_vibe_stream(process.stderr, stderr_chunks, "ERR", timeout_s, ctx)
+                    )
+
                 if streams_to_read:
                     await asyncio.gather(*streams_to_read)
             finally:
@@ -1051,13 +1061,13 @@ async def _handle_vibe_rate_limit(
                     "🔄 [VIBE-FALLBACK] OpenRouter ліміт/недоступний. Переключаюсь на Copilot (GPT-4o)...",
                 )
                 _current_model = "gpt-4o"
-                
+
                 if not _proxy_process or _proxy_process.poll() is not None:
                     _start_copilot_proxy()
-                
+
                 new_home = _prepare_temp_vibe_home("gpt-4o")
                 return True, new_home
-                
+
     error_msg = (
         f"API rate limit exceeded after {max_retries} attempts and all fallbacks. "
         f"Current model: {_current_model}"
@@ -1292,7 +1302,7 @@ async def vibe_prompt(
                 if not _proxy_process or _proxy_process.poll() is not None:
                     logger.info("[VIBE] Initial model is Copilot-based, starting proxy...")
                     _start_copilot_proxy()
-            
+
             vibe_home_override = _prepare_temp_vibe_home(target_model)
 
         # Build command using config (Model switching is handled via VIBE_HOME override)
