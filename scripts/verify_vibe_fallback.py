@@ -1,14 +1,16 @@
 
 import asyncio
-import sys
-import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
 
 # Add src to path to import vibe_server
 import os
+import sys
+import unittest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from mcp_server import vibe_server
+
 
 class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
     async def test_fallback_chain_skip_openrouter(self):
