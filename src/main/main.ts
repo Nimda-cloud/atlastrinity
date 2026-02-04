@@ -13,6 +13,8 @@ if (process.platform === 'darwin') {
   app.commandLine.appendSwitch('disable-features', 'Graphite,SkiaGraphite,UseSkiaRenderer');
   app.commandLine.appendSwitch('disable-gpu-memory-buffer-video-frames');
   app.commandLine.appendSwitch('disable-gpu-rasterization');
+  app.commandLine.appendSwitch('disable-accelerated-2d-canvas');
+  app.commandLine.appendSwitch('disable-zero-copy');
 }
 
 import { type ChildProcess, execSync, spawn } from 'node:child_process';

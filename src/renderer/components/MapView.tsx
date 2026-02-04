@@ -640,9 +640,6 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
               </gmp-map>
             </div>
 
-            {/* Edge fade overlay - creates smooth transition to transparent on all edges */}
-            <div className="map-edge-fade" />
-
             {/* Unmasked Controls Layer */}
             <div className="map-controls-layer">
               {/* Loading overlay - keep it here so it's visible */}
@@ -950,29 +947,15 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           align-items: center;
           justify-content: center;
           z-index: 50;
-          /* No masking - map just extends naturally */
         }
 
         .masked-map-layer {
           position: absolute;
-          /* Extend map beyond container edges for natural fade into panels */
-          inset: -100px -200px;
+          /* Extend map beyond container for seamless blending */
+          inset: -50px -150px;
           z-index: 0;
-          pointer-events: auto; /* Allow map interactions */
-        }
-
-        /* Edge fade overlay - smooth transparent transition on all edges */
-        .map-edge-fade {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          /* Inset box-shadow creates smooth fade to transparent on all edges */
-          box-shadow: 
-            inset 200px 0 150px -100px rgba(2, 10, 16, 1),
-            inset -200px 0 150px -100px rgba(2, 10, 16, 1),
-            inset 0 150px 100px -80px rgba(2, 10, 16, 1),
-            inset 0 -150px 100px -80px rgba(2, 10, 16, 1);
+          pointer-events: auto;
+          /* No mask - just extends naturally */
         }
         
         .map-controls-layer {
@@ -1445,10 +1428,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           flex-direction: row; /* Horizontal */
           gap: 0;
           width: fit-content; /* Size to content only */
-          background: rgba(0, 10, 20, 0.7); 
+          background: transparent; 
           border: none; /* No border */
           border-radius: 0 0 8px 8px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+          box-shadow: none;
           overflow: visible;
           z-index: 100;
           pointer-events: auto;
