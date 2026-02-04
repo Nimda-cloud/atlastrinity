@@ -457,9 +457,77 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   useEffect(() => {
     if (type !== 'INTERACTIVE' || !mapInitialized) return;
 
-    const placePicker = document.querySelector('#panel-search') as HTMLElement;
+    const placePicker = document.querySelector('#panel-search') as any;
     if (placePicker) {
       placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
+
+      // Handle Enter key for search-on-enter
+      const handleKeyDown = async (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          const input = e.target as HTMLInputElement;
+          const query = input.value?.trim();
+
+          if (!query) return;
+
+          // If picker already has a value, standard placechange will handle it
+          // Otherwise, we fetch the first prediction
+          if (!placePicker.value) {
+            try {
+              const autocompleteService = new google.maps.places.AutocompleteService();
+              const predictions = await new Promise<google.maps.places.AutocompletePrediction[]>(
+                (resolve) => {
+                  autocompleteService.getPlacePredictions({ input: query }, (preds) =>
+                    resolve(preds || []),
+                  );
+                },
+              );
+
+              if (predictions.length > 0) {
+                const firstResult = predictions[0];
+                const placesService = new google.maps.places.PlacesService(
+                  document.createElement('div'),
+                );
+
+                placesService.getDetails({ placeId: firstResult.place_id }, (place, status) => {
+                  if (
+                    status === google.maps.places.PlacesServiceStatus.OK &&
+                    place?.geometry?.location
+                  ) {
+                    const mapElement = document.querySelector('gmp-map') as any;
+                    if (mapElement?.innerMap) {
+                      mapElement.innerMap.panTo(place.geometry.location);
+                      mapElement.innerMap.setZoom(17);
+                      // Clear input focus to show result
+                      input.blur();
+                    }
+                  }
+                });
+              }
+            } catch (err) {
+              console.error('Search-on-enter failed:', err);
+            }
+          }
+        }
+      };
+
+      // We need to wait for shadow DOM to attach the listener to the internal input
+      const attachInputListener = () => {
+        if (placePicker.shadowRoot) {
+          const innerInput = placePicker.shadowRoot.querySelector('input');
+          if (innerInput) {
+            innerInput.addEventListener('keydown', handleKeyDown);
+            return true;
+          }
+        }
+        return false;
+      };
+
+      if (!attachInputListener()) {
+        const observer = new MutationObserver(() => {
+          if (attachInputListener()) observer.disconnect();
+        });
+        observer.observe(placePicker, { childList: true, subtree: true });
+      }
 
       // Inject styles into gmpx-place-picker shadow DOM to remove borders and make full area clickable
       const injectStyles = () => {
@@ -782,12 +850,21 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   return (
     <div className="map-view animate-fade-in">
       {/* Header Info */}
-      <div className="map-header">
-        <div className="map-type-badge">
-          {type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : `${type}_FEED`}
-        </div>
-        <div className="map-location">
-          {location || (type === 'INTERACTIVE' ? 'INTERACTIVE_FEED' : 'TRACKING_COORDINATES...')}
+      <div
+        className="map-header"
+        style={type === 'INTERACTIVE' ? { justifyContent: 'flex-end', paddingTop: '4px' } : {}}
+      >
+        {type !== 'INTERACTIVE' && <div className="map-type-badge">{`${type}_FEED`}</div>}
+        <div
+          className="map-location"
+          style={type === 'INTERACTIVE' ? { marginRight: 'auto', marginLeft: '12px' } : {}}
+        >
+          {location &&
+          location !== (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : `${type}_FEED`)
+            ? location
+            : type === 'INTERACTIVE'
+              ? 'INTERACTIVE_FEED'
+              : 'TRACKING_COORDINATES...'}
         </div>
         <button className="map-close-btn" onClick={onClose}>
           <svg

@@ -187,7 +187,7 @@ const App: React.FC = () => {
         setMapData((prev) => {
           const newData = {
             type: 'INTERACTIVE' as const,
-            location: query || 'SEARCH_MODE_ACTIVE',
+            location: query || 'INTERACTIVE_FEED',
           };
           if (prev.type === newData.type && prev.location === newData.location) return prev;
           return newData;
@@ -628,7 +628,7 @@ const App: React.FC = () => {
             if (nextMode === 'MAP' && !mapData.url && mapData.type !== 'INTERACTIVE') {
               setMapData({
                 type: 'INTERACTIVE',
-                location: 'INTERACTIVE_SEARCH_ACTIVE',
+                location: 'INTERACTIVE_FEED',
               });
             }
           }}
