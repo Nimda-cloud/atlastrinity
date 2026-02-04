@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T05:37:22.220593 -->
+<!-- Modified: src/renderer/components/MapView.tsx -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T05:33:40.731493 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/data/mcp_catalog.json -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T05:33:29.445567 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/data/mcp_catalog.json -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T05:27:41.146897 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

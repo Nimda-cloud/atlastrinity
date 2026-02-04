@@ -2382,5 +2382,56 @@
       "value": "float"
     },
     "description": "Control active tour: stop, pause, resume, look (heading)"
+  },
+  "tour_start": {
+    "server": "tour-guide",
+    "required": [
+      "polyline"
+    ],
+    "optional": [],
+    "types": {
+      "polyline": "str"
+    },
+    "description": "Start a virtual tour along an encoded polyline"
+  },
+  "tour_stop": {
+    "server": "tour-guide",
+    "required": [],
+    "optional": [],
+    "description": "Stop the current virtual tour"
+  },
+  "tour_pause": {
+    "server": "tour-guide",
+    "required": [],
+    "optional": [],
+    "description": "Pause the current virtual tour"
+  },
+  "tour_resume": {
+    "server": "tour-guide",
+    "required": [],
+    "optional": [],
+    "description": "Resume the paused virtual tour"
+  },
+  "tour_look": {
+    "server": "tour-guide",
+    "required": [
+      "angle"
+    ],
+    "optional": [],
+    "types": {
+      "angle": "int"
+    },
+    "description": "Change the agent's relative view angle (-90 for left, 90 for right)"
+  },
+  "tour_set_speed": {
+    "server": "tour-guide",
+    "required": [
+      "speed"
+    ],
+    "optional": [],
+    "types": {
+      "speed": "float"
+    },
+    "description": "Adjust the tour movement speed (0.5 to 3.0)"
   }
 }

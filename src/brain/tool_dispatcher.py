@@ -968,7 +968,6 @@ class ToolDispatcher:
                     "context7": self._handle_context7,
                     "golden-fund": self._handle_golden_fund,
                     "data-analysis": self._handle_data_analysis,
-
                     "xcodebuild": self._handle_xcodebuild,
                     "tour-guide": self._handle_tour,
                 }
@@ -1036,7 +1035,6 @@ class ToolDispatcher:
             "devtools": self._handle_devtools,
             "context7": self._handle_context7,
             "golden-fund": self._handle_golden_fund,
-
             "golden_fund": self._handle_golden_fund,
             "tour-guide": self._handle_tour,
         }
@@ -1542,9 +1540,7 @@ class ToolDispatcher:
             logger.exception(f"[DISPATCHER] Tour execution failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _handle_tour(
-        self, tool_name: str, args: dict[str, Any]
-    ) -> tuple[str, str, dict[str, Any]]:
+    def _handle_tour(self, tool_name: str, args: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
         """Resolution handler for tour guide tools."""
         # Simple pass-through as tools are 1:1 mapped
         return "tour-guide", tool_name, args

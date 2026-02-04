@@ -545,7 +545,7 @@ body {
   box-shadow: none;
   backdrop-filter: none;
   /* Allow map to overlap side panels */
-  overflow: visible !important;
+  overflow: visible;
   z-index: 30;
 }
 
