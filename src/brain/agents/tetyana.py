@@ -884,7 +884,9 @@ IMPORTANT:
     ) -> None:
         """Helper to correct invalid tool names using inference."""
         if not isinstance(tool_call, dict):
-            logger.warning(f"[TETYANA] tool_call is not a dict: {type(tool_call)}. Forcing dict structure.")
+            logger.warning(
+                f"[TETYANA] tool_call is not a dict: {type(tool_call)}. Forcing dict structure."
+            )
             # If it's a string, use it as the name if it looks like a tool name
             name = str(tool_call).strip() if tool_call else ""
             # But we can't easily fix the object in-place if it's a string (immutable)

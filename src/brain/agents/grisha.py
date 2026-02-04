@@ -797,7 +797,7 @@ class Grisha(BaseAgent):
         # This handles cases where the model starts with "Step failed..." but concludes with "Actually, it's fine."
         if has_explicit_success:
             return True
-        
+
         # If explicit failure verdict exists and NO explicit success, return False
         if has_explicit_failure and not has_explicit_success:
             return False
