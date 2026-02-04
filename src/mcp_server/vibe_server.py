@@ -761,7 +761,7 @@ async def _handle_vibe_rate_limit(
         # Add jitter to prevent thundering herd
         import random
 
-        jitter = random.uniform(0, 15)
+        jitter = random.uniform(0, 15)  # nosec B311
         wait_time = backoff_delays[attempt] + jitter
         logger.warning(
             f"[VIBE] Rate limit detected (attempt {attempt + 1}/{max_retries}). Retrying in {wait_time:.1f}s..."

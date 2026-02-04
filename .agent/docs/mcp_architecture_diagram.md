@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T13:32:26.764919 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T13:27:47.608201 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/tool_dispatcher.py -->
 
