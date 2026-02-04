@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T16:31:58.959448 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/App.tsx -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T15:59:57.384034 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/copilot.py, src/brain/config.py -->
 

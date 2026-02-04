@@ -814,7 +814,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Center Panel: Neural Core / Map View */}
-      <main 
+      <main
         className="panel center-panel relative overflow-hidden"
         style={{ pointerEvents: viewMode === 'MAP' ? 'none' : 'auto' }}
       >
@@ -829,13 +829,13 @@ const App: React.FC = () => {
 
       {/* Map View - Fixed overlay above all panels */}
       {viewMode === 'MAP' && (
-        <div 
-          className="fixed z-[1000] animate-fade-in" 
-          style={{ 
-            top: '32px', 
-            bottom: '24px', 
-            left: '129px',   /* 2/3 overlap on left panel (388px - 388*2/3) */
-            right: '129px'   /* 2/3 overlap on right panel */
+        <div
+          className="fixed z-[1000] animate-fade-in"
+          style={{
+            top: '32px',
+            bottom: '24px',
+            left: '129px' /* 2/3 overlap on left panel (388px - 388*2/3) */,
+            right: '129px' /* 2/3 overlap on right panel */,
           }}
         >
           <MapView

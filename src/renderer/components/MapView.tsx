@@ -640,6 +640,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
               </gmp-map>
             </div>
 
+            {/* Edge fade overlay - creates smooth transition to transparent on all edges */}
+            <div className="map-edge-fade" />
+
             {/* Unmasked Controls Layer */}
             <div className="map-controls-layer">
               {/* Loading overlay - keep it here so it's visible */}
@@ -946,25 +949,30 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           display: flex;
           align-items: center;
           justify-content: center;
-          /* No margins needed - map is now a fixed overlay */
           z-index: 50;
+          /* No masking - map just extends naturally */
         }
 
         .masked-map-layer {
           position: absolute;
-          inset: 0;
+          /* Extend map beyond container edges for natural fade into panels */
+          inset: -100px -200px;
           z-index: 0;
-          /* Professional edge fade - 1/3 of width on each side for horizontal */
-          /* Creates very smooth transition to transparency with no visible edges */
-          -webkit-mask-image: 
-            linear-gradient(to right, transparent 0%, black 33%, black 67%, transparent 100%),
-            linear-gradient(to bottom, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%);
-          mask-image: 
-            linear-gradient(to right, transparent 0%, black 33%, black 67%, transparent 100%),
-            linear-gradient(to bottom, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%);
-          -webkit-mask-composite: source-in;
-          mask-composite: intersect;
           pointer-events: auto; /* Allow map interactions */
+        }
+
+        /* Edge fade overlay - smooth transparent transition on all edges */
+        .map-edge-fade {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          /* Inset box-shadow creates smooth fade to transparent on all edges */
+          box-shadow: 
+            inset 200px 0 150px -100px rgba(2, 10, 16, 1),
+            inset -200px 0 150px -100px rgba(2, 10, 16, 1),
+            inset 0 150px 100px -80px rgba(2, 10, 16, 1),
+            inset 0 -150px 100px -80px rgba(2, 10, 16, 1);
         }
         
         .map-controls-layer {
