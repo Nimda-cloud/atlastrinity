@@ -7,7 +7,7 @@
 /// <reference types="google.maps" />
 
 import type React from 'react';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 interface MapViewProps {
   imageUrl?: string;
@@ -139,6 +139,20 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   // Cyberpunk filter toggle - enabled by default for satellite/hybrid, roadmap always uses night style
   const [cyberpunkFilterEnabled, setCyberpunkFilterEnabled] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Force update attributes on gmp-map when filter state changes to ensure web component reacts
+  // Using useLayoutEffect to ensure updates happen synchronously before paint if possible
+  useLayoutEffect(() => {
+    const mapElement = document.querySelector('gmp-map');
+    if (mapElement) {
+      // Direct DOM manipulation to ensure attribute is updated
+      const filterValue = cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled';
+      mapElement.setAttribute('data-cyberpunk-filter', filterValue);
+      
+      // Update Street View active state on the element for CSS targeting
+      mapElement.setAttribute('data-street-view', streetViewActive ? 'active' : 'inactive');
+    }
+  }, [cyberpunkFilterEnabled, mapType, streetViewActive]);
 
   // Calculate time-based lighting mode for adaptive filters
   const getTimeBasedLightingMode = useCallback((): 'night' | 'day' | 'twilight' => {
@@ -1543,19 +1557,24 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Cyberpunk filter for satellite/hybrid maps when enabled */
         gmp-map[data-map-type="satellite"][data-cyberpunk-filter="enabled"],
         gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="enabled"] {
-          /* Sepia(1) + 140deg = Sky Blue / Light Cyan */
-          /* Increased brightness to 1.3 and lowered saturation slightly for 'lighter' look */
-          filter: sepia(1) hue-rotate(140deg) saturate(2.5) contrast(1.1) brightness(1.3);
+          /* Sepia(1) + 160deg = Sky Blue / Cornflower Blue */
+          /* Adjusted per user request for "cleaner light blue" */
+          filter: sepia(1) hue-rotate(160deg) saturate(1.8) contrast(1.1) brightness(1.2);
+        }
+        
+        /* Force Cyberpunk filter when Street View is active, even if on Roadmap */
+        gmp-map[data-street-view="active"] {
+           filter: sepia(1) hue-rotate(160deg) saturate(1.8) contrast(1.1) brightness(1.2) !important;
         }
         
         /* Natural view - no filter */
         gmp-map[data-map-type="satellite"][data-cyberpunk-filter="disabled"],
         gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="disabled"] {
-          filter: none;
+          filter: none !important;
         }
         
-        /* Roadmap always uses night style, ABSOLUTELY NO FILTER */
-        gmp-map[data-map-type="roadmap"] {
+        /* Roadmap always uses night style, ABSOLUTELY NO FILTER (unless Street View is active) */
+        gmp-map[data-map-type="roadmap"]:not([data-street-view="active"]) {
           filter: none !important;
         }
         
