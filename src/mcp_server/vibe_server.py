@@ -835,12 +835,10 @@ async def _handle_vibe_rate_limit(
     ):
         openrouter_model = config.get_model_by_alias("devstral-openrouter")
         openrouter_provider = config.get_provider("openrouter")
-        
+
         # Check if OpenRouter is actually usable
         if openrouter_model and openrouter_provider and openrouter_provider.is_available():
-            logger.info(
-                "[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)..."
-            )
+            logger.info("[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)...")
             await _emit_vibe_log(
                 ctx,
                 "info",
@@ -849,7 +847,7 @@ async def _handle_vibe_rate_limit(
             _current_model = "devstral-openrouter"
             _update_argv_model(argv, "devstral-openrouter")
             return True  # Signal retry with new model
-        
+
         # If OpenRouter is NOT available, try falling through directly to Copilot
         logger.info("[VIBE] OpenRouter not available for fallback, checking Copilot...")
         # Fallthrough to Tier 2 logic below which checks for Copilot
