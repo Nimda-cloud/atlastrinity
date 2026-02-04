@@ -23,8 +23,9 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         print("\n[TEST] Simulating Mistral failure (Tier 1)...")
         result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
         self.assertIsInstance(result, tuple)
-        self.assertTrue(result[0])
-        self.assertEqual(vibe_module._current_model, "devstral-openrouter")
+        if isinstance(result, tuple):
+            self.assertTrue(result[0])
+            self.assertEqual(vibe_module._current_model, "devstral-openrouter")
         # argv remains unchanged because we use VIBE_HOME override
         self.assertNotIn("devstral-openrouter", argv)
 
@@ -32,8 +33,9 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         print("[TEST] Simulating OpenRouter failure (Tier 2)...")
         result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
         self.assertIsInstance(result, tuple)
-        self.assertTrue(result[0])
-        self.assertEqual(vibe_module._current_model, "gpt-4o")
+        if isinstance(result, tuple):
+            self.assertTrue(result[0])
+            self.assertEqual(vibe_module._current_model, "gpt-4o")
 
         # 3. Third failure (on Copilot) -> Give up
         print("[TEST] Simulating Copilot failure (Final)...")
