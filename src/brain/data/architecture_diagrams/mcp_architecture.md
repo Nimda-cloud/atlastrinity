@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T05:53:21.548612 -->
+<!-- Modified: src/mcp_server/golden_fund/tools/ingest.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T05:51:50.216424 -->
+<!-- Modified: src/mcp_server/golden_fund/tools/ingest.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T05:45:45.158179 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, scripts/check_mcp_health.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T05:40:20.789781 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/data/tool_schemas.json -->
 

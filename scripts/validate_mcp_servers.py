@@ -212,8 +212,10 @@ def validate_server(name: str, config: dict) -> dict:
     elif command == "node":
         result["type"] = "Node"
         result["status"] = "ok" if validate_direct_node_server(name, config) else "error"
-    elif "mcp-server-macos-use" in command or command.endswith(
-        ".build/release/mcp-server-macos-use"
+    elif any(
+        x in command for x in ["mcp-server-macos-use", "mcp-server-googlemaps"]
+    ) or command.endswith(
+        (".build/release/mcp-server-macos-use", ".build/release/mcp-server-googlemaps")
     ):
         result["type"] = "Swift"
         result["status"] = "ok" if validate_swift_server(name, config) else "error"
