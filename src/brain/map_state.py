@@ -127,7 +127,15 @@ class MapStateManager:
         """Set the currently active/selected place"""
         self.state.active_place = place_data
 
-    def set_agent_view(self, image_path: str, heading: int, pitch: int, fov: int):
+    def set_agent_view(
+        self,
+        image_path: str,
+        heading: int,
+        pitch: int,
+        fov: int,
+        lat: float | None = None,
+        lng: float | None = None,
+    ):
         """Update the agent's current visual perspective"""
         self.state.agent_view = {
             "image_path": image_path,
@@ -135,6 +143,8 @@ class MapStateManager:
             "pitch": pitch,
             "fov": fov,
             "timestamp": "now",  # Handled by frontend
+            "lat": lat,
+            "lng": lng,
         }
 
     def to_dict(self) -> dict[str, Any]:

@@ -76,6 +76,8 @@ const App: React.FC = () => {
       pitch: number;
       fov: number;
       timestamp: string;
+      lat?: number;
+      lng?: number;
     } | null;
   }>({ type: 'STATIC' });
 
@@ -260,6 +262,8 @@ const App: React.FC = () => {
                     pitch: av.pitch,
                     fov: av.fov,
                     timestamp: av.timestamp,
+                    lat: av.lat,
+                    lng: av.lng,
                   },
                 };
               });

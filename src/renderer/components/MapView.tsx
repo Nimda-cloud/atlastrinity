@@ -19,6 +19,8 @@ interface MapViewProps {
     pitch: number;
     fov: number;
     timestamp: string;
+    lat?: number;
+    lng?: number;
   } | null;
 }
 
@@ -148,7 +150,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
       // Direct DOM manipulation to ensure attribute is updated
       const filterValue = cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled';
       mapElement.setAttribute('data-cyberpunk-filter', filterValue);
-      
+
       // Update Street View active state on the element for CSS targeting
       mapElement.setAttribute('data-street-view', streetViewActive ? 'active' : 'inactive');
     }
@@ -300,6 +302,37 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
     initMap();
   }, [type, isLoaded, mapInitialized]);
+
+  // Sync interactive Street View with Agent's view updates
+  useEffect(() => {
+    if (type !== 'INTERACTIVE' || !agentView || !mapInitialized) return;
+
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+    if (mapElement?.innerMap) {
+      const streetView = mapElement.innerMap.getStreetView();
+      if (streetView) {
+        // Ensure Street View is visible when agent starts driving
+        if (!streetView.getVisible()) {
+          streetView.setVisible(true);
+          setStreetViewActive(true);
+        }
+
+        // Update Position if coordinates provided (sync with tour)
+        if (agentView.lat !== undefined && agentView.lng !== undefined) {
+          const newPos = new google.maps.LatLng(agentView.lat, agentView.lng);
+          streetView.setPosition(newPos);
+          // Also pan the overhead map to keep context
+          mapElement.innerMap.panTo(newPos);
+        }
+
+        // Update POV (Heading/Pitch) - This makes the camera "look" where the agent looks
+        streetView.setPov({
+          heading: agentView.heading,
+          pitch: agentView.pitch
+        });
+      }
+    }
+  }, [agentView, type, mapInitialized]);
 
   // Handle image loading for static/street view
   useEffect(() => {

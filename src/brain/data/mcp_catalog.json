@@ -533,5 +533,26 @@
       "maps_open_interactive_search"
     ],
     "when_to_use": "Finding locations with specific criteria (price, open now), planning complex multi-stop routes, visualizing streets, or getting detailed place analytics."
+  },
+  "tour-guide": {
+    "name": "tour-guide",
+    "tier": 2,
+    "category": "navigation",
+    "description": "Interactive Virtual Tour Control for Agents",
+    "capabilities": [
+      "Movement Control (Start, Stop, Pause, Resume)",
+      "Camera Control (Look Left, Right, Around)",
+      "Speed Control (Walk Faster/Slower)",
+      "Data Sync (Agent position aligns with User Map)"
+    ],
+    "key_tools": [
+      "tour_start",
+      "tour_stop",
+      "tour_pause",
+      "tour_resume",
+      "tour_look",
+      "tour_set_speed"
+    ],
+    "when_to_use": "When the user asks to 'walk' somewhere, 'look around', or control the movement of the virtual agent."
   }
 }

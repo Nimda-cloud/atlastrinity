@@ -147,8 +147,16 @@ class TourDriver:
             if match:
                 image_path = match.group(1).strip()
                 # Update MapState
+                # Sync map center to agent location so interactive map follows
+                map_state_manager.set_center(lat, lng)
+                
                 map_state_manager.set_agent_view(
-                    image_path=image_path, heading=int(final_heading), pitch=0, fov=90
+                    image_path=image_path, 
+                    heading=int(final_heading), 
+                    pitch=0, 
+                    fov=90,
+                    lat=lat,
+                    lng=lng
                 )
 
         except Exception as e:

@@ -535,6 +535,10 @@ class ToolDispatcher:
             if server in {"_trinity_native", "system"}:
                 return await self._handle_system(resolved_tool, normalized_args)
 
+            # Handle Tour Guide tools (internal execution)
+            if server == "tour-guide":
+                return await self._execute_tour(resolved_tool, normalized_args)
+
             if not server:
                 return self._handle_resolution_failure(tool_name)
 
@@ -964,7 +968,9 @@ class ToolDispatcher:
                     "context7": self._handle_context7,
                     "golden-fund": self._handle_golden_fund,
                     "data-analysis": self._handle_data_analysis,
+
                     "xcodebuild": self._handle_xcodebuild,
+                    "tour-guide": self._handle_tour,
                 }
                 if server in handlers:
                     logger.debug(
@@ -1030,7 +1036,9 @@ class ToolDispatcher:
             "devtools": self._handle_devtools,
             "context7": self._handle_context7,
             "golden-fund": self._handle_golden_fund,
+
             "golden_fund": self._handle_golden_fund,
+            "tour-guide": self._handle_tour,
         }
         if explicit_server and explicit_server in handlers:
             return handlers[explicit_server](tool_name, args)
@@ -1494,6 +1502,52 @@ class ToolDispatcher:
             }
 
         return {"success": False, "error": f"Unknown system tool: {tool_name}"}
+
+    async def _execute_tour(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """Executes Tour Driver commands locally."""
+        from .navigation.tour_driver import tour_driver
+
+        try:
+            if tool_name == "tour_start":
+                polyline = args.get("polyline")
+                if not polyline:
+                    return {"success": False, "error": "Missing 'polyline' argument"}
+                await tour_driver.start_tour(polyline)
+                return {"success": True, "result": "Tour started successfully"}
+
+            elif tool_name == "tour_stop":
+                await tour_driver.stop_tour()
+                return {"success": True, "result": "Tour stopped"}
+
+            elif tool_name == "tour_pause":
+                tour_driver.pause_tour()
+                return {"success": True, "result": "Tour paused"}
+
+            elif tool_name == "tour_resume":
+                tour_driver.resume_tour()
+                return {"success": True, "result": "Tour resumed"}
+
+            elif tool_name == "tour_look":
+                angle = args.get("angle", 0)
+                tour_driver.look_around(int(angle))
+                return {"success": True, "result": f"Looked {angle} degrees"}
+
+            elif tool_name == "tour_set_speed":
+                speed = args.get("speed", 1.0)
+                tour_driver.set_speed(float(speed))
+                return {"success": True, "result": f"Speed set to {speed}"}
+
+            return {"success": False, "error": f"Unknown tour tool: {tool_name}"}
+        except Exception as e:
+            logger.exception(f"[DISPATCHER] Tour execution failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def _handle_tour(
+        self, tool_name: str, args: dict[str, Any]
+    ) -> tuple[str, str, dict[str, Any]]:
+        """Resolution handler for tour guide tools."""
+        # Simple pass-through as tools are 1:1 mapped
+        return "tour-guide", tool_name, args
 
     def _handle_devtools(
         self, tool_name: str, args: dict[str, Any]
