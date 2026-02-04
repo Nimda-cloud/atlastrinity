@@ -223,11 +223,12 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   // Cyberpunk filter toggle - enabled by default
   const [cyberpunkFilterEnabled, setCyberpunkFilterEnabled] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const searchMarkerRef = useRef<google.maps.Marker | null>(null);
 
   // Force update attributes and STYLES on gmp-map when filter state changes
   useLayoutEffect(() => {
     const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (mapElement && mapElement.innerMap) {
+    if (mapElement?.innerMap) {
       // Direct DOM manipulation to ensure attribute is updated
       // For roadmap, 'enabled' attribute doesn't change CSS filters, but we toggle JSON styles below
       const filterValue = cyberpunkFilterEnabled ? 'enabled' : 'disabled';
@@ -437,27 +438,79 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     }
   }, [imageUrl, type]);
 
+  // Helper to update search marker
+  const updateSearchMarker = useCallback((location: google.maps.LatLng) => {
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+    if (!mapElement?.innerMap) return;
+
+    const map = mapElement.innerMap;
+
+    // Remove existing marker
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.setMap(null);
+    }
+
+    // Create the red staggering ripple SVG
+    const pulsingSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+        <!-- Ripple Ring 1 -->
+        <circle cx="60" cy="60" r="0" stroke="#ff4d4d" stroke-width="2" fill="none" opacity="0">
+          <animate attributeName="r" from="0" to="55" dur="3s" repeatCount="indefinite" begin="0s" />
+          <animate attributeName="opacity" values="0;1;0" keyTimes="0;0.1;1" dur="3s" repeatCount="indefinite" begin="0s" />
+        </circle>
+        
+        <!-- Ripple Ring 2 -->
+        <circle cx="60" cy="60" r="0" stroke="#ff4d4d" stroke-width="2" fill="none" opacity="0">
+          <animate attributeName="r" from="0" to="55" dur="3s" repeatCount="indefinite" begin="1s" />
+          <animate attributeName="opacity" values="0;1;0" keyTimes="0;0.1;1" dur="3s" repeatCount="indefinite" begin="1s" />
+        </circle>
+
+        <!-- Ripple Ring 3 -->
+        <circle cx="60" cy="60" r="0" stroke="#ff4d4d" stroke-width="2" fill="none" opacity="0">
+          <animate attributeName="r" from="0" to="55" dur="3s" repeatCount="indefinite" begin="2s" />
+          <animate attributeName="opacity" values="0;1;0" keyTimes="0;0.1;1" dur="3s" repeatCount="indefinite" begin="2s" />
+        </circle>
+      </svg>
+    `;
+
+    const encodedSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pulsingSvg)}`;
+
+    // Create new cyberpunk styled marker
+    const marker = new google.maps.Marker({
+      position: location,
+      map: map,
+      title: 'TARGET_LOCKED',
+      optimized: false, // Required for SVG animations in some versions
+      icon: {
+        url: encodedSvg,
+        scaledSize: new google.maps.Size(120, 120),
+        anchor: new google.maps.Point(60, 60),
+      },
+    });
+
+    searchMarkerRef.current = marker;
+    map.panTo(location);
+    map.setZoom(17);
+  }, []);
+
   // Handle place picker changes
   const handlePlaceChange = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const placePicker = document.querySelector('gmpx-place-picker') as GmpxPlacePickerElement;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
-    if (placePicker && mapElement?.innerMap) {
+    if (placePicker) {
       const place = placePicker.value;
       if (place?.location) {
-        mapElement.innerMap.panTo(place.location);
-        mapElement.innerMap.setZoom(17);
+        updateSearchMarker(place.location);
       }
     }
-  }, []);
+  }, [updateSearchMarker]);
 
   // Set up place picker event listener for the panel search
   useEffect(() => {
     if (type !== 'INTERACTIVE' || !mapInitialized) return;
 
-    const placePicker = document.querySelector('#panel-search') as any;
+    const placePicker = document.querySelector('#panel-search') as GmpxPlacePickerElement;
     if (placePicker) {
       placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
 
@@ -493,13 +546,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     status === google.maps.places.PlacesServiceStatus.OK &&
                     place?.geometry?.location
                   ) {
-                    const mapElement = document.querySelector('gmp-map') as any;
-                    if (mapElement?.innerMap) {
-                      mapElement.innerMap.panTo(place.geometry.location);
-                      mapElement.innerMap.setZoom(17);
-                      // Clear input focus to show result
-                      input.blur();
-                    }
+                    updateSearchMarker(place.geometry.location);
+                    // Clear input focus to show result
+                    input.blur();
                   }
                 });
               }
@@ -638,7 +687,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         clearTimeout(timer);
       };
     }
-  }, [type, mapInitialized, handlePlaceChange]);
+  }, [type, mapInitialized, handlePlaceChange, updateSearchMarker]);
 
   const handleZoom = (delta: number) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -658,7 +707,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     if (mapElement?.innerMap) {
       // Exit Street View if active when changing map type
       const streetView = mapElement.innerMap.getStreetView();
-      if (streetView && streetView.getVisible()) {
+      if (streetView?.getVisible()) {
         streetView.setVisible(false);
         setStreetViewActive(false);
       }
@@ -1073,7 +1122,11 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     type="button"
                     disabled={streetViewActive}
                     className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''} ${streetViewActive ? 'disabled' : ''}`}
-                    title={streetViewActive ? 'Exit Street View to use Pegman' : 'Drag to road for Street View'}
+                    title={
+                      streetViewActive
+                        ? 'Exit Street View to use Pegman'
+                        : 'Drag to road for Street View'
+                    }
                     aria-label="Drag Pegman to Street View"
                     onMouseDown={streetViewActive ? undefined : handlePegmanDragStart}
                     onTouchStart={streetViewActive ? undefined : handlePegmanDragStart}
