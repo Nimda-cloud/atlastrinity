@@ -1100,9 +1100,37 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           filter: grayscale(0.3) brightness(0.9) contrast(1.1) sepia(0.3) hue-rotate(180deg) saturate(2) !important;
         }
 
-        /* Pegman control styling */
+        /* Pegman control styling - position above zoom controls with cyberpunk theme */
         .gm-svpc {
-          filter: hue-rotate(180deg) saturate(1.5) !important;
+          position: absolute !important;
+          right: 10px !important;
+          bottom: 130px !important;
+          z-index: 100 !important;
+          filter: hue-rotate(180deg) brightness(1.2) saturate(2) drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)) !important;
+          background: rgba(0, 10, 20, 0.9) !important;
+          border: 1px solid #ff9800 !important;
+          border-radius: 3px !important;
+          padding: 2px !important;
+          box-shadow: 0 0 15px rgba(255, 152, 0, 0.4), inset 0 0 5px rgba(0, 229, 255, 0.1) !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .gm-svpc:hover {
+          box-shadow: 0 0 25px rgba(255, 152, 0, 0.7), 0 0 10px rgba(0, 229, 255, 0.5) !important;
+          border-color: #ffb74d !important;
+        }
+
+        /* Style the Pegman icon inside */
+        .gm-svpc img,
+        .gm-svpc button {
+          filter: brightness(1.3) !important;
+        }
+
+        /* Street View control container positioning */
+        .gmnoprint[controlwidth="40"][controlheight="40"] {
+          position: absolute !important;
+          right: 10px !important;
+          bottom: 130px !important;
         }
 
         .map-zoom-controls {
