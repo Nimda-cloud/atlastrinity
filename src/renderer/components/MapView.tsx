@@ -577,9 +577,16 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 {/* Native Pegman PlaceHolder - Style target for .gm-svpc */}
                 <div className="control-section pov-section-placeholder">
                   {/* Fake Pegman Icon (Visual Only) */}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                     <circle cx="12" cy="7" r="4" />
-                     <path d="M12 11c-4 0-7 2-7 5v4h14v-4c0-3-3-5-7-5z" />
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="7" r="4" />
+                    <path d="M12 11c-4 0-7 2-7 5v4h14v-4c0-3-3-5-7-5z" />
                   </svg>
                 </div>
               </div>
