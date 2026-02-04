@@ -28,6 +28,7 @@
         "/tmp",
         "/private/tmp"
       ],
+      "connect_timeout": 300,
       "description": "Official filesystem operations (pinned to @modelcontextprotocol/server-filesystem for reproducibility)",
       "disabled": false,
       "tier": 1,
@@ -39,7 +40,7 @@
     "sequential-thinking": {
       "transport": "stdio",
       "command": "bunx",
-      "connect_timeout": 60,
+      "connect_timeout": 300,
       "args": [
         "@modelcontextprotocol/server-sequential-thinking"
       ],
@@ -181,7 +182,7 @@
       "env": {
         "PUPPETEER_ALLOW_DANGEROUS": "true"
       },
-      "connect_timeout": 60,
+      "connect_timeout": 300,
       "description": "High-speed Headless Browser (Puppeteer) for web searching, navigation, screenshots, element interaction, and JavaScript execution",
       "disabled": false,
       "tier": 3,
@@ -231,6 +232,7 @@
         "-y",
         "c7-mcp-server"
       ],
+      "connect_timeout": 300,
       "description": "Context7 Documentation Server - Provides context-aware documentation for libraries and frameworks.",
       "disabled": false,
       "tier": 3,
@@ -258,7 +260,7 @@
     "devtools": {
       "transport": "stdio",
       "command": "python3",
-      "connect_timeout": 60,
+      "connect_timeout": 300,
       "args": [
         "-m",
         "src.mcp_server.devtools_server"
@@ -277,7 +279,7 @@
     "github": {
       "transport": "stdio",
       "command": "npx",
-      "connect_timeout": 60,
+      "connect_timeout": 300,
       "args": [
         "-y",
         "@modelcontextprotocol/server-github"
@@ -335,6 +337,7 @@
         "-m",
         "src.mcp_server.postgres_server"
       ],
+      "connect_timeout": 300,
       "description": "PostgreSQL Database Access (Experimental). Requires local PostgreSQL 17 installation.",
       "disabled": true,
       "tier": 3,

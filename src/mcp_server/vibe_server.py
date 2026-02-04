@@ -760,6 +760,7 @@ async def _handle_vibe_rate_limit(
     if attempt < max_retries - 1:
         # Add jitter to prevent thundering herd
         import random
+
         jitter = random.uniform(0, 15)
         wait_time = backoff_delays[attempt] + jitter
         logger.warning(
