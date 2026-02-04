@@ -1451,8 +1451,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           --gmpx-color-on-primary: #020a10 !important;
           --gmpx-font-family-base: 'JetBrains Mono', monospace !important;
           --gmpx-font-family-headings: 'JetBrains Mono', monospace !important;
-          border: 1px solid rgba(0, 163, 255, 0.5) !important;
-          box-shadow: 0 0 15px rgba(0, 163, 255, 0.3);
+          border: none !important;
+          box-shadow: none !important;
         }
 
         gmp-map {
@@ -1527,7 +1527,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           z-index: 1000; /* Ensure it's on top of everything */
           pointer-events: auto;
           backdrop-filter: blur(4px);
-          transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, background 0.3s;
+          /* BASE TRANSITION (HIDING/RISING) - Slow, smooth, with delay */
+          /* transition-property: top, opacity, background; */
+          transition: top 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s, opacity 0.8s ease 0.5s, background 0.8s ease 0.5s;
           opacity: 0.8; /* Visible enough to see "handle" area if any */
         }
         
@@ -1551,6 +1553,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           top: 0px; /* Slide down into view */
           opacity: 1; /* Fully visible */
           background: rgba(0, 10, 20, 0.85); /* Darken when active for legibility */
+          /* HOVER TRANSITION (SHOWING/DESCENDING) - Fast, immediate */
+          transition: top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, opacity 0.3s ease 0s, background 0.3s ease 0s;
         }
 
         .search-section {
