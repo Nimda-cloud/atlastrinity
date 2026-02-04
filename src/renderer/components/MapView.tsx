@@ -1543,9 +1543,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Cyberpunk filter for satellite/hybrid maps when enabled */
         gmp-map[data-map-type="satellite"][data-cyberpunk-filter="enabled"],
         gmp-map[data-map-type="hybrid"][data-cyberpunk-filter="enabled"] {
-          /* Use sepia to unify colors first, then rotate to Cyan (Electron Blue) */
-          /* Sepia(1) is ~40-50 hue. Adding ~140-150 brings it to ~180-190 (Cyan/Blue) */
-          filter: sepia(0.6) hue-rotate(145deg) saturate(3.5) contrast(1.2) brightness(0.85);
+          /* Sepia(1) + 150deg = Bright Cyan / Light Blue (Turquoise) */
+          /* Increased brightness to 1.1 to make it 'lighter' as requested */
+          filter: sepia(1) hue-rotate(150deg) saturate(3) contrast(1.1) brightness(1.1);
         }
         
         /* Natural view - no filter */
@@ -1554,10 +1554,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           filter: none;
         }
         
-        /* Roadmap always uses night style, no additional filter needed */
+        /* Roadmap always uses night style, ABSOLUTELY NO FILTER */
         gmp-map[data-map-type="roadmap"] {
-          /* Night style applied via Google Maps JSON styles */
-          filter: none;
+          filter: none !important;
         }
         
         /* Native Pegman Control - Styled via shadow DOM injection */
