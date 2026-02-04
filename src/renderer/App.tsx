@@ -256,7 +256,7 @@ const App: React.FC = () => {
               let changed = false;
 
               // Handle Agent View (Street View)
-              if (av && av.image_path) {
+              if (av?.image_path) {
                 const fileUrl = `file://${av.image_path}`;
                 if (
                   prev.url !== fileUrl ||

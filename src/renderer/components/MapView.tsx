@@ -318,125 +318,126 @@ const DistanceOverlay: React.FC<{
   );
 };
 
-const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClose, agentView, distanceInfo }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
-  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
-  // No explicit street view toggling needed with native control
-  // We just allow the user to drag the Pegman
-  const [lightingMode, setLightingMode] = useState<'night' | 'day' | 'twilight'>('night');
-  // Track street view active state for the custom toggle button
-  const [streetViewActive, setStreetViewActive] = useState(false);
-  // Track Pegman dragging state for road highlighting
-  const [isDraggingPegman, setIsDraggingPegman] = useState(false);
-  // Cyberpunk filter toggle - enabled by default
-  const [cyberpunkFilterEnabled, setCyberpunkFilterEnabled] = useState(true);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const searchMarkerRef = useRef<google.maps.Marker | null>(null);
+const MapView: React.FC<MapViewProps> = memo(
+  ({ imageUrl, type, location, onClose, agentView, distanceInfo }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [mapInitialized, setMapInitialized] = useState(false);
+    const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
+    // No explicit street view toggling needed with native control
+    // We just allow the user to drag the Pegman
+    const [lightingMode, setLightingMode] = useState<'night' | 'day' | 'twilight'>('night');
+    // Track street view active state for the custom toggle button
+    const [streetViewActive, setStreetViewActive] = useState(false);
+    // Track Pegman dragging state for road highlighting
+    const [isDraggingPegman, setIsDraggingPegman] = useState(false);
+    // Cyberpunk filter toggle - enabled by default
+    const [cyberpunkFilterEnabled, setCyberpunkFilterEnabled] = useState(true);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const searchMarkerRef = useRef<google.maps.Marker | null>(null);
 
-  // Force update attributes and STYLES on gmp-map when filter state changes
-  useLayoutEffect(() => {
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (mapElement?.innerMap) {
-      // Direct DOM manipulation to ensure attribute is updated
-      // For roadmap, 'enabled' attribute doesn't change CSS filters, but we toggle JSON styles below
-      const filterValue = cyberpunkFilterEnabled ? 'enabled' : 'disabled';
-      mapElement.setAttribute('data-cyberpunk-filter', filterValue);
+    // Force update attributes and STYLES on gmp-map when filter state changes
+    useLayoutEffect(() => {
+      const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+      if (mapElement?.innerMap) {
+        // Direct DOM manipulation to ensure attribute is updated
+        // For roadmap, 'enabled' attribute doesn't change CSS filters, but we toggle JSON styles below
+        const filterValue = cyberpunkFilterEnabled ? 'enabled' : 'disabled';
+        mapElement.setAttribute('data-cyberpunk-filter', filterValue);
 
-      // Update Street View active state on the element for CSS targeting
-      mapElement.setAttribute('data-street-view', streetViewActive ? 'active' : 'inactive');
+        // Update Street View active state on the element for CSS targeting
+        mapElement.setAttribute('data-street-view', streetViewActive ? 'active' : 'inactive');
 
-      // Update JSON Styles for Roadmap/Hybrid based on filter
-      if (mapType === 'roadmap' || mapType === 'hybrid') {
-        const styleToUse = cyberpunkFilterEnabled ? CYBERPUNK_MAP_STYLE : NEUTRAL_NIGHT_STYLE;
-        mapElement.innerMap.setOptions({ styles: styleToUse });
-      } else {
-        // Satellite pure - no styles
-        mapElement.innerMap.setOptions({ styles: [] });
+        // Update JSON Styles for Roadmap/Hybrid based on filter
+        if (mapType === 'roadmap' || mapType === 'hybrid') {
+          const styleToUse = cyberpunkFilterEnabled ? CYBERPUNK_MAP_STYLE : NEUTRAL_NIGHT_STYLE;
+          mapElement.innerMap.setOptions({ styles: styleToUse });
+        } else {
+          // Satellite pure - no styles
+          mapElement.innerMap.setOptions({ styles: [] });
+        }
       }
-    }
-  }, [cyberpunkFilterEnabled, mapType, streetViewActive]);
+    }, [cyberpunkFilterEnabled, mapType, streetViewActive]);
 
-  // Calculate time-based lighting mode for adaptive filters
-  const getTimeBasedLightingMode = useCallback((): 'night' | 'day' | 'twilight' => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 18) return 'day';
-    if ((hour >= 5 && hour < 6) || (hour >= 18 && hour < 19)) return 'twilight';
-    return 'night';
-  }, []);
+    // Calculate time-based lighting mode for adaptive filters
+    const getTimeBasedLightingMode = useCallback((): 'night' | 'day' | 'twilight' => {
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 18) return 'day';
+      if ((hour >= 5 && hour < 6) || (hour >= 18 && hour < 19)) return 'twilight';
+      return 'night';
+    }, []);
 
-  // Update lighting mode on mount and every minute
-  useEffect(() => {
-    setLightingMode(getTimeBasedLightingMode());
-    const interval = setInterval(() => {
+    // Update lighting mode on mount and every minute
+    useEffect(() => {
       setLightingMode(getTimeBasedLightingMode());
-    }, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, [getTimeBasedLightingMode]);
+      const interval = setInterval(() => {
+        setLightingMode(getTimeBasedLightingMode());
+      }, 60000); // Check every minute
+      return () => clearInterval(interval);
+    }, [getTimeBasedLightingMode]);
 
-  // Load the Extended Component Library script
-  useEffect(() => {
-    console.log('🗺️ MapView mounted/updated', { type, isLoaded, mapInitialized });
-    return () => console.log('🗺️ MapView unmounted');
-  }, [type, isLoaded, mapInitialized]);
+    // Load the Extended Component Library script
+    useEffect(() => {
+      console.log('🗺️ MapView mounted/updated', { type, isLoaded, mapInitialized });
+      return () => console.log('🗺️ MapView unmounted');
+    }, [type, isLoaded, mapInitialized]);
 
-  useEffect(() => {
-    if (type !== 'INTERACTIVE') return;
+    useEffect(() => {
+      if (type !== 'INTERACTIVE') return;
 
-    // Check for API key first
-    if (!GOOGLE_MAPS_API_KEY) {
-      console.error('Critical: VITE_GOOGLE_MAPS_API_KEY is missing!');
-      setError('MISSING_API_KEY');
-      return;
-    }
+      // Check for API key first
+      if (!GOOGLE_MAPS_API_KEY) {
+        console.error('Critical: VITE_GOOGLE_MAPS_API_KEY is missing!');
+        setError('MISSING_API_KEY');
+        return;
+      }
 
-    // Script is now loaded globally in index.html for stability
-    setIsLoaded(true);
-  }, [type]);
+      // Script is now loaded globally in index.html for stability
+      setIsLoaded(true);
+    }, [type]);
 
-  // Initialize the interactive map with cyberpunk styling
-  useEffect(() => {
-    if (type !== 'INTERACTIVE' || !isLoaded || mapInitialized) return;
+    // Initialize the interactive map with cyberpunk styling
+    useEffect(() => {
+      if (type !== 'INTERACTIVE' || !isLoaded || mapInitialized) return;
 
-    const initMap = async () => {
-      try {
-        // Wait for custom elements to be defined
-        await customElements.whenDefined('gmp-map');
-        await customElements.whenDefined('gmpx-api-loader');
+      const initMap = async () => {
+        try {
+          // Wait for custom elements to be defined
+          await customElements.whenDefined('gmp-map');
+          await customElements.whenDefined('gmpx-api-loader');
 
-        // Small delay to ensure everything is rendered
-        await new Promise((resolve) => setTimeout(resolve, 500));
+          // Small delay to ensure everything is rendered
+          await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
-        if (mapElement) {
-          // Wait for the inner map to be available
-          const checkMap = setInterval(() => {
-            if (mapElement.innerMap) {
-              clearInterval(checkMap);
-              mapElement.innerMap.setOptions({
-                styles: CYBERPUNK_MAP_STYLE,
-                disableDefaultUI: true,
-                zoomControl: false,
-                mapTypeControl: false,
-                streetViewControl: true, // Enable Pegman drag-and-drop
-                fullscreenControl: false,
-              });
+          if (mapElement) {
+            // Wait for the inner map to be available
+            const checkMap = setInterval(() => {
+              if (mapElement.innerMap) {
+                clearInterval(checkMap);
+                mapElement.innerMap.setOptions({
+                  styles: CYBERPUNK_MAP_STYLE,
+                  disableDefaultUI: true,
+                  zoomControl: false,
+                  mapTypeControl: false,
+                  streetViewControl: true, // Enable Pegman drag-and-drop
+                  fullscreenControl: false,
+                });
 
-              // Listen for Street View visibility changes to sync state
-              const streetView = mapElement.innerMap.getStreetView();
-              google.maps.event.addListener(streetView, 'visible_changed', () => {
-                setStreetViewActive(streetView.getVisible());
-              });
+                // Listen for Street View visibility changes to sync state
+                const streetView = mapElement.innerMap.getStreetView();
+                google.maps.event.addListener(streetView, 'visible_changed', () => {
+                  setStreetViewActive(streetView.getVisible());
+                });
 
-              // Inject styles into shadow DOM to darken the copyright bar and position Pegman
+                // Inject styles into shadow DOM to darken the copyright bar and position Pegman
 
-              // Inject styles into shadow DOM to darken the copyright bar and position Pegman
-              if (mapElement.shadowRoot) {
-                const style = document.createElement('style');
-                style.textContent = `
+                // Inject styles into shadow DOM to darken the copyright bar and position Pegman
+                if (mapElement.shadowRoot) {
+                  const style = document.createElement('style');
+                  style.textContent = `
                   .gm-style-cc { 
                     filter: invert(1) hue-rotate(180deg) brightness(1.2) contrast(1.2);
                     opacity: 0.8;
@@ -487,81 +488,81 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   
                   /* Hide the floor/arrows in street view if needed, but here we just style the pegman button */
                 `;
-                mapElement.shadowRoot.appendChild(style);
+                  mapElement.shadowRoot.appendChild(style);
+                }
+                setMapInitialized(true);
               }
-              setMapInitialized(true);
-            }
-          }, 100);
+            }, 100);
 
-          // Timeout after 10 seconds
-          setTimeout(() => clearInterval(checkMap), 10000);
+            // Timeout after 10 seconds
+            setTimeout(() => clearInterval(checkMap), 10000);
+          }
+        } catch (err) {
+          console.error('Failed to initialize map:', err);
+          setError('Failed to initialize map');
         }
-      } catch (err) {
-        console.error('Failed to initialize map:', err);
-        setError('Failed to initialize map');
+      };
+
+      initMap();
+    }, [type, isLoaded, mapInitialized]);
+
+    // Sync interactive Street View with Agent's view updates
+    useEffect(() => {
+      if (type !== 'INTERACTIVE' || !agentView || !mapInitialized) return;
+
+      const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+      if (mapElement?.innerMap) {
+        const streetView = mapElement.innerMap.getStreetView();
+        if (streetView) {
+          // Ensure Street View is visible when agent starts driving
+          if (!streetView.getVisible()) {
+            streetView.setVisible(true);
+            setStreetViewActive(true);
+          }
+
+          // Update Position if coordinates provided (sync with tour)
+          if (agentView.lat !== undefined && agentView.lng !== undefined) {
+            const newPos = new google.maps.LatLng(agentView.lat, agentView.lng);
+            streetView.setPosition(newPos);
+            // Also pan the overhead map to keep context
+            mapElement.innerMap.panTo(newPos);
+          }
+
+          // Update POV (Heading/Pitch) - This makes the camera "look" where the agent looks
+          streetView.setPov({
+            heading: agentView.heading,
+            pitch: agentView.pitch,
+          });
+        }
       }
-    };
+    }, [agentView, type, mapInitialized]);
 
-    initMap();
-  }, [type, isLoaded, mapInitialized]);
-
-  // Sync interactive Street View with Agent's view updates
-  useEffect(() => {
-    if (type !== 'INTERACTIVE' || !agentView || !mapInitialized) return;
-
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (mapElement?.innerMap) {
-      const streetView = mapElement.innerMap.getStreetView();
-      if (streetView) {
-        // Ensure Street View is visible when agent starts driving
-        if (!streetView.getVisible()) {
-          streetView.setVisible(true);
-          setStreetViewActive(true);
-        }
-
-        // Update Position if coordinates provided (sync with tour)
-        if (agentView.lat !== undefined && agentView.lng !== undefined) {
-          const newPos = new google.maps.LatLng(agentView.lat, agentView.lng);
-          streetView.setPosition(newPos);
-          // Also pan the overhead map to keep context
-          mapElement.innerMap.panTo(newPos);
-        }
-
-        // Update POV (Heading/Pitch) - This makes the camera "look" where the agent looks
-        streetView.setPov({
-          heading: agentView.heading,
-          pitch: agentView.pitch,
-        });
+    // Handle image loading for static/street view
+    useEffect(() => {
+      if (imageUrl && type !== 'INTERACTIVE') {
+        setIsLoaded(false);
+        setError(null);
+        const img = new Image();
+        img.src = imageUrl;
+        img.onload = () => setIsLoaded(true);
+        img.onerror = () => setError('Failed to load map image');
       }
-    }
-  }, [agentView, type, mapInitialized]);
+    }, [imageUrl, type]);
 
-  // Handle image loading for static/street view
-  useEffect(() => {
-    if (imageUrl && type !== 'INTERACTIVE') {
-      setIsLoaded(false);
-      setError(null);
-      const img = new Image();
-      img.src = imageUrl;
-      img.onload = () => setIsLoaded(true);
-      img.onerror = () => setError('Failed to load map image');
-    }
-  }, [imageUrl, type]);
+    // Helper to update search marker
+    const updateSearchMarker = useCallback((location: google.maps.LatLng) => {
+      const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+      if (!mapElement?.innerMap) return;
 
-  // Helper to update search marker
-  const updateSearchMarker = useCallback((location: google.maps.LatLng) => {
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (!mapElement?.innerMap) return;
+      const map = mapElement.innerMap;
 
-    const map = mapElement.innerMap;
+      // Remove existing marker
+      if (searchMarkerRef.current) {
+        searchMarkerRef.current.setMap(null);
+      }
 
-    // Remove existing marker
-    if (searchMarkerRef.current) {
-      searchMarkerRef.current.setMap(null);
-    }
-
-    // Create the red staggering ripple SVG
-    const pulsingSvg = `
+      // Create the red staggering ripple SVG
+      const pulsingSvg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
         <!-- Ripple Ring 1 -->
         <circle cx="60" cy="60" r="0" stroke="#ff4d4d" stroke-width="2" fill="none" opacity="0">
@@ -583,119 +584,119 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
       </svg>
     `;
 
-    const encodedSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pulsingSvg)}`;
+      const encodedSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pulsingSvg)}`;
 
-    // Create new cyberpunk styled marker
-    const marker = new google.maps.Marker({
-      position: location,
-      map: map,
-      title: 'TARGET_LOCKED',
-      optimized: false, // Required for SVG animations in some versions
-      icon: {
-        url: encodedSvg,
-        scaledSize: new google.maps.Size(120, 120),
-        anchor: new google.maps.Point(60, 60),
-      },
-    });
+      // Create new cyberpunk styled marker
+      const marker = new google.maps.Marker({
+        position: location,
+        map: map,
+        title: 'TARGET_LOCKED',
+        optimized: false, // Required for SVG animations in some versions
+        icon: {
+          url: encodedSvg,
+          scaledSize: new google.maps.Size(120, 120),
+          anchor: new google.maps.Point(60, 60),
+        },
+      });
 
-    searchMarkerRef.current = marker;
-    map.panTo(location);
-    map.setZoom(17);
-  }, []);
+      searchMarkerRef.current = marker;
+      map.panTo(location);
+      map.setZoom(17);
+    }, []);
 
-  // Handle place picker changes
-  const handlePlaceChange = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const placePicker = document.querySelector('gmpx-place-picker') as GmpxPlacePickerElement;
+    // Handle place picker changes
+    const handlePlaceChange = useCallback(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const placePicker = document.querySelector('gmpx-place-picker') as GmpxPlacePickerElement;
 
-    if (placePicker) {
-      const place = placePicker.value;
-      if (place?.location) {
-        updateSearchMarker(place.location);
+      if (placePicker) {
+        const place = placePicker.value;
+        if (place?.location) {
+          updateSearchMarker(place.location);
+        }
       }
-    }
-  }, [updateSearchMarker]);
+    }, [updateSearchMarker]);
 
-  // Set up place picker event listener for the panel search
-  useEffect(() => {
-    if (type !== 'INTERACTIVE' || !mapInitialized) return;
+    // Set up place picker event listener for the panel search
+    useEffect(() => {
+      if (type !== 'INTERACTIVE' || !mapInitialized) return;
 
-    const placePicker = document.querySelector('#panel-search') as GmpxPlacePickerElement;
-    if (placePicker) {
-      placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
+      const placePicker = document.querySelector('#panel-search') as GmpxPlacePickerElement;
+      if (placePicker) {
+        placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
 
-      // Handle Enter key for search-on-enter
-      const handleKeyDown = async (e: KeyboardEvent) => {
-        if (e.key === 'Enter') {
-          const input = e.target as HTMLInputElement;
-          const query = input.value?.trim();
+        // Handle Enter key for search-on-enter
+        const handleKeyDown = async (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            const input = e.target as HTMLInputElement;
+            const query = input.value?.trim();
 
-          if (!query) return;
+            if (!query) return;
 
-          // If picker already has a value, standard placechange will handle it
-          // Otherwise, we fetch the first prediction
-          if (!placePicker.value) {
-            try {
-              const autocompleteService = new google.maps.places.AutocompleteService();
-              const predictions = await new Promise<google.maps.places.AutocompletePrediction[]>(
-                (resolve) => {
-                  autocompleteService.getPlacePredictions({ input: query }, (preds) =>
-                    resolve(preds || []),
-                  );
-                },
-              );
-
-              if (predictions.length > 0) {
-                const firstResult = predictions[0];
-                const placesService = new google.maps.places.PlacesService(
-                  document.createElement('div'),
+            // If picker already has a value, standard placechange will handle it
+            // Otherwise, we fetch the first prediction
+            if (!placePicker.value) {
+              try {
+                const autocompleteService = new google.maps.places.AutocompleteService();
+                const predictions = await new Promise<google.maps.places.AutocompletePrediction[]>(
+                  (resolve) => {
+                    autocompleteService.getPlacePredictions({ input: query }, (preds) =>
+                      resolve(preds || []),
+                    );
+                  },
                 );
 
-                placesService.getDetails({ placeId: firstResult.place_id }, (place, status) => {
-                  if (
-                    status === google.maps.places.PlacesServiceStatus.OK &&
-                    place?.geometry?.location
-                  ) {
-                    updateSearchMarker(place.geometry.location);
-                    // Clear input focus to show result
-                    input.blur();
-                  }
-                });
+                if (predictions.length > 0) {
+                  const firstResult = predictions[0];
+                  const placesService = new google.maps.places.PlacesService(
+                    document.createElement('div'),
+                  );
+
+                  placesService.getDetails({ placeId: firstResult.place_id }, (place, status) => {
+                    if (
+                      status === google.maps.places.PlacesServiceStatus.OK &&
+                      place?.geometry?.location
+                    ) {
+                      updateSearchMarker(place.geometry.location);
+                      // Clear input focus to show result
+                      input.blur();
+                    }
+                  });
+                }
+              } catch (err) {
+                console.error('Search-on-enter failed:', err);
               }
-            } catch (err) {
-              console.error('Search-on-enter failed:', err);
             }
           }
-        }
-      };
+        };
 
-      // We need to wait for shadow DOM to attach the listener to the internal input
-      const attachInputListener = () => {
-        if (placePicker.shadowRoot) {
-          const innerInput = placePicker.shadowRoot.querySelector('input');
-          if (innerInput) {
-            innerInput.addEventListener('keydown', handleKeyDown);
-            return true;
+        // We need to wait for shadow DOM to attach the listener to the internal input
+        const attachInputListener = () => {
+          if (placePicker.shadowRoot) {
+            const innerInput = placePicker.shadowRoot.querySelector('input');
+            if (innerInput) {
+              innerInput.addEventListener('keydown', handleKeyDown);
+              return true;
+            }
           }
+          return false;
+        };
+
+        if (!attachInputListener()) {
+          const observer = new MutationObserver(() => {
+            if (attachInputListener()) observer.disconnect();
+          });
+          observer.observe(placePicker, { childList: true, subtree: true });
         }
-        return false;
-      };
 
-      if (!attachInputListener()) {
-        const observer = new MutationObserver(() => {
-          if (attachInputListener()) observer.disconnect();
-        });
-        observer.observe(placePicker, { childList: true, subtree: true });
-      }
-
-      // Inject styles into gmpx-place-picker shadow DOM to remove borders and make full area clickable
-      const injectStyles = () => {
-        if (placePicker.shadowRoot) {
-          const existingStyle = placePicker.shadowRoot.querySelector('#custom-panel-styles');
-          if (!existingStyle) {
-            const style = document.createElement('style');
-            style.id = 'custom-panel-styles';
-            style.textContent = `
+        // Inject styles into gmpx-place-picker shadow DOM to remove borders and make full area clickable
+        const injectStyles = () => {
+          if (placePicker.shadowRoot) {
+            const existingStyle = placePicker.shadowRoot.querySelector('#custom-panel-styles');
+            if (!existingStyle) {
+              const style = document.createElement('style');
+              style.id = 'custom-panel-styles';
+              style.textContent = `
               /* Remove all borders and outlines */
               * {
                 border: none !important;
@@ -774,126 +775,126 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 margin-left: auto !important;
               }
             `;
-            placePicker.shadowRoot.appendChild(style);
-          }
-
-          // Also add click handler to focus input when clicking anywhere
-          const input = placePicker.shadowRoot.querySelector('input');
-          if (input && !placePicker.dataset.clickHandlerAdded) {
-            placePicker.addEventListener('click', () => {
-              input.focus();
-            });
-            placePicker.dataset.clickHandlerAdded = 'true';
-          }
-        }
-      };
-
-      // Try immediately and also after a short delay
-      injectStyles();
-      const timer = setTimeout(injectStyles, 500);
-
-      return () => {
-        placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
-        clearTimeout(timer);
-      };
-    }
-  }, [type, mapInitialized, handlePlaceChange, updateSearchMarker]);
-
-  const handleZoom = (delta: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-
-    if (mapElement?.innerMap) {
-      const currentZoom = mapElement.innerMap.getZoom();
-      if (currentZoom !== undefined) {
-        mapElement.innerMap.setZoom(currentZoom + delta);
-      }
-    }
-  };
-
-  const handleMapTypeChange = useCallback((newType: 'roadmap' | 'satellite' | 'hybrid') => {
-    setMapType(newType);
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (mapElement?.innerMap) {
-      // Exit Street View if active when changing map type
-      const streetView = mapElement.innerMap.getStreetView();
-      if (streetView?.getVisible()) {
-        streetView.setVisible(false);
-        setStreetViewActive(false);
-      }
-
-      mapElement.innerMap.setMapTypeId(newType);
-      // Re-apply custom styles for roadmap and hybrid types (hybrid styles labels)
-      if (newType === 'roadmap' || newType === 'hybrid') {
-        mapElement.innerMap.setOptions({ styles: CYBERPUNK_MAP_STYLE });
-      } else {
-        // For pure satellite, remove custom JSON styles (they don't apply)
-        mapElement.innerMap.setOptions({ styles: [] });
-      }
-    }
-  }, []);
-
-  // Manual toggle for Street View (button click)
-  const handleStreetViewToggle = useCallback(() => {
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (!mapElement?.innerMap) return;
-
-    if (streetViewActive) {
-      const streetView = mapElement.innerMap.getStreetView();
-      if (streetView) {
-        streetView.setVisible(false);
-        setStreetViewActive(false);
-      }
-    } else {
-      // Check for coverage before activating to avoid white screen
-      const streetViewService = new google.maps.StreetViewService();
-      const center = mapElement.innerMap.getCenter();
-
-      if (center) {
-        streetViewService.getPanorama(
-          {
-            location: center,
-            radius: 100, // Check 100m radius
-            preference: google.maps.StreetViewPreference.NEAREST,
-          },
-          (data, status) => {
-            if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
-              // Re-check innerMap existence just in case, though unlikely to change in callback
-              if (mapElement.innerMap) {
-                const streetView = mapElement.innerMap.getStreetView();
-                streetView.setPosition(data.location.latLng);
-                streetView.setVisible(true);
-                setStreetViewActive(true);
-              }
-            } else {
-              console.warn('Street View not available at this location');
-              // Optional: Show a toast?
+              placePicker.shadowRoot.appendChild(style);
             }
-          },
-        );
+
+            // Also add click handler to focus input when clicking anywhere
+            const input = placePicker.shadowRoot.querySelector('input');
+            if (input && !placePicker.dataset.clickHandlerAdded) {
+              placePicker.addEventListener('click', () => {
+                input.focus();
+              });
+              placePicker.dataset.clickHandlerAdded = 'true';
+            }
+          }
+        };
+
+        // Try immediately and also after a short delay
+        injectStyles();
+        const timer = setTimeout(injectStyles, 500);
+
+        return () => {
+          placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
+          clearTimeout(timer);
+        };
       }
-    }
-  }, [streetViewActive]);
+    }, [type, mapInitialized, handlePlaceChange, updateSearchMarker]);
 
-  // Pegman drag handlers for Street View activation with road highlighting
-  const handlePegmanDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    setIsDraggingPegman(true);
+    const handleZoom = (delta: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
-    // Get initial position
-    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      if (mapElement?.innerMap) {
+        const currentZoom = mapElement.innerMap.getZoom();
+        if (currentZoom !== undefined) {
+          mapElement.innerMap.setZoom(currentZoom + delta);
+        }
+      }
+    };
 
-    // Create draggable Pegman clone that follows cursor
-    const dragClone = document.createElement('div');
-    dragClone.id = 'pegman-drag-clone';
-    dragClone.innerHTML = `
+    const handleMapTypeChange = useCallback((newType: 'roadmap' | 'satellite' | 'hybrid') => {
+      setMapType(newType);
+      const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+      if (mapElement?.innerMap) {
+        // Exit Street View if active when changing map type
+        const streetView = mapElement.innerMap.getStreetView();
+        if (streetView?.getVisible()) {
+          streetView.setVisible(false);
+          setStreetViewActive(false);
+        }
+
+        mapElement.innerMap.setMapTypeId(newType);
+        // Re-apply custom styles for roadmap and hybrid types (hybrid styles labels)
+        if (newType === 'roadmap' || newType === 'hybrid') {
+          mapElement.innerMap.setOptions({ styles: CYBERPUNK_MAP_STYLE });
+        } else {
+          // For pure satellite, remove custom JSON styles (they don't apply)
+          mapElement.innerMap.setOptions({ styles: [] });
+        }
+      }
+    }, []);
+
+    // Manual toggle for Street View (button click)
+    const handleStreetViewToggle = useCallback(() => {
+      const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+      if (!mapElement?.innerMap) return;
+
+      if (streetViewActive) {
+        const streetView = mapElement.innerMap.getStreetView();
+        if (streetView) {
+          streetView.setVisible(false);
+          setStreetViewActive(false);
+        }
+      } else {
+        // Check for coverage before activating to avoid white screen
+        const streetViewService = new google.maps.StreetViewService();
+        const center = mapElement.innerMap.getCenter();
+
+        if (center) {
+          streetViewService.getPanorama(
+            {
+              location: center,
+              radius: 100, // Check 100m radius
+              preference: google.maps.StreetViewPreference.NEAREST,
+            },
+            (data, status) => {
+              if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+                // Re-check innerMap existence just in case, though unlikely to change in callback
+                if (mapElement.innerMap) {
+                  const streetView = mapElement.innerMap.getStreetView();
+                  streetView.setPosition(data.location.latLng);
+                  streetView.setVisible(true);
+                  setStreetViewActive(true);
+                }
+              } else {
+                console.warn('Street View not available at this location');
+                // Optional: Show a toast?
+              }
+            },
+          );
+        }
+      }
+    }, [streetViewActive]);
+
+    // Pegman drag handlers for Street View activation with road highlighting
+    const handlePegmanDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      setIsDraggingPegman(true);
+
+      // Get initial position
+      const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+      // Create draggable Pegman clone that follows cursor
+      const dragClone = document.createElement('div');
+      dragClone.id = 'pegman-drag-clone';
+      dragClone.innerHTML = `
       <svg width="32" height="32" viewBox="0 0 24 24" fill="#ff9800" stroke="none">
         <circle cx="12" cy="4" r="3" />
         <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
       </svg>
     `;
-    dragClone.style.cssText = `
+      dragClone.style.cssText = `
       position: fixed;
       left: ${startX - 16}px;
       top: ${startY - 16}px;
@@ -903,451 +904,455 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
       animation: pegman-float 0.3s ease infinite alternate;
       transition: transform 0.1s ease;
     `;
-    document.body.appendChild(dragClone);
+      document.body.appendChild(dragClone);
 
-    // Add class to map for visual road highlighting effect
-    const mapElement = document.querySelector('gmp-map');
-    if (mapElement) {
-      mapElement.classList.add('pegman-drag-active');
-    }
-
-    // Track mouse/touch position and update clone position
-    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
-      moveEvent.preventDefault();
-      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
-      const clientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
-
-      // Update clone position
-      dragClone.style.left = `${clientX - 16}px`;
-      dragClone.style.top = `${clientY - 16}px`;
-    };
-
-    const handleEnd = (endEvent: MouseEvent | TouchEvent) => {
-      setIsDraggingPegman(false);
-
-      // Remove clone
-      const clone = document.getElementById('pegman-drag-clone');
-      if (clone) {
-        clone.remove();
+      // Add class to map for visual road highlighting effect
+      const mapElement = document.querySelector('gmp-map');
+      if (mapElement) {
+        mapElement.classList.add('pegman-drag-active');
       }
 
-      // Remove highlighting class
-      const map = document.querySelector('gmp-map');
-      if (map) {
-        map.classList.remove('pegman-drag-active');
-      }
+      // Track mouse/touch position and update clone position
+      const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+        moveEvent.preventDefault();
+        const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+        const clientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
 
-      // Get drop position
-      const clientX =
-        'touches' in endEvent ? endEvent.changedTouches[0]?.clientX : endEvent.clientX;
-      const clientY =
-        'touches' in endEvent ? endEvent.changedTouches[0]?.clientY : endEvent.clientY;
+        // Update clone position
+        dragClone.style.left = `${clientX - 16}px`;
+        dragClone.style.top = `${clientY - 16}px`;
+      };
 
-      if (clientX === undefined || clientY === undefined) return;
+      const handleEnd = (endEvent: MouseEvent | TouchEvent) => {
+        setIsDraggingPegman(false);
 
-      // Check if dropped on the map
-      const mapEl = document.querySelector('gmp-map') as GmpMapElement;
-      if (mapEl?.innerMap) {
-        const mapBounds = mapEl.getBoundingClientRect();
+        // Remove clone
+        const clone = document.getElementById('pegman-drag-clone');
+        if (clone) {
+          clone.remove();
+        }
 
-        if (
-          clientX >= mapBounds.left &&
-          clientX <= mapBounds.right &&
-          clientY >= mapBounds.top &&
-          clientY <= mapBounds.bottom
-        ) {
-          // Convert screen coordinates to map coordinates
-          const projection = mapEl.innerMap.getProjection();
-          const bounds = mapEl.innerMap.getBounds();
+        // Remove highlighting class
+        const map = document.querySelector('gmp-map');
+        if (map) {
+          map.classList.remove('pegman-drag-active');
+        }
 
-          if (projection && bounds) {
-            const ne = bounds.getNorthEast();
-            const sw = bounds.getSouthWest();
+        // Get drop position
+        const clientX =
+          'touches' in endEvent ? endEvent.changedTouches[0]?.clientX : endEvent.clientX;
+        const clientY =
+          'touches' in endEvent ? endEvent.changedTouches[0]?.clientY : endEvent.clientY;
 
-            const xPercent = (clientX - mapBounds.left) / mapBounds.width;
-            const yPercent = (clientY - mapBounds.top) / mapBounds.height;
+        if (clientX === undefined || clientY === undefined) return;
 
-            const lng = sw.lng() + xPercent * (ne.lng() - sw.lng());
-            const lat = ne.lat() - yPercent * (ne.lat() - sw.lat());
+        // Check if dropped on the map
+        const mapEl = document.querySelector('gmp-map') as GmpMapElement;
+        if (mapEl?.innerMap) {
+          const mapBounds = mapEl.getBoundingClientRect();
 
-            // Check for Street View coverage and activate
-            const streetViewService = new google.maps.StreetViewService();
-            const dropLocation = new google.maps.LatLng(lat, lng);
+          if (
+            clientX >= mapBounds.left &&
+            clientX <= mapBounds.right &&
+            clientY >= mapBounds.top &&
+            clientY <= mapBounds.bottom
+          ) {
+            // Convert screen coordinates to map coordinates
+            const projection = mapEl.innerMap.getProjection();
+            const bounds = mapEl.innerMap.getBounds();
 
-            streetViewService.getPanorama(
-              {
-                location: dropLocation,
-                radius: 50,
-                preference: google.maps.StreetViewPreference.NEAREST,
-              },
-              (data, status) => {
-                if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
-                  const streetView = mapEl.innerMap?.getStreetView();
-                  if (streetView) {
-                    streetView.setPosition(data.location.latLng);
-                    streetView.setVisible(true);
-                    setStreetViewActive(true);
+            if (projection && bounds) {
+              const ne = bounds.getNorthEast();
+              const sw = bounds.getSouthWest();
+
+              const xPercent = (clientX - mapBounds.left) / mapBounds.width;
+              const yPercent = (clientY - mapBounds.top) / mapBounds.height;
+
+              const lng = sw.lng() + xPercent * (ne.lng() - sw.lng());
+              const lat = ne.lat() - yPercent * (ne.lat() - sw.lat());
+
+              // Check for Street View coverage and activate
+              const streetViewService = new google.maps.StreetViewService();
+              const dropLocation = new google.maps.LatLng(lat, lng);
+
+              streetViewService.getPanorama(
+                {
+                  location: dropLocation,
+                  radius: 50,
+                  preference: google.maps.StreetViewPreference.NEAREST,
+                },
+                (data, status) => {
+                  if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+                    const streetView = mapEl.innerMap?.getStreetView();
+                    if (streetView) {
+                      streetView.setPosition(data.location.latLng);
+                      streetView.setVisible(true);
+                      setStreetViewActive(true);
+                    }
+                  } else {
+                    console.warn('No Street View coverage at drop location');
                   }
-                } else {
-                  console.warn('No Street View coverage at drop location');
-                }
-              },
-            );
+                },
+              );
+            }
           }
         }
-      }
 
-      // Cleanup listeners
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleEnd);
-      document.removeEventListener('touchmove', handleMove);
-      document.removeEventListener('touchend', handleEnd);
-    };
+        // Cleanup listeners
+        document.removeEventListener('mousemove', handleMove);
+        document.removeEventListener('mouseup', handleEnd);
+        document.removeEventListener('touchmove', handleMove);
+        document.removeEventListener('touchend', handleEnd);
+      };
 
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', handleMove, { passive: false });
-    document.addEventListener('touchend', handleEnd);
-  }, []);
+      document.addEventListener('mousemove', handleMove);
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchmove', handleMove, { passive: false });
+      document.addEventListener('touchend', handleEnd);
+    }, []);
 
-  // API loader is now handled at App level to prevent redundant initializations and 429 errors
-  const renderApiLoader = () => null;
+    // API loader is now handled at App level to prevent redundant initializations and 429 errors
+    const renderApiLoader = () => null;
 
-  return (
-    <div className="map-view animate-fade-in">
-      {/* Header Info */}
-      <div
-        className="map-header"
-        style={type === 'INTERACTIVE' ? { justifyContent: 'flex-end', paddingTop: '4px' } : {}}
-      >
-        {type !== 'INTERACTIVE' && <div className="map-type-badge">{`${type}_FEED`}</div>}
+    return (
+      <div className="map-view animate-fade-in">
+        {/* Header Info */}
         <div
-          className="map-location"
-          style={type === 'INTERACTIVE' ? { marginRight: 'auto', marginLeft: '12px' } : {}}
+          className="map-header"
+          style={type === 'INTERACTIVE' ? { justifyContent: 'flex-end', paddingTop: '4px' } : {}}
         >
-          {location &&
-          location !== (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : `${type}_FEED`)
-            ? location
-            : type === 'INTERACTIVE'
-              ? 'INTERACTIVE_FEED'
-              : 'TRACKING_COORDINATES...'}
-        </div>
-        <button className="map-close-btn" onClick={onClose}>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
+          {type !== 'INTERACTIVE' && <div className="map-type-badge">{`${type}_FEED`}</div>}
+          <div
+            className="map-location"
+            style={type === 'INTERACTIVE' ? { marginRight: 'auto', marginLeft: '12px' } : {}}
           >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div className="map-content-container" ref={mapContainerRef}>
-        {/* Error State */}
-        {error && (
-          <div className="map-error">
-            <div className="error-icon">⚠</div>
-            <div className="error-text">{error}</div>
-            <div className="error-hint">API_CONNECTION_FAILED</div>
+            {location &&
+            location !== (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : `${type}_FEED`)
+              ? location
+              : type === 'INTERACTIVE'
+                ? 'INTERACTIVE_FEED'
+                : 'TRACKING_COORDINATES...'}
           </div>
-        )}
+          <button className="map-close-btn" onClick={onClose}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
 
-        {/* The Map Image / Interactive Map */}
-        {!error && type === 'INTERACTIVE' ? (
-          <div className={`interactive-map-wrapper ${isLoaded ? 'loaded' : ''}`}>
-            {/* Masked Map Layer */}
-            <div className="masked-map-layer">
-              {/* API Loader */}
-              {renderApiLoader()}
+        <div className="map-content-container" ref={mapContainerRef}>
+          {/* Error State */}
+          {error && (
+            <div className="map-error">
+              <div className="error-icon">⚠</div>
+              <div className="error-text">{error}</div>
+              <div className="error-hint">API_CONNECTION_FAILED</div>
+            </div>
+          )}
 
-              <gmp-map
-                center="50.4501,30.5234"
-                zoom="12"
-                rendering-type="raster"
-                data-map-type={mapType}
-                data-lighting-mode={lightingMode}
-                data-cyberpunk-filter={
-                  cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled'
-                }
-                street-view-control
-                style={{ width: '100%', height: '100%' }}
-              >
-                {/* MOVED TO CONTROL PANEL */}
-                {/* <div slot="control-block-start-inline-start" className="place-picker-container">
+          {/* The Map Image / Interactive Map */}
+          {!error && type === 'INTERACTIVE' ? (
+            <div className={`interactive-map-wrapper ${isLoaded ? 'loaded' : ''}`}>
+              {/* Masked Map Layer */}
+              <div className="masked-map-layer">
+                {/* API Loader */}
+                {renderApiLoader()}
+
+                <gmp-map
+                  center="50.4501,30.5234"
+                  zoom="12"
+                  rendering-type="raster"
+                  data-map-type={mapType}
+                  data-lighting-mode={lightingMode}
+                  data-cyberpunk-filter={
+                    cyberpunkFilterEnabled && mapType !== 'roadmap' ? 'enabled' : 'disabled'
+                  }
+                  street-view-control
+                  style={{ width: '100%', height: '100%' }}
+                >
+                  {/* MOVED TO CONTROL PANEL */}
+                  {/* <div slot="control-block-start-inline-start" className="place-picker-container">
                   <gmpx-place-picker placeholder="SEARCH_TARGET_LOCATION..."></gmpx-place-picker>
                 </div> */}
-              </gmp-map>
-            </div>
+                </gmp-map>
+              </div>
 
-            {/* Unmasked Controls Layer */}
-            <div className="map-controls-layer">
-              {/* Loading overlay - keep it here so it's visible */}
-              {!mapInitialized && (
-                <div className="map-loading-overlay">
-                  <div className="loading-spinner"></div>
-                  <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
-                </div>
-              )}
+              {/* Unmasked Controls Layer */}
+              <div className="map-controls-layer">
+                {/* Loading overlay - keep it here so it's visible */}
+                {!mapInitialized && (
+                  <div className="map-loading-overlay">
+                    <div className="loading-spinner"></div>
+                    <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
+                  </div>
+                )}
 
-              {/* Distance Overlay */}
-              {distanceInfo && (
-                <DistanceOverlay
-                  distance={distanceInfo.distance}
-                  duration={distanceInfo.duration}
-                  origin={distanceInfo.origin}
-                  destination={distanceInfo.destination}
-                />
-              )}
+                {/* Distance Overlay */}
+                {distanceInfo && (
+                  <DistanceOverlay
+                    distance={distanceInfo.distance}
+                    duration={distanceInfo.duration}
+                    origin={distanceInfo.origin}
+                    destination={distanceInfo.destination}
+                  />
+                )}
 
-              {/* Unified Control Group - Horizontal Row at Top */}
+                {/* Unified Control Group - Horizontal Row at Top */}
 
-              {/* Unified Control Group - Horizontal Row at Top */}
-              <div className="map-controls-group">
-                {/* Search Field - NOW ON LEFT AND EXPANDED */}
-                <div className="control-section search-section">
-                  <div className="search-wrapper">
-                    <gmpx-place-picker
-                      id="panel-search"
-                      placeholder="SEARCH_TARGET..."
-                    ></gmpx-place-picker>
+                {/* Unified Control Group - Horizontal Row at Top */}
+                <div className="map-controls-group">
+                  {/* Search Field - NOW ON LEFT AND EXPANDED */}
+                  <div className="control-section search-section">
+                    <div className="search-wrapper">
+                      <gmpx-place-picker
+                        id="panel-search"
+                        placeholder="SEARCH_TARGET..."
+                      ></gmpx-place-picker>
+                    </div>
+                  </div>
+
+                  {/* Map Type Controls */}
+                  <div className="control-section">
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
+                      onClick={() => handleMapTypeChange('roadmap')}
+                      aria-label="Map View"
+                      title="TACTICAL_MAP"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                      </svg>
+                    </button>
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
+                      onClick={() => handleMapTypeChange('satellite')}
+                      aria-label="Satellite View"
+                      title="SATELLITE_FEED"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                        <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                        <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+                      </svg>
+                    </button>
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
+                      onClick={() => handleMapTypeChange('hybrid')}
+                      aria-label="Hybrid View"
+                      title="HYBRID_OVERLAY"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="12" cy="12" r="4"></circle>
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Zoom Controls */}
+                  <div className="control-section zoom-section">
+                    <div className="control-separator-vertical"></div>
+                    <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </button>
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className="zoom-btn"
+                      onClick={() => handleZoom(-1)}
+                      aria-label="Zoom Out"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Street View Toggle Button */}
+                  <div className="control-section">
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`street-view-btn ${streetViewActive ? 'active' : ''}`}
+                      onClick={handleStreetViewToggle}
+                      aria-label="Toggle Street View"
+                      title="STREET_VIEW_POV"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Draggable Pegman Icon for Street View */}
+                  <div className="control-section pegman-section">
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      type="button"
+                      disabled={streetViewActive}
+                      className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''} ${streetViewActive ? 'disabled' : ''}`}
+                      title={
+                        streetViewActive
+                          ? 'Exit Street View to use Pegman'
+                          : 'Drag to road for Street View'
+                      }
+                      aria-label="Drag Pegman to Street View"
+                      onMouseDown={streetViewActive ? undefined : handlePegmanDragStart}
+                      onTouchStart={streetViewActive ? undefined : handlePegmanDragStart}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        stroke="none"
+                      >
+                        <circle cx="12" cy="4" r="3" />
+                        <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Cyberpunk Filter Toggle */}
+                  <div className="control-section filter-section">
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''}`}
+                      onClick={() => setCyberpunkFilterEnabled(!cyberpunkFilterEnabled)}
+                      aria-label="Toggle Cyberpunk Filter"
+                      title={cyberpunkFilterEnabled ? 'FILTER_ENABLED' : 'FILTER_DISABLED'}
+                      disabled={false}
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2v20M2 12h20"></path>
+                        <circle cx="12" cy="12" r="4"></circle>
+                      </svg>
+                    </button>
                   </div>
                 </div>
-
-                {/* Map Type Controls */}
-                <div className="control-section">
-                  <div className="control-separator-vertical"></div>
-                  <button
-                    className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
-                    onClick={() => handleMapTypeChange('roadmap')}
-                    aria-label="Map View"
-                    title="TACTICAL_MAP"
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <line x1="3" y1="9" x2="21" y2="9"></line>
-                      <line x1="9" y1="21" x2="9" y2="9"></line>
-                    </svg>
-                  </button>
-                  <div className="control-separator-vertical"></div>
-                  <button
-                    className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
-                    onClick={() => handleMapTypeChange('satellite')}
-                    aria-label="Satellite View"
-                    title="SATELLITE_FEED"
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <circle cx="12" cy="12" r="4"></circle>
-                      <line x1="21.17" y1="8" x2="12" y2="8"></line>
-                      <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-                      <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-                    </svg>
-                  </button>
-                  <div className="control-separator-vertical"></div>
-                  <button
-                    className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
-                    onClick={() => handleMapTypeChange('hybrid')}
-                    aria-label="Hybrid View"
-                    title="HYBRID_OVERLAY"
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <circle cx="12" cy="12" r="4"></circle>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Zoom Controls */}
-                <div className="control-section zoom-section">
-                  <div className="control-separator-vertical"></div>
-                  <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </button>
-                  <div className="control-separator-vertical"></div>
-                  <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Street View Toggle Button */}
-                <div className="control-section">
-                  <div className="control-separator-vertical"></div>
-                  <button
-                    className={`street-view-btn ${streetViewActive ? 'active' : ''}`}
-                    onClick={handleStreetViewToggle}
-                    aria-label="Toggle Street View"
-                    title="STREET_VIEW_POV"
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Draggable Pegman Icon for Street View */}
-                <div className="control-section pegman-section">
-                  <div className="control-separator-vertical"></div>
-                  <button
-                    type="button"
-                    disabled={streetViewActive}
-                    className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''} ${streetViewActive ? 'disabled' : ''}`}
-                    title={
-                      streetViewActive
-                        ? 'Exit Street View to use Pegman'
-                        : 'Drag to road for Street View'
-                    }
-                    aria-label="Drag Pegman to Street View"
-                    onMouseDown={streetViewActive ? undefined : handlePegmanDragStart}
-                    onTouchStart={streetViewActive ? undefined : handlePegmanDragStart}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      stroke="none"
-                    >
-                      <circle cx="12" cy="4" r="3" />
-                      <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Cyberpunk Filter Toggle */}
-                <div className="control-section filter-section">
-                  <div className="control-separator-vertical"></div>
-                  <button
-                    className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''}`}
-                    onClick={() => setCyberpunkFilterEnabled(!cyberpunkFilterEnabled)}
-                    aria-label="Toggle Cyberpunk Filter"
-                    title={cyberpunkFilterEnabled ? 'FILTER_ENABLED' : 'FILTER_DISABLED'}
-                    disabled={false}
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <path d="M12 2v20M2 12h20"></path>
-                      <circle cx="12" cy="12" r="4"></circle>
-                    </svg>
-                  </button>
-                </div>
               </div>
             </div>
-          </div>
-        ) : !error && imageUrl ? (
-          <div className={`map-image-wrapper ${isLoaded ? 'loaded' : ''}`}>
-            <img src={imageUrl} alt="System Map" className="map-display-image" />
+          ) : !error && imageUrl ? (
+            <div className={`map-image-wrapper ${isLoaded ? 'loaded' : ''}`}>
+              <img src={imageUrl} alt="System Map" className="map-display-image" />
 
-            {/* Scanline Effect Overlay */}
-            <div className="map-scanline"></div>
+              {/* Scanline Effect Overlay */}
+              <div className="map-scanline"></div>
 
-            {/* HUD Overlays */}
-            <div className="map-hud-top-left">
-              <div className="hud-line">LAT: 50.4501</div>
-              <div className="hud-line">LNG: 30.5234</div>
-              <div className="hud-line">ALT: 179m</div>
-            </div>
-
-            <div className="map-hud-bottom-right">
-              <div className="hud-status">ENCRYPTED_LINK_ACTIVE</div>
-              <div className="hud-timestamp">{new Date().toLocaleTimeString()}</div>
-            </div>
-
-            {/* Agent POV Telemetry */}
-            {agentView && (
-              <div className="agent-pov-telemetry animate-pulse">
-                <div className="telemetry-item">
-                  <span className="telemetry-label">HEADING:</span>
-                  <span className="telemetry-value">{agentView.heading.toFixed(1)}°</span>
-                </div>
-                <div className="telemetry-item">
-                  <span className="telemetry-label">PITCH:</span>
-                  <span className="telemetry-value">{agentView.pitch.toFixed(1)}°</span>
-                </div>
-                <div className="telemetry-item">
-                  <span className="telemetry-label">FOV:</span>
-                  <span className="telemetry-value">{agentView.fov}°</span>
-                </div>
-                <div className="telemetry-item">
-                  <span className="telemetry-label">SOURCE:</span>
-                  <span className="telemetry-value">AGENT_NEURAL_UPLINK</span>
-                </div>
+              {/* HUD Overlays */}
+              <div className="map-hud-top-left">
+                <div className="hud-line">LAT: 50.4501</div>
+                <div className="hud-line">LNG: 30.5234</div>
+                <div className="hud-line">ALT: 179m</div>
               </div>
-            )}
 
-            {/* Corner Brackets */}
-            <div className="map-corner tl"></div>
-            <div className="map-corner tr"></div>
-            <div className="map-corner bl"></div>
-            <div className="map-corner br"></div>
-          </div>
-        ) : !error ? (
-          <div className="map-placeholder">
-            <div className="animate-pulse">WAITING_FOR_SATELLITE_UPLINK...</div>
-          </div>
-        ) : null}
-      </div>
+              <div className="map-hud-bottom-right">
+                <div className="hud-status">ENCRYPTED_LINK_ACTIVE</div>
+                <div className="hud-timestamp">{new Date().toLocaleTimeString()}</div>
+              </div>
 
-      <style>{`
+              {/* Agent POV Telemetry */}
+              {agentView && (
+                <div className="agent-pov-telemetry animate-pulse">
+                  <div className="telemetry-item">
+                    <span className="telemetry-label">HEADING:</span>
+                    <span className="telemetry-value">{agentView.heading.toFixed(1)}°</span>
+                  </div>
+                  <div className="telemetry-item">
+                    <span className="telemetry-label">PITCH:</span>
+                    <span className="telemetry-value">{agentView.pitch.toFixed(1)}°</span>
+                  </div>
+                  <div className="telemetry-item">
+                    <span className="telemetry-label">FOV:</span>
+                    <span className="telemetry-value">{agentView.fov}°</span>
+                  </div>
+                  <div className="telemetry-item">
+                    <span className="telemetry-label">SOURCE:</span>
+                    <span className="telemetry-value">AGENT_NEURAL_UPLINK</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Corner Brackets */}
+              <div className="map-corner tl"></div>
+              <div className="map-corner tr"></div>
+              <div className="map-corner bl"></div>
+              <div className="map-corner br"></div>
+            </div>
+          ) : !error ? (
+            <div className="map-placeholder">
+              <div className="animate-pulse">WAITING_FOR_SATELLITE_UPLINK...</div>
+            </div>
+          ) : null}
+        </div>
+
+        <style>{`
         .map-view {
           width: 100%;
           height: 100%;
@@ -2267,9 +2272,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           background: none !important;
         }
       `}</style>
-    </div>
-  );
-});
+      </div>
+    );
+  },
+);
 
 // Add global declarations for Google Maps Web Components to satisfy TypeScript
 declare global {

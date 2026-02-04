@@ -168,7 +168,10 @@ class TourDriver:
                 for offset in range(1, self.PREFETCH_AHEAD + 1):
                     idx = current + offset
                     if idx < len(self.current_route_points):
-                        if idx not in self._prefetch_buffer and idx not in self._prefetch_in_progress:
+                        if (
+                            idx not in self._prefetch_buffer
+                            and idx not in self._prefetch_in_progress
+                        ):
                             needed_indices.append(idx)
 
                 # Limit concurrent prefetches
@@ -268,10 +271,14 @@ class TourDriver:
                         lat=prefetched.lat,
                         lng=prefetched.lng,
                     )
-                    logger.debug(f"[TourDriver] Used prefetched image for step {self.current_step_index}")
+                    logger.debug(
+                        f"[TourDriver] Used prefetched image for step {self.current_step_index}"
+                    )
                 else:
                     # Fallback: fetch synchronously (slower path)
-                    logger.debug(f"[TourDriver] No prefetch for step {self.current_step_index}, fetching...")
+                    logger.debug(
+                        f"[TourDriver] No prefetch for step {self.current_step_index}, fetching..."
+                    )
                     await self._update_view_at_current_location()
 
                 # Calculate variable sleep based on speed

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T20:26:38.370913 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/data/protocols/maps_protocol.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T20:16:13.272578 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/navigation/tour_driver.py -->
 

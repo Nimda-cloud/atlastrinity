@@ -45,6 +45,8 @@ class MapState:
     map_type: str = "roadmap"  # roadmap, satellite, hybrid, terrain
     layers: list[str] = field(default_factory=list)  # traffic, transit, bicycle
     agent_view: dict[str, Any] | None = None  # {image_path, heading, pitch, fov}
+    distance_info: dict[str, Any] | None = None  # {distance, duration, origin, destination}
+    show_map: bool = False  # Flag to trigger map display in frontend
 
 
 class MapStateManager:
@@ -147,6 +149,37 @@ class MapStateManager:
             "lng": lng,
         }
 
+    def set_distance_info(
+        self,
+        distance: str | None = None,
+        duration: str | None = None,
+        origin: str | None = None,
+        destination: str | None = None,
+        trigger_display: bool = True,
+    ):
+        """Set distance/duration info for overlay display"""
+        self.state.distance_info = {
+            "distance": distance,
+            "duration": duration,
+            "origin": origin,
+            "destination": destination,
+            "timestamp": "now",
+        }
+        if trigger_display:
+            self.state.show_map = True
+
+    def clear_distance_info(self):
+        """Clear distance overlay"""
+        self.state.distance_info = None
+
+    def trigger_map_display(self):
+        """Signal frontend to show map view"""
+        self.state.show_map = True
+
+    def reset_map_trigger(self):
+        """Reset the show_map flag after frontend has processed it"""
+        self.state.show_map = False
+
     def to_dict(self) -> dict[str, Any]:
         """Convert state to dictionary for JSON serialization"""
         return {
@@ -181,6 +214,8 @@ class MapStateManager:
             "map_type": self.state.map_type,
             "layers": self.state.layers,
             "agent_view": self.state.agent_view,
+            "distance_info": self.state.distance_info,
+            "show_map": self.state.show_map,
         }
 
 
