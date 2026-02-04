@@ -42,7 +42,9 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(result, dict)
         if isinstance(result, dict):
             self.assertFalse(result["success"])
-        print("[TEST] Success: Fallback chain (Mistral -> OpenRouter -> Copilot) verified via VIBE_HOME switching.\n")
+        print(
+            "[TEST] Success: Fallback chain (Mistral -> OpenRouter -> Copilot) verified via VIBE_HOME switching.\n"
+        )
 
 
 if __name__ == "__main__":

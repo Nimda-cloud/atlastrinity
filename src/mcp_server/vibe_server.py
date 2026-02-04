@@ -540,7 +540,7 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
                 toml_lines.append(f"args = {json.dumps(list(mcp.args))}")
             if mcp.env:
                 env_dict = {k: str(v) for k, v in dict(mcp.env).items()}
-                env_parts = [f'{k} = {json.dumps(v)}' for k, v in env_dict.items()]
+                env_parts = [f"{k} = {json.dumps(v)}" for k, v in env_dict.items()]
                 toml_lines.append(f"env = {{ {', '.join(env_parts)} }}")
             if mcp.startup_timeout_sec:
                 toml_lines.append(f"startup_timeout_sec = {mcp.startup_timeout_sec}")
@@ -1296,7 +1296,7 @@ async def vibe_prompt(
         # Prepare temp VIBE_HOME with robust model selection
         # Priority: 1. explicit arg, 2. current session fallback, 3. global override, 4. config default
         target_model = model or _current_model or AGENT_MODEL_OVERRIDE or config.active_model
-        
+
         vibe_home_override = None
         if target_model:
             # Ensure proxy is running if the target model uses copilot
@@ -1306,12 +1306,15 @@ async def vibe_prompt(
                 if not _proxy_process or _proxy_process.poll() is not None:
                     # Double check if port is already in use by another session/process
                     import socket
+
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                        if s.connect_ex(('127.0.0.1', 8085)) != 0:
+                        if s.connect_ex(("127.0.0.1", 8085)) != 0:
                             logger.info("[VIBE] Initial model is Copilot-based, starting proxy...")
                             _start_copilot_proxy()
                         else:
-                            logger.info("[VIBE] Port 8085 already in use, assuming proxy is healthy.")
+                            logger.info(
+                                "[VIBE] Port 8085 already in use, assuming proxy is healthy."
+                            )
 
             vibe_home_override = _prepare_temp_vibe_home(target_model)
 

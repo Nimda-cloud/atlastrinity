@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T23:03:44.195540 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_fallback_chain.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T23:01:15.053584 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, bandit_full_report.txt, bandit_report.txt -->
 
