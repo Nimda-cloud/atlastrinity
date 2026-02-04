@@ -235,23 +235,43 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   a[href^="https://maps.google.com/maps"] img {
                     filter: invert(1) grayscale(1) brightness(2) drop-shadow(0 0 2px #00e5ff);
                   }
-                  /* Pegman control - reposition above zoom controls */
+                  /* Pegman control - reposition directly under controls */
                   .gm-svpc {
                     position: absolute !important;
+                    display: block !important;
                     right: 20px !important;
-                    bottom: 110px !important;
+                    bottom: 80px !important; /* Immediately below zoom controls (40px bottom + height) */
                     z-index: 100000 !important;
-                    filter: hue-rotate(180deg) brightness(1.2) saturate(2) drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)) !important;
+                    width: 40px !important;
+                    height: 48px !important;
                     background: rgba(0, 10, 20, 0.95) !important;
-                    border: 2px solid #ff9800 !important;
+                    border: 1px solid rgba(0, 229, 255, 0.3) !important;
                     border-radius: 4px !important;
-                    padding: 4px !important;
-                    box-shadow: 0 0 20px rgba(255, 152, 0, 0.6), 0 0 40px rgba(0, 229, 255, 0.3) !important;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 229, 255, 0.05) !important;
+                    transition: all 0.3s ease !important;
+                    transform: scale(1) !important;
+                    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.3)) !important;
                   }
+                  
+                  /* Highlight the iconic part of Pegman */
+                  .gm-svpc img {
+                     filter: invert(1) drop-shadow(0 0 2px #00e5ff) !important;
+                     opacity: 0.8 !important;
+                  }
+
+                  /* Hover state */
                   .gm-svpc:hover {
-                    box-shadow: 0 0 30px rgba(255, 152, 0, 0.9), 0 0 50px rgba(0, 229, 255, 0.5) !important;
-                    border-color: #ffb74d !important;
+                    border-color: #00e5ff !important;
+                    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3), inset 0 0 10px rgba(0, 229, 255, 0.1) !important;
+                    transform: translateY(-2px) !important;
                   }
+
+                  .gm-svpc:hover img {
+                    opacity: 1 !important;
+                    filter: invert(1) drop-shadow(0 0 5px #00e5ff) !important;
+                  }
+
+                  /* Creating "POV" label below via pseudo-element is tricky in shadow DOM, assume basic icon styling first */
                 `;
                 mapElement.shadowRoot.appendChild(style);
               }
@@ -1095,14 +1115,16 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
         gmp-map {
           filter: contrast(1.02) brightness(0.98);
-          /* Edge fade effect - 60px transparent gradient on all sides for performance */
+          /* CSS Masking for true edge transparency */
+          /* Horizontal: 60px full transparent -> 300px fade */
+          /* Vertical: 20px full transparent -> 100px fade */
           -webkit-mask-image: 
-            linear-gradient(to right, transparent 0, black 60px, black calc(100% - 60px), transparent 100%),
-            linear-gradient(to bottom, transparent 0, black 60px, black calc(100% - 60px), transparent 100%);
+            linear-gradient(to right, transparent 0px, transparent 60px, black 350px, black calc(100% - 350px), transparent calc(100% - 60px), transparent 100%),
+            linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
           -webkit-mask-composite: source-in;
           mask-image: 
-            linear-gradient(to right, transparent 0, black 60px, black calc(100% - 60px), transparent 100%),
-            linear-gradient(to bottom, transparent 0, black 60px, black calc(100% - 60px), transparent 100%);
+            linear-gradient(to right, transparent 0px, transparent 60px, black 350px, black calc(100% - 350px), transparent calc(100% - 60px), transparent 100%),
+            linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
           mask-composite: intersect;
           transition: filter 0.8s ease;
         }
