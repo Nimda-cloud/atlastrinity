@@ -237,10 +237,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   }
                   /* Pegman control - reposition above zoom controls */
                   .gm-svpc {
-                    position: fixed !important;
-                    right: 30px !important;
-                    bottom: 150px !important;
-                    z-index: 9999 !important;
+                    position: absolute !important;
+                    right: 20px !important;
+                    bottom: 110px !important;
+                    z-index: 100000 !important;
                     filter: hue-rotate(180deg) brightness(1.2) saturate(2) drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)) !important;
                     background: rgba(0, 10, 20, 0.95) !important;
                     border: 2px solid #ff9800 !important;
@@ -723,8 +723,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-left: -60px;
-          margin-right: -60px;
+          margin-left: -194px; /* Half of side panel width (388px/2) */
+          margin-right: -194px;
           z-index: 50;
         }
 
@@ -735,7 +735,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           position: absolute;
           top: 0;
           bottom: 0;
-          width: 80px;
+          width: 250px; /* Wider gradient for smoother transition */
           pointer-events: none;
           z-index: 100;
         }
@@ -743,20 +743,20 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         .map-content-container::before {
           left: 0;
           background: linear-gradient(to right, 
-            rgba(0, 5, 15, 1) 0%,
-            rgba(0, 5, 15, 0.8) 20%,
-            rgba(0, 5, 15, 0.4) 50%,
-            rgba(0, 5, 15, 0) 100%
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.9) 20%,
+            rgba(0, 0, 0, 0.6) 50%,
+            rgba(0, 0, 0, 0) 100%
           );
         }
 
         .map-content-container::after {
           right: 0;
           background: linear-gradient(to left, 
-            rgba(0, 5, 15, 1) 0%,
-            rgba(0, 5, 15, 0.8) 20%,
-            rgba(0, 5, 15, 0.4) 50%,
-            rgba(0, 5, 15, 0) 100%
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.9) 20%,
+            rgba(0, 0, 0, 0.6) 50%,
+            rgba(0, 0, 0, 0) 100%
           );
         }
 
