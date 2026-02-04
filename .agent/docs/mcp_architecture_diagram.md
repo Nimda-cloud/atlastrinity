@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T22:14:49.240259 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/live_fallback_test.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T22:13:24.013206 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_mcp_tools.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

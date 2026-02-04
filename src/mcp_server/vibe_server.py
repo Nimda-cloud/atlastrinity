@@ -473,8 +473,8 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
         toml_lines = [
             "# Generated Vibe Configuration for Temp Session",
             f'active_model = "{model_alias}"',
-            f'system_prompt_id = "{str(get_val(config, "system_prompt_id", "cli"))}"',
-            f"enable_auto_update = false",
+            f'system_prompt_id = "{get_val(config, "system_prompt_id", "cli")!s}"',
+            "enable_auto_update = false",
             f"max_turns = {int(get_val(config, 'max_turns', 100))}",
             f"disable_welcome_banner_animation = {str(get_val(config, 'disable_welcome_banner_animation', True)).lower()}",
             "",
@@ -1293,7 +1293,7 @@ async def vibe_prompt(
             m_conf = config.get_model_by_alias(target_model)
             if m_conf and m_conf.provider == "copilot":
                 if not _proxy_process or _proxy_process.poll() is not None:
-                    logger.info(f"[VIBE] Initial model is Copilot-based, starting proxy...")
+                    logger.info("[VIBE] Initial model is Copilot-based, starting proxy...")
                     _start_copilot_proxy()
             
             vibe_home_override = _prepare_temp_vibe_home(target_model)
