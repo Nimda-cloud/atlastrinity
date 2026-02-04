@@ -79,6 +79,12 @@ const App: React.FC = () => {
       lat?: number;
       lng?: number;
     } | null;
+    distanceInfo?: {
+      distance?: string;
+      duration?: string;
+      origin?: string;
+      destination?: string;
+    } | null;
   }>({ type: 'STATIC' });
 
   // Command dock auto-hide state
@@ -241,38 +247,58 @@ const App: React.FC = () => {
           setActiveMode(data.active_mode || 'STANDARD');
           if (data.metrics) setMetrics(data.metrics);
 
-          if (data.map_state?.agent_view) {
-            const av = data.map_state.agent_view;
-            if (av.image_path) {
-              const fileUrl = `file://${av.image_path}`;
-              setMapData((prev) => {
+          if (data.map_state) {
+            const ms = data.map_state;
+            const av = ms.agent_view;
+
+            setMapData((prev) => {
+              const newState = { ...prev };
+              let changed = false;
+
+              // Handle Agent View (Street View)
+              if (av && av.image_path) {
+                const fileUrl = `file://${av.image_path}`;
                 if (
-                  prev.url === fileUrl &&
-                  prev.type === 'STREET' &&
-                  prev.agentView?.timestamp === av.timestamp
+                  prev.url !== fileUrl ||
+                  prev.type !== 'STREET' ||
+                  prev.agentView?.timestamp !== av.timestamp
                 ) {
-                  return prev;
-                }
-                return {
-                  url: fileUrl,
-                  type: 'STREET',
-                  location: `AGENT_VIEW @ ${av.heading}°`,
-                  agentView: {
+                  newState.url = fileUrl;
+                  newState.type = 'STREET';
+                  newState.location = `AGENT_VIEW @ ${av.heading}°`;
+                  newState.agentView = {
                     heading: av.heading,
                     pitch: av.pitch,
                     fov: av.fov,
                     timestamp: av.timestamp,
                     lat: av.lat,
                     lng: av.lng,
-                  },
-                };
-              });
-              setViewMode('MAP');
-            }
-          } else if (data.map_state?.center && viewMode === 'MAP') {
-            // Handle potential case where we are in MAP mode but no agent is walking?
-            // Actually, let's just make sure we clear agentView if it's gone from backend
-            setMapData((prev) => ({ ...prev, agentView: null }));
+                  };
+                  changed = true;
+                  // Auto-switch to map if new street view frame arrives
+                  if (viewMode !== 'MAP') setViewMode('MAP');
+                }
+              }
+
+              // Handle Distance Info & Map Triggers
+              if (JSON.stringify(prev.distanceInfo) !== JSON.stringify(ms.distance_info)) {
+                newState.distanceInfo = ms.distance_info;
+                changed = true;
+              }
+
+              // Handle explicit "show map" signal from backend (e.g. after routing)
+              if (ms.show_map && viewMode !== 'MAP') {
+                setViewMode('MAP');
+                // Ensure we have interactive type if not street view
+                if (newState.type !== 'STREET') {
+                  newState.type = 'INTERACTIVE';
+                  newState.location = newState.location || 'INTERACTIVE_FEED';
+                  changed = true;
+                }
+              }
+
+              return changed ? newState : prev;
+            });
           }
 
           if (data.logs) {
@@ -847,6 +873,7 @@ const App: React.FC = () => {
             type={mapData.type}
             location={mapData.location}
             agentView={mapData.agentView}
+            distanceInfo={mapData.distanceInfo}
             onClose={handleCloseMap}
           />
         </div>

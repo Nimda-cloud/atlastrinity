@@ -22,6 +22,12 @@ interface MapViewProps {
     lat?: number;
     lng?: number;
   } | null;
+  distanceInfo?: {
+    distance?: string;
+    duration?: string;
+    origin?: string;
+    destination?: string;
+  } | null;
 }
 
 interface GmpMapElement extends HTMLElement {
@@ -208,7 +214,111 @@ if (GOOGLE_MAPS_API_KEY) {
   console.log('🗺️ MapView: Key starts with:', `${GOOGLE_MAPS_API_KEY.substring(0, 10)}...`);
 }
 
-const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClose, agentView }) => {
+const DistanceOverlay: React.FC<{
+  distance?: string;
+  duration?: string;
+  origin?: string;
+  destination?: string;
+}> = ({ distance, duration, origin, destination }) => {
+  if (!distance && !duration) return null;
+
+  return (
+    <div className="distance-overlay animate-fade-in">
+      <div className="distance-content">
+        {(distance || duration) && (
+          <div className="distance-main">
+            {distance && <div className="distance-value">{distance}</div>}
+            {duration && <div className="duration-value">{duration}</div>}
+          </div>
+        )}
+        {(origin || destination) && (
+          <div className="route-details">
+            {origin && (
+              <div className="route-point">
+                <span className="point-label">FROM:</span> {origin}
+              </div>
+            )}
+            {destination && (
+              <div className="route-point">
+                <span className="point-label">TO:</span> {destination}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <style>{`
+        .distance-overlay {
+          position: absolute;
+          top: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 90; /* Below controls */
+          pointer-events: none;
+        }
+
+        .distance-content {
+          background: rgba(0, 10, 20, 0.85);
+          border: 1px solid rgba(0, 163, 255, 0.3);
+          border-radius: 4px;
+          padding: 12px 20px;
+          backdrop-filter: blur(4px);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          align-items: center;
+          min-width: 200px;
+        }
+
+        .distance-main {
+          display: flex;
+          gap: 16px;
+          align-items: baseline;
+        }
+
+        .distance-value {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 24px;
+          font-weight: bold;
+          color: #00e5ff;
+          text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+
+        .duration-value {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 18px;
+          color: #00a3ff;
+        }
+
+        .route-details {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          width: 100%;
+          border-top: 1px solid rgba(0, 163, 255, 0.2);
+          padding-top: 8px;
+        }
+
+        .route-point {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          color: rgba(0, 229, 255, 0.8);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 300px;
+        }
+
+        .point-label {
+          color: rgba(0, 163, 255, 0.6);
+          margin-right: 4px;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClose, agentView, distanceInfo }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
@@ -983,6 +1093,18 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
                 </div>
               )}
+
+              {/* Distance Overlay */}
+              {distanceInfo && (
+                <DistanceOverlay
+                  distance={distanceInfo.distance}
+                  duration={distanceInfo.duration}
+                  origin={distanceInfo.origin}
+                  destination={distanceInfo.destination}
+                />
+              )}
+
+              {/* Unified Control Group - Horizontal Row at Top */}
 
               {/* Unified Control Group - Horizontal Row at Top */}
               <div className="map-controls-group">

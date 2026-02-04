@@ -37,3 +37,10 @@
 ## 6. INTERACTIVE UI
 
 - **Hand-off**: If the user wants to _explore_, use `maps_open_interactive_search` to launch the frontend UI. Don't try to describe 50 pins verbally.
+
+## 7. REAL-TIME VISUALIZATION DOCTRINE
+
+- **Automatic Feedback**: Calculating routes or distances MUST trigger a visual response.
+- **Overlay Information**: Display distance and duration data prominently on the map view using the established overlay components.
+- **Seamless Transition**: The system should automatically switch to the Map View when new spatial data is computed to provide immediate context.
+- **Cyberpunk Integration**: All overlays must match the established design language (JetBrains Mono, Neon Blue/Red).

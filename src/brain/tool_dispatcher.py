@@ -683,6 +683,9 @@ class ToolDispatcher:
         self, server: str, tool: str, args: dict[str, Any], result: Any
     ) -> dict[str, Any]:
         """Analyze result from MCP and add metadata if needed."""
+        # Visual Hook: Update map state if result contains location data
+        self._post_process_map_data(tool, result)
+
         if not isinstance(result, dict) or not result.get("error"):
             return cast(dict[str, Any], result)
 
@@ -699,6 +702,45 @@ class ToolDispatcher:
 
         result.update({"server": server, "tool": tool})
         return result
+
+    def _post_process_map_data(self, tool_name: str, result: Any) -> None:
+        """Post-process tool result for visual display."""
+        try:
+            from .map_state import map_state_manager
+
+            # Check if result contains location data
+            if tool_name.startswith("maps_") and isinstance(result, dict):
+                # Distance Matrix results
+                if tool_name == "maps_distance_matrix" and "rows" in result:
+                    for row in result.get("rows", []):
+                        for element in row.get("elements", []):
+                            distance = element.get("distance", {}).get("text")
+                            duration = element.get("duration", {}).get("text")
+                            if distance or duration:
+                                # Notify frontend to show distance overlay
+                                map_state_manager.set_distance_info(
+                                    distance=distance, duration=duration
+                                )
+
+                # Directions results
+                elif tool_name == "maps_directions" and "routes" in result:
+                    routes = result.get("routes", [])
+                    if routes:
+                        leg = routes[0].get("legs", [{}])[0]
+                        map_state_manager.add_route(
+                            origin=leg.get("start_location"),
+                            destination=leg.get("end_location"),
+                            polyline=routes[0].get("overview_polyline", {}).get("points"),
+                            distance=leg.get("distance", {}).get("text"),
+                            duration=leg.get("duration", {}).get("text"),
+                            steps=leg.get("steps", []),
+                        )
+                        # Ensure map is visible
+                        map_state_manager.trigger_map_display()
+        except ImportError:
+            pass  # map_state might not be available in all contexts
+        except Exception as e:
+            logger.warning(f"[DISPATCHER] Map visualization hook failed: {e}")
 
     def _validate_realm_tool_compatibility(
         self, server: str, tool_name: str, args: dict[str, Any]
