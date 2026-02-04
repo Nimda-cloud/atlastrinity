@@ -129,12 +129,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   const [error, setError] = useState<string | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
-  const [streetViewActive, setStreetViewActive] = useState(false);
-  const [streetViewCooldown, setStreetViewCooldown] = useState(false);
+  // No explicit street view toggling needed with native control
+  // We just allow the user to drag the Pegman
   const [lightingMode, setLightingMode] = useState<'night' | 'day' | 'twilight'>('night');
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
-  const streetViewDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate time-based lighting mode for adaptive filters
   const getTimeBasedLightingMode = useCallback((): 'night' | 'day' | 'twilight' => {
@@ -203,17 +201,11 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 fullscreenControl: false,
               });
 
-              // Listen for Street View visibility changes (Pegman drop)
-              const streetView = mapElement.innerMap.getStreetView();
-              google.maps.event.addListener(streetView, 'visible_changed', () => {
-                const isVisible = streetView.getVisible();
-                setStreetViewActive(isVisible);
-                if (isVisible) {
-                  streetViewRef.current = streetView;
-                } else {
-                  streetViewRef.current = null;
-                }
-              });
+              // Listen for Street View visibility changes (Pegman drop) - handled natively now
+              // const streetView = mapElement.innerMap.getStreetView();
+              
+              // Inject styles into shadow DOM to darken the copyright bar and position Pegman
+
 
               // Inject styles into shadow DOM to darken the copyright bar and position Pegman
               if (mapElement.shadowRoot) {
@@ -235,19 +227,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   a[href^="https://maps.google.com/maps"] img {
                     filter: invert(1) grayscale(1) brightness(2) drop-shadow(0 0 2px #00e5ff);
                   }
-                  /* Pegman control - reposition directly under zoom controls */
-                  .gm-svpc {
-                    position: absolute !important;
-                    display: block !important;
-                    right: 20px !important;
-                    top: 230px !important; /* Fixed position under zoom controls */
-                    bottom: auto !important;
-                    z-index: 100000 !important;
-                    width: 32px !important; /* Match zoom button width */
-                    height: 32px !important;
-                    background: rgba(0, 10, 20, 0.95) !important;
-                    border: 1px solid rgba(0, 229, 255, 0.6) !important;
-                    border-radius: 2px !important;
+                  /* Pegman control - styling handled by global CSS to align with horizontal bar */
+                  /* .gm-svpc styles removed from here */
                     box-shadow: 0 0 20px rgba(0, 163, 255, 0.3), inset 0 0 10px rgba(0, 229, 255, 0.1) !important;
                     transition: all 0.3s ease !important;
                     transform: scale(1) !important;
@@ -361,91 +342,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     }
   }, []);
 
-  // Toggle Street View mode with rate limiting
-  const handleStreetViewToggle = useCallback(() => {
-    // Prevent rapid clicking that causes 429 errors
-    if (streetViewCooldown) {
-      console.warn('🛰️ Street View: Please wait before toggling again');
-      return;
-    }
 
-    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
-    if (!mapElement?.innerMap) return;
-
-    // Check if using placeholder API key
-    const isPlaceholder = GOOGLE_MAPS_API_KEY.includes('AIzaSyBq4tcSGVtpl');
-    if (isPlaceholder && !streetViewActive) {
-      console.error(
-        '⚠️  PLACEHOLDER API KEY DETECTED! Street View requires a real Google Cloud API key with billing enabled.',
-      );
-      console.info('Please run: python3 scripts/setup_google_maps.py');
-      setError('PLACEHOLDER_API_KEY: Street View unavailable. Configure real API key.');
-      return;
-    }
-
-    if (streetViewActive) {
-      // Exit Street View
-      const streetView = mapElement.innerMap.getStreetView();
-      if (streetView) {
-        streetView.setVisible(false);
-        streetViewRef.current = null;
-      }
-      setStreetViewActive(false);
-      setError(null); // Clear any previous errors
-    } else {
-      if (streetViewDebounceRef.current) {
-        clearTimeout(streetViewDebounceRef.current);
-      }
-
-      streetViewDebounceRef.current = setTimeout(async () => {
-        // Re-query mapElement inside timeout to ensure it's still valid
-        const mapEl = document.querySelector('gmp-map') as GmpMapElement;
-        if (!mapEl?.innerMap) return;
-
-        // Enter Street View at current map center
-        const center = mapEl.innerMap.getCenter();
-        if (center) {
-          // Check Street View coverage before activating to avoid wasted requests
-          const streetViewService = new google.maps.StreetViewService();
-          try {
-            const response = await streetViewService.getPanorama({
-              location: center,
-              radius: 50, // Search within 50m radius
-              preference: google.maps.StreetViewPreference.NEAREST,
-              source: google.maps.StreetViewSource.OUTDOOR,
-            });
-
-            if (response.data?.location?.latLng) {
-              const streetView = mapEl.innerMap.getStreetView();
-              // Optimize Street View settings to reduce tile requests
-              streetView.setOptions({
-                position: response.data.location.latLng,
-                pov: { heading: 0, pitch: 0 },
-                zoom: 0, // Lowest zoom = fewer tiles
-                motionTracking: false, // Disable device motion tracking
-                motionTrackingControl: false,
-                addressControl: false, // Reduce UI elements
-                linksControl: true, // Keep navigation arrows
-                enableCloseButton: true,
-                clickToGo: true,
-              });
-              streetView.setVisible(true);
-              streetViewRef.current = streetView;
-              setStreetViewActive(true);
-            }
-          } catch {
-            console.warn('🛰️ Street View: No coverage at this location');
-            setError('No Street View coverage at this location');
-            setTimeout(() => setError(null), 3000);
-          }
-        }
-      }, 1500); // Debounce to reduce 429 errors
-    }
-
-    // Set cooldown for 5 seconds (increased from 4s)
-    setStreetViewCooldown(true);
-    setTimeout(() => setStreetViewCooldown(false), 5000);
-  }, [streetViewActive, streetViewCooldown]);
 
   // API loader is now handled at App level to prevent redundant initializations and 429 errors
   const renderApiLoader = () => null;
@@ -487,147 +384,137 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         {/* The Map Image / Interactive Map */}
         {!error && type === 'INTERACTIVE' ? (
           <div className={`interactive-map-wrapper ${isLoaded ? 'loaded' : ''}`}>
-            {/* API Loader with correct key attribute */}
-            {renderApiLoader()}
+            {/* Masked Map Layer */}
+            <div className="masked-map-layer">
+              {/* API Loader with correct key attribute */}
+              {renderApiLoader()}
 
-            <gmp-map
-              center="50.4501,30.5234"
-              zoom="12"
-              rendering-type="vector"
-              data-map-type={mapType}
-              data-lighting-mode={lightingMode}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <div slot="control-block-start-inline-start" className="place-picker-container">
-                <gmpx-place-picker placeholder="SEARCH_TARGET_LOCATION..."></gmpx-place-picker>
-              </div>
-            </gmp-map>
-
-            {/* Loading overlay */}
-            {!mapInitialized && (
-              <div className="map-loading-overlay">
-                <div className="loading-spinner"></div>
-                <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
-              </div>
-            )}
-
-            {/* Custom Zoom Controls */}
-            <div className="map-zoom-controls">
-              <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
-              <div className="zoom-separator"></div>
-              <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
+                <gmp-map
+                center="50.4501,30.5234"
+                zoom="12"
+                rendering-type="vector"
+                data-map-type={mapType}
+                data-lighting-mode={lightingMode}
+                street-view-control
+                style={{ width: '100%', height: '100%' }}
+              >
+                <div slot="control-block-start-inline-start" className="place-picker-container">
+                  <gmpx-place-picker placeholder="SEARCH_TARGET_LOCATION..."></gmpx-place-picker>
+                </div>
+              </gmp-map>
             </div>
 
-            {/* Map Type Controls */}
-            <div className="map-type-controls">
-              <button
-                className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
-                onClick={() => handleMapTypeChange('roadmap')}
-                aria-label="Map View"
-                title="TACTICAL_MAP"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="3" y1="9" x2="21" y2="9"></line>
-                  <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>
-              </button>
-              <div className="map-type-separator"></div>
-              <button
-                className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
-                onClick={() => handleMapTypeChange('satellite')}
-                aria-label="Satellite View"
-                title="SATELLITE_FEED"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <circle cx="12" cy="12" r="4"></circle>
-                  <line x1="21.17" y1="8" x2="12" y2="8"></line>
-                  <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-                  <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-                </svg>
-              </button>
-              <div className="map-type-separator"></div>
-              <button
-                className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
-                onClick={() => handleMapTypeChange('hybrid')}
-                aria-label="Hybrid View"
-                title="HYBRID_OVERLAY"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="12" cy="12" r="4"></circle>
-                </svg>
-              </button>
-            </div>
+            {/* Unmasked Controls Layer */}
+            <div className="map-controls-layer">
+              {/* Loading overlay - keep it here so it's visible */}
+              {!mapInitialized && (
+                <div className="map-loading-overlay">
+                  <div className="loading-spinner"></div>
+                  <div className="loading-text">INITIALIZING_SATELLITE_UPLINK...</div>
+                </div>
+              )}
 
-            {/* Street View Toggle */}
-            <div className="street-view-controls">
-              <button
-                className={`street-view-btn ${streetViewActive ? 'active' : ''}`}
-                onClick={handleStreetViewToggle}
-                aria-label={streetViewActive ? 'Exit Street View' : 'Enter Street View'}
-                title={streetViewActive ? 'EXIT_STREET_VIEW' : 'AGENT_POV_MODE'}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="7" r="4"></circle>
-                  <path d="M5.5 21a8.38 8.38 0 0 1 0 -6"></path>
-                  <path d="M18.5 21a8.38 8.38 0 0 0 0 -6"></path>
-                  <path d="M12 11v10"></path>
-                </svg>
-                <span className="control-label">{streetViewActive ? 'EXIT' : 'POV'}</span>
-              </button>
+                {/* Unified Control Group - Horizontal Row at Top */}
+                <div className="map-controls-group">
+                  {/* Map Type Controls */}
+                  <div className="control-section">
+                    <button
+                      className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
+                      onClick={() => handleMapTypeChange('roadmap')}
+                      aria-label="Map View"
+                      title="TACTICAL_MAP"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                      </svg>
+                    </button>
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
+                      onClick={() => handleMapTypeChange('satellite')}
+                      aria-label="Satellite View"
+                      title="SATELLITE_FEED"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                        <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                        <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+                      </svg>
+                    </button>
+                    <div className="control-separator-vertical"></div>
+                    <button
+                      className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
+                      onClick={() => handleMapTypeChange('hybrid')}
+                      aria-label="Hybrid View"
+                      title="HYBRID_OVERLAY"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="12" cy="12" r="4"></circle>
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Zoom Controls */}
+                  <div className="control-section zoom-section">
+                    <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </button>
+                    <div className="control-separator-vertical"></div>
+                    <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </button>
+                  </div>
+
+                   {/* Native Pegman PlaceHolder - Style target for .gm-svpc */}
+                   <div className="control-section pov-section-placeholder">
+                      {/* The native control will be force-moved here via CSS absolute positioning hacking or we just leave space for it */}
+                   </div>
+                </div>
             </div>
           </div>
         ) : !error && imageUrl ? (
@@ -750,15 +637,38 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           margin-left: -194px; /* Half of side panel width */
           margin-right: -194px;
           z-index: 50;
+        }
+
+        .masked-map-layer {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
           /* CSS Masking for true edge transparency */
+          /* Horizontal: 100px full transparent -> 400px fade (Wide transition) */
+          /* Vertical: 20px full transparent -> 100px fade */
           -webkit-mask-image: 
-            linear-gradient(to right, transparent 0px, black 300px, black calc(100% - 300px), transparent 100%),
-            linear-gradient(to bottom, transparent 0px, black 80px, black calc(100% - 80px), transparent 100%);
+            linear-gradient(to right, transparent 0px, transparent 100px, black 500px, black calc(100% - 500px), transparent calc(100% - 100px), transparent 100%),
+            linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
           -webkit-mask-composite: source-in;
           mask-image: 
-            linear-gradient(to right, transparent 0px, black 300px, black calc(100% - 300px), transparent 100%),
-            linear-gradient(to bottom, transparent 0px, black 80px, black calc(100% - 80px), transparent 100%);
+            linear-gradient(to right, transparent 0px, transparent 100px, black 500px, black calc(100% - 500px), transparent calc(100% - 100px), transparent 100%),
+            linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
           mask-composite: intersect;
+          pointer-events: auto; /* Allow map interactions */
+        }
+        
+        .map-controls-layer {
+          position: absolute;
+          inset: 0;
+          z-index: 100;
+          pointer-events: none; /* Let clicks pass through, children will re-enable */
+        }
+        
+        /* Enable pointer events for controls inside the layer */
+        .map-zoom-controls, 
+        .map-type-controls, 
+        .street-view-controls {
+           pointer-events: auto;
         }
 
         /* Removed vignette overlay in favor of masking */
@@ -1136,22 +1046,24 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           transition: filter 0.8s ease;
         }
 
+
         /* ===== TACTICAL LIGHTING SYSTEM ===== */
         /* Night Mode (18:00 - 06:00): Dark, high contrast, deep blue tint */
-        gmp-map[data-lighting-mode="night"][data-map-type="satellite"],
-        gmp-map[data-lighting-mode="night"][data-map-type="hybrid"] {
+        /* Applied to ALL map types including roadmap for unified look */
+        /* ===== TACTICAL LIGHTING SYSTEM ===== */
+        /* Night Mode (18:00 - 06:00): Dark, high contrast, deep blue tint */
+        /* Applied to ALL map types including roadmap per user request */
+        gmp-map[data-lighting-mode="night"] {
           filter: grayscale(1) brightness(0.7) contrast(1.4) sepia(1) hue-rotate(180deg) saturate(5) !important;
         }
-
+        
         /* Day Mode (06:00 - 18:00): Lighter, less saturated, subtle cyan overlay */
-        gmp-map[data-lighting-mode="day"][data-map-type="satellite"],
-        gmp-map[data-lighting-mode="day"][data-map-type="hybrid"] {
+        gmp-map[data-lighting-mode="day"] {
           filter: brightness(0.95) contrast(1.15) sepia(0.4) hue-rotate(180deg) saturate(2.5) !important;
         }
 
         /* Twilight Mode (05:00-06:00, 18:00-19:00): Transition blend */
-        gmp-map[data-lighting-mode="twilight"][data-map-type="satellite"],
-        gmp-map[data-lighting-mode="twilight"][data-map-type="hybrid"] {
+        gmp-map[data-lighting-mode="twilight"] {
           filter: grayscale(0.6) brightness(0.82) contrast(1.25) sepia(0.8) hue-rotate(185deg) saturate(3.5) !important;
         }
 
@@ -1160,215 +1072,129 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           filter: grayscale(0.3) brightness(0.9) contrast(1.1) sepia(0.3) hue-rotate(180deg) saturate(2) !important;
         }
 
-        /* Pegman control styling - position above zoom controls with cyberpunk theme */
-        .gm-svpc {
-          position: absolute !important;
-          right: 10px !important;
-          bottom: 130px !important;
-          z-index: 100 !important;
-          filter: hue-rotate(180deg) brightness(1.2) saturate(2) drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)) !important;
-          background: rgba(0, 10, 20, 0.9) !important;
-          border: 1px solid #ff9800 !important;
-          border-radius: 3px !important;
-          padding: 2px !important;
-          box-shadow: 0 0 15px rgba(255, 152, 0, 0.4), inset 0 0 5px rgba(0, 229, 255, 0.1) !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .gm-svpc:hover {
-          box-shadow: 0 0 25px rgba(255, 152, 0, 0.7), 0 0 10px rgba(0, 229, 255, 0.5) !important;
-          border-color: #ffb74d !important;
-        }
-
-        /* Style the Pegman icon inside */
-        .gm-svpc img,
-        .gm-svpc button {
-          filter: brightness(1.3) !important;
-        }
-
-        /* Street View control container positioning */
-        .gmnoprint[controlwidth="40"][controlheight="40"] {
-          position: absolute !important;
-          right: 10px !important;
-          bottom: 130px !important;
-        }
-
-        .map-zoom-controls {
+        /* Unified Control Row - Horizontal */
+        .map-controls-group {
           position: absolute;
-          top: 140px; /* Moved to top, below map type controls */
-          right: 20px;
+          top: 10px; /* Aligned with map header/close button */
+          right: 60px; /* Left of the Close button (which is likely at ~20px) */
           display: flex;
-          flex-direction: column;
-          background: rgba(0, 10, 20, 0.95);
-          border: 1px solid rgba(0, 229, 255, 0.6); /* Brighter border */
-          border-radius: 2px;
-          box-shadow: 0 0 20px rgba(0, 163, 255, 0.3); /* Stronger shadow */
+          flex-direction: row; /* Horizontal */
+          gap: 0;
+          background: rgba(0, 10, 20, 0.4); 
+          border: 1px solid #00a3ff;
+          border-radius: 4px;
+          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
+          overflow: hidden;
           z-index: 10;
+          pointer-events: auto;
+          backdrop-filter: blur(4px);
         }
 
-        .zoom-btn {
+        .control-section {
+          padding: 2px 4px;
+          display: flex;
+          flex-direction: row; /* Horizontal within sections too */
+          align-items: center;
+          height: 36px;
+        }
+        
+        .zoom-section {
+           border-left: 1px solid rgba(0, 163, 255, 0.3);
+           padding-left: 6px;
+           margin-left: 2px;
+        }
+        
+        /* Placeholder for Native Pegman */
+        .pov-section-placeholder {
+           width: 40px;
+           height: 36px;
+           border-left: 1px solid rgba(0, 163, 255, 0.3);
+           /* Native control will be positioned here */
+        }
+        
+        /* Native Pegman Control Styling Override */
+        /* To make it appear inside our bar, we must force position it */
+        .gm-svpc {
+           position: absolute !important;
+           top: 10px !important; 
+           right: 64px !important; /* Positioned inside the placeholder area end of the bar */
+           background-color: transparent !important;
+           box-shadow: none !important;
+           border: none !important;
+           width: 36px !important;
+           height: 36px !important;
+           z-index: 100 !important;
+           transform: translateY(1px); /* Fine tune vertical align */
+        }
+        
+        /* The inner pegman icon */
+        .gm-svpc img {
+           width: 24px !important;
+           height: 24px !important;
+           margin: 6px !important;
+           filter: invert(1) drop-shadow(0 0 2px #ff9800) sepia(1) saturate(5) hue-rotate(-30deg) !important; /* Orange */
+        }
+        
+        /* Hover effect on native pegman */
+        .gm-svpc:hover img {
+           filter: invert(1) drop-shadow(0 0 5px #ff9800) brightness(1.2) !important;
+           transform: scale(1.1);
+        }
+
+        .control-separator-vertical {
+          width: 1px;
+          background: rgba(0, 163, 255, 0.2);
+          height: 60%;
+          margin: 0 4px;
+        }
+
+        .map-type-btn, .zoom-btn {
           width: 32px;
           height: 32px;
           background: transparent;
           border: none;
-          color: #00e5ff;
+          color: rgba(0, 229, 255, 0.8);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          border-radius: 2px;
         }
 
-        .zoom-btn:hover {
-          background: rgba(0, 163, 255, 0.2);
-          color: #fff;
-          text-shadow: 0 0 8px #00e5ff;
-        }
-
-        .zoom-btn:active {
-          transform: scale(0.95);
-        }
-
-        .zoom-separator {
-          height: 1px;
+        .map-type-btn:hover, .zoom-btn:hover {
           background: rgba(0, 163, 255, 0.3);
-          width: 100%;
+          color: #fff;
+          filter: drop-shadow(0 0 5px #00e5ff);
+        }
+        
+        .map-type-btn.active {
+          background: rgba(0, 163, 255, 0.5); /* Stronger active state */
+          color: #00e5ff;
+          box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.5);
+          border-bottom: 2px solid #00e5ff; /* Horizontal indicator */
+          border: none;
+        }
+        
+        .control-label {
+           display: none; /* Hide labels for compact horizontal bar */
         }
 
-        .agent-pov-telemetry {
+        /* Loading Overlay */
+        .map-loading-overlay {
           position: absolute;
-          top: 15px;
-          right: 15px;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 50; /* Above map layer but below controls if needed, though here it's inside controls layer */
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          background: rgba(0, 10, 20, 0.7);
-          padding: 10px 14px;
-          border-right: 2px solid #ff00ff;
-          font-family: 'JetBrains Mono', monospace;
-          z-index: 10;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          background: rgba(0,0,0,0.5); /* Semi-transparent dimming */
           pointer-events: none;
         }
-
-        .telemetry-item {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          font-size: 9px;
-          letter-spacing: 1px;
-        }
-
-        .telemetry-label {
-          color: rgba(255, 255, 255, 0.5);
-        }
-
-        .telemetry-value {
-          color: #ff00ff;
-          text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
-        }
-
-        /* Map Type Controls */
-        .map-type-controls {
-          position: absolute;
-          top: 60px;
-          right: 20px;
-          display: flex;
-          flex-direction: column;
-          background: rgba(0, 10, 20, 0.9);
-          border: 1px solid rgba(0, 163, 255, 0.5);
-          border-radius: 2px;
-          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
-          z-index: 10;
-        }
-
-        .map-type-btn {
-          width: 32px;
-          height: 32px;
-          background: transparent;
-          border: none;
-          color: rgba(0, 229, 255, 0.6);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .map-type-btn:hover {
-          background: rgba(0, 163, 255, 0.2);
-          color: #fff;
-        }
-
-        .map-type-btn.active {
-          background: rgba(0, 163, 255, 0.25);
-          color: #00e5ff;
-          box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3);
-        }
-
-        .map-type-separator {
-          height: 1px;
-          background: rgba(0, 163, 255, 0.3);
-          width: 100%;
-        }
-
-        /* Street View Controls */
-        .street-view-controls {
-          position: absolute;
-          top: 180px;
-          right: 20px;
-          z-index: 10;
-        }
-
-        .street-view-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          padding: 8px;
-          background: rgba(0, 10, 20, 0.9);
-          border: 1px solid rgba(0, 163, 255, 0.5);
-          border-radius: 2px;
-          color: rgba(0, 229, 255, 0.6);
-          cursor: pointer;
-          transition: all 0.2s;
-          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
-        }
-
-        .street-view-btn:hover {
-          background: rgba(0, 163, 255, 0.2);
-          color: #fff;
-          border-color: #00a3ff;
-        }
-
-        .street-view-btn.active {
-          background: rgba(255, 140, 0, 0.15);
-          border-color: #ff8c00;
-          color: #ff8c00;
-          box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
-        }
-
-        .control-label {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 8px;
-          letter-spacing: 1px;
-        }
-      `}</style>
-
-      {/* Global styles for Google Places Autocomplete dropdown - injected into document */}
-      <style>{`
-        /* Google Places Autocomplete Dropdown - Dark Theme */
-        .pac-container {
-          background-color: rgba(2, 10, 16, 0.98) !important;
-          border: 1px solid rgba(0, 163, 255, 0.5) !important;
-          border-top: none !important;
-          border-radius: 0 0 4px 4px !important;
-          box-shadow: 0 4px 20px rgba(0, 163, 255, 0.3) !important;
-          font-family: 'JetBrains Mono', 'Outfit', sans-serif !important;
-          z-index: 10000 !important;
-          margin-top: -1px !important;
-        }
-
         .pac-item {
           background-color: transparent !important;
           border-bottom: 1px solid rgba(0, 163, 255, 0.15) !important;
