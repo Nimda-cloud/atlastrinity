@@ -75,17 +75,18 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
     for server_name, server_config in servers_to_check:
         tier = server_config.get("tier", 4)
 
-        # Special case for 'system' which is internal
-        if server_name == "system":
+        # Special case for internal services
+        if server_name in ["system", "tour-guide"]:
             from brain.mcp_registry import get_tool_names_for_server
 
-            tools = get_tool_names_for_server("system")
+            tools = get_tool_names_for_server(server_name)
+            note = "Internal Trinity System" if server_name == "system" else "Internal Tour Control"
             results[server_name] = {
                 "status": "online",
                 "tier": tier,
                 "tools_count": len(tools),
                 "response_time_ms": 0,
-                "note": "Internal Trinity System",
+                "note": note,
             }
             if not output_json:
                 print(

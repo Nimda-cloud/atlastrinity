@@ -358,18 +358,32 @@
         "tetyana"
       ],
       "note": "Works in conjunction with chrome-devtools-mcp for browser interaction."
+    },
+    "tour-guide": {
+      "transport": "internal",
+      "command": "native",
+      "description": "Interactive Virtual Tour Control (Internal). Real-time synchronization between Agent movement and User Map View. Tools: tour_start, tour_stop, tour_pause, tour_resume, tour_look, tour_set_speed.",
+      "disabled": false,
+      "tier": 2,
+      "agents": [
+        "atlas",
+        "tetyana",
+        "grisha"
+      ],
+      "note": "Native Python service handled by ToolDispatcher. No separate process required."
     }
   },
   "_metadata": {
     "version": "5.1",
-    "last_updated": "2026-02-03",
+    "last_updated": "2026-02-04",
     "description": "Single source of truth for MCP server configuration. Used by Brain, Vibe, and all agents.",
-    "active_servers": 19,
-    "total_servers": 20,
+    "active_servers": 20,
+    "total_servers": 21,
     "notes": [
       "Servers with 'disabled': true are not loaded by default",
       "Tier 1-2 servers load at startup, Tier 3-4 on-demand",
-      "Ensured all servers use explicit 'stdio' transport for stability"
+      "Ensured all servers use explicit 'stdio' transport for stability",
+      "Added tour-guide as internal native service"
     ]
   }
 }

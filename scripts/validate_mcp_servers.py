@@ -200,7 +200,10 @@ def validate_server(name: str, config: dict) -> dict:
     command = config.get("command", "")
 
     # Визначаємо тип сервера
-    if command in {"python3", "python"}:
+    if name == "tour-guide":
+        result["type"] = "Native"
+        result["status"] = "ok"
+    elif command in {"python3", "python"}:
         result["type"] = "Python"
         result["status"] = "ok" if validate_python_server(name, config) else "error"
     elif command in ["npx", "bunx"]:
