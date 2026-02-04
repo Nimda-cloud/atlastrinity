@@ -6,11 +6,9 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    import pandas as pd
-
+import pandas as pd
 
 from ..lib.parser import DataParser
 from ..lib.scraper import DataScraper
