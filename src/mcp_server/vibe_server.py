@@ -523,14 +523,18 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
                 f'name = "{mcp.name}"',
                 f'transport = "{mcp.transport}"',
             ])
-            if hasattr(mcp, "url") and mcp.url:
+            if mcp.url:
                 toml_lines.append(f'url = "{mcp.url}"')
-            if hasattr(mcp, "command") and mcp.command:
+            if mcp.command:
                 toml_lines.append(f'command = "{mcp.command}"')
-            if hasattr(mcp, "args") and mcp.args:
+            if mcp.args:
                 toml_lines.append(f"args = {list(mcp.args)}")
-            if hasattr(mcp, "env") and mcp.env:
+            if mcp.env:
                 toml_lines.append(f"env = {dict(mcp.env)}")
+            if mcp.startup_timeout_sec:
+                toml_lines.append(f"startup_timeout_sec = {mcp.startup_timeout_sec}")
+            if mcp.tool_timeout_sec:
+                toml_lines.append(f"tool_timeout_sec = {mcp.tool_timeout_sec}")
             toml_lines.append("")
 
         # Add tool patterns and permissions
@@ -816,17 +820,10 @@ async def _read_vibe_stream(
             for line in text.split("\n"):
                 if line.strip():
                     await _handle_vibe_line(line, stream_name, ctx)
-    except Exception as e:
-        logger.debug(f"[VIBE] Error reading {stream_name} stream: {e}")
-        # The original code had a 'buffer' variable here, but the new logic doesn't maintain one.
-        # This part of the fallback logic is removed as it would cause a NameError.
-        # if buffer:
-        #     line = strip_ansi(buffer.decode(errors="replace")).strip()
-        #     await _handle_vibe_line(line, stream_name, ctx)
-    except TimeoutError:
+    except asyncio.TimeoutError:
         logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
     except Exception as e:
-        logger.error(f"[VIBE] Stream reading error ({stream_name}): {e}")
+        logger.debug(f"[VIBE] Error reading {stream_name} stream: {e}")
 
 
 async def _execute_vibe_with_retries(
