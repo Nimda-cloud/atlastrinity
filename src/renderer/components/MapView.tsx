@@ -714,7 +714,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           );
           background-size: 100% 4px;
           pointer-events: none;
-          animation: scan 10s linear infinite;
+          animation: scan 8s linear infinite;
         }
 
         .map-hud-top-left {
@@ -773,8 +773,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         .br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
 
         @keyframes scan {
-          from { background-position: 0 0; }
-          to { background-position: 0 100%; }
+          from { transform: translateY(-100%); }
+          to { transform: translateY(100%); }
         }
 
         @keyframes pulse {
@@ -1005,15 +1005,15 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         }
 
         gmp-map {
-          filter: contrast(1.05) brightness(0.95) saturate(1.1);
-          /* Edge fade effect - 120px (3-4cm) transparent gradient on all sides */
+          filter: contrast(1.02) brightness(0.98);
+          /* Edge fade effect - 60px transparent gradient on all sides for performance */
           -webkit-mask-image: 
-            linear-gradient(to right, transparent 0, black 120px, black calc(100% - 120px), transparent 100%),
-            linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 120px), transparent 100%);
+            linear-gradient(to right, transparent 0, black 60px, black calc(100% - 60px), transparent 100%),
+            linear-gradient(to bottom, transparent 0, black 60px, black calc(100% - 60px), transparent 100%);
           -webkit-mask-composite: source-in;
           mask-image: 
-            linear-gradient(to right, transparent 0, black 120px, black calc(100% - 120px), transparent 100%),
-            linear-gradient(to bottom, transparent 0, black 120px, black calc(100% - 120px), transparent 100%);
+            linear-gradient(to right, transparent 0, black 60px, black calc(100% - 60px), transparent 100%),
+            linear-gradient(to bottom, transparent 0, black 60px, black calc(100% - 60px), transparent 100%);
           mask-composite: intersect;
         }
 

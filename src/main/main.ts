@@ -12,7 +12,6 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 if (process.platform === 'darwin') {
   app.commandLine.appendSwitch('disable-features', 'Graphite,SkiaGraphite');
   app.commandLine.appendSwitch('disable-gpu-memory-buffer-video-frames');
-  app.commandLine.appendSwitch('disable-gpu-compositing'); // Last resort to stop ProduceSkia/mailbox errors
   app.commandLine.appendSwitch('disable-gpu-rasterization');
 }
 
