@@ -457,10 +457,118 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   useEffect(() => {
     if (type !== 'INTERACTIVE' || !mapInitialized) return;
 
-    const placePicker = document.querySelector('#panel-search');
+    const placePicker = document.querySelector('#panel-search') as HTMLElement;
     if (placePicker) {
       placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
-      return () => placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
+
+      // Inject styles into gmpx-place-picker shadow DOM to remove borders and make full area clickable
+      const injectStyles = () => {
+        if (placePicker.shadowRoot) {
+          const existingStyle = placePicker.shadowRoot.querySelector('#custom-panel-styles');
+          if (!existingStyle) {
+            const style = document.createElement('style');
+            style.id = 'custom-panel-styles';
+            style.textContent = `
+              /* Remove all borders and outlines */
+              * {
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+              }
+              
+              /* Host element - ensure it covers the entire wrapper area */
+              :host {
+                display: flex !important;
+                width: 100% !important;
+                height: 100% !important;
+                cursor: text !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              
+              /* Ensure ALL internal containers fill the host and are horizontal */
+              .container, .input-container, [class*="container"], [part="container"], div {
+                display: flex !important;
+                flex-direction: row !important;
+                flex: 1 !important;
+                width: 100% !important;
+                height: 100% !important;
+                align-items: center !important;
+                background: transparent !important;
+                cursor: text !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+              }
+              
+              /* Input MUST take all available horizontal space */
+              input, [part="input"] {
+                flex: 1 !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-width: 0 !important;
+                background: transparent !important;
+                color: #00e5ff !important;
+                border: none !important;
+                outline: none !important;
+                caret-color: #00e5ff !important;
+                padding: 0 12px !important;
+                cursor: text !important;
+                order: 1 !important;
+                text-align: left !important;
+                pointer-events: auto !important;
+                font-family: 'JetBrains Mono', monospace !important;
+              }
+              
+              /* Search icon - HIDE */
+              svg, .icon, [class*="icon"], gmpx-icon, .search-icon {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                pointer-events: none !important;
+              }
+              
+              /* Clear button - keep on the far right */
+              button, .clear-button, [part="clear-button"] {
+                order: 10 !important; /* Move to the far right */
+                flex-shrink: 0 !important;
+                width: 32px !important;
+                height: 100% !important;
+                opacity: 0.7 !important;
+                pointer-events: auto !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: transparent !important;
+                border: none !important;
+                margin-left: auto !important;
+              }
+            `;
+            placePicker.shadowRoot.appendChild(style);
+          }
+
+          // Also add click handler to focus input when clicking anywhere
+          const input = placePicker.shadowRoot.querySelector('input');
+          if (input && !placePicker.dataset.clickHandlerAdded) {
+            placePicker.addEventListener('click', () => {
+              input.focus();
+            });
+            placePicker.dataset.clickHandlerAdded = 'true';
+          }
+        }
+      };
+
+      // Try immediately and also after a short delay
+      injectStyles();
+      const timer = setTimeout(injectStyles, 500);
+
+      return () => {
+        placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
+        clearTimeout(timer);
+      };
     }
   }, [type, mapInitialized, handlePlaceChange]);
 
@@ -675,10 +783,11 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     <div className="map-view animate-fade-in">
       {/* Header Info */}
       <div className="map-header">
-        <div className="map-type-badge">{type}_FEED</div>
+        <div className="map-type-badge">
+          {type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : `${type}_FEED`}
+        </div>
         <div className="map-location">
-          {location ||
-            (type === 'INTERACTIVE' ? 'INTERACTIVE_SEARCH_ACTIVE' : 'TRACKING_COORDINATES...')}
+          {location || (type === 'INTERACTIVE' ? 'INTERACTIVE_FEED' : 'TRACKING_COORDINATES...')}
         </div>
         <button className="map-close-btn" onClick={onClose}>
           <svg
@@ -744,8 +853,19 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
               {/* Unified Control Group - Horizontal Row at Top */}
               <div className="map-controls-group">
+                {/* Search Field - NOW ON LEFT AND EXPANDED */}
+                <div className="control-section search-section">
+                  <div className="search-wrapper">
+                    <gmpx-place-picker
+                      id="panel-search"
+                      placeholder="SEARCH_TARGET..."
+                    ></gmpx-place-picker>
+                  </div>
+                </div>
+
                 {/* Map Type Controls */}
                 <div className="control-section">
+                  <div className="control-separator-vertical"></div>
                   <button
                     className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
                     onClick={() => handleMapTypeChange('roadmap')}
@@ -753,8 +873,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     title="TACTICAL_MAP"
                   >
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -773,8 +893,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     title="SATELLITE_FEED"
                   >
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -795,8 +915,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     title="HYBRID_OVERLAY"
                   >
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -810,10 +930,11 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
                 {/* Zoom Controls */}
                 <div className="control-section zoom-section">
+                  <div className="control-separator-vertical"></div>
                   <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -826,8 +947,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   <div className="control-separator-vertical"></div>
                   <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -838,7 +959,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   </button>
                 </div>
 
-                {/* Street View Toggle Button - Restored per request */}
+                {/* Street View Toggle Button */}
                 <div className="control-section">
                   <div className="control-separator-vertical"></div>
                   <button
@@ -847,10 +968,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     aria-label="Toggle Street View"
                     title="STREET_VIEW_POV"
                   >
-                    {/* Using the icon from the screenshot reference roughly (Pegman-like or Eye) */}
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -880,14 +1000,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                       fill="currentColor"
                       stroke="none"
                     >
-                      {/* Pegman-style person icon */}
                       <circle cx="12" cy="4" r="3" />
                       <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
                     </svg>
                   </button>
                 </div>
 
-                {/* Cyberpunk Filter Toggle - only for satellite/hybrid */}
+                {/* Cyberpunk Filter Toggle */}
                 <div className="control-section filter-section">
                   <div className="control-separator-vertical"></div>
                   <button
@@ -898,43 +1017,18 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     disabled={false}
                   >
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                     >
-                      {/* Filter/Adjustment icon */}
                       <circle cx="12" cy="12" r="10"></circle>
                       <path d="M12 2v20M2 12h20"></path>
                       <circle cx="12" cy="12" r="4"></circle>
                     </svg>
                   </button>
-                </div>
-
-                {/* Search Field - Integrated into Control Panel with Offset */}
-                <div className="control-section search-section">
-                  <div className="control-separator-vertical"></div>
-                  <div className="search-wrapper">
-                    <gmpx-place-picker
-                      id="panel-search"
-                      placeholder="SEARCH_TARGET..."
-                    ></gmpx-place-picker>
-                    <div className="search-icon-overlay">
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                      </svg>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1078,9 +1172,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         }
         
         /* Enable pointer events for controls inside the layer */
-        .map-zoom-controls, 
-        .map-type-controls, 
-        .street-view-controls {
+        .control-section,
+        .search-wrapper,
+        .map-type-btn,
+        .street-view-btn,
+        .zoom-btn,
+        .filter-toggle-btn,
+        .pegman-draggable {
            pointer-events: auto;
         }
 
@@ -1419,30 +1517,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
            font-weight: bold;
         }
 
-        /* Loading Overlay */
-        .map-loading-overlay {
-          position: absolute;
-          inset: 0;
-          gap: 16px;
-          z-index: 10;
-        }
-
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 2px solid rgba(0, 163, 255, 0.2);
-          border-top-color: #00a3ff;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        .loading-text {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 10px;
-          color: #00a3ff;
-          letter-spacing: 3px;
-          animation: pulse 2s infinite;
-        }
+        /* Duplicate Loading Overlay Definition Removed */
 
         @keyframes spin {
           to { transform: rotate(360deg); }
@@ -1518,13 +1593,14 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Unified Control Row - Horizontal with slide animation */
         .map-controls-group {
           position: absolute;
-          top: -50px; /* Hidden state - higher up, almost invisible */
-          right: 100px; /* Positioned slightly more right to accommodate search */
-          transform: none;
+          top: -50px; /* Increased back for thicker panel */
+          left: 50%;
+          transform: translateX(-50%);
+          width: 66%;
           display: flex;
-          flex-direction: row; /* Horizontal */
+          flex-direction: row;
+          justify-content: space-between;
           gap: 0;
-          width: fit-content; /* Size to content only */
           background: rgba(0, 10, 20, 0.05); /* Almost invisible when hidden */
           border: 1px solid rgba(0, 163, 255, 0.1); /* Very subtle border */
           border-top: none;
@@ -1539,17 +1615,18 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           opacity: 0.15; /* Almost invisible when hidden */
         }
         
-        /* Hover trigger area - significantly expanded to prevent "running away" */
+        /* Hover trigger area - only covers area ABOVE panel, not content */
         .map-controls-group::before {
           content: '';
           position: absolute;
-          /* Cover the area ABOVE the panel to catch mouse approach */
-          top: -80px; /* Increased trigger area */
+          /* Only cover the area ABOVE the panel to catch mouse approach */
+          top: -80px;
           left: -50px;
           right: -50px;
-          bottom: -50px; /* Extend below to catch mouse overshooting */
+          bottom: 100%; /* Stop at the top edge of the panel, don't overlap content */
+          height: 80px;
           z-index: -1;
-          /* debug: background: rgba(255,0,0,0.1); */
+          pointer-events: auto;
         }
         
         /* Slide down on hover - INSTANT appearance */
@@ -1566,58 +1643,75 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
         .search-section {
           position: relative;
-          margin-left: 12px; /* Horizontal offset requested */
-          padding-left: 8px;
-          border-left: 1px solid rgba(0, 163, 255, 0.3);
+          display: flex;
+          align-items: center;
+          padding-right: 14px;
+          flex: 1; /* EXPAND TO FILL SPACE FROM LEFT */
         }
 
         .search-wrapper {
            position: relative;
-           width: 180px;
-           height: 32px;
+           width: 100%; /* FILL THE EXPANDED SECTION */
+           height: 32px; /* Increased from 24px */
            display: flex;
            align-items: center;
+           z-index: 10;
+           pointer-events: auto !important;
+           cursor: text;
+           background: transparent; /* Removed background */
+           border: none; /* Removed border */
+           transition: all 0.2s ease;
+        }
+        
+        .search-wrapper:hover {
+           background: rgba(0, 163, 255, 0.05);
+           box-shadow: 0 0 10px rgba(0, 229, 255, 0.05);
         }
 
+        /* Complete styling for gmpx-place-picker to remove all borders */
         #panel-search {
            width: 100%;
            height: 100%;
+           position: relative;
+           z-index: 20; /* Above other elements */
+           pointer-events: auto !important;
+           /* CSS Custom Properties for gmpx-place-picker */
            --gmpx-color-surface: transparent;
            --gmpx-color-on-surface: #00e5ff;
-           --gmpx-color-outline: transparent; /* Remove outline/border */
+           --gmpx-color-on-surface-variant: #00a3ff;
+           --gmpx-color-outline: transparent;
+           --gmpx-color-outline-variant: transparent;
+           --gmpx-color-primary: #00e5ff;
+           --gmpx-font-family-base: 'JetBrains Mono', monospace;
+           /* Remove any native borders */
            border: none !important;
-           background: transparent;
+           background: transparent !important;
            box-shadow: none !important;
            outline: none !important;
         }
         
-        /* Remove white border from place picker input */
+        /* Target shadow DOM parts if available */
         #panel-search::part(input) {
            border: none !important;
            outline: none !important;
            box-shadow: none !important;
            background: transparent !important;
+           color: #00e5ff !important;
         }
-
-        /* Customizing the place picker input inside shadow DOM is hard, 
-           so we rely on transparency vars and overlays */
         
-        .search-icon-overlay {
-           position: absolute;
-           right: 8px;
-           top: 50%;
-           transform: translateY(-50%);
-           pointer-events: none;
-           color: #00a3ff;
-           opacity: 0.7;
+        #panel-search::part(container) {
+           border: none !important;
+           box-shadow: none !important;
+           background: transparent !important;
         }
 
         .control-section {
-          padding: 2px 6px;
+          padding: 2px 5px;
           display: flex;
           flex-direction: row; /* Horizontal within sections too */
           align-items: center;
-          height: 40px;
+          height: 36px; /* Increased from 28px */
+          flex-shrink: 0; /* DON'T STRETCH BUTTONS */
         }
 
         /* Pegman section styling */
@@ -1627,21 +1721,23 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         
         /* Draggable Pegman Icon */
         .pegman-draggable {
-          width: 36px;
-          height: 36px;
+          width: 28px; /* Matched to map-type-btn */
+          height: 28px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #ff9800;
+          color: rgba(0, 229, 255, 0.8); /* Matched to map-type-btn */
+          background: transparent; /* ADDED TRANSPARENCY */
+          border: none;
           cursor: grab;
-          border-radius: 4px;
+          border-radius: 2px; /* Matched to map-type-btn */
           transition: all 0.25s ease;
           position: relative;
         }
         
         .pegman-draggable:hover {
-          color: #ffb74d;
-          background: rgba(255, 152, 0, 0.2);
+          color: #ff9800; /* Original distinctive orange on hover */
+          background: rgba(0, 163, 255, 0.3); /* Matched hover background */
           transform: scale(1.15);
           box-shadow: 0 0 15px rgba(255, 152, 0, 0.4);
         }
@@ -1653,6 +1749,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         }
         
         .pegman-draggable svg {
+          width: 14px; /* Increased from 12px */
+          height: 14px;
           filter: drop-shadow(0 0 3px currentColor);
           transition: filter 0.2s;
         }
@@ -1706,8 +1804,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         
         /* Filter Toggle Button Styles */
         .filter-toggle-btn {
-          width: 32px;
-          height: 32px;
+          width: 28px; /* Matched to map-type-btn */
+          height: 28px;
           background: transparent;
           border: none;
           color: rgba(0, 229, 255, 0.6);
@@ -1727,8 +1825,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         
         .filter-toggle-btn.active {
           color: #00e5ff;
-          background: rgba(0, 163, 255, 0.4);
-          box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.4);
+          background: rgba(0, 163, 255, 0.5); /* Matched to map-type-btn.active */
+          box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.5);
+          border-bottom: 2px solid #00e5ff; /* Matched to map-type-btn.active */
         }
         
         .filter-toggle-btn.disabled {
@@ -1776,12 +1875,12 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           width: 1px;
           background: rgba(0, 163, 255, 0.2);
           height: 60%;
-          margin: 0 4px;
+          margin: 0 3px;
         }
 
         .map-type-btn, .zoom-btn {
-          width: 32px;
-          height: 32px;
+          width: 28px; /* Increased from 22px */
+          height: 28px;
           background: transparent;
           border: none;
           color: rgba(0, 229, 255, 0.8);
@@ -1817,76 +1916,88 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           inset: 0;
           width: 100%;
           height: 100%;
-          z-index: 50; /* Above map layer but below controls if needed, though here it's inside controls layer */
+          z-index: 50;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           gap: 16px;
-          background: rgba(0,0,0,0.5); /* Semi-transparent dimming */
+          background: rgba(0,0,0,0.5);
           pointer-events: none;
         }
+
+        /* AUTOCOMPLETE DROPDOWN (.pac-container) - MINIMALIST FLOATING TEXT ONLY */
+        .pac-container {
+          background-color: transparent !important;
+          backdrop-filter: none !important;
+          border: none !important;
+          box-shadow: none !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          margin-top: 2px !important;
+          z-index: 99999 !important;
+          width: auto !important;
+          min-width: 260px !important;
+          pointer-events: auto !important;
+        }
+
         .pac-item {
           background-color: transparent !important;
-          border-bottom: 1px solid rgba(0, 163, 255, 0.15) !important;
-          padding: 10px 12px !important;
+          border: none !important; /* Force removal of ALL borders/separators */
+          border-top: none !important;
+          border-bottom: none !important;
+          outline: none !important;
+          padding: 6px 0 !important; /* Tighter vertical spacing for floating text */
           color: #00e5ff !important;
           cursor: pointer !important;
-          line-height: 1.4 !important;
+          display: flex !important;
+          align-items: center !important;
+          transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.2s ease;
+          opacity: 0.8;
         }
 
         .pac-item:hover,
         .pac-item-selected {
-          background-color: rgba(0, 163, 255, 0.15) !important;
+          background-color: transparent !important;
+          transform: translateX(8px);
+          opacity: 1 !important;
+          text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
         }
-
-        .pac-item:last-child {
-          border-bottom: none !important;
+        
+        /* Dim unselected items when hovering over the container */
+        .pac-container:hover .pac-item:not(:hover) {
+          opacity: 0.4;
         }
 
         .pac-item-query {
-          color: #00a3ff !important;
-          font-size: 12px !important;
+          color: #00e5ff !important;
+          font-size: 14px !important;
           font-weight: 500 !important;
         }
 
-        .pac-icon {
-          filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg) brightness(1.2) !important;
-          margin-right: 10px !important;
-        }
-
-        .pac-icon-marker {
-          background-position: -1px -161px !important;
+        /* HIDE ICONS AND MARKERS */
+        .pac-icon, .pac-icon-marker {
+          display: none !important;
         }
 
         .pac-matched {
           color: #00e5ff !important;
-          font-weight: 600 !important;
+          font-weight: bold !important;
         }
 
         /* Secondary text (address details) */
         .pac-item span:not(.pac-item-query):not(.pac-matched) {
-          color: rgba(0, 163, 255, 0.7) !important;
+          color: rgba(0, 163, 255, 0.5) !important;
           font-size: 11px !important;
+          margin-left: 8px !important;
         }
 
-        /* "Powered by Google" footer styling */
-        .pac-container::after {
-          background-color: rgba(2, 10, 16, 0.95) !important;
-          background-image: none !important;
-          border-top: 1px solid rgba(0, 163, 255, 0.2) !important;
-          padding: 8px 12px !important;
-          color: rgba(0, 163, 255, 0.4) !important;
-          font-size: 9px !important;
-        }
-
-        .pac-logo::after {
-          filter: invert(1) grayscale(1) brightness(1.5) hue-rotate(180deg) !important;
-        }
-
-        /* Hide "powered by Google" text, keep only logo filtered */
-        .hdpi.pac-logo::after {
-          background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=) !important;
+        /* Power by Google / Logo Footer - ABSOLUTELY HIDDEN */
+        .pac-container::after, .pac-logo::after, .hdpi.pac-logo::after {
+          display: none !important;
+          height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: none !important;
         }
       `}</style>
     </div>
