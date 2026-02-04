@@ -235,7 +235,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
       // Update Street View active state on the element for CSS targeting
       mapElement.setAttribute('data-street-view', streetViewActive ? 'active' : 'inactive');
-      
+
       // Update JSON Styles for Roadmap/Hybrid based on filter
       if (mapType === 'roadmap' || mapType === 'hybrid') {
         const styleToUse = cyberpunkFilterEnabled ? CYBERPUNK_MAP_STYLE : NEUTRAL_NIGHT_STYLE;
@@ -453,11 +453,11 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     }
   }, []);
 
-  // Set up place picker event listener
+  // Set up place picker event listener for the panel search
   useEffect(() => {
     if (type !== 'INTERACTIVE' || !mapInitialized) return;
 
-    const placePicker = document.querySelector('gmpx-place-picker');
+    const placePicker = document.querySelector('#panel-search');
     if (placePicker) {
       placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
       return () => placePicker.removeEventListener('gmpx-placechange', handlePlaceChange);
@@ -894,11 +894,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                     className={`filter-toggle-btn ${cyberpunkFilterEnabled ? 'active' : ''}`}
                     onClick={() => setCyberpunkFilterEnabled(!cyberpunkFilterEnabled)}
                     aria-label="Toggle Cyberpunk Filter"
-                    title={
-                      cyberpunkFilterEnabled
-                        ? 'FILTER_ENABLED'
-                        : 'FILTER_DISABLED'
-                    }
+                    title={cyberpunkFilterEnabled ? 'FILTER_ENABLED' : 'FILTER_DISABLED'}
                     disabled={false}
                   >
                     <svg
@@ -919,16 +915,26 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
 
                 {/* Search Field - Integrated into Control Panel with Offset */}
                 <div className="control-section search-section">
-                   <div className="control-separator-vertical"></div>
-                   <div className="search-wrapper">
-                      <gmpx-place-picker id="panel-search" placeholder="SEARCH_TARGET..."></gmpx-place-picker>
-                      <div className="search-icon-overlay">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                           <circle cx="11" cy="11" r="8"></circle>
-                           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                      </div>
-                   </div>
+                  <div className="control-separator-vertical"></div>
+                  <div className="search-wrapper">
+                    <gmpx-place-picker
+                      id="panel-search"
+                      placeholder="SEARCH_TARGET..."
+                    ></gmpx-place-picker>
+                    <div className="search-icon-overlay">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1251,9 +1257,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           --gmpx-color-on-surface: #00e5ff;
           --gmpx-color-on-surface-variant: #00a3ff;
           --gmpx-color-primary: #00e5ff;
+          --gmpx-color-outline: transparent; /* Remove white outline/border */
           --gmpx-font-family-base: 'JetBrains Mono', monospace;
-          box-shadow: 0 0 15px rgba(0, 163, 255, 0.2);
-          border: 1px solid #00a3ff;
+          box-shadow: none;
+          border: none;
           border-radius: 4px;
         }
 
@@ -1511,26 +1518,25 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* Unified Control Row - Horizontal with slide animation */
         .map-controls-group {
           position: absolute;
-          top: -50px; /* Hidden state - higher up */
+          top: -50px; /* Hidden state - higher up, almost invisible */
           right: 100px; /* Positioned slightly more right to accommodate search */
           transform: none;
           display: flex;
           flex-direction: row; /* Horizontal */
           gap: 0;
           width: fit-content; /* Size to content only */
-          background: rgba(0, 10, 20, 0.1); /* Even MORE transparent (was 0.2/0.15) */
-          border: 1px solid rgba(0, 163, 255, 0.2); /* Thinner border */
+          background: rgba(0, 10, 20, 0.05); /* Almost invisible when hidden */
+          border: 1px solid rgba(0, 163, 255, 0.1); /* Very subtle border */
           border-top: none;
           border-radius: 0 0 8px 8px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
           overflow: visible;
           z-index: 1000; /* Ensure it's on top of everything */
           pointer-events: auto;
-          backdrop-filter: blur(4px);
-          /* BASE TRANSITION (HIDING/RISING) - Slow, smooth, with delay */
-          /* transition-property: top, opacity, background; */
-          transition: top 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s, opacity 0.8s ease 0.5s, background 0.8s ease 0.5s;
-          opacity: 0.8; /* Visible enough to see "handle" area if any */
+          backdrop-filter: blur(2px);
+          /* BASE TRANSITION (HIDING/RISING) - Wait 3 seconds, then slide up smoothly */
+          transition: top 0.8s cubic-bezier(0.4, 0, 0.2, 1) 3s, opacity 0.8s ease 3s, background 0.5s ease 3s;
+          opacity: 0.15; /* Almost invisible when hidden */
         }
         
         /* Hover trigger area - significantly expanded to prevent "running away" */
@@ -1538,23 +1544,24 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           content: '';
           position: absolute;
           /* Cover the area ABOVE the panel to catch mouse approach */
-          top: -60px; 
-          left: -40px;
-          right: -40px;
-          bottom: -40px; /* Extend below to catch mouse overshooting */
+          top: -80px; /* Increased trigger area */
+          left: -50px;
+          right: -50px;
+          bottom: -50px; /* Extend below to catch mouse overshooting */
           z-index: -1;
           /* debug: background: rgba(255,0,0,0.1); */
         }
         
-        /* Slide in on hover */
+        /* Slide down on hover - INSTANT appearance */
         .map-controls-group:hover,
         /* Keep it open if we are editing search */
         .map-controls-group:focus-within {
           top: 0px; /* Slide down into view */
           opacity: 1; /* Fully visible */
           background: rgba(0, 10, 20, 0.85); /* Darken when active for legibility */
-          /* HOVER TRANSITION (SHOWING/DESCENDING) - Fast, immediate */
-          transition: top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, opacity 0.3s ease 0s, background 0.3s ease 0s;
+          border-color: rgba(0, 163, 255, 0.3);
+          /* HOVER TRANSITION (SHOWING/DESCENDING) - Fast, NO delay */
+          transition: top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, opacity 0.25s ease 0s, background 0.25s ease 0s, border-color 0.25s ease 0s;
         }
 
         .search-section {
@@ -1577,8 +1584,19 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
            height: 100%;
            --gmpx-color-surface: transparent;
            --gmpx-color-on-surface: #00e5ff;
-           border: none;
+           --gmpx-color-outline: transparent; /* Remove outline/border */
+           border: none !important;
            background: transparent;
+           box-shadow: none !important;
+           outline: none !important;
+        }
+        
+        /* Remove white border from place picker input */
+        #panel-search::part(input) {
+           border: none !important;
+           outline: none !important;
+           box-shadow: none !important;
+           background: transparent !important;
         }
 
         /* Customizing the place picker input inside shadow DOM is hard, 
