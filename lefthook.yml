@@ -25,10 +25,14 @@ lint:all:
     10-oxlint:
       run: npx oxlint src scripts --deny-warnings --fix
 
+pre-commit:
+  parallel: false
+  commands:
+    diagrams:
+      run: npm run diagram:auto-update && git add src/brain/data/architecture_diagrams/mcp_architecture.md .agent/docs/mcp_architecture_diagram.md
+
 pre-push:
   parallel: true
   commands:
     checks:
       run: npx lefthook run lint:all
-    diagrams:
-      run: npm run diagram:auto-update
