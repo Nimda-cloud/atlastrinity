@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T14:44:27.904060 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/copilot_proxy.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T14:39:28.979648 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe_config.toml.template, scripts/verify_fallback_chain.py -->
 

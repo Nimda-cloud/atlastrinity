@@ -1,11 +1,8 @@
 import http.server
-import json
-import os
 import socketserver
 import sys
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 
 # Setup logging

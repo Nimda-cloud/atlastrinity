@@ -1,10 +1,8 @@
-import asyncio
-
 # Adjust path to import from src
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -42,7 +40,8 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         # Now current_model is gpt-4o, another failure should lead to exhaustion
         result = await _handle_vibe_rate_limit(1, 3, [1, 2], "", "", argv, ctx)
         self.assertIsInstance(result, dict)
-        self.assertFalse(result["success"])
+        if isinstance(result, dict):
+            self.assertFalse(result["success"])
         print("[TEST] Success: Fallback chain (Mistral -> OpenRouter -> Copilot) verified.\n")
 
 
