@@ -22,18 +22,18 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         # 1. First failure -> Switch to OpenRouter
         print("\n[TEST] Simulating Mistral failure (Tier 1)...")
         result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
-        self.assertTrue(result)
+        self.assertIsInstance(result, tuple)
+        self.assertTrue(result[0])
         self.assertEqual(vibe_module._current_model, "devstral-openrouter")
-        self.assertIn("devstral-openrouter", argv)
+        # argv remains unchanged because we use VIBE_HOME override
+        self.assertNotIn("devstral-openrouter", argv)
 
         # 2. Second failure (on OpenRouter) -> Switch to Copilot (gpt-4o)
         print("[TEST] Simulating OpenRouter failure (Tier 2)...")
-        # We need to ensure we are "on" openrouter for the next check
-        # _handle_vibe_rate_limit checks _current_model
         result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
-        self.assertTrue(result)
+        self.assertIsInstance(result, tuple)
+        self.assertTrue(result[0])
         self.assertEqual(vibe_module._current_model, "gpt-4o")
-        self.assertIn("gpt-4o", argv)
 
         # 3. Third failure (on Copilot) -> Give up
         print("[TEST] Simulating Copilot failure (Final)...")
@@ -42,7 +42,7 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(result, dict)
         if isinstance(result, dict):
             self.assertFalse(result["success"])
-        print("[TEST] Success: Fallback chain (Mistral -> OpenRouter -> Copilot) verified.\n")
+        print("[TEST] Success: Fallback chain (Mistral -> OpenRouter -> Copilot) verified via VIBE_HOME switching.\n")
 
 
 if __name__ == "__main__":

@@ -372,9 +372,9 @@ def _cleanup_copilot_proxy() -> None:
                 _proxy_process.kill()
 
 
-# Register cleanup and start proxy
+# Register cleanup
 atexit.register(_cleanup_copilot_proxy)
-_start_copilot_proxy()
+# Deferred startup: _start_copilot_proxy is called inside vibe_prompt when needed
 
 
 # =============================================================================
@@ -537,9 +537,11 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
             if mcp.command:
                 toml_lines.append(f'command = "{mcp.command}"')
             if mcp.args:
-                toml_lines.append(f"args = {list(mcp.args)}")
+                toml_lines.append(f"args = {json.dumps(list(mcp.args))}")
             if mcp.env:
-                toml_lines.append(f"env = {dict(mcp.env)}")
+                env_dict = {k: str(v) for k, v in dict(mcp.env).items()}
+                env_parts = [f'{k} = {json.dumps(v)}' for k, v in env_dict.items()]
+                toml_lines.append(f"env = {{ {', '.join(env_parts)} }}")
             if mcp.startup_timeout_sec:
                 toml_lines.append(f"startup_timeout_sec = {mcp.startup_timeout_sec}")
             if mcp.tool_timeout_sec:
@@ -1291,17 +1293,25 @@ async def vibe_prompt(
         # Determine effective mode
         effective_mode = AgentMode(mode) if mode else _current_mode
 
-        # Prepare temp VIBE_HOME if we have a specific model or override
-        # We always do this for model switching since Vibe CLI doesn't support --model
-        target_model = model or _current_model
+        # Prepare temp VIBE_HOME with robust model selection
+        # Priority: 1. explicit arg, 2. current session fallback, 3. global override, 4. config default
+        target_model = model or _current_model or AGENT_MODEL_OVERRIDE or config.active_model
+        
         vibe_home_override = None
-        if target_model and target_model != "default":
+        if target_model:
             # Ensure proxy is running if the target model uses copilot
             m_conf = config.get_model_by_alias(target_model)
             if m_conf and m_conf.provider == "copilot":
+                # Check for existing proxy or port 8085 being used
                 if not _proxy_process or _proxy_process.poll() is not None:
-                    logger.info("[VIBE] Initial model is Copilot-based, starting proxy...")
-                    _start_copilot_proxy()
+                    # Double check if port is already in use by another session/process
+                    import socket
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        if s.connect_ex(('127.0.0.1', 8085)) != 0:
+                            logger.info("[VIBE] Initial model is Copilot-based, starting proxy...")
+                            _start_copilot_proxy()
+                        else:
+                            logger.info("[VIBE] Port 8085 already in use, assuming proxy is healthy.")
 
             vibe_home_override = _prepare_temp_vibe_home(target_model)
 
@@ -1374,6 +1384,7 @@ async def vibe_analyze_error(
     expected_result: str | None = None,
     actual_result: str | None = None,
     full_plan_context: str | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Deep error analysis and optional auto-fix using Vibe AI.
 
@@ -1599,7 +1610,7 @@ async def vibe_analyze_error(
             prompt=prompt,
             cwd=cwd,
             timeout_s=timeout_s or DEFAULT_TIMEOUT_S,
-            model=AGENT_MODEL_OVERRIDE,
+            model=model or _current_model or AGENT_MODEL_OVERRIDE,
             mode="auto-approve" if auto_fix else "plan",
             session_id=session_id,
             max_turns=config.max_turns,
@@ -1622,6 +1633,7 @@ async def vibe_implement_feature(
     max_iterations: int = 3,
     run_linting: bool = True,
     code_style: str = "ruff",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Deep coding mode: Implements a complex feature or refactoring.
 
@@ -1773,7 +1785,7 @@ EXECUTE NOW
             prompt=prompt,
             cwd=cwd,
             timeout_s=timeout_s or 1200,
-            model=AGENT_MODEL_OVERRIDE,
+            model=model or _current_model or AGENT_MODEL_OVERRIDE,
             mode="auto-approve",
             session_id=session_id,
             max_turns=30 + (max_iterations * 5 if iterative_review else 0),
@@ -1789,6 +1801,7 @@ async def vibe_code_review(
     cwd: str | None = None,
     timeout_s: float | None = None,
     session_id: str | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Request a code review from Vibe AI for a specific file.
 
@@ -1840,7 +1853,7 @@ async def vibe_code_review(
             prompt="\n".join(prompt_parts),
             cwd=cwd,
             timeout_s=timeout_s or 300,
-            model=AGENT_MODEL_OVERRIDE,
+            model=model or _current_model or AGENT_MODEL_OVERRIDE,
             mode="plan",  # Read-only mode
             session_id=session_id,
             max_turns=5,
@@ -1856,6 +1869,7 @@ async def vibe_smart_plan(
     cwd: str | None = None,
     timeout_s: float | None = None,
     session_id: str | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Generate a smart execution plan for a complex objective.
 
@@ -1899,6 +1913,7 @@ async def vibe_smart_plan(
             mode="plan",
             session_id=session_id,
             max_turns=5,
+            model=model,
         ),
     )
 
@@ -2106,6 +2121,7 @@ async def vibe_session_resume(
     prompt: str | None = None,
     cwd: str | None = None,
     timeout_s: float | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Resume a previous Vibe session.
 
@@ -2147,6 +2163,7 @@ async def vibe_session_resume(
             cwd=cwd,
             timeout_s=timeout_s,
             session_id=full_session_id,
+            model=model,
         ),
     )
 
@@ -2162,6 +2179,7 @@ async def vibe_ask(
     question: str,
     cwd: str | None = None,
     timeout_s: float | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Ask Vibe AI a quick question (read-only, no tool execution).
 
@@ -2184,6 +2202,7 @@ async def vibe_ask(
             mode="plan",
             max_turns=3,
             output_format="json",
+            model=model,
         ),
     )
 
