@@ -2,7 +2,7 @@
 # Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
 # Active model for Vibe (Devstral 2 is the default)
-active_model = "devstral-2512"
+active_model = "devstral-2"
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
@@ -48,7 +48,7 @@ backend = "generic"
 # Model Presets
 # =============================================================================
 [[models]]
-name = "devstral-2512"
+name = "mistral-vibe-cli-latest"
 provider = "mistral"
 alias = "devstral-2"
 temperature = 0.0
@@ -56,7 +56,7 @@ input_price = 0.0
 output_price = 0.0
 
 [[models]]
-name = "mistralai/devstral-2512:free"
+name = "mistralai/mistral-large-2411"
 provider = "openrouter"
 alias = "devstral-openrouter"
 temperature = 0.2
