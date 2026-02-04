@@ -466,6 +466,9 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
             {/* API Loader with correct key attribute */}
             {renderApiLoader()}
 
+            {/* Advanced Vignette Overlay */}
+            <div className="map-vignette-overlay"></div>
+
             <gmp-map
               center="50.4501,30.5234"
               zoom="12"
@@ -728,36 +731,21 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           z-index: 50;
         }
 
-        /* Gradient edge overlay for smooth transition */
-        .map-content-container::before,
-        .map-content-container::after {
-          content: '';
+        /* Advanced Vignette Overlay */
+        .map-vignette-overlay {
           position: absolute;
-          top: 0;
-          bottom: 0;
-          width: 250px; /* Wider gradient for smoother transition */
+          inset: 0;
           pointer-events: none;
           z-index: 100;
-        }
-
-        .map-content-container::before {
-          left: 0;
-          background: linear-gradient(to right, 
-            rgba(0, 0, 0, 1) 0%,
-            rgba(0, 0, 0, 0.9) 20%,
-            rgba(0, 0, 0, 0.6) 50%,
-            rgba(0, 0, 0, 0) 100%
-          );
-        }
-
-        .map-content-container::after {
-          right: 0;
-          background: linear-gradient(to left, 
-            rgba(0, 0, 0, 1) 0%,
-            rgba(0, 0, 0, 0.9) 20%,
-            rgba(0, 0, 0, 0.6) 50%,
-            rgba(0, 0, 0, 0) 100%
-          );
+          background: 
+            /* Left Edge - Wide Fade */
+            linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50px, rgba(0,0,0,0) 350px),
+            /* Right Edge - Wide Fade */
+            linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50px, rgba(0,0,0,0) 350px),
+            /* Top Edge - Narrow Fade */
+            linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 120px),
+            /* Bottom Edge - Narrow Fade */
+            linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 120px);
         }
 
         .map-error {
