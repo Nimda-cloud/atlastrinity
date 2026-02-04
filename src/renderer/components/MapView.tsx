@@ -656,6 +656,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     setMapType(newType);
     const mapElement = document.querySelector('gmp-map') as GmpMapElement;
     if (mapElement?.innerMap) {
+      // Exit Street View if active when changing map type
+      const streetView = mapElement.innerMap.getStreetView();
+      if (streetView && streetView.getVisible()) {
+        streetView.setVisible(false);
+        setStreetViewActive(false);
+      }
+
       mapElement.innerMap.setMapTypeId(newType);
       // Re-apply custom styles for roadmap and hybrid types (hybrid styles labels)
       if (newType === 'roadmap' || newType === 'hybrid') {
@@ -1064,11 +1071,12 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   <div className="control-separator-vertical"></div>
                   <button
                     type="button"
-                    className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''}`}
-                    title="Drag to road for Street View"
+                    disabled={streetViewActive}
+                    className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''} ${streetViewActive ? 'disabled' : ''}`}
+                    title={streetViewActive ? 'Exit Street View to use Pegman' : 'Drag to road for Street View'}
                     aria-label="Drag Pegman to Street View"
-                    onMouseDown={handlePegmanDragStart}
-                    onTouchStart={handlePegmanDragStart}
+                    onMouseDown={streetViewActive ? undefined : handlePegmanDragStart}
+                    onTouchStart={streetViewActive ? undefined : handlePegmanDragStart}
                   >
                     <svg
                       width="18"
@@ -1843,6 +1851,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           transform: scale(1.2);
           box-shadow: 0 0 20px rgba(255, 87, 34, 0.6);
           animation: pegman-pulse 0.5s ease infinite alternate;
+        }
+
+        .pegman-draggable.disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          filter: grayscale(1);
+          pointer-events: none;
         }
         
         @keyframes pegman-pulse {
