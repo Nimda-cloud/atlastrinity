@@ -328,7 +328,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         // Update POV (Heading/Pitch) - This makes the camera "look" where the agent looks
         streetView.setPov({
           heading: agentView.heading,
-          pitch: agentView.pitch
+          pitch: agentView.pitch,
         });
       }
     }
@@ -773,7 +773,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 {/* Draggable Pegman Icon for Street View */}
                 <div className="control-section pegman-section">
                   <div className="control-separator-vertical"></div>
-                  <div
+                  <button
+                    type="button"
                     className={`pegman-draggable ${isDraggingPegman ? 'dragging' : ''}`}
                     title="Drag to road for Street View"
                     aria-label="Drag Pegman to Street View"
@@ -791,7 +792,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                       <circle cx="12" cy="4" r="3" />
                       <path d="M12 8c-2.5 0-4.5 1.5-4.5 3.5V15h2v6h5v-6h2v-3.5C16.5 9.5 14.5 8 12 8z" />
                     </svg>
-                  </div>
+                  </button>
                 </div>
 
                 {/* Cyberpunk Filter Toggle - only for satellite/hybrid */}
