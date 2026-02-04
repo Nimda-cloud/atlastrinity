@@ -126,7 +126,7 @@ func performOCR(on image: CGImage) -> [VisionElement] {
 }
 
 // --- Helper for Shell execution ---
-func runShellCommand(_ command: String) -> String {
+func runShellCommand(_ command: String) -> (output: String, exitCode: Int32) {
     let task = Process()
     let pipe = Pipe()
     let errorPipe = Pipe()
@@ -150,9 +150,15 @@ func runShellCommand(_ command: String) -> String {
 
         let output = String(data: data, encoding: .utf8) ?? ""
         let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-        return output + errorOutput
+        let combinedOutput = output + errorOutput
+        let exitCode = task.terminationStatus
+        
+        fputs("log: runShellCommand: command='\(command)' exitCode=\(exitCode) outputLength=\(combinedOutput.count)\n", stderr)
+        
+        return (combinedOutput, exitCode)
     } catch {
-        return "Failed to execute command: \(error)"
+        fputs("error: runShellCommand: failed to execute command: \(error)\n", stderr)
+        return ("Failed to execute command: \(error)", -1)
     }
 }
 
@@ -1842,9 +1848,27 @@ func setupAndStartServer() async throws -> Server {
                             isError: true)
                     }
                 } else {
-                    // Run normal command
-                    let output = runShellCommand(command)
-                    return .init(content: [.text(output)], isError: false)
+                    // Run normal command with enhanced output handling
+                    let (output, exitCode) = runShellCommand(command)
+                    
+                    // Always provide meaningful output with exit code information
+                    if exitCode == 0 {
+                        if output.isEmpty {
+                            let confirmation = "Command executed successfully: \(command)\nExit Code: \(exitCode)"
+                            return .init(content: [.text(confirmation)], isError: false)
+                        } else {
+                            let enhancedOutput = "Command: \(command)\nExit Code: \(exitCode)\nOutput:\n\(output)"
+                            return .init(content: [.text(enhancedOutput)], isError: false)
+                        }
+                    } else {
+                        if output.isEmpty {
+                            let errorMsg = "Command failed with exit code \(exitCode): \(command)"
+                            return .init(content: [.text(errorMsg)], isError: true)
+                        } else {
+                            let enhancedOutput = "Command: \(command)\nExit Code: \(exitCode) (FAILED)\nOutput:\n\(output)"
+                            return .init(content: [.text(enhancedOutput)], isError: true)
+                        }
+                    }
                 }
 
             case screenshotTool.name, screenshotAliasTool.name:

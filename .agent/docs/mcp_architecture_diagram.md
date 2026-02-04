@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-04T13:16:25.070008 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T09:44:22.592631 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T08:17:49.499634 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T06:15:59.673452 -->
 <!-- Modified: .secrets.baseline, scripts/secure_backup.py, scripts/setup_dev.py -->
 

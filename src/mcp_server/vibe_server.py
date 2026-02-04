@@ -612,7 +612,8 @@ async def _execute_vibe_with_retries(
 ) -> dict[str, Any]:
     """Execute loop with retries for Vibe subprocess."""
     MAX_RETRIES = 5
-    BACKOFF_DELAYS = [30, 60, 120, 240, 480]
+    # Increased backoff delays to better handle Mistral rate limits
+    BACKOFF_DELAYS = [60, 120, 240, 480, 600]
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -757,14 +758,17 @@ async def _handle_vibe_rate_limit(
     global _current_model
 
     if attempt < max_retries - 1:
-        wait_time = backoff_delays[attempt]
+        # Add jitter to prevent thundering herd
+        import random
+        jitter = random.uniform(0, 15)
+        wait_time = backoff_delays[attempt] + jitter
         logger.warning(
-            f"[VIBE] Rate limit detected (attempt {attempt + 1}/{max_retries}). Retrying in {wait_time}s..."
+            f"[VIBE] Rate limit detected (attempt {attempt + 1}/{max_retries}). Retrying in {wait_time:.1f}s..."
         )
         await _emit_vibe_log(
             ctx,
             "warning",
-            f"⚠️ [VIBE-RATE-LIMIT] Перевищено ліміт запитів Mistral API. Спроба {attempt + 1}/{max_retries}. Очікування {wait_time}с...",
+            f"⚠️ [VIBE-RATE-LIMIT] Перевищено ліміт запитів Mistral API. Спроба {attempt + 1}/{max_retries}. Очікування {wait_time:.0f}с...",
         )
         await asyncio.sleep(wait_time)
         return True

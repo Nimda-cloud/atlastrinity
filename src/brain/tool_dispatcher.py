@@ -1237,7 +1237,14 @@ class ToolDispatcher:
         tool_name: str,
         args: dict[str, Any],
     ) -> tuple[str, str, dict[str, Any]]:
-        """Standardizes terminal command execution via macos-use."""
+        """Standardizes terminal command execution via macos-use.
+        
+        Handles LLM-generated argument variations:
+        - command/cmd/code/script/args/action -> command
+        - path -> cwd (for cd chaining)
+        - Cleans up extraneous args (step_id, action, etc.)
+        """
+        # Extract command from various possible argument names
         cmd = (
             args.get("command")
             or args.get("cmd")
@@ -1246,8 +1253,11 @@ class ToolDispatcher:
             or args.get("args")
             or args.get("action")
         )
+        
+        # Extract working directory from 'path' or 'cwd'
+        cwd = args.get("cwd") or args.get("path")
 
-        # Handle cases where tool_name IS the command (mkfs, ls, etc)
+        # Handle cases where tool_name IS the command (mkdir, ls, etc)
         if tool_name in [
             "mkdir",
             "ls",
@@ -1267,8 +1277,15 @@ class ToolDispatcher:
             else:
                 cmd = tool_name
 
-        args["command"] = str(cmd) if cmd else ""
-        return "macos-use", "execute_command", args
+        # Build clean args dict with only what execute_command expects
+        clean_args: dict[str, Any] = {}
+        clean_args["command"] = str(cmd) if cmd else ""
+        
+        # Chain cwd if provided (cd path && command)
+        if cwd and clean_args["command"] and not clean_args["command"].startswith("cd "):
+            clean_args["command"] = f"cd {cwd} && {clean_args['command']}"
+        
+        return "macos-use", "execute_command", clean_args
 
     def _handle_filesystem(
         self,
