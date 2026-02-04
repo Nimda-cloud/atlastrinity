@@ -762,7 +762,13 @@ class Grisha(BaseAgent):
 
         # EXPLICIT verdict markers - highest priority
         explicit_success_verdicts = [
-            "КРОК ПІДТВЕРДЖЕНО",
+            "КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ",
+            "КРОК ВВАЖАЄТЬСЯ УСПІШНО ВИКОНАНИМ",
+            "КІНЦЕВА РЕКОМЕНДАЦІЯ: ВИКОНАНО",
+            "КІНЦЕВА РЕКОМЕНДАЦІЯ: УСПІШНО",
+            "КІНЦЕВА РЕКОМЕНДАЦІЯ: КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ",
+            "КІНЦЕВА РЕКОМЕНДАЦІЯ: КРОК ВВАЖАЄТЬСЯ УСПІШНО ВИКОНАНИМ",
+            "FINAL RECOMMENDATION: SUCCESS",
             "VERDICT: CONFIRMED",
             "VERDICT:CONFIRMED",
             "ВЕРДИКТ: ПІДТВЕРДЖЕНО",
@@ -787,10 +793,12 @@ class Grisha(BaseAgent):
         has_explicit_success = any(v in analysis_upper for v in explicit_success_verdicts)
         has_explicit_failure = any(v in analysis_upper for v in explicit_failure_verdicts)
 
-        # If explicit success verdict exists, return True (even if "ПОМИЛКА" appears in context)
-        if has_explicit_success and not has_explicit_failure:
+        # NEW PRIORITY: Success wins if explicitly stated, even if failure was mentioned earlier
+        # This handles cases where the model starts with "Step failed..." but concludes with "Actually, it's fine."
+        if has_explicit_success:
             return True
-        # If explicit failure verdict exists, return False
+        
+        # If explicit failure verdict exists and NO explicit success, return False
         if has_explicit_failure and not has_explicit_success:
             return False
 

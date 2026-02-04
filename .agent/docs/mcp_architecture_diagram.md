@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-05T01:28:50.474127 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_fallback_chain.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T01:03:43.168255 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_fallback_chain.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-04T23:35:21.768436 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_fallback_chain.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
