@@ -12,13 +12,18 @@ def log(msg):
 
 class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        log(f"Handling POST to {self.path}")
+        log(f"--- Incoming POST to {self.path} ---")
 
         # 1. Read input
         content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length)
 
         try:
+            import json
+            payload = json.loads(post_data)
+            requested_model = payload.get("model", "unknown")
+            log(f"Request model: {requested_model}")
+            
             # 2. Add required headers
             # Authenticate with session token from environment or header
             auth_header = self.headers.get("Authorization")
@@ -29,35 +34,33 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
                 "Editor-Version": "vscode/1.85.0",
                 "Editor-Plugin-Version": "copilot/1.144.0",
                 "User-Agent": "GithubCopilot/1.144.0",
+                "X-GitHub-Api-Version": "2023-07-07",
             }
             if auth_header:
                 headers["Authorization"] = auth_header
 
             # 3. Forward to GitHub Copilot
-            # Vibe sends to /chat/completions (usually)
-            # We map local /chat/completions -> https://api.githubcopilot.com/chat/completions
             target_url = "https://api.githubcopilot.com" + self.path
 
             req = urllib.request.Request(target_url, data=post_data, headers=headers, method="POST")
 
             with urllib.request.urlopen(req) as response:
+                log(f"Upstream response: {response.status}")
                 self.send_response(response.status)
                 for k, v in response.headers.items():
-                    # Forward relevant headers
                     if k.lower() in ("content-type", "date"):
                         self.send_header(k, v)
                 self.end_headers()
-
-                # Stream content back
                 self.wfile.write(response.read())
 
         except urllib.error.HTTPError as e:
-            log(f"Upstream error: {e.code} {e.reason}")
+            error_body = e.read().decode(errors="replace")
+            log(f"Upstream HTTP error: {e.code} {e.reason} - Body: {error_body[:200]}")
             self.send_response(e.code)
             self.end_headers()
-            self.wfile.write(e.read())
+            self.wfile.write(error_body.encode())
         except Exception as e:
-            log(f"Proxy error: {e}")
+            log(f"Proxy internal error: {e}")
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode())
@@ -65,6 +68,8 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
 
 def run(port=8085):
     server_address = ("127.0.0.1", port)
+    # Enable address reuse to avoid "Address already in use" errors
+    socketserver.TCPServer.allow_reuse_address = True
     httpd = socketserver.TCPServer(server_address, CopilotProxyHandler)
     log(f"Serving at http://127.0.0.1:{port}")
     try:
