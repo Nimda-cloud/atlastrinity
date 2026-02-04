@@ -131,9 +131,27 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('roadmap');
   const [streetViewActive, setStreetViewActive] = useState(false);
   const [streetViewCooldown, setStreetViewCooldown] = useState(false);
+  const [lightingMode, setLightingMode] = useState<'night' | 'day' | 'twilight'>('night');
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const streetViewRef = useRef<google.maps.StreetViewPanorama | null>(null);
   const streetViewDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate time-based lighting mode for adaptive filters
+  const getTimeBasedLightingMode = useCallback((): 'night' | 'day' | 'twilight' => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 18) return 'day';
+    if ((hour >= 5 && hour < 6) || (hour >= 18 && hour < 19)) return 'twilight';
+    return 'night';
+  }, []);
+
+  // Update lighting mode on mount and every minute
+  useEffect(() => {
+    setLightingMode(getTimeBasedLightingMode());
+    const interval = setInterval(() => {
+      setLightingMode(getTimeBasedLightingMode());
+    }, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [getTimeBasedLightingMode]);
 
   // Load the Extended Component Library script
   useEffect(() => {
@@ -181,8 +199,20 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 disableDefaultUI: true,
                 zoomControl: false,
                 mapTypeControl: false,
-                streetViewControl: false,
+                streetViewControl: true, // Enable Pegman drag-and-drop
                 fullscreenControl: false,
+              });
+
+              // Listen for Street View visibility changes (Pegman drop)
+              const streetView = mapElement.innerMap.getStreetView();
+              google.maps.event.addListener(streetView, 'visible_changed', () => {
+                const isVisible = streetView.getVisible();
+                setStreetViewActive(isVisible);
+                if (isVisible) {
+                  streetViewRef.current = streetView;
+                } else {
+                  streetViewRef.current = null;
+                }
               });
 
               // Inject styles into shadow DOM to darken the copyright bar
@@ -275,17 +305,16 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     }
   };
 
-  // Handle map type change (roadmap/satellite/hybrid)
   const handleMapTypeChange = useCallback((newType: 'roadmap' | 'satellite' | 'hybrid') => {
     setMapType(newType);
     const mapElement = document.querySelector('gmp-map') as GmpMapElement;
     if (mapElement?.innerMap) {
       mapElement.innerMap.setMapTypeId(newType);
-      // Re-apply custom styles only for roadmap type
-      if (newType === 'roadmap') {
+      // Re-apply custom styles for roadmap and hybrid types (hybrid styles labels)
+      if (newType === 'roadmap' || newType === 'hybrid') {
         mapElement.innerMap.setOptions({ styles: CYBERPUNK_MAP_STYLE });
       } else {
-        // For satellite/hybrid, remove custom styles but keep some settings
+        // For pure satellite, remove custom JSON styles (they don't apply)
         mapElement.innerMap.setOptions({ styles: [] });
       }
     }
@@ -342,12 +371,12 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           streetViewRef.current = streetView;
           setStreetViewActive(true);
         }
-      }, 500); // 500ms debounce to prevent spam
+      }, 1500); // Increased from 500ms to reduce 429 errors
     }
 
-    // Set cooldown for 2 seconds
+    // Set cooldown for 4 seconds (increased from 2s)
     setStreetViewCooldown(true);
-    setTimeout(() => setStreetViewCooldown(false), 2000);
+    setTimeout(() => setStreetViewCooldown(false), 4000);
   }, [streetViewActive, streetViewCooldown]);
 
   // API loader is now handled at App level to prevent redundant initializations and 429 errors
@@ -397,6 +426,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
               center="50.4501,30.5234"
               zoom="12"
               rendering-type="raster"
+              data-map-type={mapType}
+              data-lighting-mode={lightingMode}
               style={{ width: '100%', height: '100%' }}
             >
               <div slot="control-block-start-inline-start" className="place-picker-container">
@@ -1015,6 +1046,36 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
             linear-gradient(to right, transparent 0, black 60px, black calc(100% - 60px), transparent 100%),
             linear-gradient(to bottom, transparent 0, black 60px, black calc(100% - 60px), transparent 100%);
           mask-composite: intersect;
+          transition: filter 0.8s ease;
+        }
+
+        /* ===== TACTICAL LIGHTING SYSTEM ===== */
+        /* Night Mode (18:00 - 06:00): Dark, high contrast, deep blue tint */
+        gmp-map[data-lighting-mode="night"][data-map-type="satellite"],
+        gmp-map[data-lighting-mode="night"][data-map-type="hybrid"] {
+          filter: grayscale(1) brightness(0.7) contrast(1.4) sepia(1) hue-rotate(180deg) saturate(5) !important;
+        }
+
+        /* Day Mode (06:00 - 18:00): Lighter, less saturated, subtle cyan overlay */
+        gmp-map[data-lighting-mode="day"][data-map-type="satellite"],
+        gmp-map[data-lighting-mode="day"][data-map-type="hybrid"] {
+          filter: brightness(0.95) contrast(1.15) sepia(0.4) hue-rotate(180deg) saturate(2.5) !important;
+        }
+
+        /* Twilight Mode (05:00-06:00, 18:00-19:00): Transition blend */
+        gmp-map[data-lighting-mode="twilight"][data-map-type="satellite"],
+        gmp-map[data-lighting-mode="twilight"][data-map-type="hybrid"] {
+          filter: grayscale(0.6) brightness(0.82) contrast(1.25) sepia(0.8) hue-rotate(185deg) saturate(3.5) !important;
+        }
+
+        /* Street View Panorama styling */
+        .gm-style-pano {
+          filter: grayscale(0.3) brightness(0.9) contrast(1.1) sepia(0.3) hue-rotate(180deg) saturate(2) !important;
+        }
+
+        /* Pegman control styling */
+        .gm-svpc {
+          filter: hue-rotate(180deg) saturate(1.5) !important;
         }
 
         .map-zoom-controls {
