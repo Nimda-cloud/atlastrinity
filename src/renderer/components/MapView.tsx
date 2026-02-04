@@ -466,9 +466,6 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
             {/* API Loader with correct key attribute */}
             {renderApiLoader()}
 
-            {/* Advanced Vignette Overlay */}
-            <div className="map-vignette-overlay"></div>
-
             <gmp-map
               center="50.4501,30.5234"
               zoom="12"
@@ -726,27 +723,21 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-left: -194px; /* Half of side panel width (388px/2) */
+          margin-left: -194px; /* Half of side panel width */
           margin-right: -194px;
           z-index: 50;
+          /* CSS Masking for true edge transparency */
+          -webkit-mask-image: 
+            linear-gradient(to right, transparent 0px, black 300px, black calc(100% - 300px), transparent 100%),
+            linear-gradient(to bottom, transparent 0px, black 80px, black calc(100% - 80px), transparent 100%);
+          -webkit-mask-composite: source-in;
+          mask-image: 
+            linear-gradient(to right, transparent 0px, black 300px, black calc(100% - 300px), transparent 100%),
+            linear-gradient(to bottom, transparent 0px, black 80px, black calc(100% - 80px), transparent 100%);
+          mask-composite: intersect;
         }
 
-        /* Advanced Vignette Overlay */
-        .map-vignette-overlay {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 100;
-          background: 
-            /* Left Edge - Wide Fade */
-            linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50px, rgba(0,0,0,0) 350px),
-            /* Right Edge - Wide Fade */
-            linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 50px, rgba(0,0,0,0) 350px),
-            /* Top Edge - Narrow Fade */
-            linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 120px),
-            /* Bottom Edge - Narrow Fade */
-            linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 120px);
-        }
+        /* Removed vignette overlay in favor of masking */
 
         .map-error {
           display: flex;
