@@ -132,6 +132,8 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
   // No explicit street view toggling needed with native control
   // We just allow the user to drag the Pegman
   const [lightingMode, setLightingMode] = useState<'night' | 'day' | 'twilight'>('night');
+  // Track street view active state for the custom toggle button
+  const [streetViewActive, setStreetViewActive] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate time-based lighting mode for adaptive filters
@@ -201,11 +203,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 fullscreenControl: false,
               });
 
-              // Listen for Street View visibility changes (Pegman drop) - handled natively now
-              // const streetView = mapElement.innerMap.getStreetView();
-              
-              // Inject styles into shadow DOM to darken the copyright bar and position Pegman
+              // Listen for Street View visibility changes to sync state
+              const streetView = mapElement.innerMap.getStreetView();
+              google.maps.event.addListener(streetView, 'visible_changed', () => {
+                setStreetViewActive(streetView.getVisible());
+              });
 
+              // Inject styles into shadow DOM to darken the copyright bar and position Pegman
 
               // Inject styles into shadow DOM to darken the copyright bar and position Pegman
               if (mapElement.shadowRoot) {
@@ -219,44 +223,40 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   .gm-style-cc span, .gm-style-cc a {
                     color: #00e5ff !important; 
                   }
-                  /* Invert the background strip but keep text readable */
-                  .gmnoprint a, .gmnoprint span {
-                    color: #00e5ff !important;
-                  }
                   /* Target the google logo if possible, generic filter */
                   a[href^="https://maps.google.com/maps"] img {
                     filter: invert(1) grayscale(1) brightness(2) drop-shadow(0 0 2px #00e5ff);
                   }
-                  /* Pegman control - styling handled by global CSS to align with horizontal bar */
-                  /* .gm-svpc styles removed from here */
-                    box-shadow: 0 0 20px rgba(0, 163, 255, 0.3), inset 0 0 10px rgba(0, 229, 255, 0.1) !important;
-                    transition: all 0.3s ease !important;
-                    transform: scale(1) !important;
-                    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.3)) !important;
+                  
+                  /* Native Pegman Control Styling - Injected into Shadow DOM */
+                  /* INVISIBLE OVERLAY - Sits exactly on top of the placeholder */
+                  .gm-svpc {
+                     position: absolute !important;
+                     top: 2px !important; 
+                     right: 194px !important; /* Match placeholder pos */
+   
+                     /* Invisible but clickable/draggable */
+                     opacity: 0.01 !important;
+                     background: transparent !important;
+                     
+                     border: none !important;
+                     box-shadow: none !important;
+                     width: 38px !important;
+                     height: 32px !important; 
+                     z-index: 100 !important;
+                     cursor: grab !important;
                   }
                   
-                  /* Highlight the iconic part of Pegman */
+                  .gm-svpc:active {
+                     cursor: grabbing !important;
+                  }
+                  
+                  /* We don't style inner img because we are hiding the container */
                   .gm-svpc img {
-                     filter: invert(1) drop-shadow(0 0 2px #00e5ff) !important;
-                     opacity: 1 !important;
-                     width: 20px !important;
-                     height: 20px !important;
-                     margin: 6px !important;
+                     visibility: hidden !important;
                   }
-
-                  /* Hover state */
-                  .gm-svpc:hover {
-                    border-color: #00e5ff !important;
-                    background: rgba(0, 163, 255, 0.2) !important;
-                    box-shadow: 0 0 25px rgba(0, 163, 255, 0.5), inset 0 0 15px rgba(0, 229, 255, 0.2) !important;
-                    transform: translateY(-2px) !important;
-                  }
-
-                  .gm-svpc:hover img {
-                    filter: invert(1) drop-shadow(0 0 5px #fff) !important;
-                  }
-
-                  /* Creating "POV" label below via pseudo-element is tricky in shadow DOM, assume basic icon styling first */
+                  
+                  /* Hide the floor/arrows in street view if needed, but here we just style the pegman button */
                 `;
                 mapElement.shadowRoot.appendChild(style);
               }
@@ -342,7 +342,47 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
     }
   }, []);
 
+  // Manual toggle for Street View (button click)
+  const handleStreetViewToggle = useCallback(() => {
+    const mapElement = document.querySelector('gmp-map') as GmpMapElement;
+    if (!mapElement?.innerMap) return;
 
+    if (streetViewActive) {
+      const streetView = mapElement.innerMap.getStreetView();
+      if (streetView) {
+        streetView.setVisible(false);
+        setStreetViewActive(false);
+      }
+    } else {
+      // Check for coverage before activating to avoid white screen
+      const streetViewService = new google.maps.StreetViewService();
+      const center = mapElement.innerMap.getCenter();
+
+      if (center) {
+        streetViewService.getPanorama(
+          {
+            location: center,
+            radius: 100, // Check 100m radius
+            preference: google.maps.StreetViewPreference.NEAREST,
+          },
+          (data, status) => {
+            if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+              // Re-check innerMap existence just in case, though unlikely to change in callback
+              if (mapElement.innerMap) {
+                const streetView = mapElement.innerMap.getStreetView();
+                streetView.setPosition(data.location.latLng);
+                streetView.setVisible(true);
+                setStreetViewActive(true);
+              }
+            } else {
+              console.warn('Street View not available at this location');
+              // Optional: Show a toast?
+            }
+          },
+        );
+      }
+    }
+  }, [streetViewActive]);
 
   // API loader is now handled at App level to prevent redundant initializations and 429 errors
   const renderApiLoader = () => null;
@@ -386,13 +426,13 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           <div className={`interactive-map-wrapper ${isLoaded ? 'loaded' : ''}`}>
             {/* Masked Map Layer */}
             <div className="masked-map-layer">
-              {/* API Loader with correct key attribute */}
+              {/* API Loader */}
               {renderApiLoader()}
 
-                <gmp-map
+              <gmp-map
                 center="50.4501,30.5234"
                 zoom="12"
-                rendering-type="vector"
+                rendering-type="raster"
                 data-map-type={mapType}
                 data-lighting-mode={lightingMode}
                 street-view-control
@@ -414,107 +454,135 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 </div>
               )}
 
-                {/* Unified Control Group - Horizontal Row at Top */}
-                <div className="map-controls-group">
-                  {/* Map Type Controls */}
-                  <div className="control-section">
-                    <button
-                      className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
-                      onClick={() => handleMapTypeChange('roadmap')}
-                      aria-label="Map View"
-                      title="TACTICAL_MAP"
+              {/* Unified Control Group - Horizontal Row at Top */}
+              <div className="map-controls-group">
+                {/* Map Type Controls */}
+                <div className="control-section">
+                  <button
+                    className={`map-type-btn ${mapType === 'roadmap' ? 'active' : ''}`}
+                    onClick={() => handleMapTypeChange('roadmap')}
+                    aria-label="Map View"
+                    title="TACTICAL_MAP"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                        <line x1="9" y1="21" x2="9" y2="9"></line>
-                      </svg>
-                    </button>
-                    <div className="control-separator-vertical"></div>
-                    <button
-                      className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
-                      onClick={() => handleMapTypeChange('satellite')}
-                      aria-label="Satellite View"
-                      title="SATELLITE_FEED"
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="3" y1="9" x2="21" y2="9"></line>
+                      <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                  </button>
+                  <div className="control-separator-vertical"></div>
+                  <button
+                    className={`map-type-btn ${mapType === 'satellite' ? 'active' : ''}`}
+                    onClick={() => handleMapTypeChange('satellite')}
+                    aria-label="Satellite View"
+                    title="SATELLITE_FEED"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <circle cx="12" cy="12" r="4"></circle>
-                        <line x1="21.17" y1="8" x2="12" y2="8"></line>
-                        <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-                        <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-                      </svg>
-                    </button>
-                    <div className="control-separator-vertical"></div>
-                    <button
-                      className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
-                      onClick={() => handleMapTypeChange('hybrid')}
-                      aria-label="Hybrid View"
-                      title="HYBRID_OVERLAY"
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                      <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                      <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+                    </svg>
+                  </button>
+                  <div className="control-separator-vertical"></div>
+                  <button
+                    className={`map-type-btn ${mapType === 'hybrid' ? 'active' : ''}`}
+                    onClick={() => handleMapTypeChange('hybrid')}
+                    aria-label="Hybrid View"
+                    title="HYBRID_OVERLAY"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="12" cy="12" r="4"></circle>
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Zoom Controls */}
-                  <div className="control-section zoom-section">
-                    <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                    </button>
-                    <div className="control-separator-vertical"></div>
-                    <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
-                    </button>
-                  </div>
-
-                   {/* Native Pegman PlaceHolder - Style target for .gm-svpc */}
-                   <div className="control-section pov-section-placeholder">
-                      {/* The native control will be force-moved here via CSS absolute positioning hacking or we just leave space for it */}
-                   </div>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="12" cy="12" r="4"></circle>
+                    </svg>
+                  </button>
                 </div>
+
+                {/* Zoom Controls */}
+                <div className="control-section zoom-section">
+                  <button className="zoom-btn" onClick={() => handleZoom(1)} aria-label="Zoom In">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                  <div className="control-separator-vertical"></div>
+                  <button className="zoom-btn" onClick={() => handleZoom(-1)} aria-label="Zoom Out">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Street View Toggle Button - Restored per request */}
+                <div className="control-section">
+                  <div className="control-separator-vertical"></div>
+                  <button
+                    className={`street-view-btn ${streetViewActive ? 'active' : ''}`}
+                    onClick={handleStreetViewToggle}
+                    aria-label="Toggle Street View"
+                    title="STREET_VIEW_POV"
+                  >
+                    {/* Using the icon from the screenshot reference roughly (Pegman-like or Eye) */}
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Native Pegman PlaceHolder - Style target for .gm-svpc */}
+                <div className="control-section pov-section-placeholder">
+                  {/* Fake Pegman Icon (Visual Only) */}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                     <circle cx="12" cy="7" r="4" />
+                     <path d="M12 11c-4 0-7 2-7 5v4h14v-4c0-3-3-5-7-5z" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         ) : !error && imageUrl ? (
@@ -643,16 +711,10 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           position: absolute;
           inset: 0;
           z-index: 0;
-          /* CSS Masking for true edge transparency */
-          /* Horizontal: 100px full transparent -> 400px fade (Wide transition) */
-          /* Vertical: 20px full transparent -> 100px fade */
-          -webkit-mask-image: 
-            linear-gradient(to right, transparent 0px, transparent 100px, black 500px, black calc(100% - 500px), transparent calc(100% - 100px), transparent 100%),
-            linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
-          -webkit-mask-composite: source-in;
-          mask-image: 
-            linear-gradient(to right, transparent 0px, transparent 100px, black 500px, black calc(100% - 500px), transparent calc(100% - 100px), transparent 100%),
-            linear-gradient(to bottom, transparent 0px, transparent 20px, black 120px, black calc(100% - 120px), transparent calc(100% - 20px), transparent 100%);
+          /* CSS Masking for true edge transparency - SMOOTHER GRADIENT */
+          /* Using radial gradient for softer vignette to avoid banding lines */
+          -webkit-mask-image: radial-gradient(ellipse at center, black 60%, transparent 98%);
+          mask-image: radial-gradient(ellipse at center, black 60%, transparent 98%);
           mask-composite: intersect;
           pointer-events: auto; /* Allow map interactions */
         }
@@ -813,7 +875,28 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           opacity: 0;
           transition: opacity 0.5s ease;
         }
+        
+        /* Interactive Map Container */
+        gmp-map {
+          width: 100%;
+          height: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+          /* Default Map Filter (Roadmap/Satellite) managed by 'filter' prop in style, 
+             but we can enforce base transitions here */
+          transition: filter 0.5s ease;
+        }
+        
+        /* Specialized Filter for Street View Mode (Cyberpunk effect) */
+        .street-view-mode gmp-map {
+           filter: sepia(0.8) hue-rotate(170deg) saturate(1.5) contrast(1.1) brightness(1.2) !important;
+        }
 
+        /* 
+         * Custom Map Controls Layer 
+         * Sits ON TOP of the mask to ensure buttons are clickable.
+         */ 
 
         /* Cyberpunk overrides for Google Maps internals */
         
@@ -899,7 +982,17 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           display: none !important;
         }
         
-        .gmnoprint a, .gmnoprint span, .gm-style-cc {
+        /* HIDE DEFAULT CONTROLS/LOGOS FILTER, but allow Pegman */
+        .gmnoprint a, .gm-style-cc {
+           display: none;
+        }
+        
+        /* Ensure Pegman container is visible even if inside gmnoprint */
+        .gmnoprint {
+           display: block !important;
+        }
+        /* Specific elements inside gmnoprint to hide if needed, e.g. text labels */
+        .gmnoprint > span {
            display: none;
         }
 
@@ -908,17 +1001,23 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         }
         
         /* Zoom & Map Type Controls Styling */
-        .map-zoom-controls, .map-type-controls, .street-view-controls {
+        /* Unified Control Group - Horizontal Row at Top */
+        .map-controls-group {
           position: absolute;
+          top: 0px; /* User requested 0px */
+          right: 190px; /* User requested 190px */
           display: flex;
-          flex-direction: column;
-          background: rgba(0, 10, 20, 0.9);
+          flex-direction: row;
+          gap: 0;
+          background: rgba(0, 10, 20, 0.2); /* More transparent per request (was 0.9 then 0.4) */
           border: 1px solid rgba(0, 163, 255, 0.3);
-          border-radius: 4px;
-          padding: 2px;
+          border-top: none; /* Look like it hangs from top */
+          border-radius: 0 0 4px 4px;
+          padding: 2px 4px;
           backdrop-filter: blur(4px);
           z-index: 10;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          align-items: center;
         }
 
         .map-zoom-controls {
@@ -1053,8 +1152,16 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         /* ===== TACTICAL LIGHTING SYSTEM ===== */
         /* Night Mode (18:00 - 06:00): Dark, high contrast, deep blue tint */
         /* Applied to ALL map types including roadmap per user request */
-        gmp-map[data-lighting-mode="night"] {
+        /* ===== TACTICAL LIGHTING SYSTEM ===== */
+        /* Night Mode (18:00 - 06:00): Dark, high contrast, deep blue tint */
+        /* ONLY applied to Satellite/Hybrid. Roadmap uses custom JSON for night mode look. */
+        gmp-map[data-lighting-mode="night"]:not([data-map-type="roadmap"]) {
           filter: grayscale(1) brightness(0.7) contrast(1.4) sepia(1) hue-rotate(180deg) saturate(5) !important;
+        }
+
+        /* Roadmap Night Mode: Just slight brightness/contrast tweak, relies on JSON styles */
+        gmp-map[data-lighting-mode="night"][data-map-type="roadmap"] {
+           filter: brightness(0.9) contrast(1.2) hue-rotate(10deg) !important;
         }
         
         /* Day Mode (06:00 - 18:00): Lighter, less saturated, subtle cyan overlay */
@@ -1097,34 +1204,46 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
           align-items: center;
           height: 36px;
         }
-        
-        .zoom-section {
-           border-left: 1px solid rgba(0, 163, 255, 0.3);
-           padding-left: 6px;
-           margin-left: 2px;
-        }
-        
-        /* Placeholder for Native Pegman */
+        /* Native Pegman PlaceHolder - Visual Anchor */
         .pov-section-placeholder {
-           width: 40px;
-           height: 36px;
+           width: 38px;
+           height: 32px;
            border-left: 1px solid rgba(0, 163, 255, 0.3);
-           /* Native control will be positioned here */
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           flex-shrink: 0;
+           color: #00e5ff; /* Cyan color for the fake icon */
+           transition: color 0.3s;
         }
         
-        /* Native Pegman Control Styling Override */
-        /* To make it appear inside our bar, we must force position it */
+        .pov-section-placeholder svg {
+           filter: drop-shadow(0 0 2px #00e5ff);
+        }
+        
+        /* Native Pegman Control Styling Override - INVISIBLE OVERLAY */
+        /* It sits exactly on top of the placeholder to capture clicks/drags */
         .gm-svpc {
            position: absolute !important;
-           top: 10px !important; 
-           right: 64px !important; /* Positioned inside the placeholder area end of the bar */
-           background-color: transparent !important;
-           box-shadow: none !important;
+           top: 2px !important; 
+           right: 194px !important; /* Positions it over the placeholder */
+           
+           /* Make it invisible but interactive */
+           opacity: 0.01 !important;
+           background: transparent !important;
+           
            border: none !important;
-           width: 36px !important;
-           height: 36px !important;
+           width: 38px !important;
+           height: 32px !important;
            z-index: 100 !important;
-           transform: translateY(1px); /* Fine tune vertical align */
+           cursor: grab !important;
+        }
+        
+        /* Ensure the pegman icon is centered */
+        .gm-svpc img {
+           top: 6px !important;
+           left: 6px !important;
+           position: absolute !important;
         }
         
         /* The inner pegman icon */
