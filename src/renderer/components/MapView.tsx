@@ -215,7 +215,7 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                 }
               });
 
-              // Inject styles into shadow DOM to darken the copyright bar
+              // Inject styles into shadow DOM to darken the copyright bar and position Pegman
               if (mapElement.shadowRoot) {
                 const style = document.createElement('style');
                 style.textContent = `
@@ -234,6 +234,23 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
                   /* Target the google logo if possible, generic filter */
                   a[href^="https://maps.google.com/maps"] img {
                     filter: invert(1) grayscale(1) brightness(2) drop-shadow(0 0 2px #00e5ff);
+                  }
+                  /* Pegman control - reposition above zoom controls */
+                  .gm-svpc {
+                    position: fixed !important;
+                    right: 30px !important;
+                    bottom: 150px !important;
+                    z-index: 9999 !important;
+                    filter: hue-rotate(180deg) brightness(1.2) saturate(2) drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)) !important;
+                    background: rgba(0, 10, 20, 0.95) !important;
+                    border: 2px solid #ff9800 !important;
+                    border-radius: 4px !important;
+                    padding: 4px !important;
+                    box-shadow: 0 0 20px rgba(255, 152, 0, 0.6), 0 0 40px rgba(0, 229, 255, 0.3) !important;
+                  }
+                  .gm-svpc:hover {
+                    box-shadow: 0 0 30px rgba(255, 152, 0, 0.9), 0 0 50px rgba(0, 229, 255, 0.5) !important;
+                    border-color: #ffb74d !important;
                   }
                 `;
                 mapElement.shadowRoot.appendChild(style);
@@ -702,10 +719,45 @@ const MapView: React.FC<MapViewProps> = memo(({ imageUrl, type, location, onClos
         .map-content-container {
           flex: 1;
           position: relative;
-          overflow: hidden;
+          overflow: visible;
           display: flex;
           align-items: center;
           justify-content: center;
+          margin-left: -60px;
+          margin-right: -60px;
+          z-index: 50;
+        }
+
+        /* Gradient edge overlay for smooth transition */
+        .map-content-container::before,
+        .map-content-container::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 80px;
+          pointer-events: none;
+          z-index: 100;
+        }
+
+        .map-content-container::before {
+          left: 0;
+          background: linear-gradient(to right, 
+            rgba(0, 5, 15, 1) 0%,
+            rgba(0, 5, 15, 0.8) 20%,
+            rgba(0, 5, 15, 0.4) 50%,
+            rgba(0, 5, 15, 0) 100%
+          );
+        }
+
+        .map-content-container::after {
+          right: 0;
+          background: linear-gradient(to left, 
+            rgba(0, 5, 15, 1) 0%,
+            rgba(0, 5, 15, 0.8) 20%,
+            rgba(0, 5, 15, 0.4) 50%,
+            rgba(0, 5, 15, 0) 100%
+          );
         }
 
         .map-error {
