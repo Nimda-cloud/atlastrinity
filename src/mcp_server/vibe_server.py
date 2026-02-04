@@ -27,8 +27,10 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
+import atexit
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -41,8 +43,16 @@ from mcp.server.fastmcp import Context
 from .vibe_config import (
     AgentMode,
     ProviderConfig,
+    ProviderConfig,
     VibeConfig,
 )
+
+# Import CopilotLLM for token exchange (from project root)
+sys.path.append(str(Path(__file__).parent.parent.parent))  # Add project root to path
+try:
+    from providers.copilot import CopilotLLM
+except ImportError:
+    CopilotLLM = None  # Graceful fallback if import fails
 
 # =============================================================================
 # SETUP: Logging, Configuration, Constants
@@ -213,6 +223,7 @@ DYNAMIC VERIFICATION PROTOCOL:
 _vibe_config: VibeConfig | None = None
 _current_mode: AgentMode = AgentMode.AUTO_APPROVE
 _current_model: str | None = None
+_proxy_process: subprocess.Popen | None = None
 
 # Concurrency Control (Queueing)
 # Vibe is heavy on tokens and resources. We serialize calls to avoid Rate Limit collisions.
@@ -317,6 +328,52 @@ logger.info(
 
 # Perform startup sync
 sync_vibe_configuration()
+
+
+def _start_copilot_proxy() -> None:
+    """Start the local Copilot proxy if needed."""
+    global _proxy_process
+    try:
+        config = get_vibe_config()
+        # Check if copilot provider is configured
+        copilot = config.get_provider("copilot")
+        if copilot:
+            proxy_script = PROJECT_ROOT / "scripts" / "copilot_proxy.py"
+            if proxy_script.exists():
+                logger.info(f"[VIBE] Starting Copilot Proxy: {proxy_script}")
+                # Start as a daemon subprocess
+                _proxy_process = subprocess.Popen(
+                    [sys.executable, str(proxy_script)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+                logger.info(f"[VIBE] Copilot Proxy started (PID: {_proxy_process.pid})")
+            else:
+                logger.warning(
+                    f"[VIBE] Copilot provider configured but proxy script not found at {proxy_script}"
+                )
+    except Exception as e:
+        logger.error(f"[VIBE] Failed to start Copilot Proxy: {e}")
+
+
+def _cleanup_copilot_proxy() -> None:
+    """Terminate the Copilot proxy subprocess."""
+    global _proxy_process
+    if _proxy_process:
+        logger.info(f"[VIBE] Terminating Copilot Proxy (PID: {_proxy_process.pid})...")
+        try:
+            _proxy_process.terminate()
+            _proxy_process.wait(timeout=2)
+        except Exception as e:
+            logger.warning(f"[VIBE] Error stopping Copilot Proxy: {e}")
+            if _proxy_process:
+                _proxy_process.kill()
+
+
+# Register cleanup and start proxy
+atexit.register(_cleanup_copilot_proxy)
+_start_copilot_proxy()
 
 
 # =============================================================================
@@ -495,6 +552,19 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
     process_env.update(config.get_environment())
     if env:
         process_env.update({k: str(v) for k, v in env.items()})
+
+    # Auto-inject Copilot Session Token if available
+    if CopilotLLM and "COPILOT_API_KEY" in process_env:
+        try:
+            # Use CopilotLLM logic to exchange API key for session token
+            # We instantiate with the key from env to reuse the logic
+            llm = CopilotLLM(api_key=process_env["COPILOT_API_KEY"], model_name="gpt-4o")
+            token, _ = llm._get_session_token()
+            process_env["COPILOT_SESSION_TOKEN"] = token
+            logger.debug("[VIBE] Successfully injected COPILOT_SESSION_TOKEN")
+        except Exception as e:
+            logger.warning(f"[VIBE] Failed to inject Copilot token: {e}")
+
     return process_env
 
 
@@ -611,9 +681,9 @@ async def _execute_vibe_with_retries(
     ctx: Context | None,
 ) -> dict[str, Any]:
     """Execute loop with retries for Vibe subprocess."""
-    MAX_RETRIES = 5
-    # Increased backoff delays to better handle Mistral rate limits
-    BACKOFF_DELAYS = [60, 120, 240, 480, 600]
+    MAX_RETRIES = 3
+    # Optimized backoff delays for faster fallback
+    BACKOFF_DELAYS = [60, 180, 300]
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -754,57 +824,66 @@ async def _handle_vibe_rate_limit(
     argv: list[str],
     ctx: Context | None,
 ) -> bool | dict[str, Any]:
-    """Handle rate limit errors with backoff or report failure."""
+    """Handle rate limit errors with multi-tier backoff or report failure."""
     global _current_model
 
-    if attempt < max_retries - 1:
-        # Add jitter to prevent thundering herd
-        import random
-
-        jitter = random.uniform(0, 15)  # nosec B311
-        wait_time = backoff_delays[attempt] + jitter
-        logger.warning(
-            f"[VIBE] Rate limit detected (attempt {attempt + 1}/{max_retries}). Retrying in {wait_time:.1f}s..."
-        )
-        await _emit_vibe_log(
-            ctx,
-            "warning",
-            f"⚠️ [VIBE-RATE-LIMIT] Перевищено ліміт запитів Mistral API. Спроба {attempt + 1}/{max_retries}. Очікування {wait_time:.0f}с...",
-        )
-        await asyncio.sleep(wait_time)
-        return True
-
-    # Try OpenRouter fallback before giving up
     config = get_vibe_config()
-    openrouter_model = config.get_model_by_alias("devstral-openrouter")
-    if openrouter_model and _current_model != "devstral-openrouter":
-        provider = config.get_provider("openrouter")
-        if provider and provider.is_available():
-            logger.info("[VIBE] Mistral rate limit exhausted. Switching to OpenRouter fallback...")
-            await _emit_vibe_log(
-                ctx,
-                "info",
-                "🔄 [VIBE-FALLBACK] Переключаюсь на OpenRouter (безкоштовний devstral)...",
-            )
-            _current_model = "devstral-openrouter"
-            # Update argv to use the new model for retry
-            # Find and update --model argument, or append if not present
-            model_found = False
-            for i, arg in enumerate(argv):
-                if arg == "--model" and i + 1 < len(argv):
-                    argv[i + 1] = "devstral-openrouter"
-                    model_found = True
-                    break
-            if not model_found:
-                # Insert --model after the vibe binary path
-                argv.insert(1, "--model")
-                argv.insert(2, "devstral-openrouter")
-            logger.debug(f"[VIBE] Updated argv for OpenRouter: {' '.join(argv[:5])}...")
-            return True  # Signal retry with new model
+
+    # Tier 1 Fallback: Mistral -> OpenRouter
+    # Triggered immediately on first failure if current model is Mistral (default)
+    if (
+        (attempt == 0 or attempt >= max_retries - 1)
+        and _current_model != "devstral-openrouter"
+        and _current_model != "gpt-4o-copilot"
+    ):
+        openrouter_model = config.get_model_by_alias("devstral-openrouter")
+        if openrouter_model:
+            provider = config.get_provider("openrouter")
+            if provider and provider.is_available():
+                logger.info(
+                    "[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)..."
+                )
+                await _emit_vibe_log(
+                    ctx,
+                    "info",
+                    "🔄 [VIBE-FALLBACK] Mistral API ліміт. Переключаюсь на OpenRouter (devstral)...",
+                )
+                _current_model = "devstral-openrouter"
+                _update_argv_model(argv, "devstral-openrouter")
+                return True  # Signal retry with new model
+
+    # Tier 2 Fallback: OpenRouter -> Copilot
+    # Triggered if we are already on OpenRouter and it fails (or if we skipped Mistral)
+    if _current_model == "devstral-openrouter":
+        copilot_model = config.get_model_by_alias("gpt-4o-copilot")
+        if copilot_model:
+            provider = config.get_provider("copilot")
+            # We assume copilot is available if configured (proxy is managed by server)
+            if provider:
+                logger.info(
+                    "[VIBE] OpenRouter rate limit. Switching to Copilot fallback (Tier 3)..."
+                )
+                await _emit_vibe_log(
+                    ctx,
+                    "info",
+                    "🔄 [VIBE-FALLBACK] OpenRouter ліміт. Переключаюсь на Copilot (GPT-4o)...",
+                )
+                _current_model = "gpt-4o-copilot"
+                _update_argv_model(argv, "gpt-4o-copilot")
+
+                # Verify proxy is running
+                global _proxy_process
+                if not _proxy_process or _proxy_process.poll() is not None:
+                    logger.warning(
+                        "[VIBE] Copilot proxy not running during fallback, attempting start..."
+                    )
+                    _start_copilot_proxy()
+
+                return True
 
     error_msg = (
-        f"Mistral API rate limit exceeded after {max_retries} attempts. "
-        f"Please wait a few minutes or check API quota."
+        f"API rate limit exceeded after {max_retries} attempts and all fallbacks. "
+        f"Current model: {_current_model}"
     )
     logger.error(f"[VIBE] {error_msg}")
     await _emit_vibe_log(ctx, "error", f"❌ [VIBE-RATE-LIMIT] {error_msg}")
@@ -812,11 +891,22 @@ async def _handle_vibe_rate_limit(
         "success": False,
         "error": error_msg,
         "error_type": "RATE_LIMIT",
-        "returncode": 1,
-        "stdout": truncate_output(stdout),
-        "stderr": truncate_output(stderr),
-        "command": argv,
     }
+
+
+def _update_argv_model(argv: list[str], new_model: str) -> None:
+    """Helper to safely replace the --model argument in argv."""
+    model_found = False
+    for i, arg in enumerate(argv):
+        if arg == "--model" and i + 1 < len(argv):
+            argv[i + 1] = new_model
+            model_found = True
+            break
+    if not model_found:
+        # Insert --model after the vibe binary path (index 1)
+        argv.insert(1, "--model")
+        argv.insert(2, new_model)
+    logger.debug(f"[VIBE] Updated argv model to: {new_model}")
 
 
 @server.tool()

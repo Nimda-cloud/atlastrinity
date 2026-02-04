@@ -1,4 +1,15 @@
 
+<<<<<<< HEAD
+=======
+<!-- AUTO-UPDATED: 2026-02-04T14:20:50.278986 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe_config.toml.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-04T14:20:05.561601 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/mcp_server/vibe_server.py -->
+
+
+>>>>>>> 1e6c089 (feat: Introduce a Copilot proxy server with session token injection and refine Vibe loop retry parameters.)
 <!-- AUTO-UPDATED: 2026-02-04T13:32:26.764919 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
