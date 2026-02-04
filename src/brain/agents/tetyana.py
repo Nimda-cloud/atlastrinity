@@ -883,6 +883,15 @@ IMPORTANT:
         self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str
     ) -> None:
         """Helper to correct invalid tool names using inference."""
+        if not isinstance(tool_call, dict):
+            logger.warning(f"[TETYANA] tool_call is not a dict: {type(tool_call)}. Forcing dict structure.")
+            # If it's a string, use it as the name if it looks like a tool name
+            name = str(tool_call).strip() if tool_call else ""
+            # But we can't easily fix the object in-place if it's a string (immutable)
+            # However, the caller expects to modify the dict.
+            # We must handle this in the caller or ensure it's a dict early.
+            return
+
         current_name = str(tool_call.get("name", "") or "").strip()
 
         # FIX: Detect hallucinated/invalid tool names from LLM responses
@@ -927,6 +936,9 @@ IMPORTANT:
         self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str
     ) -> None:
         """Apply final overrides, server info, and normalization to tool_call."""
+        if not isinstance(tool_call, dict):
+            return
+
         # 1. Logic to fix "Tool Name Hallucination"
         self._correct_tool_name(tool_call, step, target_server)
 
