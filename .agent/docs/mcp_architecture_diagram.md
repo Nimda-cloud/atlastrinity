@@ -1,4 +1,32 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T01:15:54.994543 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T22:38:14.219787 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T20:32:22.933777 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T20:20:32.190366 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T20:08:19.457849 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T19:15:18.575253 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T19:13:54.336979 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-05T18:37:15.733990 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_vibe_full.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

@@ -3,7 +3,8 @@
 
 # Active model for Vibe (Copilot/GPT-4o is now the default)
 active_model = "gpt-4o"
-fallback_chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
+fallback_chain = ["gpt-4o", "devstral-2"]
+
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
@@ -70,16 +71,9 @@ temperature = 0.0
 input_price = 0.0
 output_price = 0.0
 
-[[models]]
-name = "mistralai/devstral-2512:free"
-provider = "openrouter"
-alias = "devstral-openrouter"
-temperature = 0.2
-input_price = 0.0
-output_price = 0.0
-
 # =============================================================================
 # Built-in Tool Permissions
+
 # =============================================================================
 [tools.bash]
 permission = "always"

@@ -231,6 +231,24 @@ VIBE_LOCK = asyncio.Lock()
 VIBE_QUEUE_SIZE = 0
 
 
+async def _emergency_cleanup() -> None:
+    """Forcefully terminate lingering vibe and proxy processes to unblock the queue."""
+    logger.warning("[VIBE] Emergency cleanup triggered. Terminating lingering processes...")
+    try:
+        # 1. Kill any active proxy
+        _cleanup_provider_proxy()
+
+        # 2. Kill any actual 'vibe' CLI processes that might be hanging
+        # We use pgrep/pkill for platform-agnostic (ish) cleanup on Unix
+        import subprocess
+
+        # Use -f to match the command line (more robust than exact name)
+        subprocess.run(["pkill", "-9", "-f", "vibe"], capture_output=True, check=False)
+
+    except Exception as e:
+        logger.error(f"[VIBE] Emergency cleanup failed: {e}")
+
+
 def get_vibe_config() -> VibeConfig:
     """Get or load the Vibe configuration."""
     global _vibe_config, _current_mode
@@ -738,7 +756,20 @@ async def run_vibe_subprocess(
         logger.info(msg)
         await _emit_vibe_log(ctx, "info", msg)
 
-    async with VIBE_LOCK:
+    # Use a timeout for lock acquisition to avoid indefinite queue hangs
+    # We wait up to timeout*2 to allow for one full task completion + some buffer
+    lock_timeout = (timeout_s or DEFAULT_TIMEOUT_S) * 2
+    try:
+        await asyncio.wait_for(VIBE_LOCK.acquire(), timeout=lock_timeout)
+    except TimeoutError:
+        VIBE_QUEUE_SIZE -= 1
+        error_msg = f"Queue timeout: Lock held for over {lock_timeout}s. Forcing emergency reset."
+        logger.error(f"[VIBE] {error_msg}")
+        await _emit_vibe_log(ctx, "error", f"🚨 [VIBE-QUEUE] {error_msg}")
+        await _emergency_cleanup()
+        return {"success": False, "error": error_msg, "command": argv}
+
+    try:
         VIBE_QUEUE_SIZE -= 1
         logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
         logger.debug(f"[VIBE] Full argv: {argv}")
@@ -748,24 +779,31 @@ async def run_vibe_subprocess(
                 ctx, "info", f"🚀 [VIBE-LIVE] Запуск Vibe: {prompt_preview[:80]}..."
             )
 
-        try:
-            result = await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
-            return result
-        except Exception as outer_e:
-            error_msg = f"Outer subprocess error: {outer_e}"
-            logger.error(f"[VIBE] {error_msg}")
-            return {"success": False, "error": error_msg, "command": argv}
-        finally:
-            # Clean up temp VIBE_HOME if it was an override
-            if vibe_home_override and "vibe_home_" in vibe_home_override:
-                try:
-                    # We give a small delay to ensure file handles are closed
-                    await asyncio.sleep(0.5)
-                    shutil.rmtree(vibe_home_override, ignore_errors=True)
-                    logger.debug(f"[VIBE] Cleaned up temp VIBE_HOME: {vibe_home_override}")
-                except Exception as e:
-                    logger.warning(f"[VIBE] Failed to cleanup temp home {vibe_home_override}: {e}")
-            pass
+        result = await _execute_vibe_with_retries(argv, cwd, timeout_s, process_env, ctx)
+        return result
+
+    except Exception as outer_e:
+        error_msg = f"Outer subprocess error: {outer_e}"
+        logger.error(f"[VIBE] {error_msg}")
+        return {"success": False, "error": error_msg, "command": argv}
+    finally:
+        # 1. Release Lock correctly
+        if VIBE_LOCK.locked():
+            try:
+                VIBE_LOCK.release()
+            except RuntimeError:
+                # Already released or not held by this task
+                pass
+
+        # 2. Clean up temp VIBE_HOME if it was an override
+        if vibe_home_override and "vibe_home_" in vibe_home_override:
+            try:
+                # We give a small delay to ensure file handles are closed
+                await asyncio.sleep(0.5)
+                shutil.rmtree(vibe_home_override, ignore_errors=True)
+                logger.debug(f"[VIBE] Cleaned up temp VIBE_HOME: {vibe_home_override}")
+            except Exception as e:
+                logger.warning(f"[VIBE] Failed to cleanup temp home {vibe_home_override}: {e}")
 
 
 def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
@@ -819,9 +857,13 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
                     llm = CopilotLLM(api_key=api_key, model_name="gpt-4o")
                     token, _ = llm._get_session_token()
                     process_env[p_conf.api_key_env_var] = token
-                    logger.debug(f"[VIBE] Successfully injected token for provider: {p_conf.name}")
+                    logger.debug(
+                        f"[VIBE] Successfully injected token for provider: {p_conf.name}, token: ***"
+                    )
                 except Exception as e:
-                    logger.warning(f"[VIBE] Failed to inject token for {p_conf.name}: {e}")
+                    logger.warning(
+                        f"[VIBE] Failed to inject token for {p_conf.name}: {e}. Token was sanitized."
+                    )
 
     return process_env
 
@@ -920,9 +962,11 @@ async def _read_vibe_stream(
     try:
         while True:
             # Use read() instead of readline() to handle status lines without newlines
-            data = await stream.read(1024)
+            # Apply a timeout to avoid hangs if the process stops writing but won't exit
+            data = await asyncio.wait_for(stream.read(1024), timeout=timeout_s)
             if not data:
                 break
+
             chunks.append(data)
 
             # For logging, we still try to process lines if they exist in the chunk
@@ -976,13 +1020,17 @@ async def _execute_vibe_with_retries(
                     )
 
                 if streams_to_read:
-                    await asyncio.gather(*streams_to_read)
+                    # Apply an outer timeout to the gather as well
+                    # Wrap in ensure_future to satisfy type checker
+                    gather_task = asyncio.ensure_future(asyncio.gather(*streams_to_read))
+                    await asyncio.wait_for(gather_task, timeout=timeout_s + 10)
             finally:
                 pass
 
             try:
                 # Wait for the process to finish, with a timeout
-                await asyncio.wait_for(process.wait(), timeout=timeout_s + 20)
+                await asyncio.wait_for(process.wait(), timeout=5)
+
                 await _emit_vibe_log(ctx, "info", "✅ [VIBE-LIVE] Vibe завершив роботу успішно")
             except TimeoutError:
                 return await _handle_vibe_timeout(
@@ -992,33 +1040,36 @@ async def _execute_vibe_with_retries(
             stdout = strip_ansi(b"".join(stdout_chunks).decode(errors="replace"))
             stderr = strip_ansi(b"".join(stderr_chunks).decode(errors="replace"))
 
-            # Check for API rate limits and other fallback triggers
-            rate_limit_patterns = [
-                r"Rate limit[s]? exceeded",
-                r"Upgrade to Pro",
-                r"429 Too Many Requests",
-                r"Insufficient quota",
-            ]
-            is_rate_limit = any(
-                re.search(p, stderr, re.IGNORECASE) or re.search(p, stdout, re.IGNORECASE)
-                for p in rate_limit_patterns
-            )
-
-            if is_rate_limit:
-                res = await _handle_vibe_rate_limit(
-                    attempt, MAX_RETRIES, BACKOFF_DELAYS, stdout, stderr, argv, ctx
+            if process.returncode != 0:
+                # Check for API rate limits and other fallback triggers
+                rate_limit_patterns = [
+                    r"Rate limit[s]? exceeded",
+                    r"Upgrade to Pro",
+                    r"429 Too Many Requests",
+                    r"Insufficient quota",
+                    r"RateLimitError",
+                ]
+                is_rate_limit = any(
+                    re.search(p, stderr, re.IGNORECASE) or re.search(p, stdout, re.IGNORECASE)
+                    for p in rate_limit_patterns
                 )
-                if isinstance(res, tuple) and res[0] is True:
-                    # Model switched, update VIBE_HOME for next attempt
-                    new_home = res[1]
-                    if new_home:
-                        process_env["VIBE_HOME"] = new_home
-                    continue
-                if isinstance(res, bool) and res is True:
-                    continue
-                return cast(dict[str, Any], res)
 
-            # Check for Session not found (failed resume)
+                if is_rate_limit:
+                    res = await _handle_vibe_rate_limit(
+                        attempt, MAX_RETRIES, BACKOFF_DELAYS, stdout, stderr, argv, ctx
+                    )
+                    if isinstance(res, tuple) and res[0] is True:
+                        # Model switched, update VIBE_HOME for next attempt
+                        new_home = res[1]
+                        if new_home:
+                            process_env["VIBE_HOME"] = new_home
+                        continue
+                    if isinstance(res, bool) and res is True:
+                        continue
+                    return cast(dict[str, Any], res)
+
+                # Check for Session not found (failed resume)
+
             # Use regex for more robust detection of Vibe session errors (Iteration 3)
             session_patterns = [
                 r"session '.*' not found",

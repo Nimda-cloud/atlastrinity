@@ -116,6 +116,15 @@ class ProviderConfig(BaseModel):
 
     def is_available(self) -> bool:
         """Check if provider is available (has API key set)."""
+        # For providers requiring token exchange (e.g., Copilot),
+        # check for the source key (COPILOT_API_KEY) if the target isn't set yet.
+        if self.requires_token_exchange:
+            source_key_var = (
+                "COPILOT_API_KEY" if self.name == "copilot" else f"{self.name.upper()}_API_KEY"
+            )
+            if os.getenv(source_key_var):
+                return True
+
         return bool(self.get_api_key())
 
 
