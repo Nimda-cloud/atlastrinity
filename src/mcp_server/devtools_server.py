@@ -40,6 +40,55 @@ class ResponseDict(TypedDict):
 
 
 @server.tool()
+def devtools_list_processes() -> dict[str, Any]:
+    """List all processes tracked by the AtlasTrinity Watchdog.
+    Includes PID, type (vibe, mcp, proxy), CPU usage history, and health status.
+    """
+    try:
+        from src.brain.watchdog import watchdog
+        return watchdog.get_status()
+    except Exception as e:
+        return {"error": f"Failed to get process status: {e}"}
+
+
+@server.tool()
+async def devtools_restart_mcp_server(server_name: str) -> dict[str, Any]:
+    """Gracefully restart a specific MCP server.
+
+    Args:
+        server_name: The name of the server to restart (e.g., 'vibe', 'memory', 'filesystem').
+    """
+    try:
+        from src.brain.mcp_manager import mcp_manager
+        success = await mcp_manager.restart_server(server_name)
+        return {
+            "success": success,
+            "message": f"Server {server_name} restart {'initiated' if success else 'failed'}."
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@server.tool()
+async def devtools_kill_process(pid: int, hard: bool = False) -> dict[str, Any]:
+    """Forcefully terminate or kill a specific process by PID.
+
+    Args:
+        pid: The Process ID to kill.
+        hard: If True, send SIGKILL (hard kill). Otherwise SIGTERM (graceful).
+    """
+    try:
+        from src.brain.watchdog import watchdog
+        success = await watchdog.terminate_process(pid, hard=hard)
+        return {
+            "success": success,
+            "message": f"PID {pid} {'killed' if success else 'failed to kill'}."
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@server.tool()
 def devtools_check_mcp_health() -> dict[str, Any]:
     """Run the system-wide MCP health check script.
     Ping all enabled servers and report their status, response time, and tool counts.

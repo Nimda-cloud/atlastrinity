@@ -98,6 +98,14 @@ async def lifespan(app: FastAPI):
     # Initialize components
     await trinity.initialize()
 
+    # Start Process Watchdog
+    try:
+        from .watchdog import watchdog
+        await watchdog.start()
+        logger.info("[Server] Process Watchdog started")
+    except Exception as e:
+        logger.error(f"[Server] Failed to start watchdog: {e}")
+
     # Start stdin watchdog to ensure we die when parent dies
     def watchdog():
         try:
@@ -285,6 +293,17 @@ async def get_metrics():
         return {"status": "error", "message": "Monitoring system not available"}
     except Exception as e:
         logger.error(f"Error getting monitoring metrics: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/monitoring/processes")
+async def get_processes():
+    """Get status of all tracked processes from Watchdog."""
+    try:
+        from .watchdog import watchdog
+        return {"status": "success", "data": watchdog.get_status()}
+    except Exception as e:
+        logger.error(f"Error getting process status: {e}")
         return {"status": "error", "message": str(e)}
 
 
