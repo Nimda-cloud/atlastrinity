@@ -358,7 +358,9 @@ def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
             is_used = s.connect_ex(("127.0.0.1", port)) == 0
 
         if is_used:
-            logger.info(f"[VIBE] Proxy port {port} for {p_conf.name} already in use, assuming active.")
+            logger.info(
+                f"[VIBE] Proxy port {port} for {p_conf.name} already in use, assuming active."
+            )
             return
 
         # Expand variables in command (PROJECT_ROOT, etc.)
@@ -376,7 +378,7 @@ def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
         proxy_log = log_dir / f"{p_conf.name}_proxy.log"
         _proxy_process = subprocess.Popen(
             cmd,
-            stdout=open(proxy_log, "a"),  # noqa: SIM115
+            stdout=open(proxy_log, "a", encoding="utf-8"),  # noqa: SIM115
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
@@ -389,7 +391,6 @@ def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
 
 def _cleanup_provider_proxy() -> None:
     """Terminate the active provider proxy subprocess."""
-    global _proxy_process
     if _proxy_process:
         logger.info(f"[VIBE] Terminating active proxy (PID: {_proxy_process.pid})...")
         try:
@@ -750,9 +751,11 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
         if p_conf.requires_token_exchange and CopilotLLM:
             # We look for the raw API key in env
             # For Copilot, it's typically COPILOT_API_KEY
-            raw_key_var = "COPILOT_API_KEY" if p_conf.name == "copilot" else f"{p_conf.name.upper()}_API_KEY"
+            raw_key_var = (
+                "COPILOT_API_KEY" if p_conf.name == "copilot" else f"{p_conf.name.upper()}_API_KEY"
+            )
             api_key = process_env.get(raw_key_var) or os.getenv(raw_key_var)
-            
+
             if api_key:
                 try:
                     # Current implementation uses CopilotLLM for exchange
@@ -1083,7 +1086,9 @@ async def _handle_vibe_rate_limit(
         chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
 
     try:
-        current_idx = chain.index(_current_model) if _current_model and _current_model in chain else -1
+        current_idx = (
+            chain.index(_current_model) if _current_model and _current_model in chain else -1
+        )
         next_idx = current_idx + 1
 
         if next_idx < len(chain):
@@ -1092,17 +1097,19 @@ async def _handle_vibe_rate_limit(
             p_conf = config.get_provider(m_conf.provider) if m_conf else None
 
             if m_conf and p_conf and p_conf.is_available():
-                logger.info(f"[VIBE] Rate limit for {_current_model}. Switching to {next_model_alias} (Tier {next_idx + 1})...")
+                logger.info(
+                    f"[VIBE] Rate limit for {_current_model}. Switching to {next_model_alias} (Tier {next_idx + 1})..."
+                )
                 await _emit_vibe_log(
                     ctx,
                     "info",
                     f"🔄 [VIBE-FALLBACK] Ліміт для {_current_model}. Переключаюсь на {next_model_alias}...",
                 )
-                
+
                 # Start proxy if configured for this provider
                 if p_conf.requires_proxy:
                     _ensure_provider_proxy(p_conf)
-                
+
                 _current_model = next_model_alias
                 new_home = _prepare_temp_vibe_home(next_model_alias)
                 return True, new_home

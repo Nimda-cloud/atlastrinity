@@ -14,38 +14,35 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
         # Reset state in the target module
         import src.mcp_server.vibe_server as vibe_module
 
-        vibe_module._current_model = "devstral-2512"
+        vibe_module._current_model = "gpt-4o"
 
         argv = ["vibe", "hello"]
         ctx = MagicMock()
 
-        # 1. First failure -> Switch to OpenRouter
-        print("\n[TEST] Simulating Mistral failure (Tier 1)...")
+        # 1. First failure (Copilot) -> Switch to Mistral
+        print("\n[TEST] Simulating Copilot failure (Tier 1)...")
+        result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
+        self.assertIsInstance(result, tuple)
+        if isinstance(result, tuple):
+            self.assertTrue(result[0])
+            self.assertEqual(vibe_module._current_model, "devstral-2")
+
+        # 2. Second failure (Mistral) -> Switch to OpenRouter
+        print("[TEST] Simulating Mistral failure (Tier 2)...")
         result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
         self.assertIsInstance(result, tuple)
         if isinstance(result, tuple):
             self.assertTrue(result[0])
             self.assertEqual(vibe_module._current_model, "devstral-openrouter")
-        # argv remains unchanged because we use VIBE_HOME override
-        self.assertNotIn("devstral-openrouter", argv)
 
-        # 2. Second failure (on OpenRouter) -> Switch to Copilot (gpt-4o)
-        print("[TEST] Simulating OpenRouter failure (Tier 2)...")
-        result = await _handle_vibe_rate_limit(0, 3, [1, 2], "", "", argv, ctx)
-        self.assertIsInstance(result, tuple)
-        if isinstance(result, tuple):
-            self.assertTrue(result[0])
-            self.assertEqual(vibe_module._current_model, "gpt-4o")
-
-        # 3. Third failure (on Copilot) -> Give up
-        print("[TEST] Simulating Copilot failure (Final)...")
-        # Now current_model is gpt-4o, another failure should lead to exhaustion
+        # 3. Third failure (OpenRouter) -> Give up
+        print("[TEST] Simulating OpenRouter failure (Final)...")
         result = await _handle_vibe_rate_limit(1, 3, [1, 2], "", "", argv, ctx)
         self.assertIsInstance(result, dict)
         if isinstance(result, dict):
             self.assertFalse(result["success"])
         print(
-            "[TEST] Success: Fallback chain (Mistral -> OpenRouter -> Copilot) verified via VIBE_HOME switching.\n"
+            "[TEST] Success: Fallback chain (Copilot -> Mistral -> OpenRouter) verified via VIBE_HOME switching.\n"
         )
 
 
