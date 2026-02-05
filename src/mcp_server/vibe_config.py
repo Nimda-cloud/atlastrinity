@@ -106,6 +106,9 @@ class ProviderConfig(BaseModel):
     api_key_env_var: str = Field(..., description="Environment variable for API key")
     api_style: ApiStyle = Field(ApiStyle.OPENAI, description="API style to use")
     backend: Backend = Field(Backend.GENERIC, description="Backend implementation")
+    requires_proxy: bool = Field(False, description="Whether this provider requires a local proxy (e.g., Copilot)")
+    proxy_command: str | None = Field(None, description="Command to start the local proxy")
+    requires_token_exchange: bool = Field(False, description="Whether this provider requires exchanging API key for a session token")
 
     def get_api_key(self) -> str | None:
         """Retrieve API key from environment variable."""

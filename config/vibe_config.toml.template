@@ -44,6 +44,9 @@ api_base = "http://localhost:8085"
 api_key_env_var = "COPILOT_SESSION_TOKEN"
 api_style = "openai"
 backend = "generic"
+requires_proxy = true
+proxy_command = "python3 ${PROJECT_ROOT}/scripts/copilot_proxy.py"
+requires_token_exchange = true
 
 # =============================================================================
 # Model Presets

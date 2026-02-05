@@ -329,62 +329,76 @@ logger.info(
 sync_vibe_configuration()
 
 
-def _start_copilot_proxy() -> None:
-    """Start the local Copilot proxy if needed."""
+def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
+    """Start the provider's local proxy if configured and needed."""
     global _proxy_process
+    if not p_conf.requires_proxy or not p_conf.proxy_command:
+        return
+
     try:
-        config = get_vibe_config()
-        # Check if copilot provider is configured
-        copilot = config.get_provider("copilot")
-        if copilot:
-            # Check if port 8085 is already in use
-            import socket
+        # Check if port is already in use (heuristic based on api_base)
+        port = 8085
+        if "localhost:" in p_conf.api_base or "127.0.0.1:" in p_conf.api_base:
+            try:
+                # Extract port from URL like http://localhost:8085
+                match = re.search(r":(\d+)", p_conf.api_base)
+                if match:
+                    port = int(match.group(1))
+            except Exception:
+                pass
 
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(0.5)
-                is_used = s.connect_ex(("127.0.0.1", 8085)) == 0
+        import socket
 
-            if is_used:
-                logger.info("[VIBE] Copilot Proxy port 8085 already in use, assuming active.")
-                return
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            is_used = s.connect_ex(("127.0.0.1", port)) == 0
 
-            proxy_script = PROJECT_ROOT / "scripts" / "copilot_proxy.py"
-            if proxy_script.exists():
-                logger.info(f"[VIBE] Starting Copilot Proxy: {proxy_script}")
-                # Start as a daemon subprocess, redirecting output to log file
-                proxy_log = log_dir / "copilot_proxy.log"
-                _proxy_process = subprocess.Popen(
-                    [sys.executable, str(proxy_script)],
-                    stdout=open(proxy_log, "a"),  # noqa: SIM115
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True,
-                )
-                logger.info(
-                    f"[VIBE] Copilot Proxy started (PID: {_proxy_process.pid}, Log: {proxy_log})"
-                )
-            else:
-                logger.warning(
-                    f"[VIBE] Copilot provider configured but proxy script not found at {proxy_script}"
-                )
+        if is_used:
+            logger.info(f"[VIBE] Proxy port {port} for {p_conf.name} already in use, assuming active.")
+            return
+
+        # Expand variables in command (PROJECT_ROOT, etc.)
+        cmd_str = VibeConfig.expand_vars(p_conf.proxy_command)
+        import shlex
+
+        try:
+            cmd = shlex.split(cmd_str)
+        except ValueError:
+            # Fallback if shlex fails
+            cmd = cmd_str.split()
+
+        logger.info(f"[VIBE] Starting proxy for {p_conf.name}: {cmd_str}")
+        # Start as a daemon subprocess, redirecting output to log file
+        proxy_log = log_dir / f"{p_conf.name}_proxy.log"
+        _proxy_process = subprocess.Popen(
+            cmd,
+            stdout=open(proxy_log, "a"),  # noqa: SIM115
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        logger.info(
+            f"[VIBE] Proxy for {p_conf.name} started (PID: {_proxy_process.pid}, Log: {proxy_log})"
+        )
     except Exception as e:
-        logger.error(f"[VIBE] Failed to start Copilot Proxy: {e}")
+        logger.error(f"[VIBE] Failed to start proxy for {p_conf.name}: {e}")
 
 
-def _cleanup_copilot_proxy() -> None:
-    """Terminate the Copilot proxy subprocess."""
+def _cleanup_provider_proxy() -> None:
+    """Terminate the active provider proxy subprocess."""
+    global _proxy_process
     if _proxy_process:
-        logger.info(f"[VIBE] Terminating Copilot Proxy (PID: {_proxy_process.pid})...")
+        logger.info(f"[VIBE] Terminating active proxy (PID: {_proxy_process.pid})...")
         try:
             _proxy_process.terminate()
             _proxy_process.wait(timeout=2)
         except Exception as e:
-            logger.warning(f"[VIBE] Error stopping Copilot Proxy: {e}")
+            logger.warning(f"[VIBE] Error stopping proxy: {e}")
             if _proxy_process:
                 _proxy_process.kill()
 
 
 # Register cleanup
-atexit.register(_cleanup_copilot_proxy)
+atexit.register(_cleanup_provider_proxy)
 # Deferred startup: _start_copilot_proxy is called inside vibe_prompt when needed
 
 
@@ -727,17 +741,24 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
     if env:
         process_env.update({k: str(v) for k, v in env.items()})
 
-    # Auto-inject Copilot Session Token if available
-    if CopilotLLM and "COPILOT_API_KEY" in process_env:
-        try:
-            # Use CopilotLLM logic to exchange API key for session token
-            # We instantiate with the key from env to reuse the logic
-            llm = CopilotLLM(api_key=process_env["COPILOT_API_KEY"], model_name="gpt-4o")
-            token, _ = llm._get_session_token()
-            process_env["COPILOT_SESSION_TOKEN"] = token
-            logger.debug("[VIBE] Successfully injected COPILOT_SESSION_TOKEN")
-        except Exception as e:
-            logger.warning(f"[VIBE] Failed to inject Copilot token: {e}")
+    # Auto-inject Session Tokens for providers that require exchange (e.g., Copilot)
+    for p_conf in config.providers:
+        if p_conf.requires_token_exchange and CopilotLLM:
+            # We look for the raw API key in env
+            # For Copilot, it's typically COPILOT_API_KEY
+            raw_key_var = "COPILOT_API_KEY" if p_conf.name == "copilot" else f"{p_conf.name.upper()}_API_KEY"
+            api_key = process_env.get(raw_key_var) or os.getenv(raw_key_var)
+            
+            if api_key:
+                try:
+                    # Current implementation uses CopilotLLM for exchange
+                    # In the future, this can be dispatched by provider type
+                    llm = CopilotLLM(api_key=api_key, model_name="gpt-4o")
+                    token, _ = llm._get_session_token()
+                    process_env[p_conf.api_key_env_var] = token
+                    logger.debug(f"[VIBE] Successfully injected token for provider: {p_conf.name}")
+                except Exception as e:
+                    logger.warning(f"[VIBE] Failed to inject token for {p_conf.name}: {e}")
 
     return process_env
 
@@ -1074,10 +1095,9 @@ async def _handle_vibe_rate_limit(
                     f"🔄 [VIBE-FALLBACK] Ліміт для {_current_model}. Переключаюсь на {next_model_alias}...",
                 )
                 
-                # Start proxy if switching to copilot
-                if p_conf.name == "copilot":
-                    if not _proxy_process or _proxy_process.poll() is not None:
-                        _start_copilot_proxy()
+                # Start proxy if configured for this provider
+                if p_conf.requires_proxy:
+                    _ensure_provider_proxy(p_conf)
                 
                 _current_model = next_model_alias
                 new_home = _prepare_temp_vibe_home(next_model_alias)
@@ -1317,20 +1337,10 @@ async def vibe_prompt(
         if target_model:
             # Ensure proxy is running if the target model uses copilot
             m_conf = config.get_model_by_alias(target_model)
-            if m_conf and m_conf.provider == "copilot":
-                # Check for existing proxy or port 8085 being used
-                if not _proxy_process or _proxy_process.poll() is not None:
-                    # Double check if port is already in use by another session/process
-                    import socket
-
-                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                        if s.connect_ex(("127.0.0.1", 8085)) != 0:
-                            logger.info("[VIBE] Initial model is Copilot-based, starting proxy...")
-                            _start_copilot_proxy()
-                        else:
-                            logger.info(
-                                "[VIBE] Port 8085 already in use, assuming proxy is healthy."
-                            )
+            if m_conf and m_conf.provider:
+                p_conf = config.get_provider(m_conf.provider)
+                if p_conf and p_conf.requires_proxy:
+                    _ensure_provider_proxy(p_conf)
 
             vibe_home_override = _prepare_temp_vibe_home(target_model)
 
