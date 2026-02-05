@@ -41,7 +41,11 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
                 headers["Authorization"] = auth_header
 
             # 3. Forward to GitHub Copilot
-            target_url = "https://api.githubcopilot.com" + self.path
+            # Vibe/OpenAI style uses /v1/... but GitHub prefers chat/completions directly
+            path = self.path
+            if path.startswith("/v1/"):
+                path = path[3:]
+            target_url = "https://api.githubcopilot.com" + path
 
             req = urllib.request.Request(target_url, data=post_data, headers=headers, method="POST")
 

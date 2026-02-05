@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-05T13:51:01.340996 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_vibe_fallback.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-05T13:17:31.685871 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_watchdog.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

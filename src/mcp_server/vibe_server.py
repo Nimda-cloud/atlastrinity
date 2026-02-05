@@ -473,23 +473,36 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
         vibe_home = Path(config.vibe_home or os.getenv("VIBE_HOME", str(Path.home() / ".vibe")))
 
         # 1. Create directory structure
-        (temp_path / "prompts").mkdir(parents=True, exist_ok=True)
         (temp_path / "agents").mkdir(parents=True, exist_ok=True)
-        (temp_path / "logs").mkdir(parents=True, exist_ok=True)
 
-        # 2. Link/Copy support folders (prompts and logs are essential)
+        # 2. Link support folders (prompts and logs are essential)
         for folder in ["prompts", "logs"]:
             src = vibe_home / folder
             dst = temp_path / folder
             if src.exists():
-                dst.mkdir(parents=True, exist_ok=True)
-                for item in src.glob("*"):
-                    if item.is_file():
-                        dst_item = dst / item.name
-                        try:
-                            os.symlink(item, dst_item)
-                        except (OSError, FileExistsError):
-                            shutil.copy2(item, dst_item)
+                try:
+                    # Attempt to symlink the entire directory for persistence
+                    os.symlink(src, dst)
+                except (OSError, FileExistsError):
+                    # Fallback to granular file linking if directory symlink fails
+                    dst.mkdir(parents=True, exist_ok=True)
+                    for item in src.glob("*"):
+                        if item.is_file():
+                            dst_item = dst / item.name
+                            try:
+                                os.symlink(item, dst_item)
+                            except (OSError, FileExistsError):
+                                shutil.copy2(item, dst_item)
+            else:
+                # If logs directory is missing, we create it in the main vibe_home to be safe
+                if folder == "logs":
+                    src.mkdir(parents=True, exist_ok=True)
+                    try:
+                        os.symlink(src, dst)
+                    except (OSError, FileExistsError):
+                        dst.mkdir(parents=True, exist_ok=True)
+                else:
+                    dst.mkdir(parents=True, exist_ok=True)
 
         # 3. Generate custom config.toml
         # We generate a fresh TOML matching the VibeConfig object
