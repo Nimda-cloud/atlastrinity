@@ -22,5 +22,9 @@ permission = "always"
 [tools.grep]
 permission = "always"
 
-[tools."*"]
+[tools.ls]
+permission = "always"
+
+# MCP Tools
+[tools.devtools_devtools_lint_python]
 permission = "always"

@@ -6,7 +6,6 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from typing import Optional
 
 
 # Setup logging
@@ -17,7 +16,7 @@ def log(msg):
 class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
     # Track processed requests and uptime
     processed_requests: int = 0
-    start_time: Optional[float] = None
+    start_time: float | None = None
 
     def do_GET(self):
         CopilotProxyHandler.processed_requests += 1

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-05T17:08:03.248904 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/vibe/agents/accept-edits.toml.template -->
+
+
 <!-- AUTO-UPDATED: 2026-02-05T16:11:57.004994 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/vibe/agents/accept-edits.toml.template -->
 
