@@ -232,11 +232,15 @@ VIBE_QUEUE_SIZE = 0
 
 def get_vibe_config() -> VibeConfig:
     """Get or load the Vibe configuration."""
-    global _vibe_config
+    global _vibe_config, _current_mode
     if _vibe_config is None:
         config_path = Path(VIBE_CONFIG_FILE) if VIBE_CONFIG_FILE else None
         _vibe_config = VibeConfig.load(config_path=config_path)
         logger.info(f"[VIBE] Loaded configuration: active_model={_vibe_config.active_model}")
+
+        # Initialize _current_mode from config
+        _current_mode = _vibe_config.default_mode
+
     return _vibe_config
 
 
