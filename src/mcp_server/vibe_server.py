@@ -2706,17 +2706,28 @@ if __name__ == "__main__":
         logger.warning(f"[VIBE] Could not load configuration: {e}")
 
     try:
-        server.run()
-    except (BrokenPipeError, KeyboardInterrupt):
+        # Check for uvloop
+        try:
+            import uvloop
+            if sys.version_info >= (3, 11):
+                with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+                    runner.run(server.run_stdio_async())
+            else:
+                uvloop.install()
+                server.run(transport="stdio")
+        except ImportError:
+             server.run(transport="stdio")
+
+    except (BrokenPipeError, KeyboardInterrupt, asyncio.CancelledError):
         logger.info("[VIBE] Server shutdown requested")
         sys.exit(0)
     except ExceptionGroup as eg:
         if any(isinstance(e, BrokenPipeError) or "Broken pipe" in str(e) for e in eg.exceptions):
             sys.exit(0)
         logger.error(f"[VIBE] Unexpected error group: {eg}")
-        raise
+        sys.exit(1)
     except BaseException as e:
         if isinstance(e, BrokenPipeError) or "Broken pipe" in str(e):
             sys.exit(0)
         logger.error(f"[VIBE] Unexpected error: {e}")
-        raise
+        sys.exit(1)

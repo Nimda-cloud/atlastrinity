@@ -235,6 +235,7 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
+        print("\n[CONFIG] Sync stopped by user.")
 
     observer.join()
 
