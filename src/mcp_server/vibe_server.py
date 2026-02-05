@@ -792,6 +792,16 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
     if env:
         process_env.update({k: str(v) for k, v in env.items()})
 
+    # Ensure PYTHONPATH includes src and project root for module resolution
+    existing_pp = process_env.get("PYTHONPATH", "")
+    # Add src and project root if not already present
+    paths_to_add = [str(PROJECT_ROOT), str(PROJECT_ROOT / "src")]
+    # Note: Vibe might be running in a different CWD, so absolute paths are safer
+    for p in paths_to_add:
+        if p not in existing_pp:
+            existing_pp = f"{p}:{existing_pp}" if existing_pp else p
+    process_env["PYTHONPATH"] = existing_pp
+
     # Auto-inject Session Tokens for providers that require exchange (e.g., Copilot)
     for p_conf in config.providers:
         if p_conf.requires_token_exchange and CopilotLLM:
