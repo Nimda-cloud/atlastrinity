@@ -526,18 +526,15 @@ class VibeConfig(BaseModel):
         args = ["-p", prompt, "--output", output_format]
 
         # Mode mapping to agent profiles
-        # In programmatic mode (-p), agent profile is ignored as tools are auto-approved.
-        # Providing --agent can sometimes trigger TUI, so we omit it for -p.
-        if not prompt or args[0] != "-p":
-            effective_mode = mode or self.default_mode
-            if agent:
-                args.extend(["--agent", agent])
-            elif effective_mode == AgentMode.AUTO_APPROVE:
-                args.extend(["--agent", "auto-approve"])
-            elif effective_mode == AgentMode.PLAN:
-                args.extend(["--agent", "plan"])
-            elif effective_mode == AgentMode.ACCEPT_EDITS:
-                args.extend(["--agent", "accept-edits"])
+        effective_mode = mode or self.default_mode
+        if agent:
+            args.extend(["--agent", agent])
+        elif effective_mode == AgentMode.AUTO_APPROVE:
+            args.extend(["--agent", "auto-approve"])
+        elif effective_mode == AgentMode.PLAN:
+            args.extend(["--agent", "plan"])
+        elif effective_mode == AgentMode.ACCEPT_EDITS:
+            args.extend(["--agent", "accept-edits"])
         # Default mode doesn't need --agent (uses builtin default)
 
         # Model override - only if CLI supports it (handled via config heuristic)
@@ -549,7 +546,17 @@ class VibeConfig(BaseModel):
 
         # Session resume
         if session_id:
-            args.extend(["--resume", session_id])
+            # Check for session existence if prompt mode is active
+            # We only resume if the session folder exists in the home directory
+            vibe_home_val = self.vibe_home or os.getenv("VIBE_HOME") or str(Path.home() / ".vibe")
+            vibe_home = Path(vibe_home_val)
+            session_path = vibe_home / "logs" / "session" / session_id
+            if session_path.exists():
+                args.extend(["--resume", session_id])
+            else:
+                # We don't log here because this is a config object,
+                # but we skip adding the flag to avoid CLI error
+                pass
 
         # Limits
         effective_max_turns = max_turns or self.max_turns

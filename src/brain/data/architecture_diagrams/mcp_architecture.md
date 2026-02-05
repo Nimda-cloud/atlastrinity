@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-05T16:11:57.004994 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/vibe/agents/accept-edits.toml.template -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T16:09:50.112672 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe/agents/accept-edits.toml.template, config/vibe/agents/auto-approve.toml.template -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T16:08:31.465695 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-05T13:51:01.340996 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_vibe_fallback.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

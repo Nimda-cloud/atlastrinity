@@ -37,6 +37,7 @@ from pathlib import Path
 from re import Pattern
 from typing import Any, Literal, cast
 
+from dotenv import load_dotenv
 from mcp.server import FastMCP
 from mcp.server.fastmcp import Context
 
@@ -472,37 +473,44 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
         # Find real VIBE_HOME
         vibe_home = Path(config.vibe_home or os.getenv("VIBE_HOME", str(Path.home() / ".vibe")))
 
-        # 1. Create directory structure
-        (temp_path / "agents").mkdir(parents=True, exist_ok=True)
+        # 1. Link support folders (prompts, logs, and agents are essential)
+        # We use a helper for recursive symlinking to ensure subfolders like 'session' work
+        def link_recursive(src_dir: Path, dst_dir: Path):
+            dst_dir.mkdir(parents=True, exist_ok=True)
+            for item in src_dir.glob("*"):
+                dst_item = dst_dir / item.name
+                if item.is_dir():
+                    link_recursive(item, dst_item)
+                else:
+                    try:
+                        if dst_item.exists() or dst_item.is_symlink():
+                            dst_item.unlink()
+                        os.symlink(item, dst_item)
+                    except (OSError, FileExistsError):
+                        try:
+                            shutil.copy2(item, dst_item)
+                        except OSError:
+                            pass
 
-        # 2. Link support folders (prompts and logs are essential)
-        for folder in ["prompts", "logs"]:
+        for folder in ["prompts", "logs", "agents"]:
             src = vibe_home / folder
-            dst = temp_path / folder
+            if src.exists():
+                link_recursive(src, temp_path / folder)
+            else:
+                (temp_path / folder).mkdir(parents=True, exist_ok=True)
+
+        # 2. Link essential files if they exist
+        for filename in ["instructions.md", "trusted_folders.toml", "vibe.log", "vibehistory"]:
+            src = vibe_home / filename
+            dst = temp_path / filename
             if src.exists():
                 try:
-                    # Attempt to symlink the entire directory for persistence
                     os.symlink(src, dst)
                 except (OSError, FileExistsError):
-                    # Fallback to granular file linking if directory symlink fails
-                    dst.mkdir(parents=True, exist_ok=True)
-                    for item in src.glob("*"):
-                        if item.is_file():
-                            dst_item = dst / item.name
-                            try:
-                                os.symlink(item, dst_item)
-                            except (OSError, FileExistsError):
-                                shutil.copy2(item, dst_item)
-            else:
-                # If logs directory is missing, we create it in the main vibe_home to be safe
-                if folder == "logs":
-                    src.mkdir(parents=True, exist_ok=True)
                     try:
-                        os.symlink(src, dst)
-                    except (OSError, FileExistsError):
-                        dst.mkdir(parents=True, exist_ok=True)
-                else:
-                    dst.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(src, dst)
+                    except OSError:
+                        pass
 
         # 3. Generate custom config.toml
         # We generate a fresh TOML matching the VibeConfig object
@@ -520,10 +528,14 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
         toml_lines = [
             "# Generated Vibe Configuration for Temp Session",
             f'active_model = "{model_alias}"',
+            f"fallback_chain = {json.dumps(get_val(config, 'fallback_chain', []))}",
             f'system_prompt_id = "{get_val(config, "system_prompt_id", "cli")!s}"',
+            f'default_mode = "{get_val(config, "default_mode", "auto-approve")!s}"',
             "enable_auto_update = false",
             f"max_turns = {int(get_val(config, 'max_turns', 100))}",
             f"disable_welcome_banner_animation = {str(get_val(config, 'disable_welcome_banner_animation', True)).lower()}",
+            f"vim_keybindings = {str(get_val(config, 'vim_keybindings', False)).lower()}",
+            f"timeout_s = {float(get_val(config, 'timeout_s', 600.0))}",
             "",
         ]
 
@@ -532,11 +544,17 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
             # Skip if it's the default placeholder or redundant
             if not provider.name or not provider.api_base:
                 continue
+
+            # Standardize localhost to 127.0.0.1 to avoid DNS/Hang issues
+            api_base = str(provider.api_base)
+            if "localhost" in api_base:
+                api_base = api_base.replace("localhost", "127.0.0.1")
+
             toml_lines.extend(
                 [
                     "[[providers]]",
                     f'name = "{provider.name}"',
-                    f'api_base = "{provider.api_base}"',
+                    f'api_base = "{api_base}"',
                     f'api_key_env_var = "{provider.api_key_env_var}"',
                     f'api_style = "{provider.api_style}"',
                     f'backend = "{provider.backend}"',
@@ -682,14 +700,15 @@ def handle_long_prompt(prompt: str, cwd: str | None = None) -> tuple[str, str | 
 
 
 def _generate_task_session_id(prompt: str) -> str:
-    """Generate a stable session ID from prompt content to enable context reuse."""
+    """Generate a stable session ID in Vibe's native timestamp format.
+    Native format: session_YYYYMMDD_HHMMSS_random
+    """
+    now = datetime.now()
+    # We use a task-specific hash as the "random" part to maintain stability for the same prompt
     import hashlib
 
-    # We hash the first 500 chars of the prompt to create a 'task key'
-    # This ensures that related calls for the same task use the same session
-    clean_prompt = prompt.strip()[:500]
-    h = hashlib.sha256(clean_prompt.encode()).hexdigest()
-    return f"task-{h[:12]}"
+    h = hashlib.sha256(prompt.strip()[:500].encode()).hexdigest()[:8]
+    return f"session_{now.strftime('%Y%m%d_%H%M%S')}_{h}"
 
 
 async def run_vibe_subprocess(
@@ -708,6 +727,9 @@ async def run_vibe_subprocess(
     # Apply VIBE_HOME override if provided
     if vibe_home_override:
         process_env["VIBE_HOME"] = vibe_home_override
+        logger.debug(f"[VIBE] Using VIBE_HOME override: {vibe_home_override}")
+    else:
+        logger.debug(f"[VIBE] Using default VIBE_HOME: {process_env.get('VIBE_HOME', 'Not Set')}")
 
     # Queue Management
     VIBE_QUEUE_SIZE += 1
@@ -743,12 +765,22 @@ async def run_vibe_subprocess(
                     logger.debug(f"[VIBE] Cleaned up temp VIBE_HOME: {vibe_home_override}")
                 except Exception as e:
                     logger.warning(f"[VIBE] Failed to cleanup temp home {vibe_home_override}: {e}")
+            pass
 
 
 def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
     """Prepare environment variables for Vibe subprocess."""
     config = get_vibe_config()
+    # Load environment variables from .env
+    load_dotenv()
+
     process_env = os.environ.copy()
+
+    # Ensure MISTRAL_API_KEY and COPILOT_API_KEY are explicitly propagated
+    for key in ["MISTRAL_API_KEY", "COPILOT_API_KEY", "OPENROUTER_API_KEY"]:
+        if key in os.environ:
+            process_env[key] = os.environ[key]
+
     # Force non-interactive/programmatic mode for Vibe (Textual-based)
     process_env["TERM"] = "dumb"
     process_env["PAGER"] = "cat"
@@ -909,34 +941,18 @@ async def _execute_vibe_with_retries(
     for attempt in range(MAX_RETRIES):
         logger.info(f"[VIBE] Starting attempt {attempt + 1}/{MAX_RETRIES}...")
         try:
+            # Execute subprocess with DEVNULL for stdin to avoid TUI hangs
             process = await asyncio.create_subprocess_exec(
                 *argv,
                 cwd=cwd or VIBE_WORKSPACE,
                 env=process_env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
             )
 
             stdout_chunks: list[bytes] = []
             stderr_chunks: list[bytes] = []
-
-            # Heartbeat to push through Vibe's 'Press Enter' TUI hangs
-            async def send_heartbeat():
-                if process.stdin is None:
-                    return
-                while process.returncode is None:
-                    try:
-                        # Only send if we think it's stuck or just as a proactive nudge
-                        process.stdin.write(b"\n")
-                        await process.stdin.drain()
-                        logger.debug("[VIBE] Sent heartbeat newline to stdin")
-                        await asyncio.sleep(5)  # Proactive nudge every 5s
-                    except Exception as e:
-                        logger.debug(f"[VIBE] Heartbeat stopped: {e}")
-                        break
-
-            heartbeat_task = asyncio.create_task(send_heartbeat())
 
             try:
                 streams_to_read = []
@@ -952,11 +968,7 @@ async def _execute_vibe_with_retries(
                 if streams_to_read:
                     await asyncio.gather(*streams_to_read)
             finally:
-                heartbeat_task.cancel()
-                try:
-                    await heartbeat_task
-                except asyncio.CancelledError:
-                    pass
+                pass
 
             try:
                 # Wait for the process to finish, with a timeout
@@ -1103,7 +1115,7 @@ async def _handle_vibe_rate_limit(
         current_idx = (
             chain.index(_current_model) if _current_model and _current_model in chain else -1
         )
-        
+
         # Iterate through the chain starting from the next model
         for next_idx in range(current_idx + 1, len(chain)):
             next_model_alias = chain[next_idx]
@@ -1192,12 +1204,13 @@ async def vibe_test_in_sandbox(
             # Prepare env
             env = os.environ.copy()
             env["PYTHONPATH"] = sandbox_dir  # Add sandbox to path
-
+            # Execute subprocess with DEVNULL for stdin to avoid TUI hangs
             process = await asyncio.create_subprocess_shell(
                 command,
                 cwd=sandbox_dir,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
                 env=env,
             )
 

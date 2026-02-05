@@ -1,8 +1,12 @@
 import http.server
+import json
+import signal
 import socketserver
 import sys
+import time
 import urllib.error
 import urllib.request
+from typing import Optional
 
 
 # Setup logging
@@ -11,7 +15,50 @@ def log(msg):
 
 
 class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
+    # Track processed requests and uptime
+    processed_requests: int = 0
+    start_time: Optional[float] = None
+
+    def do_GET(self):
+        CopilotProxyHandler.processed_requests += 1
+        log(f"--- Incoming GET to {self.path} ---")
+
+        if self.path in ["/v1/models", "/models"]:
+            # Standard OpenAI-style models list
+            models_data = {
+                "object": "list",
+                "data": [
+                    {
+                        "id": "gpt-4o",
+                        "object": "model",
+                        "created": 1715340800,
+                        "owned_by": "github-copilot",
+                    }
+                ],
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(models_data).encode())
+        elif self.path == "/v1/status":
+            # Return proxy status
+            st = CopilotProxyHandler.start_time
+            uptime = time.time() - st if st is not None else 0.0
+            status_data = {
+                "uptime": uptime,
+                "processed_requests": CopilotProxyHandler.processed_requests,
+                "upstream_model": "gpt-4o",
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(status_data).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
     def do_POST(self):
+        CopilotProxyHandler.processed_requests += 1
         log(f"--- Incoming POST to {self.path} ---")
 
         # 1. Read input
@@ -19,8 +66,6 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
 
         try:
-            import json
-
             payload = json.loads(post_data)
             requested_model = payload.get("model", "unknown")
             log(f"Request model: {requested_model}")
@@ -49,14 +94,27 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
 
             req = urllib.request.Request(target_url, data=post_data, headers=headers, method="POST")
 
-            with urllib.request.urlopen(req) as response:
-                log(f"Upstream response: {response.status}")
-                self.send_response(response.status)
-                for k, v in response.headers.items():
-                    if k.lower() in ("content-type", "date"):
-                        self.send_header(k, v)
+            try:
+                # Add a reasonable timeout (60s) to prevent hangs
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    upstream_status = response.status
+                    log(f"Upstream response code: {upstream_status}")
+                    self.send_response(upstream_status)
+                    for k, v in response.headers.items():
+                        if k.lower() in (
+                            "content-type",
+                            "date",
+                            "x-request-id",
+                            "x-github-request-id",
+                        ):
+                            self.send_header(k, v)
+                    self.end_headers()
+                    self.wfile.write(response.read())
+            except TimeoutError:
+                log("Error: Upstream request timed out (60s)")
+                self.send_response(504)
                 self.end_headers()
-                self.wfile.write(response.read())
+                self.wfile.write(b"Gateway Timeout: GitHub Copilot did not respond")
 
         except urllib.error.HTTPError as e:
             error_body = e.read().decode(errors="replace")
@@ -72,7 +130,8 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
 
 
 def run(port=8085):
-    import signal
+
+    CopilotProxyHandler.start_time = time.time()
 
     server_address = ("127.0.0.1", port)
     # Enable address reuse to avoid "Address already in use" errors

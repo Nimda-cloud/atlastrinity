@@ -2,7 +2,7 @@
 # Conservative mode for planning and exploration
 
 # Use the default model from main config
-active_model = "devstral-2"
+# active_model = "devstral-2"
 system_prompt_id = "cli"
 
 # Optimize: Unrestricted access to all native tools for exploration
