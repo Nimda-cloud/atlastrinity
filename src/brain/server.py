@@ -101,13 +101,14 @@ async def lifespan(app: FastAPI):
     # Start Process Watchdog
     try:
         from .watchdog import watchdog
+
         await watchdog.start()
         logger.info("[Server] Process Watchdog started")
     except Exception as e:
         logger.error(f"[Server] Failed to start watchdog: {e}")
 
     # Start stdin watchdog to ensure we die when parent dies
-    def watchdog():
+    def stdin_watchdog_loop():
         try:
             sys.stdin.read()
         except EOFError:
@@ -119,7 +120,7 @@ async def lifespan(app: FastAPI):
 
     import threading
 
-    threading.Thread(target=watchdog, daemon=True).start()
+    threading.Thread(target=stdin_watchdog_loop, daemon=True).start()
 
     # Production: copy configs from Resources/ to ~/.config/ if needed
     run_production_setup()
@@ -301,6 +302,7 @@ async def get_processes():
     """Get status of all tracked processes from Watchdog."""
     try:
         from .watchdog import watchdog
+
         return {"status": "success", "data": watchdog.get_status()}
     except Exception as e:
         logger.error(f"Error getting process status: {e}")
