@@ -30,13 +30,20 @@ class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
             "copilot": copilot_prov,
         }
         mock_config.get_provider.side_effect = providers.get
+        mock_config.fallback_chain = ["devstral-2", "devstral-openrouter", "gpt-4o"]
 
-        mock_config.get_model_by_alias.return_value = True
+        def get_model_mock(alias):
+            m = MagicMock()
+            if alias == "devstral-2": m.provider = "mistral"
+            elif alias == "devstral-openrouter": m.provider = "openrouter"
+            elif alias == "gpt-4o": m.provider = "copilot"
+            return m
+        mock_config.get_model_by_alias.side_effect = get_model_mock
 
         with (
             patch("mcp_server.vibe_server.get_vibe_config", return_value=mock_config),
-            patch("mcp_server.vibe_server._current_model", None),
-            patch("mcp_server.vibe_server._update_argv_model") as mock_update,
+            patch("mcp_server.vibe_server._current_model", "devstral-2"),
+            patch("mcp_server.vibe_server._prepare_temp_vibe_home", return_value="/tmp/vibe_temp"),
         ):
             # Execute
             result = await vibe_server._handle_vibe_rate_limit(
@@ -45,13 +52,14 @@ class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
                 backoff_delays=[1, 2, 4],
                 stdout="Rate limit exceeded",
                 stderr="",
-                argv=["vibe", "--model", "mistral-large"],
+                argv=["vibe", "--model", "devstral-2"],
                 ctx=None,
             )
 
-            # Verification: Should have updated to gpt-4o (Copilot)
-            self.assertTrue(result)
-            mock_update.assert_called_with(["vibe", "--model", "mistral-large"], "gpt-4o")
+            # Verification: Should have skipped devstral-openrouter (unavail) and landed on gpt-4o
+            self.assertIsInstance(result, tuple)
+            self.assertTrue(result[0])
+            self.assertEqual(vibe_server._current_model, "gpt-4o")
 
     async def test_fallback_chain_use_openrouter(self):
         """Test using OpenRouter when it IS available."""
@@ -69,13 +77,14 @@ class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
             "openrouter": openrouter_prov,
         }
         mock_config.get_provider.side_effect = providers.get
+        mock_config.fallback_chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
 
-        mock_config.get_model_by_alias.return_value = True
+        mock_config.get_model_by_alias.return_value = MagicMock(provider="openrouter")
 
         with (
             patch("mcp_server.vibe_server.get_vibe_config", return_value=mock_config),
-            patch("mcp_server.vibe_server._current_model", None),
-            patch("mcp_server.vibe_server._update_argv_model") as mock_update,
+            patch("mcp_server.vibe_server._current_model", "devstral-2"),
+            patch("mcp_server.vibe_server._prepare_temp_vibe_home", return_value="/tmp/vibe_temp"),
         ):
             result = await vibe_server._handle_vibe_rate_limit(
                 attempt=0,
@@ -83,14 +92,13 @@ class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
                 backoff_delays=[1, 2, 4],
                 stdout="Rate limit exceeded",
                 stderr="",
-                argv=["vibe", "--model", "mistral-large"],
+                argv=["vibe", "--model", "devstral-2"],
                 ctx=None,
             )
 
-            self.assertTrue(result)
-            mock_update.assert_called_with(
-                ["vibe", "--model", "mistral-large"], "devstral-openrouter"
-            )
+            self.assertIsInstance(result, tuple)
+            self.assertTrue(result[0])
+            self.assertEqual(vibe_server._current_model, "devstral-openrouter")
 
     async def test_full_fallback_chain_mistral_to_copilot(self):
         """Test the full chain: Mistral (fail) -> OpenRouter (fail/unavail) -> Copilot (success)."""
@@ -112,16 +120,23 @@ class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
             "copilot": copilot_prov,
         }
         mock_config.get_provider.side_effect = providers.get
-        mock_config.get_model_by_alias.return_value = True
+        mock_config.fallback_chain = ["devstral-2", "devstral-openrouter", "gpt-4o"]
+
+        def get_model_mock(alias):
+            m = MagicMock()
+            if alias == "devstral-2": m.provider = "mistral"
+            elif alias == "devstral-openrouter": m.provider = "openrouter"
+            elif alias == "gpt-4o": m.provider = "copilot"
+            return m
+        mock_config.get_model_by_alias.side_effect = get_model_mock
 
         import time
-
         start_time = time.time()
 
         with (
             patch("mcp_server.vibe_server.get_vibe_config", return_value=mock_config),
-            patch("mcp_server.vibe_server._current_model", None),
-            patch("mcp_server.vibe_server._update_argv_model") as mock_update,
+            patch("mcp_server.vibe_server._current_model", "devstral-2"),
+            patch("mcp_server.vibe_server._prepare_temp_vibe_home", return_value="/tmp/vibe_temp"),
         ):
             # Execute
             result = await vibe_server._handle_vibe_rate_limit(
@@ -137,9 +152,10 @@ class TestVibeFallback(unittest.IsolatedAsyncioTestCase):
             duration = time.time() - start_time
 
             # Assertions
-            self.assertTrue(result)
+            self.assertIsInstance(result, tuple)
+            self.assertTrue(result[0])
             # Tier 3 is Copilot (gpt-4o)
-            mock_update.assert_called_with(["vibe", "--model", "devstral-2"], "gpt-4o")
+            self.assertEqual(vibe_server._current_model, "gpt-4o")
 
             print(f"\n⚡ Fallback Speed: {duration:.4f}s")
             print("✅ Tier 3 Verification Passed: Copilot is the active fallback when others fail.")

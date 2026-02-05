@@ -1,4 +1,24 @@
 
+<!-- AUTO-UPDATED: 2026-02-05T13:17:31.685871 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_watchdog.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T08:48:24.539604 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_watchdog.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T06:11:13.603920 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_watchdog.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T05:21:13.378560 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_watchdog.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-05T05:20:26.837329 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_watchdog.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-05T03:17:23.061699 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/verify_fallback_chain.py -->
 

@@ -475,9 +475,10 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
         # 1. Create directory structure
         (temp_path / "prompts").mkdir(parents=True, exist_ok=True)
         (temp_path / "agents").mkdir(parents=True, exist_ok=True)
+        (temp_path / "logs").mkdir(parents=True, exist_ok=True)
 
-        # 2. Link/Copy support folders (prompts are essential, agents are omitted for -p)
-        for folder in ["prompts"]:
+        # 2. Link/Copy support folders (prompts and logs are essential)
+        for folder in ["prompts", "logs"]:
             src = vibe_home / folder
             dst = temp_path / folder
             if src.exists():
@@ -1089,9 +1090,9 @@ async def _handle_vibe_rate_limit(
         current_idx = (
             chain.index(_current_model) if _current_model and _current_model in chain else -1
         )
-        next_idx = current_idx + 1
-
-        if next_idx < len(chain):
+        
+        # Iterate through the chain starting from the next model
+        for next_idx in range(current_idx + 1, len(chain)):
             next_model_alias = chain[next_idx]
             m_conf = config.get_model_by_alias(next_model_alias)
             p_conf = config.get_provider(m_conf.provider) if m_conf else None
@@ -1113,6 +1114,8 @@ async def _handle_vibe_rate_limit(
                 _current_model = next_model_alias
                 new_home = _prepare_temp_vibe_home(next_model_alias)
                 return True, new_home
+            else:
+                logger.debug(f"[VIBE] Skipping {next_model_alias}: provider not available.")
     except ValueError:
         # In case current_model is not in chain
         pass
