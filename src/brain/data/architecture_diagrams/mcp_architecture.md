@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T01:42:01.143014 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, package.json, scripts/ensure_clean_start.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T01:41:10.470817 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/vibe_config.toml.template -->
 

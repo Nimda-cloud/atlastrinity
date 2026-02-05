@@ -141,7 +141,7 @@ async def lifespan(app: FastAPI):
     # Clean shutdown of orchestrator
     try:
         await asyncio.wait_for(trinity.shutdown(), timeout=5.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("Trinity shutdown timed out, forcing...")
     except Exception as e:
         logger.error(f"Error during trinity shutdown: {e}")
