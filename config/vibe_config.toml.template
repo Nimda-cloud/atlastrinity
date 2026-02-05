@@ -3,6 +3,7 @@
 
 # Active model for Vibe (Copilot/GPT-4o is now the default)
 active_model = "gpt-4o"
+fallback_chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"

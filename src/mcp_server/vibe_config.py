@@ -228,6 +228,10 @@ class VibeConfig(BaseModel):
     )
     system_prompt_id: str = Field("default", description="System prompt ID")
     default_mode: AgentMode = Field(AgentMode.AUTO_APPROVE, description="Default operational mode")
+    fallback_chain: list[str] = Field(
+        default_factory=list,
+        description="Chain of model aliases to use when rate limited",
+    )
 
     # Tool patterns (glob/regex)
     enabled_tools: list[str] = Field(

@@ -1051,36 +1051,40 @@ async def _handle_vibe_rate_limit(
 
     config = get_vibe_config()
 
-    # Logic: Fallback Chain
-    # Tier: Copilot (gpt-4o) -> Mistral (devstral-2) -> OpenRouter (devstral-openrouter)
+    # Use configurable fallback chain from VibeConfig
+    chain = config.fallback_chain
+    if not chain:
+        # Emergency default if config is empty
+        chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
 
-    if _current_model == "gpt-4o":
-        mistral_model = config.get_model_by_alias("devstral-2")
-        mistral_provider = config.get_provider("mistral")
-        if mistral_model and mistral_provider and mistral_provider.is_available():
-            logger.info("[VIBE] Copilot rate limit. Switching to Mistral (Tier 2)...")
-            await _emit_vibe_log(
-                ctx,
-                "info",
-                "🔄 [VIBE-FALLBACK] Copilot ліміт. Переключаюсь на Mistral (devstral-2)...",
-            )
-            _current_model = "devstral-2"
-            new_home = _prepare_temp_vibe_home("devstral-2")
-            return True, new_home
+    try:
+        current_idx = chain.index(_current_model) if _current_model and _current_model in chain else -1
+        next_idx = current_idx + 1
 
-    if _current_model in ("gpt-4o", "devstral-2"):
-        openrouter_model = config.get_model_by_alias("devstral-openrouter")
-        openrouter_provider = config.get_provider("openrouter")
-        if openrouter_model and openrouter_provider and openrouter_provider.is_available():
-            logger.info("[VIBE] Target model rate limit. Switching to OpenRouter (Tier 3)...")
-            await _emit_vibe_log(
-                ctx,
-                "info",
-                "🔄 [VIBE-FALLBACK] Помилка ліміту. Переключаюсь на OpenRouter (devstral)...",
-            )
-            _current_model = "devstral-openrouter"
-            new_home = _prepare_temp_vibe_home("devstral-openrouter")
-            return True, new_home
+        if next_idx < len(chain):
+            next_model_alias = chain[next_idx]
+            m_conf = config.get_model_by_alias(next_model_alias)
+            p_conf = config.get_provider(m_conf.provider) if m_conf else None
+
+            if m_conf and p_conf and p_conf.is_available():
+                logger.info(f"[VIBE] Rate limit for {_current_model}. Switching to {next_model_alias} (Tier {next_idx + 1})...")
+                await _emit_vibe_log(
+                    ctx,
+                    "info",
+                    f"🔄 [VIBE-FALLBACK] Ліміт для {_current_model}. Переключаюсь на {next_model_alias}...",
+                )
+                
+                # Start proxy if switching to copilot
+                if p_conf.name == "copilot":
+                    if not _proxy_process or _proxy_process.poll() is not None:
+                        _start_copilot_proxy()
+                
+                _current_model = next_model_alias
+                new_home = _prepare_temp_vibe_home(next_model_alias)
+                return True, new_home
+    except ValueError:
+        # In case current_model is not in chain
+        pass
 
     error_msg = (
         f"API rate limit exceeded after {max_retries} attempts and all fallbacks. "
