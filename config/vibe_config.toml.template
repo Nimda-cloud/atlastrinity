@@ -1,8 +1,8 @@
 # Mistral Vibe Configuration (Native Format)
 # Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model for Vibe (Devstral 2 is the default)
-active_model = "devstral-2"
+# Active model for Vibe (Copilot/GPT-4o is now the default)
+active_model = "gpt-4o"
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
@@ -48,6 +48,14 @@ backend = "generic"
 # Model Presets
 # =============================================================================
 [[models]]
+name = "gpt-4o"
+provider = "copilot"
+alias = "gpt-4o"
+temperature = 0.1
+input_price = 0.0
+output_price = 0.0
+
+[[models]]
 name = "devstral-2512"
 provider = "mistral"
 alias = "devstral-2"
@@ -60,14 +68,6 @@ name = "mistralai/devstral-2512:free"
 provider = "openrouter"
 alias = "devstral-openrouter"
 temperature = 0.2
-input_price = 0.0
-output_price = 0.0
-
-[[models]]
-name = "gpt-4o"
-provider = "copilot"
-alias = "gpt-4o"
-temperature = 0.1
 input_price = 0.0
 output_price = 0.0
 

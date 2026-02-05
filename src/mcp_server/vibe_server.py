@@ -865,6 +865,7 @@ async def _execute_vibe_with_retries(
     BACKOFF_DELAYS = [60, 180, 300]
 
     for attempt in range(MAX_RETRIES):
+        logger.info(f"[VIBE] Starting attempt {attempt + 1}/{MAX_RETRIES}...")
         try:
             process = await asyncio.create_subprocess_exec(
                 *argv,
@@ -1050,43 +1051,36 @@ async def _handle_vibe_rate_limit(
 
     config = get_vibe_config()
 
-    # Tier 1 Fallback: Mistral -> OpenRouter
-    if _current_model not in ("devstral-openrouter", "gpt-4o"):
-        openrouter_model = config.get_model_by_alias("devstral-openrouter")
-        openrouter_provider = config.get_provider("openrouter")
+    # Logic: Fallback Chain
+    # Tier: Copilot (gpt-4o) -> Mistral (devstral-2) -> OpenRouter (devstral-openrouter)
 
-        if openrouter_model and openrouter_provider and openrouter_provider.is_available():
-            logger.info("[VIBE] Mistral rate limit. Switching to OpenRouter fallback (Tier 2)...")
+    if _current_model == "gpt-4o":
+        mistral_model = config.get_model_by_alias("devstral-2")
+        mistral_provider = config.get_provider("mistral")
+        if mistral_model and mistral_provider and mistral_provider.is_available():
+            logger.info("[VIBE] Copilot rate limit. Switching to Mistral (Tier 2)...")
             await _emit_vibe_log(
                 ctx,
                 "info",
-                "🔄 [VIBE-FALLBACK] Mistral API ліміт. Переключаюсь на OpenRouter (devstral)...",
+                "🔄 [VIBE-FALLBACK] Copilot ліміт. Переключаюсь на Mistral (devstral-2)...",
+            )
+            _current_model = "devstral-2"
+            new_home = _prepare_temp_vibe_home("devstral-2")
+            return True, new_home
+
+    if _current_model in ("gpt-4o", "devstral-2"):
+        openrouter_model = config.get_model_by_alias("devstral-openrouter")
+        openrouter_provider = config.get_provider("openrouter")
+        if openrouter_model and openrouter_provider and openrouter_provider.is_available():
+            logger.info("[VIBE] Target model rate limit. Switching to OpenRouter (Tier 3)...")
+            await _emit_vibe_log(
+                ctx,
+                "info",
+                "🔄 [VIBE-FALLBACK] Помилка ліміту. Переключаюсь на OpenRouter (devstral)...",
             )
             _current_model = "devstral-openrouter"
             new_home = _prepare_temp_vibe_home("devstral-openrouter")
             return True, new_home
-
-    # Tier 2 Fallback: OpenRouter -> Copilot
-    if _current_model == "devstral-openrouter" or (_current_model and _current_model != "gpt-4o"):
-        copilot_model = config.get_model_by_alias("gpt-4o")
-        if copilot_model:
-            provider = config.get_provider("copilot")
-            if provider:
-                logger.info(
-                    "[VIBE] OpenRouter rate limit (or unavailable). Switching to Copilot fallback (Tier 3)..."
-                )
-                await _emit_vibe_log(
-                    ctx,
-                    "info",
-                    "🔄 [VIBE-FALLBACK] OpenRouter ліміт/недоступний. Переключаюсь на Copilot (GPT-4o)...",
-                )
-                _current_model = "gpt-4o"
-
-                if not _proxy_process or _proxy_process.poll() is not None:
-                    _start_copilot_proxy()
-
-                new_home = _prepare_temp_vibe_home("gpt-4o")
-                return True, new_home
 
     error_msg = (
         f"API rate limit exceeded after {max_retries} attempts and all fallbacks. "
@@ -1530,10 +1524,10 @@ async def vibe_analyze_error(
                 "2.1 RECENT LOGS (Pointer-based Context)",
                 "=" * 40,
                 f"Full log file: {DEFAULT_CONFIG_ROOT}/logs/vibe_server.log",
-                "ACTION: Use your 'read_file' or 'filesystem_read' tool to inspect this file.",
+                "ACTION: Use your 'read_file' or 'filesystem_read' tool to inspect this file if needed.",
                 "",
-                "BRIEF LOG SNIPPET (for quick orientation):",
-                str(log_context)[-2000:],  # Only last 2k for orientation
+                "BRIEF LOG SNIPPET (last 30 lines for quick orientation):",
+                "\n".join(str(log_context).splitlines()[-30:]),  # Only last 30 lines
             ],
         )
 
