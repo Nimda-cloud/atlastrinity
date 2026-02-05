@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
