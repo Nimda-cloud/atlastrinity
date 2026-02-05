@@ -8,6 +8,9 @@ fallback_chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
 system_prompt_id = "cli"
 
+# Default operational mode (default, plan, accept-edits, auto-approve)
+default_mode = "auto-approve"
+
 # Enable/Disable auto-updates
 enable_auto_update = true
 
