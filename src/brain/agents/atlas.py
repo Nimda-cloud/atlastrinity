@@ -888,6 +888,9 @@ Respond in JSON:
             logger.warning("[ATLAS] Solo research reached turn limit. Signaling escalation.")
             return "__ESCALATE__"
 
+        if result and len(str(result).strip()) > 0:
+            return str(result)
+
         fallback_msg = "Я виконав кілька кроків пошуку, але мені потрібно більше часу. Що саме вас цікавить найбільше?"
         await self._memorize_chat_interaction(user_request, fallback_msg)
         return fallback_msg
