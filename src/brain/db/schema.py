@@ -27,26 +27,23 @@ class GUID(TypeDecorator):
             from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
             return dialect.type_descriptor(PG_UUID())
-        else:
-            return dialect.type_descriptor(CHAR(36))
+        return dialect.type_descriptor(CHAR(36))
 
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        elif dialect.name == "postgresql":
+        if dialect.name == "postgresql":
             return str(value)
-        elif not isinstance(value, uuid.UUID):
+        if not isinstance(value, uuid.UUID):
             return str(uuid.UUID(value))
-        else:
-            return str(value)
+        return str(value)
 
     def process_result_value(self, value, dialect):
         if value is None:
             return value
-        elif not isinstance(value, uuid.UUID):
+        if not isinstance(value, uuid.UUID):
             return uuid.UUID(value)
-        else:
-            return value
+        return value
 
 
 class Base(DeclarativeBase):

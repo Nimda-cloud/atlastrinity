@@ -1015,10 +1015,9 @@ class Trinity:
                 if verified_plan:
                     plan = verified_plan
                     break
-                elif attempt < max_retries:
+                if attempt < max_retries:
                     continue
-                else:
-                    break
+                break
             break
         return plan
 
@@ -1059,11 +1058,10 @@ class Trinity:
                         "[ORCHESTRATOR] Atlas overrode Grisha's rejection due to high confidence debate."
                     )
                     return plan
-                else:
-                    await self._log(
-                        "Atlas debated but decided to accept feedback due to lower confidence.",
-                        "atlas",
-                    )
+                await self._log(
+                    "Atlas debated but decided to accept feedback due to lower confidence.",
+                    "atlas",
+                )
 
             prefix = (
                 "Гріша знову виявив недоліки: "
@@ -1196,7 +1194,7 @@ class Trinity:
                         },
                     }
                 )
-            msg = HumanMessage(content=cast(Any, content))
+            msg = HumanMessage(content=cast("Any", content))
             self.state["current_images"] = images  # Temporary store for Atlas
         else:
             msg = HumanMessage(content=user_request)
@@ -2013,18 +2011,18 @@ class Trinity:
         if action in ["RETRY", "WAIT_AND_RETRY"]:
             return await self._handle_strategy_retry(strategy, attempt, step_result)
 
-        elif action == "RESTART":
+        if action == "RESTART":
             return await self._handle_strategy_restart(strategy, step_id)
 
-        elif action == "ASK_USER":
+        if action == "ASK_USER":
             return await self._handle_strategy_ask_user(strategy, step_id)
 
-        elif action == "VIBE_HEAL":
+        if action == "VIBE_HEAL":
             return await self._handle_strategy_vibe_heal(
                 strategy, step, step_id, last_error, step_result, depth
             )
 
-        elif action == "ATLAS_PLAN":
+        if action == "ATLAS_PLAN":
             return await self._handle_strategy_atlas_plan(
                 strategy, step, step_id, last_error, steps, index
             )
@@ -2322,7 +2320,7 @@ class Trinity:
             )
 
             step_result = await self.execute_node(
-                cast(Any, self.state), step, step_id, attempt, depth
+                cast("Any", self.state), step, step_id, attempt, depth
             )
 
             if step_result.success:
@@ -2570,13 +2568,12 @@ class Trinity:
                 await self._log_behavioral_deviation(step, step_id, result, p_text)
                 return result
 
-            else:
-                logger.info("[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
-                step["grisha_feedback"] = (
-                    f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."
-                )
-                result.success = False
-                return result
+            logger.info("[ORCHESTRATOR] Deviation REJECTED. Forcing original plan.")
+            step["grisha_feedback"] = (
+                f"Strategy Deviation Rejected: {evaluation.get('reason')}. Stick to the plan."
+            )
+            result.success = False
+            return result
         except Exception as eval_err:
             logger.error(f"[ORCHESTRATOR] Deviation evaluation failed: {eval_err}")
             result.success = False
@@ -2657,7 +2654,7 @@ class Trinity:
             await self._log(f"User responded: {user_response}", "system")
             messages = self.state.get("messages")
             if messages is not None and isinstance(messages, list):
-                messages.append(HumanMessage(content=cast(Any, user_response)))
+                messages.append(HumanMessage(content=cast("Any", user_response)))
                 self.state["messages"] = messages
             try:
                 from src.brain.state_manager import state_manager

@@ -50,9 +50,8 @@ async def test_vibe_which():
         print(f"✅ Vibe binary found at: {result.get('binary')}")
         print(f"   Version: {result.get('version')}")
         return True
-    else:
-        print(f"❌ Failed: {result.get('error')}")
-        return False
+    print(f"❌ Failed: {result.get('error')}")
+    return False
 
 
 async def test_prepare_prompt_small():
@@ -65,9 +64,8 @@ async def test_prepare_prompt_small():
         print("✅ Small prompt returned directly (no file created)")
         print(f"   Prompt: {result[:50]}...")
         return True
-    else:
-        print(f"❌ Unexpected file created: {file_path}")
-        return False
+    print(f"❌ Unexpected file created: {file_path}")
+    return False
 
 
 async def test_prepare_prompt_large():
@@ -84,9 +82,8 @@ async def test_prepare_prompt_large():
         # Cleanup test file
         Path(file_path).unlink(missing_ok=True)
         return True
-    else:
-        print(f"❌ File not in correct location: {file_path}")
-        return False
+    print(f"❌ File not in correct location: {file_path}")
+    return False
 
 
 async def test_vibe_prompt_small_task():
@@ -124,9 +121,8 @@ async def test_vibe_prompt_small_task():
         # Cleanup
         test_file.unlink()
         return True
-    else:
-        print(f"⚠️ Vibe ran but file not found at {test_file}")
-        return False
+    print(f"⚠️ Vibe ran but file not found at {test_file}")
+    return False
 
 
 async def test_vibe_arg_filtering():
@@ -149,10 +145,9 @@ async def test_vibe_arg_filtering():
         print("✅ Argument --no-tui was correctly filtered out")
         print(f"   Command run: {' '.join(command)}")
         return True
-    else:
-        print("❌ Failed: --no-tui was NOT filtered out")
-        print(f"   Command run: {' '.join(command)}")
-        return False
+    print("❌ Failed: --no-tui was NOT filtered out")
+    print(f"   Command run: {' '.join(command)}")
+    return False
 
 
 async def test_vibe_analyze_error():
@@ -170,9 +165,8 @@ async def test_vibe_analyze_error():
     if result.get("success") or result.get("returncode") is not None:
         print("✅ vibe_analyze_error executed without name errors")
         return True
-    else:
-        print(f"❌ Failed: {result.get('error')}")
-        return False
+    print(f"❌ Failed: {result.get('error')}")
+    return False
 
 
 async def main():

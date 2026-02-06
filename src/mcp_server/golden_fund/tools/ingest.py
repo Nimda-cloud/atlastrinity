@@ -28,7 +28,7 @@ def _get_scrape_result(url: str, type: str, scraper: DataScraper):
     """Helper to handle the first stage of ingestion: scraping."""
     if type == "api":
         return scraper.scrape_api_endpoint(url), ".json"
-    elif type == "web_page":
+    if type == "web_page":
         return scraper.scrape_web_page(url), ".json"
 
     # Generic file download
@@ -39,7 +39,7 @@ def _get_scrape_result(url: str, type: str, scraper: DataScraper):
         ext = ".xlsx"
     else:
         path = Path(url)
-        ext = path.suffix if path.suffix else ".bin"
+        ext = path.suffix or ".bin"
     return result, ext
 
 

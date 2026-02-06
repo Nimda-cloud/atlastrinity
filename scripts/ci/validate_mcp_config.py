@@ -83,24 +83,23 @@ def validate_mcp_config(config_path: Path) -> bool:
         for error in all_errors:
             print(f"  - {error}")
         return False
-    else:
-        print(f"✅ Configuration valid: {server_count} servers configured")
+    print(f"✅ Configuration valid: {server_count} servers configured")
 
-        # Count by tier
-        tier_counts = {}
-        disabled_count = 0
-        for name, cfg in servers.items():
-            if name.startswith("_comment"):
-                continue
-            tier = cfg.get("tier", 0)
-            tier_counts[tier] = tier_counts.get(tier, 0) + 1
-            if cfg.get("disabled", False):
-                disabled_count += 1
+    # Count by tier
+    tier_counts = {}
+    disabled_count = 0
+    for name, cfg in servers.items():
+        if name.startswith("_comment"):
+            continue
+        tier = cfg.get("tier", 0)
+        tier_counts[tier] = tier_counts.get(tier, 0) + 1
+        if cfg.get("disabled", False):
+            disabled_count += 1
 
-        print(f"📊 Tier breakdown: {dict(sorted(tier_counts.items()))}")
-        print(f"🔒 Disabled servers: {disabled_count}")
+    print(f"📊 Tier breakdown: {dict(sorted(tier_counts.items()))}")
+    print(f"🔒 Disabled servers: {disabled_count}")
 
-        return True
+    return True
 
 
 def main():

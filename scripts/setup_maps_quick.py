@@ -126,12 +126,9 @@ def check_gcloud():
                     if subprocess.run(["which", "gcloud"], capture_output=True).returncode == 0:
                         print_success("gcloud тепер доступний!")
                         return True
-                    else:
-                        print_warning("gcloud встановлено, але потребує перезапуску термінала")
-                        print_info(
-                            "Після перезапуску запустіть: python3 scripts/setup_maps_quick.py"
-                        )
-                        return False
+                    print_warning("gcloud встановлено, але потребує перезапуску термінала")
+                    print_info("Після перезапуску запустіть: python3 scripts/setup_maps_quick.py")
+                    return False
 
                 except subprocess.CalledProcessError as e:
                     print_error(f"Не вдалося встановити gcloud: {e}")
@@ -179,7 +176,7 @@ def get_or_create_project():
         choice = input("Використати цей проект? (y/n/create): ").lower()
         if choice == "y":
             return current_project
-        elif choice == "create":
+        if choice == "create":
             return create_project()
 
     # List projects
@@ -221,7 +218,7 @@ def create_project():
         )
 
         if result.returncode != 0:
-            stderr = result.stderr if result.stderr else "Невідома помилка"
+            stderr = result.stderr or "Невідома помилка"
 
             # Check for Terms of Service error specifically
             if "Terms of Service" in stderr or "TOS" in stderr:
@@ -266,12 +263,9 @@ def create_project():
                         run_command(["gcloud", "config", "set", "project", manual_project_id])
                         print_success(f"Проект {manual_project_id} встановлено як активний")
                         return manual_project_id
-                    else:
-                        print_error(f"Проект '{manual_project_id}' не знайдено.")
-                        print_info(
-                            "Перевірте Project ID в консолі: https://console.cloud.google.com"
-                        )
-                        sys.exit(1)
+                    print_error(f"Проект '{manual_project_id}' не знайдено.")
+                    print_info("Перевірте Project ID в консолі: https://console.cloud.google.com")
+                    sys.exit(1)
             else:
                 print_info("Створіть проект і запустіть скрипт знову.")
                 sys.exit(1)
@@ -499,16 +493,16 @@ def update_env(api_key):
     vite_new_line = f"VITE_GOOGLE_MAPS_API_KEY={api_key}"
 
     # Update or Add GOOGLE_MAPS_API_KEY
-    if re.search(key_pattern, content, re.M):
-        content = re.sub(key_pattern, new_line, content, flags=re.M)
+    if re.search(key_pattern, content, re.MULTILINE):
+        content = re.sub(key_pattern, new_line, content, flags=re.MULTILINE)
     else:
         if content and not content.endswith("\n"):
             content += "\n"
         content += new_line + "\n"
 
     # Update or Add VITE_GOOGLE_MAPS_API_KEY
-    if re.search(vite_key_pattern, content, re.M):
-        content = re.sub(vite_key_pattern, vite_new_line, content, flags=re.M)
+    if re.search(vite_key_pattern, content, re.MULTILINE):
+        content = re.sub(vite_key_pattern, vite_new_line, content, flags=re.MULTILINE)
     else:
         if content and not content.endswith("\n"):
             content += "\n"

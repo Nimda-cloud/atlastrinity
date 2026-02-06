@@ -43,47 +43,47 @@ class MonitoringConfig:
         Returns:
             Dictionary containing monitoring configuration
         """
-        return cast(dict[str, Any], self.system_config.get("monitoring", {}))
+        return cast("dict[str, Any]", self.system_config.get("monitoring", {}))
 
     def get_prometheus_config(self) -> dict[str, Any]:
         """Get Prometheus configuration."""
-        return cast(dict[str, Any], self._get_config_section().get("prometheus", {}))
+        return cast("dict[str, Any]", self._get_config_section().get("prometheus", {}))
 
     def get_grafana_config(self) -> dict[str, Any]:
         """Get Grafana configuration."""
-        return cast(dict[str, Any], self._get_config_section().get("grafana", {}))
+        return cast("dict[str, Any]", self._get_config_section().get("grafana", {}))
 
     def get_opensearch_config(self) -> dict[str, Any]:
         """Get OpenSearch configuration."""
-        return cast(dict[str, Any], self._get_config_section().get("opensearch", {}))
+        return cast("dict[str, Any]", self._get_config_section().get("opensearch", {}))
 
     def get_tracing_config(self) -> dict[str, Any]:
         """Get tracing configuration."""
-        return cast(dict[str, Any], self._get_config_section().get("tracing", {}))
+        return cast("dict[str, Any]", self._get_config_section().get("tracing", {}))
 
     def get_etl_config(self) -> dict[str, Any]:
         """Get ETL monitoring configuration."""
-        return cast(dict[str, Any], self._get_config_section().get("etl", {}))
+        return cast("dict[str, Any]", self._get_config_section().get("etl", {}))
 
     def get_alerts_config(self) -> dict[str, Any]:
         """Get alerts configuration."""
-        return cast(dict[str, Any], self._get_config_section().get("alerts", {}))
+        return cast("dict[str, Any]", self._get_config_section().get("alerts", {}))
 
     def is_prometheus_enabled(self) -> bool:
         """Check if Prometheus monitoring is enabled."""
-        return cast(bool, self.get_prometheus_config().get("enabled", True))
+        return cast("bool", self.get_prometheus_config().get("enabled", True))
 
     def is_grafana_enabled(self) -> bool:
         """Check if Grafana logging is enabled."""
-        return cast(bool, self.get_grafana_config().get("enabled", True))
+        return cast("bool", self.get_grafana_config().get("enabled", True))
 
     def is_opensearch_enabled(self) -> bool:
         """Check if OpenSearch integration is enabled."""
-        return cast(bool, self.get_opensearch_config().get("enabled", True))
+        return cast("bool", self.get_opensearch_config().get("enabled", True))
 
     def is_tracing_enabled(self) -> bool:
         """Check if tracing is enabled."""
-        return cast(bool, self.get_tracing_config().get("enabled", True))
+        return cast("bool", self.get_tracing_config().get("enabled", True))
 
     def save_config(self, config: dict[str, Any]) -> bool:
         """

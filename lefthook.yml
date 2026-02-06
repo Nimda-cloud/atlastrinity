@@ -4,26 +4,35 @@
 lint:all:
   parallel: true
   commands:
+    # === TypeScript / JavaScript ===
     01-biome:
       run: npx @biomejs/biome check --write src scripts
-    02-ruff:
-      run: .venv/bin/ruff check . --fix && .venv/bin/ruff format .
-    03-pyright:
-      run: npx pyright src scripts
-    04-pyrefly:
-      run: .venv/bin/python -m pyrefly check src/
-    05-complexity:
-      run: .venv/bin/xenon --max-absolute D --max-modules C --max-average B src
-    06-bandit:
-      run: .venv/bin/bandit -c pyproject.toml -r src
-    07-knip:
-      run: npx knip
-    08-security:
-      run: npm run lint:security
-    09-yaml-sync:
-      run: .venv/bin/python scripts/sync_and_validate_configs.py
-    10-oxlint:
+    02-oxlint:
       run: npx oxlint src scripts --deny-warnings --fix
+    03-tsc:
+      run: npx tsc --noEmit -p tsconfig.json && npx tsc --noEmit -p tsconfig.main.json
+    04-eslint-typed:
+      run: npx eslint src/main src/renderer
+    # === Python ===
+    05-ruff:
+      run: .venv/bin/ruff check . --fix && .venv/bin/ruff format .
+    06-pyright:
+      run: npx pyright src scripts
+    07-pyrefly:
+      run: .venv/bin/python -m pyrefly check src/
+    08-complexity:
+      run: .venv/bin/xenon --max-absolute D --max-modules C --max-average B src
+    09-bandit:
+      run: .venv/bin/bandit -c pyproject.toml -r src
+    10-vulture:
+      run: .venv/bin/vulture src scripts vulture_whitelist.py --min-confidence 80 --exclude .venv,dist_venv,node_modules,__pycache__
+    # === Cross-language ===
+    11-knip:
+      run: npx knip
+    12-security:
+      run: npm run lint:security
+    13-yaml-sync:
+      run: .venv/bin/python scripts/sync_and_validate_configs.py
 
 pre-commit:
   parallel: false

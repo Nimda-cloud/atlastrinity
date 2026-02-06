@@ -53,9 +53,8 @@ def test_company_dataset():
         print(f"  Records extracted: {len(result['transformed_data'])}")
         print(f"  Sample data: {result['transformed_data'][0]}")
         return result
-    else:
-        print(f"✗ Company dataset parsing failed: {result['error']}")
-        return None
+    print(f"✗ Company dataset parsing failed: {result['error']}")
+    return None
 
 
 def test_director_dataset():
@@ -85,9 +84,8 @@ def test_director_dataset():
         print(f"  Records extracted: {len(result['transformed_data'])}")
         print(f"  Sample data: {result['transformed_data'][0]}")
         return result
-    else:
-        print(f"✗ Director dataset parsing failed: {result['error']}")
-        return None
+    print(f"✗ Director dataset parsing failed: {result['error']}")
+    return None
 
 
 def test_auto_detection():
@@ -156,8 +154,7 @@ def main():
         # Return success if at least one test passed
         if company_result or director_result:
             return 0
-        else:
-            return 1
+        return 1
 
     except Exception as e:
         print(f"Test failed with exception: {e}")

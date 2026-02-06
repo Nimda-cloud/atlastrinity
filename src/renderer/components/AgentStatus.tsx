@@ -4,6 +4,8 @@
 
 import type React from 'react';
 
+const RE_GOAL = /goal=['"](.*?)['"]/;
+
 type AgentName = 'ATLAS' | 'TETYANA' | 'GRISHA' | 'SYSTEM' | 'USER';
 type SystemState =
   | 'IDLE'
@@ -51,7 +53,7 @@ const AgentStatus: React.FC<AgentStatusProps> = ({
 
   const formatTask = (task: string) => {
     if (!task) return 'CORE_IDLE_PREPARING_RESOURCES';
-    const goalMatch = task.match(/goal=['"](.*?)['"]/);
+    const goalMatch = task.match(RE_GOAL);
     if (goalMatch?.[1]) return goalMatch[1];
     return task;
   };

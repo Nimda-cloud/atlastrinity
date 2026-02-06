@@ -212,10 +212,12 @@ DYNAMIC VERIFICATION PROTOCOL:
 2. EXECUTE Build/Check:
    - Swift: Run 'swift build' in the project root.
    - Python: Run 'python -m py_compile <file>' and 'ruff check <file>'.
-   - Node.js: Run 'npm run build' or 'tsc'.
-3. MANDATORY GLOBAL LINT:
+   - Node.js: Run 'npm run build' or 'tsc --noEmit'.
+3. MANDATORY GLOBAL LINT (13 parallel checks):
    - Run 'devtools.devtools_run_global_lint' AFTER any code modification.
-   - This ensures the entire repository remains clean and coherent.
+   - JS/TS: biome, oxlint, tsc --noEmit (both tsconfigs), eslint type-aware (floating promises, unsafe types)
+   - Python: ruff (25 rule sets incl. PERF/FURB/TRY/RET), pyright (standard), pyrefly, xenon, bandit, vulture (dead code)
+   - Cross: knip (unused JS/TS), security audit, yaml-sync
 4. ANALYZE Output:
    - If ANY linting errors or build failures (exit code != 0) are found, READ the error log, ANALYZE the message, and FIX it in the next iteration.
    - Continue until the report shows 0 errors.
@@ -884,7 +886,7 @@ async def _emit_vibe_log(ctx: Context | None, level: str, message: str) -> None:
         return
     try:
         # Cast level string to Literal expected by ctx.log
-        log_level = cast(Literal["debug", "info", "warning", "error"], level)
+        log_level = cast("Literal['debug', 'info', 'warning', 'error']", level)
         # Robustness: ensure we don't await a MagicMock or failing call
         if hasattr(ctx, "log"):
             from unittest.mock import MagicMock
@@ -1076,7 +1078,7 @@ async def _execute_vibe_with_retries(
                         continue
                     if isinstance(res, bool) and res is True:
                         continue
-                    return cast(dict[str, Any], res)
+                    return cast("dict[str, Any]", res)
 
                 # Check for Session not found (failed resume)
 
@@ -1212,8 +1214,7 @@ async def _handle_vibe_rate_limit(
                 _current_model = next_model_alias
                 new_home = _prepare_temp_vibe_home(next_model_alias)
                 return True, new_home
-            else:
-                logger.debug(f"[VIBE] Skipping {next_model_alias}: provider not available.")
+            logger.debug(f"[VIBE] Skipping {next_model_alias}: provider not available.")
     except ValueError:
         # In case current_model is not in chain
         pass
@@ -1747,7 +1748,7 @@ async def vibe_analyze_error(
     logger.info(f"[VIBE] Analyzing error (auto_fix={auto_fix}, step={step_action})")
 
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         await vibe_prompt(
             ctx=ctx,
             prompt=prompt,
@@ -1922,7 +1923,7 @@ EXECUTE NOW
     logger.info(f"[VIBE] Implementing feature: {goal[:50]}... (iterative={iterative_review})")
 
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         await vibe_prompt(
             ctx=ctx,
             prompt=prompt,
@@ -1990,7 +1991,7 @@ async def vibe_code_review(
         prompt_parts.append(f"\nFOCUS AREAS: {focus_areas}")
 
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         await vibe_prompt(
             ctx=ctx,
             prompt="\n".join(prompt_parts),
@@ -2047,7 +2048,7 @@ async def vibe_smart_plan(
     )
 
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         await vibe_prompt(
             ctx=ctx,
             prompt="\n".join(prompt_parts),
@@ -2299,7 +2300,7 @@ async def vibe_session_resume(
 
     # Use vibe_prompt with session continuation
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         await vibe_prompt(
             ctx=ctx,
             prompt=prompt or "Continue from where we left off.",
@@ -2336,7 +2337,7 @@ async def vibe_ask(
 
     """
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         await vibe_prompt(
             ctx=ctx,
             prompt=question,

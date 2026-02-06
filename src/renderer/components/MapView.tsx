@@ -220,7 +220,7 @@ const DistanceOverlay: React.FC<{
   origin?: string;
   destination?: string;
 }> = ({ distance, duration, origin, destination }) => {
-  if (!distance && !duration) return null;
+  if (!(distance || duration)) return null;
 
   return (
     <div className="distance-overlay animate-fade-in">
@@ -409,7 +409,6 @@ const MapView: React.FC<MapViewProps> = memo(
           // Small delay to ensure everything is rendered
           await new Promise((resolve) => setTimeout(resolve, 500));
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
           if (mapElement) {
@@ -503,7 +502,7 @@ const MapView: React.FC<MapViewProps> = memo(
         }
       };
 
-      initMap();
+      void initMap();
     }, [type, isLoaded, mapInitialized]);
 
     // Sync interactive Street View with Agent's view updates
@@ -606,7 +605,6 @@ const MapView: React.FC<MapViewProps> = memo(
 
     // Handle place picker changes
     const handlePlaceChange = useCallback(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const placePicker = document.querySelector('gmpx-place-picker') as GmpxPlacePickerElement;
 
       if (placePicker) {
@@ -626,7 +624,7 @@ const MapView: React.FC<MapViewProps> = memo(
         placePicker.addEventListener('gmpx-placechange', handlePlaceChange);
 
         // Handle Enter key for search-on-enter
-        const handleKeyDown = async (e: KeyboardEvent) => {
+        const handleKeyDown = (e: KeyboardEvent) => {
           if (e.key === 'Enter') {
             const input = e.target as HTMLInputElement;
             const query = input.value?.trim();
@@ -636,36 +634,38 @@ const MapView: React.FC<MapViewProps> = memo(
             // If picker already has a value, standard placechange will handle it
             // Otherwise, we fetch the first prediction
             if (!placePicker.value) {
-              try {
-                const autocompleteService = new google.maps.places.AutocompleteService();
-                const predictions = await new Promise<google.maps.places.AutocompletePrediction[]>(
-                  (resolve) => {
-                    autocompleteService.getPlacePredictions({ input: query }, (preds) =>
+              void (async () => {
+                try {
+                  const autocompleteService = new google.maps.places.AutocompleteService();
+                  const predictions = await new Promise<
+                    google.maps.places.AutocompletePrediction[]
+                  >((resolve) => {
+                    void autocompleteService.getPlacePredictions({ input: query }, (preds) =>
                       resolve(preds || []),
                     );
-                  },
-                );
-
-                if (predictions.length > 0) {
-                  const firstResult = predictions[0];
-                  const placesService = new google.maps.places.PlacesService(
-                    document.createElement('div'),
-                  );
-
-                  placesService.getDetails({ placeId: firstResult.place_id }, (place, status) => {
-                    if (
-                      status === google.maps.places.PlacesServiceStatus.OK &&
-                      place?.geometry?.location
-                    ) {
-                      updateSearchMarker(place.geometry.location);
-                      // Clear input focus to show result
-                      input.blur();
-                    }
                   });
+
+                  if (predictions.length > 0) {
+                    const firstResult = predictions[0];
+                    const placesService = new google.maps.places.PlacesService(
+                      document.createElement('div'),
+                    );
+
+                    placesService.getDetails({ placeId: firstResult.place_id }, (place, status) => {
+                      if (
+                        status === google.maps.places.PlacesServiceStatus.OK &&
+                        place?.geometry?.location
+                      ) {
+                        updateSearchMarker(place.geometry.location);
+                        // Clear input focus to show result
+                        input.blur();
+                      }
+                    });
+                  }
+                } catch (err) {
+                  console.error('Search-on-enter failed:', err);
                 }
-              } catch (err) {
-                console.error('Search-on-enter failed:', err);
-              }
+              })();
             }
           }
         };
@@ -801,7 +801,6 @@ const MapView: React.FC<MapViewProps> = memo(
     }, [type, mapInitialized, handlePlaceChange, updateSearchMarker]);
 
     const handleZoom = (delta: number) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapElement = document.querySelector('gmp-map') as GmpMapElement;
 
       if (mapElement?.innerMap) {
@@ -851,7 +850,7 @@ const MapView: React.FC<MapViewProps> = memo(
         const center = mapElement.innerMap.getCenter();
 
         if (center) {
-          streetViewService.getPanorama(
+          void streetViewService.getPanorama(
             {
               location: center,
               radius: 100, // Check 100m radius
@@ -975,7 +974,7 @@ const MapView: React.FC<MapViewProps> = memo(
               const streetViewService = new google.maps.StreetViewService();
               const dropLocation = new google.maps.LatLng(lat, lng);
 
-              streetViewService.getPanorama(
+              void streetViewService.getPanorama(
                 {
                   location: dropLocation,
                   radius: 50,
@@ -2282,26 +2281,25 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmp-map': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         center?: string;
         zoom?: string;
         'rendering-type'?: string;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       'gmpx-api-loader': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         key?: string;
         'solution-channel'?: string;
         version?: string;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       'gmpx-place-picker': React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLElement>,
         HTMLElement
       > & {
         placeholder?: string;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       'gmp-advanced-marker': React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLElement>,
         HTMLElement
@@ -2310,4 +2308,5 @@ declare global {
   }
 }
 
+MapView.displayName = 'MapView';
 export default MapView;

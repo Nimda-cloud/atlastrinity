@@ -123,7 +123,7 @@ class SmartErrorRouter:
         """Classifies an error string into a category"""
         error_str = str(error).lower()
         if error_str in self._cache:
-            return cast(ErrorCategory, self._cache[error_str])
+            return cast("ErrorCategory", self._cache[error_str])
 
         if error_str in ["help_pending", "need_user_input", "user_input_received"]:
             category = ErrorCategory.USER_INPUT
@@ -164,13 +164,12 @@ class SmartErrorRouter:
                     max_retries=3,
                     reason=f"API rate limit or service unavailability detected. Waiting {60 * attempt}s before retry.",
                 )
-            else:
-                # After 3 attempts, escalate to Atlas for a deeper infrastructure diagnostic
-                return RecoveryStrategy(
-                    action="ATLAS_PLAN",
-                    context_needed=True,
-                    reason="Persistent API rate limiting or service issue. Requesting Atlas to optimize request pattern or find alternative provider.",
-                )
+            # After 3 attempts, escalate to Atlas for a deeper infrastructure diagnostic
+            return RecoveryStrategy(
+                action="ATLAS_PLAN",
+                context_needed=True,
+                reason="Persistent API rate limiting or service issue. Requesting Atlas to optimize request pattern or find alternative provider.",
+            )
 
         if category == ErrorCategory.TRANSIENT:
             # Patient Retry
@@ -290,7 +289,7 @@ class SmartErrorRouter:
                     max_retries=2,
                     reason="Step verification failed due to missing expected results. Retrying with adjusted approach.",
                 )
-            elif is_system_bug:
+            if is_system_bug:
                 # True verification system failure - escalate to Atlas
                 logger.warning("[ROUTER] Verification system bug detected - escalating to Atlas")
                 return RecoveryStrategy(
@@ -299,7 +298,7 @@ class SmartErrorRouter:
                     reason="Verification system failure detected. This indicates issues with Grisha's error detection logic, not the task itself. Escalating for diagnostic review.",
                 )
             # Ambiguous case - use RETRY first, then escalate if persistent
-            elif attempt <= 1:
+            if attempt <= 1:
                 logger.info(
                     "[ROUTER] Ambiguous verification failure - trying RETRY before escalation"
                 )
@@ -309,29 +308,27 @@ class SmartErrorRouter:
                     max_retries=2,
                     reason="Verification failed. Retrying with modified approach before escalating.",
                 )
-            else:
-                # After retry, escalate to Atlas
-                logger.info(
-                    "[ROUTER] Persistent verification failure after retry - escalating to Atlas"
-                )
-                return RecoveryStrategy(
-                    action="ATLAS_PLAN",
-                    context_needed=True,
-                    reason="Persistent verification failure. Escalating to Atlas for strategic re-planning.",
-                )
+            # After retry, escalate to Atlas
+            logger.info(
+                "[ROUTER] Persistent verification failure after retry - escalating to Atlas"
+            )
+            return RecoveryStrategy(
+                action="ATLAS_PLAN",
+                context_needed=True,
+                reason="Persistent verification failure. Escalating to Atlas for strategic re-planning.",
+            )
 
         # Unknown / Default Fallback
         if attempt <= 2:
             return RecoveryStrategy(
                 action="RETRY", backoff=1.0, reason="Unknown error. Trying again."
             )
-        else:
-            # Persistent unknown error: extreme autonomy mode triggers strategic planning
-            return RecoveryStrategy(
-                action="ATLAS_PLAN",
-                context_needed=True,
-                reason="Persistent unknown error. Escalating for strategic re-evaluation and discovery.",
-            )
+        # Persistent unknown error: extreme autonomy mode triggers strategic planning
+        return RecoveryStrategy(
+            action="ATLAS_PLAN",
+            context_needed=True,
+            reason="Persistent unknown error. Escalating for strategic re-evaluation and discovery.",
+        )
 
 
 # Global Instance

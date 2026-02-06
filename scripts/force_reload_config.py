@@ -34,9 +34,8 @@ def force_reload_config():
         macos_config = tool_routing["macos_use"]
         print(f"macos_use synonyms: {macos_config.get('synonyms', [])}")
         return True
-    else:
-        print("❌ macos_use not found in tool_routing")
-        return False
+    print("❌ macos_use not found in tool_routing")
+    return False
 
 
 if __name__ == "__main__":

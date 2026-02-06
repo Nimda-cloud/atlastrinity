@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 
 export default ts.config(
   js.configs.recommended,
-  ...ts.configs.recommended,
+  ...ts.configs.recommendedTypeChecked,
   {
     plugins: {
       react,
@@ -23,6 +23,8 @@ export default ts.config(
     },
     languageOptions: {
       parserOptions: {
+        projectService: true,
+        tsconfigRootDir: __dirname,
         ecmaFeatures: {
           jsx: true,
         },
@@ -42,7 +44,20 @@ export default ts.config(
           argsIgnorePattern: '^_',
         },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/unbound-method': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
     },
@@ -55,7 +70,8 @@ export default ts.config(
       'build/',
       '*.config.js',
       '*.config.ts',
-      '*.config.mjs'
+      '*.config.mjs',
+      'vite.config.ts',
     ],
   }
 );

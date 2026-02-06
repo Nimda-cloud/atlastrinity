@@ -26,12 +26,11 @@ class MetricsCollector:
         """Format network speed in human-readable units."""
         if bytes_per_sec < 1024:
             return f"{bytes_per_sec:.0f}", "B/S"
-        elif bytes_per_sec < 1024**2:
+        if bytes_per_sec < 1024**2:
             return f"{bytes_per_sec / 1024:.1f}", "K/S"
-        elif bytes_per_sec < 1024**3:
+        if bytes_per_sec < 1024**3:
             return f"{bytes_per_sec / 1024**2:.1f}", "M/S"
-        else:
-            return f"{bytes_per_sec / 1024**3:.1f}", "G/S"
+        return f"{bytes_per_sec / 1024**3:.1f}", "G/S"
 
     def get_metrics(self) -> dict[str, Any]:
         """

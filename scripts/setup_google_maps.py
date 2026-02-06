@@ -102,7 +102,7 @@ def get_or_create_project():
         choice = input("Use this project? (y/n/create): ").lower()
         if choice == "y":
             return current_project
-        elif choice == "create":
+        if choice == "create":
             return create_project()
 
     # List projects
@@ -318,16 +318,16 @@ def update_env(api_key):
     vite_new_line = f"VITE_GOOGLE_MAPS_API_KEY={api_key}"
 
     # Update or Add GOOGLE_MAPS_API_KEY
-    if re.search(key_pattern, content, re.M):
-        content = re.sub(key_pattern, new_line, content, flags=re.M)
+    if re.search(key_pattern, content, re.MULTILINE):
+        content = re.sub(key_pattern, new_line, content, flags=re.MULTILINE)
     else:
         if content and not content.endswith("\n"):
             content += "\n"
         content += new_line + "\n"
 
     # Update or Add VITE_GOOGLE_MAPS_API_KEY
-    if re.search(vite_key_pattern, content, re.M):
-        content = re.sub(vite_key_pattern, vite_new_line, content, flags=re.M)
+    if re.search(vite_key_pattern, content, re.MULTILINE):
+        content = re.sub(vite_key_pattern, vite_new_line, content, flags=re.MULTILINE)
     else:
         if content and not content.endswith("\n"):
             content += "\n"

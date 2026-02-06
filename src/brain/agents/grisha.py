@@ -1377,8 +1377,7 @@ class Grisha(BaseAgent):
 
             if issues_count > 3:
                 return f"План потребує доопрацювання. Знайдено {issues_count} проблем. Головні: {'; '.join(voice_issues)}. Ще {issues_count - 3} додаткових."
-            else:
-                return f"План потребує доопрацювання. Проблеми: {'; '.join(voice_issues)}."
+            return f"План потребує доопрацювання. Проблеми: {'; '.join(voice_issues)}."
 
         return f"План потребує доопрацювання. {summary_ukrainian}"
 
@@ -1866,10 +1865,9 @@ class Grisha(BaseAgent):
                     f"[GRISHA] Skipping verification for successful intermediate step {step_id}"
                 )
                 return self._create_intermediate_success_result(step_id)
-            else:
-                logger.info(
-                    f"[GRISHA] Intermediate step {step_id} FAILED. Proceeding with verification/diagnosis."
-                )
+            logger.info(
+                f"[GRISHA] Intermediate step {step_id} FAILED. Proceeding with verification/diagnosis."
+            )
 
         # System check
         system_issues = []
@@ -1947,20 +1945,19 @@ class Grisha(BaseAgent):
             if reasoning and len(reasoning) < 200:
                 msg += f"Деталі: {reasoning}"
             return msg
-        else:
-            issues = verdict.get("issues", [])
-            issues_text = "; ".join(issues) if issues else "критерії не виконані"
+        issues = verdict.get("issues", [])
+        issues_text = "; ".join(issues) if issues else "критерії не виконані"
 
-            msg = f"Крок {step_id} не пройшов перевірку. "
-            msg += f"Виявлені проблеми: {issues_text}. "
+        msg = f"Крок {step_id} не пройшов перевірку. "
+        msg += f"Виявлені проблеми: {issues_text}. "
 
-            # Add snippet of reasoning if it's informative
-            if reasoning and "пр" not in reasoning.lower()[:10]:  # avoid repeating "проблеми"
-                msg += f"Аналіз: {reasoning[:1000]}"
-                if len(reasoning) > 1000:
-                    msg += "..."
+        # Add snippet of reasoning if it's informative
+        if reasoning and "пр" not in reasoning.lower()[:10]:  # avoid repeating "проблеми"
+            msg += f"Аналіз: {reasoning[:1000]}"
+            if len(reasoning) > 1000:
+                msg += "..."
 
-            return msg
+        return msg
 
     async def analyze_failure(
         self,
@@ -2528,7 +2525,7 @@ class Grisha(BaseAgent):
                 text = json_match.group(1).strip()
 
         try:
-            return cast(dict[str, Any], json.loads(text))
+            return cast("dict[str, Any]", json.loads(text))
         except (json.JSONDecodeError, ValueError):
             return None
 
@@ -2588,7 +2585,7 @@ class Grisha(BaseAgent):
                 # dispatch_tool returns result directly
                 res = await mcp_manager.dispatch_tool(
                     tool_name=tool_full_name,
-                    arguments=cast(dict[str, Any], t.get("args", {})),
+                    arguments=cast("dict[str, Any]", t.get("args", {})),
                     allow_fallback=True,
                 )
 

@@ -81,4 +81,4 @@ def get_config_value(section: str, key: str, default: Any = None) -> Any:
 
 def load_mcp_config() -> dict[str, Any]:
     """Deprecated: use load_config().get('mcp', {}) instead"""
-    return cast(dict[str, Any], load_config().get("mcp", {}))
+    return cast("dict[str, Any]", load_config().get("mcp", {}))

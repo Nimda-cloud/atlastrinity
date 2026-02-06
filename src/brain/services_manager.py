@@ -87,12 +87,10 @@ def ensure_redis(force_check: bool = False):
             if first_run:
                 flag_file.touch()
             return True
-        else:
-            logger.warning("[Services] ! Redis service started but ping failed.")
-            return False
-    else:
-        logger.error("[Services] ✗ Failed to start Redis service.")
+        logger.warning("[Services] ! Redis service started but ping failed.")
         return False
+    logger.error("[Services] ✗ Failed to start Redis service.")
+    return False
 
 
 def ensure_postgres(force_check: bool = False) -> bool:
@@ -127,8 +125,7 @@ def ensure_postgres(force_check: bool = False) -> bool:
             if first_run:
                 flag_file.touch()
             return True
-        else:
-            logger.info("[Services] PostgreSQL is not responding. Attempting to start via brew...")
+        logger.info("[Services] PostgreSQL is not responding. Attempting to start via brew...")
     else:
         logger.warning("[Services] pg_isready not found. Cannot verify connectivity precisely.")
 
@@ -260,9 +257,8 @@ def ensure_golden_fund(force_check: bool = False) -> bool:
             if "datasets_metadata" in tables:
                 logger.info("[Services] Golden Fund is ready")
                 return True
-            else:
-                logger.warning("[Services] Golden Fund database structure incomplete")
-                return False
+            logger.warning("[Services] Golden Fund database structure incomplete")
+            return False
 
     except Exception as e:
         logger.error(f"[Services] Failed to ensure Golden Fund: {e}")
@@ -301,9 +297,8 @@ def ensure_vibe(force_check: bool = False) -> bool:
             if first_run:
                 flag_file.touch()
             return True
-        else:
-            logger.error(f"[Services] ✗ Failed to install Vibe CLI: {result.stderr}")
-            return False
+        logger.error(f"[Services] ✗ Failed to install Vibe CLI: {result.stderr}")
+        return False
     except Exception as e:
         logger.error(f"[Services] Error installing Vibe CLI: {e}")
         return False

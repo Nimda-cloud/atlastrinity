@@ -314,14 +314,13 @@ class DatabaseManager:
             t = df[col].dtype
             if pd.api.types.is_integer_dtype(t):
                 return Integer
-            elif pd.api.types.is_float_dtype(t):
+            if pd.api.types.is_float_dtype(t):
                 return Float
-            elif pd.api.types.is_datetime64_any_dtype(t):
+            if pd.api.types.is_datetime64_any_dtype(t):
                 return DateTime
-            elif pd.api.types.is_bool_dtype(t):
+            if pd.api.types.is_bool_dtype(t):
                 return Boolean
-            else:
-                return Text  # Default to Text for objects/strings
+            return Text  # Default to Text for objects/strings
 
         # 2. Define the new table
         metadata = MetaData()
@@ -398,7 +397,7 @@ class DatabaseManager:
         """Get a new async session."""
         if not self.available or not self._session_maker:
             raise RuntimeError("Database not initialized")
-        return cast(AsyncSession, self._session_maker())
+        return cast("AsyncSession", self._session_maker())
 
     async def close(self):
         if self._engine:

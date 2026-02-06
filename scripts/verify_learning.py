@@ -37,9 +37,9 @@ async def test_learning_and_vibe():
     orchestrator = Orchestrator()
     await orchestrator.initialize()
 
-    try:
-        from src.brain.mcp_manager import mcp_manager
+    from src.brain.mcp_manager import mcp_manager
 
+    try:
         print("Checking Vibe server tools...")
         tools = await mcp_manager.list_tools("vibe")
         tool_names = [t.name for t in tools]

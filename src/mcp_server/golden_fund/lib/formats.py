@@ -99,9 +99,8 @@ class ExcelParser:
             if isinstance(df_dict, dict):
                 # Multiple sheets, return dict of DataFrames
                 return ParseResult(True, data=df_dict)
-            else:
-                # Single DataFrame
-                return ParseResult(True, data=df_dict)
+            # Single DataFrame
+            return ParseResult(True, data=df_dict)
         except Exception as e:
             return ParseResult(False, error=f"Excel parse error: {e}")
 

@@ -33,9 +33,8 @@ async def test_graph_generation():
     if "graph TD" in result:
         print("\n✅ Graph Generation Successful")
         return True
-    else:
-        print("\n❌ Graph Generation Failed (Invalid format)")
-        return False
+    print("\n❌ Graph Generation Failed (Invalid format)")
+    return False
 
 
 if __name__ == "__main__":

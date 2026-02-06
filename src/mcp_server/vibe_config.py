@@ -341,9 +341,8 @@ class VibeConfig(BaseModel):
         """Check if tool name matches a pattern."""
         if isinstance(pattern, re.Pattern):
             return bool(pattern.fullmatch(tool_name))
-        else:
-            # Glob or literal
-            return fnmatch.fnmatch(tool_name, pattern)
+        # Glob or literal
+        return fnmatch.fnmatch(tool_name, pattern)
 
     def get_tool_permission(self, tool_name: str) -> ToolPermission:
         """Get permission level for a specific tool."""

@@ -175,7 +175,7 @@ class ConsolidationModule:
             # Basic JSON extraction
             start = content.find("{")
             end = content.rfind("}") + 1
-            return cast(dict[str, str] | None, json.loads(content[start:end]))
+            return cast("dict[str, str] | None", json.loads(content[start:end]))
         except Exception as e:
             logger.warning(f"LLM Lesson distillation failed: {e}")
             return None

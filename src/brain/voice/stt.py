@@ -419,8 +419,7 @@ class WhisperSTT:
         # If previous phrase ends with punctuation
         if prev[-1] in ".!?":
             return f"{prev} {new[0].upper() + new[1:] if len(new) > 1 else new.upper()}"
-        else:
-            return f"{prev} {new}"
+        return f"{prev} {new}"
 
     def list_audio_devices(self) -> list:
         if not _check_audio_available():

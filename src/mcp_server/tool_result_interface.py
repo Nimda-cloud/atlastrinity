@@ -12,16 +12,13 @@ class ToolResult(ABC):
     @abstractmethod
     def success(self) -> bool:
         """Indicates whether the tool execution was successful."""
-        pass
 
     @property
     @abstractmethod
     def data(self) -> Any:
         """The main data returned by the tool."""
-        pass
 
     @property
     @abstractmethod
     def error(self) -> str | None:
         """Error message if the tool execution failed."""
-        pass

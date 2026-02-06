@@ -36,7 +36,7 @@ def _load_search_rules() -> dict[str, Any]:
         match = re.search(r"\{.*\}", content, re.DOTALL)
         if match:
             config = json.loads(match.group(0))
-            return cast(dict[str, Any], config.get("search_rules", {}))
+            return cast("dict[str, Any]", config.get("search_rules", {}))
     except Exception as e:
         logger.error(f"Error loading protocol: {e}")
     return {}
@@ -297,8 +297,7 @@ def _scrape_opendatabot(company_name: str) -> dict[str, Any]:
                 "provider": "Opendatabot (Direct Web Scraping)",
                 "fallback_used": True,
             }
-        else:
-            return {"error": "No company data found on Opendatabot"}
+        return {"error": "No company data found on Opendatabot"}
 
     except Exception as e:
         logger.error(f"Opendatabot scraping failed: {e}")
@@ -389,8 +388,7 @@ def _scrape_youcontrol(company_name: str) -> dict[str, Any]:
                 "provider": "YouControl (Direct Web Scraping)",
                 "fallback_used": True,
             }
-        else:
-            return {"error": "No company data found on YouControl"}
+        return {"error": "No company data found on YouControl"}
 
     except Exception as e:
         logger.error(f"YouControl scraping failed: {e}")
@@ -426,45 +424,40 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
             f"Business registry search completed: found {len(result.get('results', []))} results",
         )
         return result
-    else:
-        logger.warning(f"DuckDuckGo search failed: {result.get('error', 'unknown error')}")
+    logger.warning(f"DuckDuckGo search failed: {result.get('error', 'unknown error')}")
 
-        # Step 2: Fallback to direct web scraping
-        logger.info("Initiating fallback web scraping for business registry data")
+    # Step 2: Fallback to direct web scraping
+    logger.info("Initiating fallback web scraping for business registry data")
 
-        # Try Opendatabot first
-        opendatabot_result = _scrape_opendatabot(company_name)
-        if opendatabot_result.get("success"):
-            logger.info(
-                f"Opendatabot scraping successful: found {len(opendatabot_result.get('results', []))} results"
-            )
-            return opendatabot_result
-        else:
-            logger.warning(
-                f"Opendatabot scraping failed: {opendatabot_result.get('error', 'unknown error')}"
-            )
+    # Try Opendatabot first
+    opendatabot_result = _scrape_opendatabot(company_name)
+    if opendatabot_result.get("success"):
+        logger.info(
+            f"Opendatabot scraping successful: found {len(opendatabot_result.get('results', []))} results"
+        )
+        return opendatabot_result
+    logger.warning(
+        f"Opendatabot scraping failed: {opendatabot_result.get('error', 'unknown error')}"
+    )
 
-        # Try YouControl as second fallback
-        youcontrol_result = _scrape_youcontrol(company_name)
-        if youcontrol_result.get("success"):
-            logger.info(
-                f"YouControl scraping successful: found {len(youcontrol_result.get('results', []))} results"
-            )
-            return youcontrol_result
-        else:
-            logger.warning(
-                f"YouControl scraping failed: {youcontrol_result.get('error', 'unknown error')}"
-            )
+    # Try YouControl as second fallback
+    youcontrol_result = _scrape_youcontrol(company_name)
+    if youcontrol_result.get("success"):
+        logger.info(
+            f"YouControl scraping successful: found {len(youcontrol_result.get('results', []))} results"
+        )
+        return youcontrol_result
+    logger.warning(f"YouControl scraping failed: {youcontrol_result.get('error', 'unknown error')}")
 
-        # If all methods failed, return the original DuckDuckGo error with fallback context
-        return {
-            **result,
-            "fallback_attempted": True,
-            "fallback_errors": {
-                "opendatabot": opendatabot_result.get("error", "unknown error"),
-                "youcontrol": youcontrol_result.get("error", "unknown error"),
-            },
-        }
+    # If all methods failed, return the original DuckDuckGo error with fallback context
+    return {
+        **result,
+        "fallback_attempted": True,
+        "fallback_errors": {
+            "opendatabot": opendatabot_result.get("error", "unknown error"),
+            "youcontrol": youcontrol_result.get("error", "unknown error"),
+        },
+    }
 
 
 @server.tool()

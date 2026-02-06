@@ -198,7 +198,7 @@ async function createWindow(): Promise<void> {
   });
 
   // Check required permissions in background after window is created
-  checkPermissions().then(async (ok) => {
+  void checkPermissions().then(async (ok) => {
     if (!ok) {
       await requestPermissions();
     }
@@ -234,14 +234,16 @@ async function createWindow(): Promise<void> {
       } catch {
         if (retryCount < 10) {
           console.log(`[ELECTRON] Load failed, retrying in 2s...`);
-          setTimeout(() => attemptLoad(retryCount + 1), 2000);
+          setTimeout(() => {
+            void attemptLoad(retryCount + 1);
+          }, 2000);
         } else {
           console.error('[ELECTRON] Failed to load renderer after 10 attempts');
         }
       }
     };
 
-    attemptLoad();
+    void attemptLoad();
   } else {
     await mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
@@ -361,7 +363,7 @@ function startPythonServer() {
     const message = data.toString();
     console.log(`[Python]: ${message}`);
     if (mainWindow) {
-      mainWindow.webContents.executeJavaScript(
+      void mainWindow.webContents.executeJavaScript(
         `console.log('[Python]: ' + ${JSON.stringify(message)})`,
       );
     }
@@ -371,7 +373,7 @@ function startPythonServer() {
     const message = data.toString();
     console.error(`[Python Err]: ${message}`);
     if (mainWindow) {
-      mainWindow.webContents.executeJavaScript(
+      void mainWindow.webContents.executeJavaScript(
         `console.error('[Python Err]: ' + ${JSON.stringify(message)})`,
       );
     }
@@ -380,7 +382,7 @@ function startPythonServer() {
   pythonProcess.on('error', (err: Error) => {
     console.error(`Failed to start Python server: ${err}`);
     if (mainWindow) {
-      mainWindow.webContents.executeJavaScript(
+      void mainWindow.webContents.executeJavaScript(
         `console.error('CRITICAL: Failed to start Python server: ' + ${JSON.stringify(err.message)})`,
       );
     }
@@ -389,7 +391,7 @@ function startPythonServer() {
   pythonProcess.on('close', (code: number | null) => {
     console.log(`Python process exited with code ${code}`);
     if (mainWindow && code !== 0 && code !== null) {
-      mainWindow.webContents.executeJavaScript(
+      void mainWindow.webContents.executeJavaScript(
         `console.error('CRITICAL: Python server exited with code ' + ${code})`,
       );
     }
@@ -414,9 +416,9 @@ ipcMain.handle('request-accessibility', async () => {
 });
 
 // App lifecycle
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   createAppMenu();
-  createWindow();
+  void createWindow();
 });
 
 app.on('window-all-closed', () => {
@@ -474,7 +476,7 @@ app.on('will-quit', () => {
 
 app.on('activate', () => {
   if (mainWindow === null) {
-    createWindow();
+    void createWindow();
   }
 });
 

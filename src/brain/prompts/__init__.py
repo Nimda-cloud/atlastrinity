@@ -64,12 +64,11 @@ class AgentPrompts:
 
         if agent_name.upper() == "ATLAS":
             return ATLAS["SYSTEM_PROMPT_TEMPLATE"].format(**context_data)
-        elif agent_name.upper() == "TETYANA":
+        if agent_name.upper() == "TETYANA":
             return TETYANA["SYSTEM_PROMPT_TEMPLATE"].format(**context_data)
-        elif agent_name.upper() == "GRISHA":
+        if agent_name.upper() == "GRISHA":
             return GRISHA["SYSTEM_PROMPT_TEMPLATE"].format(**context_data)
-        else:
-            raise ValueError(f"Unknown agent: {agent_name}")
+        raise ValueError(f"Unknown agent: {agent_name}")
 
     @staticmethod
     def tetyana_reasoning_prompt(

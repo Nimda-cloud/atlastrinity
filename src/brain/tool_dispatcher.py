@@ -808,11 +808,10 @@ class ToolDispatcher:
             ]
             if tool_name in data_analysis_tools:
                 return True, ""
-            else:
-                return (
-                    False,
-                    f"Tool '{tool_name}' is not compatible with data-analysis realm. Available tools: {', '.join(data_analysis_tools)}",
-                )
+            return (
+                False,
+                f"Tool '{tool_name}' is not compatible with data-analysis realm. Available tools: {', '.join(data_analysis_tools)}",
+            )
 
         # Special case: golden-fund realm validation
         if server == "golden-fund":
@@ -828,11 +827,10 @@ class ToolDispatcher:
             ]
             if tool_name in golden_fund_tools:
                 return True, ""
-            else:
-                return (
-                    False,
-                    f"Tool '{tool_name}' is not compatible with golden-fund realm. Available tools: {', '.join(golden_fund_tools)}",
-                )
+            return (
+                False,
+                f"Tool '{tool_name}' is not compatible with golden-fund realm. Available tools: {', '.join(golden_fund_tools)}",
+            )
 
         # For other realms, provide a generic compatibility check
         capabilities = server_info.get("capabilities", [])
@@ -1522,14 +1520,14 @@ class ToolDispatcher:
                 "result": f"Server '{server_to_restart}' restart {'successful' if success else 'failed'}.",
             }
 
-        elif tool_name == "query_db":
+        if tool_name == "query_db":
             # For now, we don't expose raw SQL to agents for safety, but we could implement specific queries
             return {
                 "success": False,
                 "error": "Direct DB queries via LLM are currently restricted for safety.",
             }
 
-        elif tool_name == "restart_application":
+        if tool_name == "restart_application":
             reason = args.get("reason", "Manual restart triggered")
             logger.warning(f"[SYSTEM] Application restart triggered: {reason}")
 
@@ -1564,7 +1562,7 @@ class ToolDispatcher:
                 "result": "Initiating graceful restart sequence. I will be back in a moment.",
             }
 
-        elif tool_name in {"system", "status"}:
+        if tool_name in {"system", "status"}:
             # Generic status/meta tool for informational steps
             return {
                 "success": True,
@@ -1585,24 +1583,24 @@ class ToolDispatcher:
                 await tour_driver.start_tour(polyline)
                 return {"success": True, "result": "Tour started successfully"}
 
-            elif tool_name == "tour_stop":
+            if tool_name == "tour_stop":
                 await tour_driver.stop_tour()
                 return {"success": True, "result": "Tour stopped"}
 
-            elif tool_name == "tour_pause":
+            if tool_name == "tour_pause":
                 tour_driver.pause_tour()
                 return {"success": True, "result": "Tour paused"}
 
-            elif tool_name == "tour_resume":
+            if tool_name == "tour_resume":
                 tour_driver.resume_tour()
                 return {"success": True, "result": "Tour resumed"}
 
-            elif tool_name == "tour_look":
+            if tool_name == "tour_look":
                 angle = args.get("angle", 0)
                 tour_driver.look_around(int(angle))
                 return {"success": True, "result": f"Looked {angle} degrees"}
 
-            elif tool_name == "tour_set_speed":
+            if tool_name == "tour_set_speed":
                 speed = args.get("speed", 1.0)
                 tour_driver.set_speed(float(speed))
                 return {"success": True, "result": f"Speed set to {speed}"}

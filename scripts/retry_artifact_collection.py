@@ -34,7 +34,7 @@ async def run():
         "content",
         None,
     )
-    print("Notes search:", structured if structured else notes_search)
+    print("Notes search:", structured or notes_search)
 
     # Read note content if available and extract file path (first file path)
     note_id = None

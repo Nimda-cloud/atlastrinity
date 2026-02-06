@@ -57,9 +57,9 @@ def load_tests(file_path: str | Path) -> list[TestScenario]:
 
     # Support specific "tests" key or root list
     if isinstance(data, dict) and "tests" in data:
-        return cast(list[TestScenario], data["tests"])
+        return cast("list[TestScenario]", data["tests"])
     if isinstance(data, list):
-        return cast(list[TestScenario], data)
+        return cast("list[TestScenario]", data)
 
     raise ValueError("Invalid test file structure. Expected list of tests or {'tests': [...]}")
 

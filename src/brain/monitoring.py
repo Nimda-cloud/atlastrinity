@@ -166,17 +166,17 @@ class MonitoringSystem:
 
         def create_gauge(name, label):
             if name in REGISTRY._names_to_collectors:
-                return cast(Any, REGISTRY._names_to_collectors[name])
+                return cast("Any", REGISTRY._names_to_collectors[name])
             return Gauge(name, label)
 
         def create_counter(name, label, labels=None):
             if name in REGISTRY._names_to_collectors:
-                return cast(Any, REGISTRY._names_to_collectors[name])
+                return cast("Any", REGISTRY._names_to_collectors[name])
             return Counter(name, label, labels or [])
 
         def create_histogram(name, label, labels=None):
             if name in REGISTRY._names_to_collectors:
-                return cast(Any, REGISTRY._names_to_collectors[name])
+                return cast("Any", REGISTRY._names_to_collectors[name])
             return Histogram(name, label, labels or [])
 
         # System metrics

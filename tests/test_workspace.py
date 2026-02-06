@@ -23,8 +23,7 @@ async def verify_workspace():
     if not WORKSPACE_DIR.exists():
         print(f"❌ FAILURE: Workspace directory not created at {WORKSPACE_DIR}")
         return
-    else:
-        print(f"✅ Directory exists: {WORKSPACE_DIR}")
+    print(f"✅ Directory exists: {WORKSPACE_DIR}")
 
     # Check permissions
     st = os.stat(WORKSPACE_DIR)

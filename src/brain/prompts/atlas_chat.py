@@ -166,8 +166,8 @@ SOUL DIRECTIVE — WHO I AM IN DIALOGUE:
 ═══════════════════════════════════════════════════════════════════════════════
                          MEMORY ARSENAL (ACTIVE)
 ═══════════════════════════════════════════════════════════════════════════════
-1. **KNOWLEDGE GRAPH**: {graph_context if graph_context else "No active graph context."}
-2. **VECTOR MEMORY**: {vector_context if vector_context else "No similar past memories."}
+1. **KNOWLEDGE GRAPH**: {graph_context or "No active graph context."}
+2. **VECTOR MEMORY**: {vector_context or "No similar past memories."}
 3. **SYSTEM STATUS**: {system_status}
 4. **AGENT CAPABILITIES**: {agent_capabilities}
 

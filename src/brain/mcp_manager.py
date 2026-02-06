@@ -490,7 +490,7 @@ class MCPManager:
                     await tour_driver.start_tour(polyline)
                     return {"content": [{"type": "text", "text": "Tour started successfully."}]}
 
-                elif tool_name == "maps_tour_control":
+                if tool_name == "maps_tour_control":
                     from src.brain.navigation.tour_driver import tour_driver
 
                     action = (arguments or {}).get("action", "")
@@ -499,13 +499,13 @@ class MCPManager:
                     if action == "stop":
                         await tour_driver.stop_tour()
                         return {"content": [{"type": "text", "text": "Tour stopped."}]}
-                    elif action == "pause":
+                    if action == "pause":
                         tour_driver.pause_tour()
                         return {"content": [{"type": "text", "text": "Tour paused."}]}
-                    elif action == "resume":
+                    if action == "resume":
                         tour_driver.resume_tour()
                         return {"content": [{"type": "text", "text": "Tour resumed."}]}
-                    elif action == "look":
+                    if action == "look":
                         angle = int(val) if val is not None else 0
                         tour_driver.look_around(angle)
                         return {"content": [{"type": "text", "text": f"Looking at {angle}."}]}

@@ -120,8 +120,7 @@ def check_python_deps():
 
     if missing_deps:
         return {"status": "error", "message": f"Missing dependencies: {missing_deps}"}
-    else:
-        return {"status": "ok", "message": "All critical dependencies available"}
+    return {"status": "ok", "message": "All critical dependencies available"}
 
 
 def check_vibe_server():
@@ -138,8 +137,7 @@ def check_vibe_server():
         )
         if result.returncode == 0:
             return {"status": "ok", "message": f"Vibe server available: {result.stdout.strip()}"}
-        else:
-            return {"status": "error", "message": f"Vibe server error: {result.stderr}"}
+        return {"status": "error", "message": f"Vibe server error: {result.stderr}"}
     except Exception as e:
         return {"status": "error", "message": f"Vibe server check failed: {e}"}
 
@@ -154,8 +152,7 @@ def check_memory_usage():
         memory = psutil.virtual_memory()
         if memory.percent > 90:
             return {"status": "warning", "message": f"High memory usage: {memory.percent}%"}
-        else:
-            return {"status": "ok", "message": f"Memory usage: {memory.percent}%"}
+        return {"status": "ok", "message": f"Memory usage: {memory.percent}%"}
     except ImportError:
         return {"status": "warning", "message": "psutil not available - cannot check memory"}
     except Exception as e:
@@ -182,8 +179,7 @@ def check_recent_errors():
         error_count = sum(1 for line in lines if "ERROR" in line.upper())
         if error_count > 5:
             return {"status": "warning", "message": f"Found {error_count} errors in recent logs"}
-        else:
-            return {"status": "ok", "message": f"Found {error_count} errors in recent logs"}
+        return {"status": "ok", "message": f"Found {error_count} errors in recent logs"}
     except Exception as e:
         return {"status": "error", "message": f"Log check failed: {e}"}
 
@@ -233,9 +229,8 @@ def main():
     if issues_found > 0:
         print("🚨 Issues found! Please review the errors above.")
         return 1
-    else:
-        print("🎉 All systems operational!")
-        return 0
+    print("🎉 All systems operational!")
+    return 0
 
 
 if __name__ == "__main__":

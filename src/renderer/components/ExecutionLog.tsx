@@ -23,7 +23,7 @@ interface ExecutionLogProps {
 const ExecutionLog: React.FC<ExecutionLogProps> = ({ logs }) => {
   // Filter out noisy connection logs
   const filteredLogs = logs.filter(
-    (l) => !l.message.includes('Connected to') && !l.message.includes('health check'),
+    (l) => !(l.message.includes('Connected to') || l.message.includes('health check')),
   );
 
   const logsEndRef = useRef<HTMLDivElement>(null);

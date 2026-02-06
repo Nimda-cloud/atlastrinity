@@ -58,7 +58,6 @@ def kill_process(pid, name):
 
         # Give it a moment (non-blocking in this script structure,
         # but practically we just fire SIGTERM first)
-        pass
     except ProcessLookupError:
         pass
     except PermissionError:

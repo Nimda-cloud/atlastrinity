@@ -89,11 +89,10 @@ class DataTransformer:
                         )
 
                 return TransformResult(True, data=transformed)
-            else:
-                res = self._transform_item(data, source_format)
-                return TransformResult(
-                    bool(res), data=res, error="Validation failed" if not res else None
-                )
+            res = self._transform_item(data, source_format)
+            return TransformResult(
+                bool(res), data=res, error="Validation failed" if not res else None
+            )
         except Exception as e:
             return TransformResult(False, error=f"Transformation error: {e}")
 
@@ -113,7 +112,7 @@ class DataTransformer:
 
             # Validate
             validated = self.schema(**record)
-            return cast(dict[str, Any] | None, validated.model_dump())
+            return cast("dict[str, Any] | None", validated.model_dump())
         except ValidationError as e:
             logger.warning(f"Validation failed for item: {e}")
             return None

@@ -43,7 +43,7 @@ async def _transcribe_via_brain(audio_path: str) -> str | None:
                     files = {"audio": (os.path.basename(audio_path), f, "audio/wav")}
                     response = await client.post("http://127.0.0.1:8000/api/stt", files=files)
                     if response.status_code == 200:
-                        return cast(str, response.json().get("text", ""))
+                        return cast("str", response.json().get("text", ""))
     except Exception as e:
         print(f"[MCP Whisper] Brain API fallback: {e}")
     return None
@@ -61,7 +61,7 @@ async def transcribe_audio(audio_path: str, language: str | None = None) -> str:
     stt = await get_local_stt()
     lang = language or config.get("voice.stt.language", "uk")
     result = await stt.transcribe_file(audio_path, language=lang)
-    return cast(str, result.text)
+    return cast("str", result.text)
 
 
 @server.tool()
@@ -71,7 +71,7 @@ async def record_and_transcribe(duration: float = 5.0, language: str | None = No
     stt = await get_local_stt()
     lang = language or config.get("voice.stt.language", "uk")
     result = await stt.record_and_transcribe(duration, language=lang)
-    return cast(str, result.text)
+    return cast("str", result.text)
 
 
 if __name__ == "__main__":

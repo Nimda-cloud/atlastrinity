@@ -15,5 +15,5 @@ project-excludes = [
 
 # Disable specific heavy checks if necessary
 [errors]
-# Example: disable certain checks that might trigger recursion
-# unrecognized-attribute = false
+# Guarded optional imports (chromadb, yaml, aioredis) trigger false positives
+missing-attribute = false

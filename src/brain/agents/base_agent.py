@@ -20,7 +20,7 @@ class BaseAgent:
             for block in blocks[1:]:
                 inner = block.split("`")[0].strip()
                 try:
-                    return cast(dict[str, Any], json.loads(inner))
+                    return cast("dict[str, Any]", json.loads(inner))
                 except json.JSONDecodeError:
                     continue
 
@@ -31,7 +31,7 @@ class BaseAgent:
                 inner = block.strip()
                 if inner.startswith("{") and "}" in inner:
                     try:
-                        return cast(dict[str, Any], json.loads(inner))
+                        return cast("dict[str, Any]", json.loads(inner))
                     except json.JSONDecodeError:
                         pass
 
@@ -41,7 +41,7 @@ class BaseAgent:
             end = text.rfind("}") + 1
             if start >= 0 and end > start:
                 candidate = text[start:end]
-                return cast(dict[str, Any], json.loads(candidate))
+                return cast("dict[str, Any]", json.loads(candidate))
         except (json.JSONDecodeError, Exception):
             pass
 

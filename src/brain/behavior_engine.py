@@ -114,7 +114,7 @@ class BehaviorEngine:
                 logger.info(
                     f"[BEHAVIOR ENGINE] Loaded config with {len(config.get('patterns', {}))} pattern groups",
                 )
-                return cast(dict[str, Any], config)
+                return cast("dict[str, Any]", config)
         except Exception as e:
             logger.error(f"[BEHAVIOR ENGINE] Failed to load config: {e}")
             return {}
@@ -277,12 +277,12 @@ class BehaviorEngine:
                 logger.debug(
                     f"[BEHAVIOR ENGINE] Strategy selected: {strategy} (condition: {condition})",
                 )
-                return cast(str, strategy)
+                return cast("str", strategy)
 
         # Return default or fallback
         default = task_strategies.get("default", "standard")
         logger.debug(f"[BEHAVIOR ENGINE] Strategy selected: {default} (default)")
-        return cast(str, default)
+        return cast("str", default)
 
     def route_tool(
         self,
@@ -385,7 +385,7 @@ class BehaviorEngine:
             if any(kw in task_lower for kw in keywords):
                 recommended = config.get("recommended_servers", [])
                 logger.debug(f"[BEHAVIOR ENGINE] Task classified as {task_type}: {recommended}")
-                return cast(list[str], recommended)
+                return cast("list[str]", recommended)
 
         # Default fallback
         default_servers = ["macos-use", "filesystem"]
@@ -491,11 +491,13 @@ class BehaviorEngine:
 
     def get_output_processing(self, category: str) -> dict[str, Any]:
         """Returns output processing rules for a category."""
-        return cast(dict[str, Any], self.config.get("output_processing", {}).get(category, {}))
+        return cast("dict[str, Any]", self.config.get("output_processing", {}).get(category, {}))
 
     def get_background_monitoring(self, task_name: str) -> dict[str, Any]:
         """Returns background monitoring config for a task."""
-        return cast(dict[str, Any], self.config.get("background_monitoring", {}).get(task_name, {}))
+        return cast(
+            "dict[str, Any]", self.config.get("background_monitoring", {}).get(task_name, {})
+        )
 
     def get_stats(self) -> dict[str, Any]:
         """Returns usage statistics."""
@@ -618,9 +620,9 @@ class WorkflowEngine:
                         return match.group(0)
 
                 return re.sub(r"\$\{([^}]+)\}", replacer, v)
-            elif isinstance(v, dict):
+            if isinstance(v, dict):
                 return {ik: _resolve_val(iv) for ik, iv in v.items()}
-            elif isinstance(v, list):
+            if isinstance(v, list):
                 return [_resolve_val(iv) for iv in v]
             return v
 

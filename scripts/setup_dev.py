@@ -89,10 +89,9 @@ def check_python_version():
     if current_version == REQUIRED_PYTHON:
         print_success(f"Python {current_version} знайдено")
         return True
-    else:
-        print_warning(f"Поточна версія Python: {current_version}")
-        print_info(f"Рекомендовано використовувати {REQUIRED_PYTHON} для повної сумісності.")
-        return True  # Дозволяємо продовжити, але з попередженням
+    print_warning(f"Поточна версія Python: {current_version}")
+    print_info(f"Рекомендовано використовувати {REQUIRED_PYTHON} для повної сумісності.")
+    return True  # Дозволяємо продовжити, але з попередженням
 
 
 def ensure_directories():
@@ -149,8 +148,25 @@ def check_system_tools():
     else:
         print_success(f"Node знайдено ({subprocess.getoutput('node --version').strip()})")
 
-    # 3. Check other tools
-    tools = ["bun", "swift", "npm", "vibe", "oxlint", "knip", "ruff", "pyrefly", "gcloud"]
+    # 3. Check other tools (includes all 13 linters from lint:all + build tools)
+    tools = [
+        "bun",
+        "swift",
+        "npm",
+        "vibe",
+        "oxlint",
+        "knip",
+        "ruff",
+        "pyrefly",
+        "vulture",
+        "bandit",
+        "xenon",
+        "safety",
+        "detect-secrets",
+        "gcloud",
+    ]
+    # Python tools that live in .venv/bin
+    venv_tools = {"ruff", "pyrefly", "vulture", "bandit", "xenon", "safety", "detect-secrets"}
     missing = []
 
     for tool in tools:
@@ -159,7 +175,7 @@ def check_system_tools():
             print_success(f"{tool} знайдено")
         else:
             # Check venv for python tools (only if venv exists)
-            if tool in ["ruff", "pyrefly"]:
+            if tool in venv_tools:
                 venv_tool = PROJECT_ROOT / ".venv" / "bin" / tool
                 if venv_tool.exists():
                     print_success(f"{tool} знайдено у .venv")
@@ -171,6 +187,15 @@ def check_system_tools():
             else:
                 # Python-specific tools are non-blocking here as they'll be installed later
                 print_info(f"{tool} поки не знайдено (буде встановлено у .venv пізніше)")
+
+    # Check npx-based tools (biome, eslint, pyright, tsc, lefthook are npm devDependencies)
+    npx_tools = ["@biomejs/biome", "eslint", "pyright", "lefthook"]
+    for pkg in npx_tools:
+        pkg_dir = PROJECT_ROOT / "node_modules" / pkg
+        if pkg_dir.exists():
+            print_success(f"{pkg} знайдено в node_modules")
+        else:
+            print_info(f"{pkg} поки не знайдено (буде встановлено через npm install)")
 
     # Auto-install Vibe if missing
     if "vibe" in missing:
@@ -662,10 +687,7 @@ def build_swift_mcp():
         if binary_age < 7 * 24 * 3600:  # 7 days
             print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
             return True
-        else:
-            print_info(
-                f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція..."
-            )
+        print_info(f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція...")
 
     # Force recompilation: removing existing binary check to ensure latest logic is built
     print_info("Компіляція macos-use...")
@@ -677,9 +699,8 @@ def build_swift_mcp():
         if binary_path.exists():
             print_success(f"Скомпільовано успішно: {binary_path}")
             return True
-        else:
-            print_error("Бінарний файл не знайдено після компіляції!")
-            return False
+        print_error("Бінарний файл не знайдено після компіляції!")
+        return False
     except subprocess.CalledProcessError as e:
         print_error(f"Помилка компіляції Swift: {e}")
         return False
@@ -702,10 +723,7 @@ def build_googlemaps_mcp():
         if binary_age < 7 * 24 * 3600:  # 7 days
             print_success(f"Бінарний файл вже існує і свіжий: {binary_path}")
             return True
-        else:
-            print_info(
-                f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція..."
-            )
+        print_info(f"Бінарний файл застаріли ({int(binary_age / 86400)} днів). Перекомпіляція...")
 
     print_info("Компіляція googlemaps...")
 
@@ -716,9 +734,8 @@ def build_googlemaps_mcp():
         if binary_path.exists():
             print_success(f"Скомпільовано успішно: {binary_path}")
             return True
-        else:
-            print_error("Бінарний файл не знайдено після компіляції!")
-            return False
+        print_error("Бінарний файл не знайдено після компіляції!")
+        return False
     except subprocess.CalledProcessError as e:
         print_error(f"Помилка компіляції Swift: {e}")
         return False
@@ -797,9 +814,8 @@ def setup_google_maps():
             if script_path.exists():
                 subprocess.run([sys.executable, str(script_path)], check=True)
                 return True
-            else:
-                print_error(f"Скрипт {script_path} не знайдено!")
-                print_info("Ви можете налаштувати ключ вручну в .env")
+            print_error(f"Скрипт {script_path} не знайдено!")
+            print_info("Ви можете налаштувати ключ вручну в .env")
         else:
             print_info("Пропущено. Запустіть пізніше: python3 scripts/setup_maps_quick.py")
     except Exception as e:
@@ -872,9 +888,8 @@ def setup_xcodebuild_mcp():
         if built_binary.exists():
             print_success(f"XcodeBuildMCP зібрано: {built_binary}")
             return True
-        else:
-            print_error("Бінарний файл не знайдено після збірки")
-            return False
+        print_error("Бінарний файл не знайдено після збірки")
+        return False
     except subprocess.CalledProcessError as e:
         print_error(f"Помилка збірки: {e}")
         return False
@@ -1010,6 +1025,14 @@ def install_deps():
 
     # 2. NPM & MCP
     if shutil.which("npm"):
+        print_info("Оновлення npm до останньої версії...")
+        subprocess.run(
+            ["npm", "install", "-g", "npm@latest"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            check=False,
+        )
+
         print_info("NPM install (from package.json)...")
         subprocess.run(["npm", "install"], cwd=PROJECT_ROOT, capture_output=True, check=True)
 

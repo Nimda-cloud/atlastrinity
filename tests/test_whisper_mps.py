@@ -38,10 +38,9 @@ def check_mps_availability():
             return False
 
         return True
-    else:
-        print("❌ MPS недоступний")
-        print("   Ви НЕ на Apple Silicon Mac, або PyTorch застарілий")
-        return False
+    print("❌ MPS недоступний")
+    print("   Ви НЕ на Apple Silicon Mac, або PyTorch застарілий")
+    return False
 
 
 def test_whisper_device(device_name: str):

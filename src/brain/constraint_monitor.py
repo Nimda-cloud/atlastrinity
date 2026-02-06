@@ -116,7 +116,7 @@ class ConstraintMonitor:
                     if line.startswith("VIOLATION:"):
                         violation = line.replace("VIOLATION:", "").strip()
                         break
-                    elif "VIOLATION:" in line:  # Handle cases where VIOLATION: is not at start
+                    if "VIOLATION:" in line:  # Handle cases where VIOLATION: is not at start
                         parts = line.split("VIOLATION:")
                         if len(parts) > 1:
                             violation = parts[1].strip()

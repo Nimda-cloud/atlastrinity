@@ -6,7 +6,31 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "useConsistentBuiltinInstantiation": "warn",
+        "useDefaultSwitchClause": "warn",
+        "useThrowOnlyError": "warn"
+      },
+      "suspicious": {
+        "noConsole": "off",
+        "noEmptyBlockStatements": "warn",
+        "useAwait": "off",
+        "noEvolvingTypes": "warn"
+      },
+      "correctness": {
+        "noUnusedFunctionParameters": "warn",
+        "noUndeclaredDependencies": "error"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "off",
+        "noExcessiveNestedTestSuites": "warn",
+        "useDateNow": "warn",
+        "useSimplifiedLogicExpression": "warn"
+      },
+      "performance": {
+        "noBarrelFile": "warn",
+        "noReExportAll": "warn",
+        "useTopLevelRegex": "warn"
       },
       "a11y": {
         "noSvgWithoutTitle": "off",
@@ -33,10 +57,15 @@
       "!**/node_modules/**/*",
       "!**/release/**/*",
       "!**/build/**/*",
+      "!**/.venv/**/*",
+      "!**/dist_venv/**/*",
+      "!**/backups/**/*",
+      "!**/vendor/**/*",
       "!**/*.py",
       "!**/*.json",
       "!**/*.yaml",
-      "!**/*.yml"
+      "!**/*.yml",
+      "!**/*.html"
     ]
   }
 }

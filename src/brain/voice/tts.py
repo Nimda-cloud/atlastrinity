@@ -374,9 +374,9 @@ class AgentVoice:
         with open(output_file, mode="wb") as f:
             self.tts.tts(
                 text,
-                cast(Any, self._voice),
+                cast("Any", self._voice),
                 Stress.Dictionary.value,
-                cast(Any, f),
+                cast("Any", f),
             )
         return True
 
@@ -735,7 +735,7 @@ Ukrainian:"""
             if self.engine:
                 with c_file.open(mode="wb") as f:
                     self.engine.tts(
-                        text, cast(Any, voice_enum), Stress.Dictionary.value, cast(Any, f)
+                        text, cast("Any", voice_enum), Stress.Dictionary.value, cast("Any", f)
                     )
 
         await asyncio.to_thread(_do_gen)

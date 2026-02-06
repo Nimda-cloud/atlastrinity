@@ -155,26 +155,25 @@ class DataValidator:
                     },
                     metadata=metadata,
                 )
-            else:
-                # Validation failed - no valid employees found
-                metadata_fail: dict[str, Any] = {
-                    "context": context,
-                    "timestamp": datetime.now().isoformat(),
-                    "check_type": "completeness",
-                    "check_name": "employee_role_completeness",
-                    "validation_passed": False,
-                    "valid_employees_found": 0,
-                }
+            # Validation failed - no valid employees found
+            metadata_fail: dict[str, Any] = {
+                "context": context,
+                "timestamp": datetime.now().isoformat(),
+                "check_type": "completeness",
+                "check_name": "employee_role_completeness",
+                "validation_passed": False,
+                "valid_employees_found": 0,
+            }
 
-                return ValidationResult(
-                    False,
-                    error="Data completeness check failed: No named employees with roles/positions found",
-                    warnings=[
-                        "Dataset may be incomplete or missing employee information",
-                        f"Checked {len(data_list)} records but found no valid employee-role pairs",
-                    ],
-                    metadata=metadata_fail,
-                )
+            return ValidationResult(
+                False,
+                error="Data completeness check failed: No named employees with roles/positions found",
+                warnings=[
+                    "Dataset may be incomplete or missing employee information",
+                    f"Checked {len(data_list)} records but found no valid employee-role pairs",
+                ],
+                metadata=metadata_fail,
+            )
 
         except Exception as e:
             return ValidationResult(
@@ -207,12 +206,11 @@ class DataValidator:
                     data={"message": "Data structure is valid"},
                     metadata={"schema_check": "passed"},
                 )
-            else:
-                return ValidationResult(
-                    False,
-                    error=f"Invalid data structure: expected dict or list, got {type(data)}",
-                    metadata={"schema_check": "failed"},
-                )
+            return ValidationResult(
+                False,
+                error=f"Invalid data structure: expected dict or list, got {type(data)}",
+                metadata={"schema_check": "failed"},
+            )
         except Exception as e:
             return ValidationResult(
                 False, error=f"Schema validation error: {e!s}", metadata={"exception": str(e)}
@@ -239,11 +237,10 @@ class DataValidator:
 
         if checkpoint_name == "completeness":
             return self.validate_data_completeness(data, context)
-        elif checkpoint_name == "schema":
+        if checkpoint_name == "schema":
             return self.validate_schema_compatibility(data)
-        else:
-            return ValidationResult(
-                False,
-                error=f"Unknown validation checkpoint: {checkpoint_name}",
-                metadata={"available_checkpoints": ["completeness", "schema"]},
-            )
+        return ValidationResult(
+            False,
+            error=f"Unknown validation checkpoint: {checkpoint_name}",
+            metadata={"available_checkpoints": ["completeness", "schema"]},
+        )

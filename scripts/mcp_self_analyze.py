@@ -261,8 +261,7 @@ Generate arguments for '{tool_name}':"""
             gen_text = str(gen_text).strip()
             if gen_text.startswith("```"):
                 gen_text = gen_text.split("```")[1]
-                if gen_text.startswith("json"):
-                    gen_text = gen_text[4:]
+                gen_text = gen_text.removeprefix("json")
             generated_args = json.loads(gen_text.strip())
             result["generated_args"] = generated_args
         except json.JSONDecodeError:

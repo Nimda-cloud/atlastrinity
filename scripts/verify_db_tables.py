@@ -45,13 +45,13 @@ async def verify_redis():
     """Simple Redis ping check using redis-py"""
     print("\n[DB CHECK] Verifying Redis...")
     try:
-        from typing import Any, cast
+        from typing import cast
 
         from redis.asyncio import from_url
 
         # Default fallback if env not set, though Config should handle it
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        client = cast(Any, from_url(redis_url, encoding="utf-8", decode_responses=True))
+        client = cast("Any", from_url(redis_url, encoding="utf-8", decode_responses=True))
         is_alive = await client.ping()
         if is_alive:
             print("[DB]   - Redis PING: PONG (Connection Successful)")
@@ -84,7 +84,7 @@ async def verify_chromadb():
 
         # Just try to instantiate client
         # Cast to Any to satisfy linters that might not see PersistentClient
-        cli = cast(Any, chromadb).PersistentClient(path=str(db_path))
+        cli = cast("Any", chromadb).PersistentClient(path=str(db_path))
         collections = cli.list_collections()
         print("[DB]   - ChromaDB Client Initialized")
         print(f"[DB]   - Collections found: {len(collections)}")

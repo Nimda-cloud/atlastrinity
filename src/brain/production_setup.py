@@ -37,10 +37,9 @@ def get_resources_path():
     """Отримує шлях до Resources/ в .app bundle"""
     if hasattr(sys, "_MEIPASS"):
         return Path(sys._MEIPASS)  # type: ignore  # PyInstaller attribute
-    elif getattr(sys, "frozen", False):
+    if getattr(sys, "frozen", False):
         return Path(sys.executable).parent.parent / "Resources"
-    else:
-        return Path(__file__).parent.parent.parent
+    return Path(__file__).parent.parent.parent
 
 
 def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:

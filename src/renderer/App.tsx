@@ -43,6 +43,10 @@ interface SystemMetrics {
 const API_BASE = 'http://127.0.0.1:8000';
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
+const RE_SAVED_TO_PNG = /Saved to: (.+\.png)/;
+const RE_LOCATION = /Location: ([^\n]+)/;
+const RE_CENTER = /Center: ([^\n]+)/;
+
 const App: React.FC = () => {
   const [systemState, setSystemState] = useState<SystemState>('IDLE');
   const [activeAgent, setActiveAgent] = useState<AgentName>('ATLAS');
@@ -104,7 +108,7 @@ const App: React.FC = () => {
       hideTimerRef.current = null;
     }
     // Schedule showing the dock after delay
-    if (!isDockVisible && !showTimerRef.current) {
+    if (!(isDockVisible || showTimerRef.current)) {
       showTimerRef.current = setTimeout(() => {
         setIsDockVisible(true);
         showTimerRef.current = null;
@@ -169,7 +173,7 @@ const App: React.FC = () => {
 
       // Auto-detect map updates in logs
       if (message.includes('Saved to:') && message.includes('.png')) {
-        const pathMatch = message.match(/Saved to: (.+\.png)/);
+        const pathMatch = message.match(RE_SAVED_TO_PNG);
         if (pathMatch?.[1]) {
           const filePath = pathMatch[1];
           // Convert local path to file:// URL for Electron display
@@ -180,8 +184,7 @@ const App: React.FC = () => {
           setMapData({
             url: fileUrl,
             type: isStreet ? 'STREET' : 'STATIC',
-            location:
-              message.match(/Location: ([^\n]+)/)?.[1] || message.match(/Center: ([^\n]+)/)?.[1],
+            location: message.match(RE_LOCATION)?.[1] || message.match(RE_CENTER)?.[1],
           });
           setViewMode('MAP');
         }
@@ -222,7 +225,9 @@ const App: React.FC = () => {
             `[BRAIN] Session fetch still failing, retrying in ${delay}ms... (Attempt ${retryCount + 1}/5)`,
           );
         }
-        setTimeout(() => fetchSessions(retryCount + 1), delay);
+        setTimeout(() => {
+          void fetchSessions(retryCount + 1);
+        }, delay);
       } else {
         // Final retry failed, log but don't spam
         if (!(err instanceof TypeError && err.message.includes('Failed to fetch'))) {
@@ -381,9 +386,11 @@ const App: React.FC = () => {
           if (mounted) {
             console.log('[BRAIN] Backend connected. Starting synchronization.');
             setIsConnected(true);
-            pollState();
-            fetchSessions();
-            interval = setInterval(pollState, pollInterval);
+            void pollState();
+            void fetchSessions();
+            interval = setInterval(() => {
+              void pollState();
+            }, pollInterval);
           }
           return;
         }
@@ -395,12 +402,16 @@ const App: React.FC = () => {
         const delay = Math.min(1000 * 1.5 ** retryCount, 5000);
         console.log(`[BRAIN] Waiting for backend... (Attempt ${retryCount + 1})`);
 
-        setTimeout(() => waitForBackend(retryCount + 1), delay);
+        setTimeout(() => {
+          void waitForBackend(retryCount + 1);
+        }, delay);
       }
     };
 
     // Start looking for the brain after a short delay to allow Python to spin up
-    const initialTimer = setTimeout(() => waitForBackend(), 3000);
+    const initialTimer = setTimeout(() => {
+      void waitForBackend();
+    }, 3000);
 
     return () => {
       mounted = false;
@@ -537,7 +548,7 @@ const App: React.FC = () => {
         setLogs([]);
         setChatHistory([]);
         if (result.session_id) setCurrentSessionId(result.session_id);
-        fetchSessions();
+        void fetchSessions();
       }
     } catch (err) {
       console.error('Failed to reset session:', err);
@@ -558,7 +569,7 @@ const App: React.FC = () => {
         setChatHistory([]);
         setCurrentSessionId(sessionId);
         setIsHistoryOpen(false);
-        pollState();
+        void pollState();
       }
     } catch (err) {
       console.error('Failed to restore session:', err);
@@ -658,7 +669,7 @@ const App: React.FC = () => {
         <button
           onClick={() => {
             console.log('New Session clicked');
-            handleNewSession();
+            void handleNewSession();
           }}
           className="titlebar-btn group"
           title="New Session"
@@ -726,7 +737,7 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      handleNewSession();
+                      void handleNewSession();
                       setIsHistoryOpen(false);
                     }}
                     className="group flex items-center justify-center w-8 h-8 rounded-sm border transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
@@ -814,7 +825,9 @@ const App: React.FC = () => {
                       {sessions.map((s) => (
                         <button
                           key={s.id}
-                          onClick={() => handleRestoreSession(s.id)}
+                          onClick={() => {
+                            void handleRestoreSession(s.id);
+                          }}
                           className="group p-3 border text-left transition-all duration-300 backdrop-blur-sm w-full relative overflow-hidden mb-3"
                           style={{
                             backgroundColor:
@@ -920,7 +933,9 @@ const App: React.FC = () => {
         onMouseLeave={handleHoverZoneLeave}
       >
         <CommandLine
-          onCommand={handleCommand}
+          onCommand={(cmd, files) => {
+            void handleCommand(cmd, files);
+          }}
           isVoiceEnabled={isVoiceEnabled}
           onToggleVoice={handleToggleVoice}
           isProcessing={['PLANNING', 'EXECUTING', 'VERIFYING', 'CHAT'].includes(systemState)}
@@ -950,26 +965,25 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'gmp-map': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         center?: string;
         zoom?: string;
         'rendering-type'?: string;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       'gmpx-api-loader': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         key?: string;
         'solution-channel'?: string;
         version?: string;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       'gmpx-place-picker': React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLElement>,
         HTMLElement
       > & {
         placeholder?: string;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       'gmp-advanced-marker': React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLElement>,
         HTMLElement

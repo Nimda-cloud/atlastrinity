@@ -334,8 +334,7 @@ Generate the test scenario:"""
         # Extract JSON from response
         if response_text.startswith("```"):
             response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
+            response_text = response_text.removeprefix("json")
 
         scenario = json.loads(response_text.strip())
         return {"success": True, "scenario": scenario}
@@ -378,7 +377,7 @@ async def execute_test_step(
             extra_args.extend(["--tool-arg", f"{key}={value}"])
 
     # Execute
-    result = run_inspector_cmd(server_name, "tools/call", cast(list[str], extra_args))
+    result = run_inspector_cmd(server_name, "tools/call", cast("list[str]", extra_args))
 
     return {
         "tool": tool_name,

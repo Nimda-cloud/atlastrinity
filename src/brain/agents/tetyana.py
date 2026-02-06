@@ -229,7 +229,7 @@ Respond in JSON:
             response = await self.reasoning_llm.ainvoke(
                 messages,
             )
-            result = self._parse_response(cast(str, response.content))
+            result = self._parse_response(cast("str", response.content))
             result["goal_chain"] = goal_chain
 
             if result.get("deviation_suggested"):
@@ -318,7 +318,7 @@ Respond in JSON:
                         logger.info(
                             f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}"
                         )
-                        return cast(str, item.text)
+                        return cast("str", item.text)
             elif isinstance(result, dict) and "results" in result:
                 results = result["results"]
                 if results and len(results) > 0:
@@ -334,7 +334,7 @@ Respond in JSON:
                     logger.info(
                         f"[TETYANA] Retrieved Grisha's feedback from memory for step {step_id}"
                     )
-                    return cast(str, entities[0].get("observations", [""])[0])
+                    return cast("str", entities[0].get("observations", [""])[0])
         except Exception as e:
             logger.warning(f"[TETYANA] Could not retrieve from memory: {e}")
         return None
@@ -419,9 +419,8 @@ Respond in JSON:
             if result.returncode == 0 and os.path.exists(path):
                 logger.info(f"[TETYANA] Screenshot for Vision saved (fallback): {path}")
                 return path
-            else:
-                logger.error(f"[TETYANA] Screenshot failed: {result.stderr.decode()}")
-                return None
+            logger.error(f"[TETYANA] Screenshot failed: {result.stderr.decode()}")
+            return None
 
         except Exception as e:
             logger.error(f"[TETYANA] Screenshot error: {e}")
@@ -684,22 +683,22 @@ IMPORTANT:
         action_text = action_text.lower()
         if any(kw in action_text for kw in ["implement feature", "deep code", "refactor project"]):
             return "vibe.vibe_implement_feature"
-        elif any(kw in action_text for kw in ["vibe", "code", "debug", "analyze error"]):
+        if any(kw in action_text for kw in ["vibe", "code", "debug", "analyze error"]):
             return "vibe.vibe_prompt"
-        elif any(kw in action_text for kw in ["click", "type", "press", "scroll", "open app"]):
+        if any(kw in action_text for kw in ["click", "type", "press", "scroll", "open app"]):
             return "macos-use.macos-use_take_screenshot"  # Fallback to start UI interaction
-        elif any(
+        if any(
             kw in action_text
             for kw in ["finder", "desktop", "folder", "sort", "trash", "open path"]
         ):
             return "macos-use.macos-use_finder_list_files"
-        elif "list" in action_text and "directory" in action_text:
+        if "list" in action_text and "directory" in action_text:
             return "filesystem.list_directory"
-        elif "read" in action_text and "file" in action_text:
+        if "read" in action_text and "file" in action_text:
             return "filesystem.read_file"
-        elif "search" in action_text and "file" in action_text:
+        if "search" in action_text and "file" in action_text:
             return "filesystem.find_by_name"
-        elif any(
+        if any(
             kw in action_text
             for kw in [
                 "run",
@@ -715,7 +714,7 @@ IMPORTANT:
             ]
         ):
             return "macos-use.execute_command"
-        elif "browser" in action_text or "url" in action_text:
+        if "browser" in action_text or "url" in action_text:
             return "browser.open_url"
         return None
 
@@ -864,7 +863,9 @@ IMPORTANT:
             }
 
         # Fallback to step-defined tool or inferred tool
-        base_call = cast(dict[str, Any], proposed) or cast(dict[str, Any], step.get("tool_call"))
+        base_call = cast("dict[str, Any]", proposed) or cast(
+            "dict[str, Any]", step.get("tool_call")
+        )
         if base_call:
             return base_call
 
@@ -1236,8 +1237,8 @@ IMPORTANT:
         attempt: int,
     ) -> StepResult:
         """Construct the final StepResult and update state."""
-        final_voice_msg = cast(str | None, tool_result.get("voice_message")) or (
-            cast(str | None, monologue.get("voice_message")) if attempt == 1 else None
+        final_voice_msg = cast("str | None", tool_result.get("voice_message")) or (
+            cast("str | None", monologue.get("voice_message")) if attempt == 1 else None
         )
 
         if not final_voice_msg and attempt == 1:
@@ -1366,12 +1367,12 @@ IMPORTANT:
     def _convert_to_dict(self, result: Any) -> dict[str, Any]:
         """Convert various result types to dict."""
         if hasattr(result, "model_dump"):
-            return cast(dict[str, Any], result.model_dump())
-        elif hasattr(result, "dict"):
-            return cast(dict[str, Any], result.dict())
-        elif not isinstance(result, dict):
+            return cast("dict[str, Any]", result.model_dump())
+        if hasattr(result, "dict"):
+            return cast("dict[str, Any]", result.dict())
+        if not isinstance(result, dict):
             return {"content": [{"type": "text", "text": str(result)}], "isError": False}
-        return cast(dict[str, Any], result)
+        return cast("dict[str, Any]", result)
 
     def _extract_error_message(self, result: dict[str, Any]) -> dict[str, Any]:
         """Extract error message from result content."""
@@ -1453,7 +1454,7 @@ IMPORTANT:
         from ..mcp_manager import mcp_manager
 
         try:
-            return cast(dict[str, Any], await mcp_manager.dispatch_tool(tool, args, server))
+            return cast("dict[str, Any]", await mcp_manager.dispatch_tool(tool, args, server))
         except Exception as e:
             logger.error(f"[TETYANA] Unified call failed for {server}.{tool}: {e}")
             return {"success": False, "error": str(e)}
@@ -1577,10 +1578,9 @@ IMPORTANT:
             if formatted.get("success") and not formatted.get("error"):
                 logger.info(f"[TETYANA] Successfully opened '{app_name}' via macos-use.")
                 return formatted
-            else:
-                logger.warning(
-                    f"[TETYANA] macos-use open failed, falling back to legacy: {formatted.get('error')}",
-                )
+            logger.warning(
+                f"[TETYANA] macos-use open failed, falling back to legacy: {formatted.get('error')}",
+            )
         except Exception as e:
             logger.warning(f"[TETYANA] macos-use open exception: {e}")
 
@@ -1852,7 +1852,7 @@ IMPORTANT:
             await self._save_browser_artifacts(step_id, html, title, shot)
             return self._format_mcp_result(res)
 
-        elif action == "click":
+        if action == "click":
             res = await mcp_manager.call_tool(
                 "puppeteer",
                 "puppeteer_click",
@@ -1873,7 +1873,7 @@ IMPORTANT:
                     pass
 
             return self._format_mcp_result(res)
-        elif action in {"type", "fill"}:
+        if action in {"type", "fill"}:
             return self._format_mcp_result(
                 await mcp_manager.call_tool(
                     "puppeteer",
@@ -1881,12 +1881,11 @@ IMPORTANT:
                     {"selector": args.get("selector", ""), "value": args.get("value", "")},
                 ),
             )
-        elif action == "screenshot":
+        if action == "screenshot":
             return self._format_mcp_result(
                 await mcp_manager.call_tool("puppeteer", "puppeteer_screenshot", {}),
             )
-        else:
-            return {"success": False, "error": f"Unknown browser action: {action}"}
+        return {"success": False, "error": f"Unknown browser action: {action}"}
 
     async def _filesystem_action(self, args: dict[str, Any]) -> dict[str, Any]:
         """Filesystem operations via MCP"""
@@ -1910,7 +1909,7 @@ IMPORTANT:
             result = await mcp_manager.call_tool("filesystem", "read_file", {"path": path})
             shared_context.update_path(path, "read")
             return self._format_mcp_result(result)
-        elif action in {"write", "write_file"}:
+        if action in {"write", "write_file"}:
             result = await mcp_manager.call_tool(
                 "filesystem",
                 "write_file",
@@ -1918,19 +1917,18 @@ IMPORTANT:
             )
             shared_context.update_path(path, "write")
             return self._format_mcp_result(result)
-        elif action in {"create_dir", "mkdir", "create_directory"}:
+        if action in {"create_dir", "mkdir", "create_directory"}:
             result = await mcp_manager.call_tool("filesystem", "create_directory", {"path": path})
             shared_context.update_path(path, "create_directory")
             return self._format_mcp_result(result)
-        elif action in {"list", "list_directory"}:
+        if action in {"list", "list_directory"}:
             result = await mcp_manager.call_tool("filesystem", "list_directory", {"path": path})
             shared_context.update_path(path, "access")
             return self._format_mcp_result(result)
-        else:
-            return {
-                "success": False,
-                "error": f"Unknown FS action: {action}. Valid: read_file, write_file, list_directory",
-            }
+        return {
+            "success": False,
+            "error": f"Unknown FS action: {action}. Valid: read_file, write_file, list_directory",
+        }
 
     async def _github_action(self, args: dict[str, Any]) -> dict[str, Any]:
         """GitHub actions"""
@@ -1956,7 +1954,7 @@ IMPORTANT:
                     {"script": args.get("script", "")},
                 ),
             )
-        elif action == "open_app":
+        if action == "open_app":
             return self._format_mcp_result(
                 await mcp_manager.call_tool(
                     "applescript",
@@ -1964,7 +1962,7 @@ IMPORTANT:
                     {"app_name": args.get("app_name", "")},
                 ),
             )
-        elif action == "volume":
+        if action == "volume":
             return self._format_mcp_result(
                 await mcp_manager.call_tool(
                     "applescript",
@@ -2124,7 +2122,7 @@ IMPORTANT:
         """Generates context-aware TTS message dynamically."""
         voice_msg = kwargs.get("voice_message")
         if voice_msg and len(voice_msg) > 5:
-            return cast(str, voice_msg)
+            return cast("str", voice_msg)
 
         step_id = kwargs.get("step", 1)
         desc = kwargs.get("description", "")

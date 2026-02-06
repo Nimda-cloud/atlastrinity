@@ -1620,7 +1620,7 @@
     "server": "devtools",
     "required": [],
     "optional": [],
-    "description": "Run the complete system linting suite (npm run lint:all). This includes Python (ruff, pyrefly, mypy, bandit, xenon) and JS/TS (oxlint, eslint) checks."
+    "description": "Run the complete system linting suite (npm run lint:all). 13 parallel checks: JS/TS (biome, oxlint, tsc, eslint), Python (ruff, pyright, pyrefly, xenon, bandit, vulture), Cross (knip, security, yaml-sync)."
   },
   "devtools_lint_js": {
     "server": "devtools",
@@ -1642,7 +1642,7 @@
     "types": {
       "target_path": "str"
     },
-    "description": "Run 'knip' to find unused files, dependencies, and exports."
+    "description": "Run 'knip' (JS/TS) and 'vulture' (Python) to find unused code, files, dependencies, exports, variables, and functions."
   },
   "devtools_check_integrity": {
     "server": "devtools",

@@ -256,7 +256,7 @@ class SystemConfig:
             if val:
                 return val
 
-        return cast(str, self.get(f"api.{key_name}", ""))
+        return cast("str", self.get(f"api.{key_name}", ""))
 
     def get_agent_config(self, agent_name: str) -> dict[str, Any]:
         """Returns specific agent configuration with global model inheritance."""
@@ -284,11 +284,11 @@ class SystemConfig:
                     "models.default",
                 )
 
-        return cast(dict[str, Any], agent_config)
+        return cast("dict[str, Any]", agent_config)
 
     def get_security_config(self) -> dict[str, Any]:
         """Returns security configuration."""
-        return cast(dict[str, Any], self.get("security", {}))
+        return cast("dict[str, Any]", self.get("security", {}))
 
     @property
     def all(self) -> dict[str, Any]:

@@ -177,8 +177,8 @@ async def chat(
         file_info = await FileProcessor.process_files(files)
         logger.info("[SERVER] File processing complete.")
 
-    file_context = cast(str, file_info.get("text", ""))
-    images = cast(list[dict[str, Any]], file_info.get("images", []))
+    file_context = cast("str", file_info.get("text", ""))
+    images = cast("list[dict[str, Any]]", file_info.get("images", []))
 
     # Combine request with file context
     full_request = request
@@ -890,15 +890,14 @@ def _categorize_place(types: list[str]) -> str:
     # Priority-based categorization
     if any(t in types for t in ["restaurant", "cafe", "bar", "food"]):
         return "restaurant"
-    elif any(t in types for t in ["lodging", "hotel"]):
+    if any(t in types for t in ["lodging", "hotel"]):
         return "hotel"
-    elif any(
+    if any(
         t in types
         for t in ["tourist_attraction", "museum", "park", "point_of_interest", "landmark"]
     ):
         return "attraction"
-    else:
-        return "custom"
+    return "custom"
 
 
 # MCP Wrapper

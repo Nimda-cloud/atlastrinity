@@ -59,10 +59,9 @@ def test_alias(alias, prompt):
         print(f"✅ SUCCESS: {alias}")
         print(f"   Output: {result.stdout.strip()[:200]}...")
         return True
-    else:
-        print(f"❌ FAILED: {alias}")
-        print(f"   Error: {result.stderr.strip()[:500]}")
-        return False
+    print(f"❌ FAILED: {alias}")
+    print(f"   Error: {result.stderr.strip()[:500]}")
+    return False
 
 
 # 1. Start Proxy

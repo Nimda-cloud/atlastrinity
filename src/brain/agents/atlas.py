@@ -227,7 +227,7 @@ class Atlas(BaseAgent):
                         },
                     }
                 )
-            hum_msg = HumanMessage(content=cast(Any, content))
+            hum_msg = HumanMessage(content=cast("Any", content))
         else:
             hum_msg = HumanMessage(content=prompt)
 
@@ -578,7 +578,7 @@ Respond in JSON:
                         },
                     }
                 )
-            messages.append(HumanMessage(content=cast(Any, content)))
+            messages.append(HumanMessage(content=cast("Any", content)))
         else:
             messages.append(HumanMessage(content=user_request))
 
@@ -934,7 +934,7 @@ Standalone Query:"""
                 ],
             )
             resolved = str(response.content).strip().strip('"')
-            return resolved if resolved else query
+            return resolved or query
         except Exception as e:
             logger.warning(f"[ATLAS] Query resolution failed: {e}")
             return query
@@ -1142,9 +1142,8 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
                 simulation_result = str(reasoning.get("analysis", "Strategy simulation complete."))
                 logger.info("[ATLAS] Deep Strategy Simulation successful.")
                 return simulation_result
-            else:
-                logger.warning(f"[ATLAS] Deep Thinking failed: {reasoning.get('error')}")
-                return "Standard execution strategy fallback."
+            logger.warning(f"[ATLAS] Deep Thinking failed: {reasoning.get('error')}")
+            return "Standard execution strategy fallback."
 
         except Exception as e:
             logger.warning(f"[ATLAS] Deep Thinking process crashed: {e}")
@@ -1396,7 +1395,7 @@ Output the corrected plan in the same JSON format as before.
                 dict,
             ):
                 return cast(
-                    dict[str, Any],
+                    "dict[str, Any]",
                     payload.structuredContent.get("result", payload.structuredContent),
                 )
             if hasattr(payload, "content"):
@@ -1406,10 +1405,10 @@ Output the corrected plan in the same JSON format as before.
                         return text
                     if isinstance(text, str):
                         try:
-                            return cast(dict[str, Any], json.loads(text))
+                            return cast("dict[str, Any]", json.loads(text))
                         except Exception:
                             try:
-                                return cast(dict[str, Any], ast.literal_eval(text))
+                                return cast("dict[str, Any]", ast.literal_eval(text))
                             except Exception:
                                 continue
             return None
@@ -1451,11 +1450,11 @@ Output the corrected plan in the same JSON format as before.
             if result and hasattr(result, "content"):
                 for item in result.content:
                     if hasattr(item, "text"):
-                        return cast(str, item.text)
+                        return cast("str", item.text)
             elif isinstance(result, dict) and "entities" in result:
                 entities = result["entities"]
                 if entities and len(entities) > 0:
-                    return cast(str, entities[0].get("observations", [""])[0])
+                    return cast("str", entities[0].get("observations", [""])[0])
 
             logger.info(f"[ATLAS] Retrieved Grisha's report from memory for step {step_id}")
         except Exception as e:
@@ -1583,7 +1582,7 @@ Output the corrected plan in the same JSON format as before.
 
             start = content.find("{")
             end = content.rfind("}") + 1
-            return cast(dict[str, Any], json.loads(content[start:end]))
+            return cast("dict[str, Any]", json.loads(content[start:end]))
         except Exception as e:
             logger.error(f"Failed to summarize session: {e}")
             return {"summary": "Summary failed", "entities": []}
@@ -1794,23 +1793,23 @@ If the user asked to 'count', you MUST state the exact number found.
                 suffix = "кроки"
             return f"План готовий. {count} {suffix}. Тетяно, виконуй."
 
-        elif action == "no_steps":
+        if action == "no_steps":
             return "Не бачу необхідних кроків для виконання цього запиту."
 
-        elif action == "enriched":
+        if action == "enriched":
             return "Контекст проаналізовано. Розширюю запит."
 
-        elif action == "helping":
+        if action == "helping":
             return "Бачу проблему. Пробую альтернативний підхід."
 
-        elif action == "delegating":
+        if action == "delegating":
             return "Тетяно, передаю керування тобі."
 
-        elif action == "recovery_started":
+        if action == "recovery_started":
             # Avoid generic 'consultation' wording. Be direct.
             return f"Бачу перешкоду у кроці {kwargs.get('step_id', '?')}. Тетяно, зачекай секунду — я проаналізую проблему та знайду шлях входу."
 
-        elif action == "vibe_engaged":
+        if action == "vibe_engaged":
             return (
                 f"Залучаю Вайб для глибинного аналізу помилки у кроці {kwargs.get('step_id', '?')}."
             )

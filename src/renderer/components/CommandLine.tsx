@@ -280,7 +280,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
 
   // Recording cycle
   const startRecordingCycle = useCallback(() => {
-    if (!streamRef.current?.active || !isListeningRef.current) return;
+    if (!(streamRef.current?.active && isListeningRef.current)) return;
 
     // Force WAV
     let mimeType = 'audio/webm';
@@ -374,7 +374,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
       }
 
       let stream = streamRef.current;
-      if (!stream || !stream.active) {
+      if (!stream?.active) {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -428,7 +428,7 @@ const CommandLine: React.FC<CommandLineProps> = ({
     if (isListening) {
       stopListening();
     } else {
-      startListening();
+      void startListening();
     }
   };
 

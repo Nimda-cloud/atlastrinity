@@ -62,10 +62,9 @@ def run(config: str | None = None) -> int:
                 "Failing preflight because FAIL_ON_SYS_LIMITS=1 and system limits are inadequate.",
             )
             return 1
-        else:
-            print(
-                "Continuing despite system limit warnings (set FAIL_ON_SYS_LIMITS=1 to fail on these)",
-            )
+        print(
+            "Continuing despite system limit warnings (set FAIL_ON_SYS_LIMITS=1 to fail on these)",
+        )
 
     print("No MCP package issues found.")
     return 0

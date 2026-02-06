@@ -93,7 +93,7 @@ class StateManager:
             key = self._key(f"session:{session_id}")
             data = await self.redis_client.get(key)  # type: ignore
             if data:
-                return cast(dict[Any, Any] | None, json.loads(data))
+                return cast("dict[Any, Any] | None", json.loads(data))
             return None
         except Exception as e:
             logger.error(f"[STATE] Failed to restore session: {e}")
@@ -153,7 +153,7 @@ class StateManager:
             key = self._key(f"checkpoint:{session_id}")
             data = await self.redis_client.get(key)  # type: ignore
             if data:
-                return cast(dict[Any, Any] | None, json.loads(data))
+                return cast("dict[Any, Any] | None", json.loads(data))
             return None
         except Exception as e:
             logger.error(f"[STATE] Failed to get checkpoint: {e}")
@@ -178,7 +178,7 @@ class StateManager:
             key = self._key("active_task")
             data = await self.redis_client.get(key)  # type: ignore
             if data:
-                return cast(dict[Any, Any] | None, json.loads(data))
+                return cast("dict[Any, Any] | None", json.loads(data))
             return None
         except Exception as e:
             logger.error(f"[STATE] Failed to get active task: {e}")

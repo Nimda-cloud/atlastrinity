@@ -138,7 +138,7 @@ class CopilotLLM(BaseChatModel):
                 google_api_key=api_key,
                 temperature=0.1,
             )
-            return cast(AIMessage, llm.invoke(messages))
+            return cast("AIMessage", llm.invoke(messages))
         except Exception as e:
             # If Gemini fails, try local BLIP captioning
             return self._invoke_local_blip_fallback(list(messages), e)
@@ -221,7 +221,7 @@ class CopilotLLM(BaseChatModel):
                 # Call LLM with text-only message
 
                 text_only_messages: list[BaseMessage] = cast(
-                    list[BaseMessage],
+                    "list[BaseMessage]",
                     [msg for msg in messages if isinstance(msg, SystemMessage)]
                     + [
                         HumanMessage(content=new_prompt),
@@ -241,7 +241,7 @@ class CopilotLLM(BaseChatModel):
         try:
             result = self._generate(messages)
             if result.generations:
-                return cast(AIMessage, result.generations[0].message)
+                return cast("AIMessage", result.generations[0].message)
             return AIMessage(content="[No response generated]")
         except Exception as e:
             return AIMessage(content=f"[Internal invoke error] {e}")
@@ -803,7 +803,7 @@ class CopilotLLM(BaseChatModel):
                                 )
                         final_answer = str(parsed.get("final_answer", ""))
                         if tool_calls:
-                            content = final_answer if final_answer else ""
+                            content = final_answer or ""
                         elif final_answer:
                             content = final_answer
             except json.JSONDecodeError:
@@ -927,7 +927,7 @@ class CopilotLLM(BaseChatModel):
                                 )
                         final_answer = str(parsed.get("final_answer", ""))
                         if tool_calls:
-                            content = final_answer if final_answer else ""
+                            content = final_answer or ""
                         elif final_answer:
                             content = final_answer
             except Exception:

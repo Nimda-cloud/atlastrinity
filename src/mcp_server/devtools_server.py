@@ -112,7 +112,7 @@ def devtools_check_mcp_health() -> dict[str, Any]:
 
         try:
             data = json.loads(output)
-            return cast(dict[str, Any], data)
+            return cast("dict[str, Any]", data)
         except json.JSONDecodeError:
             return {"error": "Failed to parse health check JSON", "raw_output": output}
 
@@ -547,7 +547,7 @@ def devtools_run_mcp_sandbox(
 
         try:
             data = json.loads(stdout)
-            return cast(dict[str, Any], data)
+            return cast("dict[str, Any]", data)
         except json.JSONDecodeError:
             return {
                 "error": "Failed to parse sandbox JSON output",
@@ -661,7 +661,14 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
             # Check for eslint config
             has_config = any(
                 (PROJECT_ROOT / f).exists()
-                for f in [".eslintrc.js", ".eslintrc.json", ".eslintrc.yml", "eslint.config.js"]
+                for f in [
+                    ".eslintrc.js",
+                    ".eslintrc.json",
+                    ".eslintrc.yml",
+                    "eslint.config.js",
+                    "eslint.config.mjs",
+                    "eslint.config.ts",
+                ]
             )
             if has_config:
                 cmd = ["npx", "eslint", "--format", "json", file_path]
@@ -696,8 +703,10 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
 @server.tool()
 def devtools_run_global_lint() -> dict[str, Any]:
     """Run the complete system linting suite (npm run lint:all).
-    This includes Python (ruff, pyrefly, mypy, bandit, xenon) and
-    JS/TS (oxlint, eslint) checks.
+    This runs 13 parallel checks via lefthook:
+    - JS/TS: biome, oxlint, tsc --noEmit (both tsconfigs), eslint type-aware
+    - Python: ruff (25 rule sets), pyright (standard), pyrefly, xenon, bandit, vulture
+    - Cross: knip (unused JS), security audit, yaml-sync
     """
     try:
         # npm run lint:all is defined in package.json at project root
@@ -718,49 +727,88 @@ def devtools_run_global_lint() -> dict[str, Any]:
 
 @server.tool()
 def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
-    """Run 'knip' to find unused files, dependencies, and exports.
-    Requires 'knip' to be installed in the project (usually via npm).
+    """Run 'knip' (JS/TS) and 'vulture' (Python) to find unused code.
+    Detects unused files, dependencies, exports, variables, and functions.
     """
-    if not shutil.which("knip") and not shutil.which("npx"):
-        return {"error": "knip (or npx) is not found."}
+    results: dict[str, Any] = {"success": True, "knip": {}, "vulture": {}}
 
-    try:
-        # We use npx knip --reporter json
-        # NOTE: knip usually needs to run from the project root where package.json is.
-        # target_path might be used as cwd if it's a directory.
-
-        cwd = target_path if os.path.isdir(target_path) else "."
-
-        cmd = ["npx", "knip", "--reporter", "json"]
-        result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)
-
-        output = result.stdout.strip()
-        if not output:
-            return {"success": True, "issues": []}
-
+    # 1. Knip (JS/TS dead code)
+    if shutil.which("npx"):
         try:
-            data = json.loads(output)
-            return {"success": True, "data": data}
-        except json.JSONDecodeError:
-            return {
-                "error": "Failed to parse knip JSON output",
-                "raw_output": output,
-                "stderr": result.stderr,
-            }
+            cwd = target_path if os.path.isdir(target_path) else "."
+            cmd = ["npx", "knip", "--reporter", "json"]
+            result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)
+            output = result.stdout.strip()
+            if output:
+                try:
+                    results["knip"] = json.loads(output)
+                except json.JSONDecodeError:
+                    results["knip"] = {"raw_output": output}
+            else:
+                results["knip"] = {"issues": []}
+        except Exception as e:
+            results["knip"] = {"error": str(e)}
+    else:
+        results["knip"] = {"error": "npx not found"}
 
-    except Exception as e:
-        return {"error": str(e)}
+    # 2. Vulture (Python dead code)
+    vulture_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "vulture", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else None
+    )
+    if vulture_bin:
+        try:
+            cmd = [
+                vulture_bin,
+                "src",
+                "scripts",
+                "vulture_whitelist.py",
+                "--min-confidence",
+                "80",
+                "--exclude",
+                ".venv,dist_venv,node_modules,__pycache__",
+            ]
+            result = subprocess.run(
+                cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+            )
+            lines = [l for l in result.stdout.strip().splitlines() if l.strip()]
+            results["vulture"] = {
+                "dead_code_count": len(lines),
+                "items": lines[:50],
+            }
+            if len(lines) > 0:
+                results["success"] = False
+        except Exception as e:
+            results["vulture"] = {"error": str(e)}
+    else:
+        results["vulture"] = {"error": "vulture not installed (pip install vulture)"}
+
+    return results
 
 
 @server.tool()
 def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
     """Run 'pyrefly' to check code integrity and find generic coding errors."""
-    if not shutil.which("pyrefly"):
+    pyrefly_bin = (
+        vbin
+        if (
+            vbin := shutil.which(
+                "pyrefly", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
+            )
+        )
+        else None
+    )
+    if not pyrefly_bin:
         return {"error": "pyrefly is not installed."}
 
     try:
         # Run pyrefly check
-        cmd = ["pyrefly", "check", path]
+        cmd = [pyrefly_bin, "check", path]
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
         stdout = result.stdout.strip()
@@ -882,30 +930,31 @@ def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
 
 @server.tool()
 def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
-    """Run deep type checking for Python (mypy)."""
-    mypy_bin = (
-        vbin
-        if (
-            vbin := shutil.which(
-                "mypy", path=os.pathsep.join([str(VENV_BIN), os.environ.get("PATH", "")])
-            )
-        )
-        else "mypy"
-    )
+    """Run deep type checking for Python (pyright).
+    Uses the project's pyrightconfig.json for configuration.
+    """
     try:
-        # We use --explicit-package-bases as discovered during CLI verification
-        cmd = [mypy_bin, path, "--explicit-package-bases"]
-        # Set MYPYPATH if needed, but CLI test showed 'mypy src' works if src is root-ish
-        env = os.environ.copy()
-        if path == "src":
-            env["MYPYPATH"] = "src"
+        cmd = ["npx", "pyright", path]
+        res = subprocess.run(
+            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+        )
+        stdout = res.stdout.strip()
+        stderr = res.stderr.strip()
 
-        res = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
+        # Parse error/warning counts from pyright output
+        import re
+
+        error_match = re.search(r"(\d+) error", stdout + stderr)
+        warning_match = re.search(r"(\d+) warning", stdout + stderr)
+        error_count = int(error_match.group(1)) if error_match else 0
+        warning_count = int(warning_match.group(1)) if warning_match else 0
+
         return {
-            "success": res.returncode == 0,
-            "stdout": res.stdout.strip(),
-            "stderr": res.stderr.strip(),
-            "violation_count": len(res.stdout.splitlines()) if res.returncode != 0 else 0,
+            "success": error_count == 0,
+            "error_count": error_count,
+            "warning_count": warning_count,
+            "stdout": stdout,
+            "stderr": stderr,
         }
     except Exception as e:
         return {"error": str(e)}
@@ -913,20 +962,30 @@ def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
 
 @server.tool()
 def devtools_check_types_ts() -> dict[str, Any]:
-    """Run deep type checking for TypeScript (tsc --noEmit)."""
-    tsc_bin = shutil.which("tsc") or "npx tsc"
-    try:
-        cmd = [*tsc_bin.split(), "--noEmit"]
-        res = subprocess.run(
-            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
-        )
-        return {
-            "success": res.returncode == 0,
-            "stdout": res.stdout.strip(),
-            "stderr": res.stderr.strip(),
-        }
-    except Exception as e:
-        return {"error": str(e)}
+    """Run deep type checking for TypeScript (tsc --noEmit) on both tsconfigs."""
+    results: dict[str, Any] = {"success": True}
+    configs = ["tsconfig.json", "tsconfig.main.json"]
+    for cfg in configs:
+        cfg_path = PROJECT_ROOT / cfg
+        if not cfg_path.exists():
+            results[cfg] = {"skipped": f"{cfg} not found"}
+            continue
+        try:
+            cmd = ["npx", "tsc", "--noEmit", "-p", cfg]
+            res = subprocess.run(
+                cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+            )
+            results[cfg] = {
+                "success": res.returncode == 0,
+                "stdout": res.stdout.strip(),
+                "stderr": res.stderr.strip(),
+            }
+            if res.returncode != 0:
+                results["success"] = False
+        except Exception as e:
+            results[cfg] = {"error": str(e)}
+            results["success"] = False
+    return results
 
 
 @server.tool()
@@ -1123,7 +1182,7 @@ def devtools_update_architecture_diagrams(
         response["files_updated"] = updated_files  # type: ignore[typeddict-item]
         response["timestamp"] = datetime.now().isoformat()  # type: ignore[typeddict-item]
 
-        return cast(dict[str, Any], response)
+        return cast("dict[str, Any]", response)
 
     except Exception as e:
         return {"error": f"Failed to update diagrams: {e}", "success": False}

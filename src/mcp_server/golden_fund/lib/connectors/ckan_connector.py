@@ -36,10 +36,9 @@ class CKANConnector:
             if data.get("success"):
                 results = data["result"]["results"]
                 logger.info(f"Found {len(results)} packages")
-                return cast(list[dict[str, Any]], results)
-            else:
-                logger.warning(f"CKAN search failed: {data.get('error')}")
-                return []
+                return cast("list[dict[str, Any]]", results)
+            logger.warning(f"CKAN search failed: {data.get('error')}")
+            return []
 
         except Exception as e:
             logger.error(f"Error searching CKAN: {e}")
@@ -58,7 +57,7 @@ class CKANConnector:
             data = response.json()
 
             if data.get("success"):
-                return cast(dict[str, Any], data["result"])
+                return cast("dict[str, Any]", data["result"])
             return None
 
         except Exception as e:

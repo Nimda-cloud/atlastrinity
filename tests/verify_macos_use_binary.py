@@ -65,9 +65,9 @@ async def run_verification():
     def truncate_obj(obj, max_len=100):
         if isinstance(obj, dict):
             return {k: truncate_obj(v, max_len) for k, v in obj.items()}
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             return [truncate_obj(i, max_len) for i in obj]
-        elif isinstance(obj, str):
+        if isinstance(obj, str):
             if len(obj) > max_len:
                 return obj[:max_len] + f"... ({len(obj)} chars)"
             return obj

@@ -72,7 +72,7 @@ skips = ["B101", "B404", "B603", "B607", "B405", "B110", "B112", "B105", "B608"]
 fixable = ["ALL"]
 unfixable = []
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
-select = ["E4", "E7", "E9", "F", "B", "I", "N", "UP", "PL", "RUF", "C90", "SIM", "ARG", "PTH", "ERA"]
+select = ["E4", "E7", "E9", "F", "B", "I", "N", "UP", "PL", "RUF", "C90", "SIM", "ARG", "PTH", "ERA", "PERF", "FURB", "T20", "TRY", "RET", "FLY", "PIE", "ISC", "LOG", "TC"]
 ignore = [
     "E501",   # Line too long
     "RUF001", # Ambiguous unicode character (Ukrainian project)
@@ -114,16 +114,39 @@ ignore = [
     "PTH",     # Use pathlib (standard practice varies)
     "C901",    # Complex functions (refactoring out of scope)
     "PTH123",  # open() vs Path.open()
+    "TRY003",  # Long exception messages (common pattern)
+    "TRY301",  # Raise within try (sometimes needed)
+    "TRY400",  # logging.error vs logging.exception (intentional)
+    "RET504",  # Unnecessary assign before return (aids readability)
+    "TRY300",  # Consider moving to else block (stylistic, not a bug)
+    "ISC001",  # Implicit string concat (conflicts with formatter)
+    "PERF203", # try-except in loop (sometimes unavoidable)
+    "TC001",   # Move app imports to TYPE_CHECKING (too aggressive)
+    "TC003",   # Move stdlib imports to TYPE_CHECKING (too aggressive)
+    "FURB101", # open+read → Path.read_text (pathlib not enforced)
+    "FURB103", # open+write → Path.write_text (pathlib not enforced)
+    "TRY002",  # Create your own exception (overkill for most cases)
+    "TRY201",  # Use raise without exception name (stylistic)
+    "TRY401",  # Redundant exception in logging.exception (intentional)
+    "PERF401", # Use list comprehension/extend (readability preference)
+    "PERF402", # Use list() or list.copy() (stylistic)
+    "PERF102", # Use dict.values() (stylistic)
+    "PIE810",  # Call startswith once with tuple (stylistic)
+    "TC002",   # Move third-party import to TYPE_CHECKING (too aggressive)
+    "FURB177", # Prefer Path.cwd() (pathlib not enforced)
+    "FURB171", # Membership test against single-item container (stylistic)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "RUF052", "PTH", "ARG002", "C901"]
-"test_data/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "PTH"]
-"scripts/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "PTH"]
+"tests/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "RUF052", "PTH", "ARG002", "C901", "T20"]
+"test_data/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "PTH", "T20"]
+"scripts/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "PTH", "T20"]
+"providers/**/*.py" = ["T20"] # Provider debug/status prints
 "example_vibe_prompt_usage.py" = ["E402"]
-"src/mcp_server/*.py" = ["PLC0415"] # Late imports for performance
-"src/brain/voice/tts.py" = ["E402", "F401"] # Special initialization and lazy checks
-"src/brain/server.py" = ["E402", "F401"] # Env load before imports
+"src/mcp_server/**/*.py" = ["PLC0415", "T20"] # Late imports for performance, server status prints
+"src/brain/**/*.py" = ["T20"] # Brain module status/debug prints
+"src/brain/voice/tts.py" = ["E402", "F401", "T20"] # Special initialization, lazy checks, TTS status prints
+"src/brain/server.py" = ["E402", "F401", "T20"] # Env load before imports, startup prints
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

@@ -69,7 +69,7 @@ class LongTermMemory:
 
         try:
             # Just try to instantiate client with telemetry disabled
-            self.client = cast(Any, chromadb).PersistentClient(
+            self.client = cast("Any", chromadb).PersistentClient(
                 path=str(db_path), settings=Settings(anonymized_telemetry=False)
             )
 
@@ -647,7 +647,7 @@ class LongTermMemory:
                 query_texts=[query],
                 n_results=min(n_results, self.discoveries.count()),
                 include=cast("Any", ["documents", "metadatas", "distances"]),
-                where=where_filter if where_filter else None,  # type: ignore[arg-type]
+                where=where_filter or None,  # type: ignore[arg-type]
             )
 
             discoveries = []

@@ -72,7 +72,7 @@ def _load_dataframe(data_source: str, **kwargs) -> tuple[pd.DataFrame | None, st
             logger.info(f"Loaded {len(df)} rows from {path}")
             return df, None
 
-        elif data_source.startswith("http"):
+        if data_source.startswith("http"):
             # URL
             if ".csv" in data_source.lower():
                 df = pd.read_csv(data_source, **kwargs)
@@ -85,8 +85,7 @@ def _load_dataframe(data_source: str, **kwargs) -> tuple[pd.DataFrame | None, st
             logger.info(f"Loaded {len(df)} rows from URL")
             return df, None
 
-        else:
-            return None, f"Data source not found: {data_source}"
+        return None, f"Data source not found: {data_source}"
 
     except Exception as e:
         return None, f"Failed to load data: {e!s}"
@@ -107,20 +106,20 @@ def _get_column_stats(series: pd.Series) -> dict[str, Any]:
     if pd.api.types.is_numeric_dtype(series):
         stats.update(
             {
-                "min": float(cast(Any, series.min()))
-                if not pd.isna(cast(Any, series.min()))
+                "min": float(cast("Any", series.min()))
+                if not pd.isna(cast("Any", series.min()))
                 else None,
-                "max": float(cast(Any, series.max()))
-                if not pd.isna(cast(Any, series.max()))
+                "max": float(cast("Any", series.max()))
+                if not pd.isna(cast("Any", series.max()))
                 else None,
-                "mean": round(float(cast(Any, series.mean())), 4)
-                if not pd.isna(cast(Any, series.mean()))
+                "mean": round(float(cast("Any", series.mean())), 4)
+                if not pd.isna(cast("Any", series.mean()))
                 else None,
-                "median": float(cast(Any, series.median()))
-                if not pd.isna(cast(Any, series.median()))
+                "median": float(cast("Any", series.median()))
+                if not pd.isna(cast("Any", series.median()))
                 else None,
-                "std": round(float(cast(Any, series.std())), 4)
-                if not pd.isna(cast(Any, series.std()))
+                "std": round(float(cast("Any", series.std())), 4)
+                if not pd.isna(cast("Any", series.std()))
                 else None,
             }
         )
@@ -421,10 +420,10 @@ async def generate_statistics(
                     ci_lower = mean - 1.96 * se
                     ci_upper = mean + 1.96 * se
                     results.setdefault("confidence_intervals", {})[col] = {
-                        "mean": round(float(cast(Any, mean)), 4),
-                        "std_error": round(float(cast(Any, se)), 4),
-                        "ci_95_lower": round(float(cast(Any, ci_lower)), 4),
-                        "ci_95_upper": round(float(cast(Any, ci_upper)), 4),
+                        "mean": round(float(cast("Any", mean)), 4),
+                        "std_error": round(float(cast("Any", se)), 4),
+                        "ci_95_lower": round(float(cast("Any", ci_lower)), 4),
+                        "ci_95_upper": round(float(cast("Any", ci_upper)), 4),
                     }
 
     return results
@@ -805,8 +804,8 @@ async def interpret_column_data(
             "column_name": col_name,
             "data_type": str(series.dtype),
             "total_values": len(series),
-            "null_count": int(cast(Any, series.isna().sum())),
-            "unique_count": int(cast(Any, series.nunique())),
+            "null_count": int(cast("Any", series.isna().sum())),
+            "unique_count": int(cast("Any", series.nunique())),
             "unique_values_with_counts": [[str(k), int(v)] for k, v in value_counts.items()][:100],
         }
 
@@ -892,19 +891,18 @@ async def run_pandas_code(
                 "columns": list(result.columns),
                 "preview": result.head(10).to_dict(orient="records"),
             }
-        elif isinstance(result, pd.Series):
+        if isinstance(result, pd.Series):
             return {
                 "success": True,
                 "result_type": "Series",
                 "length": len(result),
                 "preview": result.head(10).to_dict(),
             }
-        else:
-            return {
-                "success": True,
-                "result_type": type(result).__name__,
-                "result": str(result)[:5000],  # Limit output
-            }
+        return {
+            "success": True,
+            "result_type": type(result).__name__,
+            "result": str(result)[:5000],  # Limit output
+        }
 
     except Exception as e:
         return {

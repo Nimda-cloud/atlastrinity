@@ -292,15 +292,14 @@ class FirstRunInstaller:
 
                 self._report(SetupStep.INSTALL_HOMEBREW, 1.0, "Homebrew встановлено ✓")
                 return True
-            else:
-                self._report(
-                    SetupStep.INSTALL_HOMEBREW,
-                    1.0,
-                    "Помилка встановлення Homebrew",
-                    success=False,
-                    error=f"Exit code: {process.returncode}",
-                )
-                return False
+            self._report(
+                SetupStep.INSTALL_HOMEBREW,
+                1.0,
+                "Помилка встановлення Homebrew",
+                success=False,
+                error=f"Exit code: {process.returncode}",
+            )
+            return False
 
         except Exception as e:
             self._report(
@@ -348,15 +347,14 @@ class FirstRunInstaller:
         if code == 0:
             self._report(step, 1.0, f"{formula} встановлено ✓")
             return True
-        else:
-            self._report(
-                step,
-                1.0,
-                f"Помилка встановлення {formula}",
-                success=False,
-                error=stderr[:200],
-            )
-            return False
+        self._report(
+            step,
+            1.0,
+            f"Помилка встановлення {formula}",
+            success=False,
+            error=stderr[:200],
+        )
+        return False
 
     def install_redis(self) -> bool:
         """Install Redis"""
@@ -379,15 +377,14 @@ class FirstRunInstaller:
         if code == 0:
             self._report(SetupStep.INSTALL_VIBE, 1.0, "Vibe CLI успішно встановлено ✓")
             return True
-        else:
-            self._report(
-                SetupStep.INSTALL_VIBE,
-                1.0,
-                "Помилка встановлення Vibe CLI",
-                success=False,
-                error=stderr[:100],
-            )
-            return False
+        self._report(
+            SetupStep.INSTALL_VIBE,
+            1.0,
+            "Помилка встановлення Vibe CLI",
+            success=False,
+            error=stderr[:100],
+        )
+        return False
 
     def install_postgres(self) -> bool:
         """Install PostgreSQL (skipped if using SQLite backend)"""
