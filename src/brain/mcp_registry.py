@@ -322,6 +322,63 @@ def get_registry_stats() -> dict[str, Any]:
     }
 
 
+def get_protocols_by_names(protocol_names: list[str]) -> dict[str, str]:
+    """Return protocol contents for the given protocol names.
+
+    Used by ModeRouter/prompts to inject ONLY the protocols relevant to a mode,
+    instead of injecting ALL protocols into every prompt.
+
+    Args:
+        protocol_names: List of protocol short names (e.g. ["voice", "search", "task"])
+
+    Returns:
+        Dict mapping protocol name → protocol text content.
+    """
+    # Map short names to loaded global variables
+    _protocol_map: dict[str, str] = {
+        "voice": VOICE_PROTOCOL,
+        "search": SEARCH_PROTOCOL,
+        "storage": STORAGE_PROTOCOL,
+        "sdlc": SDLC_PROTOCOL,
+        "task": TASK_PROTOCOL,
+        "data": DATA_PROTOCOL,
+        "system_mastery": SYSTEM_MASTERY_PROTOCOL,
+        "hacking": HACKING_PROTOCOL,
+        "maps": MAPS_PROTOCOL,
+        "system_map": SYSTEM_MAP_PROTOCOL,
+        "vibe": VIBE_DOCUMENTATION,
+    }
+
+    result: dict[str, str] = {}
+    for name in protocol_names:
+        content = _protocol_map.get(name)
+        if content:
+            result[name] = content
+        else:
+            result[name] = f"Protocol '{name}' not loaded."
+    return result
+
+
+def get_protocols_text_for_mode(protocol_names: list[str]) -> str:
+    """Return concatenated protocol text for a mode, ready for prompt injection.
+
+    Args:
+        protocol_names: List of protocol short names.
+
+    Returns:
+        Single string with all protocol contents separated by headers.
+    """
+    protocols = get_protocols_by_names(protocol_names)
+    if not protocols:
+        return ""
+
+    sections = []
+    for _, content in protocols.items():
+        if content and not content.endswith("not loaded."):
+            sections.append(content)
+    return "\n\n".join(sections)
+
+
 def clear_caches() -> None:
     """Clear all internal caches. Useful for testing or after registry reload."""
     global _schema_cache_hits, _schema_cache_misses  # noqa: PLW0603

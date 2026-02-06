@@ -132,7 +132,19 @@ class BehaviorEngine:
         user_request: str,
         context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Classifies user intent based on config patterns.
+        """LEGACY: Keyword-based intent classification (fallback only).
+
+        DEPRECATED as primary classifier. The system now uses LLM-first classification:
+            1. atlas.analyze_request() → LLM classifies intent
+            2. mode_router.build_profile() → builds ModeProfile from LLM result
+            3. ModeProfile flows through orchestrator → atlas.chat()
+
+        This method is kept ONLY as emergency fallback when:
+            - LLM classification completely fails
+            - System is in degraded mode
+            - Tool routing needs a quick hint (classify_task)
+
+        For new code, use: mode_router.build_profile(llm_analysis)
 
         Args:
             user_request: User's input text

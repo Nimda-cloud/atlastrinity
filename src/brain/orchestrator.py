@@ -1003,7 +1003,9 @@ class Trinity:
                 logger_task.cancel()
 
             if not plan or not plan.steps:
-                await self._handle_no_steps_plan(user_request, history)
+                await self._handle_no_steps_plan(
+                    user_request, history, mode_profile=analysis.get("mode_profile")
+                )
                 return None
 
             self.state["current_plan"] = plan
@@ -1021,11 +1023,13 @@ class Trinity:
             break
         return plan
 
-    async def _handle_no_steps_plan(self, user_request, history):
+    async def _handle_no_steps_plan(self, user_request, history, mode_profile=None):
         """Handle case where Atlas generates no steps."""
         msg = self.atlas.get_voice_message("no_steps")
         await self._speak("atlas", msg)
-        fallback_chat = await self.atlas.chat(user_request, history=history, use_deep_persona=True)
+        fallback_chat = await self.atlas.chat(
+            user_request, history=history, use_deep_persona=True, mode_profile=mode_profile
+        )
         await self._speak("atlas", fallback_chat)
 
     async def _verify_plan_with_grisha(self, plan, user_request, attempt, max_retries):
@@ -1277,6 +1281,8 @@ class Trinity:
                 return {"status": "completed", "result": msg, "type": "workflow"}
 
             # Simple intent routing (chat, solo_task, etc.)
+            # Pass ModeProfile through so chat() uses LLM classification, not keywords
+            mode_profile = analysis.get("mode_profile")
             if intent in ["chat", "recall", "status", "solo_task"]:
                 response = analysis.get("initial_response") or await self.atlas.chat(
                     user_request,
@@ -1285,6 +1291,7 @@ class Trinity:
                     intent=intent,
                     on_preamble=self._speak,
                     images=images,
+                    mode_profile=mode_profile,
                 )
                 if response != "__ESCALATE__":
                     await self._speak("atlas", response)

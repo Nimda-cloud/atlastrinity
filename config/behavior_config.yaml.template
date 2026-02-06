@@ -52,8 +52,10 @@
 # Protocol Integration:
 # - Loaded at startup via src/brain/mcp_registry.py:load_registry()
 # - Injected into agent prompts via src/brain/prompts/ (ATLAS, TETYANA, GRISHA)
-# - Atlas uses SDLC_PROTOCOL for development tasks, TASK_PROTOCOL for others
-# - All agents receive VOICE_PROTOCOL, DATA_PROTOCOL, SEARCH_PROTOCOL
+# - Atlas chat/solo_task: SELECTIVE injection via ModeProfile (mode_profiles.json)
+#   e.g. chat gets only ["voice"], solo_task gets ["voice", "search"]
+# - Tetyana/Grisha (task/dev): receive full protocol set for execution
+# - Protocol selection: src/brain/mcp_registry.py:get_protocols_by_names()
 # =============================================================================
 
 patterns:
@@ -159,10 +161,21 @@ orchestrator:
     escalate_to_user_after_retries: 3
 
 # =============================================================================
-# INTENT DETECTION & CLASSIFICATION
+# INTENT DETECTION & CLASSIFICATION (LEGACY FALLBACK)
 # =============================================================================
-# User request intent classification patterns
-# Previously hardcoded in: atlas.py (lines 263-315)
+# DEPRECATED as primary classifier since v2.1.0 (Feb 2026).
+# Primary classification is now LLM-first:
+#   1. atlas.analyze_request() → LLM classifies intent
+#   2. mode_router.build_profile() → builds ModeProfile from mode_profiles.json
+#   3. ModeProfile flows through orchestrator → atlas.chat()
+#
+# These keyword patterns are kept ONLY as emergency fallback when:
+#   - LLM classification completely fails
+#   - behavior_engine.classify_intent() is called in degraded mode
+#
+# For the authoritative mode definitions, see:
+#   src/brain/data/mode_profiles.json
+#   src/brain/mode_router.py
 # =============================================================================
 
 intent_detection:
@@ -1361,9 +1374,17 @@ model_overrides:
       skip_planning: true
 
 # =============================================================================
-# WORKFLOW STAGES CONFIGURATION
+# WORKFLOW STAGES CONFIGURATION (SUPPLEMENTARY)
 # =============================================================================
-# Define all execution stages and their behavior parameters
+# Define execution stages and their detailed behavior parameters.
+#
+# NOTE (v2.1.0): The authoritative MODE DEFINITIONS (which mode to select,
+# default protocols, servers, flags) are now in:
+#   src/brain/data/mode_profiles.json  (selected by LLM via ModeRouter)
+#
+# This section provides SUPPLEMENTARY execution parameters (timeouts, retry
+# policies, model selection, verification settings) that are NOT in mode_profiles.
+# The 'triggers' sub-keys below are LEGACY and no longer drive mode selection.
 
 workflow_stages:
   # ---------------------------------------------------------------------------

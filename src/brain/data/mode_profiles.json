@@ -1,0 +1,192 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Declarative mode profiles for LLM-first routing. Each mode defines which protocols, servers, prompts, and LLM settings to use. The ModeRouter selects a mode via LLM classification, then builds the full execution profile from these defaults.",
+    "modes_summary": "chat (simple talk) | deep_chat (philosophy/identity) | solo_task (research with tools) | task (Trinity execution) | development (Vibe + Trinity coding)"
+  },
+
+  "chat": {
+    "description": "Simple conversational exchange — greetings, small talk, gratitude, quick answers from memory",
+    "llm_tier": "standard",
+    "protocols": ["voice"],
+    "servers": [],
+    "tools_access": "none",
+    "prompt_template": "atlas_chat",
+    "require_planning": false,
+    "require_tools": false,
+    "use_deep_persona": false,
+    "use_sequential_thinking": false,
+    "trinity_required": false,
+    "examples": [
+      "Привіт!",
+      "Дякую",
+      "Як справи?",
+      "Окей, зрозумів"
+    ]
+  },
+
+  "deep_chat": {
+    "description": "Philosophical, identity, mission-related conversations requiring deep persona and expanded context",
+    "llm_tier": "deep",
+    "protocols": ["voice"],
+    "servers": ["memory"],
+    "tools_access": "read_only",
+    "prompt_template": "atlas_chat",
+    "require_planning": false,
+    "require_tools": false,
+    "use_deep_persona": true,
+    "use_sequential_thinking": false,
+    "trinity_required": false,
+    "examples": [
+      "Хто ти?",
+      "Яка твоя місія?",
+      "Ти живий?",
+      "Розкажи про свою свідомість"
+    ]
+  },
+
+  "solo_task": {
+    "description": "Information retrieval, research, file reading, web search — Atlas handles independently with tools",
+    "llm_tier": "standard",
+    "protocols": ["voice", "search"],
+    "servers": [
+      "macos-use",
+      "filesystem",
+      "duckduckgo-search",
+      "sequential-thinking",
+      "memory",
+      "context7",
+      "golden-fund"
+    ],
+    "tools_access": "read_only",
+    "prompt_template": "atlas_solo_task",
+    "require_planning": false,
+    "require_tools": true,
+    "use_deep_persona": false,
+    "use_sequential_thinking": true,
+    "trinity_required": false,
+    "examples": [
+      "Яка погода у Львові?",
+      "Прочитай файл config.yaml",
+      "Знайди документацію по LangChain",
+      "Який курс долара?"
+    ]
+  },
+
+  "recall": {
+    "description": "User asking to remember, remind, or retrieve information about past tasks/conversations",
+    "llm_tier": "standard",
+    "protocols": ["voice", "storage"],
+    "servers": ["memory", "golden-fund", "redis"],
+    "tools_access": "read_only",
+    "prompt_template": "atlas_chat",
+    "require_planning": false,
+    "require_tools": true,
+    "use_deep_persona": false,
+    "use_sequential_thinking": false,
+    "trinity_required": false,
+    "examples": [
+      "Що ми робили вчора?",
+      "Нагадай про останній проект",
+      "Що ти знаєш про мене?"
+    ]
+  },
+
+  "status": {
+    "description": "User asking about current state or status of the system",
+    "llm_tier": "standard",
+    "protocols": ["voice", "system_mastery"],
+    "servers": ["redis", "devtools", "macos-use"],
+    "tools_access": "read_only",
+    "prompt_template": "atlas_solo_task",
+    "require_planning": false,
+    "require_tools": true,
+    "use_deep_persona": false,
+    "use_sequential_thinking": false,
+    "trinity_required": false,
+    "examples": [
+      "Який статус системи?",
+      "Які сервери працюють?",
+      "Скільки задач виконано?"
+    ]
+  },
+
+  "task": {
+    "description": "Direct execution tasks requiring Trinity coordination — file creation, system control, automation",
+    "llm_tier": "standard",
+    "protocols": ["voice", "search", "task", "storage", "data", "system_mastery", "maps"],
+    "servers": [
+      "macos-use",
+      "filesystem",
+      "memory",
+      "sequential-thinking",
+      "duckduckgo-search",
+      "puppeteer",
+      "googlemaps",
+      "redis",
+      "data-analysis",
+      "golden-fund",
+      "xcodebuild",
+      "whisper-stt"
+    ],
+    "tools_access": "full",
+    "prompt_template": "atlas_planner",
+    "require_planning": true,
+    "require_tools": true,
+    "use_deep_persona": false,
+    "use_sequential_thinking": true,
+    "trinity_required": true,
+    "examples": [
+      "Відкрий Finder і створи папку",
+      "Встанови пакет через brew",
+      "Побудуй маршрут до аеропорту",
+      "Відправ email"
+    ]
+  },
+
+  "development": {
+    "description": "Software development, coding, debugging — requires Vibe + Trinity with SDLC protocols",
+    "llm_tier": "deep",
+    "protocols": ["voice", "sdlc", "task", "storage", "data", "system_mastery"],
+    "servers": [
+      "vibe",
+      "filesystem",
+      "macos-use",
+      "sequential-thinking",
+      "context7",
+      "devtools",
+      "github",
+      "memory",
+      "golden-fund",
+      "xcodebuild"
+    ],
+    "tools_access": "full",
+    "prompt_template": "atlas_planner",
+    "require_planning": true,
+    "require_tools": true,
+    "use_deep_persona": false,
+    "use_sequential_thinking": true,
+    "use_vibe": true,
+    "trinity_required": true,
+    "examples": [
+      "Створи калькулятор на Swift",
+      "Виправ баг у модулі авторизації",
+      "Зроби рефакторинг класу",
+      "Напиши тести для API"
+    ]
+  },
+
+  "_protocol_registry": {
+    "voice": "voice_protocol.txt",
+    "search": "search_protocol.txt",
+    "task": "task_protocol.txt",
+    "sdlc": "sdlc_protocol.txt",
+    "storage": "storage_protocol.txt",
+    "data": "data_protocol.txt",
+    "system_mastery": "system_mastery_protocol.txt",
+    "maps": "maps_protocol.md",
+    "hacking": "hacking_sysadmin_protocol.md",
+    "vibe": "vibe_docs.txt",
+    "system_map": "system_map_protocol.md"
+  }
+}

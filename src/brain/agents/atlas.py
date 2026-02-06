@@ -31,6 +31,7 @@ from src.brain.context import shared_context
 from src.brain.logger import logger
 from src.brain.memory import long_term_memory
 from src.brain.prompts import AgentPrompts
+from src.brain.mode_router import ModeProfile, mode_router
 from src.brain.prompts.atlas_chat import (
     generate_atlas_chat_prompt,
     generate_atlas_solo_task_prompt,
@@ -246,27 +247,44 @@ class Atlas(BaseAgent):
             if not analysis.get("enriched_request"):
                 analysis["enriched_request"] = user_request
 
+            # Build ModeProfile from LLM classification (LLM-first, no keywords)
+            profile = mode_router.build_profile(analysis)
+            analysis["mode_profile"] = profile
+            analysis["intent"] = profile.intent
+            analysis["use_deep_persona"] = profile.use_deep_persona
+
+            # Ensure initial_response key always exists for backward compatibility
+            analysis.setdefault("initial_response", None)
+
             # Mapping for orchestrator: if intent is chat, map voice_response to initial_response
             # so the orchestrator can use the LLM's tailored greeting immediately.
             # CRITICAL: We skip this if use_deep_persona is True, to force the orchestrator
             # to call the full atlas.chat() which uses the complete system prompt.
             if (
-                analysis.get("intent") == "chat"
+                profile.intent == "chat"
                 and analysis.get("voice_response")
-                and not analysis.get("use_deep_persona")
+                and not profile.use_deep_persona
             ):
                 analysis["initial_response"] = analysis.get("voice_response")
 
+            logger.info(
+                f"[ATLAS] LLM-first classification: mode={profile.mode}, "
+                f"protocols={profile.all_protocols}, deep_persona={profile.use_deep_persona}"
+            )
             return analysis
         except Exception as e:
             logger.error(f"Intent detection LLM failed: {e}")
+            # Emergency fallback: use ModeRouter lightweight heuristic
+            fallback_profile = mode_router.fallback_classify(user_request)
+            logger.warning(f"[ATLAS] Using fallback classification: mode={fallback_profile.mode}")
             return {
-                "intent": "chat",
+                "intent": fallback_profile.intent,
+                "mode_profile": fallback_profile,
                 "reason": f"System fallback due to technical issue: {e}",
                 "enriched_request": user_request,
                 "complexity": "low",
-                "use_deep_persona": False,
-                "initial_response": None,  # Force falling back to atlas.chat() for dynamic response
+                "use_deep_persona": fallback_profile.use_deep_persona,
+                "initial_response": None,
             }
 
     async def evaluate_deviation(
@@ -589,43 +607,45 @@ Respond in JSON:
         user_request: str,
         history: list[Any] | None,
         use_deep_persona: bool,
+        mode_profile: ModeProfile | None = None,
     ) -> tuple[dict[str, Any], bool, bool, str]:
-        """Classify intent and determine persona/context requirements."""
-        from ..behavior_engine import behavior_engine
+        """Determine persona/context requirements using ModeProfile (LLM-first).
 
-        classification = behavior_engine.classify_intent(user_request, context={})
-        intent = classification.get("intent", "solo_task")
-        is_simple_chat = classification.get("type") == "simple_chat"
+        If mode_profile is provided (from analyze_request), uses it directly.
+        No keyword-based reclassification — the LLM already decided.
+        """
+        if mode_profile:
+            # LLM-first path: use the profile built from analyze_request()
+            intent = mode_profile.intent
+            use_deep_persona = mode_profile.use_deep_persona
+            is_simple_chat = mode_profile.mode == "chat"
 
-        # Override with classification's preference for deep persona if not explicitly True
-        if not use_deep_persona:
-            use_deep_persona = classification.get("use_deep_persona", False)
+            classification = mode_profile.to_dict()
+            classification["type"] = mode_profile.mode
 
-        # SEMANTIC ESSENCE VERIFICATION:
-        # If classification says simple chat but requires semantic check, consult the Brain.
-        if not use_deep_persona and (
-            classification.get("requires_semantic_verification") or "атлас" in user_request.lower()
-        ):
             logger.info(
-                f"[ATLAS CHAT] Triggering Semantic Essence Analysis for: {user_request[:30]}..."
+                f"[ATLAS CHAT] Using ModeProfile: mode={mode_profile.mode}, "
+                f"deep_persona={use_deep_persona}"
             )
-            analysis = await self.analyze_request(user_request, history=history)
-            if analysis.get("use_deep_persona"):
-                use_deep_persona = True
-                logger.info("[ATLAS CHAT] Soul recognized via Semantic Essence Analysis")
+        else:
+            # Fallback path: if chat() called without profile, use lightweight fallback
+            logger.warning("[ATLAS CHAT] No ModeProfile provided, using fallback classification")
+            fallback = mode_router.fallback_classify(user_request)
+            intent = fallback.intent
+            use_deep_persona = use_deep_persona or fallback.use_deep_persona
+            is_simple_chat = fallback.mode == "chat"
+            classification = fallback.to_dict()
+            classification["type"] = fallback.mode
 
         if use_deep_persona:
             logger.info(
-                f"[ATLAS CHAT] Deep Persona ENABLED for intent: {classification.get('type')}"
+                f"[ATLAS CHAT] Deep Persona ENABLED for mode: {classification.get('mode', classification.get('type'))}"
             )
 
         # ADAPTIVE CONTEXT FETCHING:
-        # Even if it's a simple chat, if it refers to "Atlas" or is the start of a conversation,
-        # we might want context to be more "conscious" and aware of the mission.
         should_fetch_context = (
             not is_simple_chat
             or intent == "solo_task"
-            or "атлас" in user_request.lower()
             or not history
         )
 
@@ -675,8 +695,13 @@ Respond in JSON:
         vector_context: str,
         available_tools_info: list[dict[str, Any]],
         use_deep_persona: bool,
+        mode_profile: ModeProfile | None = None,
     ) -> str:
-        """Construct the core system prompt based on intent and available data."""
+        """Construct the core system prompt based on intent and available data.
+
+        If mode_profile is provided, uses selective protocol injection
+        (only protocols relevant to the current mode).
+        """
         # D. System Context (Always fast)
         try:
             ctx_snapshot = shared_context.to_dict()
@@ -691,9 +716,12 @@ Respond in JSON:
             else "- Conversational assistant."
         )
 
-        # Injection logic: Deep Analysis should come AFTER capabilities but BEFORE instructions
-        # Or even better: inject it as a separate 'thought' message if possible,
-        # but for now we put it inside SystemMessage for consistency.
+        # Selective protocol injection: append mode-specific protocols
+        protocol_context = ""
+        if mode_profile:
+            from ..mcp_registry import get_protocols_text_for_mode
+
+            protocol_context = get_protocols_text_for_mode(mode_profile.all_protocols)
 
         system_prompt_text = ""
         if intent == "solo_task":
@@ -714,6 +742,11 @@ Respond in JSON:
                 agent_capabilities=agent_capabilities,
                 use_deep_persona=use_deep_persona,
             )
+
+        # Inject mode-specific protocols after the base prompt
+        if protocol_context:
+            system_prompt_text += f"\n\n{protocol_context}"
+
         return system_prompt_text
 
     async def _handle_chat_preamble(
@@ -839,18 +872,26 @@ Respond in JSON:
         use_deep_persona: bool = False,
         intent: str | None = None,
         images: list[dict[str, Any]] | None = None,
+        mode_profile: ModeProfile | None = None,
     ) -> str:
-        """EntryPoint for Chat: Contextual multi-turn reasoning and interaction."""
-        # 1. Determine parameters and fetch context
+        """EntryPoint for Chat: Contextual multi-turn reasoning and interaction.
+
+        Args:
+            mode_profile: If provided (from analyze_request), skips keyword reclassification.
+                         The LLM already decided the mode — we trust it.
+        """
+        # 1. Determine parameters using ModeProfile (LLM-first, no keyword reclassification)
         (
             classification,
             use_deep_persona_resolved,
             should_fetch,
             resolved_query,
-        ) = await self._determine_chat_parameters(user_request, history, use_deep_persona)
+        ) = await self._determine_chat_parameters(
+            user_request, history, use_deep_persona, mode_profile=mode_profile
+        )
         if intent is None:
             intent = classification.get("intent", "solo_task")
-        is_simple_chat = classification.get("type") == "simple_chat"
+        is_simple_chat = classification.get("type") == "chat" or classification.get("mode") == "chat"
 
         # Ensure intent is not None for type safety
         assert intent is not None, "Intent should be set after classification"
@@ -865,9 +906,10 @@ Respond in JSON:
             user_request, is_simple_chat, intent
         )
 
-        # 4. Generate system prompt
+        # 4. Generate system prompt with selective protocol injection
         system_prompt = self._generate_chat_system_prompt(
-            user_request, intent, graph_ctx, vector_ctx, tools_info, use_deep_persona_resolved
+            user_request, intent, graph_ctx, vector_ctx, tools_info,
+            use_deep_persona_resolved, mode_profile=mode_profile,
         )
 
         # 5. Build messages
