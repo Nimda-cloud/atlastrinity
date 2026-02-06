@@ -71,6 +71,30 @@ temperature = 0.0
 input_price = 0.0
 output_price = 0.0
 
+[[models]]
+name = "raptor-mini"
+provider = "copilot"
+alias = "raptor-mini"
+temperature = 0.1
+input_price = 0.0
+output_price = 0.0
+
+[[models]]
+name = "gpt-5-mini"
+provider = "copilot"
+alias = "gpt-5-mini"
+temperature = 0.1
+input_price = 0.0
+output_price = 0.0
+
+[[models]]
+name = "gpt-4.1"
+provider = "copilot"
+alias = "gpt-4.1"
+temperature = 0.1
+input_price = 0.0
+output_price = 0.0
+
 # =============================================================================
 # Built-in Tool Permissions
 

@@ -187,28 +187,28 @@ class ProcessWatchdog:
         logger.error(
             f"[WATCHDOG] 🚨 PROCESS STUCK: {pid} ({info['type']}). Requesting Healing Orchestrator..."
         )
-        
+
         # New: Delegate to HealingOrchestrator
         try:
             from src.brain.system_healing import healing_orchestrator
-            
+
             # Construct context for analysis
             context = {
                 "process_info": info,
                 "pid": pid,
                 "stuck_count": info.get("stuck_count", 0),
-                "step_id": f"watchdog_kill_{pid}"
+                "step_id": f"watchdog_kill_{pid}",
             }
-            
+
             # Call orchestrator (it will analyze -> decide -> act)
             # We treat this as a "STEP" failure where the step is keeping the process alive
             await healing_orchestrator.handle_error(
                 step_id=f"watchdog_process_{pid}",
                 error=f"Process {pid} ({info['name']}) is stuck (0% CPU for extended period).",
                 context=context,
-                log_context=f"Process Info: {info}"
+                log_context=f"Process Info: {info}",
             )
-            
+
         except Exception as e:
             logger.error(f"[WATCHDOG] Failed to call Healing Orchestrator: {e}")
             # Fallback to old behavior if orchestrator fails

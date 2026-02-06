@@ -36,13 +36,13 @@ models:
   vision: "gpt-4o"                     # Vision/multimodal tasks
   reasoning: "gpt-4.1"                  # Specialized deep reasoning
   code_analysis: "gpt-4o"              # Code review and analysis
-  consolidation: "gpt-4o"              # Memory consolidation
+  consolidation: "raptor-mini"          # Memory consolidation
   
   # Fallbacks (used when primary unavailable)
   fallback: "gpt-4o"                   # Fallback model
   
   # Sandbox model (used by mcp_sandbox.py)
-  sandbox: "gpt-4o"
+  sandbox: "raptor-mini"
 
   # Agents inherit from models.default unless overridden
 
@@ -56,7 +56,7 @@ agents:
 
   tetyana:
     # model: inherited from models.default
-    reasoning_model: "gpt-4.1"       # Tool selection reasoning, set in your config.yaml
+    reasoning_model: "gpt-5-mini"       # Tool selection reasoning, set in your config.yaml
     vision_model: ""             # Vision tasks, set in your config.yaml
     temperature: 0.5
     max_tokens: 2000

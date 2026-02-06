@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T06:44:47.870258 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_phoenix_flow.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T06:20:15.756064 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, .turbo/daemon/1accda45ee070313-turbo.log.2026-02-06 -->
 

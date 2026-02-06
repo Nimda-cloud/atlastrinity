@@ -491,34 +491,38 @@ class Trinity:
         """Resume execution from a recovery snapshot."""
         try:
             from src.brain.tools.recovery import recovery_manager
-            
+
             snapshot = recovery_manager.load_snapshot()
             if not snapshot:
                 logger.warning("[TRINITY] No snapshot found to resume from.")
                 return
 
             orchestrator_state = snapshot.get("orchestrator_state", {})
-            task_context = snapshot.get("task_context", {}) # Logic might need adjustment based on snapshot structure
-            
+            _task_context = snapshot.get(
+                "task_context", {}
+            )  # Logic might need adjustment based on snapshot structure
+
             # Restore state
             self.state.update(orchestrator_state)
             self.current_session_id = snapshot.get("session_id", self.current_session_id)
-            
+
             logger.info(f"[TRINITY] 🦅 Resumed from snapshot (Reason: {snapshot.get('reason')})")
-            
+
             # Resume execution
             # We need to trigger the run loop again, possibly skipping the step that failed if needed
             # For now, we just restart the cycle
-            if "messages" in self.state and self.state["messages"]:
-                 # Extract last user message or just re-run last step?
-                 # Simplified: Just log "Ready to resume"
-                 logger.info("[TRINITY] Ready to resume task.")
-                 await self._log("🦅 Система відновлена після перезавантаження. Готовий продовжити.", "system")
-                 
-                 # Automatically trigger run if we have a task ID
-                 # This part depends on how 'run' handles state
-                 # Ideally we re-invoke the step that was pending
-                 
+            if self.state.get("messages"):
+                # Extract last user message or just re-run last step?
+                # Simplified: Just log "Ready to resume"
+                logger.info("[TRINITY] Ready to resume task.")
+                await self._log(
+                    "🦅 Система відновлена після перезавантаження. Готовий продовжити.", "system"
+                )
+
+                # Automatically trigger run if we have a task ID
+                # This part depends on how 'run' handles state
+                # Ideally we re-invoke the step that was pending
+
         except Exception as e:
             logger.error(f"[TRINITY] Failed to resume from snapshot: {e}")
 

@@ -1,8 +1,8 @@
 # Accept-edits agent configuration for Vibe
 # Automatically approves file modification tools
 
-# Use the default model from main config
-# active_model = "devstral-2"
+# Use gpt-5-mini for fast and precise edits
+active_model = "gpt-5-mini"
 system_prompt_id = "cli"
 
 # Optimize: Unrestricted access to all native tools for applying edits
