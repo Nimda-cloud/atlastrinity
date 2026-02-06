@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T08:16:22.633843 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/monitoring.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T08:13:14.192704 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, all_ruff_errors.txt -->
 

@@ -399,11 +399,12 @@ const App: React.FC = () => {
       }
     };
 
-    // Start looking for the brain
-    waitForBackend();
+    // Start looking for the brain after a short delay to allow Python to spin up
+    const initialTimer = setTimeout(() => waitForBackend(), 3000);
 
     return () => {
       mounted = false;
+      clearTimeout(initialTimer);
       if (interval) clearInterval(interval);
     };
   }, [fetchSessions, pollState, pollInterval]);
