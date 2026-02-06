@@ -143,6 +143,7 @@ class Trinity:
 
         # ARCHITECTURAL IMPROVEMENT: Live Voice status during long tools (like Vibe)
         self._last_live_speech_time = 0
+        self._spoken_history = {}  # Deduplication cache: hash -> timestamp
         from .mcp_manager import mcp_manager
 
         mcp_manager.register_log_callback(self._mcp_log_voice_callback)
@@ -486,6 +487,29 @@ class Trinity:
 
         # 1. Clean up text for TTS using config rules
         import re
+        import hashlib
+        import time
+
+        # Deduplication Logic
+        # Calculate hash of the raw text to identify duplicates
+        msg_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        now = time.time()
+        last_time = self._spoken_history.get(msg_hash, 0)
+        
+        # 60s cooldown for identical messages
+        if now - last_time < 60:
+            logger.info(f"[VOICE] Skipping duplicate message (Cooldown active): '{text[:50]}...'")
+            return
+
+        self._spoken_history[msg_hash] = now
+        
+        # Cleanup old history (simple mechanism)
+        if len(self._spoken_history) > 100:
+            current_time = now
+            self._spoken_history = {
+                k: v for k, v in self._spoken_history.items() 
+                if current_time - v < 120
+            }
 
         processed_text = text
         for rule in voice_config.get("sanitization_rules", []):

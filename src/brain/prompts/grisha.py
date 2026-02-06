@@ -57,6 +57,7 @@ VERDICT INSTRUCTIONS:
 4. **EVIDENCE EVALUATION**: Analyze the Result text. If empty, but command is success (True) and it's an ANALYSIS step - CHECK if it's logical. Do not fail ONLY because of "emptiness" if it proves absence.
 5. **COMMAND RELEVANCE CHECK**: RELAXED - Verify that the executed command is RELEVANT to the expected result. If step expects "verify Bridged Mode" and command is "list vms", this is RELEVANT as initial step unless this is explicitly marked as FINAL task completion.
 6. **INTERMEDIATE STEPS**: For steps that are part of larger tasks, be more lenient - focus on progress rather than complete perfection.
+7. **INDIRECT EVIDENCE**: If the step requires remote access (SSH), and we see a successful file listing or command output from the remote machine, this CONFIRMS the connection even if the "connect" command output was silent or ambiguous.
 
 Provide response:
 - **VERDICT**: CONFIRMED or FAILED

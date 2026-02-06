@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T05:48:41.880137 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/tetyana.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T05:43:35.514759 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/error_router.py -->
 

@@ -1811,7 +1811,8 @@ class Grisha(BaseAgent):
         verification_results: list,
     ):
         step_id = step.get("id", "unknown")
-        logger.info(
+        # Reduced verbosity - Orchestrator handles the main error logging
+        logger.debug(
             f"[GRISHA] Step {step_id} failed. Saving detailed rejection report for Tetyana..."
         )
         try:

@@ -141,6 +141,24 @@ patterns:
       notify_on_completion: true
 
 # =============================================================================
+# GRISHA VERIFICATION CONFIGURATION
+# =============================================================================
+grisha:
+  verification:
+    min_confidence_for_rejection: 0.7
+    max_retries_per_step: 2
+    enable_evidence_synthesis: true
+    mask_sensitive_data: true
+
+# =============================================================================
+# ORCHESTRATOR RECOVERY CONFIGURATION
+# =============================================================================
+orchestrator:
+  recovery:
+    max_same_strategy_retries: 2
+    escalate_to_user_after_retries: 3
+
+# =============================================================================
 # INTENT DETECTION & CLASSIFICATION
 # =============================================================================
 # User request intent classification patterns
