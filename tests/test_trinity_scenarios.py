@@ -73,6 +73,7 @@ langchain_core_messages_mod = types.ModuleType("langchain_core.messages")
 class _BaseMessage:
     def __init__(self, content=None, **kwargs):
         self.content = content
+        self.additional_kwargs = kwargs.get("additional_kwargs", {})
 
 
 class _HumanMessage(_BaseMessage):
@@ -110,6 +111,9 @@ class _StubMCPManager:
     def start_health_monitoring(self, interval: int = 60):
         return None
 
+    def register_log_callback(self, callback):
+        return None
+
 
 brain_mcp_manager_mod.mcp_manager = _StubMCPManager()  # type: ignore
 sys.modules.setdefault("src.brain.mcp_manager", brain_mcp_manager_mod)
@@ -126,6 +130,12 @@ from src.brain.orchestrator import Trinity
 class DummyVoice:
     async def speak(self, agent_id: str, text: str):
         return None
+
+    def stop(self):
+        return None
+
+    async def prepare_speech_text(self, text: str) -> str:
+        return text
 
 
 class StubNotifications:
@@ -173,13 +183,23 @@ def isolated_globals(monkeypatch):
 
     # Avoid Redis / memory / consolidation side-effects during unit tests
     monkeypatch.setattr(orch.state_manager, "available", False, raising=False)
-    monkeypatch.setattr(orch.long_term_memory, "available", False, raising=False)  # type: ignore
-    monkeypatch.setattr(
-        orch.consolidation_module,
-        "should_consolidate",
-        lambda: False,
-        raising=False,
-    )
+
+    # long_term_memory is imported locally inside methods, mock at source
+    try:
+        from src.brain.memory import long_term_memory
+
+        monkeypatch.setattr(long_term_memory, "available", False, raising=False)
+    except (ImportError, AttributeError):
+        pass
+
+    # consolidation_module may not exist at module level
+    if hasattr(orch, "consolidation_module"):
+        monkeypatch.setattr(
+            orch.consolidation_module,
+            "should_consolidate",
+            lambda: False,
+            raising=False,
+        )
 
 
 @pytest.fixture
@@ -200,7 +220,7 @@ def trinity_base(isolated_globals, stub_notifications, fast_sleep):
 
 def test_chat_intent_returns_chat_result(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "chat", "initial_response": "Привіт!"}
 
         async def chat(self, user_request: str, history=None):
@@ -216,7 +236,7 @@ def test_chat_intent_returns_chat_result(trinity_base):
 
 def test_planning_error_returns_error(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "task", "reason": "Ок"}
 
         async def create_plan(self, analysis):
@@ -231,7 +251,7 @@ def test_planning_error_returns_error(trinity_base):
 
 def test_empty_plan_returns_no_steps_message(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "task", "reason": "Ок"}
 
         async def create_plan(self, analysis):
@@ -253,7 +273,7 @@ def test_empty_plan_returns_no_steps_message(trinity_base):
 
 def test_simple_execution_appends_step_result(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "task", "reason": "Ок"}
 
         async def create_plan(self, analysis):
@@ -290,7 +310,7 @@ def test_simple_execution_appends_step_result(trinity_base):
 
 def test_verification_rejection_marks_step_failed(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "task", "reason": "Ок"}
 
         async def create_plan(self, analysis):
@@ -344,7 +364,7 @@ def test_verification_rejection_marks_step_failed(trinity_base):
 
 def test_verification_crash_is_caught_and_logged(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "task", "reason": "Ок"}
 
         async def create_plan(self, analysis):
@@ -398,7 +418,7 @@ def test_retries_then_user_rejects_recovery_aborts(trinity_base, stub_notificati
     stub_notifications.next_approval = False
 
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             return {"intent": "task", "reason": "Ок"}
 
         async def create_plan(self, analysis):
@@ -443,7 +463,7 @@ def test_retries_then_user_rejects_recovery_aborts(trinity_base, stub_notificati
 
 def test_subtask_step_triggers_recursive_run(trinity_base):
     class MockAtlas:
-        async def analyze_request(self, user_request: str, history=None, context=None):
+        async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
             if "привіт" in user_request.lower():
                 return {"intent": "chat", "initial_response": "Привіт!"}
             return {"intent": "task", "reason": "Ок"}

@@ -35,7 +35,15 @@ class TestModeProfilesJSON:
             return json.load(f)
 
     def test_all_modes_present(self, profiles_data):
-        expected_modes = {"chat", "deep_chat", "solo_task", "recall", "status", "task", "development"}
+        expected_modes = {
+            "chat",
+            "deep_chat",
+            "solo_task",
+            "recall",
+            "status",
+            "task",
+            "development",
+        }
         actual_modes = {k for k in profiles_data if not k.startswith("_")}
         assert expected_modes == actual_modes, f"Missing modes: {expected_modes - actual_modes}"
 
@@ -132,29 +140,35 @@ class TestModeRouterBuildProfile:
         assert "vibe" in profile.all_servers
 
     def test_extra_servers_merged(self, router):
-        profile = router.build_profile({
-            "intent": "solo_task",
-            "extra_servers": ["puppeteer", "github"],
-        })
+        profile = router.build_profile(
+            {
+                "intent": "solo_task",
+                "extra_servers": ["puppeteer", "github"],
+            }
+        )
         assert "puppeteer" in profile.all_servers
         assert "github" in profile.all_servers
         # Default solo_task servers also present
         assert "duckduckgo-search" in profile.all_servers
 
     def test_extra_protocols_merged(self, router):
-        profile = router.build_profile({
-            "intent": "chat",
-            "extra_protocols": ["maps", "data"],
-        })
+        profile = router.build_profile(
+            {
+                "intent": "chat",
+                "extra_protocols": ["maps", "data"],
+            }
+        )
         assert "voice" in profile.all_protocols  # default
         assert "maps" in profile.all_protocols  # extra
         assert "data" in profile.all_protocols  # extra
 
     def test_no_duplicate_servers(self, router):
-        profile = router.build_profile({
-            "intent": "solo_task",
-            "extra_servers": ["memory", "filesystem"],  # already in defaults
-        })
+        profile = router.build_profile(
+            {
+                "intent": "solo_task",
+                "extra_servers": ["memory", "filesystem"],  # already in defaults
+            }
+        )
         server_counts = {}
         for s in profile.all_servers:
             server_counts[s] = server_counts.get(s, 0) + 1
@@ -162,10 +176,12 @@ class TestModeRouterBuildProfile:
         assert not duplicates, f"Duplicate servers: {duplicates}"
 
     def test_voice_response_preserved(self, router):
-        profile = router.build_profile({
-            "intent": "chat",
-            "voice_response": "Вітаю, Олеже!",
-        })
+        profile = router.build_profile(
+            {
+                "intent": "chat",
+                "voice_response": "Вітаю, Олеже!",
+            }
+        )
         assert profile.voice_response == "Вітаю, Олеже!"
 
     def test_to_dict_serialization(self, router):

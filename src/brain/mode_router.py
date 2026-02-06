@@ -181,7 +181,7 @@ class ModeRouter:
             reason=llm_analysis.get("reason", ""),
             voice_response=llm_analysis.get("voice_response", ""),
             enriched_request=llm_analysis.get("enriched_request", ""),
-            complexity=llm_analysis.get("complexity", defaults.get("complexity", "medium")),
+            complexity=str(llm_analysis.get("complexity", defaults.get("complexity", "medium"))),
             llm_tier=defaults.get("llm_tier", "standard"),
             protocols=list(defaults.get("protocols", [])),
             servers=list(defaults.get("servers", [])),
@@ -189,11 +189,11 @@ class ModeRouter:
             prompt_template=defaults.get("prompt_template", "atlas_chat"),
             require_planning=defaults.get("require_planning", False),
             require_tools=defaults.get("require_tools", False),
-            use_deep_persona=llm_analysis.get(
-                "use_deep_persona", defaults.get("use_deep_persona", False)
+            use_deep_persona=bool(
+                llm_analysis.get("use_deep_persona", defaults.get("use_deep_persona", False))
             ),
             use_sequential_thinking=defaults.get("use_sequential_thinking", False),
-            use_vibe=llm_analysis.get("use_vibe", defaults.get("use_vibe", False)),
+            use_vibe=bool(llm_analysis.get("use_vibe", defaults.get("use_vibe", False))),
             trinity_required=defaults.get("trinity_required", False),
             extra_servers=llm_analysis.get("extra_servers", []),
             extra_protocols=llm_analysis.get("extra_protocols", []),
@@ -251,9 +251,7 @@ class ModeRouter:
             return "development"
 
         # Default fallback
-        logger.warning(
-            f"[MODE ROUTER] Unknown mode '{raw_mode}', defaulting to 'chat'"
-        )
+        logger.warning(f"[MODE ROUTER] Unknown mode '{raw_mode}', defaulting to 'chat'")
         self._fallback_count += 1
         return "chat"
 
@@ -274,9 +272,25 @@ class ModeRouter:
 
         # Rule 2: Action verbs → task (check BEFORE word count, catches "відкрий X")
         action_verbs = [
-            "відкрий", "зроби", "створи", "встанови", "запусти", "видали",
-            "скопіюй", "перемісти", "надішли", "побудуй", "налаштуй",
-            "open", "create", "install", "run", "delete", "move", "send", "build",
+            "відкрий",
+            "зроби",
+            "створи",
+            "встанови",
+            "запусти",
+            "видали",
+            "скопіюй",
+            "перемісти",
+            "надішли",
+            "побудуй",
+            "налаштуй",
+            "open",
+            "create",
+            "install",
+            "run",
+            "delete",
+            "move",
+            "send",
+            "build",
         ]
         if any(request_lower.startswith(v) or f" {v}" in request_lower for v in action_verbs):
             return self.build_profile({"mode": "task"})

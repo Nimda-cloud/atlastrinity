@@ -86,7 +86,6 @@ class AgentPrompts:
             Formatted system prompt with only the relevant protocols.
         """
         from ..mcp_registry import get_protocols_by_names
-
         from .common import get_realm_catalog, get_vibe_documentation
 
         # Get fresh catalog
@@ -99,7 +98,9 @@ class AgentPrompts:
         context_data = {
             "catalog": current_catalog,
             "vibe_tools_documentation": (
-                get_vibe_documentation() if "vibe" in protocol_names or "sdlc" in protocol_names else ""
+                get_vibe_documentation()
+                if "vibe" in protocol_names or "sdlc" in protocol_names
+                else ""
             ),
             "voice_protocol": protocols.get("voice", ""),
             "search_protocol": protocols.get("search", ""),

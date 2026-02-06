@@ -1,4 +1,4 @@
-from brain.prompts import AgentPrompts
+from src.brain.prompts import AgentPrompts
 
 
 def test_agent_prompts_exports():
@@ -9,9 +9,7 @@ def test_agent_prompts_exports():
 
 def test_grisha_prompt_contains_dynamic_catalog():
     """Verify Grisha's prompt includes dynamic server catalog from mcp_registry."""
-    grisha = AgentPrompts.GRISHA
-    assert isinstance(grisha, dict)
-    sys_prompt = grisha.get("SYSTEM_PROMPT", "")
+    sys_prompt = AgentPrompts.get_agent_system_prompt("GRISHA")
 
     # Check that catalog is properly interpolated from mcp_registry
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
@@ -22,9 +20,7 @@ def test_grisha_prompt_contains_dynamic_catalog():
 
 def test_atlas_prompt_contains_dynamic_catalog():
     """Verify Atlas's prompt includes dynamic server catalog from mcp_registry."""
-    atlas = AgentPrompts.ATLAS
-    assert isinstance(atlas, dict)
-    sys_prompt = atlas.get("SYSTEM_PROMPT", "")
+    sys_prompt = AgentPrompts.get_agent_system_prompt("ATLAS")
 
     # Check that catalog is properly interpolated
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
@@ -32,18 +28,16 @@ def test_atlas_prompt_contains_dynamic_catalog():
 
 def test_tetyana_prompt_contains_dynamic_catalog():
     """Verify Tetyana's prompt includes dynamic server catalog from mcp_registry."""
-    tetyana = AgentPrompts.TETYANA
-    assert isinstance(tetyana, dict)
-    sys_prompt = tetyana.get("SYSTEM_PROMPT", "")
+    sys_prompt = AgentPrompts.get_agent_system_prompt("TETYANA")
 
     # Check that catalog is properly interpolated
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
 
 
 def test_prompts_no_uninterpolated_placeholders():
-    """Verify no literal placeholders remain in prompts."""
+    """Verify no literal placeholders remain in formatted prompts."""
     for name in ["ATLAS", "TETYANA", "GRISHA"]:
-        prompt = getattr(AgentPrompts, name).get("SYSTEM_PROMPT", "")
+        prompt = AgentPrompts.get_agent_system_prompt(name)
         assert "{DEFAULT_REALM_CATALOG}" not in prompt, f"{name} has uninterpolated catalog"
         assert "{VIBE_TOOLS_DOCUMENTATION}" not in prompt, f"{name} has uninterpolated vibe docs"
         assert "{VOICE_PROTOCOL}" not in prompt, f"{name} has uninterpolated voice protocol"

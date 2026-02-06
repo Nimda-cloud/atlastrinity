@@ -30,8 +30,8 @@ from src.brain.config_loader import config
 from src.brain.context import shared_context
 from src.brain.logger import logger
 from src.brain.memory import long_term_memory
-from src.brain.prompts import AgentPrompts
 from src.brain.mode_router import ModeProfile, mode_router
+from src.brain.prompts import AgentPrompts
 from src.brain.prompts.atlas_chat import (
     generate_atlas_chat_prompt,
     generate_atlas_solo_task_prompt,
@@ -561,7 +561,9 @@ Respond in JSON:
         )
         return cast("tuple[str, str, list[dict[str, Any]]]", tuple(results))
 
-    async def _get_solo_tools(self, mode_profile: ModeProfile | None = None) -> list[dict[str, Any]]:
+    async def _get_solo_tools(
+        self, mode_profile: ModeProfile | None = None
+    ) -> list[dict[str, Any]]:
         """Fast tool discovery for solo_task mode.
 
         Uses cached tools when available. If ModeProfile specifies servers,
@@ -580,14 +582,21 @@ Respond in JSON:
             target_servers = set(mode_profile.all_servers)
         else:
             target_servers = {
-                "macos-use", "filesystem", "duckduckgo-search",
-                "sequential-thinking", "memory", "context7", "golden-fund",
+                "macos-use",
+                "filesystem",
+                "duckduckgo-search",
+                "sequential-thinking",
+                "memory",
+                "context7",
+                "golden-fund",
             }
 
         configured_servers = set(mcp_manager.config.get("mcpServers", {}).keys())
         active_servers = configured_servers & target_servers
 
-        logger.info(f"[ATLAS SOLO] Tool discovery on {len(active_servers)} servers: {active_servers}")
+        logger.info(
+            f"[ATLAS SOLO] Tool discovery on {len(active_servers)} servers: {active_servers}"
+        )
 
         new_tools: list[dict[str, Any]] = []
         try:
@@ -604,22 +613,48 @@ Respond in JSON:
                     d_low = tool.description.lower() if tool.description else ""
                     is_safe = any(
                         p in t_low or p in d_low
-                        for p in ["get", "list", "read", "search", "stats", "fetch",
-                                  "check", "find", "view", "query", "cat", "ls",
-                                  "directions", "route", "geocode", "places",
-                                  "thinking", "thought"]
+                        for p in [
+                            "get",
+                            "list",
+                            "read",
+                            "search",
+                            "stats",
+                            "fetch",
+                            "check",
+                            "find",
+                            "view",
+                            "query",
+                            "cat",
+                            "ls",
+                            "directions",
+                            "route",
+                            "geocode",
+                            "places",
+                            "thinking",
+                            "thought",
+                        ]
                     )
                     is_mut = any(
                         p in t_low or p in d_low
-                        for p in ["create", "delete", "write", "update", "exec",
-                                  "run", "set", "modify"]
+                        for p in [
+                            "create",
+                            "delete",
+                            "write",
+                            "update",
+                            "exec",
+                            "run",
+                            "set",
+                            "modify",
+                        ]
                     )
                     if is_safe and not is_mut:
-                        new_tools.append({
-                            "name": f"{s_name}_{tool.name}",
-                            "description": tool.description,
-                            "input_schema": tool.inputSchema,
-                        })
+                        new_tools.append(
+                            {
+                                "name": f"{s_name}_{tool.name}",
+                                "description": tool.description,
+                                "input_schema": tool.inputSchema,
+                            }
+                        )
 
             self._cached_info_tools = new_tools
             self._last_tool_refresh = int(now)
@@ -723,11 +758,7 @@ Respond in JSON:
             )
 
         # ADAPTIVE CONTEXT FETCHING:
-        should_fetch_context = (
-            not is_simple_chat
-            or intent == "solo_task"
-            or not history
-        )
+        should_fetch_context = not is_simple_chat or intent == "solo_task" or not history
 
         resolved_query = user_request
         if history and not is_simple_chat:
@@ -982,14 +1013,19 @@ Respond in JSON:
         )
         if intent is None:
             intent = classification.get("intent", "solo_task")
-        is_simple_chat = classification.get("type") == "chat" or classification.get("mode") == "chat"
+        is_simple_chat = (
+            classification.get("type") == "chat" or classification.get("mode") == "chat"
+        )
 
         # Ensure intent is not None for type safety
         assert intent is not None, "Intent should be set after classification"
 
         # 2. Parallel context gathering (solo_task: fast path, tools only)
         graph_ctx, vector_ctx, tools_info = await self._gather_context_for_chat(
-            intent, should_fetch, resolved_query, use_deep_persona_resolved,
+            intent,
+            should_fetch,
+            resolved_query,
+            use_deep_persona_resolved,
             mode_profile=mode_profile,
         )
 
@@ -1000,8 +1036,13 @@ Respond in JSON:
 
         # 4. Generate system prompt with selective protocol injection
         system_prompt = self._generate_chat_system_prompt(
-            user_request, intent, graph_ctx, vector_ctx, tools_info,
-            use_deep_persona_resolved, mode_profile=mode_profile,
+            user_request,
+            intent,
+            graph_ctx,
+            vector_ctx,
+            tools_info,
+            use_deep_persona_resolved,
+            mode_profile=mode_profile,
         )
 
         # 5. Build messages

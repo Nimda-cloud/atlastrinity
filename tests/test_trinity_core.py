@@ -89,7 +89,7 @@ class TestAtlasCore:
         atlas = Atlas()
 
         msg1 = atlas.get_voice_message("plan_created", steps=5)
-        assert "5 пунктів" in msg1
+        assert "5 кроків" in msg1
 
         msg2 = atlas.get_voice_message("delegating")
         assert "Тетяно" in msg2
