@@ -2108,10 +2108,14 @@ class Trinity:
         depth: int = 0,
     ) -> bool:
         """Recursively execute steps with proper goal context management."""
-        MAX_RECURSION_DEPTH = 5
+        from src.brain.context import shared_context
 
-        if depth > MAX_RECURSION_DEPTH:
-            raise RecursionError("Max task recursion depth reached. Failing task.")
+        max_depth = shared_context.max_recursive_depth
+
+        if depth > max_depth:
+            raise RecursionError(
+                f"Max task recursion depth ({max_depth}) reached. Failing task."
+            )
 
         await self._handle_recursion_backoff(depth)
         metrics_collector.record("recursion_depth", depth, tags={"parent": parent_prefix or "root"})
@@ -2194,6 +2198,16 @@ class Trinity:
 
         for attempt in range(1, max_step_retries + 1):
             await self._trigger_async_constraint_monitoring()
+
+            # Goal alignment logging for debugging
+            from src.brain.context import shared_context
+
+            if shared_context.current_goal:
+                logger.debug(
+                    f"[ORCHESTRATOR] Goal alignment check: depth={depth}, "
+                    f"current_goal={shared_context.current_goal[:80]}"
+                )
+
             await self._log(
                 f"Step {step_id}, Attempt {attempt}: {step.get('action')}", "orchestrator"
             )

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T02:02:55.977862 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/server.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T01:42:01.143014 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, package.json, scripts/ensure_clean_start.py -->
 
