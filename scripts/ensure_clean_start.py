@@ -7,7 +7,6 @@ Aggressively kills lingering processes from previous sessions to ensure a clean 
 import os
 import signal
 import subprocess
-import sys
 import time
 
 # Signatures of processes to kill
@@ -56,10 +55,10 @@ def kill_process(pid, name):
 
         print(f"[CLEANUP] Killing {name} (PID: {pid})...")
         os.kill(pid, signal.SIGTERM)
-        
-        # Give it a moment (non-blocking in this script structure, 
+
+        # Give it a moment (non-blocking in this script structure,
         # but practically we just fire SIGTERM first)
-        pass 
+        pass
     except ProcessLookupError:
         pass
     except PermissionError:
@@ -70,7 +69,7 @@ def kill_process(pid, name):
 
 def main():
     print("[CLEANUP] Checking for lingering processes...")
-    
+
     processes = get_process_list()
     killed_count = 0
 
@@ -80,18 +79,15 @@ def main():
             # Double check it's not us (though we are 'ensure_clean_start.py')
             if "ensure_clean_start.py" in cmd:
                 continue
-            
+
             kill_process(pid, cmd[:50] + "...")
             killed_count += 1
 
     # Port cleanup (lsof)
-    start_time = time.time()
     for port in TARGET_PORTS:
         try:
             # lsof -t -i:PORT
-            res = subprocess.run(
-                ["lsof", "-t", f"-i:{port}"], capture_output=True, text=True
-            )
+            res = subprocess.run(["lsof", "-t", f"-i:{port}"], capture_output=True, text=True)
             pids = res.stdout.strip().split()
             for p in pids:
                 if p:
@@ -114,6 +110,7 @@ def main():
         time.sleep(1)
     else:
         print("[CLEANUP] System clean.")
+
 
 if __name__ == "__main__":
     main()

@@ -854,7 +854,7 @@ class Grisha(BaseAgent):
 
         # FIXED PRIORITY ORDER:
         # 1. Header success indicator → True
-        # 2. Reasoning confirms success (final conclusions) → True  
+        # 2. Reasoning confirms success (final conclusions) → True
         # 3. Header failure indicator → False (only if no success found anywhere)
         # 4. Default → False
         if has_success:

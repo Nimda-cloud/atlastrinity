@@ -2113,9 +2113,7 @@ class Trinity:
         max_depth = shared_context.max_recursive_depth
 
         if depth > max_depth:
-            raise RecursionError(
-                f"Max task recursion depth ({max_depth}) reached. Failing task."
-            )
+            raise RecursionError(f"Max task recursion depth ({max_depth}) reached. Failing task.")
 
         await self._handle_recursion_backoff(depth)
         metrics_collector.record("recursion_depth", depth, tags={"parent": parent_prefix or "root"})

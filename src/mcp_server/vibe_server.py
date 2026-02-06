@@ -2709,14 +2709,11 @@ if __name__ == "__main__":
         # Check for uvloop
         try:
             import uvloop
-            if sys.version_info >= (3, 11):
-                with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
-                    runner.run(server.run_stdio_async())
-            else:
-                uvloop.install()
-                server.run(transport="stdio")
+
+            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+                runner.run(server.run_stdio_async())
         except ImportError:
-             server.run(transport="stdio")
+            server.run(transport="stdio")
 
     except (BrokenPipeError, KeyboardInterrupt, asyncio.CancelledError):
         logger.info("[VIBE] Server shutdown requested")
