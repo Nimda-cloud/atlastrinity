@@ -1283,7 +1283,7 @@ class Trinity:
             # Simple intent routing (chat, solo_task, etc.)
             # Pass ModeProfile through so chat() uses LLM classification, not keywords
             mode_profile = analysis.get("mode_profile")
-            if intent in ["chat", "recall", "status", "solo_task"]:
+            if intent in ["chat", "deep_chat", "recall", "status", "solo_task"]:
                 response = analysis.get("initial_response") or await self.atlas.chat(
                     user_request,
                     history=history,
@@ -1412,7 +1412,7 @@ class Trinity:
     async def _evaluate_and_remember(self, user_request: str, intent: str | None = None):
         """Evaluate execution quality and save to LTM."""
         # Skip evaluation for simple chat/informative intents to avoid duplicated greetings
-        if intent in ["chat", "recall", "status"]:
+        if intent in ["chat", "deep_chat", "solo_task", "recall", "status"]:
             logger.debug(f"[ORCHESTRATOR] Skipping evaluation for intent: {intent}")
             return
 
