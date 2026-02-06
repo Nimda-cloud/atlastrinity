@@ -827,6 +827,7 @@ class Grisha(BaseAgent):
         has_success = any(word in header_text for word in success_indicators)
         has_failure = any(word in header_text for word in failure_indicators)
 
+        # Check FULL TEXT for final conclusion phrases (not just header)
         reasoning_text = analysis_text.upper()
         reasoning_confirms_success = any(
             phrase in reasoning_text
@@ -843,13 +844,23 @@ class Grisha(BaseAgent):
                 "ВСЕ ДОБРЕ",
                 "CONFIRMED AS COMPLETED",
                 "STEP IS CONFIRMED",
+                # Additional final conclusion phrases
+                "КІНЦЕВИЙ ВЕРДИКТ: УСПІХ",
+                "ФІНАЛЬНЕ РІШЕННЯ: ВИКОНАНО",
+                "ОСТАТОЧНО: ПІДТВЕРДЖЕНО",
+                "В РЕЗУЛЬТАТІ: УСПІШНО",
             ]
         )
 
-        # NEW PRIORITY: Success wins if explicitly stated
+        # FIXED PRIORITY ORDER:
+        # 1. Header success indicator → True
+        # 2. Reasoning confirms success (final conclusions) → True  
+        # 3. Header failure indicator → False (only if no success found anywhere)
+        # 4. Default → False
         if has_success:
             return True
         if reasoning_confirms_success:
+            logger.debug("[GRISHA] Reasoning section confirms success despite header ambiguity")
             return True
         if has_failure:
             return False
