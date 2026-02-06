@@ -214,6 +214,17 @@ class StateManager:
             if "Event loop is closed" not in str(e):
                 logger.error(f"[STATE] Failed to publish event: {e}")
 
+    async def get_key(self, key: str) -> Any | None:
+        """Get a raw key value with prefix"""
+        if not self.available or self.redis_client is None:
+            return None
+        try:
+            full_key = self._key(key)
+            return await self.redis_client.get(full_key)
+        except Exception as e:
+            logger.error(f"[STATE] Failed to get key {key}: {e}")
+            return None
+
 
 # Singleton instance
 state_manager = StateManager()

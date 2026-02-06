@@ -1,99 +1,99 @@
+
 import asyncio
 import os
+import shutil
+import tempfile
+from pathlib import Path
+import logging
+
+# Setup mocking for Orchestrator/Vibe context
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("SelfHealingTest")
+
+from src.brain.tools.sandbox_runner import sandbox_runner
+from src.brain.tools.recovery import recovery_manager
+
+async def test_self_healing_logic():
+    """
+    Simulates the specific steps of the Self-Healing "Phoenix Protocol":
+    1. A 'broken' file exists.
+    2. Sandbox verification is requested for a 'fix'.
+    3. Recovery snapshot is saved.
+    4. Recovery snapshot is loaded (simulating restart).
+    """
+    print("\n--- Starting Self-Healing Verification ---")
+    
+    # SETUP: Create a fake workspace with a broken file
+    with tempfile.TemporaryDirectory() as temp_workspace:
+        workspace_path = Path(temp_workspace)
+        sandbox_runner.workspace_root = workspace_path # Override for test
+        
+        # 1. Create 'broken.py' that fails validation
+        broken_file = workspace_path / "broken.py"
+        broken_file.write_text("def add(a, b): return a - b  # BUG: should be +")
+        
+        # 2. Create 'verify_math.py' that expects correct math
+        verify_script = workspace_path / "verify_math.py"
+        verify_script.write_text("""
 import sys
-from unittest.mock import MagicMock
+from broken import add
 
-# Add project root to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.join(current_dir, "..")
-sys.path.insert(0, project_root)
+if add(2, 2) == 4:
+    print("Verification Passed")
+    sys.exit(0)
+else:
+    print("Verification Failed")
+    sys.exit(1)
+""")
+        
+        # TEST PHASE 1: Verify the BROKEN state fails in sandbox
+        print("\n[Test 1] Verifying broken state fails in sandbox...")
+        sandbox_dir = sandbox_runner.prepare_sandbox(str(broken_file), str(verify_script))
+        success, out, err = sandbox_runner.run_verification(sandbox_dir, "verify_math.py")
+        
+        if not success:
+            print("✅ Success: Sandbox correctly identified code is broken.")
+        else:
+            print("❌ Failure: Sandbox passed broken code!", out)
+            return
 
+        # TEST PHASE 2: Apply FIX in sandbox and verify PASS
+        print("\n[Test 2] Applying fix in sandbox and verifying...")
+        # Simulate Apply Patch: Modify the file IN THE SANDBOX
+        sandboxed_broken = Path(sandbox_dir) / "broken.py"
+        sandboxed_broken.write_text("def add(a, b): return a + b  # FIXED")
+        
+        success_fix, out_fix, err_fix = sandbox_runner.run_verification(sandbox_dir, "verify_math.py")
+        
+        if success_fix:
+            print("✅ Success: Sandbox verified the fix.")
+        else:
+            print("❌ Failure: Sandbox rejected the fix!", out_fix, err_fix)
+            return
 
-# Mock LLM response
-class MockLLM:
-    def __init__(self, *args, **kwargs):
-        self.model_name = "mock"
-
-    async def ainvoke(self, messages):
-        str(messages)
-        # Return a mock JSON response for Grisha
-        return MagicMock(
-            content="""{
-            "root_cause": "Permission denied error indicates lack of privilege.",
-            "technical_advice": "Use sudo for protected directories.",
-            "voice_message": "FEEDBACK_GENERATED"
-        }""",
-        )
-
-
-# 1. Mock `providers.copilot` BEFORE importing agents
-mock_copilot = MagicMock()
-mock_copilot.CopilotLLM = MockLLM
-sys.modules["providers.copilot"] = mock_copilot
-
-# 2. NOW import agents
-from src.brain.agents import Grisha, Tetyana
-from src.brain.prompts import AgentPrompts
-
-
-async def test_grisha_analysis():
-    print("\n--- Testing Grisha Analysis ---")
-    grisha = Grisha()
-
-    mock_step = {
-        "id": 1,
-        "action": "Create a directory at /root/protected",
-        "tool": "execute_command",
-        "args": {"command": "mkdir /root/protected"},
-        "full_plan": "1. Create dir. 2. Done.",
-    }
-    mock_error = "Permission denied: /root/protected"
-
-    print("Analyzing mocked failure...")
-    result = await grisha.analyze_failure(mock_step, mock_error)
-
-    print(f"Analysis Result: {result.get('analysis', {})}")
-    print(f"Feedback Text: {result.get('feedback_text')}")
-
-    if result.get("feedback_text") and "FEEDBACK" in result.get("feedback_text"):
-        print("✅ Grisha successfully generated feedback.")
-    else:
-        print("❌ Grisha failed to generate feedback.")
-
-
-async def test_tetyana_feedback_usage():
-    print("\n--- Testing Tetyana Feedback Usage ---")
-    Tetyana()
-
-    # Mock step with injected feedback
-    mock_step = {
-        "id": 2,
-        "action": "Fix directory creation",
-        "grisha_feedback": "Use sudo or change path to home directory.",
-        "tool": "terminal",
-        "args": {"command": "mkdir /root/protected"},
-    }
-
-    # We can't easily execute Tetyana without a full LLM response mock,
-    # but we can check if the prompt generation includes the feedback.
-
-    prompt = AgentPrompts.tetyana_reasoning_prompt(
-        str(mock_step),
-        {"mock": "context"},
-        feedback=mock_step["grisha_feedback"],
-    )
-
-    if "PREVIOUS REJECTION FEEDBACK" in prompt and "Use sudo" in prompt:
-        print("✅ Tetyana prompt correctly includes Grisha's feedback.")
-    else:
-        print("❌ Tetyana prompt missing feedback.")
-        print(prompt[:500])
-
-
-async def main():
-    await test_grisha_analysis()
-    await test_tetyana_feedback_usage()
-
+        # TEST PHASE 3: Recovery Snapshot
+        print("\n[Test 3] Testing State Preservation (Phoenix Protocol)...")
+        fake_state = {"current_step": "fix_math_bug", "memory": "test_memory"}
+        fake_context = {"session_id": "session_123", "task_id": "task_abc", "reason": "Testing"}
+        
+        saved = await recovery_manager.save_snapshot(fake_state, fake_context)
+        if saved:
+             print("✅ Success: Snapshot saved.")
+        else:
+             print("❌ Failure: Could not save snapshot.")
+             return
+             
+        # TEST PHASE 4: Load Snapshot
+        loaded_data = recovery_manager.load_snapshot()
+        if loaded_data and loaded_data["session_id"] == "session_123":
+            print(f"✅ Success: Loaded snapshot correctly. Timestamp: {loaded_data['timestamp']}")
+        else:
+            print("❌ Failure: Snapshot load mismatch or missing.", loaded_data)
+            return
+            
+        # Cleanup
+        recovery_manager.clear_snapshot()
+        print("\n🎉 ALL SYSTEMS GO: Self-Healing Logic Verified.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(test_self_healing_logic())

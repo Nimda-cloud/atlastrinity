@@ -183,20 +183,21 @@ class SmartErrorRouter:
             )
 
         if category == ErrorCategory.LOGIC:
-            # Fast Fail -> Vibe Heal
+            # Fast Fail -> Self-Healing Protocol
             # We skip simple retries for logic errors because re-running buggy code won't fix it
             return RecoveryStrategy(
-                action="VIBE_HEAL",
+                action="SELF_HEALING",
                 backoff=0.0,
                 max_retries=2,  # Give Vibe 2 shots using Reflection
                 context_needed=True,
-                reason="Logic error detected. Engaging Vibe for code repair.",
+                reason="Logic error detected. Initiating Self-Healing Protocol (Analyze -> Sandbox -> Fix).",
             )
 
         if category == ErrorCategory.STATE:
-            # Immediate Restart
+            # Immediate Restart with State Preservation
             return RecoveryStrategy(
-                action="RESTART", reason="System state corruption detected. Restarting application."
+                action="SELF_HEALING_RESTART",
+                reason="System state corruption detected. Initiating Phoenix Protocol (Snapshot -> Restart -> Resume).",
             )
 
         if category == ErrorCategory.PERMISSION:
