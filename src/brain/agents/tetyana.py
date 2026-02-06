@@ -700,9 +700,23 @@ IMPORTANT:
         elif "search" in action_text and "file" in action_text:
             return "filesystem.find_by_name"
         elif any(
-            kw in action_text for kw in ["run", "execute", "command", "terminal", "bash", "mkdir"]
+            kw in action_text
+            for kw in [
+                "run",
+                "execute",
+                "command",
+                "terminal",
+                "bash",
+                "mkdir",
+                "ssh",
+                "connect",
+                "remote",
+                "shell",
+            ]
         ):
             return "macos-use.execute_command"
+        elif "browser" in action_text or "url" in action_text:
+            return "browser.open_url"
         return None
 
     async def _get_detailed_server_context(self, target_server: str) -> str:
@@ -933,6 +947,23 @@ IMPORTANT:
 
             if name:
                 tool_call["name"] = name
+
+        # FINAL CHECK: If still empty, try to provide a generic fallback for safe exploration
+        if not tool_call.get("name") and not tool_call.get("tool"):
+            action = str(step.get("action", "")).lower()
+            logger.warning(
+                f"[TETYANA] Tool name still empty after inference for action: '{action}'. Attempting final fallback."
+            )
+            if "status" in action or "check" in action or "verify" in action:
+                # Safe fallback to checking system status/files
+                tool_call["name"] = "macos-use.execute_command"
+                if not tool_call.get("args"):
+                    tool_call["args"] = {}
+                if not tool_call["args"].get("command"):
+                    tool_call["args"]["command"] = "ls -la" # Safe discovery
+            else:
+                 # Last resort: Screenshot to see what's happening
+                 tool_call["name"] = "macos-use.macos-use_take_screenshot"
 
     def _finalize_tool_call_normalization(
         self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str
@@ -1391,6 +1422,23 @@ IMPORTANT:
             tool_call.get("args") or tool_call.get("arguments") or {}
         )
         explicit_server = tool_call.get("server")
+
+        # VALIDATION: Check for empty tool name
+        if not tool_name or tool_name.lower() in ["none", "null", "undefined", ""]:
+            logger.error(f"[TETYANA] Validation Error: Empty tool name in {tool_call}")
+            return {
+                "success": False,
+                "error": "Tool Inference Failed: Could not determine which tool to use. Please specify a valid tool name or action.",
+            }
+
+        # VALIDATION: Check for required command argument for execute_command
+        if tool_name == "macos-use.execute_command" or tool_name == "execute_command":
+             if not args.get("command") and not args.get("cmd"):
+                 logger.error("[TETYANA] Validation Error: Missing 'command' argument for execute_command")
+                 return {
+                     "success": False, 
+                     "error": "Validation Error: 'execute_command' requires a 'command' argument."
+                 }
 
         try:
             result = await mcp_manager.dispatch_tool(tool_name, args, explicit_server)
