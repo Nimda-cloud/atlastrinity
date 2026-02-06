@@ -1,4 +1,24 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T04:31:40.089378 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/ensure_clean_start.py, src/brain/agents/grisha.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-06T04:31:19.954991 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/ensure_clean_start.py, src/brain/agents/grisha.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-06T04:30:46.205210 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/ensure_clean_start.py, src/brain/agents/grisha.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-06T04:30:07.473476 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/ensure_clean_start.py, src/brain/agents/grisha.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-06T04:26:07.717488 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/ensure_clean_start.py, src/brain/agents/grisha.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T02:31:34.928657 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/grisha.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

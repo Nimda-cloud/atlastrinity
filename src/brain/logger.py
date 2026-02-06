@@ -14,6 +14,7 @@ class SecretFilter(logging.Filter):
             re.compile(r"gh[up]_[a-zA-Z0-9]{30,60}"),  # GitHub tokens
             re.compile(r"AIzaSy[a-zA-Z0-9_-]{33}"),  # Google API Keys
             re.compile(r"Bearer\s+[a-zA-Z0-9._-]+"),  # Bearer tokens
+            re.compile(r"(?<!\w)(?:[A-Za-z0-9@#$%^&+=]{8,})(?!\w)"),  # Generic passwords
         ]
 
     def filter(self, record):
