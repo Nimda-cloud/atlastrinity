@@ -371,51 +371,32 @@ const App: React.FC = () => {
   const isTourActive = Boolean(mapData.agentView);
   const pollInterval = isTourActive ? 1000 : 3000;
 
-  // Robust startup sequence
+  // Robust startup sequence — main process signals when backend is ready
   useEffect(() => {
     let mounted = true;
     let interval: NodeJS.Timeout;
 
-    const waitForBackend = async (retryCount = 0) => {
+    const onBrainReady = () => {
       if (!mounted) return;
-
-      try {
-        // Simple health check before aggressive polling
-        const res = await fetch(`${API_BASE}/api/health`);
-        if (res.ok) {
-          if (mounted) {
-            console.log('[BRAIN] Backend connected. Starting synchronization.');
-            setIsConnected(true);
-            void pollState();
-            void fetchSessions();
-            interval = setInterval(() => {
-              void pollState();
-            }, pollInterval);
-          }
-          return;
-        }
-        throw new Error('Backend not ready');
-      } catch {
-        if (!mounted) return;
-
-        // Exponential backoff with cap
-        const delay = Math.min(1000 * 1.5 ** retryCount, 5000);
-        console.log(`[BRAIN] Waiting for backend... (Attempt ${retryCount + 1})`);
-
-        setTimeout(() => {
-          void waitForBackend(retryCount + 1);
-        }, delay);
-      }
+      console.log('[BRAIN] Backend connected. Starting synchronization.');
+      setIsConnected(true);
+      void pollState();
+      void fetchSessions();
+      interval = setInterval(() => {
+        void pollState();
+      }, pollInterval);
     };
 
-    // Start looking for the brain after a short delay to allow Python to spin up
-    const initialTimer = setTimeout(() => {
-      void waitForBackend();
-    }, 3000);
+    // Check if already signaled (e.g. HMR reload after backend was already up)
+    if ((window as unknown as Record<string, unknown>).__BRAIN_READY__) {
+      onBrainReady();
+    } else {
+      window.addEventListener('brain-ready', onBrainReady, { once: true });
+    }
 
     return () => {
       mounted = false;
-      clearTimeout(initialTimer);
+      window.removeEventListener('brain-ready', onBrainReady);
       if (interval) clearInterval(interval);
     };
   }, [fetchSessions, pollState, pollInterval]);

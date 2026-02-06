@@ -244,11 +244,14 @@ async function createWindow(): Promise<void> {
     };
 
     void attemptLoad();
+    // In dev, Python is started externally — just wait for it
+    waitForBrainReady();
   } else {
     await mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
     // Spawn Python Server in Production
     startPythonServer();
+    waitForBrainReady();
   }
 
   mainWindow.on('closed', () => {
@@ -396,6 +399,30 @@ function startPythonServer() {
       );
     }
   });
+}
+
+// Signal renderer when Python backend is ready (avoids ERR_CONNECTION_REFUSED noise in DevTools)
+function waitForBrainReady() {
+  const checkHealth = async (attempt = 0) => {
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/health');
+      if (res.ok) {
+        console.log('[MAIN] Brain backend is ready.');
+        if (mainWindow) {
+          void mainWindow.webContents.executeJavaScript(
+            'window.__BRAIN_READY__ = true; window.dispatchEvent(new Event("brain-ready"));',
+          );
+        }
+        return;
+      }
+    } catch {
+      // Backend not up yet — expected during startup
+    }
+    const delay = Math.min(1000 * 1.5 ** attempt, 5000);
+    setTimeout(() => void checkHealth(attempt + 1), delay);
+  };
+  // Start checking after a short delay to let Python spin up
+  setTimeout(() => void checkHealth(), 3000);
 }
 
 // IPC Handlers for renderer communication
