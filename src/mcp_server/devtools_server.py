@@ -1333,7 +1333,9 @@ def devtools_get_system_map() -> dict[str, Any]:
         data_dir / "monitoring.db",
     ]:
         if db_path.exists():
-            dbs_found.append({"path": str(db_path), "size_kb": round(db_path.stat().st_size / 1024, 1)})
+            dbs_found.append(
+                {"path": str(db_path), "size_kb": round(db_path.stat().st_size / 1024, 1)}
+            )
 
     # Check golden_fund
     gf_dir = data_dir / "golden_fund"
@@ -1466,7 +1468,11 @@ def devtools_test_all_mcp_native() -> dict[str, Any]:
 
         transport = cfg.get("transport", "stdio")
         if transport == "internal":
-            results[name] = {"status": "internal", "tier": cfg.get("tier", 4), "note": "Native service"}
+            results[name] = {
+                "status": "internal",
+                "tier": cfg.get("tier", 4),
+                "note": "Native service",
+            }
             continue
 
         command = cfg.get("command", "")
@@ -1492,22 +1498,26 @@ def devtools_test_all_mcp_native() -> dict[str, Any]:
         env["PYTHONPATH"] = str(PROJECT_ROOT)
 
         # JSON-RPC initialize + tools/list request
-        init_request = json.dumps({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "devtools-test", "version": "1.0"},
-            },
-        })
-        list_request = json.dumps({
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "tools/list",
-            "params": {},
-        })
+        init_request = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "devtools-test", "version": "1.0"},
+                },
+            }
+        )
+        list_request = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/list",
+                "params": {},
+            }
+        )
         stdin_data = init_request + "\n" + list_request + "\n"
 
         full_cmd = [command, *resolved_args]
@@ -1585,8 +1595,12 @@ def devtools_test_all_mcp_native() -> dict[str, Any]:
             }
 
     # Summary
-    online = sum(1 for r in results.values() if r.get("status") in ("online", "started", "internal"))
-    offline = sum(1 for r in results.values() if r.get("status") in ("error", "timeout", "not_found"))
+    online = sum(
+        1 for r in results.values() if r.get("status") in ("online", "started", "internal")
+    )
+    offline = sum(
+        1 for r in results.values() if r.get("status") in ("error", "timeout", "not_found")
+    )
     disabled = sum(1 for r in results.values() if r.get("status") == "disabled")
 
     return {
