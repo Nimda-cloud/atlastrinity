@@ -398,7 +398,7 @@ def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
             # Fallback if shlex fails
             cmd = cmd_str.split()
 
-        logger.info(f"[VIBE] Starting proxy for {p_conf.name}: {cmd_str}")
+        logger.info(mask_sensitive_data(f"[VIBE] Starting proxy for {p_conf.name}: {cmd_str}"))
         # Start as a daemon subprocess, redirecting output to log file
         proxy_log = log_dir / f"{p_conf.name}_proxy.log"
         _proxy_process = subprocess.Popen(
@@ -777,8 +777,8 @@ async def run_vibe_subprocess(
 
     try:
         VIBE_QUEUE_SIZE -= 1
-        logger.debug(f"[VIBE] Executing: {' '.join(argv)}")
-        logger.debug(f"[VIBE] Full argv: {argv}")
+        logger.debug(mask_sensitive_data(f"[VIBE] Executing: {' '.join(argv)}"))
+        logger.debug(mask_sensitive_data(f"[VIBE] Full argv: {argv}"))
 
         if prompt_preview:
             await _emit_vibe_log(
@@ -809,7 +809,11 @@ async def run_vibe_subprocess(
                 shutil.rmtree(vibe_home_override, ignore_errors=True)
                 logger.debug(f"[VIBE] Cleaned up temp VIBE_HOME: {vibe_home_override}")
             except Exception as e:
-                logger.warning(f"[VIBE] Failed to cleanup temp home {vibe_home_override}: {e}")
+                logger.warning(
+                    mask_sensitive_data(
+                        f"[VIBE] Failed to cleanup temp home {vibe_home_override}: {e}"
+                    )
+                )
 
 
 def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
@@ -1119,7 +1123,9 @@ async def _execute_vibe_with_retries(
         except FileNotFoundError:
             return {"success": False, "error": f"Vibe binary not found: {argv[0]}", "command": argv}
         except Exception as e:
-            logger.error(f"[VIBE] Subprocess error during attempt {attempt + 1}: {e}")
+            logger.error(
+                mask_sensitive_data(f"[VIBE] Subprocess error during attempt {attempt + 1}: {e}")
+            )
             if attempt == MAX_RETRIES - 1:
                 return {"success": False, "error": str(e), "command": argv}
 

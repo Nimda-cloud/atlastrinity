@@ -6,6 +6,7 @@ This script properly clears cached data, memory, and temporary files.
 """
 
 import asyncio
+import os
 import shutil
 import subprocess
 import sys
@@ -100,19 +101,29 @@ def clear_cache():
 
     # Recursive __pycache__
     pycache_count = 0
-    for p in project_root.rglob("__pycache__"):
-        try:
-            shutil.rmtree(p)
-            pycache_count += 1
-        except Exception:
-            pass
+    for root, dirs, _ in os.walk(project_root):
+        depth = root[len(str(project_root)) :].count(os.sep)
+        if depth > 5:
+            continue
+        for dir_name in dirs:
+            if dir_name == "__pycache__":
+                try:
+                    shutil.rmtree(Path(root) / dir_name)
+                    pycache_count += 1
+                except Exception:
+                    pass
 
     # Recursive .pyc
-    for p in project_root.rglob("*.pyc"):
-        try:
-            p.unlink()
-        except Exception:
-            pass
+    for root, _, files in os.walk(project_root):
+        depth = root[len(str(project_root)) :].count(os.sep)
+        if depth > 5:
+            continue
+        for file_name in files:
+            if file_name.endswith(".pyc"):
+                try:
+                    Path(root, file_name).unlink()
+                except Exception:
+                    pass
 
     cleared_count = 0
     for cache_dir in cache_dirs:
@@ -148,12 +159,17 @@ def clear_chroma_files():
                 print(f"⚠️ Could not delete {chroma_path}: {e}")
 
     # Also delete any SQLite files in config root
-    for sqlite_file in CONFIG_ROOT.rglob("*.sqlite3"):
-        try:
-            sqlite_file.unlink()
-            print(f"✅ Deleted SQLite file: {sqlite_file}")
-        except Exception:
-            pass
+    for root, _, files in os.walk(CONFIG_ROOT):
+        depth = root[len(str(CONFIG_ROOT)) :].count(os.sep)
+        if depth > 5:
+            continue
+        for file_name in files:
+            if file_name.endswith(".sqlite3"):
+                try:
+                    Path(root, file_name).unlink()
+                    print(f"✅ Deleted SQLite file: {Path(root, file_name)}")
+                except Exception:
+                    pass
 
 
 async def cleanup_hallucinations():
