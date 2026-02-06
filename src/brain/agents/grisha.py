@@ -17,9 +17,11 @@ sys.path.insert(0, project_root)
 
 import hashlib
 import json
+import logging
 import re
 import subprocess
 import tempfile
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, cast
@@ -41,6 +43,7 @@ from src.brain.prompts.grisha import (
     GRISHA_PLAN_VERIFICATION_PROMPT,
     GRISHA_VERIFICATION_GOAL_ANALYSIS,
 )
+from src.brain.utils.security import mask_sensitive_data
 
 
 @dataclass
@@ -258,48 +261,11 @@ class Grisha(BaseAgent):
         )
 
         logger.debug(
-            f"[GRISHA] Recorded rejection for step {step_id}. "
-            f"Total rejections: {len(self._rejection_history[step_id])}"
+            mask_sensitive_data(
+                f"[GRISHA] Recorded rejection for step {step_id}. "
+                f"Total rejections: {len(self._rejection_history[step_id])}"
+            )
         )
-
-    def _mask_sensitive_data(self, text: str) -> str:
-        """Masks sensitive data (passwords, API keys) in text before logging.
-
-        Args:
-            text: Text that may contain sensitive data
-
-        Returns:
-            Text with sensitive data masked
-        """
-        # Password patterns
-        password_patterns = [
-            r"password[:\s=]+([^\s\n]+)",
-            r"passwd[:\s=]+([^\s\n]+)",
-            r"pwd[:\s=]+([^\s\n]+)",
-            r"-p\s+([^\s\n]+)",
-            r"--password[:\s=]+([^\s\n]+)",
-        ]
-
-        masked_text = text
-        for pattern in password_patterns:
-            masked_text = re.sub(
-                pattern, r"password: ****MASKED****", masked_text, flags=re.IGNORECASE
-            )
-
-        # API key patterns
-        api_key_patterns = [
-            r"api[_-]?key[:\s=]+([^\s\n]+)",
-            r"apikey[:\s=]+([^\s\n]+)",
-            r"token[:\s=]+([^\s\n]+)",
-            r"secret[:\s=]+([^\s\n]+)",
-        ]
-
-        for pattern in api_key_patterns:
-            masked_text = re.sub(
-                pattern, r"api_key: ****MASKED****", masked_text, flags=re.IGNORECASE
-            )
-
-        return masked_text
 
     async def _deep_validation_reasoning(
         self,
@@ -354,17 +320,29 @@ class Grisha(BaseAgent):
         # Layer 1: Tool Execution
         tool_layer = {"layer": "tool_execution", "passed": False, "evidence": ""}
         if hasattr(result, "tool_call") or (isinstance(result, dict) and result.get("tool_call")):
-            tc = getattr(result, "tool_call", None) or result.get("tool_call", {})
-            if tc and tc.get("name"):
+            tc = getattr(result, "tool_call", None) or (
+                result.get("tool_call", {}) if isinstance(result, dict) else {}
+            )
+            tc_name = ""
+            if isinstance(tc, dict):
+                tc_name = tc.get("name", "")
+            else:
+                tc_name = getattr(tc, "name", "")
+
+            if tc_name:
                 tool_layer["passed"] = True
-                tool_layer["evidence"] = f"Інструмент '{tc['name']}' був викликаний"
+                tool_layer["evidence"] = f"Інструмент '{tc_name}' був викликаний"
         layers.append(tool_layer)
 
         # Layer 2: Output Validation
         output_layer = {"layer": "output_validation", "passed": False, "evidence": ""}
-        result_str = str(
-            result.get("result", "") if isinstance(result, dict) else getattr(result, "result", ""),
-        )
+        result_val = ""
+        if isinstance(result, dict):
+            result_val = result.get("result", "")
+        else:
+            result_val = getattr(result, "result", getattr(result, "content", str(result)))
+
+        result_str = str(result_val)
         if result_str and len(result_str) > 0 and "error" not in result_str.lower():
             output_layer["passed"] = True
             output_layer["evidence"] = f"Отримано результат: {result_str[:200]}..."
@@ -760,13 +738,16 @@ class Grisha(BaseAgent):
             else:
                 has_error = bool(getattr(r, "error", False))
 
-            # Get result string: result.result (sdk object) vs result.get('result') (dict)
+            # Get result string
             res_val = "N/A"
             if isinstance(r, dict):
                 res_val = str(r.get("result", "N/A"))
+            elif hasattr(r, "result"):
+                res_val = str(r.result)
+            elif hasattr(r, "content"):
+                res_val = str(r.content)
             else:
-                # If it's an SDK object, 'result' might be the content attribute or the object itself
-                res_val = str(getattr(r, "result", r))
+                res_val = str(r)
 
             results_summary += f"Tool {i + 1}: {tool_name}\n  Success: {not has_error}\n  Result: {res_val[:2000]}\n"
 
@@ -2183,7 +2164,7 @@ class Grisha(BaseAgent):
 """
 
             # CRITICAL: Mask sensitive data before saving
-            report_text_masked = self._mask_sensitive_data(report_text)
+            report_text_masked = mask_sensitive_data(report_text)
 
             # Save to memory server (for graph/relations)
             try:

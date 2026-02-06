@@ -41,6 +41,8 @@ from dotenv import load_dotenv
 from mcp.server import FastMCP
 from mcp.server.fastmcp import Context
 
+from src.brain.utils.security import mask_sensitive_data
+
 from .vibe_config import (
     AgentMode,
     ProviderConfig,
@@ -889,7 +891,7 @@ async def _emit_vibe_log(ctx: Context | None, level: str, message: str) -> None:
 
 async def _handle_vibe_line(line: str, stream_name: str, ctx: Context | None) -> None:
     """Process and log a single line of output from Vibe."""
-    line = _clean_vibe_line(line)
+    line = mask_sensitive_data(_clean_vibe_line(line))
     if not line:
         return
 
@@ -946,7 +948,7 @@ async def _format_and_emit_vibe_log(line: str, stream_name: str, ctx: Context | 
     else:
         formatted = f"⚡ [VIBE-LIVE] {line}"
 
-    logger.debug(f"[VIBE_{stream_name}] {line}")
+    logger.debug(mask_sensitive_data(f"[VIBE_{stream_name}] {line}"))
     level = "warning" if stream_name == "ERR" else "info"
     await _emit_vibe_log(ctx, level, formatted)
 

@@ -1,7 +1,8 @@
 import logging
-import re
 import sys
 from logging.handlers import RotatingFileHandler
+
+from .utils.security import mask_sensitive_data
 
 
 class SecretFilter(logging.Filter):
@@ -9,28 +10,19 @@ class SecretFilter(logging.Filter):
 
     def __init__(self, name: str = ""):
         super().__init__(name)
-        # Patterns to mask: ghu_..., ghp_..., mistral keys, etc.
-        self.patterns = [
-            re.compile(r"gh[up]_[a-zA-Z0-9]{30,60}"),  # GitHub tokens
-            re.compile(r"AIzaSy[a-zA-Z0-9_-]{33}"),  # Google API Keys
-            re.compile(r"Bearer\s+[a-zA-Z0-9._-]+"),  # Bearer tokens
-            re.compile(r"(?<!\w)(?:[A-Za-z0-9@#$%^&+=]{8,})(?!\w)"),  # Generic passwords
-        ]
 
     def filter(self, record):
         if not isinstance(record.msg, str):
             return True
 
-        for pattern in self.patterns:
-            record.msg = pattern.sub("[MASKED]", record.msg)
+        record.msg = mask_sensitive_data(record.msg)
 
         # Also check arguments if they are strings
         if record.args:
             new_args = []
             for arg in record.args:
                 if isinstance(arg, str):
-                    for pattern in self.patterns:
-                        arg = pattern.sub("[MASKED]", arg)
+                    arg = mask_sensitive_data(arg)
                 new_args.append(arg)
             record.args = tuple(new_args)
 
