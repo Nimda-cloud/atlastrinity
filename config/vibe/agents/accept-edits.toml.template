@@ -25,6 +25,9 @@ permission = "always"
 [tools.ls]
 permission = "always"
 
-# MCP Tools
+# MCP Tools - DevTools
 [tools.devtools_devtools_lint_python]
+permission = "always"
+
+[tools.devtools_devtools_run_global_lint]
 permission = "always"

@@ -213,8 +213,12 @@ DYNAMIC VERIFICATION PROTOCOL:
    - Swift: Run 'swift build' in the project root.
    - Python: Run 'python -m py_compile <file>' and 'ruff check <file>'.
    - Node.js: Run 'npm run build' or 'tsc'.
-3. ANALYZE Output:
-   - If exit code != 0, READ the error log, ANALYZE the message, and FIX it in the next iteration.
+3. MANDATORY GLOBAL LINT:
+   - Run 'devtools.devtools_run_global_lint' AFTER any code modification.
+   - This ensures the entire repository remains clean and coherent.
+4. ANALYZE Output:
+   - If ANY linting errors or build failures (exit code != 0) are found, READ the error log, ANALYZE the message, and FIX it in the next iteration.
+   - Continue until the report shows 0 errors.
 """
 
 # =============================================================================
@@ -1698,9 +1702,10 @@ async def vibe_analyze_error(
                 "  2.5.4. If sandbox test passes, ONLY THEN apply the fix to the main codebase.",
                 "",
                 "PHASE 3 - VERIFY:",
-                "  3.1. Verify the fix works by running appropriate checks",
-                "  3.2. Confirm no new issues were introduced",
-                "  3.3. Report results with evidence of success",
+                "  3.1. Verify the fix works by running appropriate functional checks",
+                "  3.2. MANDATORY: Run 'devtools.devtools_run_global_lint' to ensure no code quality regression",
+                "  3.3. Confirm no new issues were introduced and all violations are fixed",
+                "  3.4. Report results with evidence of success (0 linting errors)",
                 "",
                 "PHASE 4 - PREVENTION:",
                 "  4.1. Identify if this issue was caused by a systemic weakness (invalid path logic, missing config, unstable utility).",
@@ -1890,7 +1895,7 @@ PHASE 2 - IMPLEMENT:
 
 PHASE 3 - VERIFY:
   3.1. Check syntax is valid
-  3.2. Run linting checks
+  3.2. MANDATORY: Run 'devtools.devtools_run_global_lint' and fix any violations
   3.3. Verify imports resolve correctly
 {iterative_section}
 
