@@ -653,11 +653,13 @@ class Trinity:
                 matches = glob.glob(pattern, recursive=True)
                 # Filter out node_modules and .git
                 matches = [m for m in matches if "node_modules" not in m and ".git" not in m]
-                found_diagrams.extend(matches[:5]) # Store just first 5 for identifying presence
+                found_diagrams.extend(matches[:5])  # Store just first 5 for identifying presence
         except Exception:
             pass
 
-        diagram_status = f"Found {len(found_diagrams)}+ potential files" if found_diagrams else "None found"
+        diagram_status = (
+            f"Found {len(found_diagrams)}+ potential files" if found_diagrams else "None found"
+        )
         devtools_status = "Available" if devtools_exists else "Not found"
 
         report = (

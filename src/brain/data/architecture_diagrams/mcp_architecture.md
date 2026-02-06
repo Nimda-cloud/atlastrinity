@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T09:53:27.733432 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/error_router.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T09:52:28.343788 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/App.tsx -->
 
