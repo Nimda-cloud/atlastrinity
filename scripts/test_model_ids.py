@@ -2,6 +2,7 @@
 """Test specific model names with Copilot"""
 
 import os
+
 import requests
 
 API_KEY = os.getenv("COPILOT_API_KEY")

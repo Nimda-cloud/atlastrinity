@@ -2,8 +2,8 @@
 """Get available GitHub Copilot models"""
 
 import json
-
 import os
+
 import requests
 
 API_KEY = os.getenv("COPILOT_API_KEY")

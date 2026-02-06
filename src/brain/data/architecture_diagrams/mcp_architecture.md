@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T07:57:17.463916 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .agent/workflows/rules.md, .cursorrules -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T07:55:06.478620 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe/agents/accept-edits.toml.template -->
 

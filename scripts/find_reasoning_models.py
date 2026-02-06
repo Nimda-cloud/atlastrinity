@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare reasoning models from GitHub Copilot API"""
+
 import os
 
 import requests

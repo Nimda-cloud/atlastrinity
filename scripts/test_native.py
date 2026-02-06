@@ -2,9 +2,9 @@
 """Direct API test for native model support"""
 
 import json
+import os
 import sys
 
-import os
 import requests
 
 # Get session token
