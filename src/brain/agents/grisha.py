@@ -15,6 +15,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
 sys.path.insert(0, project_root)
 
+import hashlib
 import json
 import re
 import subprocess
@@ -168,6 +169,7 @@ class Grisha(BaseAgent):
         self.dangerous_commands = security_config.get("dangerous_commands", self.BLOCKLIST)
         self.verifications: list = []
         self._strategy_cache: dict[str, str] = {}
+        self._rejection_history: dict[str, list[dict]] = {}  # step_id -> list of rejection fingerprints
 
         logger.info(
             f"[GRISHA] 3-Phase Architecture Initialized:\n"
@@ -175,6 +177,124 @@ class Grisha(BaseAgent):
             f"  Phase 2 (Execution): {execution_model}\n"
             f"  Phase 3 (Verdict): {verdict_model}, Vision: {vision_model_name}"
         )
+
+    def _create_rejection_fingerprint(
+        self, step_id: str, verdict: str, issues: list[str], confidence: float
+    ) -> str:
+        """Creates a unique fingerprint for a rejection to detect recursion.
+        
+        Args:
+            step_id: ID of the step being verified
+            verdict: The verdict text (FAILED, PASSED, etc.)
+            issues: List of issues identified
+            confidence: Confidence score
+            
+        Returns:
+            SHA256 hash fingerprint of the rejection
+        """
+        # Create a stable representation of the rejection
+        fingerprint_data = {
+            "step_id": str(step_id),
+            "verdict": verdict.upper().strip(),
+            "issues_normalized": sorted([issue.strip().lower() for issue in issues]),
+            "confidence_bucket": round(confidence, 1),  # Bucket to 0.1 precision
+        }
+        
+        # Create hash
+        fingerprint_str = json.dumps(fingerprint_data, sort_keys=True)
+        return hashlib.sha256(fingerprint_str.encode()).hexdigest()
+
+    def _check_recursion(
+        self, step_id: str, fingerprint: str, max_same_rejections: int = 2
+    ) -> tuple[bool, int]:
+        """Checks if we're in a recursion loop for this step.
+        
+        Args:
+            step_id: ID of the step being verified
+            fingerprint: Rejection fingerprint to check
+            max_same_rejections: Maximum allowed identical rejections
+            
+        Returns:
+            (is_recursion, rejection_count) tuple
+        """
+        if step_id not in self._rejection_history:
+            self._rejection_history[step_id] = []
+        
+        history = self._rejection_history[step_id]
+        
+        # Count how many times we've seen this exact fingerprint
+        same_rejections = sum(1 for entry in history if entry["fingerprint"] == fingerprint)
+        
+        is_recursion = same_rejections >= max_same_rejections
+        
+        if is_recursion:
+            logger.warning(
+                f"[GRISHA] RECURSION DETECTED for step {step_id}: "
+                f"Same rejection repeated {same_rejections} times"
+            )
+        
+        return is_recursion, same_rejections
+
+    def _record_rejection(self, step_id: str, fingerprint: str, verdict_data: dict) -> None:
+        """Records a rejection in the history for recursion detection.
+        
+        Args:
+            step_id: ID of the step
+            fingerprint: Rejection fingerprint
+            verdict_data: Full verdict data for debugging
+        """
+        if step_id not in self._rejection_history:
+            self._rejection_history[step_id] = []
+        
+        self._rejection_history[step_id].append(
+            {
+                "fingerprint": fingerprint,
+                "timestamp": datetime.now().isoformat(),
+                "verdict": verdict_data.get("verdict", "UNKNOWN"),
+                "confidence": verdict_data.get("confidence", 0.0),
+            }
+        )
+        
+        logger.debug(
+            f"[GRISHA] Recorded rejection for step {step_id}. "
+            f"Total rejections: {len(self._rejection_history[step_id])}"
+        )
+
+    def _mask_sensitive_data(self, text: str) -> str:
+        """Masks sensitive data (passwords, API keys) in text before logging.
+        
+        Args:
+            text: Text that may contain sensitive data
+            
+        Returns:
+            Text with sensitive data masked
+        """
+        # Password patterns
+        password_patterns = [
+            r"password[:\s=]+([^\s\n]+)",
+            r"passwd[:\s=]+([^\s\n]+)",
+            r"pwd[:\s=]+([^\s\n]+)",
+            r"-p\s+([^\s\n]+)",
+            r"--password[:\s=]+([^\s\n]+)",
+        ]
+        
+        masked_text = text
+        for pattern in password_patterns:
+            masked_text = re.sub(pattern, r"password: ****MASKED****", masked_text, flags=re.IGNORECASE)
+        
+        # API key patterns
+        api_key_patterns = [
+            r"api[_-]?key[:\s=]+([^\s\n]+)",
+            r"apikey[:\s=]+([^\s\n]+)",
+            r"token[:\s=]+([^\s\n]+)",
+            r"secret[:\s=]+([^\s\n]+)",
+        ]
+        
+        for pattern in api_key_patterns:
+            masked_text = re.sub(pattern, r"api_key: ****MASKED****", masked_text, flags=re.IGNORECASE)
+        
+        return masked_text
+
 
     async def _deep_validation_reasoning(
         self,
@@ -1918,12 +2038,50 @@ class Grisha(BaseAgent):
         from ..message_bus import AgentMsg, MessageType, message_bus
 
         try:
+            # STEP 1: Create rejection fingerprint for recursion detection
+            verdict_str = "FAILED" if not verification.verified else "PASSED"
+            issues_list = verification.issues if isinstance(verification.issues, list) else [str(verification.issues)]
+            
+            fingerprint = self._create_rejection_fingerprint(
+                step_id=step_id,
+                verdict=verdict_str,
+                issues=issues_list,
+                confidence=verification.confidence
+            )
+            
+            # STEP 2: Check for recursion
+            is_recursion, rejection_count = self._check_recursion(step_id, fingerprint, max_same_rejections=2)
+            
+            if is_recursion:
+                logger.error(
+                    f"[GRISHA] ⚠️ RECURSION LOOP DETECTED for step {step_id}! "
+                    f"Same rejection repeated {rejection_count} times. "
+                    f"Escalating to user instead of retrying."
+                )
+                # Add recursion warning to issues
+                issues_list.append(
+                    f"⚠️ RECURSION DETECTED: This step has been rejected {rejection_count} times with identical reasoning. "
+                    "Manual intervention required."
+                )
+                verification.issues = issues_list
+            
+            # STEP 3: Record this rejection
+            self._record_rejection(
+                step_id=step_id,
+                fingerprint=fingerprint,
+                verdict_data={
+                    "verdict": verdict_str,
+                    "confidence": verification.confidence,
+                    "issues": issues_list
+                }
+            )
+            
             timestamp = datetime.now().isoformat()
 
             # Build structured sections
             issues_formatted = (
-                chr(10).join(f"  - {issue}" for issue in verification.issues)
-                if verification.issues
+                chr(10).join(f"  - {issue}" for issue in issues_list)
+                if issues_list
                 else "  - No specific issues identified"
             )
 
@@ -1988,6 +2146,9 @@ class Grisha(BaseAgent):
 ========================================
 """
 
+            # CRITICAL: Mask sensitive data before saving
+            report_text_masked = self._mask_sensitive_data(report_text)
+
             # Save to memory server (for graph/relations)
             try:
                 await mcp_manager.dispatch_tool(
@@ -1997,7 +2158,7 @@ class Grisha(BaseAgent):
                             {
                                 "name": f"grisha_rejection_step_{step_id}",
                                 "entityType": "verification_report",
-                                "observations": [report_text],
+                                "observations": [report_text_masked],  # Use masked version
                             },
                         ],
                     },
@@ -2015,7 +2176,8 @@ class Grisha(BaseAgent):
                 file_path = os.path.join(reports_dir, filename)
 
                 with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(report_text)
+                    f.write(report_text_masked)  # Use masked version
+
 
                 logger.info(f"[GRISHA] Rejection report saved to filesystem: {file_path}")
             except Exception as e:
