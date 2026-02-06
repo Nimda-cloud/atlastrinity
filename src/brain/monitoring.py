@@ -254,6 +254,13 @@ class MonitoringSystem:
         try:
             start_http_server(self.prometheus_port)
             logger.info(f"Prometheus metrics server started on port {self.prometheus_port}")
+        except OSError as e:
+            if e.errno == 48:  # Address already in use
+                logger.warning(
+                    f"Prometheus port {self.prometheus_port} is busy. Metrics server likely already running (common during reload)."
+                )
+            else:
+                logger.error(f"Failed to start Prometheus server: {e}")
         except Exception as e:
             logger.error(f"Failed to start Prometheus server: {e}")
 

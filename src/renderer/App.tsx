@@ -366,19 +366,44 @@ const App: React.FC = () => {
   const isTourActive = Boolean(mapData.agentView);
   const pollInterval = isTourActive ? 1000 : 3000;
 
+  // Robust startup sequence
   useEffect(() => {
+    let mounted = true;
     let interval: NodeJS.Timeout;
 
-    // Delay initial connection attempts to allow Python server to start
-    // Reduced from 5000 to 1000 since we now delay Electron launch at process level
-    const startupTimeout = setTimeout(() => {
-      pollState();
-      fetchSessions();
-      interval = setInterval(pollState, pollInterval);
-    }, 1000);
+    const waitForBackend = async (retryCount = 0) => {
+      if (!mounted) return;
+
+      try {
+        // Simple health check before aggressive polling
+        const res = await fetch(`${API_BASE}/api/health`);
+        if (res.ok) {
+          if (mounted) {
+            console.log('[BRAIN] Backend connected. Starting synchronization.');
+            setIsConnected(true);
+            pollState();
+            fetchSessions();
+            interval = setInterval(pollState, pollInterval);
+          }
+          return;
+        }
+        throw new Error('Backend not ready');
+      } catch {
+        if (!mounted) return;
+
+        // Exponential backoff with cap
+        const delay = Math.min(1000 * 1.5 ** retryCount, 5000);
+        console.log(`[BRAIN] Waiting for backend... (Attempt ${retryCount + 1})`);
+
+        setTimeout(() => waitForBackend(retryCount + 1), delay);
+      }
+    };
+
+    // Start looking for the brain
+    waitForBackend();
 
     return () => {
-      clearTimeout(startupTimeout);
+      mounted = false;
       if (interval) clearInterval(interval);
     };
   }, [fetchSessions, pollState, pollInterval]);
