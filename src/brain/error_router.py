@@ -209,6 +209,13 @@ class SmartErrorRouter:
 
         if category == ErrorCategory.USER_INPUT:
             # If we are stuck on help_pending/need_user_input, trigger strategic discovery
+            # FIX: If we have tried multiple times and still need user input, stop spinning and ASK.
+            if attempt > 3:
+                return RecoveryStrategy(
+                    action="ASK_USER",
+                    reason="Repeated requests for user input/assistance. Stopping recursion to request manual intervention.",
+                )
+
             return RecoveryStrategy(
                 action="ATLAS_PLAN",
                 context_needed=True,

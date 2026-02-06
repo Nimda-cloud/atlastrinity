@@ -209,6 +209,9 @@ class Trinity:
 
             asyncio.create_task(auto_resume())
 
+        # SYSTEM VISIBILITY CHECK
+        await self._log_visibility_report()
+
         logger.info(f"[GRISHA] Auditor ready. Vision: {self.grisha.llm.model_name}")
 
     async def warmup(self, async_warmup: bool = True):
@@ -629,6 +632,42 @@ class Trinity:
                 # Use 'atlas' for status updates
                 self._last_live_speech_time = int(now)
                 asyncio.create_task(self._speak("atlas", speech_text))
+
+    async def _log_visibility_report(self):
+        """Logs the visibility of Diagrams and DevTools on startup."""
+        import glob
+        import os
+
+        # Check for DevTools
+        devtools_path = "src/mcp_server/devtools_server.py"
+        devtools_exists = os.path.exists(devtools_path)
+
+        # Check for Diagrams
+        # Using a broad glob to find any diagram-related files in reasonable locations
+        # We limit search to avoid massive traversals (e.g. ignore node_modules)
+        diagram_patterns = ["**/*diagram*.*", "**/*.drawio", "**/*.mermaid"]
+        found_diagrams = []
+        try:
+            for pattern in diagram_patterns:
+                # glob.glob is recursive with **
+                matches = glob.glob(pattern, recursive=True)
+                # Filter out node_modules and .git
+                matches = [m for m in matches if "node_modules" not in m and ".git" not in m]
+                found_diagrams.extend(matches[:5]) # Store just first 5 for identifying presence
+        except Exception:
+            pass
+
+        diagram_status = f"Found {len(found_diagrams)}+ potential files" if found_diagrams else "None found"
+        devtools_status = "Available" if devtools_exists else "Not found"
+
+        report = (
+            f"Visibility Report: "
+            f"[Diagrams: {diagram_status}] "
+            f"[DevTools: {devtools_status}] "
+            f"(Repo logic aware)"
+        )
+        logger.info(f"[SYSTEM] {report}")
+        await self._log(report, source="SYSTEM", type="startup_report")
 
     async def _log(self, text: str, source: str = "system", type: str = "info"):
         """Log wrapper with message types and DB persistence"""
