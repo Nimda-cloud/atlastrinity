@@ -2230,8 +2230,19 @@ class Trinity:
             )
             if should_retry:
                 continue
-            if override_result and override_result.success:
-                return
+            if override_result:
+                if override_result.success:
+                    return
+                # CRITICAL: If strategy was ASK_USER, stop here. Don't fallback to Atlas.
+                if override_result.error == "need_user_input":
+                    logger.warning(f"[ORCHESTRATOR] Stopping step {step_id} for user input.")
+                    notifications.send_stuck_alert(
+                        self._parse_numeric_id(step_id),
+                        f"USER INPUT REQUIRED: {override_result.result}",
+                        max_step_retries,
+                    )
+                    return
+
 
             if await self._validate_with_grisha_failure(step, step_id, step_result, last_error):
                 return

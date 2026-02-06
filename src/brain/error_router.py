@@ -218,6 +218,28 @@ class SmartErrorRouter:
             # ENHANCED: Distinguish between legitimate step failure vs verification system bug
             error_str = str(error).lower()
 
+            # CRITICAL: Check for Grisha recursion detection
+            # If Grisha already detected recursion, DON'T trigger ATLAS_PLAN (would create infinite loop)
+            recursion_indicators = [
+                "recursion detected",
+                "recursion loop detected",
+                "same rejection repeated",
+                "manual intervention required",
+                "identical reasoning",
+            ]
+
+            is_recursion = any(indicator in error_str for indicator in recursion_indicators)
+
+            if is_recursion:
+                # Grisha detected recursion - escalate to user, NOT Atlas
+                logger.warning(
+                    "[ROUTER] Grisha recursion detected. Escalating to user instead of ATLAS_PLAN."
+                )
+                return RecoveryStrategy(
+                    action="ASK_USER",
+                    reason="Grisha detected a recursion loop (same rejection repeated multiple times). Manual intervention required to break the cycle.",
+                )
+
             # Legitimate step failures (NOT verification system bugs):
             legitimate_failure_indicators = [
                 "empty results detected",
@@ -226,6 +248,10 @@ class SmartErrorRouter:
                 "artifact not found",
                 "expected result not achieved",
                 "tool execution found but result empty",
+                "insufficient evidence",
+                "missing evidence",
+                "no confirmation",
+                "command output does not show",
             ]
 
             # True verification system bugs (require Atlas diagnostic):
@@ -236,6 +262,8 @@ class SmartErrorRouter:
                 "tool routing loop",
                 "infinite verification recursion",
                 "verification timeout after",
+                "grisha exception",
+                "verification system failure",
             ]
 
             # Check if this is a legitimate failure (step didn't produce expected result)
@@ -246,7 +274,7 @@ class SmartErrorRouter:
 
             if is_legitimate_failure and not is_system_bug:
                 # This is a REAL step failure, not a verification bug
-                # Let Tetyana retry with adjustments
+                # Let Tetyana retry with adjustments (NOT ATLAS_PLAN)
                 logger.info("[ROUTER] Detected legitimate step failure (not verification bug)")
                 return RecoveryStrategy(
                     action="RETRY",
@@ -254,13 +282,36 @@ class SmartErrorRouter:
                     max_retries=2,
                     reason="Step verification failed due to missing expected results. Retrying with adjusted approach.",
                 )
-            else:
+            elif is_system_bug:
                 # True verification system failure - escalate to Atlas
+                logger.warning("[ROUTER] Verification system bug detected - escalating to Atlas")
                 return RecoveryStrategy(
                     action="ATLAS_PLAN",
                     context_needed=True,
                     reason="Verification system failure detected. This indicates issues with Grisha's error detection logic, not the task itself. Escalating for diagnostic review.",
                 )
+            else:
+                # Ambiguous case - use RETRY first, then escalate if persistent
+                if attempt <= 1:
+                    logger.info(
+                        "[ROUTER] Ambiguous verification failure - trying RETRY before escalation"
+                    )
+                    return RecoveryStrategy(
+                        action="RETRY",
+                        backoff=3.0,
+                        max_retries=2,
+                        reason="Verification failed. Retrying with modified approach before escalating.",
+                    )
+                else:
+                    # After retry, escalate to Atlas
+                    logger.info(
+                        "[ROUTER] Persistent verification failure after retry - escalating to Atlas"
+                    )
+                    return RecoveryStrategy(
+                        action="ATLAS_PLAN",
+                        context_needed=True,
+                        reason="Persistent verification failure. Escalating to Atlas for strategic re-planning.",
+                    )
 
         # Unknown / Default Fallback
         if attempt <= 2:
