@@ -682,25 +682,38 @@ class ToolDispatcher:
     def _process_mcp_result(
         self, server: str, tool: str, args: dict[str, Any], result: Any
     ) -> dict[str, Any]:
-        """Analyze result from MCP and add metadata if needed."""
+        """Analyze result from MCP and add metadata if needed.
+        STABILIZATION: Converts SDK objects to dicts to prevent 'not subscriptable' errors.
+        """
         # Visual Hook: Update map state if result contains location data
         self._post_process_map_data(tool, result)
 
-        if not isinstance(result, dict) or not result.get("error"):
-            return cast(dict[str, Any], result)
+        # Convert CallToolResult (SDK object) to dict if it's not already
+        if not isinstance(result, dict):
+            # Attempt to convert SDK object to a dictionary
+            # Typical SDK result has 'content', 'isError', 'meta'
+            processed = {
+                "success": not getattr(result, "is_error", getattr(result, "isError", False)),
+                "result": getattr(result, "content", str(result)),
+                "error": getattr(result, "error", None),
+                "server": server,
+                "tool": tool,
+            }
+            # Many agents expect 'content' explicitly (like Tetyana)
+            if hasattr(result, "content"):
+                processed["content"] = result.content
 
-        error_msg = str(result.get("error", ""))
+            result = processed
+
+        error_msg = str(result.get("error") or "")
         if "not found" in error_msg.lower() or "-32602" in error_msg:
-            result.update(
-                {
-                    "tool_not_found": True,
-                    "suggestion": f"Tool '{tool}' may not exist on server '{server}'.",
-                }
-            )
+            result["tool_not_found"] = True
+            result["suggestion"] = f"Tool '{tool}' may not exist on server '{server}'."
         elif "bad request" in error_msg.lower() or "400" in error_msg:
             result["bad_request"] = True
 
-        result.update({"server": server, "tool": tool})
+        result["server"] = server
+        result["tool"] = tool
         return result
 
     def _post_process_map_data(self, tool_name: str, result: Any) -> None:

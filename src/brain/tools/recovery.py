@@ -45,7 +45,7 @@ class RecoveryManager:
                     # Full history is in DB, we just need the "last step" context if needed
                     # Actually, Orchestrator rebuilds from DB, so we mainly need the ID
                     continue
-                if isinstance(v, (str, int, float, bool, list, dict, type(None))):
+                if isinstance(v, str | int | float | bool | list | dict | type(None)):
                     orch_dump[k] = v
                 else:
                     orch_dump[k] = str(v)

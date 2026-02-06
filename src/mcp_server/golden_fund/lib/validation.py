@@ -201,7 +201,7 @@ class DataValidator:
         """
         try:
             # Basic schema validation - check if data is structured properly
-            if isinstance(data, (dict, list)):
+            if isinstance(data, dict | list):
                 return ValidationResult(
                     True,
                     data={"message": "Data structure is valid"},

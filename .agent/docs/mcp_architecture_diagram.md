@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T08:24:36.989079 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/server.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T07:11:46.851535 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/server.py -->
 

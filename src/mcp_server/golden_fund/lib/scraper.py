@@ -17,6 +17,8 @@ from typing import Any
 import requests
 from bs4 import BeautifulSoup
 
+from src.mcp_server.tool_result_interface import ToolResult
+
 # Initialize logger
 logger = logging.getLogger("golden_fund.scraper")
 
@@ -29,15 +31,27 @@ class ScrapeFormat(Enum):
     XML = "xml"
 
 
-class ScrapeResult:
+class ScrapeResult(ToolResult):
     """Result container for scraping operations."""
 
     def __init__(self, success: bool, data: Any | None = None, error: str | None = None):
-        self.success = success
-        self.data = data
-        self.error = error
+        self._success = success
+        self._data = data
+        self._error = error
         self.timestamp = datetime.now()
         self.metadata: dict[str, Any] = {}
+
+    @property
+    def success(self) -> bool:
+        return self._success
+
+    @property
+    def data(self) -> Any:
+        return self._data
+
+    @property
+    def error(self) -> str | None:
+        return self._error
 
     def __repr__(self) -> str:
         if self.success:

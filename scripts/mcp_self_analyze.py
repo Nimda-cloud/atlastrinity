@@ -273,7 +273,7 @@ Generate arguments for '{tool_name}':"""
         # Step 2: Call the tool via inspector
         extra_args = ["--tool-name", tool_name]
         for key, value in generated_args.items():
-            if isinstance(value, (dict, list)):
+            if isinstance(value, dict | list):
                 extra_args.extend(["--tool-arg", f"{key}={json.dumps(value)}"])
             else:
                 extra_args.extend(["--tool-arg", f"{key}={value}"])

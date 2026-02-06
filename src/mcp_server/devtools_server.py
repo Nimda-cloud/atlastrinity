@@ -372,7 +372,7 @@ def mcp_inspector_call_tool(
 
     if args:
         for key, value in args.items():
-            if isinstance(value, (dict, list)):
+            if isinstance(value, dict | list):
                 extra_args.extend(["--tool-arg", f"{key}={json.dumps(value)}"])
             else:
                 extra_args.extend(["--tool-arg", f"{key}={value}"])
@@ -1028,7 +1028,10 @@ def devtools_update_architecture_diagrams(
             git_init_result = ensure_git_repository(project_path_obj)
             response["git_status"]["initialized"] = git_init_result
             if not git_init_result.get("initialized"):
-                return {"error": git_init_result.get("error", "Git init failed"), "success": False}
+                return {
+                    "error": git_init_result.get("error") or "Git init failed",
+                    "success": False,
+                }
 
         # Step 3: Setup GitHub remote if requested
         if github_repo or github_token:

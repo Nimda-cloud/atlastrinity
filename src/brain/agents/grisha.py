@@ -748,12 +748,27 @@ class Grisha(BaseAgent):
         step_id = step.get("id", "unknown")
 
         # Format results for analysis
-        results_summary = "\n".join(
-            [
-                f"Tool {i + 1}: {r['tool']}\n  Success: {not r.get('error', False)}\n  Result: {r.get('result', 'N/A')[:2000]}\n"
-                for i, r in enumerate(verification_results)
-            ]
-        )
+        results_summary = ""
+        for i, r in enumerate(verification_results):
+            # Normalization: ensure we can read 'tool' and 'result' regardless of object vs dict
+            tool_name = r.get("tool", "N/A") if isinstance(r, dict) else getattr(r, "tool", "N/A")
+
+            # Check for error: result.error (sdk object) vs result.get('error') (dict)
+            has_error = False
+            if isinstance(r, dict):
+                has_error = bool(r.get("error"))
+            else:
+                has_error = bool(getattr(r, "error", False))
+
+            # Get result string: result.result (sdk object) vs result.get('result') (dict)
+            res_val = "N/A"
+            if isinstance(r, dict):
+                res_val = str(r.get("result", "N/A"))
+            else:
+                # If it's an SDK object, 'result' might be the content attribute or the object itself
+                res_val = str(getattr(r, "result", r))
+
+            results_summary += f"Tool {i + 1}: {tool_name}\n  Success: {not has_error}\n  Result: {res_val[:2000]}\n"
 
         query = GRISHA_LOGICAL_VERDICT.format(
             step_action=step.get("action", ""),

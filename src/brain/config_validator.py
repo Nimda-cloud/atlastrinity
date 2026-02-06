@@ -122,7 +122,7 @@ class ConfigValidator:
         expected = type_map.get(expected_type)
         if expected is None:
             return True
-        return isinstance(value, expected) if isinstance(expected, (type, tuple)) else True
+        return isinstance(value, expected) if isinstance(expected, (type, tuple)) else True  # noqa: UP038
 
     def _check_range(self, value: Any, range_tuple: tuple) -> bool:
         """Check if numeric value is within range."""

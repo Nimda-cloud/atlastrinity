@@ -41,7 +41,7 @@ async def verify():
             "results" in res_str
             or "entities" in res_str
             or "Atlas" in res_str
-            or isinstance(res, (list, dict))
+            or isinstance(res, list | dict)
         ):
             print("SUCCESS: Dispatcher handled 'memory.memory' call!")
             print(f"Result Preview: {res_str[:200]}")

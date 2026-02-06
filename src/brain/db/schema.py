@@ -131,6 +131,7 @@ class ToolExecution(Base):
     tool_name: Mapped[str] = mapped_column(String(100))
     arguments: Mapped[dict[str, Any]] = mapped_column(JSON)
     result: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="SUCCESS")  # SUCCESS, FAILED
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 

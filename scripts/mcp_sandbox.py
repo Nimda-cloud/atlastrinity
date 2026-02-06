@@ -372,7 +372,7 @@ async def execute_test_step(
     # Build tool call args
     extra_args = ["--tool-name", tool_name]
     for key, value in args.items():
-        if isinstance(value, (dict, list)):
+        if isinstance(value, dict | list):
             extra_args.extend(["--tool-arg", f"{key}={json.dumps(value)}"])
         elif value is not None:
             extra_args.extend(["--tool-arg", f"{key}={value}"])
