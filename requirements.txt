@@ -12,6 +12,7 @@ python-multipart>=0.0.6
 # === LLM Provider ===
 requests>=2.31.0
 tenacity>=8.1.0
+humanfriendly
 
 # === Voice ===
 # Dependency Notes:
@@ -45,6 +46,7 @@ opt-einsum
 nltk>=3.4.5
 stanza>=1.8.0
 ukrainian-word-stress==1.1.0
+gradio>=5.47.0
 num2words @ git+https://github.com/savoirfairelinux/num2words.git@3e39091d052829fc9e65c18176ce7b7ff6169772
 ukrainian_accentor @ git+https://github.com/egorsmkv/ukrainian-accentor.git@5b7971c4e135e3ff3283336962e63fc0b1c80f4c
 
@@ -54,8 +56,16 @@ sounddevice>=0.4.6
 soundfile>=0.12.1
 
 # === Memory ===
-chromadb>=0.6.0
+chromadb==0.6.3
 redis>=5.0.0
+googleapis-common-protos==1.63.2
+opentelemetry-api==1.25.0
+opentelemetry-sdk==1.25.0
+opentelemetry-exporter-otlp-proto-grpc==1.25.0
+opentelemetry-semantic-conventions==0.46b0
+opentelemetry-instrumentation-fastapi==0.46b0
+opentelemetry-util-http==0.46b0
+grpcio>=1.60.0
 
 # === Vision & Automation ===
 pyautogui>=0.9.54
@@ -65,7 +75,7 @@ pyobjc-framework-ApplicationServices>=10.0 ; sys_platform == 'darwin'
 
 # === Utils ===
 python-dotenv>=1.0.0
-pydantic>=2.5.0,<2.13.0
+pydantic>=2.10.0,<2.13.0
 httpx>=0.25.0
 mcp>=1.23.0
 fastmcp>=0.1.0,<3.0.0

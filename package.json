@@ -88,7 +88,7 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@modelcontextprotocol/server-filesystem": "^2025.12.18",
     "@modelcontextprotocol/server-github": "^2025.4.8",
     "@modelcontextprotocol/server-memory": "^2025.11.25",
@@ -101,7 +101,6 @@
     "stripe": "^20.1.1"
   },
   "overrides": {
-    "@modelcontextprotocol/sdk": "^1.25.3",
     "lodash-es": "^4.17.21"
   },
   "build": {

@@ -58,6 +58,10 @@ def print_info(msg: str):
 # Константи
 REQUIRED_PYTHON = "3.12.12"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Ensure valid python path for module imports
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
 VENV_PATH = PROJECT_ROOT / ".venv"
 
@@ -954,7 +958,7 @@ def install_deps():
 
     # Update PIP and foundational tools
     run_venv_cmd(
-        ["-m", "pip", "install", "-U", "pip", "setuptools", "wheel"],
+        ["-m", "pip", "install", "-U", "pip", "setuptools<74.0.0", "wheel"],
         check=False,
         capture_output=True,
     )
@@ -962,18 +966,8 @@ def install_deps():
     # Install main requirements
     req_file = PROJECT_ROOT / "requirements.txt"
     if req_file.exists():
-        # Step 1: Install major voice components without dependencies.
-        # Their metadata has old constraints (e.g. importlib-metadata < 5.0)
-        # which conflict with modern libraries. Installing them first --no-deps
-        # allows us to use modern versions for everything else.
-        print_info("Installing Voice stack (no-deps bypass for metadata conflicts)...")
-        run_venv_cmd(
-            ["-m", "pip", "install", "--no-deps", "espnet==202509", "ukrainian-tts>=6.0.2"],
-            check=True,
-        )
-
-        # Step 2: Install remaining core dependencies from requirements.txt.
-        # Pip will now resolve the rest of the environment normally.
+        # Step 1: Install core dependencies from requirements.txt.
+        # Pip will resolve the environment normally for the majority of tools.
         print_info("Installing core dependencies from requirements.txt...")
         run_venv_cmd(
             [
@@ -984,6 +978,15 @@ def install_deps():
                 "-r",
                 str(req_file),
             ],
+            check=True,
+        )
+
+        # Step 2: Install Voice stack (espnet/ukrainian-tts) without dependencies.
+        # Metadata of these packages contains outdated constraints (e.g. importlib-metadata < 5.0)
+        # By installing them last with --no-deps, we prevent them from breaking the broader environment.
+        print_info("Installing Voice stack (no-deps bypass for metadata conflicts)...")
+        run_venv_cmd(
+            ["-m", "pip", "install", "--no-deps", "espnet==202509", "ukrainian-tts>=6.0.2"],
             check=True,
         )
 
