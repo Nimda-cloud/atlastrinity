@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T06:53:18.450700 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, package.json, requirements.txt -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T06:51:49.926967 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/agents/grisha.py -->
 
