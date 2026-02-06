@@ -9,11 +9,12 @@ done
 
 echo ""
 echo "=== ОСТАННІ ЛОГИ (stderr.txt) ==="
-tail -n 50 /Users/dev/Documents/GitHub/atlastrinity/stderr.txt | grep --color=auto -E "(VIBE|vibe_prompt|ERROR|INFO|DEBUG)" || echo "Немає логів Vibe"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+tail -n 50 "$SCRIPT_DIR/../stderr.txt" | grep --color=auto -E "(VIBE|vibe_prompt|ERROR|INFO|DEBUG)" || echo "Немає логів Vibe"
 
 echo ""
 echo "=== ОСТАННІ ЛОГИ (stdout.txt) ==="
-tail -n 50 /Users/dev/Documents/GitHub/atlastrinity/stdout.txt | grep --color=auto -E "(VIBE|vibe_prompt|ERROR|INFO|DEBUG)" || echo "Немає логів Vibe"
+tail -n 50 "$SCRIPT_DIR/../stdout.txt" | grep --color=auto -E "(VIBE|vibe_prompt|ERROR|INFO|DEBUG)" || echo "Немає логів Vibe"
 
 echo ""
 echo "=== VIBE WORKSPACE ==="

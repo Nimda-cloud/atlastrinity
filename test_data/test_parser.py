@@ -6,9 +6,11 @@ Test script for the data parsing component.
 
 import os
 import sys
+from pathlib import Path
 
-# Add the etl_module to Python path
-sys.path.insert(0, "/Users/dev/Documents/GitHub/atlastrinity")
+# Project root relative to this test file
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from etl_module.src.parsing import DataFormat, DataParser
 
@@ -17,7 +19,7 @@ def test_csv_parsing():
     """Test CSV parsing functionality."""
     print("Testing CSV parsing...")
     parser = DataParser()
-    result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.csv")
+    result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.csv"))
 
     if result.success:
         print(f"✓ CSV parsing successful: {type(result.data).__name__}")
@@ -33,7 +35,7 @@ def test_json_parsing():
     """Test JSON parsing functionality."""
     print("Testing JSON parsing...")
     parser = DataParser()
-    result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.json")
+    result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.json"))
 
     if result.success:
         print(f"✓ JSON parsing successful: {type(result.data).__name__}")
@@ -51,7 +53,7 @@ def test_xml_parsing():
     """Test XML parsing functionality."""
     print("Testing XML parsing...")
     parser = DataParser()
-    result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.xml")
+    result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.xml"))
 
     if result.success:
         print(f"✓ XML parsing successful: {type(result.data).__name__}")
@@ -68,25 +70,19 @@ def test_dataframe_conversion():
     parser = DataParser()
 
     # Test CSV to DataFrame
-    result = parser.parse_to_dataframe(
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.csv"
-    )
+    result = parser.parse_to_dataframe(str(PROJECT_ROOT / "test_data" / "test.csv"))
     print(
         f"CSV to DataFrame: {'✓' if result.success else '✗'} {result.error if not result.success else ''}"
     )
 
     # Test JSON to DataFrame
-    result = parser.parse_to_dataframe(
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.json"
-    )
+    result = parser.parse_to_dataframe(str(PROJECT_ROOT / "test_data" / "test.json"))
     print(
         f"JSON to DataFrame: {'✓' if result.success else '✗'} {result.error if not result.success else ''}"
     )
 
     # Test XML to DataFrame
-    result = parser.parse_to_dataframe(
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.xml"
-    )
+    result = parser.parse_to_dataframe(str(PROJECT_ROOT / "test_data" / "test.xml"))
     print(
         f"XML to DataFrame: {'✓' if result.success else '✗'} {result.error if not result.success else ''}"
     )
@@ -99,13 +95,11 @@ def test_error_handling():
     parser = DataParser()
 
     # Test non-existent file
-    result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/nonexistent.csv")
+    result = parser.parse(str(PROJECT_ROOT / "test_data" / "nonexistent.csv"))
     print(f"Non-existent file: {'✓' if not result.success else '✗'} {result.error}")
 
     # Test unsupported format
-    result = parser.parse(
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.csv", format_hint=DataFormat.XML
-    )
+    result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.csv"), format_hint=DataFormat.XML)
     print(f"Wrong format hint: {'✓' if not result.success else '✗'} {result.error}")
     print()
 

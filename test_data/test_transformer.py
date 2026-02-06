@@ -6,9 +6,11 @@ Test script for the data transformation component.
 
 import os
 import sys
+from pathlib import Path
 
-# Add the etl_module to Python path
-sys.path.insert(0, "/Users/dev/Documents/GitHub/atlastrinity")
+# Project root relative to this test file
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from etl_module.src.parsing import DataFormat, DataParser
 from etl_module.src.transformation import DataTransformer, TransformResult
@@ -20,7 +22,7 @@ def test_csv_transformation():
 
     # Parse CSV data
     parser = DataParser()
-    parse_result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.csv")
+    parse_result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.csv"))
 
     if not parse_result.success:
         print(f"✗ CSV parsing failed: {parse_result.error}")
@@ -46,7 +48,7 @@ def test_json_transformation():
 
     # Parse JSON data
     parser = DataParser()
-    parse_result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.json")
+    parse_result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.json"))
 
     if not parse_result.success:
         print(f"✗ JSON parsing failed: {parse_result.error}")
@@ -71,7 +73,7 @@ def test_xml_transformation():
 
     # Parse XML data
     parser = DataParser()
-    parse_result = parser.parse("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.xml")
+    parse_result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.xml"))
 
     if not parse_result.success:
         print(f"✗ XML parsing failed: {parse_result.error}")

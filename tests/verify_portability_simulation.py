@@ -15,7 +15,7 @@ MOCK_CONFIG = MOCK_HOME / ".config" / "atlastrinity"
 MOCK_CONFIG.mkdir(parents=True)
 
 # Setup paths
-PROJECT_ROOT = Path("/Users/dev/Documents/GitHub/atlastrinity")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # We need to mock CONFIG_ROOT in memory to avoid polluting real ~/.config

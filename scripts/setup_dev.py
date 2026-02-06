@@ -1317,6 +1317,13 @@ def backup_databases():
     print_step("Створення безпечних резервних копій баз даних...")
 
     try:
+        # Auto-install cryptography if missing (needed for secure backup)
+        try:
+            import cryptography as cryptography  # noqa: F401, PLC0414
+        except ImportError:
+            print_info("Модуль 'cryptography' відсутній. Встановлення...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "cryptography"], check=False)
+
         from scripts.secure_backup import SecureBackupManager
 
         backup_manager = SecureBackupManager(PROJECT_ROOT)
@@ -1386,6 +1393,13 @@ def restore_databases():
     print_step("Відновлення баз даних з резервних копій...")
 
     try:
+        # Auto-install cryptography if missing
+        try:
+            import cryptography as cryptography  # noqa: F401, PLC0414
+        except ImportError:
+            print_info("Модуль 'cryptography' відсутній. Встановлення...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "cryptography"], check=False)
+
         from scripts.secure_backup import SecureBackupManager
 
         backup_manager = SecureBackupManager(PROJECT_ROOT)
@@ -1597,6 +1611,12 @@ def ensure_frontend_config():
 
 
 def main():
+    # 0. Pre-flight: upgrade pip to avoid warnings
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], check=False)
+    except Exception:
+        pass
+
     print(
         f"\n{Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.ENDC}",
     )

@@ -12,8 +12,13 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 if ! command -v gh &> /dev/null; then
-    echo "❌ GitHub CLI (gh) not found. Please install it with: brew install gh"
-    exit 1
+    echo "🔗 GitHub CLI (gh) not found. Attempting to install with brew..."
+    if command -v brew &> /dev/null; then
+        brew install gh
+    else
+        echo "❌ Homebrew not found. Please install Homebrew first or install gh manually: brew install gh"
+        exit 1
+    fi
 fi
 
 # Load GITHUB_TOKEN from .env and export as GH_TOKEN for the CLI

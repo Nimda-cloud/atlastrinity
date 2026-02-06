@@ -23,7 +23,8 @@ echo "================================================"
 echo ""
 
 # Live моніторинг з кольорами
-tail -f /Users/dev/Documents/GitHub/atlastrinity/stderr.txt 2>/dev/null | while read line; do
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+tail -f "$SCRIPT_DIR/../stderr.txt" 2>/dev/null | while read line; do
     # Показуємо тільки важливі рядки
     if echo "$line" | grep -qE "(VIBE|vibe_prompt|ERROR|WARNING|Executing prompt|validation error)"; then
         timestamp=$(date '+%H:%M:%S')

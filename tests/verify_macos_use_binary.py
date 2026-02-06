@@ -2,10 +2,19 @@ import asyncio
 import json
 import os
 import subprocess
+from pathlib import Path
 
 
 async def run_verification():
-    binary_path = "/Users/olegkizyma/Documents/GitHub/atlastrinity/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
+    project_root = Path(__file__).resolve().parent.parent
+    binary_path = (
+        project_root
+        / "vendor"
+        / "mcp-server-macos-use"
+        / ".build"
+        / "release"
+        / "mcp-server-macos-use"
+    )
 
     if not os.path.exists(binary_path):
         print(f"Error: Binary not found at {binary_path}")

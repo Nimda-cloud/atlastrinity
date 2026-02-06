@@ -9,7 +9,10 @@ import yaml
 try:
     import toml
 except ImportError:
-    toml = None
+    try:
+        import tomllib as toml
+    except ImportError:
+        toml = None
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

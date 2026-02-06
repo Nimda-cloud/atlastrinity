@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Define paths
-DMG_PATH="/Users/dev/Documents/GitHub/atlastrinity/output.dmg"
-LOG_FILE="/Users/dev/Documents/GitHub/atlastrinity/signing_notarization.log"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DMG_PATH="$SCRIPT_DIR/output.dmg"
+LOG_FILE="$SCRIPT_DIR/signing_notarization.log"
 
 # Signing the DMG
 codesign --sign "Developer ID Application: Your Name (TEAMID)" --timestamp --options runtime "$DMG_PATH" &>> "$LOG_FILE"

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T05:54:41.190417 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/clear_experience_fixed.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T14:23:21.502651 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/memory.py -->
 

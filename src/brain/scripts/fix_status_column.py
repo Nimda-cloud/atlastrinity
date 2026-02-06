@@ -8,7 +8,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 
 async def fix_schema():
-    db_path = "/Users/dev/.config/atlastrinity/atlastrinity.db"
+    from pathlib import Path
+
+    db_path = Path.home() / ".config" / "atlastrinity" / "atlastrinity.db"
     print(f"Connecting to database at {db_path}...")
 
     if not os.path.exists(db_path):

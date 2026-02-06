@@ -239,7 +239,7 @@ Your task:
 2. Use safe, read-only values where possible (e.g., existing paths like ~/.zshrc or /tmp).
 3. Return ONLY valid JSON object with the arguments. No explanation.
 
-Example for read_file: {{"path": "/Users/dev/.zshrc"}}
+Example for read_file: {{"path": "~/.zshrc"}}
 Example for list_directory: {{"path": "/tmp"}}
 
 Generate arguments for '{tool_name}':"""

@@ -7,9 +7,11 @@ Test script for the dataset parser component.
 import asyncio
 import os
 import sys
+from pathlib import Path
 
-# Add the project root to Python path
-sys.path.insert(0, "/Users/dev/Documents/GitHub/atlastrinity")
+# Project root relative to this test file
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from etl_module.src.parsing import DatasetParser
 
@@ -37,7 +39,7 @@ def test_company_dataset():
     # Save test data
     import json
 
-    test_file = "/Users/dev/Documents/GitHub/atlastrinity/test_data/test_companies.json"
+    test_file = str(PROJECT_ROOT / "test_data" / "test_companies.json")
     with open(test_file, "w") as f:
         json.dump(test_company_data, f, indent=2)
 
@@ -69,7 +71,7 @@ def test_director_dataset():
     # Save test data
     import json
 
-    test_file = "/Users/dev/Documents/GitHub/atlastrinity/test_data/test_directors.json"
+    test_file = str(PROJECT_ROOT / "test_data" / "test_directors.json")
     with open(test_file, "w") as f:
         json.dump(test_director_data, f, indent=2)
 
@@ -96,9 +98,9 @@ def test_auto_detection():
 
     # Test with existing test files
     test_files = [
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.csv",
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.json",
-        "/Users/dev/Documents/GitHub/atlastrinity/test_data/test.xml",
+        str(PROJECT_ROOT / "test_data" / "test.csv"),
+        str(PROJECT_ROOT / "test_data" / "test.json"),
+        str(PROJECT_ROOT / "test_data" / "test.xml"),
     ]
 
     for test_file in test_files:
@@ -116,7 +118,7 @@ def test_knowledge_graph_logging():
 
     # First get a successful parsing result
     parser = DatasetParser()
-    result = parser.parse_dataset("/Users/dev/Documents/GitHub/atlastrinity/test_data/test.json")
+    result = parser.parse_dataset(str(PROJECT_ROOT / "test_data" / "test.json"))
 
     if result and result["success"]:
         # Test KG logging

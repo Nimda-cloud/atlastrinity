@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 # Setup paths
-PROJECT_ROOT = Path("/Users/dev/Documents/GitHub/atlastrinity")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Mock environment
