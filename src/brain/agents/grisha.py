@@ -1892,6 +1892,13 @@ class Grisha(BaseAgent):
             goal_analysis.get("selected_tools", []), step
         )
 
+        # PROACTIVE AUDIT: If evidence is insufficient, Grisha takes control
+        if not self._has_sufficient_evidence(verification_results):
+            logger.info(f"[GRISHA] Evidence insufficient for step {step_id}. Initiating Proactive Audit.")
+            independent_evidence = await self._collect_independent_evidence(step, goal_analysis)
+            if independent_evidence:
+                verification_results.extend(independent_evidence)
+
         # Phase 2: Verdict
         logger.info("[GRISHA] 🧠 Phase 2: Forming logical verdict...")
         verdict = await self._form_logical_verdict(
@@ -2518,3 +2525,66 @@ class Grisha(BaseAgent):
             return cast(dict[str, Any], json.loads(text))
         except (json.JSONDecodeError, ValueError):
             return None
+
+    def _has_sufficient_evidence(self, results: list[dict[str, Any]]) -> bool:
+        """Heuristic check: Do we have enough evidence to judge?"""
+        if not results:
+            return False
+        
+        for res in results:
+            # Check for successful tool execution with content
+            if res.get("success", False) or res.get("exit_code") == 0:
+                output = str(res.get("result", "")).strip()
+                # Ignore trivial outputs
+                if output and "error" not in output.lower() and len(output) > 5:
+                    return True
+        return False
+
+    async def _collect_independent_evidence(
+        self, step: dict[str, Any], goal_analysis: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Proactive Audit: Grisha triggers 'Sherlock Mode' availability."""
+        from ..mcp_manager import mcp_manager
+        
+        step_action = step.get("action", "")
+        # logger.info(f"[GRISHA] 🕵️ PROACTIVE AUDIT: Insufficient evidence for '{step_action}'. Taking control.")
+        
+        # Quick heuristic for common tools to avoid LLM overhead if possible
+        audit_tools = []
+        
+        # 1. Auto-select tools based on action keywords (Safety Net)
+        if "process" in step_action or "run" in step_action:
+             audit_tools.append({"tool": "macos-use.execute_command", "args": {"command": "ps aux | grep -v grep | head -n 10"}})
+        
+        # Always verify DB state - safe and informative
+        audit_tools.append({
+            "tool": "vibe.vibe_check_db", 
+            "args": {"query": f"SELECT * FROM tool_executions WHERE status='success' ORDER BY created_at DESC LIMIT 5"}
+        })
+        
+        # Execute the tools
+        results = []
+        for t in audit_tools:
+            try:
+                # Use dispatch_tool which handles server resolution automatically
+                tool_full_name = str(t.get("tool", ""))
+                logger.info(f"[GRISHA] 🕵️ Auditing with: {tool_full_name}")
+                
+                # dispatch_tool returns result directly
+                res = await mcp_manager.dispatch_tool(
+                    tool_name=tool_full_name, 
+                    arguments=t.get("args", {}),
+                    allow_fallback=True
+                )
+                
+                # Format as structured result
+                results.append({
+                    "tool": tool_full_name,
+                    "args": t.get("args", {}),
+                    "result": res,
+                    "success": True # Assume execution success if no exception
+                })
+            except Exception as e:
+                logger.warning(f"[GRISHA] Audit tool {t.get('tool')} failed: {e}")
+                
+        return results

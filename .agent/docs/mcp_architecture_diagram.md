@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T05:54:24.456468 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/behavior_config.yaml.template, src/brain/agents/grisha.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T05:48:41.880137 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/tetyana.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
