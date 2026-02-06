@@ -185,32 +185,34 @@ class ProcessWatchdog:
             return
 
         logger.error(
-            f"[WATCHDOG] 🚨 AUTO-HEALING: Terminating stuck process {pid} ({info['type']})"
+            f"[WATCHDOG] 🚨 PROCESS STUCK: {pid} ({info['type']}). Requesting Healing Orchestrator..."
         )
-        self.mon.record_healing_event(
-            task_id="watchdog_auto",
-            event_type="process_hang",
-            step_id=f"kill_{pid}",
-            priority=2,
-            status="triggered",
-            details={"pid": pid, "info": info},
-        )
-
+        
+        # New: Delegate to HealingOrchestrator
         try:
-            await self.terminate_process(pid, hard=(info["type"] in ["vibe_cli", "proxy"]))
-
-            # If it's an MCP server, we should tell MCPManager to restart it
-            if info["type"].startswith("mcp_"):
-                # Proactive restart
-                server_name = self._extract_server_name(info)
-                if server_name:
-                    logger.info(f"[WATCHDOG] Proactively restarting MCP server: {server_name}")
-                    from .mcp_manager import mcp_manager
-
-                    asyncio.create_task(mcp_manager.restart_server(server_name))
-
+            from src.brain.system_healing import healing_orchestrator
+            
+            # Construct context for analysis
+            context = {
+                "process_info": info,
+                "pid": pid,
+                "stuck_count": info.get("stuck_count", 0),
+                "step_id": f"watchdog_kill_{pid}"
+            }
+            
+            # Call orchestrator (it will analyze -> decide -> act)
+            # We treat this as a "STEP" failure where the step is keeping the process alive
+            await healing_orchestrator.handle_error(
+                step_id=f"watchdog_process_{pid}",
+                error=f"Process {pid} ({info['name']}) is stuck (0% CPU for extended period).",
+                context=context,
+                log_context=f"Process Info: {info}"
+            )
+            
         except Exception as e:
-            logger.error(f"[WATCHDOG] Failed to heal process {pid}: {e}")
+            logger.error(f"[WATCHDOG] Failed to call Healing Orchestrator: {e}")
+            # Fallback to old behavior if orchestrator fails
+            await self.terminate_process(pid, hard=True)
 
     async def terminate_process(self, pid: int, hard: bool = False) -> bool:
         """Kill a process either gracefully or hard."""
