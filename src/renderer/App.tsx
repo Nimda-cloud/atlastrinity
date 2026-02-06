@@ -40,7 +40,7 @@ interface SystemMetrics {
   net_down_unit: string;
 }
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 const App: React.FC = () => {
