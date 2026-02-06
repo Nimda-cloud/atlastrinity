@@ -16,6 +16,7 @@ from typing import Any, cast
 
 try:
     import chromadb
+    from chromadb.config import Settings
 
     CHROMADB_AVAILABLE = True
 except ImportError:
@@ -67,8 +68,10 @@ class LongTermMemory:
         db_path.mkdir(parents=True, exist_ok=True)
 
         try:
-            # Just try to instantiate client
-            self.client = cast(Any, chromadb).PersistentClient(path=str(db_path))
+            # Just try to instantiate client with telemetry disabled
+            self.client = cast(Any, chromadb).PersistentClient(
+                path=str(db_path), settings=Settings(anonymized_telemetry=False)
+            )
 
             # Initialize collections
             self.lessons = self.client.get_or_create_collection(

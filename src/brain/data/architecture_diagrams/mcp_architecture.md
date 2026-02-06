@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T09:16:15.676888 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/atlas.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T09:06:35.093503 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/vibe/agents/accept-edits.toml.template, config/vibe/agents/auto-approve.toml.template -->
 
