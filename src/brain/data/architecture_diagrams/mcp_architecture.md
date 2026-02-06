@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T11:58:44.548994 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, biome.json -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T11:55:06.225326 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/orchestrator.py -->
 

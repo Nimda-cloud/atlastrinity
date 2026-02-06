@@ -1757,40 +1757,71 @@ def main():
                         except Exception:
                             pass
 
-    # Git Remote Check
-    print_step("Перевірка Git конфігурації...")
+    # Git Remote Auto-Configuration (github-operations workflow)
+    print_step("Налаштування Git remote з GITHUB_TOKEN...")
     try:
-        remote_res = subprocess.run(["git", "remote", "-v"], capture_output=True, text=True)
+        remote_res = subprocess.run(
+            ["git", "remote", "-v"], capture_output=True, text=True, check=False
+        )
         if "github.com" in remote_res.stdout:
             print_success("Git remote налаштовано на GitHub")
 
-            # Check for token in .env
-            env_path = CONFIG_ROOT / ".env"
-            has_env_token = False
-            if env_path.exists():
-                with open(env_path, encoding="utf-8") as f:
-                    if "GITHUB_TOKEN" in f.read():
-                        has_env_token = True
+            # Read GITHUB_TOKEN from .env (local first, then global)
+            github_token = None
+            for env_path in [PROJECT_ROOT / ".env", CONFIG_ROOT / ".env"]:
+                if env_path.exists():
+                    with open(env_path, encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line.startswith("GITHUB_TOKEN=") and not line.startswith("#"):
+                                token_val = line.split("=", 1)[1].strip().strip("'\"")
+                                if token_val and not token_val.startswith("$"):
+                                    github_token = token_val
+                                    break
+                    if github_token:
+                        break
 
-            if has_env_token:
-                print_success("Git: Виявлено GITHUB_TOKEN у .env (використовується для MCP та API)")
+            if github_token:
+                # Extract repo path from current remote URL
+                remote_url = remote_res.stdout.strip().split("\n")[0]
+                repo_match = re.search(r"github\.com[:/](.+?)(?:\.git)?(?:\s|$)", remote_url)
+                if repo_match:
+                    repo_path = repo_match.group(1).strip()
+                    new_url = f"https://{github_token}@github.com/{repo_path}.git"
 
-            if "https://" in remote_res.stdout and "@" not in remote_res.stdout:
+                    # Check if already configured with token
+                    if f"@github.com/{repo_path}" in remote_res.stdout:
+                        print_success("Git remote вже налаштовано з токеном")
+                    else:
+                        subprocess.run(
+                            ["git", "remote", "set-url", "origin", new_url],
+                            check=True,
+                            capture_output=True,
+                        )
+                        print_success(
+                            "Git remote автоматично налаштовано з GITHUB_TOKEN (push/pull без паролю)"
+                        )
+                else:
+                    print_warning("Не вдалося розпізнати GitHub repo URL")
+            else:
+                # No token found — check credential helper
                 helper_res = subprocess.run(
-                    ["git", "config", "--get", "credential.helper"], capture_output=True, text=True
+                    ["git", "config", "--get", "credential.helper"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
                 if "osxkeychain" in helper_res.stdout:
                     print_success("Git CLI: Налаштовано через HTTPS + Keychain (osxkeychain)")
                 else:
                     print_info(
-                        "Git CLI: Використовується HTTPS. Можливо знадобиться персональний токен для push."
+                        "GITHUB_TOKEN не знайдено в .env. Додайте його для автоматичного push/pull."
                     )
-            elif "@" in remote_res.stdout:
-                print_success("Git CLI: Налаштовано через персональний токен (embedded)")
+                    print_info("  echo 'GITHUB_TOKEN=ghp_ваш_токен' >> .env")
         else:
             print_warning("Remote origin не знайдено або не вказує на GitHub.")
-    except Exception:
-        pass
+    except Exception as e:
+        print_warning(f"Не вдалося налаштувати Git remote: {e}")
 
     try:
         download_models()
