@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T07:00:46.313486 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T06:53:18.450700 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, package.json, requirements.txt -->
 

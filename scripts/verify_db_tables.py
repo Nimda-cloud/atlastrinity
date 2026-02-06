@@ -5,6 +5,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -82,12 +83,15 @@ async def verify_chromadb():
             return True
 
         # Just try to instantiate client
-        client = chromadb.PersistentClient(path=str(db_path))
-        collections = client.list_collections()
+        # Cast to Any to satisfy linters that might not see PersistentClient
+        cli = cast(Any, chromadb).PersistentClient(path=str(db_path))
+        collections = cli.list_collections()
         print("[DB]   - ChromaDB Client Initialized")
         print(f"[DB]   - Collections found: {len(collections)}")
         for col in collections:
-            print(f"[DB]     * {col.name} (count: {col.count()})")
+            # Cast to Any to satisfy Pyright's strictness on ChromaDB collection count()
+            c: Any = col
+            print(f"[DB]     * {c.name} (count: {c.count()})")
 
         return True
     except ImportError:

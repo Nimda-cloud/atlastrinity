@@ -11,6 +11,7 @@ This enables the system to learn from past experience.
 import asyncio
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, cast
 
 try:
@@ -62,10 +63,12 @@ class LongTermMemory:
             self.available = False
             return
 
-        os.makedirs(CHROMA_DIR, exist_ok=True)
+        db_path = Path(CHROMA_DIR)
+        db_path.mkdir(parents=True, exist_ok=True)
 
         try:
-            self.client = chromadb.PersistentClient(path=CHROMA_DIR)
+            # Just try to instantiate client
+            self.client = cast(Any, chromadb).PersistentClient(path=str(db_path))
 
             # Initialize collections
             self.lessons = self.client.get_or_create_collection(
@@ -214,7 +217,7 @@ class LongTermMemory:
             results = self.lessons.query(
                 query_texts=[error],
                 n_results=min(n_results, self.lessons.count()),
-                include=["documents", "metadatas", "distances"],
+                include=cast("Any", ["documents", "metadatas", "distances"]),
             )
 
             similar = []
@@ -265,7 +268,7 @@ class LongTermMemory:
             results = self.strategies.query(
                 query_texts=[task],
                 n_results=min(n_results, self.strategies.count()),
-                include=["documents", "metadatas", "distances"],
+                include=cast("Any", ["documents", "metadatas", "distances"]),
                 where=cast("Any", where_filter) if where_filter else None,
             )
 
@@ -356,7 +359,7 @@ class LongTermMemory:
             results = self.conversations.query(
                 query_texts=[query],
                 n_results=min(n_results, self.conversations.count()),
-                include=["documents", "metadatas", "distances"],
+                include=cast("Any", ["documents", "metadatas", "distances"]),
             )
 
             similar = []
@@ -548,7 +551,7 @@ class LongTermMemory:
             results = self.behavior_deviations.query(
                 query_texts=[intent],
                 n_results=min(n_results, self.behavior_deviations.count()),
-                include=["documents", "metadatas", "distances"],
+                include=cast("Any", ["documents", "metadatas", "distances"]),
             )
             similar = []
             if results and results["documents"]:
@@ -640,7 +643,7 @@ class LongTermMemory:
             results = self.discoveries.query(
                 query_texts=[query],
                 n_results=min(n_results, self.discoveries.count()),
-                include=["documents", "metadatas", "distances"],
+                include=cast("Any", ["documents", "metadatas", "distances"]),
                 where=where_filter if where_filter else None,  # type: ignore[arg-type]
             )
 
@@ -668,7 +671,7 @@ class LongTermMemory:
         try:
             results = self.discoveries.get(
                 where={"task_id": task_id},
-                include=["metadatas"],
+                include=cast("Any", ["metadatas"]),
             )
             discoveries = {}
             if results and results["metadatas"]:
@@ -724,7 +727,9 @@ class LongTermMemory:
             if not collection:
                 return 0
 
-            results = collection.query(query_texts=[query], n_results=5)
+            # Pyright might complain about collection.query if collection is not typed.
+            # Adding a cast to Any to satisfy type checker, assuming it's a valid Chroma collection.
+            results = cast("Any", collection).query(query_texts=[query], n_results=5)
             ids_to_delete = []
             if results and results["ids"]:
                 for i_list in results["ids"]:

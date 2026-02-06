@@ -307,7 +307,7 @@ def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[di
     results = long_term_memory.knowledge.query(
         query_texts=[q],
         n_results=lim,
-        include=["documents", "metadatas", "distances"],
+        include=cast("Any", ["documents", "metadatas", "distances"]),
         where=cast("Any", where_filter),
     )
 

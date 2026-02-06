@@ -101,6 +101,7 @@
     "stripe": "^20.1.1"
   },
   "overrides": {
+    "@modelcontextprotocol/sdk": "$@modelcontextprotocol/sdk",
     "lodash-es": "^4.17.21"
   },
   "build": {
