@@ -291,28 +291,27 @@ class SmartErrorRouter:
                     context_needed=True,
                     reason="Verification system failure detected. This indicates issues with Grisha's error detection logic, not the task itself. Escalating for diagnostic review.",
                 )
+            # Ambiguous case - use RETRY first, then escalate if persistent
+            elif attempt <= 1:
+                logger.info(
+                    "[ROUTER] Ambiguous verification failure - trying RETRY before escalation"
+                )
+                return RecoveryStrategy(
+                    action="RETRY",
+                    backoff=3.0,
+                    max_retries=2,
+                    reason="Verification failed. Retrying with modified approach before escalating.",
+                )
             else:
-                # Ambiguous case - use RETRY first, then escalate if persistent
-                if attempt <= 1:
-                    logger.info(
-                        "[ROUTER] Ambiguous verification failure - trying RETRY before escalation"
-                    )
-                    return RecoveryStrategy(
-                        action="RETRY",
-                        backoff=3.0,
-                        max_retries=2,
-                        reason="Verification failed. Retrying with modified approach before escalating.",
-                    )
-                else:
-                    # After retry, escalate to Atlas
-                    logger.info(
-                        "[ROUTER] Persistent verification failure after retry - escalating to Atlas"
-                    )
-                    return RecoveryStrategy(
-                        action="ATLAS_PLAN",
-                        context_needed=True,
-                        reason="Persistent verification failure. Escalating to Atlas for strategic re-planning.",
-                    )
+                # After retry, escalate to Atlas
+                logger.info(
+                    "[ROUTER] Persistent verification failure after retry - escalating to Atlas"
+                )
+                return RecoveryStrategy(
+                    action="ATLAS_PLAN",
+                    context_needed=True,
+                    reason="Persistent verification failure. Escalating to Atlas for strategic re-planning.",
+                )
 
         # Unknown / Default Fallback
         if attempt <= 2:

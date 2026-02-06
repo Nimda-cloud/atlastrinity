@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T06:11:24.878336 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .agent/workflows/self_healing.md, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T06:07:28.640861 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/grisha.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

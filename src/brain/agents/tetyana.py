@@ -960,10 +960,10 @@ IMPORTANT:
                 if not tool_call.get("args"):
                     tool_call["args"] = {}
                 if not tool_call["args"].get("command"):
-                    tool_call["args"]["command"] = "ls -la" # Safe discovery
+                    tool_call["args"]["command"] = "ls -la"  # Safe discovery
             else:
-                 # Last resort: Screenshot to see what's happening
-                 tool_call["name"] = "macos-use.macos-use_take_screenshot"
+                # Last resort: Screenshot to see what's happening
+                tool_call["name"] = "macos-use.macos-use_take_screenshot"
 
     def _finalize_tool_call_normalization(
         self, tool_call: dict[str, Any], step: dict[str, Any], target_server: str
@@ -1432,13 +1432,15 @@ IMPORTANT:
             }
 
         # VALIDATION: Check for required command argument for execute_command
-        if tool_name == "macos-use.execute_command" or tool_name == "execute_command":
-             if not args.get("command") and not args.get("cmd"):
-                 logger.error("[TETYANA] Validation Error: Missing 'command' argument for execute_command")
-                 return {
-                     "success": False, 
-                     "error": "Validation Error: 'execute_command' requires a 'command' argument."
-                 }
+        if tool_name in {"macos-use.execute_command", "execute_command"}:
+            if not args.get("command") and not args.get("cmd"):
+                logger.error(
+                    "[TETYANA] Validation Error: Missing 'command' argument for execute_command"
+                )
+                return {
+                    "success": False,
+                    "error": "Validation Error: 'execute_command' requires a 'command' argument.",
+                }
 
         try:
             result = await mcp_manager.dispatch_tool(tool_name, args, explicit_server)

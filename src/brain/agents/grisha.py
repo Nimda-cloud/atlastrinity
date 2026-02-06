@@ -169,7 +169,9 @@ class Grisha(BaseAgent):
         self.dangerous_commands = security_config.get("dangerous_commands", self.BLOCKLIST)
         self.verifications: list = []
         self._strategy_cache: dict[str, str] = {}
-        self._rejection_history: dict[str, list[dict]] = {}  # step_id -> list of rejection fingerprints
+        self._rejection_history: dict[
+            str, list[dict]
+        ] = {}  # step_id -> list of rejection fingerprints
 
         logger.info(
             f"[GRISHA] 3-Phase Architecture Initialized:\n"
@@ -182,13 +184,13 @@ class Grisha(BaseAgent):
         self, step_id: str, verdict: str, issues: list[str], confidence: float
     ) -> str:
         """Creates a unique fingerprint for a rejection to detect recursion.
-        
+
         Args:
             step_id: ID of the step being verified
             verdict: The verdict text (FAILED, PASSED, etc.)
             issues: List of issues identified
             confidence: Confidence score
-            
+
         Returns:
             SHA256 hash fingerprint of the rejection
         """
@@ -199,7 +201,7 @@ class Grisha(BaseAgent):
             "issues_normalized": sorted([issue.strip().lower() for issue in issues]),
             "confidence_bucket": round(confidence, 1),  # Bucket to 0.1 precision
         }
-        
+
         # Create hash
         fingerprint_str = json.dumps(fingerprint_data, sort_keys=True)
         return hashlib.sha256(fingerprint_str.encode()).hexdigest()
@@ -208,36 +210,36 @@ class Grisha(BaseAgent):
         self, step_id: str, fingerprint: str, max_same_rejections: int = 2
     ) -> tuple[bool, int]:
         """Checks if we're in a recursion loop for this step.
-        
+
         Args:
             step_id: ID of the step being verified
             fingerprint: Rejection fingerprint to check
             max_same_rejections: Maximum allowed identical rejections
-            
+
         Returns:
             (is_recursion, rejection_count) tuple
         """
         if step_id not in self._rejection_history:
             self._rejection_history[step_id] = []
-        
+
         history = self._rejection_history[step_id]
-        
+
         # Count how many times we've seen this exact fingerprint
         same_rejections = sum(1 for entry in history if entry["fingerprint"] == fingerprint)
-        
+
         is_recursion = same_rejections >= max_same_rejections
-        
+
         if is_recursion:
             logger.warning(
                 f"[GRISHA] RECURSION DETECTED for step {step_id}: "
                 f"Same rejection repeated {same_rejections} times"
             )
-        
+
         return is_recursion, same_rejections
 
     def _record_rejection(self, step_id: str, fingerprint: str, verdict_data: dict) -> None:
         """Records a rejection in the history for recursion detection.
-        
+
         Args:
             step_id: ID of the step
             fingerprint: Rejection fingerprint
@@ -245,7 +247,7 @@ class Grisha(BaseAgent):
         """
         if step_id not in self._rejection_history:
             self._rejection_history[step_id] = []
-        
+
         self._rejection_history[step_id].append(
             {
                 "fingerprint": fingerprint,
@@ -254,7 +256,7 @@ class Grisha(BaseAgent):
                 "confidence": verdict_data.get("confidence", 0.0),
             }
         )
-        
+
         logger.debug(
             f"[GRISHA] Recorded rejection for step {step_id}. "
             f"Total rejections: {len(self._rejection_history[step_id])}"
@@ -262,10 +264,10 @@ class Grisha(BaseAgent):
 
     def _mask_sensitive_data(self, text: str) -> str:
         """Masks sensitive data (passwords, API keys) in text before logging.
-        
+
         Args:
             text: Text that may contain sensitive data
-            
+
         Returns:
             Text with sensitive data masked
         """
@@ -277,11 +279,13 @@ class Grisha(BaseAgent):
             r"-p\s+([^\s\n]+)",
             r"--password[:\s=]+([^\s\n]+)",
         ]
-        
+
         masked_text = text
         for pattern in password_patterns:
-            masked_text = re.sub(pattern, r"password: ****MASKED****", masked_text, flags=re.IGNORECASE)
-        
+            masked_text = re.sub(
+                pattern, r"password: ****MASKED****", masked_text, flags=re.IGNORECASE
+            )
+
         # API key patterns
         api_key_patterns = [
             r"api[_-]?key[:\s=]+([^\s\n]+)",
@@ -289,12 +293,13 @@ class Grisha(BaseAgent):
             r"token[:\s=]+([^\s\n]+)",
             r"secret[:\s=]+([^\s\n]+)",
         ]
-        
-        for pattern in api_key_patterns:
-            masked_text = re.sub(pattern, r"api_key: ****MASKED****", masked_text, flags=re.IGNORECASE)
-        
-        return masked_text
 
+        for pattern in api_key_patterns:
+            masked_text = re.sub(
+                pattern, r"api_key: ****MASKED****", masked_text, flags=re.IGNORECASE
+            )
+
+        return masked_text
 
     async def _deep_validation_reasoning(
         self,
@@ -1894,7 +1899,9 @@ class Grisha(BaseAgent):
 
         # PROACTIVE AUDIT: If evidence is insufficient, Grisha takes control
         if not self._has_sufficient_evidence(verification_results):
-            logger.info(f"[GRISHA] Evidence insufficient for step {step_id}. Initiating Proactive Audit.")
+            logger.info(
+                f"[GRISHA] Evidence insufficient for step {step_id}. Initiating Proactive Audit."
+            )
             independent_evidence = await self._collect_independent_evidence(step, goal_analysis)
             if independent_evidence:
                 verification_results.extend(independent_evidence)
@@ -2048,18 +2055,24 @@ class Grisha(BaseAgent):
         try:
             # STEP 1: Create rejection fingerprint for recursion detection
             verdict_str = "FAILED" if not verification.verified else "PASSED"
-            issues_list = verification.issues if isinstance(verification.issues, list) else [str(verification.issues)]
-            
+            issues_list = (
+                verification.issues
+                if isinstance(verification.issues, list)
+                else [str(verification.issues)]
+            )
+
             fingerprint = self._create_rejection_fingerprint(
                 step_id=step_id,
                 verdict=verdict_str,
                 issues=issues_list,
-                confidence=verification.confidence
+                confidence=verification.confidence,
             )
-            
+
             # STEP 2: Check for recursion
-            is_recursion, rejection_count = self._check_recursion(step_id, fingerprint, max_same_rejections=2)
-            
+            is_recursion, rejection_count = self._check_recursion(
+                step_id, fingerprint, max_same_rejections=2
+            )
+
             if is_recursion:
                 logger.error(
                     f"[GRISHA] ⚠️ RECURSION LOOP DETECTED for step {step_id}! "
@@ -2072,7 +2085,7 @@ class Grisha(BaseAgent):
                     "Manual intervention required."
                 )
                 verification.issues = issues_list
-            
+
             # STEP 3: Record this rejection
             self._record_rejection(
                 step_id=step_id,
@@ -2080,10 +2093,10 @@ class Grisha(BaseAgent):
                 verdict_data={
                     "verdict": verdict_str,
                     "confidence": verification.confidence,
-                    "issues": issues_list
-                }
+                    "issues": issues_list,
+                },
             )
-            
+
             timestamp = datetime.now().isoformat()
 
             # Build structured sections
@@ -2185,7 +2198,6 @@ class Grisha(BaseAgent):
 
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(report_text_masked)  # Use masked version
-
 
                 logger.info(f"[GRISHA] Rejection report saved to filesystem: {file_path}")
             except Exception as e:
@@ -2530,7 +2542,7 @@ class Grisha(BaseAgent):
         """Heuristic check: Do we have enough evidence to judge?"""
         if not results:
             return False
-        
+
         for res in results:
             # Check for successful tool execution with content
             if res.get("success", False) or res.get("exit_code") == 0:
@@ -2545,23 +2557,32 @@ class Grisha(BaseAgent):
     ) -> list[dict[str, Any]]:
         """Proactive Audit: Grisha triggers 'Sherlock Mode' availability."""
         from ..mcp_manager import mcp_manager
-        
+
         step_action = step.get("action", "")
         # logger.info(f"[GRISHA] 🕵️ PROACTIVE AUDIT: Insufficient evidence for '{step_action}'. Taking control.")
-        
+
         # Quick heuristic for common tools to avoid LLM overhead if possible
         audit_tools = []
-        
+
         # 1. Auto-select tools based on action keywords (Safety Net)
         if "process" in step_action or "run" in step_action:
-             audit_tools.append({"tool": "macos-use.execute_command", "args": {"command": "ps aux | grep -v grep | head -n 10"}})
-        
+            audit_tools.append(
+                {
+                    "tool": "macos-use.execute_command",
+                    "args": {"command": "ps aux | grep -v grep | head -n 10"},
+                }
+            )
+
         # Always verify DB state - safe and informative
-        audit_tools.append({
-            "tool": "vibe.vibe_check_db", 
-            "args": {"query": f"SELECT * FROM tool_executions WHERE status='success' ORDER BY created_at DESC LIMIT 5"}
-        })
-        
+        audit_tools.append(
+            {
+                "tool": "vibe.vibe_check_db",
+                "args": {
+                    "query": "SELECT * FROM tool_executions WHERE status='success' ORDER BY created_at DESC LIMIT 5"
+                },
+            }
+        )
+
         # Execute the tools
         results = []
         for t in audit_tools:
@@ -2569,22 +2590,24 @@ class Grisha(BaseAgent):
                 # Use dispatch_tool which handles server resolution automatically
                 tool_full_name = str(t.get("tool", ""))
                 logger.info(f"[GRISHA] 🕵️ Auditing with: {tool_full_name}")
-                
+
                 # dispatch_tool returns result directly
                 res = await mcp_manager.dispatch_tool(
-                    tool_name=tool_full_name, 
-                    arguments=t.get("args", {}),
-                    allow_fallback=True
+                    tool_name=tool_full_name,
+                    arguments=cast(dict[str, Any], t.get("args", {})),
+                    allow_fallback=True,
                 )
-                
+
                 # Format as structured result
-                results.append({
-                    "tool": tool_full_name,
-                    "args": t.get("args", {}),
-                    "result": res,
-                    "success": True # Assume execution success if no exception
-                })
+                results.append(
+                    {
+                        "tool": tool_full_name,
+                        "args": t.get("args", {}),
+                        "result": res,
+                        "success": True,  # Assume execution success if no exception
+                    }
+                )
             except Exception as e:
                 logger.warning(f"[GRISHA] Audit tool {t.get('tool')} failed: {e}")
-                
+
         return results
