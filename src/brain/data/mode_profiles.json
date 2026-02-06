@@ -46,9 +46,9 @@
   },
 
   "solo_task": {
-    "description": "Information retrieval, research, file reading, web search — Atlas handles independently with tools",
+    "description": "Quick research, lookup, info retrieval — Atlas handles alone with MCP tools. Like enhanced chat: tools → reason → answer. No Trinity pipeline.",
     "llm_tier": "standard",
-    "protocols": ["voice", "search"],
+    "protocols": ["voice", "search", "maps"],
     "servers": [
       "macos-use",
       "filesystem",
@@ -56,20 +56,26 @@
       "sequential-thinking",
       "memory",
       "context7",
-      "golden-fund"
+      "golden-fund",
+      "googlemaps",
+      "puppeteer"
     ],
     "tools_access": "read_only",
     "prompt_template": "atlas_solo_task",
     "require_planning": false,
     "require_tools": true,
     "use_deep_persona": false,
-    "use_sequential_thinking": true,
+    "use_sequential_thinking": false,
+    "skip_deep_reasoning": true,
+    "skip_memory_context": true,
     "trinity_required": false,
     "examples": [
       "Яка погода у Львові?",
+      "Покажи маршрут від Києва до Одеси",
       "Прочитай файл config.yaml",
       "Знайди документацію по LangChain",
-      "Який курс долара?"
+      "Який курс долара?",
+      "Знайди інформацію про компанію"
     ]
   },
 

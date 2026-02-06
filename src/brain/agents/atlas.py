@@ -370,10 +370,22 @@ Respond in JSON:
         should_fetch_context: bool,
         resolved_query: str,
         use_deep_persona: bool,
+        mode_profile: ModeProfile | None = None,
     ) -> tuple[str, str, list[dict[str, Any]]]:
-        """Parallel fetching of Graph, Vector, and Tool context."""
+        """Parallel fetching of Graph, Vector, and Tool context.
+
+        SOLO_TASK OPTIMIZATION: Skip graph/vector queries (they add latency
+        without value for weather/search/info queries). Only fetch tools.
+        """
         if not should_fetch_context:
             return "", "", []
+
+        # Solo task fast path: skip memory, only discover tools
+        is_solo = intent == "solo_task" or (mode_profile and mode_profile.mode == "solo_task")
+        if is_solo:
+            logger.info("[ATLAS SOLO] Fast path: skipping graph/vector, discovering tools only")
+            tools = await self._get_solo_tools(mode_profile)
+            return "", "", tools
 
         logger.info(
             f"[ATLAS CHAT] Fetching context in parallel for ({intent}): {resolved_query[:30]}...",
@@ -541,13 +553,81 @@ Respond in JSON:
                 logger.warning(f"[ATLAS] Tool discovery failed: {e}")
             return new_tools
 
-        # Gather all context in parallel
+        # Gather all context in parallel (chat, deep_chat, recall, status modes)
         results = await asyncio.gather(
             get_graph(),
             get_vector(),
             get_tools(),
         )
         return cast("tuple[str, str, list[dict[str, Any]]]", tuple(results))
+
+    async def _get_solo_tools(self, mode_profile: ModeProfile | None = None) -> list[dict[str, Any]]:
+        """Fast tool discovery for solo_task mode.
+
+        Uses cached tools when available. If ModeProfile specifies servers,
+        only discovers from those servers (fewer connections = faster).
+        """
+        import time
+
+        from ..mcp_manager import mcp_manager
+
+        now = time.time()
+        if self._cached_info_tools and (now - self._last_tool_refresh <= self._refresh_interval):
+            return self._cached_info_tools
+
+        # Use ModeProfile servers if available, otherwise default solo set
+        if mode_profile and mode_profile.all_servers:
+            target_servers = set(mode_profile.all_servers)
+        else:
+            target_servers = {
+                "macos-use", "filesystem", "duckduckgo-search",
+                "sequential-thinking", "memory", "context7", "golden-fund",
+            }
+
+        configured_servers = set(mcp_manager.config.get("mcpServers", {}).keys())
+        active_servers = configured_servers & target_servers
+
+        logger.info(f"[ATLAS SOLO] Tool discovery on {len(active_servers)} servers: {active_servers}")
+
+        new_tools: list[dict[str, Any]] = []
+        try:
+            server_tools = await asyncio.gather(
+                *[mcp_manager.list_tools(s) for s in active_servers],
+                return_exceptions=True,
+            )
+
+            for s_name, t_list in zip(list(active_servers), server_tools, strict=True):
+                if isinstance(t_list, Exception | BaseException):
+                    continue
+                for tool in cast("list", t_list):
+                    t_low = tool.name.lower()
+                    d_low = tool.description.lower() if tool.description else ""
+                    is_safe = any(
+                        p in t_low or p in d_low
+                        for p in ["get", "list", "read", "search", "stats", "fetch",
+                                  "check", "find", "view", "query", "cat", "ls",
+                                  "directions", "route", "geocode", "places",
+                                  "thinking", "thought"]
+                    )
+                    is_mut = any(
+                        p in t_low or p in d_low
+                        for p in ["create", "delete", "write", "update", "exec",
+                                  "run", "set", "modify"]
+                    )
+                    if is_safe and not is_mut:
+                        new_tools.append({
+                            "name": f"{s_name}_{tool.name}",
+                            "description": tool.description,
+                            "input_schema": tool.inputSchema,
+                        })
+
+            self._cached_info_tools = new_tools
+            self._last_tool_refresh = int(now)
+            logger.info(f"[ATLAS SOLO] Discovered {len(new_tools)} safe tools")
+        except Exception as e:
+            logger.warning(f"[ATLAS SOLO] Tool discovery failed: {e}")
+
+        return new_tools
 
     def _construct_chat_messages(
         self,
@@ -662,8 +742,16 @@ Respond in JSON:
         is_simple_chat: bool,
         intent: str,
     ) -> str:
-        """Trigger deep reasoning for complex chat queries."""
-        # E. DEEP THINKING: Trigger only for complex queries in the first turn
+        """Trigger deep reasoning for complex chat queries.
+
+        SOLO_TASK OPTIMIZATION: Skip sequential-thinking for solo_task.
+        Solo_task uses tools directly — the LLM reasons DURING tool use,
+        not before. This saves one extra MCP call.
+        """
+        # Solo task: skip deep reasoning — tools + LLM reasoning is enough
+        if intent == "solo_task":
+            return ""
+
         analysis_context = ""
         is_complex = len(user_request.split()) > 7 or any(
             kw in user_request.lower()
@@ -672,12 +760,7 @@ Respond in JSON:
 
         if not is_simple_chat and is_complex:
             logger.info("[ATLAS] Engaging deep reasoning for chat...")
-            # Detect capabilities for the thinker
-            cap_for_thinker = (
-                "- Web search, File read, Spotlight, System info (Read-only)."
-                if intent == "solo_task"
-                else "- General conversational partner."
-            )
+            cap_for_thinker = "- General conversational partner."
             reasoning = await self.use_sequential_thinking(
                 user_request,
                 total_thoughts=2,
@@ -808,13 +891,13 @@ Respond in JSON:
         if tool_executed:
             final_messages.append(
                 SystemMessage(
-                    content="INTERNAL AUDIT: Review retrieved data. Does it answer fully? If missing (e.g. snippet too short), use more tools. Don't stop until complete."
+                    content="Check: does the data fully answer the request? If snippet is incomplete, fetch the full page. Otherwise deliver the answer now."
                 )
             )
         elif current_turn == 0:
             final_messages.append(
                 SystemMessage(
-                    content="STRICT DIRECTIVE: You announced tools but did NOT call any. You MUST use tools NOW."
+                    content="You did NOT call any tools. Call a tool NOW to get the data."
                 )
             )
 
@@ -852,11 +935,19 @@ Respond in JSON:
 
             final_messages.append(response)
             if current_turn == 0:
-                final_messages.append(
-                    SystemMessage(
-                        content="CONTINUITY HINT: Synthesize findings. End with a question."
+                # Solo task: direct answer, no "end with question" chat behavior
+                if intent == "solo_task":
+                    final_messages.append(
+                        SystemMessage(
+                            content="SYNTHESIS: You have tool results. Now deliver a COMPLETE answer in Ukrainian. Include all specific data (numbers, names, facts). Do NOT say 'check the link' — speak the actual data."
+                        )
                     )
-                )
+                else:
+                    final_messages.append(
+                        SystemMessage(
+                            content="CONTINUITY HINT: Synthesize findings. End with a question."
+                        )
+                    )
 
             tool_executed = await self._process_chat_tool_calls(response.tool_calls, final_messages)
             self._apply_chat_audit_logic(intent, tool_executed, current_turn, final_messages)
@@ -896,9 +987,10 @@ Respond in JSON:
         # Ensure intent is not None for type safety
         assert intent is not None, "Intent should be set after classification"
 
-        # 2. Parallel context gathering
+        # 2. Parallel context gathering (solo_task: fast path, tools only)
         graph_ctx, vector_ctx, tools_info = await self._gather_context_for_chat(
-            intent, should_fetch, resolved_query, use_deep_persona_resolved
+            intent, should_fetch, resolved_query, use_deep_persona_resolved,
+            mode_profile=mode_profile,
         )
 
         # 3. Handle Deep Reasoning if necessary

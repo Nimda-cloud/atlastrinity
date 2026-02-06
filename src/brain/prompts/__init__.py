@@ -426,11 +426,14 @@ MODE DEFINITIONS (choose ONE):
    Also triggers for explicit requests for "deep", "philosophical", "detailed" answers.
    Examples: "Хто ти?", "Яка твоя місія?", "Ти живий?", "Розкажи про свідомість"
 
-3. 'solo_task' — Informational request that Atlas handles independently with tools.
-   Research, web search, file reading, documentation lookup, weather, news, prices.
-   Atlas has: search, filesystem, fetch_url, sequential-thinking, memory, context7.
-   If it involves system MODIFICATION or file CREATION, it's 'task' not 'solo_task'.
-   Examples: "Яка погода?", "Прочитай файл", "Знайди документацію", "Який курс?"
+3. 'solo_task' — Quick research/lookup that Atlas handles ALONE with tools. No Trinity.
+   Anything where Atlas can: search the web, read a file, check maps/routes, fetch a page,
+   look up docs, get weather/news/prices — and then give a direct answer.
+   Atlas has: search, filesystem, fetch_url, googlemaps, memory, context7, puppeteer.
+   KEY: if the user just needs INFORMATION (not system changes), it's solo_task.
+   If it involves system MODIFICATION, file CREATION, or app control → 'task'.
+   Examples: "Яка погода?", "Покажи маршрут від Києва до Одеси", "Знайди інфо в неті",
+   "Прочитай файл", "Який курс долара?", "Знайди документацію по React"
 
 4. 'recall' — User wants to retrieve information about past tasks or conversations.
    NOT for "repeat"/"redo" requests (those are 'task' or 'development').
