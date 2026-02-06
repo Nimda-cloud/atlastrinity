@@ -64,15 +64,7 @@ input_price = 0.0
 output_price = 0.0
 
 [[models]]
-name = "devstral-2512"
-provider = "mistral"
-alias = "devstral-2"
-temperature = 0.0
-input_price = 0.0
-output_price = 0.0
-
-[[models]]
-name = "raptor-mini"
+name = "oswe-vscode-secondary"
 provider = "copilot"
 alias = "raptor-mini"
 temperature = 0.1
@@ -83,6 +75,14 @@ output_price = 0.0
 name = "gpt-5-mini"
 provider = "copilot"
 alias = "gpt-5-mini"
+temperature = 0.1
+input_price = 0.0
+output_price = 0.0
+
+[[models]]
+name = "grok-code-fast-1"
+provider = "copilot"
+alias = "grok-code-fast-1"
 temperature = 0.1
 input_price = 0.0
 output_price = 0.0

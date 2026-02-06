@@ -1,5 +1,6 @@
 import http.server
 import json
+import os
 import signal
 import socketserver
 import sys
@@ -16,7 +17,7 @@ def log(msg):
 class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
     # Track processed requests and uptime
     processed_requests: int = 0
-    start_time: float | None = None
+    start_time: float = 0.0
 
     def do_GET(self):
         CopilotProxyHandler.processed_requests += 1
@@ -61,17 +62,25 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
         log(f"--- Incoming POST to {self.path} ---")
 
         # 1. Read input
-        content_length = int(self.headers.get("Content-Length", 0))
-        post_data = self.rfile.read(content_length)
-
         try:
-            payload = json.loads(post_data)
-            requested_model = payload.get("model", "unknown")
-            log(f"Request model: {requested_model}")
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
+
+            # Log model name
+            try:
+                payload = json.loads(post_data)
+                requested_model = payload.get("model", "unknown")
+                log(f"Request model: {requested_model}")
+            except Exception:
+                pass  # Just logging
 
             # 2. Add required headers
-            # Authenticate with session token from environment or header
-            auth_header = self.headers.get("Authorization")
+            # Authenticate with session token from environment (priority) or header
+            env_token = os.environ.get("COPILOT_SESSION_TOKEN")
+            if env_token and "dummy" not in env_token.lower():
+                auth_header = f"Bearer {env_token}"
+            else:
+                auth_header = self.headers.get("Authorization")
 
             # Copilot required headers
             headers = {
@@ -85,35 +94,34 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
                 headers["Authorization"] = auth_header
 
             # 3. Forward to GitHub Copilot
-            # Vibe/OpenAI style uses /v1/... but GitHub prefers chat/completions directly
             path = self.path
             if path.startswith("/v1/"):
-                path = path[3:]
-            target_url = "https://api.githubcopilot.com" + path
+                path = path.replace("/v1/", "/")
 
-            req = urllib.request.Request(target_url, data=post_data, headers=headers, method="POST")
+            if not path.startswith("/"):
+                path = f"/{path}"
 
-            try:
-                # Add a reasonable timeout (60s) to prevent hangs
-                with urllib.request.urlopen(req, timeout=60) as response:
-                    upstream_status = response.status
-                    log(f"Upstream response code: {upstream_status}")
-                    self.send_response(upstream_status)
-                    for k, v in response.headers.items():
-                        if k.lower() in (
-                            "content-type",
-                            "date",
-                            "x-request-id",
-                            "x-github-request-id",
-                        ):
-                            self.send_header(k, v)
-                    self.end_headers()
-                    self.wfile.write(response.read())
-            except TimeoutError:
-                log("Error: Upstream request timed out (60s)")
-                self.send_response(504)
+            upstream_url = f"https://api.githubcopilot.com{path}"
+            log(f"Forwarding to: {upstream_url}")
+
+            req = urllib.request.Request(
+                upstream_url, data=post_data, headers=headers, method="POST"
+            )
+
+            with urllib.request.urlopen(req, timeout=120) as response:
+                upstream_status = response.getcode()
+                log(f"Upstream response code: {upstream_status}")
+                self.send_response(upstream_status)
+                for k, v in response.headers.items():
+                    if k.lower() in (
+                        "content-type",
+                        "date",
+                        "x-request-id",
+                        "x-github-request-id",
+                    ):
+                        self.send_header(k, v)
                 self.end_headers()
-                self.wfile.write(b"Gateway Timeout: GitHub Copilot did not respond")
+                self.wfile.write(response.read())
 
         except urllib.error.HTTPError as e:
             error_body = e.read().decode(errors="replace")
@@ -129,29 +137,22 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
 
 
 def run(port=8085):
-
     CopilotProxyHandler.start_time = time.time()
-
     server_address = ("127.0.0.1", port)
     # Enable address reuse to avoid "Address already in use" errors
     socketserver.TCPServer.allow_reuse_address = True
     httpd = socketserver.TCPServer(server_address, CopilotProxyHandler)
     log(f"Serving at http://127.0.0.1:{port}")
 
-    def handle_signal(sig, frame):
-        log(f"Received signal {sig}, shutting down...")
-        httpd.server_close()
+    def shutdown_handler(signum, frame):
+        log("Shutting down proxy...")
+        httpd.shutdown()
         sys.exit(0)
 
-    signal.signal(signal.SIGTERM, handle_signal)
-    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGINT, shutdown_handler)
+    signal.signal(signal.SIGTERM, shutdown_handler)
 
-    try:
-        httpd.serve_forever()
-    except Exception as e:
-        log(f"Server error: {e}")
-    finally:
-        httpd.server_close()
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":

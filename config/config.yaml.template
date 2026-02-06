@@ -34,29 +34,29 @@ models:
   # You can change these to your preferred models (e.g., "claude-3.5-sonnet", "gpt-4o-mini", etc.)
   default: "gpt-4o"                    # Default LLM for agents
   vision: "gpt-4o"                     # Vision/multimodal tasks
-  reasoning: "gpt-4.1"                  # Specialized deep reasoning
-  code_analysis: "gpt-4o"              # Code review and analysis
-  consolidation: "raptor-mini"          # Memory consolidation
+  reasoning: "gpt-4.1"                  # Deep reasoning
+  code_analysis: "grok-code-fast-1"      # Fast coding analysis
+  consolidation: "oswe-vscode-secondary"          # Memory consolidation (Raptor native)
   
   # Fallbacks (used when primary unavailable)
   fallback: "gpt-4o"                   # Fallback model
   
   # Sandbox model (used by mcp_sandbox.py)
-  sandbox: "raptor-mini"
+  sandbox: "oswe-vscode-secondary"
 
   # Agents inherit from models.default unless overridden
 
 agents:
   atlas:
     # model: inherited from models.default 
-    deep_model: "gpt-4.1"          # Deep chat model for complex logic, set in your config.yaml
+    deep_model: "gpt-4.1"          # Complex reasoning and planning
     temperature: 0.7
     max_tokens: 2000                 # Standard chat/task mode
     max_tokens_deep: 12000           # Deep persona mode (increased from 8000)
 
   tetyana:
     # model: inherited from models.default
-    reasoning_model: "gpt-5-mini"       # Tool selection reasoning, set in your config.yaml
+    reasoning_model: "gpt-5-mini"       # Efficient routing and tool selection
     vision_model: ""             # Vision tasks, set in your config.yaml
     temperature: 0.5
     max_tokens: 2000
@@ -64,21 +64,21 @@ agents:
   grisha:
     # Three-Phase Verification Architecture:
     # Phase 1: Strategy planning (what to verify, which tools)
-    strategy_model: "gpt-4.1"        # Deep reasoning for verification strategy, set in your config.yaml
+    strategy_model: "gpt-4.1"        # Deep reasoning for verification strategy
     
     # Phase 2: Tool selection & execution (MCP server interaction)
     # model: inherited from models.default
     
     # Phase 3: Result analysis & verdict
     vision_model: ""             # Vision/multimodal verification, set in your config.yaml
-    verdict_model: ""          # Final verdict reasoning, set in your config.yaml
+    verdict_model: "gpt-4.1"          # Logical verdict reasoning
     
     # General settings
     temperature: 0.3
     max_tokens: 1500
     
-    # Two-Phase Verification Sequential-Thinking (NEW)
-    verification_reasoning_model: "gpt-4.1"  # Model for logical verdict analysis, set in your config.yaml
+    # Two-Phase Verification Sequential-Thinking (Quantum)
+    verification_reasoning_model: "gpt-4.1"  # Logic model for verdict analysis
     verification_temperature: 0.2          # Low temp for precise reasoning
     verification_max_tokens: 4000          # Sufficient for deep analysis
 

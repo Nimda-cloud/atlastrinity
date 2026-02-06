@@ -4,7 +4,7 @@ import os
 import sys
 from collections.abc import Callable
 from io import BytesIO
-from typing import Any, cast
+from typing import Any, ClassVar, Optional, Union, cast
 
 import httpx
 import requests
@@ -24,6 +24,10 @@ ContentItem = str | dict[str, Any]
 
 
 class CopilotLLM(BaseChatModel):
+    # Model translation: custom names -> real API model names
+    # Note: 'oswe-vscode-secondary' IS the native ID for 'Raptor Mini' in GitHub API.
+    # No custom model translation - native models only
+
     model_name: str | None = None
     vision_model_name: str | None = None
     api_key: str | None = None

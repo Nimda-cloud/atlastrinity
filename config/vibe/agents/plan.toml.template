@@ -1,8 +1,8 @@
 # Plan agent configuration for Vibe
 # Conservative mode for planning and exploration
 
-# Use the default model from main config
-# active_model = "devstral-2"
+# Use gpt-4.1 for deep planning and reasoning
+active_model = "gpt-4.1"
 system_prompt_id = "cli"
 
 # Optimize: Unrestricted access to all native tools for exploration
