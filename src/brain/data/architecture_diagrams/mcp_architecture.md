@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T13:31:29.019822 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/setup_dev.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T11:58:44.548994 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, biome.json -->
 

@@ -1003,15 +1003,17 @@ def devtools_run_context_check(test_file: str) -> dict[str, Any]:
 
 
 @server.tool()
-def devtools_analyze_trace(log_path: str) -> dict[str, Any]:
+def devtools_analyze_trace(log_path: str = "") -> dict[str, Any]:
     """Analyze an MCP execution log file for logic issues.
 
     Detects infinite loops (repeated tool calls), inefficiencies, and
     potential hallucinations in tool usage.
 
     Args:
-        log_path: Path to the log file (e.g., brain.log or relevant log file).
+        log_path: Path to the log file. Defaults to ~/.config/atlastrinity/logs/brain.log
     """
+    if not log_path:
+        log_path = str(Path.home() / ".config" / "atlastrinity" / "logs" / "brain.log")
     return analyze_log_file(log_path)
 
 
@@ -1303,6 +1305,300 @@ def _export_diagrams(target_mode: str, project_path: Path) -> None:
     except Exception:
         # Export is optional, don't fail on errors
         pass
+
+
+@server.tool()
+def devtools_get_system_map() -> dict[str, Any]:
+    """Get the complete AtlasTrinity system map: all paths, MCP servers, databases, logs, tools.
+
+    Returns a structured map of:
+    - Repository structure (src/, scripts/, config/, vendor/, tests/)
+    - Global paths (~/.config/atlastrinity/): logs, databases, configs, models
+    - All MCP servers with their commands and tool counts
+    - Linter/code quality tool locations and configs
+    - Testing methods for MCP servers
+
+    Use this tool FIRST when you need to find any file, log, database, or tool location.
+    """
+    config_root = Path.home() / ".config" / "atlastrinity"
+    log_dir = config_root / "logs"
+    data_dir = config_root / "data"
+
+    # Collect actual file states
+    logs_found = sorted(str(p) for p in log_dir.glob("*.log*")) if log_dir.exists() else []
+    dbs_found = []
+    for db_path in [
+        config_root / "atlastrinity.db",
+        data_dir / "trinity.db",
+        data_dir / "monitoring.db",
+    ]:
+        if db_path.exists():
+            dbs_found.append({"path": str(db_path), "size_kb": round(db_path.stat().st_size / 1024, 1)})
+
+    # Check golden_fund
+    gf_dir = data_dir / "golden_fund"
+    if gf_dir.exists():
+        gf_files = list(gf_dir.iterdir())
+        dbs_found.append({"path": str(gf_dir), "files": len(gf_files), "type": "directory"})
+
+    # MCP config
+    mcp_config_path = config_root / "mcp" / "config.json"
+    mcp_servers_info = {}
+    if mcp_config_path.exists():
+        try:
+            with open(mcp_config_path, encoding="utf-8") as f:
+                mcp_data = json.load(f)
+            for name, cfg in mcp_data.get("mcpServers", {}).items():
+                if name.startswith("_"):
+                    continue
+                mcp_servers_info[name] = {
+                    "tier": cfg.get("tier", 4),
+                    "command": cfg.get("command", ""),
+                    "disabled": cfg.get("disabled", False),
+                    "transport": cfg.get("transport", "stdio"),
+                }
+        except Exception:
+            pass
+
+    return {
+        "project_root": str(PROJECT_ROOT),
+        "global_config_root": str(config_root),
+        "paths": {
+            "repository": {
+                "src_brain": str(PROJECT_ROOT / "src" / "brain"),
+                "src_mcp_server": str(PROJECT_ROOT / "src" / "mcp_server"),
+                "src_renderer": str(PROJECT_ROOT / "src" / "renderer"),
+                "src_main": str(PROJECT_ROOT / "src" / "main"),
+                "scripts": str(PROJECT_ROOT / "scripts"),
+                "config_templates": str(PROJECT_ROOT / "config"),
+                "vendor": str(PROJECT_ROOT / "vendor"),
+                "tests": str(PROJECT_ROOT / "tests"),
+                "docs": str(PROJECT_ROOT / "docs"),
+                "agent_docs": str(PROJECT_ROOT / ".agent" / "docs"),
+                "protocols": str(PROJECT_ROOT / "src" / "brain" / "data" / "protocols"),
+            },
+            "global": {
+                "config_yaml": str(config_root / "config.yaml"),
+                "behavior_config": str(config_root / "behavior_config.yaml"),
+                "vibe_config": str(config_root / "vibe_config.toml"),
+                "env_secrets": str(config_root / ".env"),
+                "mcp_config": str(mcp_config_path),
+                "log_dir": str(log_dir),
+                "brain_log": str(log_dir / "brain.log"),
+                "main_db": str(config_root / "atlastrinity.db"),
+                "trinity_db": str(data_dir / "trinity.db"),
+                "monitoring_db": str(data_dir / "monitoring.db"),
+                "golden_fund_dir": str(data_dir / "golden_fund"),
+                "memory_dir": str(config_root / "memory"),
+                "screenshots_dir": str(config_root / "screenshots"),
+                "workspace": str(config_root / "workspace"),
+                "vibe_workspace": str(config_root / "vibe_workspace"),
+                "models_dir": str(config_root / "models"),
+                "cache_dir": str(config_root / "cache"),
+            },
+        },
+        "logs": logs_found,
+        "databases": dbs_found,
+        "mcp_servers": mcp_servers_info,
+        "linter_configs": {
+            "ruff": str(PROJECT_ROOT / "pyproject.toml"),
+            "pyright": str(PROJECT_ROOT / "pyrightconfig.json"),
+            "pyrefly": str(PROJECT_ROOT / "pyrefly.toml"),
+            "biome": str(PROJECT_ROOT / "biome.json"),
+            "eslint": str(PROJECT_ROOT / "eslint.config.mjs"),
+            "knip": str(PROJECT_ROOT / "knip.json"),
+            "lefthook": str(PROJECT_ROOT / "lefthook.yml"),
+            "tsconfig": str(PROJECT_ROOT / "tsconfig.json"),
+            "tsconfig_main": str(PROJECT_ROOT / "tsconfig.main.json"),
+            "safety_policy": str(PROJECT_ROOT / ".safety-policy.yml"),
+            "secrets_baseline": str(PROJECT_ROOT / ".secrets.baseline"),
+        },
+        "testing": {
+            "health_check": "devtools_check_mcp_health()",
+            "inspector_list": "mcp_inspector_list_tools(server_name)",
+            "inspector_call": "mcp_inspector_call_tool(server_name, tool_name, args)",
+            "sandbox_test": "devtools_run_mcp_sandbox(all_servers=True)",
+            "log_analysis": "devtools_analyze_trace()",
+            "scripts": {
+                "health": str(PROJECT_ROOT / "scripts" / "check_mcp_health.py"),
+                "sandbox": str(PROJECT_ROOT / "scripts" / "mcp_sandbox.py"),
+                "integration": str(PROJECT_ROOT / "scripts" / "test_mcp_integration.py"),
+                "validate": str(PROJECT_ROOT / "scripts" / "validate_mcp_servers.py"),
+                "macos_tools": str(PROJECT_ROOT / "scripts" / "test_all_macos_tools.py"),
+                "system_health": str(PROJECT_ROOT / "scripts" / "system_health_check.py"),
+            },
+        },
+    }
+
+
+@server.tool()
+def devtools_test_all_mcp_native() -> dict[str, Any]:
+    """Test ALL enabled MCP servers natively by spawning each server process,
+    listing its tools via stdio JSON-RPC, and reporting results.
+
+    This is a quick smoke test that verifies each server can start and respond.
+    For deeper testing, use devtools_run_mcp_sandbox().
+
+    Returns:
+        Dict with per-server results: status, tool_count, response_time_ms, error.
+    """
+    import time
+
+    config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
+    if not config_path.exists():
+        return {"error": "MCP config not found", "path": str(config_path)}
+
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+    except Exception as e:
+        return {"error": f"Failed to load MCP config: {e}"}
+
+    results = {}
+    servers = config.get("mcpServers", {})
+
+    for name, cfg in servers.items():
+        if name.startswith("_"):
+            continue
+        if cfg.get("disabled", False):
+            results[name] = {"status": "disabled", "tier": cfg.get("tier", 4)}
+            continue
+
+        transport = cfg.get("transport", "stdio")
+        if transport == "internal":
+            results[name] = {"status": "internal", "tier": cfg.get("tier", 4), "note": "Native service"}
+            continue
+
+        command = cfg.get("command", "")
+        args = cfg.get("args", [])
+        env_vars = cfg.get("env", {})
+
+        # Resolve placeholders
+        command = command.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+        command = command.replace("${HOME}", str(Path.home()))
+        resolved_args = []
+        for arg in args:
+            arg = arg.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+            arg = arg.replace("${HOME}", str(Path.home()))
+            resolved_args.append(arg)
+
+        env = os.environ.copy()
+        for k, v in env_vars.items():
+            v = v.replace("${PROJECT_ROOT}", str(PROJECT_ROOT))
+            v = v.replace("${HOME}", str(Path.home()))
+            v = v.replace("${GOOGLE_MAPS_API_KEY}", os.environ.get("GOOGLE_MAPS_API_KEY", ""))
+            v = v.replace("${GITHUB_TOKEN}", os.environ.get("GITHUB_TOKEN", ""))
+            env[k] = v
+        env["PYTHONPATH"] = str(PROJECT_ROOT)
+
+        # JSON-RPC initialize + tools/list request
+        init_request = json.dumps({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "devtools-test", "version": "1.0"},
+            },
+        })
+        list_request = json.dumps({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list",
+            "params": {},
+        })
+        stdin_data = init_request + "\n" + list_request + "\n"
+
+        full_cmd = [command, *resolved_args]
+        start = time.time()
+
+        try:
+            proc = subprocess.run(
+                full_cmd,
+                input=stdin_data,
+                capture_output=True,
+                text=True,
+                timeout=15,
+                env=env,
+                cwd=str(PROJECT_ROOT),
+            )
+            elapsed_ms = round((time.time() - start) * 1000, 1)
+
+            stdout = proc.stdout.strip()
+            if not stdout:
+                results[name] = {
+                    "status": "error",
+                    "tier": cfg.get("tier", 4),
+                    "error": proc.stderr[:200] if proc.stderr else "Empty response",
+                    "response_time_ms": elapsed_ms,
+                }
+                continue
+
+            # Parse JSON-RPC responses (may be multiple lines)
+            tool_count = 0
+            for line in stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    resp = json.loads(line)
+                    if resp.get("id") == 2 and "result" in resp:
+                        tools = resp["result"].get("tools", [])
+                        tool_count = len(tools)
+                except json.JSONDecodeError:
+                    continue
+
+            if tool_count > 0:
+                results[name] = {
+                    "status": "online",
+                    "tier": cfg.get("tier", 4),
+                    "tool_count": tool_count,
+                    "response_time_ms": elapsed_ms,
+                }
+            else:
+                results[name] = {
+                    "status": "started",
+                    "tier": cfg.get("tier", 4),
+                    "tool_count": 0,
+                    "response_time_ms": elapsed_ms,
+                    "note": "Server started but tools/list returned 0 (may need initialized notification)",
+                }
+
+        except subprocess.TimeoutExpired:
+            results[name] = {
+                "status": "timeout",
+                "tier": cfg.get("tier", 4),
+                "error": "Server did not respond within 15s",
+            }
+        except FileNotFoundError:
+            results[name] = {
+                "status": "not_found",
+                "tier": cfg.get("tier", 4),
+                "error": f"Command not found: {full_cmd[0]}",
+            }
+        except Exception as e:
+            results[name] = {
+                "status": "error",
+                "tier": cfg.get("tier", 4),
+                "error": str(e)[:200],
+            }
+
+    # Summary
+    online = sum(1 for r in results.values() if r.get("status") in ("online", "started", "internal"))
+    offline = sum(1 for r in results.values() if r.get("status") in ("error", "timeout", "not_found"))
+    disabled = sum(1 for r in results.values() if r.get("status") == "disabled")
+
+    return {
+        "summary": {
+            "total": len(results),
+            "online": online,
+            "offline": offline,
+            "disabled": disabled,
+            "health_pct": round(online / max(1, len(results) - disabled) * 100, 1),
+        },
+        "servers": results,
+    }
 
 
 if __name__ == "__main__":

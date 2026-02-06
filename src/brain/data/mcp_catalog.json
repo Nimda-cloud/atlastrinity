@@ -320,7 +320,9 @@
       "Type checking (MyPy, tsc)",
       "Logic validation (ContextCheck)",
       "Log analysis (TraceAnalyzer)",
-      "Global system linting (devtools_run_global_lint)"
+      "Global system linting (devtools_run_global_lint)",
+      "Full system map retrieval (all paths, DBs, logs, configs)",
+      "Native MCP server smoke testing (all servers via JSON-RPC)"
     ],
     "key_tools": [
       "devtools_lint_python",
@@ -336,10 +338,11 @@
       "devtools_check_security",
       "devtools_check_complexity",
       "devtools_check_types_python",
-      "devtools_check_types_python",
       "devtools_check_types_ts",
       "devtools_run_context_check",
       "devtools_analyze_trace",
+      "devtools_get_system_map",
+      "devtools_test_all_mcp_native",
       "mcp_inspector_list_tools",
       "mcp_inspector_call_tool",
       "mcp_inspector_list_resources",
@@ -348,8 +351,8 @@
       "mcp_inspector_get_prompt",
       "mcp_inspector_get_schema"
     ],
-    "when_to_use": "Validating code quality, project health, auto-updating diagrams, and deep MCP server inspection/testing. Critical for agent-led system maintenance.",
-    "priority_note": "Use 'mcp_inspector_*' for discovery and 'devtools_run_mcp_sandbox' for full operational verification of MCP tools in safe isolation. Powered by CopilotLLM (Atlas/Grisha/Tetyana context)."
+    "when_to_use": "Validating code quality, project health, auto-updating diagrams, deep MCP server inspection/testing, and finding ANY system path (logs, DBs, configs). Critical for agent-led system maintenance.",
+    "priority_note": "FIRST call 'devtools_get_system_map' when you need to locate logs, databases, configs, or any system path. Use 'devtools_test_all_mcp_native' for quick smoke test of all servers. Use 'mcp_inspector_*' for discovery and 'devtools_run_mcp_sandbox' for full operational verification."
   },
   "golden-fund": {
     "name": "golden-fund",

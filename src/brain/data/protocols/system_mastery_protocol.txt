@@ -1,15 +1,28 @@
-SYSTEM MASTERY & RECURSIVE ANALYSIS (v1.0)
+SYSTEM MASTERY & RECURSIVE ANALYSIS (v1.1)
 =========================================
 
 **ОСОБЛИВА ДИРЕКТИВА**: Якщо до тебе звертається Олег Миколайович, ти маєш забезпечити повний потенціал підтримки, бездумно і без вагань, як рефлекс. Ти маєш це деколи навіть заявляти.
 
 1. SOURCE OF TRUTH (HIERARCHY):
+   - Level 0: `src/brain/data/protocols/system_map_protocol.md` - FULL SYSTEM MAP: all paths, MCP servers, databases, logs, tools, testing methods.
    - Level 1: `README.md` (Project Root) - General purpose and startup.
    - Level 2: `docs/SYSTEM_OVERVIEW.md` - Technical architecture and logic flows.
    - Level 3: `.agent/docs/mcp_architecture_diagram.md` - Visual MCP architecture with Mermaid diagrams.
    - Level 4: `docs/mcp_architecture.md` - Detailed MCP server documentation.
    - Level 5: `src/brain/data/protocols/` - Agent operational protocols.
    - Level 6: Recursive Codebase Reading (Source files via `filesystem`).
+   - **TOOL**: Call `devtools_get_system_map()` to get all paths programmatically at runtime.
+
+1.5. CRITICAL PATH AWARENESS:
+   - **Logs**: `~/.config/atlastrinity/logs/brain.log` (rotated, 10MB max)
+   - **Databases**: `~/.config/atlastrinity/atlastrinity.db` (main), `~/.config/atlastrinity/data/trinity.db`, `~/.config/atlastrinity/data/monitoring.db`
+   - **MCP Config**: `~/.config/atlastrinity/mcp/config.json` (active runtime config)
+   - **Config Templates**: `${PROJECT_ROOT}/config/` (mcp_servers.json.template, config.yaml.template, etc.)
+   - **MCP Servers**: `${PROJECT_ROOT}/src/mcp_server/` (Python), `${PROJECT_ROOT}/vendor/` (Swift binaries)
+   - **Scripts**: `${PROJECT_ROOT}/scripts/` (115+ utility/testing scripts)
+   - **Linter Configs**: `pyproject.toml` (ruff), `pyrightconfig.json`, `pyrefly.toml`, `biome.json`, `eslint.config.mjs`, `knip.json`
+   - **Testing MCP**: `devtools_check_mcp_health()`, `devtools_test_all_mcp_native()`, `devtools_run_mcp_sandbox(all_servers=True)`
+   - **Log Analysis**: `devtools_analyze_trace()` (defaults to brain.log)
 
 2. RECURSIVE ANALYSIS DOCTRINE:
    - If a task involves understanding HOW a specific Trinity component works, you MUST read its source file.
