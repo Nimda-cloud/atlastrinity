@@ -1335,6 +1335,17 @@ print('TTS OK')
             print_warning(f"Помилка завантаження TTS: {e}")
 
 
+def _pip_install_safe(package: str):
+    """Install a pip package using venv python if available, otherwise --user flag."""
+    venv_python = VENV_PATH / "bin" / "python"
+    if venv_python.exists():
+        subprocess.run([str(venv_python), "-m", "pip", "install", package], check=False)
+    else:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--user", package], check=False
+        )
+
+
 def backup_databases():
     """Архівує всі бази даних з шифруванням та фільтрацією секретів"""
     print_step("Створення безпечних резервних копій баз даних...")
@@ -1345,7 +1356,7 @@ def backup_databases():
             import cryptography as cryptography  # noqa: F401, PLC0414
         except ImportError:
             print_info("Модуль 'cryptography' відсутній. Встановлення...")
-            subprocess.run([sys.executable, "-m", "pip", "install", "cryptography"], check=False)
+            _pip_install_safe("cryptography")
 
         from scripts.secure_backup import SecureBackupManager
 
@@ -1421,7 +1432,7 @@ def restore_databases():
             import cryptography as cryptography  # noqa: F401, PLC0414
         except ImportError:
             print_info("Модуль 'cryptography' відсутній. Встановлення...")
-            subprocess.run([sys.executable, "-m", "pip", "install", "cryptography"], check=False)
+            _pip_install_safe("cryptography")
 
         from scripts.secure_backup import SecureBackupManager
 
@@ -1634,12 +1645,6 @@ def ensure_frontend_config():
 
 
 def main():
-    # 0. Pre-flight: upgrade pip to avoid warnings
-    try:
-        subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], check=False)
-    except Exception:
-        pass
-
     print(
         f"\n{Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.ENDC}",
     )

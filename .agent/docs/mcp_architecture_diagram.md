@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T06:22:11.310654 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe/agents/plan.toml.template -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T19:15:03.829280 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

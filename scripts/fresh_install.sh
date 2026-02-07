@@ -68,7 +68,15 @@ fi
 echo "🛡️  Backup Check"
 if confirm "Create database backup before wiping?" "Y"; then
     echo "📦 Backing up databases..."
-    python3 scripts/setup_dev.py --backup
+    # Use venv python if available (venv hasn't been deleted yet), otherwise python3.12/python3
+    if [ -x ".venv/bin/python" ]; then
+        BACKUP_PYTHON=".venv/bin/python"
+    elif command -v python3.12 &> /dev/null; then
+        BACKUP_PYTHON="python3.12"
+    else
+        BACKUP_PYTHON="python3"
+    fi
+    $BACKUP_PYTHON scripts/setup_dev.py --backup
     if [ $? -eq 0 ]; then
         echo "✅ Backup completed successfully."
     else
@@ -80,7 +88,7 @@ else
 fi
 
 echo ""
-echo "📦 Крок 1/6: Видалення Python venv..."
+echo "📦 Крок 1/8: Видалення Python venv..."
 if [ -d ".venv" ]; then
     rm -rf .venv
     echo "✅ .venv видалено"
@@ -135,8 +143,6 @@ else
     echo "ℹ️  XcodeBuildMCP не існує"
 fi
 
-echo ""
-echo "📦 Крок 6/8: Видалення глобальної конфігурації..."
 echo ""
 echo "📦 Крок 6/8: Видалення глобальної конфігурації..."
 
