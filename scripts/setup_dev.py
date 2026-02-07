@@ -1341,9 +1341,7 @@ def _pip_install_safe(package: str):
     if venv_python.exists():
         subprocess.run([str(venv_python), "-m", "pip", "install", package], check=False)
     else:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--user", package], check=False
-        )
+        subprocess.run([sys.executable, "-m", "pip", "install", "--user", package], check=False)
 
 
 def backup_databases():

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T06:26:10.655285 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, scripts/setup_dev.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T06:22:11.310654 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe/agents/plan.toml.template -->
 
