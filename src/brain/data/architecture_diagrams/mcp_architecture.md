@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T01:19:00.833574 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe_config.toml.template -->
+
+
+<!-- AUTO-UPDATED: 2026-02-08T01:18:41.762880 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe_config.toml.template -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T00:52:13.166168 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/grisha.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

@@ -15,8 +15,10 @@ except ImportError:  # pragma: no cover
         verbose: bool = False,
         interpolate: bool = True,
         encoding: str | None = "utf-8",
-    ) -> dict[str, str | None]:  # type: ignore[override]
+    ) -> dict[str, str | None]:
         return {}
+
+    # type: ignore[reportAssignmentType]
 
 
 import re

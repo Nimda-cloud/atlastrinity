@@ -340,10 +340,39 @@ async def reset_session():
 
 @app.get("/api/sessions")
 async def get_sessions():
-    """List all available sessions"""
+    """List all available sessions (Active in Redis + Persistent in DB)"""
+    from .db.manager import db_manager
     from .state_manager import state_manager
 
-    return await state_manager.list_sessions()
+    # 1. Get active sessions from Redis
+    active_sessions = await state_manager.list_sessions()
+
+    # 2. Get persistent sessions from DB
+    persistent_sessions = await db_manager.list_sessions(limit=100)
+
+    # 3. Merge results, deduplicating by ID
+    # Use a dict to merge, giving priority to active session metadata if available
+    merged: dict[str, dict[str, Any]] = {}
+
+    for s in persistent_sessions:
+        merged[s["id"]] = s
+
+    for s in active_sessions:
+        s_id = s["id"]
+        if s_id in merged:
+            merged[s_id]["source"] = "active"
+        else:
+            merged[s_id] = {
+                "id": s_id,
+                "source": "active",
+                "theme": "Active Session",
+            }
+
+    # Return as sorted list (newest first based on started_at if available)
+    result = list(merged.values())
+    result.sort(key=lambda x: x.get("started_at", ""), reverse=True)
+
+    return result
 
 
 @app.post("/api/sessions/restore")

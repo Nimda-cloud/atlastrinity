@@ -399,6 +399,34 @@ class DatabaseManager:
             raise RuntimeError("Database not initialized")
         return cast("AsyncSession", self._session_maker())
 
+    async def list_sessions(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Retrieve persistent session history from the database."""
+        if not self.available:
+            return []
+
+        from sqlalchemy import select
+
+        from src.brain.db.schema import Session as DBSession
+
+        try:
+            async with await self.get_session() as session:
+                stmt = select(DBSession).order_by(DBSession.started_at.desc()).limit(limit)
+                res = await session.execute(stmt)
+                db_sessions = res.scalars().all()
+
+                return [
+                    {
+                        "id": str(s.id),
+                        "started_at": s.started_at.isoformat() if s.started_at else None,
+                        "theme": s.metadata_blob.get("theme", "Untitled Session"),
+                        "source": "db",
+                    }
+                    for s in db_sessions
+                ]
+        except Exception as e:
+            print(f"[DB] Failed to list sessions: {e}", file=sys.stderr)
+            return []
+
     async def close(self):
         if self._engine:
             await self._engine.dispose()

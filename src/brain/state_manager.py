@@ -10,19 +10,18 @@ import asyncio
 import json
 import os
 from datetime import datetime
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
-try:
-    import redis.asyncio as aioredis  # type: ignore
-
-    REDIS_AVAILABLE = True
-except ImportError:
+if TYPE_CHECKING:
+    import redis.asyncio as aioredis
+else:
     try:
-        import redis as aioredis  # type: ignore
-
-        REDIS_AVAILABLE = True
+        import redis.asyncio as aioredis
     except ImportError:
-        REDIS_AVAILABLE = False
+        try:
+            import redis as aioredis
+        except ImportError:
+            aioredis = None
 
 from .logger import logger
 
@@ -42,7 +41,7 @@ class StateManager:
         self.prefix = prefix
         self.available = False
 
-        if not REDIS_AVAILABLE:
+        if aioredis is None:
             logger.warning("[STATE] Redis not installed. Running without persistence.")
             return
 
@@ -50,7 +49,7 @@ class StateManager:
         redis_url = os.getenv("REDIS_URL") or config.get("state.redis_url")
 
         if redis_url:
-            self.redis_client: Any | None = aioredis.Redis.from_url(
+            self.redis_client: aioredis.Redis = aioredis.Redis.from_url(
                 redis_url,
                 decode_responses=True,
                 socket_connect_timeout=2,
@@ -78,9 +77,9 @@ class StateManager:
         try:
             key = self._key(f"session:{session_id}")
             # Ensure state is JSON serializable
-            await self.redis_client.set(key, json.dumps(state, default=str))  # type: ignore
+            await self.redis_client.set(key, json.dumps(state, default=str))
             # Also update last session pointer
-            await self.redis_client.set(self._key("last_session"), session_id)  # type: ignore
+            await self.redis_client.set(self._key("last_session"), session_id)
             logger.info(f"[STATE] Session {session_id} saved")
         except Exception as e:
             logger.error(f"[STATE] Failed to save session: {e}")
@@ -91,7 +90,7 @@ class StateManager:
             return None
         try:
             key = self._key(f"session:{session_id}")
-            data = await self.redis_client.get(key)  # type: ignore
+            data = await self.redis_client.get(key)
             if data:
                 return cast("dict[Any, Any] | None", json.loads(data))
             return None
@@ -105,7 +104,7 @@ class StateManager:
             return []
         try:
             pattern = self._key("session:*")
-            keys = await self.redis_client.keys(pattern)  # type: ignore
+            keys = await self.redis_client.keys(pattern)
             sessions = []
             for k in keys:
                 # Key is byte if decode_responses=False, but we set it True
@@ -122,7 +121,7 @@ class StateManager:
             return
         try:
             key = self._key(f"session:{session_id}")
-            await self.redis_client.delete(key)  # type: ignore
+            await self.redis_client.delete(key)
         except Exception as e:
             logger.error(f"[STATE] Failed to delete session: {e}")
 
@@ -141,7 +140,7 @@ class StateManager:
                 "timestamp": datetime.now().isoformat(),
                 "result": result,
             }
-            await self.redis_client.set(key, json.dumps(checkpoint_data, default=str))  # type: ignore
+            await self.redis_client.set(key, json.dumps(checkpoint_data, default=str))
         except Exception as e:
             logger.error(f"[STATE] Checkpoint failed: {e}")
 
