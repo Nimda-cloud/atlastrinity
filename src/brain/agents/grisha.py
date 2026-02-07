@@ -1641,7 +1641,7 @@ class Grisha(BaseAgent):
 
             # Parse step_id safely
             parsed_seq = self._safe_parse_step_id(step_id)
-            
+
             # If step_id cannot be parsed to int, use string-based query
             if parsed_seq is None:
                 logger.debug(f"[GRISHA] Step ID '{step_id}' is non-numeric, using fallback query")
