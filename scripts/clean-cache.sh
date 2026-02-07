@@ -35,9 +35,14 @@ rm -rf ~/Library/Caches/atlastrinity* 2>/dev/null
 echo "  • Очищення локального кешу конфігурації..."
 rm -rf ~/.config/atlastrinity/cache/* 2>/dev/null
 
-# Очищення Redis
-echo "  • Очищення Redis (flushall)..."
-redis-cli flushall 2>/dev/null || echo "    (Redis не знайдено або не запущено)"
+# Очищення Redis (ВИБІРКОВЕ - зберігаємо сесії!)
+echo "  • Очищення Redis (cache only, preserving sessions)..."
+# Видаляємо тільки кеш-ключі, зберігаючи сесії та історію завдань
+redis-cli KEYS "cache:*" 2>/dev/null | xargs -r redis-cli DEL 2>/dev/null || true
+redis-cli KEYS "temp:*" 2>/dev/null | xargs -r redis-cli DEL 2>/dev/null || true
+redis-cli KEYS "lock:*" 2>/dev/null | xargs -r redis-cli DEL 2>/dev/null || true
+# НЕ видаляємо: session:*, task:*, tasks:*, history:*, state:*
+echo "    (Sessions preserved)"
 
 # Очищення білдів
 echo "  • Очищення дистрибутивів та білд-інфо..."
