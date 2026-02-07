@@ -1621,6 +1621,17 @@ class Grisha(BaseAgent):
                 "template_root": None,
             }
 
+    def _safe_parse_step_id(self, step_id: str) -> int | None:
+        """Safely parse step_id to int, returning None if not parseable."""
+        try:
+            step_str = str(step_id).split(".")[-1] if "." in str(step_id) else str(step_id)
+            # Check if it's a valid number (handle 'unknown' and other non-numeric values)
+            if step_str.isdigit() or (step_str.startswith("-") and step_str[1:].isdigit()):
+                return int(step_str)
+            return None
+        except (ValueError, TypeError):
+            return None
+
     async def _fetch_execution_trace(self, step_id: str, task_id: str | None = None) -> str:
         """Fetches the raw tool execution logs from the database for a given step.
         This serves as the 'single source of truth' for verification.
@@ -1628,8 +1639,33 @@ class Grisha(BaseAgent):
         try:
             from ..mcp_manager import mcp_manager
 
+            # Parse step_id safely
+            parsed_seq = self._safe_parse_step_id(step_id)
+            
+            # If step_id cannot be parsed to int, use string-based query
+            if parsed_seq is None:
+                logger.debug(f"[GRISHA] Step ID '{step_id}' is non-numeric, using fallback query")
+                # Fallback: try to find recent executions without specific sequence number
+                sql = """
+                    SELECT te.tool_name, te.arguments, te.result, ts.status as step_status, te.created_at 
+                    FROM tool_executions te
+                    LEFT JOIN task_steps ts ON te.step_id = ts.id
+                    ORDER BY te.created_at DESC 
+                    LIMIT 5;
+                """
+                params = {}
+                if task_id:
+                    sql = """
+                        SELECT te.tool_name, te.arguments, te.result, ts.status as step_status, te.created_at 
+                        FROM tool_executions te
+                        LEFT JOIN task_steps ts ON te.step_id = ts.id
+                        WHERE ts.task_id = :task_id
+                        ORDER BY te.created_at DESC 
+                        LIMIT 5;
+                    """
+                    params = {"task_id": task_id}
             # Query db for tool executions related to this step, including the status from task_steps
-            if task_id:
+            elif task_id:
                 sql = """
                     SELECT te.tool_name, te.arguments, te.result, ts.status as step_status, te.created_at 
                     FROM tool_executions te
@@ -1639,9 +1675,7 @@ class Grisha(BaseAgent):
                     LIMIT 5;
                 """
                 params = {
-                    "seq": int(str(step_id).split(".")[-1])
-                    if "." in str(step_id)
-                    else int(step_id),
+                    "seq": parsed_seq,
                     "task_id": task_id,
                 }
             else:
@@ -1653,9 +1687,7 @@ class Grisha(BaseAgent):
                     ORDER BY te.created_at DESC 
                     LIMIT 5;
                 """
-                params = {
-                    "seq": int(str(step_id).split(".")[-1]) if "." in str(step_id) else int(step_id)
-                }
+                params = {"seq": parsed_seq}
 
             rows = await mcp_manager.query_db(sql, params)
 

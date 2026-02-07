@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T23:18:15.101718 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/windsurf.py, scripts/test_windsurf_provider.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-07T23:13:04.482001 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/windsurf.py, scripts/test_windsurf_provider.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T12:05:24.422554 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, providers/get_windsurf_token.py -->
 
