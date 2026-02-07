@@ -29,35 +29,45 @@ if [ -n "$GH_TOKEN_VAL" ]; then
 fi
 
 # Check if authenticated (via GH_TOKEN or existing session)
-if ! gh auth status &> /dev/null; then
+# Use 'gh api user' which is more robust than 'gh auth status' as it validates the current token directly
+if ! gh api user --jq '.login' &> /dev/null; then
     echo "❌ Authentication failed. Ensure GITHUB_TOKEN in .env is valid or run: gh auth login"
     exit 1
 fi
 
-echo "🎬 Starting secrets synchronization for $(basename $(pwd))..."
+# Exclude GITHUB_TOKEN (used for auth) and other common non-secret env vars if any
+EXCLUDE_LIST=("GITHUB_TOKEN" "PATH" "PWD" "HOME")
 
-# List of secrets to sync
-SECRETS_TO_SYNC=(
-    "MISTRAL_API_KEY"
-    "COPILOT_API_KEY"
-    "GOOGLE_MAPS_API_KEY"
-    "OPENAI_API_KEY"
-    "ANTHROPIC_API_KEY"
-    "SONAR_TOKEN"
-)
+echo "🎬 Starting secrets synchronization for $(basename $(pwd))..."
 
 SYNC_COUNT=0
 
-for SECRET in "${SECRETS_TO_SYNC[@]}"; do
-    # Extract value from .env, excluding comments and handling simple Key=Value pairs
+# Extract all keys that look like secrets/configs (CAPITAL_LETTERS=...)
+# Excludes comments and empty lines
+KEYS=$(grep -E "^[A-Z0-9_]+=" "$ENV_FILE" | cut -d '=' -f1)
+
+for SECRET in $KEYS; do
+    # Check if in exclude list
+    SKIP=false
+    for EXCLUDE in "${EXCLUDE_LIST[@]}"; do
+        if [[ "$SECRET" == "$EXCLUDE" ]]; then
+            SKIP=true
+            break
+        fi
+    done
+    
+    if [ "$SKIP" = true ]; then
+        echo "ℹ️  Skipping $SECRET (excluded)"
+        continue
+    fi
+
+    # Extract value, handling quotes
     VALUE=$(grep "^$SECRET=" "$ENV_FILE" | head -n 1 | cut -d '=' -f2- | sed "s/^['\"]//;s/['\"]$//")
     
     if [ -n "$VALUE" ]; then
         echo "📤 Syncing $SECRET..."
         echo "$VALUE" | gh secret set "$SECRET"
         SYNC_COUNT=$((SYNC_COUNT + 1))
-    else
-        echo "ℹ️  Skipping $SECRET (not found in .env)"
     fi
 done
 

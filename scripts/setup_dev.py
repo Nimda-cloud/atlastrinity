@@ -154,6 +154,7 @@ def check_system_tools():
         "swift",
         "npm",
         "vibe",
+        "gh",
         "oxlint",
         "knip",
         "ruff",
@@ -257,6 +258,17 @@ def check_system_tools():
     if "swift" in missing:
         print_error("Swift необхідний для компіляції macos-use та googlemaps MCP серверів!")
         print_info("Встановіть Xcode або Command Line Tools: xcode-select --install")
+
+    # Auto-install GitHub CLI if missing
+    if "gh" in missing:
+        print_info("GitHub CLI (gh) не знайдено. Встановлення через Brew...")
+        try:
+            subprocess.run(["brew", "install", "gh"], check=True)
+            print_success("GitHub CLI встановлено")
+            if "gh" in missing:
+                missing.remove("gh")
+        except Exception as e:
+            print_warning(f"Не вдалося встановити GitHub CLI: {e}")
 
     # 4. Check for Full Xcode (for XcodeBuildMCP)
     xcode_app = Path("/Applications/Xcode.app")
@@ -635,12 +647,21 @@ def install_brew_deps():
                     continue
 
             # Перевіряємо статус
-            result = subprocess.run(
-                ["brew", "services", "info", service, "--json"],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
+            try:
+                result = subprocess.run(
+                    ["brew", "services", "info", service, "--json"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+            except Exception:
+                # Fallback if --json is not supported or brew services fails
+                result = subprocess.run(
+                    ["brew", "services", "list"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
 
             is_running = False
             if result.returncode == 0:
@@ -1329,7 +1350,7 @@ print('TTS OK')
 """
             env = os.environ.copy()
             cmd = [venv_python, "-c", python_script]
-            subprocess.run(cmd, check=True, timeout=600, env=env)
+            subprocess.run(cmd, check=True, timeout=1800, env=env)
             print_success("TTS моделі готові")
         except Exception as e:
             print_warning(f"Помилка завантаження TTS: {e}")
@@ -1875,32 +1896,53 @@ def main():
     print("  2. Запустіть систему: npm run dev")
     print()
 
-    mcp_info = [
-        ("memory", "Граф знань & Long-term Memory (Python)"),
-        ("macos-use", "Нативний контроль macOS + Термінал (Swift)"),
-        ("vibe", "Coding Agent & Self-Healing (Python)"),
-        ("filesystem", "Файлові операції (Node)"),
-        ("sequential-thinking", "Глибоке мислення (Node)"),
-        ("xcodebuild", "Xcode Build & Test Automation (Node)"),
-        ("chrome-devtools", "Автоматизація Chrome (Node)"),
-        ("puppeteer", "Веб-скрейпінг та пошук (Node)"),
-        ("github", "Офіційний GitHub MCP (Node)"),
-        ("duckduckgo-search", "Швидкий пошук (Python)"),
-        ("whisper-stt", "Локальне розпізнавання мови (Python)"),
-        ("graph", "Візуалізація графу знань (Python)"),
-        ("context7", "Документація бібліотек та API (Node)"),
-        ("devtools", "Лінтер та аналіз коду (Python)"),
-        ("react-devtools", "React Introspection & Fiber Analysis (Node)"),
-        ("redis", "Оглядовість кешу та сесій (Python)"),
-        ("golden-fund", "Knowledge Base & Data Persistence (Python)"),
-        ("data-analysis", "Pandas Data Analysis Engine (Python)"),
-        ("googlemaps", "Google Maps API з Cyberpunk фільтром (Swift)"),
-    ]
+    mcp_info = []
+    # Try to load all servers from config to be dynamic
+    if mcp_config_path.exists():
+        try:
+            with open(mcp_config_path, encoding="utf-8") as f:
+                mcp_cfg = json.load(f)
+                all_servers = mcp_cfg.get("mcpServers", {})
+                for s_id, s_info in all_servers.items():
+                    if s_id.startswith("_"):
+                        continue  # Skip comments
+                    desc = s_info.get("description", "No description available")
+                    # Truncate long descriptions for cleaner output
+                    if len(desc) > 80:
+                        desc = desc[:77] + "..."
+                    mcp_info.append((s_id, desc))
+        except Exception:
+            pass
+
+    if not mcp_info:
+        # Fallback to hardcoded list if config is unreadable
+        mcp_info = [
+            ("memory", "Граф знань & Long-term Memory (Python)"),
+            ("macos-use", "Нативний контроль macOS + Термінал (Swift)"),
+            ("vibe", "Coding Agent & Self-Healing (Python)"),
+            ("filesystem", "Файлові операції (Node)"),
+            ("sequential-thinking", "Глибоке мислення (Node)"),
+            ("xcodebuild", "Xcode Build & Test Automation (Node)"),
+            ("chrome-devtools", "Автоматизація Chrome (Node)"),
+            ("puppeteer", "Веб-скрейпінг та пошук (Node)"),
+            ("github", "Офіційний GitHub MCP (Node)"),
+            ("duckduckgo-search", "Швидкий пошук (Python)"),
+            ("whisper-stt", "Локальне розпізнавання мови (Python)"),
+            ("graph", "Візуалізація графу знань (Python)"),
+            ("context7", "Документація бібліотек та API (Node)"),
+            ("devtools", "Лінтер та аналіз коду (Python)"),
+            ("react-devtools", "React Introspection & Fiber Analysis (Node)"),
+            ("redis", "Оглядовість кешу та сесій (Python)"),
+            ("golden-fund", "Knowledge Base & Data Persistence (Python)"),
+            ("data-analysis", "Pandas Data Analysis Engine (Python)"),
+            ("googlemaps", "Google Maps API з Cyberpunk фільтром (Swift)"),
+            ("tour-guide", "Interactive Virtual Tour Control (Internal)"),
+        ]
 
     print_info(
         f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else len(mcp_info)}):"
     )
-    for s_id, s_desc in mcp_info:
+    for s_id, s_desc in sorted(mcp_info):
         # Check if actually enabled in config
         status = ""
         if enabled_servers and s_id not in enabled_servers:

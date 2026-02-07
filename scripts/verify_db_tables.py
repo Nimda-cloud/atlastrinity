@@ -98,6 +98,11 @@ async def verify_chromadb():
         print("[DB] WARNING: chromadb not installed. Skipping check.")
     except Exception as e:
         print(f"[DB] ChromaDB Error: {e}")
+        # Log more details if it's a type error
+        if isinstance(e, TypeError):
+            import traceback
+
+            traceback.print_exc()
         return False
     return True
 

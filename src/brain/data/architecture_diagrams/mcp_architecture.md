@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T18:46:33.722267 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, docker-compose.yml -->
+
+
+<!-- AUTO-UPDATED: 2026-02-07T18:45:12.358377 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/setup_dev.py, scripts/sync_secrets.sh -->
+
+
+<!-- AUTO-UPDATED: 2026-02-07T18:44:04.085853 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/setup_dev.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T06:26:10.655285 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, scripts/setup_dev.py -->
 
