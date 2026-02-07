@@ -47,7 +47,7 @@ models:
   # You can change these to your preferred models (e.g., "claude-3.5-sonnet", "gpt-4o-mini", etc.)
   default: "gpt-4o"                    # Default LLM for agents
   vision: "gpt-4o"                     # Vision/multimodal tasks
-  reasoning: "gpt-4.1"                  # Deep reasoning
+  reasoning: "oswe-vscode-secondary"      # Raptor reasoning
   code_analysis: "grok-code-fast-1"      # Fast coding analysis
   consolidation: "oswe-vscode-secondary"          # Memory consolidation (Raptor native)
   
@@ -62,7 +62,7 @@ models:
 agents:
   atlas:
     # model: inherited from models.default 
-    deep_model: "gpt-4.1"          # Complex reasoning and planning
+    deep_model: "oswe-vscode-secondary"  # Raptor reasoning and planning
     temperature: 0.7
     max_tokens: 2000                 # Standard chat/task mode
     max_tokens_deep: 12000           # Deep persona mode (increased from 8000)
@@ -77,21 +77,21 @@ agents:
   grisha:
     # Three-Phase Verification Architecture:
     # Phase 1: Strategy planning (what to verify, which tools)
-    strategy_model: "gpt-4.1"        # Deep reasoning for verification strategy
+    strategy_model: "oswe-vscode-secondary" # Raptor reasoning for strategy
     
     # Phase 2: Tool selection & execution (MCP server interaction)
     # model: inherited from models.default
     
     # Phase 3: Result analysis & verdict
     vision_model: ""             # Vision/multimodal verification, set in your config.yaml
-    verdict_model: "gpt-4.1"          # Logical verdict reasoning
+    verdict_model: "oswe-vscode-secondary"  # Raptor verdict reasoning
     
     # General settings
     temperature: 0.3
     max_tokens: 1500
     
     # Two-Phase Verification Sequential-Thinking (Quantum)
-    verification_reasoning_model: "gpt-4.1"  # Logic model for verdict analysis
+    verification_reasoning_model: "oswe-vscode-secondary" # Raptor verdict analysis
     verification_temperature: 0.2          # Low temp for precise reasoning
     verification_max_tokens: 4000          # Sufficient for deep analysis
 
@@ -115,7 +115,7 @@ mcp:
 
   sequential_thinking:
     enabled: true
-    # Model configuration for this tool is handled by agents definition
+    model: "oswe-vscode-secondary"   # Critical for complex reasoning
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
   googlemaps:

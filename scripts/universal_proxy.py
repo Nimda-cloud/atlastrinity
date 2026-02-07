@@ -37,6 +37,7 @@ import signal
 import socketserver
 import sys
 import time
+import uuid
 from urllib.request import Request, urlopen
 
 # ─── Provider Configuration ───────────────────────────────────────────────────
@@ -51,6 +52,7 @@ COPILOT_MODEL_PATTERNS = [
     "oswe-vscode-secondary",
     "claude-3.5-sonnet",
     "o3-mini",
+    "raptor-mini",
 ]
 
 WINDSURF_MODEL_PATTERNS = [
@@ -64,8 +66,27 @@ WINDSURF_MODEL_PATTERNS = [
     "kimi-k2.5",
 ]
 
+# Windsurf internal model mapping
+WINDSURF_MODEL_MAPPING = {
+    "deepseek-v3": "MODEL_DEEPSEEK_V3",
+    "deepseek-r1": "MODEL_DEEPSEEK_R1",
+    "swe-1": "MODEL_SWE_1",
+    "swe-1.5": "MODEL_SWE_1_5",
+    "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
+    "gpt-5.1-codex": "MODEL_PRIVATE_9",
+    "gpt-5.1-codex-mini": "MODEL_PRIVATE_19",
+    "kimi-k2.5": "kimi-k2-5",
+}
+
 # Default ports
 DEFAULT_PORT = 8085
+
+
+# Windsurf Session State
+class WindsurfState:
+    session_id: str = str(uuid.uuid4())
+    request_count: int = 0
+
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 
@@ -136,7 +157,7 @@ def handle_copilot_request(
     method: str, path: str, headers: dict, body: bytes
 ) -> tuple[int, dict, bytes]:
     """Handle request by forwarding to GitHub Copilot API."""
-    # Get Copilot session token
+    # log(f"DEBUG: handle_copilot_request path={path}")
     copilot_key = os.getenv("COPILOT_API_KEY")
     if not copilot_key:
         error("COPILOT_API_KEY not set")
@@ -144,6 +165,7 @@ def handle_copilot_request(
 
     try:
         # Get session token
+        # log("DEBUG: Fetching Copilot session token...")
         token_headers = {
             "Authorization": f"token {copilot_key}",
             "Editor-Version": "vscode/1.85.0",
@@ -158,9 +180,9 @@ def handle_copilot_request(
         with urlopen(token_req, timeout=30) as resp:
             token_data = json.loads(resp.read().decode())
             session_token = token_data.get("token")
-            api_endpoint = (
-                token_data.get("endpoints", {}).get("api") or "https://api.githubcopilot.com"
-            )
+            # Use api.githubcopilot.com as it's more reliable for internal routing
+            api_endpoint = "https://api.githubcopilot.com"
+            # log(f"DEBUG: Token acquired. Using endpoint: {api_endpoint}")
 
         if not session_token:
             error("Failed to get Copilot session token")
@@ -174,9 +196,6 @@ def handle_copilot_request(
             "Authorization": f"Bearer {session_token}",
             "Content-Type": "application/json",
             "Editor-Version": "vscode/1.85.0",
-            "Copilot-Vision-Request": "true"
-            if "image" in body.decode(errors="ignore")
-            else "false",
         }
 
         # Add any additional headers from original request
@@ -187,20 +206,25 @@ def handle_copilot_request(
                 if key.lower()
                 not in [
                     "authorization",
+                    "accept",
                     "content-type",
+                    "user-agent",
                     "editor-version",
                     "editor-plugin-version",
-                    "user-agent",
+                    "copilot-vision-request",
                 ]
             }
         )
 
         url = f"{api_endpoint}{path}"
+        # log(f"DEBUG: Forwarding request to {url}")
         req = Request(url, data=body, headers=copilot_headers, method=method)
-
-        with urlopen(req, timeout=300) as resp:
+        # Increased timeout to 600 for high-reasoning models (Raptor)
+        with urlopen(req, timeout=600) as resp:
+            status_code = resp.getcode()
             response_body = resp.read()
             response_headers = dict(resp.headers)
+            # log(f"DEBUG: Received response {status_code}, length {len(response_body)}")
 
             # Filter headers to send back
             allowed_headers = [
@@ -215,10 +239,13 @@ def handle_copilot_request(
                 k: v for k, v in response_headers.items() if k.lower() in allowed_headers
             }
 
-            return resp.getcode(), filtered_headers, response_body
+            return status_code, filtered_headers, response_body
 
     except Exception as e:
+        import traceback
+
         error(f"Copilot request failed: {e}")
+        traceback.print_exc()
         return 502, {"error": f"Copilot request failed: {e}"}, str(e).encode()
 
 
@@ -232,6 +259,10 @@ def handle_windsurf_request(
     api_key = os.getenv("WINDSURF_API_KEY")
     install_id = os.getenv("WINDSURF_INSTALL_ID", "")
     api_server = os.getenv("WINDSURF_API_SERVER", "https://server.self-serve.windsurf.com")
+
+    WindsurfState.request_count += 1
+    session_id = WindsurfState.session_id
+    request_id = str(WindsurfState.request_count)
 
     if not api_key:
         error("WINDSURF_API_KEY not set")
@@ -251,24 +282,29 @@ def handle_windsurf_request(
         # Convert OpenAI messages to Windsurf format
         chat_messages = []
         for msg in messages:
+            if not isinstance(msg, dict):
+                continue
             role = 1  # Default to user
-            if msg.get("role") == "system":
+            role_type = msg.get("role")
+            if role_type == "system":
                 role = 0
-            elif msg.get("role") == "assistant":
+            elif role_type == "assistant":
                 role = 2
 
             content = msg.get("content", "")
             if isinstance(content, list):
                 # Flatten multimodal content to text
-                text_parts = []
+                text_parts: list[str] = []
                 for item in content:
                     if isinstance(item, dict) and item.get("type") == "text":
-                        text_parts.append(item.get("text", ""))
+                        val = item.get("text")
+                        if isinstance(val, str):
+                            text_parts.append(val)
                     elif isinstance(item, str):
                         text_parts.append(item)
                 content = " ".join(text_parts)
 
-            chat_messages.append({"role": role, "content": content})
+            chat_messages.append({"role": role, "content": str(content)})
 
         # Build Connect-RPC payload
         windsurf_payload = json.dumps(
@@ -279,11 +315,11 @@ def handle_windsurf_request(
                     "ideVersion": "1.98.0",
                     "extensionVersion": "1.42.0",
                     "locale": "en",
-                    "sessionId": f"universal-proxy-{int(time.time())}",
-                    "requestId": "1",
+                    "sessionId": session_id,
+                    "requestId": request_id,
                     "installationId": install_id,
                 },
-                "modelName": model_name,  # Use model name as-is (Windsurf will map it)
+                "modelName": WINDSURF_MODEL_MAPPING.get(model_name, model_name),
             }
         ).encode()
 
@@ -292,6 +328,9 @@ def handle_windsurf_request(
             "Content-Type": "application/connect+json",
             "Connect-Protocol-Version": "1",
             "Authorization": f"Basic {api_key}",
+            "User-Agent": "Windsurf/1.98.0",
+            "X-Client-IDE": "windsurf",
+            "X-Request-Id": request_id,
         }
 
         url = f"{api_server}/exa.api_server_pb.ApiServerService/GetChatMessage"
@@ -301,7 +340,7 @@ def handle_windsurf_request(
             response_data = resp.read()
 
             # Parse Connect-RPC response
-            result_text = ""
+            result_chunks: list[str] = []
             offset = 0
             while offset < len(response_data):
                 if offset + 5 > len(response_data):
@@ -327,12 +366,23 @@ def handle_windsurf_request(
                     )
 
                 # Data frame
-                if "text" in frame_json:
-                    result_text += frame_json["text"]
-                elif "content" in frame_json:
-                    result_text += frame_json["content"]
-                elif "chatMessage" in frame_json:
-                    result_text += frame_json["chatMessage"].get("content", "")
+                if isinstance(frame_json, dict):
+                    if "text" in frame_json:
+                        val = frame_json.get("text")
+                        if isinstance(val, str):
+                            result_chunks.append(val)
+                    elif "content" in frame_json:
+                        val = frame_json.get("content")
+                        if isinstance(val, str):
+                            result_chunks.append(val)
+                    elif "chatMessage" in frame_json:
+                        msg_obj = frame_json.get("chatMessage")
+                        if isinstance(msg_obj, dict):
+                            val = msg_obj.get("content")
+                            if isinstance(val, str):
+                                result_chunks.append(val)
+
+            result_text = "".join(result_chunks)
 
         # Convert to OpenAI-compatible response
         openai_response = {
@@ -549,13 +599,20 @@ def run(port: int = DEFAULT_PORT) -> None:
 
     log(f"Starting Universal LLM Proxy on port {port}")
 
+    def mask_key(k: str | None) -> str:
+        if not k or not isinstance(k, str):
+            return "NOT SET"
+        if len(k) < 15:
+            return k
+        return k[:15] + "..." + k[-8:]  # type: ignore
+
     if copilot_key:
-        info(f"Copilot API key: {copilot_key[:15]}...{copilot_key[-8:]}")
+        info(f"Copilot API key: {mask_key(copilot_key)}")
     else:
         warn("COPILOT_API_KEY not set (Copilot requests will fail)")
 
     if windsurf_key:
-        info(f"Windsurf API key: {windsurf_key[:15]}...{windsurf_key[-8:]}")
+        info(f"Windsurf API key: {mask_key(windsurf_key)}")
     else:
         warn("WINDSURF_API_KEY not set (Windsurf requests will fail)")
 
@@ -564,8 +621,11 @@ def run(port: int = DEFAULT_PORT) -> None:
 
     UniversalProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(server_address, UniversalProxyHandler)
+
+    class ReusableTCPServer(socketserver.TCPServer):
+        allow_reuse_address = True
+
+    httpd = ReusableTCPServer(server_address, UniversalProxyHandler)
 
     log(f"Serving at http://127.0.0.1:{port}")
     log(f"OpenAI-compatible endpoint: http://127.0.0.1:{port}/v1/chat/completions")

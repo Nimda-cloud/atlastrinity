@@ -1,0 +1,17 @@
+import sys
+
+# Add project root and src to path
+sys.path.append("/Users/hawk/Documents/GitHub/atlastrinity")
+sys.path.append("/Users/hawk/Documents/GitHub/atlastrinity/src")
+
+from providers.factory import create_llm, get_provider_name  # type: ignore
+
+print(f"Current Provider Name: {get_provider_name()}")
+
+try:
+    llm = create_llm(model_name="deepseek-v3")
+    print(f"Created LLM Type: {type(llm)}")
+    print(f"LLM Model Name: {llm.model_name}")
+    print(f"LLM Proxy URL: {getattr(llm, 'proxy_url', 'N/A')}")
+except Exception as e:
+    print(f"Error creating LLM: {e}")

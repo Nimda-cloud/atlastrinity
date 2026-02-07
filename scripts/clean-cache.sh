@@ -48,20 +48,24 @@ rm -f *.tsbuildinfo 2>/dev/null
 # Очищення зображень STT/TTT
 
 # Вбивство завислих процесів
-echo "  • Вбивство завислих процесів (port 8000, 8088, MCP servers)..."
-# Вбиваємо все на порту 8000/8088 (brain.server)
-lsof -ti :8000 -ti :8088 | xargs kill -9 2>/dev/null || true
+echo "  • Вбивство завислих процесів (port 8000, 8085, 8088, MCP servers)..."
+# Вбиваємо все на портах 8000/8085/8088 (brain.server, universal_proxy)
+lsof -ti :8000 -ti :8085 -ti :8088 | xargs kill -9 2>/dev/null || true
 # Вбиваємо основні MCP сервери за маскою
 pkill -9 -f vibe_server 2>/dev/null || true
+pkill -9 -f universal_proxy.py 2>/dev/null || true
 pkill -9 -f memory_server 2>/dev/null || true
 pkill -9 -f graph_server 2>/dev/null || true
 pkill -9 -f mcp-server 2>/dev/null || true
 pkill -9 -f macos-use 2>/dev/null || true
 pkill -9 -f brain.server 2>/dev/null || true
 
-# Вбиваємо процеси на портах Vite (3000, 3001)
-echo "  • Звільнення портів UI (3000, 3001)..."
+# Вбиваємо процеси на портах Vite/Vibe/Proxies (3000, 3001, 8080, 8090)
+echo "  • Звільнення портів UI/Dev (3000, 3001, 8080, 8090)..."
 lsof -ti :3000 | xargs kill -9 2>/dev/null || true
 lsof -ti :3001 | xargs kill -9 2>/dev/null || true
+lsof -ti :8080 | xargs kill -9 2>/dev/null || true
+lsof -ti :8090 | xargs kill -9 2>/dev/null || true
+
 
 echo "✅ Кеші очищені!"
