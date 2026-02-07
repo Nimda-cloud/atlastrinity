@@ -75,7 +75,9 @@ def detect_language_server() -> tuple[int, str]:
                 try:
                     lsof = subprocess.run(
                         ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-p", pid],
-                        capture_output=True, text=True, timeout=5,
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
                     )
                     port = 0
                     for ll in lsof.stdout.splitlines():
@@ -98,6 +100,7 @@ def detect_language_server() -> tuple[int, str]:
 def ls_heartbeat(port: int, csrf: str) -> bool:
     """Check if language server is alive."""
     import urllib.request
+
     try:
         req = urllib.request.Request(
             f"http://127.0.0.1:{port}{LS_HEARTBEAT}",
@@ -243,26 +246,30 @@ class WindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
                 conv_id = str(uuid.uuid4())
                 ls_messages = []
                 for cm in chat_messages:
-                    ls_messages.append({
-                        **cm,
-                        "messageId": str(uuid.uuid4()),
-                        "timestamp": now_rfc,
-                        "conversationId": conv_id,
-                    })
-                ls_body = json.dumps({
-                    "chatMessages": ls_messages,
-                    "metadata": {
-                        "ideName": "windsurf",
-                        "ideVersion": "1.98.0",
-                        "extensionVersion": "1.42.0",
-                        "locale": "en",
-                        "sessionId": f"proxy-{os.getpid()}",
-                        "requestId": str(WindsurfProxyHandler.processed_requests),
-                        "installationId": install_id,
-                        "apiKey": api_key,
-                    },
-                    "modelName": model_id,
-                }).encode()
+                    ls_messages.append(
+                        {
+                            **cm,
+                            "messageId": str(uuid.uuid4()),
+                            "timestamp": now_rfc,
+                            "conversationId": conv_id,
+                        }
+                    )
+                ls_body = json.dumps(
+                    {
+                        "chatMessages": ls_messages,
+                        "metadata": {
+                            "ideName": "windsurf",
+                            "ideVersion": "1.98.0",
+                            "extensionVersion": "1.42.0",
+                            "locale": "en",
+                            "sessionId": f"proxy-{os.getpid()}",
+                            "requestId": str(WindsurfProxyHandler.processed_requests),
+                            "installationId": install_id,
+                            "apiKey": api_key,
+                        },
+                        "modelName": model_id,
+                    }
+                ).encode()
                 envelope = struct.pack(">BI", 0, len(ls_body)) + ls_body
 
                 conn = http.client.HTTPConnection("127.0.0.1", ls_port, timeout=300)

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T12:05:24.422554 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, providers/get_windsurf_token.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T12:03:43.843168 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, providers/get_windsurf_token.py -->
 

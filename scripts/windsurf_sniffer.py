@@ -56,6 +56,7 @@ from pathlib import Path
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 
+
 class C:
     BOLD = "\033[1m"
     DIM = "\033[2m"
@@ -165,14 +166,16 @@ def decode_connect_rpc_frames(data: bytes) -> list[dict]:
     if data and data[0] in (0x7B, 0x5B):  # '{' or '['
         try:
             parsed = json.loads(data)
-            frames.append({
-                "index": 0,
-                "flags": -1,
-                "flags_desc": "PLAIN_JSON",
-                "raw_length": len(data),
-                "json": parsed,
-                "format": "json",
-            })
+            frames.append(
+                {
+                    "index": 0,
+                    "flags": -1,
+                    "flags_desc": "PLAIN_JSON",
+                    "raw_length": len(data),
+                    "json": parsed,
+                    "format": "json",
+                }
+            )
             return frames
         except (json.JSONDecodeError, UnicodeDecodeError):
             pass  # Not valid JSON, try envelope parsing
@@ -215,23 +218,27 @@ def decode_connect_rpc_frames(data: bytes) -> list[dict]:
     if not frames and data:
         try:
             parsed = json.loads(data)
-            frames.append({
-                "index": 0,
-                "flags": -1,
-                "flags_desc": "PLAIN_JSON",
-                "raw_length": len(data),
-                "json": parsed,
-                "format": "json",
-            })
+            frames.append(
+                {
+                    "index": 0,
+                    "flags": -1,
+                    "flags_desc": "PLAIN_JSON",
+                    "raw_length": len(data),
+                    "json": parsed,
+                    "format": "json",
+                }
+            )
         except Exception:
-            frames.append({
-                "index": 0,
-                "flags": -1,
-                "flags_desc": "RAW",
-                "raw_length": len(data),
-                "hex": data[:512].hex(),
-                "format": "binary",
-            })
+            frames.append(
+                {
+                    "index": 0,
+                    "flags": -1,
+                    "flags_desc": "RAW",
+                    "raw_length": len(data),
+                    "hex": data[:512].hex(),
+                    "format": "binary",
+                }
+            )
 
     return frames
 
@@ -259,10 +266,12 @@ def extract_chat_content(frames: list[dict]) -> dict:
         if frame.get("flags") == 0x02:
             err = fj.get("error", {})
             if err:
-                result["errors"].append({
-                    "code": err.get("code", "unknown"),
-                    "message": err.get("message", ""),
-                })
+                result["errors"].append(
+                    {
+                        "code": err.get("code", "unknown"),
+                        "message": err.get("message", ""),
+                    }
+                )
             continue
 
         # Request: chatMessages
@@ -279,12 +288,14 @@ def extract_chat_content(frames: list[dict]) -> dict:
                     if generic:
                         content = generic.get("text", content)
 
-                result["messages"].append({
-                    "role": role_name,
-                    "content": content[:500] + ("..." if len(content) > 500 else ""),
-                    "message_id": msg.get("messageId", ""),
-                    "conversation_id": msg.get("conversationId", ""),
-                })
+                result["messages"].append(
+                    {
+                        "role": role_name,
+                        "content": content[:500] + ("..." if len(content) > 500 else ""),
+                        "message_id": msg.get("messageId", ""),
+                        "conversation_id": msg.get("conversationId", ""),
+                    }
+                )
 
         # Request: metadata
         if "metadata" in fj:
@@ -331,9 +342,7 @@ def print_separator(char: str = "─", width: int = 90) -> None:
     print(f"{C.DIM}{char * width}{C.RESET}")
 
 
-def print_request_header(
-    method: str, path: str, req_num: int, content_type: str = ""
-) -> None:
+def print_request_header(method: str, path: str, req_num: int, content_type: str = "") -> None:
     ts = format_timestamp()
     ep_info = KNOWN_ENDPOINTS.get(path, {})
     ep_name = ep_info.get("name", path.rsplit("/", maxsplit=1)[-1] if "/" in path else path)
@@ -347,8 +356,7 @@ def print_request_header(
         f"{C.BOLD}{C.GREEN}▶ #{req_num}{C.RESET} "
         f"{C.YELLOW}{ts}{C.RESET} "
         f"{dir_color}[{direction}]{C.RESET} "
-        f"{C.BOLD}{ep_name}{C.RESET}"
-        + (f" {C.DIM}— {ep_desc}{C.RESET}" if ep_desc else "")
+        f"{C.BOLD}{ep_name}{C.RESET}" + (f" {C.DIM}— {ep_desc}{C.RESET}" if ep_desc else "")
     )
     print(f"  {C.DIM}{method} {path}{C.RESET}")
     if content_type:
@@ -520,9 +528,7 @@ def _sanitize_frames_for_dump(frames: list[dict]) -> list[dict]:
 def detect_language_server() -> tuple[int, str]:
     """Detect running Windsurf language server port and CSRF token."""
     try:
-        result = subprocess.run(
-            ["ps", "aux"], capture_output=True, text=True, timeout=5
-        )
+        result = subprocess.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
         for line in result.stdout.splitlines():
             if "language_server_macos_arm" not in line or "grep" in line:
                 continue
@@ -536,10 +542,17 @@ def detect_language_server() -> tuple[int, str]:
                 try:
                     lsof = subprocess.run(
                         [
-                            "lsof", "-nP", "-iTCP", "-sTCP:LISTEN",
-                            "-a", "-p", pid,
+                            "lsof",
+                            "-nP",
+                            "-iTCP",
+                            "-sTCP:LISTEN",
+                            "-a",
+                            "-p",
+                            pid,
                         ],
-                        capture_output=True, text=True, timeout=5,
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
                     )
                     port = 0
                     for ll in lsof.stdout.splitlines():
@@ -629,9 +642,7 @@ class SnifferProxyHandler(http.server.BaseHTTPRequestHandler):
         # Forward to real Language Server
         start_time = time.monotonic()
         try:
-            conn = http.client.HTTPConnection(
-                self.target_host, self.target_port, timeout=600
-            )
+            conn = http.client.HTTPConnection(self.target_host, self.target_port, timeout=600)
 
             # Forward headers, replacing CSRF if needed
             fwd_headers = dict(req_headers)
@@ -764,9 +775,7 @@ def run_sniffer(
 
     # Start server
     socketserver.TCPServer.allow_reuse_address = True
-    server = socketserver.ThreadingTCPServer(
-        ("127.0.0.1", listen_port), SnifferProxyHandler
-    )
+    server = socketserver.ThreadingTCPServer(("127.0.0.1", listen_port), SnifferProxyHandler)
 
     print()
     print(f"{C.BOLD}Sniffer proxy listening:{C.RESET}")
@@ -781,8 +790,10 @@ def run_sniffer(
     print(f"    WINDSURF_LS_PORT={listen_port}")
     print()
     print(f"  {C.YELLOW}Option 3:{C.RESET} Direct test via curl:")
-    print(f"    curl -X POST http://127.0.0.1:{listen_port}"
-          f"/exa.language_server_pb.LanguageServerService/Heartbeat \\")
+    print(
+        f"    curl -X POST http://127.0.0.1:{listen_port}"
+        f"/exa.language_server_pb.LanguageServerService/Heartbeat \\"
+    )
     print("      -H 'Content-Type: application/json' \\")
     print(f"      -H 'x-codeium-csrf-token: {ls_csrf[:20]}...' \\")
     print("      -d '{}'")
@@ -824,31 +835,43 @@ Examples:
         """,
     )
     parser.add_argument(
-        "--port", type=int, default=18080,
+        "--port",
+        type=int,
+        default=18080,
         help="Port to listen on (default: 18080)",
     )
     parser.add_argument(
-        "--ls-port", type=int, default=0,
+        "--ls-port",
+        type=int,
+        default=0,
         help="Language Server port (auto-detected if not set)",
     )
     parser.add_argument(
-        "--ls-csrf", type=str, default="",
+        "--ls-csrf",
+        type=str,
+        default="",
         help="Language Server CSRF token (auto-detected if not set)",
     )
     parser.add_argument(
-        "--dump-file", type=str, default=None,
+        "--dump-file",
+        type=str,
+        default=None,
         help="Path to NDJSON dump file (default: none)",
     )
     parser.add_argument(
-        "--auto-dump", action="store_true",
+        "--auto-dump",
+        action="store_true",
         help="Auto-create dump file in /tmp/windsurf_dump_<timestamp>.ndjson",
     )
     parser.add_argument(
-        "--no-filter", action="store_true",
+        "--no-filter",
+        action="store_true",
         help="Don't filter out heartbeat requests",
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true",
+        "--verbose",
+        "-v",
+        action="store_true",
         help="Show telemetry and other noisy endpoints",
     )
 

@@ -8,6 +8,7 @@ Tests all three modes:
 2. Direct cloud API
 3. Proxy mode (requires windsurf_proxy.py running)
 """
+
 import os
 import sys
 
@@ -42,10 +43,12 @@ def test_mode(mode: str):
     os.environ["WINDSURF_MODE"] = mode
     try:
         llm = WindsurfLLM()
-        result = llm.invoke([
-            SystemMessage(content="You are helpful. Be brief."),
-            HumanMessage(content="What is 2+2? Answer only the number."),
-        ])
+        result = llm.invoke(
+            [
+                SystemMessage(content="You are helpful. Be brief."),
+                HumanMessage(content="What is 2+2? Answer only the number."),
+            ]
+        )
         content = result.content
         if "[WINDSURF ERROR]" in content:
             print(f"  Error: {content[:200]}")

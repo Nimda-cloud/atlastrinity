@@ -66,9 +66,7 @@ def _detect_language_server() -> tuple[int, str]:
         (port, csrf_token) — port=0 if not detected.
     """
     try:
-        result = subprocess.run(
-            ["ps", "aux"], capture_output=True, text=True, timeout=5
-        )
+        result = subprocess.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
         for line in result.stdout.splitlines():
             if "language_server_macos_arm" not in line or "grep" in line:
                 continue
@@ -82,7 +80,9 @@ def _detect_language_server() -> tuple[int, str]:
                 try:
                     lsof = subprocess.run(
                         ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-p", pid],
-                        capture_output=True, text=True, timeout=5,
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
                     )
                     port = 0
                     for ll in lsof.stdout.splitlines():
