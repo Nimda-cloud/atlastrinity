@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T00:52:13.166168 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/grisha.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T23:33:12.321127 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/clean-cache.sh, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

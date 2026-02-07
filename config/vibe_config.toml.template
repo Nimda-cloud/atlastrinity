@@ -2,8 +2,8 @@
 # Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
 # Active model for Vibe (Copilot/GPT-4o is now the default)
-active_model = "gpt-4o"
-fallback_chain = ["gpt-4o", "devstral-2"]
+active_model = "gpt-4.1"
+fallback_chain = ["gpt-4.1", "gpt-4o", "devstral-2"]
 
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
