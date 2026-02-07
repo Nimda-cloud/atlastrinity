@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-06T17:46:53.235751 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .env.example, .secrets.baseline -->
+
+
+<!-- AUTO-UPDATED: 2026-02-06T17:46:07.005545 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/main/main.ts -->
+
+
 <!-- AUTO-UPDATED: 2026-02-06T14:48:59.694926 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/atlas.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

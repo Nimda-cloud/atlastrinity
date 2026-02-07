@@ -29,6 +29,19 @@
 # Change defaults here to switch models globally
 
 models:
+  # LLM Provider: "copilot" or "windsurf"
+  # - copilot:  GitHub Copilot API (ghu_ token, all Copilot models)
+  # - windsurf: Windsurf/Codeium API (sk-ws- token, FREE models only)
+  #
+  # When provider is "windsurf", models must be from the free tier:
+  #   deepseek-v3, deepseek-r1, swe-1, swe-1.5, grok-code-fast-1,
+  #   gpt-5.1-codex, gpt-5.1-codex-mini, kimi-k2.5, etc.
+  #
+  # Proxy: Both providers can work through a local proxy on port 8085:
+  #   copilot:  python scripts/copilot_proxy.py
+  #   windsurf: python scripts/windsurf_proxy.py
+  provider: "copilot"                   # LLM provider: copilot | windsurf
+
   # Default models for different purposes
   # Using gpt-4o as default for GitHub Copilot API
   # You can change these to your preferred models (e.g., "claude-3.5-sonnet", "gpt-4o-mini", etc.)
