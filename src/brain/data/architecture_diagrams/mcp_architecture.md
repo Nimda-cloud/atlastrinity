@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T01:24:14.931067 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, package.json -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T01:19:00.833574 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe_config.toml.template -->
 
