@@ -31,6 +31,7 @@ import base64
 import json
 import re
 import sqlite3
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -114,6 +115,9 @@ class WindsurfAuth:
     user_id: str = ""
     models: list[WindsurfModel] = field(default_factory=list)
     raw_auth_status: dict = field(default_factory=dict)
+    # Runtime info from running Language Server process
+    ls_port: int = 0
+    ls_csrf_token: str = ""
 
 
 # ─── DB Extraction ───────────────────────────────────────────────────────────
@@ -151,6 +155,54 @@ def _find_account_name(db_path: Path) -> str:
     except Exception:
         pass
     return ""
+
+
+def _detect_language_server() -> tuple[int, str]:
+    """Detect running Windsurf language server port and CSRF token from process args.
+
+    Returns:
+        (port, csrf_token) — port=0 if not found.
+    """
+    port = 0
+    csrf_token = ""
+    try:
+        result = subprocess.run(
+            ["ps", "aux"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        for line in result.stdout.splitlines():
+            if "language_server_macos_arm" not in line or "grep" in line:
+                continue
+            # Extract CSRF token
+            m = re.search(r"--csrf_token\s+(\S+)", line)
+            if m:
+                csrf_token = m.group(1)
+            # Get PID to find listening ports
+            parts = line.split()
+            if len(parts) >= 2:
+                pid = parts[1]
+                try:
+                    lsof = subprocess.run(
+                        ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-p", pid],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    for lline in lsof.stdout.splitlines():
+                        if "LISTEN" in lline:
+                            m2 = re.search(r":(\d+)\s+\(LISTEN\)", lline)
+                            if m2:
+                                candidate = int(m2.group(1))
+                                if port == 0 or candidate < port:
+                                    port = candidate
+                except Exception:
+                    pass
+            break
+    except Exception:
+        pass
+    return port, csrf_token
 
 
 def _decode_models_from_proto(configs_b64: list[str]) -> list[WindsurfModel]:
@@ -277,6 +329,11 @@ def extract_windsurf_auth() -> WindsurfAuth | None:
     if not auth.account_name:
         auth.account_name = _find_account_name(WINDSURF_STATE_DB)
 
+    # 4. Detect running Language Server
+    ls_port, ls_csrf = _detect_language_server()
+    auth.ls_port = ls_port
+    auth.ls_csrf_token = ls_csrf
+
     if not auth.api_key:
         error("API key не знайдено в Windsurf DB")
         return None
@@ -331,6 +388,10 @@ def update_env_windsurf(auth: WindsurfAuth) -> None:
         "WINDSURF_INSTALL_ID": auth.installation_id,
         "WINDSURF_MODEL": DEFAULT_WINDSURF_MODEL,
     }
+    if auth.ls_port:
+        vars_to_set["WINDSURF_LS_PORT"] = str(auth.ls_port)
+    if auth.ls_csrf_token:
+        vars_to_set["WINDSURF_LS_CSRF"] = auth.ls_csrf_token
 
     changed = False
     for key, value in vars_to_set.items():
@@ -391,6 +452,10 @@ def print_auth_info(auth: WindsurfAuth) -> None:
     print(f"  {C.DIM}API Key len:{C.RESET}    {len(auth.api_key)}")
     print(f"  {C.DIM}Installation:{C.RESET}   {auth.installation_id}")
     print(f"  {C.DIM}API Server:{C.RESET}     {auth.api_server_url}")
+    if auth.ls_port:
+        print(f"  {C.DIM}LS Port:{C.RESET}        {auth.ls_port}")
+    if auth.ls_csrf_token:
+        print(f"  {C.DIM}LS CSRF:{C.RESET}        {auth.ls_csrf_token[:20]}...")
 
 
 def print_models(auth: WindsurfAuth) -> None:
@@ -424,6 +489,8 @@ def output_json(auth: WindsurfAuth) -> None:
         "account_name": auth.account_name,
         "user_id": auth.user_id,
         "models": [{"name": m.name, "model_id": m.model_id} for m in auth.models],
+        "ls_port": auth.ls_port,
+        "ls_csrf_token": auth.ls_csrf_token,
     }
     print(json.dumps(data, indent=2, ensure_ascii=False))
 

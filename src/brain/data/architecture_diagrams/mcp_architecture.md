@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T12:03:43.843168 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, providers/get_windsurf_token.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-07T12:01:29.030193 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/setup_dev.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T19:05:53.077671 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, docker-compose.yml -->
 

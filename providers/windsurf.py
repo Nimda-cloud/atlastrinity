@@ -1,6 +1,11 @@
 import json
 import os
+import re
+import struct
+import subprocess
 import sys
+import time
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -45,14 +50,81 @@ ROLE_SYSTEM = 0
 ROLE_USER = 1
 ROLE_ASSISTANT = 2
 
+# Language Server endpoints
+LS_RAW_CHAT = "/exa.language_server_pb.LanguageServerService/RawGetChatMessage"
+LS_CHECK_CAPACITY = "/exa.language_server_pb.LanguageServerService/CheckChatCapacity"
+LS_HEARTBEAT = "/exa.language_server_pb.LanguageServerService/Heartbeat"
+
+
+# ─── Language Server Auto-Detection ──────────────────────────────────────────
+
+
+def _detect_language_server() -> tuple[int, str]:
+    """Detect running Windsurf language server port and CSRF token.
+
+    Returns:
+        (port, csrf_token) — port=0 if not detected.
+    """
+    try:
+        result = subprocess.run(
+            ["ps", "aux"], capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.splitlines():
+            if "language_server_macos_arm" not in line or "grep" in line:
+                continue
+            csrf_token = ""
+            m = re.search(r"--csrf_token\s+(\S+)", line)
+            if m:
+                csrf_token = m.group(1)
+            parts = line.split()
+            if len(parts) >= 2:
+                pid = parts[1]
+                try:
+                    lsof = subprocess.run(
+                        ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-p", pid],
+                        capture_output=True, text=True, timeout=5,
+                    )
+                    port = 0
+                    for ll in lsof.stdout.splitlines():
+                        if "LISTEN" in ll:
+                            m2 = re.search(r":(\d+)\s+\(LISTEN\)", ll)
+                            if m2:
+                                candidate = int(m2.group(1))
+                                if port == 0 or candidate < port:
+                                    port = candidate
+                    if port and csrf_token:
+                        return port, csrf_token
+                except Exception:
+                    pass
+            break
+    except Exception:
+        pass
+    return 0, ""
+
+
+def _ls_heartbeat(port: int, csrf: str) -> bool:
+    """Quick heartbeat check to verify LS is responding."""
+    try:
+        r = requests.post(
+            f"http://127.0.0.1:{port}{LS_HEARTBEAT}",
+            headers={"Content-Type": "application/json", "x-codeium-csrf-token": csrf},
+            json={},
+            timeout=3,
+        )
+        return r.status_code == 200
+    except Exception:
+        return False
+
 
 class WindsurfLLM(BaseChatModel):
     """Windsurf/Codeium LLM provider.
 
-    Supports two modes:
-    1. Proxy mode (default): Sends OpenAI-compatible requests to a local proxy
+    Supports three modes (auto-selected in order of preference):
+    1. Local LS mode: Communicates with the running Windsurf IDE language server
+       via Connect-RPC on localhost. Uses the same auth as the IDE.
+    2. Proxy mode: Sends OpenAI-compatible requests to a local proxy
        (windsurf_proxy.py on port 8085) which translates to Windsurf Connect-RPC API.
-    2. Direct mode: Sends Connect-RPC requests directly to Windsurf API server.
+    3. Direct mode: Sends Connect-RPC requests directly to Windsurf API server.
 
     Only FREE tier models are available to avoid premium credit consumption.
 
@@ -63,6 +135,9 @@ class WindsurfLLM(BaseChatModel):
         WINDSURF_DIRECT      - Set to "true" to bypass proxy and call API directly
         WINDSURF_INSTALL_ID  - Installation ID (from Windsurf DB)
         WINDSURF_API_SERVER  - API server URL (default: https://server.self-serve.windsurf.com)
+        WINDSURF_LS_PORT     - Language server port (auto-detected if not set)
+        WINDSURF_LS_CSRF     - Language server CSRF token (auto-detected if not set)
+        WINDSURF_MODE        - Force mode: "local", "proxy", or "direct"
     """
 
     model_name: str | None = None
@@ -73,6 +148,10 @@ class WindsurfLLM(BaseChatModel):
     api_server: str = "https://server.self-serve.windsurf.com"
     installation_id: str = ""
     _tools: list[Any] | None = None
+    # Local LS mode fields
+    ls_port: int = 0
+    ls_csrf: str = ""
+    _mode: str = "proxy"  # "local", "proxy", or "direct"
 
     def __init__(
         self,
@@ -107,23 +186,44 @@ class WindsurfLLM(BaseChatModel):
             )
         self.api_key = ws_key
 
-        # Mode: proxy or direct
-        self.direct_mode = (
-            direct_mode
-            if direct_mode is not None
-            else (os.getenv("WINDSURF_DIRECT", "").lower() == "true")
-        )
+        # Installation ID
+        self.installation_id = os.getenv("WINDSURF_INSTALL_ID", "")
 
         # Proxy URL
         self.proxy_url = proxy_url or os.getenv("WINDSURF_PROXY_URL", "http://127.0.0.1:8085")
 
-        # Direct mode settings
+        # API server for direct mode
         self.api_server = os.getenv("WINDSURF_API_SERVER", "https://server.self-serve.windsurf.com")
-        self.installation_id = os.getenv("WINDSURF_INSTALL_ID", "")
 
-        mode_str = "direct" if self.direct_mode else f"proxy ({self.proxy_url})"
+        # Mode selection
+        forced_mode = os.getenv("WINDSURF_MODE", "").lower()
+        if forced_mode in ("local", "proxy", "direct"):
+            self._mode = forced_mode
+        elif direct_mode or os.getenv("WINDSURF_DIRECT", "").lower() == "true":
+            self._mode = "direct"
+        else:
+            self._mode = "proxy"
+
+        # Auto-detect local LS if mode is local or auto
+        if self._mode == "local" or forced_mode == "":
+            ls_port = int(os.getenv("WINDSURF_LS_PORT", "0"))
+            ls_csrf = os.getenv("WINDSURF_LS_CSRF", "")
+            if not ls_port or not ls_csrf:
+                detected_port, detected_csrf = _detect_language_server()
+                if not ls_port:
+                    ls_port = detected_port
+                if not ls_csrf:
+                    ls_csrf = detected_csrf
+            if ls_port and ls_csrf and _ls_heartbeat(ls_port, ls_csrf):
+                self.ls_port = ls_port
+                self.ls_csrf = ls_csrf
+                self._mode = "local"
+
+        self.direct_mode = self._mode == "direct"
+
         print(
-            f"[WINDSURF] Initialized: model='{self.model_name}', mode={mode_str}",
+            f"[WINDSURF] Initialized: model='{self.model_name}', mode={self._mode}"
+            + (f" (ls_port={self.ls_port})" if self._mode == "local" else ""),
             file=sys.stderr,
             flush=True,
         )
@@ -290,6 +390,171 @@ class WindsurfLLM(BaseChatModel):
             response.raise_for_status()
             return response.json()
 
+    # ─── Local Language Server Mode ────────────────────────────────────────
+
+    def _build_ls_metadata(self) -> dict:
+        """Build metadata dict for local LS requests."""
+        return {
+            "ideName": "windsurf",
+            "ideVersion": "1.98.0",
+            "extensionVersion": "1.42.0",
+            "locale": "en",
+            "sessionId": f"atlastrinity-{os.getpid()}",
+            "requestId": str(int(time.time())),
+            "installationId": self.installation_id,
+            "apiKey": self.api_key,
+        }
+
+    @staticmethod
+    def _make_envelope(payload_dict: dict) -> bytes:
+        """Wrap JSON payload in Connect streaming envelope (flags + length + data)."""
+        payload_bytes = json.dumps(payload_dict).encode("utf-8")
+        return struct.pack(">BI", 0, len(payload_bytes)) + payload_bytes
+
+    @staticmethod
+    def _parse_streaming_frames(data: bytes) -> tuple[str, str | None]:
+        """Parse Connect-RPC streaming frames.
+
+        Returns:
+            (result_text, error_message_or_None)
+        """
+        result_text = ""
+        error_msg = None
+        offset = 0
+        while offset + 5 <= len(data):
+            flags = data[offset]
+            frame_len = int.from_bytes(data[offset + 1 : offset + 5], "big")
+            frame_data = data[offset + 5 : offset + 5 + frame_len]
+            offset += 5 + frame_len
+            try:
+                fj = json.loads(frame_data)
+            except json.JSONDecodeError:
+                continue
+            if flags == 0x02:  # Trailer
+                err = fj.get("error", {})
+                if err:
+                    error_msg = f"{err.get('code', 'unknown')}: {err.get('message', '')}"
+                continue
+            # Data frame
+            dm = fj.get("deltaMessage", {})
+            if dm:
+                if dm.get("isError"):
+                    error_msg = dm.get("text", "unknown error")
+                else:
+                    result_text += dm.get("text", "")
+            elif "text" in fj:
+                result_text += fj["text"]
+            elif "content" in fj:
+                result_text += fj["content"]
+            elif "chatMessage" in fj:
+                result_text += fj["chatMessage"].get("content", "")
+        return result_text, error_msg
+
+    def _refresh_ls_connection(self) -> bool:
+        """Re-detect LS port/CSRF if the current connection is stale."""
+        if self.ls_port and self.ls_csrf and _ls_heartbeat(self.ls_port, self.ls_csrf):
+            return True
+        detected_port, detected_csrf = _detect_language_server()
+        if detected_port and detected_csrf and _ls_heartbeat(detected_port, detected_csrf):
+            self.ls_port = detected_port
+            self.ls_csrf = detected_csrf
+            return True
+        return False
+
+    def _call_local_ls(self, payload: dict) -> str:
+        """Send chat request via local language server's RawGetChatMessage."""
+        if not self._refresh_ls_connection():
+            raise RuntimeError("Windsurf language server not available")
+
+        now_rfc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        conv_id = str(uuid.uuid4())
+        model_id = WINDSURF_FREE_MODELS.get(
+            self.model_name or WINDSURF_DEFAULT_MODEL,
+            self.model_name or WINDSURF_DEFAULT_MODEL,
+        )
+
+        ls_payload = {
+            "chatMessages": [
+                {
+                    **msg,
+                    "messageId": str(uuid.uuid4()),
+                    "timestamp": now_rfc,
+                    "conversationId": conv_id,
+                }
+                for msg in payload.get("chatMessages", [])
+            ],
+            "metadata": self._build_ls_metadata(),
+            "modelName": model_id,
+        }
+
+        envelope = self._make_envelope(ls_payload)
+        headers = {
+            "Content-Type": "application/connect+json",
+            "Connect-Protocol-Version": "1",
+            "x-codeium-csrf-token": self.ls_csrf,
+        }
+
+        response = requests.post(
+            f"http://127.0.0.1:{self.ls_port}{LS_RAW_CHAT}",
+            headers=headers,
+            data=envelope,
+            timeout=300,
+            stream=True,
+        )
+        data = b""
+        for chunk in response.iter_content(chunk_size=4096):
+            data += chunk
+
+        result_text, error_msg = self._parse_streaming_frames(data)
+        if error_msg:
+            raise RuntimeError(f"Windsurf LS error: {error_msg}")
+        return result_text
+
+    async def _call_local_ls_async(self, payload: dict) -> str:
+        """Async version of local LS call."""
+        if not self._refresh_ls_connection():
+            raise RuntimeError("Windsurf language server not available")
+
+        now_rfc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        conv_id = str(uuid.uuid4())
+        model_id = WINDSURF_FREE_MODELS.get(
+            self.model_name or WINDSURF_DEFAULT_MODEL,
+            self.model_name or WINDSURF_DEFAULT_MODEL,
+        )
+
+        ls_payload = {
+            "chatMessages": [
+                {
+                    **msg,
+                    "messageId": str(uuid.uuid4()),
+                    "timestamp": now_rfc,
+                    "conversationId": conv_id,
+                }
+                for msg in payload.get("chatMessages", [])
+            ],
+            "metadata": self._build_ls_metadata(),
+            "modelName": model_id,
+        }
+
+        envelope = self._make_envelope(ls_payload)
+        headers = {
+            "Content-Type": "application/connect+json",
+            "Connect-Protocol-Version": "1",
+            "x-codeium-csrf-token": self.ls_csrf,
+        }
+
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=30.0)) as client:
+            response = await client.post(
+                f"http://127.0.0.1:{self.ls_port}{LS_RAW_CHAT}",
+                headers=headers,
+                content=envelope,
+            )
+
+        result_text, error_msg = self._parse_streaming_frames(response.content)
+        if error_msg:
+            raise RuntimeError(f"Windsurf LS error: {error_msg}")
+        return result_text
+
     # ─── Direct Mode (Connect-RPC) ───────────────────────────────────────
 
     def _call_direct(self, payload: dict) -> str:
@@ -300,48 +565,15 @@ class WindsurfLLM(BaseChatModel):
             "Connect-Protocol-Version": "1",
             "Authorization": f"Basic {self.api_key}",
         }
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=300,
-        )
+        response = requests.post(url, headers=headers, json=payload, timeout=300)
 
         data = response.content
         if not data:
             raise RuntimeError("Empty response from Windsurf API")
 
-        # Parse Connect-RPC framed response
-        # Frame format: flag(1 byte) + length(4 bytes big-endian) + payload
-        result_text = ""
-        offset = 0
-        while offset < len(data):
-            if offset + 5 > len(data):
-                break
-            flag = data[offset]
-            frame_len = int.from_bytes(data[offset + 1 : offset + 5], "big")
-            frame_data = data[offset + 5 : offset + 5 + frame_len]
-            offset += 5 + frame_len
-
-            try:
-                frame_json = json.loads(frame_data)
-            except json.JSONDecodeError:
-                continue
-
-            if flag == 0x02:  # Trailer/error frame
-                error_info = frame_json.get("error", {})
-                error_code = error_info.get("code", "unknown")
-                error_msg = error_info.get("message", "Unknown error")
-                raise RuntimeError(f"Windsurf API error ({error_code}): {error_msg}")
-
-            # Data frame — extract content
-            if "text" in frame_json:
-                result_text += frame_json["text"]
-            elif "content" in frame_json:
-                result_text += frame_json["content"]
-            elif "chatMessage" in frame_json:
-                result_text += frame_json["chatMessage"].get("content", "")
-
+        result_text, error_msg = self._parse_streaming_frames(data)
+        if error_msg:
+            raise RuntimeError(f"Windsurf API error: {error_msg}")
         return result_text
 
     async def _call_direct_async(self, payload: dict) -> str:
@@ -359,35 +591,9 @@ class WindsurfLLM(BaseChatModel):
         if not data:
             raise RuntimeError("Empty response from Windsurf API")
 
-        result_text = ""
-        offset = 0
-        while offset < len(data):
-            if offset + 5 > len(data):
-                break
-            flag = data[offset]
-            frame_len = int.from_bytes(data[offset + 1 : offset + 5], "big")
-            frame_data = data[offset + 5 : offset + 5 + frame_len]
-            offset += 5 + frame_len
-
-            try:
-                frame_json = json.loads(frame_data)
-            except json.JSONDecodeError:
-                continue
-
-            if flag == 0x02:
-                error_info = frame_json.get("error", {})
-                raise RuntimeError(
-                    f"Windsurf API error ({error_info.get('code', 'unknown')}): "
-                    f"{error_info.get('message', 'Unknown error')}"
-                )
-
-            if "text" in frame_json:
-                result_text += frame_json["text"]
-            elif "content" in frame_json:
-                result_text += frame_json["content"]
-            elif "chatMessage" in frame_json:
-                result_text += frame_json["chatMessage"].get("content", "")
-
+        result_text, error_msg = self._parse_streaming_frames(data)
+        if error_msg:
+            raise RuntimeError(f"Windsurf API error: {error_msg}")
         return result_text
 
     # ─── Result Processing ───────────────────────────────────────────────
@@ -456,7 +662,11 @@ class WindsurfLLM(BaseChatModel):
     ) -> ChatResult:
         """Synchronous generation."""
         try:
-            if self.direct_mode:
+            if self._mode == "local":
+                payload = self._build_connect_rpc_payload(messages)
+                content = self._call_local_ls(payload)
+                return self._process_content(content)
+            if self._mode == "direct":
                 payload = self._build_connect_rpc_payload(messages)
                 content = self._call_direct(payload)
                 return self._process_content(content)
@@ -478,7 +688,11 @@ class WindsurfLLM(BaseChatModel):
     ) -> ChatResult:
         """Asynchronous generation."""
         try:
-            if self.direct_mode:
+            if self._mode == "local":
+                payload = self._build_connect_rpc_payload(messages)
+                content = await self._call_local_ls_async(payload)
+                return self._process_content(content)
+            if self._mode == "direct":
                 payload = self._build_connect_rpc_payload(messages)
                 content = await self._call_direct_async(payload)
                 return self._process_content(content)
@@ -499,7 +713,10 @@ class WindsurfLLM(BaseChatModel):
     ) -> AIMessage:
         """Streaming invoke compatible with CopilotLLM interface."""
         try:
-            if self.direct_mode:
+            if self._mode == "local":
+                payload = self._build_connect_rpc_payload(messages)
+                content = self._call_local_ls(payload)
+            elif self._mode == "direct":
                 payload = self._build_connect_rpc_payload(messages)
                 content = self._call_direct(payload)
             else:

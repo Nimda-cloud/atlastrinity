@@ -23,10 +23,14 @@ import http.client
 import http.server
 import json
 import os
+import re
 import signal
 import socketserver
+import struct
+import subprocess
 import sys
 import time
+import uuid
 
 # ─── Windsurf Free Models ────────────────────────────────────────────────────
 
@@ -48,6 +52,62 @@ ROLE_MAP = {"system": 0, "user": 1, "assistant": 2}
 
 DEFAULT_API_SERVER = "https://server.self-serve.windsurf.com"
 CHAT_ENDPOINT = "/exa.api_server_pb.ApiServerService/GetChatMessage"
+LS_RAW_CHAT = "/exa.language_server_pb.LanguageServerService/RawGetChatMessage"
+LS_HEARTBEAT = "/exa.language_server_pb.LanguageServerService/Heartbeat"
+
+# ─── Language Server Auto-Detection ─────────────────────────────────────────
+
+
+def detect_language_server() -> tuple[int, str]:
+    """Detect running Windsurf language server port and CSRF token."""
+    try:
+        result = subprocess.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
+        for line in result.stdout.splitlines():
+            if "language_server_macos_arm" not in line or "grep" in line:
+                continue
+            csrf = ""
+            m = re.search(r"--csrf_token\s+(\S+)", line)
+            if m:
+                csrf = m.group(1)
+            parts = line.split()
+            if len(parts) >= 2:
+                pid = parts[1]
+                try:
+                    lsof = subprocess.run(
+                        ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-p", pid],
+                        capture_output=True, text=True, timeout=5,
+                    )
+                    port = 0
+                    for ll in lsof.stdout.splitlines():
+                        if "LISTEN" in ll:
+                            m2 = re.search(r":(\d+)\s+\(LISTEN\)", ll)
+                            if m2:
+                                c = int(m2.group(1))
+                                if port == 0 or c < port:
+                                    port = c
+                    if port and csrf:
+                        return port, csrf
+                except Exception:
+                    pass
+            break
+    except Exception:
+        pass
+    return 0, ""
+
+
+def ls_heartbeat(port: int, csrf: str) -> bool:
+    """Check if language server is alive."""
+    import urllib.request
+    try:
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}{LS_HEARTBEAT}",
+            data=b"{}",
+            headers={"Content-Type": "application/json", "x-codeium-csrf-token": csrf},
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            return resp.getcode() == 200
+    except Exception:
+        return False
 
 
 def log(msg: str) -> None:
@@ -169,27 +229,83 @@ class WindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
             }
         ).encode()
 
-        # Forward to Windsurf API
-        try:
-            host = api_server.replace("https://", "").replace("http://", "")
-            conn = http.client.HTTPSConnection(host, timeout=300)
-            conn.request(
-                "POST",
-                CHAT_ENDPOINT,
-                windsurf_payload,
-                {
-                    "Content-Type": "application/connect+json",
-                    "Connect-Protocol-Version": "1",
-                    "Authorization": f"Basic {api_key}",
-                },
-            )
-            resp = conn.getresponse()
-            data = resp.read()
-            conn.close()
-        except Exception as e:
-            log(f"Upstream error: {e}")
-            self._send_json(502, {"error": f"Upstream connection failed: {e}"})
-            return
+        # Try local Language Server first, then fall back to cloud API
+        ls_port = int(os.environ.get("WINDSURF_LS_PORT", "0"))
+        ls_csrf = os.environ.get("WINDSURF_LS_CSRF", "")
+
+        data = None
+        use_ls = ls_port and ls_csrf
+
+        if use_ls:
+            try:
+                # Build LS-specific payload with required fields
+                now_rfc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                conv_id = str(uuid.uuid4())
+                ls_messages = []
+                for cm in chat_messages:
+                    ls_messages.append({
+                        **cm,
+                        "messageId": str(uuid.uuid4()),
+                        "timestamp": now_rfc,
+                        "conversationId": conv_id,
+                    })
+                ls_body = json.dumps({
+                    "chatMessages": ls_messages,
+                    "metadata": {
+                        "ideName": "windsurf",
+                        "ideVersion": "1.98.0",
+                        "extensionVersion": "1.42.0",
+                        "locale": "en",
+                        "sessionId": f"proxy-{os.getpid()}",
+                        "requestId": str(WindsurfProxyHandler.processed_requests),
+                        "installationId": install_id,
+                        "apiKey": api_key,
+                    },
+                    "modelName": model_id,
+                }).encode()
+                envelope = struct.pack(">BI", 0, len(ls_body)) + ls_body
+
+                conn = http.client.HTTPConnection("127.0.0.1", ls_port, timeout=300)
+                conn.request(
+                    "POST",
+                    LS_RAW_CHAT,
+                    envelope,
+                    {
+                        "Content-Type": "application/connect+json",
+                        "Connect-Protocol-Version": "1",
+                        "x-codeium-csrf-token": ls_csrf,
+                    },
+                )
+                resp = conn.getresponse()
+                data = resp.read()
+                conn.close()
+                log(f"Local LS response: {len(data)} bytes")
+            except Exception as e:
+                log(f"Local LS error: {e}, falling back to cloud API")
+                data = None
+
+        if data is None:
+            # Fall back to direct cloud API
+            try:
+                host = api_server.replace("https://", "").replace("http://", "")
+                conn = http.client.HTTPSConnection(host, timeout=300)
+                conn.request(
+                    "POST",
+                    CHAT_ENDPOINT,
+                    windsurf_payload,
+                    {
+                        "Content-Type": "application/connect+json",
+                        "Connect-Protocol-Version": "1",
+                        "Authorization": f"Basic {api_key}",
+                    },
+                )
+                resp = conn.getresponse()
+                data = resp.read()
+                conn.close()
+            except Exception as e:
+                log(f"Upstream error: {e}")
+                self._send_json(502, {"error": f"Upstream connection failed: {e}"})
+                return
 
         # Parse Connect-RPC response
         try:
@@ -322,6 +438,21 @@ def run(port: int = 8085) -> None:
 
     log(f"API Key: {api_key[:15]}...{api_key[-8:]}")
     log(f"Free models: {', '.join(sorted(WINDSURF_FREE_MODELS.keys()))}")
+
+    # Auto-detect local Language Server
+    ls_port = int(os.environ.get("WINDSURF_LS_PORT", "0"))
+    ls_csrf = os.environ.get("WINDSURF_LS_CSRF", "")
+    if not ls_port or not ls_csrf:
+        detected_port, detected_csrf = detect_language_server()
+        if detected_port and detected_csrf:
+            ls_port = detected_port
+            ls_csrf = detected_csrf
+            os.environ["WINDSURF_LS_PORT"] = str(ls_port)
+            os.environ["WINDSURF_LS_CSRF"] = ls_csrf
+    if ls_port and ls_csrf and ls_heartbeat(ls_port, ls_csrf):
+        log(f"Local LS detected: port={ls_port}, csrf={ls_csrf[:20]}...")
+    else:
+        log("Local LS not detected, using cloud API only")
 
     WindsurfProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)

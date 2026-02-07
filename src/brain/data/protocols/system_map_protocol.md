@@ -88,8 +88,7 @@ atlastrinity/
 │   │   └── .build/release/mcp-server-macos-use  # Compiled binary
 │   ├── mcp-server-googlemaps/    # Google Maps MCP (12 tools)
 │   │   └── .build/release/mcp-server-googlemaps  # Compiled binary
-│   └── XcodeBuildMCP/            # Xcode Build & Test (94+ tools)
-│       └── .smithery/stdio/index.cjs
+│   └── (XcodeBuildMCP via npx)    # Xcode Build & Test (94+ tools)
 │
 ├── scripts/                      # Utility Scripts (115+)
 │   ├── check_mcp_health.py       # MCP health check (CLI: --json --tools --all)
@@ -243,7 +242,7 @@ VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 | `github` | stdio | `npx @modelcontextprotocol/server-github` | npm | ~20 |
 | `redis` | stdio | `python3 -m src.mcp_server.redis_server` | Local Python | 5 |
 | `data-analysis` | stdio | `python3 -m src.mcp_server.data_analysis_server` | Local Python | 10 |
-| `xcodebuild` | stdio | `node vendor/XcodeBuildMCP/.smithery/stdio/index.cjs` | Node.js | 94+ |
+| `xcodebuild` | stdio | `npx -y xcodebuildmcp@latest mcp` | npm | 94+ |
 | `tour-guide` | internal | Native Python (ToolDispatcher) | Internal | 6 |
 
 ### Tier 3 — Optional (On-demand)

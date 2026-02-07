@@ -136,12 +136,7 @@ if [ -d "vendor/mcp-server-googlemaps/.build" ]; then
     echo "✅ Swift .build видалено (googlemaps)"
 fi
 
-if [ -d "vendor/XcodeBuildMCP" ]; then
-    rm -rf vendor/XcodeBuildMCP
-    echo "✅ XcodeBuildMCP видалено (буде перевстановлено при setup)"
-else
-    echo "ℹ️  XcodeBuildMCP не існує"
-fi
+echo "ℹ️  XcodeBuildMCP тепер встановлюється через npx (не потребує vendor/)"
 
 echo ""
 echo "📦 Крок 6/8: Видалення глобальної конфігурації..."

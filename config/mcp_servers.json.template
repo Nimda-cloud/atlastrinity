@@ -76,9 +76,11 @@
     "_comment_tier2": "=== TIER 2: HIGH PRIORITY (Рекомендовані) ===",
     "xcodebuild": {
       "transport": "stdio",
-      "command": "node",
+      "command": "npx",
       "args": [
-        "${PROJECT_ROOT}/vendor/XcodeBuildMCP/.smithery/stdio/index.cjs"
+        "-y",
+        "xcodebuildmcp@latest",
+        "mcp"
       ],
       "connect_timeout": 120,
       "description": "Xcode Build & Test Automation (iOS/macOS development): Build projects, run tests, manage simulators, analyze build logs, code coverage, device deployment. Critical for Atlas planning and iOS/macOS development workflows.",
