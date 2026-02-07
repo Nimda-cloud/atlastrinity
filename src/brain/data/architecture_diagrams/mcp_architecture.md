@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T19:05:53.077671 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, docker-compose.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T18:46:33.722267 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, docker-compose.yml -->
 

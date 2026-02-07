@@ -1791,7 +1791,7 @@ def main():
             print_success("Git remote налаштовано на GitHub")
 
             # Read GITHUB_TOKEN from .env (local first, then global)
-            github_token = None
+            github_token: str | None = None
             for env_path in [PROJECT_ROOT / ".env", CONFIG_ROOT / ".env"]:
                 if env_path.exists():
                     with open(env_path, encoding="utf-8") as f:
