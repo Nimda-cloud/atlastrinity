@@ -6,7 +6,6 @@ from fastapi import UploadFile
 
 logger = logging.getLogger("brain.services.file_processor")
 
-
 class FileProcessor:
     """Service to process uploaded files and extract text content."""
 

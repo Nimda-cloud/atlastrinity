@@ -1,20 +1,21 @@
 import json
 import os
 import re
-import struct
-import subprocess
 import sys
 import threading
 import time
-import uuid
-from collections.abc import Callable
 from typing import Any, Union
-
-import grpc
-import httpx
 import requests
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import (
+
+import struct
+import subprocess
+import uuid
+from collections.abc import Callable
+import grpc
+import httpx
+
     AIMessage,
     BaseMessage,
     HumanMessage,
@@ -23,7 +24,7 @@ from langchain_core.messages import (
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 # Type aliases
-ContentItem = Union[str, dict[str, Any]]
+ContentItem = str | dict[str, Any]
 
 # ─── Windsurf Free Models ────────────────────────────────────────────────────
 # Only FREE tier models from Windsurf/Codeium
@@ -97,9 +98,7 @@ CASCADE_MODEL_MAP: dict[str, str] = {
 # Max seconds to wait for Cascade AI response
 CASCADE_TIMEOUT = 90
 
-
 # ─── Proto Binary Helpers ────────────────────────────────────────────────────
-
 
 def _proto_varint(val: int) -> bytes:
     """Encode an integer as a protobuf varint."""
@@ -110,22 +109,18 @@ def _proto_varint(val: int) -> bytes:
     r += bytes([val])
     return r
 
-
 def _proto_str(field_num: int, s: str) -> bytes:
     """Encode a string field in protobuf binary format."""
     b = s.encode("utf-8")
     return _proto_varint((field_num << 3) | 2) + _proto_varint(len(b)) + b
 
-
 def _proto_msg(field_num: int, inner: bytes) -> bytes:
     """Encode a sub-message field in protobuf binary format."""
     return _proto_varint((field_num << 3) | 2) + _proto_varint(len(inner)) + inner
 
-
 def _proto_int(field_num: int, val: int) -> bytes:
     """Encode a varint field in protobuf binary format."""
     return _proto_varint((field_num << 3) | 0) + _proto_varint(val)
-
 
 def _proto_extract_string(data: bytes, target_field: int) -> str:
     """Extract first string at target_field from proto binary."""
@@ -173,7 +168,6 @@ def _proto_extract_string(data: bytes, target_field: int) -> str:
         else:
             break
     return ""
-
 
 def _proto_find_strings(data: bytes, min_len: int = 4) -> list[str]:
     """Recursively extract all readable strings from proto binary."""
@@ -226,7 +220,6 @@ def _proto_find_strings(data: bytes, min_len: int = 4) -> list[str]:
             break
     return results
 
-
 def _build_metadata_proto(api_key: str, session_id: str) -> bytes:
     """Build Metadata proto binary (exa.codeium_common_pb.Metadata)."""
     return (
@@ -239,9 +232,7 @@ def _build_metadata_proto(api_key: str, session_id: str) -> bytes:
         + _proto_str(10, session_id)
     )
 
-
 # ─── Language Server Auto-Detection ──────────────────────────────────────────
-
 
 def _detect_language_server() -> tuple[int, str]:
     """Detect running Windsurf language server port and CSRF token.
@@ -285,7 +276,6 @@ def _detect_language_server() -> tuple[int, str]:
         pass
     return 0, ""
 
-
 def _ls_heartbeat(port: int, csrf: str) -> bool:
     """Quick heartbeat check to verify LS is responding."""
     try:
@@ -298,7 +288,6 @@ def _ls_heartbeat(port: int, csrf: str) -> bool:
         return r.status_code == 200
     except Exception:
         return False
-
 
 class WindsurfLLM(BaseChatModel):
     """Windsurf/Codeium LLM provider.

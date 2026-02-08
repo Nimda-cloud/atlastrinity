@@ -224,6 +224,5 @@ class StateManager:
             logger.error(f"[STATE] Failed to get key {key}: {e}")
             return None
 
-
 # Singleton instance
 state_manager = StateManager()

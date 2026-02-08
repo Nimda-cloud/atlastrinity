@@ -1,15 +1,16 @@
-import base64
 import json
 import os
 import sys
-from collections.abc import Callable
-from io import BytesIO
 from typing import Any, cast
-
-import httpx
 import requests
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import (
+
+import base64
+from collections.abc import Callable
+from io import BytesIO
+import httpx
+
     AIMessage,
     BaseMessage,
     HumanMessage,
@@ -21,7 +22,6 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 # Type aliases for better type safety
 ContentItem = str | dict[str, Any]
-
 
 class CopilotLLM(BaseChatModel):
     # Model translation: custom names -> real API model names
@@ -120,7 +120,6 @@ class CopilotLLM(BaseChatModel):
     def _invoke_gemini_fallback(self, messages: list[BaseMessage]) -> AIMessage:
         try:
             # Dynamic import to avoid circular dependency
-            import os
 
             from langchain_google_genai import (
                 ChatGoogleGenerativeAI,  # pyrefly: ignore[missing-import]
@@ -151,7 +150,6 @@ class CopilotLLM(BaseChatModel):
         """Ultimate fallback: Use Vision Module (OCR + BLIP) to describe the image."""
         try:
             print("[LOCAL VISION FALLBACK] Using Vision Module (OCR + BLIP)...", flush=True)
-            import os
             import tempfile
 
             from vision_module import get_vision_module  # pyrefly: ignore[missing-import]
@@ -178,7 +176,6 @@ class CopilotLLM(BaseChatModel):
                 )
 
             # Decode and save to temp file
-            import base64
 
             image_bytes = base64.b64decode(image_b64)
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:

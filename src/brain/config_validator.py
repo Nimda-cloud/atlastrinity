@@ -28,7 +28,6 @@ class ValidationIssue:
     message: str
     value: Any = None
 
-
 @dataclass
 class ValidationResult:
     """Result of validating a configuration file."""
@@ -44,7 +43,6 @@ class ValidationResult:
     @property
     def warnings(self) -> list[ValidationIssue]:
         return [i for i in self.issues if i.level == "warning"]
-
 
 # Expected structure schemas
 YAML_SCHEMA = {
@@ -101,7 +99,6 @@ MCP_SERVER_SCHEMA = {
     "agents": {"_type": "list"},
     "connect_timeout": {"_type": "int", "_range": (1, 600)},
 }
-
 
 class ConfigValidator:
     """Validates AtlasTrinity configuration files."""
@@ -408,7 +405,6 @@ class ConfigValidator:
                     logger.info(f"  [{issue.path}] {issue.message}")
 
         return all_valid
-
 
 # Global instance
 config_validator = ConfigValidator()

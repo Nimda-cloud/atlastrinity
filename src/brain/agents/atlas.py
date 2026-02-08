@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 """Atlas - The Strategist
 
 Role: Strategic analysis, plan formulation, task delegation
@@ -48,7 +47,6 @@ class TaskPlan:
     created_at: datetime = field(default_factory=datetime.now)
     status: str = "pending"  # pending, active, completed, failed
     context: dict[str, Any] = field(default_factory=dict)
-
 
 class Atlas(BaseAgent):
     """Atlas - The Strategist
@@ -329,7 +327,6 @@ class Atlas(BaseAgent):
         """Assess Grisha's critique of a plan.
         Decide whether to ACCEPT the critique (and fix) or DISPUTE it (if confident).
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         plan_str = str(plan.steps) if hasattr(plan, "steps") else str(plan)
         issues_str = "; ".join(critique_issues) if critique_issues else critique
@@ -390,8 +387,6 @@ Respond in JSON:
         logger.info(
             f"[ATLAS CHAT] Fetching context in parallel for ({intent}): {resolved_query[:30]}...",
         )
-
-        from ..mcp_manager import mcp_manager
 
         async def get_graph():
             try:
@@ -569,9 +564,6 @@ Respond in JSON:
         Uses cached tools when available. If ModeProfile specifies servers,
         only discovers from those servers (fewer connections = faster).
         """
-        import time
-
-        from ..mcp_manager import mcp_manager
 
         now = time.time()
         if self._cached_info_tools and (now - self._last_tool_refresh <= self._refresh_interval):
@@ -886,8 +878,6 @@ Respond in JSON:
         """Execute tool calls and append results to messages."""
         from langchain_core.messages import ToolMessage
 
-        from ..mcp_manager import mcp_manager
-
         tool_executed = False
         for tool_call in tool_calls:
             logical_name = tool_call.get("name")
@@ -1074,7 +1064,6 @@ Respond in JSON:
         """Resolves ambiguous references in the query using conversation history.
         E.g., "а ближче?" -> "Епіцентр ближче до Зимної Води"
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         if not history or len(query.split()) > 10:
             return query
@@ -1331,7 +1320,6 @@ If plan is sound, state: "SELF_REVIEW_ISSUES: None" and set CONFIDENCE: 0.9+
         intent: str,
     ) -> tuple[list[BaseMessage], str]:
         """Constructs the prompt messages for plan creation."""
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         # Inject context-specific doctrine
         if intent == "development":
@@ -1428,8 +1416,6 @@ CRITICAL PLANNING RULES:
             user_msg = messages[-1].content
             new_prompt = f"{user_msg}\n\nRESEARCH FINDINGS:\n{reasoning.get('analysis')!s}"
 
-            from langchain_core.messages import HumanMessage, SystemMessage
-
             new_messages = [
                 SystemMessage(content=dynamic_system_prompt),
                 HumanMessage(content=new_prompt),
@@ -1446,7 +1432,6 @@ CRITICAL PLANNING RULES:
         dynamic_system_prompt: str,
     ) -> list[dict[str, Any]]:
         """Performs self-verification and correction of the plan."""
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         self_check = await self._self_verify_plan(steps, goal_text)
 
@@ -1557,10 +1542,6 @@ Output the corrected plan in the same JSON format as before.
     async def get_grisha_report(self, step_id: str) -> str | None:
         """Retrieve Grisha's detailed rejection report from notes or memory"""
         import ast
-        import json
-        import os
-
-        from ..mcp_manager import mcp_manager
 
         def _parse_payload(payload: Any) -> dict[str, Any] | None:
             if isinstance(payload, dict):
@@ -1641,7 +1622,6 @@ Output the corrected plan in the same JSON format as before.
         self, step_id: str, error: str, history: list[dict[str, Any]] | None = None
     ) -> dict[str, Any]:
         """Helps Tetyana when she is stuck, using shared context and Grisha's feedback for better solutions"""
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         # Get context for better recovery suggestions
         context_info = shared_context.to_dict()
@@ -1687,7 +1667,6 @@ Output the corrected plan in the same JSON format as before.
         """Atlas reviews the diagnostics from Vibe and the audit from Grisha.
         Decides whether to proceed with the self-healing fix and sets the tempo.
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         context_data = context or shared_context.to_dict()
 
@@ -1753,7 +1732,6 @@ Output the corrected plan in the same JSON format as before.
             )
 
             # JSON extraction
-            import json
 
             start = content.find("{")
             end = content.rfind("}") + 1
@@ -1766,9 +1744,6 @@ Output the corrected plan in the same JSON format as before.
         """Atlas reviews the execution results of Tetyana and Grisha.
         Determines if the goal was REALLY achieved and if the strategy is worth remembering.
         """
-        import os
-
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         # ARTIFACT VERIFICATION: Extract claimed file paths from goal and results
         claimed_artifacts = self._extract_artifact_paths(goal, results)
@@ -1875,7 +1850,6 @@ If the user asked to 'count', you MUST state the exact number found.
         """Atlas takes the 'burden' and decides for the user after a timeout.
         Analyzes the context of the task and provides the most logical answer.
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         logger.info(f"[ATLAS] Deciding on behalf of silent user for question: {question[:100]}...")
 

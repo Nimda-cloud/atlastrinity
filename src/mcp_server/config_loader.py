@@ -13,7 +13,6 @@ import yaml
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
 
-
 def _substitute_placeholders(value: Any) -> Any:
     """Substitute ${VAR} placeholders in strings."""
     if not isinstance(value, str):
@@ -32,7 +31,6 @@ def _substitute_placeholders(value: Any) -> Any:
         return os.getenv(var_name, match.group(0))
 
     return re.sub(r"\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}", replace_match, value)
-
 
 def load_config() -> dict[str, Any]:
     """Load full configuration from config.yaml and .env"""
@@ -61,7 +59,6 @@ def load_config() -> dict[str, Any]:
 
     return {}
 
-
 def get_config_value(section: str, key: str, default: Any = None) -> Any:
     """Get a config value from any section with placeholder resolution"""
     full_config = load_config()
@@ -77,7 +74,6 @@ def get_config_value(section: str, key: str, default: Any = None) -> Any:
 
     value = section_data.get(key, default) if isinstance(section_data, dict) else default
     return _substitute_placeholders(value)
-
 
 def load_mcp_config() -> dict[str, Any]:
     """Deprecated: use load_config().get('mcp', {}) instead"""

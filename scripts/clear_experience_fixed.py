@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Fixed Atlas Trinity Memory Cleanup Script
 
@@ -59,7 +58,6 @@ def kill_processes():
 
     print("✅ Processes terminated.")
 
-
 def clear_redis():
     """Clear Redis data"""
     print("🧹 Clearing Redis cache...")
@@ -69,7 +67,6 @@ def clear_redis():
         print("✅ Redis flushed.")
     except Exception as e:
         print(f"⚠️ Could not flush Redis: {e}")
-
 
 def clear_cache():
     """Clear all cache directories including recursive __pycache__"""
@@ -140,7 +137,6 @@ def clear_cache():
 
     print(f"✅ Cleared {cleared_count} standard cache paths and {pycache_count} __pycache__ dirs.")
 
-
 def clear_chroma_files():
     """Force clear ChromaDB files"""
     print("🧹 Force clearing ChromaDB files...")
@@ -171,7 +167,6 @@ def clear_chroma_files():
                 except Exception:
                     pass
 
-
 async def cleanup_hallucinations():
     """Cleanup specific hallucinations as done in cleanup_memory.py"""
     if not long_term_memory.available:
@@ -191,7 +186,6 @@ async def cleanup_hallucinations():
         await long_term_memory.delete_specific_memory("conversations", h)
         await long_term_memory.delete_specific_memory("lessons", h)
     print("✅ Hallucination patterns cleared.")
-
 
 async def clear_experience():
     print("╔══════════════════════════════════════════╗")
@@ -263,7 +257,6 @@ async def clear_experience():
 
     print("\n✨ All experience, records, Redis and cache have been successfully reset.")
     print("🚀 Atlas is now a blank slate.")
-
 
 if __name__ == "__main__":
     asyncio.run(clear_experience())

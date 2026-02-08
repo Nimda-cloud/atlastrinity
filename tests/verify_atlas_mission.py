@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.agents.atlas import Atlas
@@ -44,7 +43,6 @@ async def verify_mission_depth():
         print("✓ SUCCESS: Response is deep and verbose")
     else:
         print("⚠ WARNING: Response might be too brief")
-
 
 if __name__ == "__main__":
     asyncio.run(verify_mission_depth())

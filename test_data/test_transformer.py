@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Test script for the data transformation component.
 """
@@ -41,7 +39,6 @@ def test_csv_transformation():
         print(f"✗ CSV transformation failed: {transform_result.error}")
     print()
 
-
 def test_json_transformation():
     """Test JSON data transformation."""
     print("Testing JSON transformation...")
@@ -66,7 +63,6 @@ def test_json_transformation():
         print(f"✗ JSON transformation failed: {transform_result.error}")
     print()
 
-
 def test_xml_transformation():
     """Test XML data transformation."""
     print("Testing XML transformation...")
@@ -90,7 +86,6 @@ def test_xml_transformation():
     else:
         print(f"✗ XML transformation failed: {transform_result.error}")
     print()
-
 
 def test_data_validation():
     """Test data validation functionality."""
@@ -129,7 +124,6 @@ def test_data_validation():
     print(f"Wrong type validation: {'✓' if not result.success else '✗'} {result.error}")
     print()
 
-
 def test_schema_compatibility():
     """Test schema compatibility checking."""
     print("Testing schema compatibility...")
@@ -152,7 +146,6 @@ def test_schema_compatibility():
     result = transformer.validate_schema_compatibility(incompatible_data)
     print(f"Incompatible schema check: {'✓' if not result.success else '✗'} {result.error}")
     print()
-
 
 def test_data_normalization():
     """Test data type normalization."""
@@ -179,7 +172,6 @@ def test_data_normalization():
         print(f"✗ Data normalization failed: {result.error}")
     print()
 
-
 def test_error_handling():
     """Test error handling in transformation."""
     print("Testing error handling...")
@@ -201,7 +193,6 @@ def test_error_handling():
     )
     print()
 
-
 def test_schema_inspection():
     """Test schema inspection functionality."""
     print("Testing schema inspection...")
@@ -213,7 +204,6 @@ def test_schema_inspection():
     print(f"  Schema fields: {list(schema['properties'].keys())}")
     print(f"  Required fields: {schema.get('required', [])}")
     print()
-
 
 def main():
     """Run all transformation tests."""
@@ -241,7 +231,6 @@ def main():
         import traceback
 
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()

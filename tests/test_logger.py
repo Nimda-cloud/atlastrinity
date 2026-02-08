@@ -2,7 +2,6 @@ import sys
 import unittest
 from pathlib import Path
 
-# Ensure the src directory is in the Python path
 src_path = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
@@ -58,7 +57,6 @@ class TestSecretFilter(unittest.TestCase):
         self.filter.filter(record)
         self.assertNotIn("Dima@1203", record.msg)
         self.assertIn("[MASKED]", record.msg)
-
 
 if __name__ == "__main__":
     unittest.main()

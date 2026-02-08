@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Comprehensive MCP Server Test Suite
 Tests all configured MCP servers and their capabilities.
 """
@@ -24,7 +23,6 @@ class Colors:
     FAIL = "\033[91m"
     ENDC = "\033[0m"
     BOLD = "\033[1m"
-
 
 async def run_server_test(server_name: str, test_cases: list) -> dict:
     """Test a single MCP server with multiple test cases. Returns graceful skips for missing servers."""
@@ -109,10 +107,8 @@ async def run_server_test(server_name: str, test_cases: list) -> dict:
 
     return results
 
-
 # Pytest wrapper
 # Pytest wrapper
-
 
 @pytest.mark.asyncio
 async def test_mcp_server(server_name: str, test_cases: list):
@@ -138,7 +134,6 @@ async def test_mcp_server(server_name: str, test_cases: list):
         pytest.skip(f"Server {server_name} connection timeout (>15s)")
     except Exception as e:
         pytest.skip(f"Server {server_name} connection error: {str(e)[:80]}")
-
 
 async def main():
     print(f"{Colors.BOLD}{Colors.HEADER}")
@@ -258,7 +253,6 @@ async def main():
     # Cleanup
     await mcp_manager.cleanup()
     print(f"\n{Colors.OKCYAN}Test suite completed.{Colors.ENDC}\n")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

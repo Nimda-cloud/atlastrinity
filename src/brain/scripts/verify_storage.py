@@ -5,7 +5,6 @@ import sys
 
 from sqlalchemy import func, select, text
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 # Configure logging
@@ -36,7 +35,6 @@ except ImportError as e:
     logger.error(f"Import failed: {e}")
     sys.exit(1)
 
-
 async def verify_chromadb():
     print("\n--- 1. Semantic/Vector Storage (ChromaDB) ---")
     if not long_term_memory.available:
@@ -63,7 +61,6 @@ async def verify_chromadb():
                     print(f"     Sample ID: {peek['ids'][0]}")
     except Exception as e:
         print(f"❌ ChromaDB Verification Failed: {e}")
-
 
 async def verify_database():
     print("\n--- 2. Structured Storage (SQLite) ---")
@@ -106,7 +103,6 @@ async def verify_database():
     except Exception as e:
         print(f"❌ Database Verification Failed: {e}")
 
-
 async def verify_redis():
     print("\n--- 3. State & Cache (Redis) ---")
     if not state_manager.available:
@@ -139,12 +135,10 @@ async def verify_redis():
     except Exception as e:
         print(f"❌ Redis Verification Failed: {e}")
 
-
 async def main():
     await verify_chromadb()
     await verify_database()
     await verify_redis()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

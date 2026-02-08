@@ -19,7 +19,6 @@ def _run_cmd(cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
     except Exception as e:
         return 1, "", str(e)
 
-
 def _parse_package_arg(arg: str) -> tuple[str, str] | None:
     """Parse strings like 'pkg@1.2.3' or '@scope/pkg@1.2.3' and return (pkg, ver).
     Returns None if no explicit version present or arg is a file/path.
@@ -38,14 +37,12 @@ def _parse_package_arg(arg: str) -> tuple[str, str] | None:
         return None
     return pkg, ver
 
-
 def npm_package_exists(pkg: str, ver: str) -> bool:
     """Check if npm has pkg@ver available."""
     npm = shutil.which("npm") or "npm"
     cmd = [npm, "view", f"{pkg}@{ver}", "version"]
     rc, out, _err = _run_cmd(cmd)
     return rc == 0 and bool(out.strip())
-
 
 def npm_registry_has_version(pkg: str, ver: str) -> bool:
     """Query the npm registry directly for pkg@ver. Returns True if exists.
@@ -88,13 +85,11 @@ def npm_registry_has_version(pkg: str, ver: str) -> bool:
     except Exception:
         return False
 
-
 def bunx_package_exists(pkg: str, ver: str) -> bool:
     """Check bunx packages. Prefer bun registry query if possible, otherwise fall back to npm registry."""
     # If bun is installed we could attempt bun-specific calls in future, but
     # the npm registry is authoritative and works for bunx too.
     return npm_registry_has_version(pkg, ver)
-
 
 def python_module_importable(module: str) -> bool:
     """Return True if the given python module can be imported in the current environment.
@@ -111,7 +106,6 @@ def python_module_importable(module: str) -> bool:
     py = shutil.which("python3") or shutil.which("python") or sys.executable or "python"
     rc, _out, _err = _run_cmd([py, "-c", f"import {module}"], timeout=5)
     return rc == 0
-
 
 def _extract_modules_from_python_code(code: str) -> list[str]:
     """Rudimentary parser to extract top-level module names from a python code snippet.
@@ -137,7 +131,6 @@ def _extract_modules_from_python_code(code: str) -> list[str]:
             out.append(m)
     return out
 
-
 def check_package_arg_for_tool(arg: str, tool_cmd: str = "npx") -> bool:
     parsed = _parse_package_arg(arg)
     if not parsed:
@@ -148,7 +141,6 @@ def check_package_arg_for_tool(arg: str, tool_cmd: str = "npx") -> bool:
         return npm_registry_has_version(pkg, ver)
     # Unknown tool: assume present
     return True
-
 
 def check_system_limits() -> list[str]:
     """Check OS process limits and return list of human-readable issues found.
@@ -196,7 +188,6 @@ def check_system_limits() -> list[str]:
         pass
 
     return issues
-
 
 def scan_mcp_config_for_package_issues(config_path: Path) -> list[str]:
     """Given a path to MCP config JSON, return list of issue strings found."""

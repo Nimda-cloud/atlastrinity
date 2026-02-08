@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Fix SQL query for vibe_check_db
 """
@@ -62,7 +61,6 @@ def fix_vibe_check_query():
     except Exception as e:
         print(f"❌ Query failed: {e}")
         return None
-
 
 if __name__ == "__main__":
     fix_vibe_check_query()

@@ -3,7 +3,6 @@ import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.orchestrator import Trinity
@@ -57,7 +56,6 @@ async def test_orchestrator_planning():
         print("SUCCESS: Orchestrator reached planning phase (analyze_request called).")
     else:
         print("FAIL: Orchestrator did NOT reach planning phase.")
-
 
 if __name__ == "__main__":
     asyncio.run(test_orchestrator_planning())

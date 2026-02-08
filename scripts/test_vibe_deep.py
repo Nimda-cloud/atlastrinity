@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Constants
 CONFIG_PATH = Path.home() / ".config/atlastrinity/mcp/config.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -24,7 +23,6 @@ TOOLS_TO_TEST = [
     ("vibe_session_details", {"session_id_or_file": "non_existent_session_id"}),
     ("vibe_execute_subcommand", {"subcommand": "invalid-subcommand"}),
 ]
-
 
 async def run_vibe_tool(
     server_config: dict[str, Any],
@@ -210,7 +208,6 @@ async def run_vibe_tool(
 
     return success
 
-
 async def main():
     if not CONFIG_PATH.exists():
         print("Config not found")
@@ -238,7 +235,6 @@ async def main():
 
     if not all_pass:
         sys.exit(1)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

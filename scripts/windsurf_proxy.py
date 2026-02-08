@@ -57,7 +57,6 @@ LS_HEARTBEAT = "/exa.language_server_pb.LanguageServerService/Heartbeat"
 
 # ─── Language Server Auto-Detection ─────────────────────────────────────────
 
-
 def detect_language_server() -> tuple[int, str]:
     """Detect running Windsurf language server port and CSRF token."""
     try:
@@ -96,7 +95,6 @@ def detect_language_server() -> tuple[int, str]:
         pass
     return 0, ""
 
-
 def ls_heartbeat(port: int, csrf: str) -> bool:
     """Check if language server is alive."""
     import urllib.request
@@ -112,10 +110,8 @@ def ls_heartbeat(port: int, csrf: str) -> bool:
     except Exception:
         return False
 
-
 def log(msg: str) -> None:
     print(f"[WindsurfProxy] {msg}", file=sys.stderr, flush=True)
-
 
 class WindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
     processed_requests: int = 0
@@ -435,7 +431,6 @@ class WindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-
 def run(port: int = 8085) -> None:
     api_key = os.environ.get("WINDSURF_API_KEY", "")
     if not api_key:
@@ -477,7 +472,6 @@ def run(port: int = 8085) -> None:
     signal.signal(signal.SIGTERM, shutdown_handler)
 
     httpd.serve_forever()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Windsurf OpenAI-compatible proxy")

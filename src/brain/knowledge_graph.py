@@ -17,7 +17,6 @@ from .memory import long_term_memory
 
 logger = logging.getLogger("brain.knowledge_graph")
 
-
 class KnowledgeGraph:
     """Manages the Knowledge Graph.
     - Stores nodes/edges in SQLite (Structured)
@@ -177,7 +176,6 @@ class KnowledgeGraph:
 
     def add_edge_background(self, *args, **kwargs):
         """Fire-and-forget version of add_edge."""
-        import asyncio
 
         asyncio.create_task(self.add_edge(*args, **kwargs))
 
@@ -362,6 +360,5 @@ class KnowledgeGraph:
         except Exception as e:
             logger.error(f"[GRAPH] Failed to fetch graph data: {e}")
             return {"nodes": [], "edges": [], "error": str(e)}
-
 
 knowledge_graph = KnowledgeGraph()

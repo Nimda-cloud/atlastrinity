@@ -19,7 +19,6 @@ def test_syslimits_warning_default(monkeypatch, tmp_path):
     rc = cli.run(str(p))
     assert rc == 0
 
-
 def test_syslimits_fail_when_env_set(monkeypatch, tmp_path):
     cfg = {"mcpServers": {}}
     p = tmp_path / "mcp.json"

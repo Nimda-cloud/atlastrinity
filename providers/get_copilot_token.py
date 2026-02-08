@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 GitHub Copilot Token Retriever
 ==============================
@@ -75,9 +74,7 @@ WINDSURF_STATE_DB = (
     / "state.vscdb"
 )
 
-
 # ─── Colors ──────────────────────────────────────────────────────────────────
-
 
 class C:
     """ANSI color codes for terminal output."""
@@ -90,25 +87,19 @@ class C:
     DIM = "\033[2m"
     RESET = "\033[0m"
 
-
 def info(msg: str) -> None:
     print(f"{C.GREEN}✓{C.RESET} {msg}")
-
 
 def warn(msg: str) -> None:
     print(f"{C.YELLOW}⚠{C.RESET} {msg}")
 
-
 def error(msg: str) -> None:
     print(f"{C.RED}✗{C.RESET} {msg}")
-
 
 def step(msg: str) -> None:
     print(f"\n{C.CYAN}▸{C.RESET} {C.BOLD}{msg}{C.RESET}")
 
-
 # ─── HTTP Helpers ────────────────────────────────────────────────────────────
-
 
 def _post_json(url: str, data: dict) -> dict:
     """POST form-encoded data, return JSON response."""
@@ -117,16 +108,13 @@ def _post_json(url: str, data: dict) -> dict:
     with urlopen(req, timeout=30) as resp:
         return json.loads(resp.read().decode())
 
-
 def _get_json(url: str, headers: dict) -> dict:
     """GET with headers, return JSON response."""
     req = Request(url, headers={**headers, "Accept": "application/json"})
     with urlopen(req, timeout=30) as resp:
         return json.loads(resp.read().decode())
 
-
 # ─── Token Verification ─────────────────────────────────────────────────────
-
 
 def verify_token(token: str) -> dict | None:
     """Verify a ghu_ token against Copilot API. Returns session data or None."""
@@ -154,7 +142,6 @@ def verify_token(token: str) -> dict | None:
         error(f"Connection error: {e}")
         return None
 
-
 def print_token_info(data: dict) -> None:
     """Pretty-print Copilot session token info."""
     sku = data.get("sku", "unknown")
@@ -175,9 +162,7 @@ def print_token_info(data: dict) -> None:
     print(f"  {C.DIM}API:{C.RESET}        {api_endpoint}")
     print(f"  {C.DIM}Expires:{C.RESET}    {expires_str}")
 
-
 # ─── Method 1: OAuth Device Flow (VS Code scheme) ───────────────────────────
-
 
 def get_token_oauth_device_flow() -> str | None:
     """
@@ -285,9 +270,7 @@ def get_token_oauth_device_flow() -> str | None:
     error("Таймаут очікування авторизації.")
     return None
 
-
 # ─── Method 2: Extract from IDE DB ──────────────────────────────────────────
-
 
 def _search_db_for_ghu_token(db_path: Path, ide_name: str) -> str | None:
     """
@@ -360,21 +343,17 @@ def _search_db_for_ghu_token(db_path: Path, ide_name: str) -> str | None:
         error(f"Помилка читання {ide_name} DB: {e}")
         return None
 
-
 def get_token_from_windsurf() -> str | None:
     """Try to extract GitHub ghu_ token from Windsurf's state database."""
     step("Searching for GitHub token in Windsurf")
     return _search_db_for_ghu_token(WINDSURF_STATE_DB, "Windsurf")
-
 
 def get_token_from_vscode() -> str | None:
     """Try to extract GitHub ghu_ token from VS Code's state database."""
     step("Searching for GitHub token in VS Code")
     return _search_db_for_ghu_token(VSCODE_STATE_DB, "VS Code")
 
-
 # ─── .env Update ─────────────────────────────────────────────────────────────
-
 
 def _set_env_var(env_path: Path, key: str, value: str) -> bool:
     """Set or replace a single key=value in an .env file. Returns True if changed."""
@@ -398,7 +377,6 @@ def _set_env_var(env_path: Path, key: str, value: str) -> bool:
     env_path.write_text(new_content)
     return True
 
-
 def update_env_file(env_path: Path, token: str) -> bool:
     """Update COPILOT_API_KEY and VISION_API_KEY in an .env file."""
     if not env_path.exists():
@@ -415,7 +393,6 @@ def update_env_file(env_path: Path, token: str) -> bool:
         warn(f"Нічого не змінено в {env_path}")
     return changed
 
-
 def update_all_env(token: str) -> None:
     """Update token in LOCAL .env only.
 
@@ -429,9 +406,7 @@ def update_all_env(token: str) -> None:
     else:
         warn(f"Нічого не змінено в {LOCAL_ENV}")
 
-
 # ─── Test Current Token ─────────────────────────────────────────────────────
-
 
 def test_current_token() -> bool:
     """Test the currently configured COPILOT_API_KEY."""
@@ -468,9 +443,7 @@ def test_current_token() -> bool:
     error("Токен НЕ працює")
     return False
 
-
 # ─── Main ────────────────────────────────────────────────────────────────────
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -603,7 +576,6 @@ def main():
         print(f"  {C.DIM}Для автооновлення .env файлів запустіть з --update-env{C.RESET}")
 
     print()
-
 
 if __name__ == "__main__":
     main()

@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from brain.mcp_manager import mcp_manager
@@ -11,7 +10,6 @@ from brain.message_bus import AgentMsg, MessageType, message_bus
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("test_vibe")
-
 
 async def test_error_analysis_payload():
     """Verify vibe_analyze_error accepts new parameters and structures the prompt."""
@@ -50,7 +48,6 @@ async def test_error_analysis_payload():
         logger.error(f"Error analysis test failed: {e}")
         return False
 
-
 async def test_message_bus_extensions():
     """Verify message bus handles new message types."""
     logger.info("Testing message bus extensions...")
@@ -75,7 +72,6 @@ async def test_message_bus_extensions():
     logger.info("Message bus extensions verified.")
     return True
 
-
 async def main():
     logger.info("Starting Vibe Optimization Verification...")
 
@@ -90,7 +86,6 @@ async def main():
     else:
         logger.error("❌ Vibe Optimization Tests Failed.")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

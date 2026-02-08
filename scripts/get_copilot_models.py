@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Get available GitHub Copilot models"""
 
 import json

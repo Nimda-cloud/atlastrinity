@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """AtlasTrinity Full Stack Development Setup Script
 Виконує комплексне налаштування середовища після клонування:
 - Перевірка середовища (Python 3.12.12, Bun, Swift)
@@ -22,7 +21,6 @@ import sys
 import time
 from pathlib import Path
 
-
 # Кольори для консолі
 class Colors:
     HEADER = "\033[95m"
@@ -34,26 +32,20 @@ class Colors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
 
-
 def print_step(msg: str):
     print(f"\n{Colors.BOLD}{Colors.OKBLUE}[SETUP]{Colors.ENDC} {msg}")
-
 
 def print_success(msg: str):
     print(f"{Colors.OKGREEN}✓{Colors.ENDC} {msg}")
 
-
 def print_warning(msg: str):
     print(f"{Colors.WARNING}⚠{Colors.ENDC} {msg}")
-
 
 def print_error(msg: str):
     print(f"{Colors.FAIL}✗{Colors.ENDC} {msg}")
 
-
 def print_info(msg: str):
     print(f"{Colors.OKCYAN}ℹ{Colors.ENDC} {msg}")
-
 
 # Константи
 REQUIRED_PYTHON = "3.12.12"
@@ -80,7 +72,6 @@ DIRS = {
     "huggingface": CONFIG_ROOT / "models" / "huggingface",
 }
 
-
 def check_python_version():
     """Перевіряє версію Python"""
     print_step(f"Перевірка версії Python (ціль: {REQUIRED_PYTHON})...")
@@ -93,7 +84,6 @@ def check_python_version():
     print_info(f"Рекомендовано використовувати {REQUIRED_PYTHON} для повної сумісності.")
     return True  # Дозволяємо продовжити, але з попередженням
 
-
 def ensure_directories():
     """Створює необхідні директорії в ~/.config"""
     print_step("Налаштування глобальних директорій...")
@@ -103,7 +93,6 @@ def ensure_directories():
             print_success(f"Створено {name}: {path}")
         else:
             print_success(f"Директорія {name} вже існує")
-
 
 def check_system_tools():
     """Перевіряє наявність базових інструментів та встановлює відсутні"""
@@ -313,7 +302,6 @@ def check_system_tools():
 
     return "brew" not in missing  # Brew є обов'язковим
 
-
 def ensure_database():
     """Initialize SQLite database in global config folder"""
     print_step("Налаштування основної бази даних (SQLite)...")
@@ -361,7 +349,6 @@ def ensure_database():
         except Exception as e:
             print_warning(f"Не вдалося створити legacy trinity.db: {e}")
 
-
 def prepare_monitoring_db():
     """Initialize Monitoring SQLite database"""
     print_step("Налаштування бази даних моніторингу (SQLite)...")
@@ -384,7 +371,6 @@ def prepare_monitoring_db():
 
     # Ensure tables exist (Schema Check)
     try:
-        import sqlite3
 
         with sqlite3.connect(monitor_db_path) as conn:
             # Check for healing_events
@@ -417,7 +403,6 @@ def prepare_monitoring_db():
     except Exception as e:
         print_warning(f"Не вдалося оновити схему Monitoring DB: {e}")
 
-
 def verify_golden_fund():
     """Verify Golden Fund database and restore from backup if needed."""
     print_step("Перевірка Golden Fund (Backup & Restore)...")
@@ -449,7 +434,6 @@ def verify_golden_fund():
     if not config_db_path.exists():
         print_info("Створення нової бази даних Golden Fund...")
         try:
-            import sqlite3
 
             with sqlite3.connect(config_db_path) as conn:
                 # Enable WAL mode for better concurrency
@@ -497,7 +481,6 @@ def verify_golden_fund():
             print_warning(f"Не вдалося відновити Memory Chroma: {e}")
 
     # 2. Check Tables (Verify Integrity)
-    import sqlite3
 
     try:
         # We can't use the SQLStorage class directly easily here without import setup, so raw check
@@ -526,7 +509,6 @@ def verify_golden_fund():
     if not search_index_path.exists():
         print_info("Створення бази індексу пошуку (FTS5)...")
         try:
-            import sqlite3
 
             with sqlite3.connect(search_index_path) as conn:
                 conn.execute("PRAGMA journal_mode=WAL;")
@@ -536,11 +518,9 @@ def verify_golden_fund():
         except Exception as e:
             print_warning(f"Не вдалося створити Search Index DB: {e}")
 
-
 def _brew_formula_installed(formula: str) -> bool:
     rc = subprocess.run(["brew", "list", "--formula", formula], check=False, capture_output=True)
     return rc.returncode == 0
-
 
 def _brew_cask_installed(cask: str, app_name: str) -> bool:
     # 1) check brew metadata
@@ -553,7 +533,6 @@ def _brew_cask_installed(cask: str, app_name: str) -> bool:
         f"{os.path.expanduser('~/Applications')}/{app_name}.app",
     ]
     return any(os.path.exists(p) for p in app_paths)
-
 
 def install_brew_deps():
     """Встановлює системні залежності через Homebrew"""
@@ -688,7 +667,6 @@ def install_brew_deps():
 
     return True
 
-
 def build_swift_mcp():
     """Компілює Swift MCP сервер (macos-use)"""
     print_step("Компіляція нативного MCP серверу (macos-use)...")
@@ -726,7 +704,6 @@ def build_swift_mcp():
         print_error(f"Помилка компіляції Swift: {e}")
         return False
 
-
 def build_googlemaps_mcp():
     """Компілює Swift Google Maps MCP сервер"""
     print_step("Компіляція Google Maps MCP серверу (googlemaps)...")
@@ -760,7 +737,6 @@ def build_googlemaps_mcp():
     except subprocess.CalledProcessError as e:
         print_error(f"Помилка компіляції Swift: {e}")
         return False
-
 
 def setup_google_maps():
     """Адаптивне налаштування Google Maps API через gcloud"""
@@ -844,7 +820,6 @@ def setup_google_maps():
 
     return False
 
-
 def setup_xcodebuild_mcp():
     """Встановлює та компілює XcodeBuildMCP для iOS/macOS розробки"""
     print_step("Налаштування XcodeBuildMCP (Xcode automation)...")
@@ -915,7 +890,6 @@ def setup_xcodebuild_mcp():
         print_error(f"Помилка збірки: {e}")
         return False
 
-
 def check_venv():
     """Налаштовує Python virtual environment"""
     print_step("Налаштування Python venv...")
@@ -935,7 +909,6 @@ def check_venv():
     else:
         print_success("Venv вже існує")
     return True
-
 
 def verify_mcp_package_versions():
     """Wrapper around centralized scan_mcp_config_for_package_issues."""
@@ -966,7 +939,6 @@ def verify_mcp_package_versions():
     except Exception:
         pass
     return issues
-
 
 def install_deps():
     """Встановлює всі залежності (Python, NPM, MCP)"""
@@ -1094,7 +1066,6 @@ def install_deps():
 
     return True
 
-
 def process_template(src_path: Path, dst_path: Path):
     """Copies template to destination with variable substitution."""
     try:
@@ -1128,7 +1099,6 @@ def process_template(src_path: Path, dst_path: Path):
     except Exception as e:
         print_error(f"Failed to process template {src_path.name}: {e}")
         return False
-
 
 def sync_configs():
     """Copies template configs to global folder with variable expansion."""
@@ -1252,7 +1222,6 @@ def sync_configs():
         print_error(f"Config setup error: {e}")
         return False
 
-
 def download_models():
     """Завантажує AI моделі зі смарт-перевіркою"""
     print_step("Налаштування AI моделей...")
@@ -1335,7 +1304,6 @@ def download_models():
             print_info("Ініціалізація TTS моделей (з пакуванням)...")
             python_script = f"""
 import os, sys
-from pathlib import Path
 from ukrainian_tts.tts import TTS
 
 # Set resources dir for stanza which is used under the hood
@@ -1355,7 +1323,6 @@ print('TTS OK')
         except Exception as e:
             print_warning(f"Помилка завантаження TTS: {e}")
 
-
 def _pip_install_safe(package: str):
     """Install a pip package using venv python if available, otherwise --user flag."""
     venv_python = VENV_PATH / "bin" / "python"
@@ -1363,7 +1330,6 @@ def _pip_install_safe(package: str):
         subprocess.run([str(venv_python), "-m", "pip", "install", package], check=False)
     else:
         subprocess.run([sys.executable, "-m", "pip", "install", "--user", package], check=False)
-
 
 def backup_databases():
     """Архівує всі бази даних з шифруванням та фільтрацією секретів"""
@@ -1395,7 +1361,6 @@ def backup_databases():
         _legacy_backup_databases()
     except Exception as e:
         print_error(f"Помилка при створенні бекапу: {e}")
-
 
 def _legacy_backup_databases():
     """Застарілий метод бекапу (без шифрування)"""
@@ -1440,7 +1405,6 @@ def _legacy_backup_databases():
     print_success("Бекап завершено успішно.")
     print_info(f"Резервні копії збережено в: {backup_dir}")
 
-
 def restore_databases():
     """Відновлює всі бази даних та вектори з архіву репозиторію (Secure Restore)"""
     print_step("Відновлення баз даних з резервних копій...")
@@ -1448,12 +1412,9 @@ def restore_databases():
     try:
         # Auto-install cryptography if missing
         try:
-            import cryptography as cryptography  # noqa: F401, PLC0414
         except ImportError:
             print_info("Модуль 'cryptography' відсутній. Встановлення...")
             _pip_install_safe("cryptography")
-
-        from scripts.secure_backup import SecureBackupManager
 
         backup_manager = SecureBackupManager(PROJECT_ROOT)
         success = backup_manager.restore_secure_backup()
@@ -1470,7 +1431,6 @@ def restore_databases():
         _legacy_restore_databases()
     except Exception as e:
         print_error(f"Помилка при відновленні: {e}")
-
 
 def _legacy_restore_databases():
     """Застарілий метод відновлення (без розшифрування)"""
@@ -1515,7 +1475,6 @@ def _legacy_restore_databases():
 
     print_success("Повне відновлення завершено.")
 
-
 async def verify_database_tables():
     """Detailed verification of database tables and counts using external script"""
     print_step("Детальна перевірка таблиць бази даних...")
@@ -1529,7 +1488,6 @@ async def verify_database_tables():
     except Exception as e:
         print_error(f"Помилка при верифікації таблиць: {e}")
         return False
-
 
 def check_services():
     """Перевіряє запущені сервіси"""
@@ -1571,7 +1529,6 @@ def check_services():
         except Exception as e:
             print_warning(f"Не вдалося перевірити {label}: {e}")
 
-
 def run_integrity_check():
     """Runs ruff and oxlint to ensure the setup is clean"""
     print_step("Запуск перевірки цілісності коду (Integrity Check)...")
@@ -1599,7 +1556,6 @@ def run_integrity_check():
             print_warning("Виявлено проблеми в TS/JS коді.")
         except Exception as e:
             print_warning(f"Не вдалося запустити Oxlint: {e}")
-
 
 def ensure_frontend_config():
     """Перевірка та автоматичне виправлення конфігурацій фронтенду (CSP, Vite Env)"""
@@ -1661,7 +1617,6 @@ def ensure_frontend_config():
             with open(map_view, "w", encoding="utf-8") as f:
                 f.write(content)
             print_success("MapView.tsx: Хардкод-ключ видалено")
-
 
 def main():
     print(
@@ -1951,7 +1906,6 @@ def main():
 
     print("  - MCP Inspector: Дебаг MCP серверів (npx @modelcontextprotocol/inspector)")
     print("=" * 60 + "\n")
-
 
 if __name__ == "__main__":
     main()

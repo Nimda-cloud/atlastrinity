@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 """Standalone script to verify database tables and counts during setup"""
 
 import asyncio
@@ -40,7 +39,6 @@ async def verify_database_tables():
         return False
     return True
 
-
 async def verify_redis():
     """Simple Redis ping check using redis-py"""
     print("\n[DB CHECK] Verifying Redis...")
@@ -65,7 +63,6 @@ async def verify_redis():
         print(f"[DB] Redis Error: {e}")
         # Not blocking setup usually, but good to know
         return True
-
 
 async def verify_chromadb():
     """Verify ChromaDB client initialization and collection listing"""
@@ -106,7 +103,6 @@ async def verify_chromadb():
         return False
     return True
 
-
 async def main_check():
     sql_ok = await verify_database_tables()
     redis_ok = await verify_redis()
@@ -118,7 +114,6 @@ async def main_check():
         chroma_ok = await chroma_ok
 
     return sql_ok and redis_ok and chroma_ok
-
 
 if __name__ == "__main__":
     if not asyncio.run(main_check()):

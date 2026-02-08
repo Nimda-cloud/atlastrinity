@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Clean Backups
 Removes the backups/databases directory.
@@ -10,7 +9,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BACKUP_DIR = PROJECT_ROOT / "backups" / "databases"
 
-
 def clean_backups():
     print("🧹 Cleaning Backups...")
     if BACKUP_DIR.exists():
@@ -21,7 +19,6 @@ def clean_backups():
             print(f"❌ Failed to delete {BACKUP_DIR}: {e}")
     else:
         print(f"ℹ️ {BACKUP_DIR} not found.")
-
 
 if __name__ == "__main__":
     clean_backups()

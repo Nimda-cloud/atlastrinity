@@ -2,7 +2,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Setup paths
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
@@ -39,7 +38,6 @@ async def test_google_registration_scenario():
         print(f"❌ Error during execution: {e}")
     finally:
         await mcp_manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(test_google_registration_scenario())

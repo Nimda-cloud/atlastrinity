@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.agents.atlas import Atlas
@@ -31,7 +30,6 @@ async def test_chat_intelligence():
     print("\nScenario 4: State Change (Task)")
     analysis = await atlas.analyze_request("Створи файл test.txt на робочому столі")
     print(f"Intent detected: {analysis.get('intent')} (Reason: {analysis.get('reason')})")
-
 
 async def test_persona_intelligence():
     print("\n=== Testing Adaptive Persona Intelligence ===")
@@ -89,7 +87,6 @@ async def test_persona_intelligence():
         print("✓ Dynamic Tool test PASSED")
     else:
         print("⚠ Dynamic Tool test FAILED (Could not use dynamic tools)")
-
 
 if __name__ == "__main__":
     asyncio.run(test_chat_intelligence())

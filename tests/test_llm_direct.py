@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add project root to sys.path
 sys.path.append(os.getcwd())
 
 try:
@@ -13,7 +12,6 @@ except Exception as e:
     print(f"Failed to import create_llm: {e}")
     sys.exit(1)
 
-
 async def test_llm():
     try:
         print("Initializing LLM via factory...")
@@ -23,7 +21,6 @@ async def test_llm():
         print(f"LLM Response: {res.content}")
     except Exception as e:
         print(f"LLM Error: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_llm())

@@ -6,7 +6,6 @@ Supports providers, models, agents, tool permissions, and MCP integration.
 Based on official Mistral Vibe documentation:
 https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-
 Author: AtlasTrinity Team
 Date: 2026-01-29
 """
@@ -35,14 +34,12 @@ logger = logging.getLogger("vibe_config")
 # ENUMS
 # =============================================================================
 
-
 class ToolPermission(StrEnum):
     """Tool permission levels matching Vibe CLI."""
 
     ALWAYS = "always"  # Auto-approve without asking
     ASK = "ask"  # Ask for confirmation
     NEVER = "never"  # Disabled
-
 
 class ApiStyle(StrEnum):
     """API styles for LLM providers."""
@@ -51,14 +48,12 @@ class ApiStyle(StrEnum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
 
-
 class Backend(StrEnum):
     """Backend types for LLM providers."""
 
     MISTRAL = "mistral"
     GENERIC = "generic"
     ANTHROPIC = "anthropic"
-
 
 class AgentMode(StrEnum):
     """Operational modes for Vibe agent."""
@@ -68,7 +63,6 @@ class AgentMode(StrEnum):
     ACCEPT_EDITS = "accept-edits"  # Auto-approve file edits only
     AUTO_APPROVE = "auto-approve"  # Auto-approve all tools
 
-
 class McpTransport(StrEnum):
     """MCP server transport types."""
 
@@ -76,17 +70,14 @@ class McpTransport(StrEnum):
     STREAMABLE_HTTP = "streamable-http"
     STDIO = "stdio"
 
-
 # =============================================================================
 # CONFIGURATION MODELS
 # =============================================================================
-
 
 class ToolConfig(BaseModel):
     """Configuration for individual tool permissions."""
 
     permission: ToolPermission = ToolPermission.ASK
-
 
 class ProviderConfig(BaseModel):
     """LLM provider configuration.
@@ -127,7 +118,6 @@ class ProviderConfig(BaseModel):
 
         return bool(self.get_api_key())
 
-
 class ModelConfig(BaseModel):
     """Model configuration for Vibe.
 
@@ -149,7 +139,6 @@ class ModelConfig(BaseModel):
     input_price: float = Field(0.0, ge=0.0, description="Price per million input tokens (USD)")
     output_price: float = Field(0.0, ge=0.0, description="Price per million output tokens (USD)")
     max_tokens: int | None = Field(None, description="Maximum tokens to generate")
-
 
 class McpServerConfig(BaseModel):
     """MCP server configuration for extending Vibe.
@@ -180,7 +169,6 @@ class McpServerConfig(BaseModel):
     )
     startup_timeout_sec: int | None = Field(None, description="Startup timeout in seconds")
     tool_timeout_sec: int | None = Field(None, description="Tool execution timeout in seconds")
-
 
 class AgentProfileConfig(BaseModel):
     """Custom agent profile configuration.
@@ -224,7 +212,6 @@ class AgentProfileConfig(BaseModel):
             }
 
         return cls(**data)
-
 
 class VibeConfig(BaseModel):
     """Main Vibe configuration.
@@ -598,11 +585,9 @@ class VibeConfig(BaseModel):
 
         return env
 
-
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
-
 
 def load_agent_profile(
     agent_name: str,
@@ -641,7 +626,6 @@ def load_agent_profile(
 
     return None
 
-
 def get_default_providers() -> list[ProviderConfig]:
     """Get default provider configurations."""
     return [
@@ -660,7 +644,6 @@ def get_default_providers() -> list[ProviderConfig]:
             backend=Backend.GENERIC,
         ),
     ]
-
 
 def get_default_models() -> list[ModelConfig]:
     """Get default model configurations.

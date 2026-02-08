@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 
 from brain.mcp_manager import MCPManager
@@ -55,7 +54,6 @@ async def test_restart():
 
     # 4. Cleanup
     await manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(test_restart())

@@ -16,7 +16,6 @@ def test_run_no_issues(monkeypatch, tmp_path):
     rc = cli.run(str(p))
     assert rc == 0
 
-
 def test_run_with_issues(monkeypatch, tmp_path):
     cfg = {"mcpServers": {"filesystem": {"command": "npx", "args": ["badpkg@0.0.1"]}}}
     p = tmp_path / "mcp.json"
@@ -29,7 +28,6 @@ def test_run_with_issues(monkeypatch, tmp_path):
     rc = cli.run(str(p))
     assert rc == 1
 
-
 def test_run_with_bunx_issues(monkeypatch, tmp_path):
     cfg = {"mcpServers": {"other": {"command": "bunx", "args": ["badbun@0.0.1"]}}}
     p = tmp_path / "mcp.json"
@@ -41,7 +39,6 @@ def test_run_with_bunx_issues(monkeypatch, tmp_path):
     )
     rc = cli.run(str(p))
     assert rc == 1
-
 
 def test_run_positive_both(monkeypatch, tmp_path):
     cfg = {
@@ -69,7 +66,6 @@ def test_run_positive_both(monkeypatch, tmp_path):
     monkeypatch.setattr("src.brain.mcp_preflight.check_system_limits", list)
     rc = cli.run(str(p))
     assert rc == 0
-
 
 def test_run_with_system_limits(monkeypatch, tmp_path):
     cfg = {"mcpServers": {}}

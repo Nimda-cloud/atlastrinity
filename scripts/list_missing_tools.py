@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
 
@@ -18,7 +17,6 @@ async def get_tools():
             print(f"Tools: {tool_names}")
         except Exception as e:
             print(f"Error: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(get_tools())

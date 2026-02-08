@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Add project root to path
 sys.path.append(os.getcwd())
 
 from src.mcp_server.devtools_server import devtools_update_architecture_diagrams
@@ -60,7 +59,6 @@ def check_architecture():
     except Exception as e:
         print(f"❌ Exception during check: {e}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     check_architecture()

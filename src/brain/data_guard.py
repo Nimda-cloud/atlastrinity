@@ -5,7 +5,6 @@ import pandas as pd
 
 logger = logging.getLogger("brain.data_guard")
 
-
 class DataQualityGuard:
     """Validates external datasets before ingestion into the Golden Fund.
     Provides checks for completeness, structural integrity, and data sanity.
@@ -82,6 +81,5 @@ class DataQualityGuard:
             )
 
         return report
-
 
 data_guard = DataQualityGuard()

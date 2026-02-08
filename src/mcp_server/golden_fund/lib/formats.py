@@ -20,7 +20,6 @@ class ParseResult:
         self.error = error
         self.metadata: dict[str, Any] = {}
 
-
 class JSONParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:
         try:
@@ -35,7 +34,6 @@ class JSONParser:
                 return ParseResult(True, data=data)
         except Exception as e:
             return ParseResult(False, error=f"JSON parse error: {e}")
-
 
 class CSVParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:
@@ -53,7 +51,6 @@ class CSVParser:
                 break
 
         return ParseResult(False, error=f"CSV parse error: {last_error or 'Unknown encoding'}")
-
 
 class XMLParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:
@@ -88,7 +85,6 @@ class XMLParser:
                 return {"#text": element.text.strip()}
         return result
 
-
 class ExcelParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:
         try:
@@ -103,7 +99,6 @@ class ExcelParser:
             return ParseResult(True, data=df_dict)
         except Exception as e:
             return ParseResult(False, error=f"Excel parse error: {e}")
-
 
 class ParquetParser:
     def parse(self, file_path: Path, **kwargs) -> ParseResult:

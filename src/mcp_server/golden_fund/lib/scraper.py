@@ -22,14 +22,12 @@ from src.mcp_server.tool_result_interface import ToolResult
 # Initialize logger
 logger = logging.getLogger("golden_fund.scraper")
 
-
 class ScrapeFormat(Enum):
     """Supported output formats for scraped data."""
 
     CSV = "csv"
     JSON = "json"
     XML = "xml"
-
 
 class ScrapeResult(ToolResult):
     """Result container for scraping operations."""
@@ -57,7 +55,6 @@ class ScrapeResult(ToolResult):
         if self.success:
             return f"ScrapeResult(success=True, records={len(self.data) if isinstance(self.data, list) else 1})"
         return f"ScrapeResult(success=False, error={self.error})"
-
 
 class DataScraper:
     """

@@ -74,7 +74,6 @@ async def run_verification():
         return obj
 
     def read_response():
-        from typing import cast
 
         stdout = cast("subprocess.Popen", process).stdout
         assert stdout is not None
@@ -213,7 +212,6 @@ async def run_verification():
     if stderr_output:
         print("\n=== STDERR LOGS ===")
         print(stderr_output)
-
 
 if __name__ == "__main__":
     asyncio.run(run_verification())

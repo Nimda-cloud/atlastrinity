@@ -3,7 +3,6 @@ import os
 import sys
 import time
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.voice.stt import WhisperSTT
@@ -20,7 +19,6 @@ async def main():
     print(f"Tiny model loaded in {time.time() - start:.2f}s")
 
     print("Verification SUCCESS: Faster-Whisper engine is working.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

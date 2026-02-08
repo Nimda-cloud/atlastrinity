@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Whisper STT Comprehensive Verification
 Перевіряє всі аспекти інтеграції Whisper
 """
@@ -10,12 +9,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent  # tests/ -> project root
 sys.path.insert(0, str(PROJECT_ROOT))
 
-
 def print_header(msg: str):
     print(f"\n{'=' * 60}")
     print(f"  {msg}")
     print(f"{'=' * 60}\n")
-
 
 def print_check(msg: str, status: bool, details: str = ""):
     symbol = "✓" if status else "✗"
@@ -24,7 +21,6 @@ def print_check(msg: str, status: bool, details: str = ""):
     print(f"{color}{symbol}{reset} {msg}")
     if details:
         print(f"  → {details}")
-
 
 def main():
     print_header("WHISPER STT VERIFICATION")
@@ -265,7 +261,6 @@ def main():
     print("   - Доступні моделі: tiny, base, small, medium, large-v3")
 
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

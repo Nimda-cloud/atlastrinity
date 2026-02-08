@@ -6,7 +6,6 @@ def test_agent_prompts_exports():
     assert hasattr(AgentPrompts, "TETYANA")
     assert hasattr(AgentPrompts, "GRISHA")
 
-
 def test_grisha_prompt_contains_dynamic_catalog():
     """Verify Grisha's prompt includes dynamic server catalog from mcp_registry."""
     sys_prompt = AgentPrompts.get_agent_system_prompt("GRISHA")
@@ -17,7 +16,6 @@ def test_grisha_prompt_contains_dynamic_catalog():
     # Check MCP verification tools are mentioned
     assert "macos-use_refresh_traversal" in sys_prompt or "execute_command" in sys_prompt
 
-
 def test_atlas_prompt_contains_dynamic_catalog():
     """Verify Atlas's prompt includes dynamic server catalog from mcp_registry."""
     sys_prompt = AgentPrompts.get_agent_system_prompt("ATLAS")
@@ -25,14 +23,12 @@ def test_atlas_prompt_contains_dynamic_catalog():
     # Check that catalog is properly interpolated
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
 
-
 def test_tetyana_prompt_contains_dynamic_catalog():
     """Verify Tetyana's prompt includes dynamic server catalog from mcp_registry."""
     sys_prompt = AgentPrompts.get_agent_system_prompt("TETYANA")
 
     # Check that catalog is properly interpolated
     assert "TIER 1 - CORE" in sys_prompt or "macos-use" in sys_prompt
-
 
 def test_prompts_no_uninterpolated_placeholders():
     """Verify no literal placeholders remain in formatted prompts."""

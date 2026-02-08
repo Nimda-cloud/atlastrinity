@@ -101,7 +101,6 @@ class ConsolidationModule:
         """Fetch tasks and their steps from the configured SQL database (SQLite by default)."""
         from sqlalchemy import select
 
-        from .db.manager import db_manager
         from .db.schema import Task as DBTask
         from .db.schema import TaskStep as DBStep
 
@@ -198,7 +197,6 @@ class ConsolidationModule:
 
         # Nighttime (3 AM)
         return bool(now.hour == 3 and (now - self.last_consolidation).total_seconds() > 3600)
-
 
 # Singleton instance
 consolidation_module = ConsolidationModule()

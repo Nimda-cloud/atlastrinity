@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Wrapper script to call devtools_update_architecture_diagrams via MCP.
 This is used by npm scripts to trigger automatic diagram updates.
@@ -66,7 +65,6 @@ async def main():
         sys.exit(1)
     finally:
         await manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

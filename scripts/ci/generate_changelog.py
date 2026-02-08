@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate changelog from git commits since last tag."""
 
 import subprocess
@@ -20,7 +19,6 @@ def get_last_tag() -> str:
     except subprocess.CalledProcessError:
         # No tags yet
         return ""
-
 
 def get_commits_since_tag(tag: str) -> list[dict[str, str]]:
     """Get all commits since the given tag."""
@@ -63,7 +61,6 @@ def get_commits_since_tag(tag: str) -> list[dict[str, str]]:
     except subprocess.CalledProcessError:
         return []
 
-
 def categorize_commits(
     commits: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
@@ -97,7 +94,6 @@ def categorize_commits(
             categories["other"].append(commit)
 
     return categories
-
 
 def generate_changelog(version: str | None = None) -> str:
     """Generate a markdown changelog."""
@@ -181,7 +177,6 @@ def generate_changelog(version: str | None = None) -> str:
 
     return "\n".join(changelog)
 
-
 def main():
     """Main entry point."""
     version = sys.argv[1] if len(sys.argv) > 1 else None
@@ -194,7 +189,6 @@ def main():
 
     print(f"✅ Changelog generated: {output_file}")
     print(f"\n{changelog}")
-
 
 if __name__ == "__main__":
     main()

@@ -9,6 +9,5 @@ async def test_open_data():
     result = open_data_search("бюджет")
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
-
 if __name__ == "__main__":
     asyncio.run(test_open_data())

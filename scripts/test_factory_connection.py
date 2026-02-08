@@ -1,4 +1,3 @@
-# Add project root and src to path
 import os
 import sys
 

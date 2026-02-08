@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Додаємо src до шляху, щоб знайти mcp_server
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
 from mcp_server.vibe_server import run_vibe_subprocess
@@ -28,7 +27,6 @@ async def main():
         print("✅ Успіх! Файл створено.")
     else:
         print(f"❌ Помилка: {result.get('error')}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

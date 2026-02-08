@@ -20,7 +20,6 @@ except ImportError:  # pragma: no cover
 
     # type: ignore[reportAssignmentType]
 
-
 import re
 
 from .config import CONFIG_ROOT, MCP_DIR, PROJECT_ROOT, deep_merge
@@ -295,6 +294,5 @@ class SystemConfig:
     @property
     def all(self) -> dict[str, Any]:
         return self._config
-
 
 config = SystemConfig()

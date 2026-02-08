@@ -7,10 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-
 def _integration_enabled() -> bool:
     return os.getenv("TRINITY_INTEGRATION") in {"1", "true", "True"}
-
 
 def _mcp_package_available() -> bool:
     try:
@@ -18,13 +16,11 @@ def _mcp_package_available() -> bool:
     except Exception:
         return False
 
-
 def _selected_servers() -> set[str] | None:
     raw = os.getenv("TRINITY_MCP_SERVERS", "").strip()
     if not raw:
         return None
     return {s.strip() for s in raw.split(",") if s.strip()}
-
 
 def _missing_required_env_vars(server_cfg: dict) -> list[str]:
     missing: list[str] = []
@@ -44,13 +40,11 @@ def _missing_required_env_vars(server_cfg: dict) -> list[str]:
                     missing.append(env_name)
     return missing
 
-
 def _load_global_mcp_config() -> dict:
     cfg_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
     if not cfg_path.exists():
         return {}
     return json.loads(cfg_path.read_text(encoding="utf-8"))
-
 
 @pytest.mark.skipif(
     not _integration_enabled(),

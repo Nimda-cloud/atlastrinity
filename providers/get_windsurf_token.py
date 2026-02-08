@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Windsurf / Codeium Token Extractor
 ===================================
@@ -64,7 +63,6 @@ DEFAULT_WINDSURF_MODEL = "deepseek-v3"
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 
-
 class C:
     BOLD = "\033[1m"
     GREEN = "\033[92m"
@@ -74,25 +72,19 @@ class C:
     DIM = "\033[2m"
     RESET = "\033[0m"
 
-
 def info(msg: str) -> None:
     print(f"{C.GREEN}✓{C.RESET} {msg}")
-
 
 def warn(msg: str) -> None:
     print(f"{C.YELLOW}⚠{C.RESET} {msg}")
 
-
 def error(msg: str) -> None:
     print(f"{C.RED}✗{C.RESET} {msg}")
-
 
 def step(msg: str) -> None:
     print(f"\n{C.CYAN}▸{C.RESET} {C.BOLD}{msg}{C.RESET}")
 
-
 # ─── Data Classes ────────────────────────────────────────────────────────────
-
 
 @dataclass
 class WindsurfModel:
@@ -102,7 +94,6 @@ class WindsurfModel:
     model_id: str
     provider: str = ""
     cost_tier: str = ""  # Free, Value, Premium, BYOK
-
 
 @dataclass
 class WindsurfAuth:
@@ -119,9 +110,7 @@ class WindsurfAuth:
     ls_port: int = 0
     ls_csrf_token: str = ""
 
-
 # ─── DB Extraction ───────────────────────────────────────────────────────────
-
 
 def _get_db_value(db_path: Path, key: str) -> str | None:
     """Get a single value from state.vscdb by key."""
@@ -135,7 +124,6 @@ def _get_db_value(db_path: Path, key: str) -> str | None:
     except Exception as e:
         error(f"DB read error for key '{key}': {e}")
         return None
-
 
 def _find_account_name(db_path: Path) -> str:
     """Find the Windsurf account name from DB keys."""
@@ -155,7 +143,6 @@ def _find_account_name(db_path: Path) -> str:
     except Exception:
         pass
     return ""
-
 
 def _detect_language_server() -> tuple[int, str]:
     """Detect running Windsurf language server port and CSRF token from process args.
@@ -204,7 +191,6 @@ def _detect_language_server() -> tuple[int, str]:
         pass
     return port, csrf_token
 
-
 def _decode_models_from_proto(configs_b64: list[str]) -> list[WindsurfModel]:
     """Decode model names from protobuf base64 configs."""
     models = []
@@ -225,7 +211,6 @@ def _decode_models_from_proto(configs_b64: list[str]) -> list[WindsurfModel]:
             continue
     return models
 
-
 def _decode_user_info(user_b64: str) -> tuple[str, str]:
     """Decode user name and ID from protobuf base64."""
     try:
@@ -243,7 +228,6 @@ def _decode_user_info(user_b64: str) -> tuple[str, str]:
         return name, user_id
     except Exception:
         return "", ""
-
 
 def _parse_model_categories(auth_status: dict) -> dict[str, list[str]]:
     """Parse model categories (Provider, Cost) from auth status protobuf."""
@@ -282,7 +266,6 @@ def _parse_model_categories(auth_status: dict) -> dict[str, list[str]]:
         pass
 
     return categories
-
 
 def extract_windsurf_auth() -> WindsurfAuth | None:
     """Extract all Windsurf auth data from state.vscdb."""
@@ -340,9 +323,7 @@ def extract_windsurf_auth() -> WindsurfAuth | None:
 
     return auth
 
-
 # ─── .env Update ─────────────────────────────────────────────────────────────
-
 
 def _set_env_var(env_path: Path, key: str, value: str) -> bool:
     """Set or replace a single key=value in an .env file. Returns True if changed."""
@@ -369,7 +350,6 @@ def _set_env_var(env_path: Path, key: str, value: str) -> bool:
 
     env_path.write_text(new_content)
     return True
-
 
 def update_env_windsurf(auth: WindsurfAuth) -> None:
     """Update all Windsurf-related variables in LOCAL .env only.
@@ -403,9 +383,7 @@ def update_env_windsurf(auth: WindsurfAuth) -> None:
     else:
         print(f"  {C.DIM}Без змін: {LOCAL_ENV}{C.RESET}")
 
-
 # ─── Token Test ──────────────────────────────────────────────────────────────
-
 
 def test_windsurf_token(api_key: str, api_server_url: str = "") -> bool:
     """Test Windsurf API key by making a health check request."""
@@ -439,9 +417,7 @@ def test_windsurf_token(api_key: str, api_server_url: str = "") -> bool:
         error(f"Cannot reach API server {server}: {e}")
         return False
 
-
 # ─── Display ─────────────────────────────────────────────────────────────────
-
 
 def print_auth_info(auth: WindsurfAuth) -> None:
     """Pretty-print Windsurf auth information."""
@@ -456,7 +432,6 @@ def print_auth_info(auth: WindsurfAuth) -> None:
         print(f"  {C.DIM}LS Port:{C.RESET}        {auth.ls_port}")
     if auth.ls_csrf_token:
         print(f"  {C.DIM}LS CSRF:{C.RESET}        {auth.ls_csrf_token[:20]}...")
-
 
 def print_models(auth: WindsurfAuth) -> None:
     """Print available models grouped by category."""
@@ -479,7 +454,6 @@ def print_models(auth: WindsurfAuth) -> None:
             for m in tier_models:
                 print(f"    - {m}")
 
-
 def output_json(auth: WindsurfAuth) -> None:
     """Output auth data as JSON."""
     data = {
@@ -494,9 +468,7 @@ def output_json(auth: WindsurfAuth) -> None:
     }
     print(json.dumps(data, indent=2, ensure_ascii=False))
 
-
 # ─── Main ────────────────────────────────────────────────────────────────────
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -582,7 +554,6 @@ def main():
         print(f"\n  {C.DIM}Оновлення .env пропущено (--no-update){C.RESET}")
 
     print()
-
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Test Windsurf provider with free models.
 
@@ -42,7 +41,6 @@ Your response should be in this exact format:
 Capital: [capital]
 Sum: [sum]
 """
-
 
 def test_model(model_name: str, mode: str | None = None) -> tuple[bool, str]:
     """Test a single model with the given mode."""
@@ -95,7 +93,6 @@ def test_model(model_name: str, mode: str | None = None) -> tuple[bool, str]:
         # Clean up environment variable
         os.environ.pop("WINDSURF_MODE", None)
 
-
 def main():
     print("Windsurf Free Models Test")
     print("=" * 80)
@@ -142,7 +139,6 @@ def main():
         print(f"{status} {model}")
         if not result["success"]:
             print(f"   Error: {result['response']}")
-
 
 if __name__ == "__main__":
     main()

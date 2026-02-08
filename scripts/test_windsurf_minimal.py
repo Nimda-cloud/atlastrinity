@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Minimal test for Windsurf provider with free models.
 

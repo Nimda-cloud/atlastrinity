@@ -14,6 +14,5 @@ def download():
 
     print("Download and initialization successful!")
 
-
 if __name__ == "__main__":
     download()

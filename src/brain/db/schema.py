@@ -45,10 +45,8 @@ class GUID(TypeDecorator):
             return uuid.UUID(value)
         return value
 
-
 class Base(DeclarativeBase):
     pass
-
 
 class Session(Base):
     __tablename__ = "sessions"
@@ -62,7 +60,6 @@ class Session(Base):
         back_populates="session",
         cascade="all, delete-orphan",
     )
-
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -94,7 +91,6 @@ class Task(Base):
     # Hierarchical support
     parent_task: Mapped["Task | None"] = relationship("Task", remote_side=[id], backref="sub_tasks")
 
-
 class TaskStep(Base):
     __tablename__ = "task_steps"
 
@@ -113,7 +109,6 @@ class TaskStep(Base):
 
     task: Mapped["Task"] = relationship(back_populates="steps")
     tool_executions: Mapped[list["ToolExecution"]] = relationship(back_populates="step")
-
 
 class ToolExecution(Base):
     __tablename__ = "tool_executions"
@@ -134,7 +129,6 @@ class ToolExecution(Base):
 
     step: Mapped["TaskStep"] = relationship(back_populates="tool_executions")
 
-
 class LogEntry(Base):
     __tablename__ = "logs"
 
@@ -145,7 +139,6 @@ class LogEntry(Base):
     source: Mapped[str] = mapped_column(String(50))
     message: Mapped[str] = mapped_column(Text)
     metadata_blob: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-
 
 class ChatMessage(Base):
     """Stores full chat history for persistent session reconstruction"""
@@ -161,7 +154,6 @@ class ChatMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     metadata_blob: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
 
-
 # Knowledge Graph Nodes (Vertices)
 class KGNode(Base):
     __tablename__ = "kg_nodes"
@@ -173,7 +165,6 @@ class KGNode(Base):
     attributes: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
 
     last_updated: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
-
 
 # Knowledge Graph Edges (Relationships)
 class KGEdge(Base):
@@ -187,7 +178,6 @@ class KGEdge(Base):
     attributes: Mapped[dict[str, Any] | None] = mapped_column(JSON, default={}, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
-
 
 # Agent Message Bus - Typed inter-agent communication
 class AgentMessage(Base):
@@ -207,7 +197,6 @@ class AgentMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-
 # Analytics for recursive healing
 class RecoveryAttempt(Base):
     """Track recursive healing attempts for analytics"""
@@ -226,7 +215,6 @@ class RecoveryAttempt(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-
 class ConversationSummary(Base):
     """Stores professional summaries of chat sessions for semantic recall"""
 
@@ -240,7 +228,6 @@ class ConversationSummary(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     metadata_blob: Mapped[dict[str, Any]] = mapped_column(JSON, default={})
-
 
 class BehavioralDeviation(Base):
     """Stores logic deviations from original plans for auditing and analytics.
@@ -265,7 +252,6 @@ class BehavioralDeviation(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-
 class KnowledgePromotion(Base):
     """Tracks the elevation of data from task-specific to global (Golden Fund).
     Provides an audit log for knowledge accumulation.
@@ -283,7 +269,6 @@ class KnowledgePromotion(Base):
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
-
 
 class Discovery(Base):
     """Stores critical values discovered during task execution.

@@ -26,13 +26,11 @@ except ImportError:
     # Fallback for when validation module is not available
     pass
 
-
 class TransformResult:
     def __init__(self, success: bool, data: Any | None = None, error: str | None = None):
         self.success = success
         self.data = data
         self.error = error
-
 
 class UnifiedSchema(BaseModel):
     """
@@ -46,7 +44,6 @@ class UnifiedSchema(BaseModel):
     source_format: str = Field(..., description="Original format")
     timestamp: datetime = Field(default_factory=datetime.now)
     metadata: dict[str, Any] = Field(default_factory=dict)
-
 
 class DataTransformer:
     def __init__(self):

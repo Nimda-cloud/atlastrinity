@@ -2,7 +2,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Setup paths
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
@@ -56,7 +55,6 @@ async def test_learning_and_vibe():
 
     finally:
         await mcp_manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(test_learning_and_vibe())

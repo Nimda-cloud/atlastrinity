@@ -6,7 +6,6 @@ from pathlib import Path
 from mcp_server import vibe_server
 from mcp_server.vibe_server import Context
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 
 # Load .env
@@ -18,7 +17,6 @@ if env_path.exists():
                 k, v = line.strip().split("=", 1)
                 os.environ[k] = v
     print("Loaded .env")
-
 
 async def test_final_verification():
     print("--- Starting Final Verification ---")
@@ -45,7 +43,6 @@ async def test_final_verification():
             print(f"File content: {f.read()}")
     else:
         print("❌ FAILURE: scripts/final_verify.py was NOT created.")
-
 
 if __name__ == "__main__":
     asyncio.run(test_final_verification())

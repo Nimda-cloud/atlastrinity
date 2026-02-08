@@ -27,11 +27,9 @@ try:
 except ImportError:
     YAML_AVAILABLE = False
 
-
 def is_production():
     """Перевіряє чи запущено з .app bundle"""
     return getattr(sys, "frozen", False) or hasattr(sys, "_MEIPASS")
-
 
 def get_resources_path():
     """Отримує шлях до Resources/ в .app bundle"""
@@ -40,7 +38,6 @@ def get_resources_path():
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent.parent / "Resources"
     return Path(__file__).parent.parent.parent
-
 
 def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
     """Smart merge для YAML конфігу.
@@ -102,7 +99,6 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
         print(f"[Production Setup] ✗ Error merging YAML: {e}", file=sys.stderr)
         return False
 
-
 def sync_json_config(src_path: Path, dst_path: Path) -> bool:
     """Копіює JSON конфіг (MCP servers - системний, не user config)."""
     try:
@@ -137,7 +133,6 @@ def sync_json_config(src_path: Path, dst_path: Path) -> bool:
     except Exception as e:
         print(f"[Production Setup] ✗ Error copying JSON: {e}", file=sys.stderr)
         return False
-
 
 def copy_config_if_needed():
     """Синхронізує конфігураційні файли з Resources/ в ~/.config/atlastrinity/
@@ -190,7 +185,6 @@ def copy_config_if_needed():
 
     print("[Production Setup] ✓ Config files synchronized", file=sys.stderr)
 
-
 def ensure_tts_models():
     """Перевіряє наявність TTS моделей в ~/.config/atlastrinity/models/tts/
     Якщо немає - виводить інструкції (ukrainian-tts завантажить автоматично)
@@ -208,7 +202,6 @@ def ensure_tts_models():
     else:
         print(f"[Production Setup] ✓ TTS models present in {MODELS_DIR}", file=sys.stderr)
 
-
 def ensure_stt_models():
     """Перевіряє наявність Faster-Whisper моделей в ~/.config/atlastrinity/models/faster-whisper/"""
     if not WHISPER_DIR.exists() or not any(WHISPER_DIR.iterdir()):
@@ -221,7 +214,6 @@ def ensure_stt_models():
         print(
             f"[Production Setup] ✓ Faster-Whisper models present in {WHISPER_DIR}", file=sys.stderr
         )
-
 
 def run_production_setup():
     """Головна функція - викликається при старті в production"""
@@ -239,7 +231,6 @@ def run_production_setup():
     print("=" * 60, file=sys.stderr)
     print("✅ Production setup complete", file=sys.stderr)
     print("=" * 60 + "\n", file=sys.stderr)
-
 
 if __name__ == "__main__":
     run_production_setup()

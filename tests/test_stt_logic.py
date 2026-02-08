@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.voice.stt import SpeechType, TranscriptionResult, WhisperSTT
@@ -44,7 +43,6 @@ def test_stt_blacklist():
         print("STT Blacklist verification SUCCESS.")
     else:
         print(f"STT Blacklist verification FAILED ({success_count}/{len(test_cases)} passed).")
-
 
 if __name__ == "__main__":
     test_stt_blacklist()

@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# Setup paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -88,7 +87,6 @@ async def verify_ingestion_pipeline():
     if clean_res.get("success") and table_name:
         # Check KG Node
         node_id = clean_res["node_id"]
-        from sqlalchemy import text
 
         async with await db_manager.get_session() as session:
             node_res = await session.execute(
@@ -115,7 +113,6 @@ async def verify_ingestion_pipeline():
                 )
 
     print("--- Verification Complete ---")
-
 
 if __name__ == "__main__":
     asyncio.run(verify_ingestion_pipeline())

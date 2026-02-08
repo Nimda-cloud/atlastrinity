@@ -38,7 +38,6 @@ except ImportError:
     WORKSPACE_DIR = CONFIG_ROOT / "workspace"
     VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 
-
 class SetupStep(Enum):
     CHECK_SYSTEM = "check_system"
     CHECK_PERMISSIONS = "check_permissions"
@@ -54,7 +53,6 @@ class SetupStep(Enum):
     INSTALL_VIBE = "install_vibe"
     SETUP_COMPLETE = "setup_complete"
 
-
 @dataclass
 class SetupProgress:
     step: SetupStep
@@ -63,10 +61,8 @@ class SetupProgress:
     success: bool = True
     error: str | None = None
 
-
 # Progress callback type
 ProgressCallback = Callable[[SetupProgress], None]
-
 
 def _run_command(cmd: list, timeout: int = 300, capture: bool = True) -> tuple[int, str, str]:
     """Execute command and return (returncode, stdout, stderr)"""
@@ -79,7 +75,6 @@ def _run_command(cmd: list, timeout: int = 300, capture: bool = True) -> tuple[i
         return -1, "", "Command timed out"
     except Exception as e:
         return -1, "", str(e)
-
 
 def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
     """Execute shell command with pipe handling"""
@@ -95,7 +90,6 @@ def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
         return result.returncode, result.stdout, result.stderr
     except Exception as e:
         return -1, "", str(e)
-
 
 class FirstRunInstaller:
     """Orchestrates first-run setup on a new Mac"""
@@ -413,7 +407,6 @@ class FirstRunInstaller:
         self._report(SetupStep.START_SERVICES, 0.0, "Запуск сервісів...")
 
         # Only include PostgreSQL service if backend requires it
-        from .config_loader import config as sys_config
 
         db_url = sys_config.get(
             "database.url",
@@ -486,7 +479,6 @@ class FirstRunInstaller:
         self._report(SetupStep.CREATE_DATABASE, 0.0, "Створення бази даних...")
 
         # Use config.get
-        from .config_loader import config as sys_config
 
         db_url = sys_config.get(
             "database.url",
@@ -702,7 +694,6 @@ class FirstRunInstaller:
 
         # 9. Project Workspace
         try:
-            from .config_loader import config as sys_config
 
             project_ws = (
                 Path(sys_config.get("system.workspace_path", str(CONFIG_ROOT / "workspace")))
@@ -738,9 +729,7 @@ class FirstRunInstaller:
         """Check if first-run setup was already completed"""
         return (CONFIG_ROOT / "setup_complete").exists()
 
-
 # ============ CLI ENTRY POINT ============
-
 
 async def main():
     """CLI entry point for testing"""
@@ -753,7 +742,6 @@ async def main():
 
     success = await installer.run_full_setup()
     sys.exit(0 if success else 1)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

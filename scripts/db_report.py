@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Simple DB reporter: lists problematic tasks and recent ERROR logs.
 
 Run with: .venv/bin/python scripts/db_report.py
@@ -76,7 +75,6 @@ async def report(limit_tasks: int = 50, limit_logs: int = 200):
 
     return 0
 
-
 def main():
     try:
         rc = asyncio.run(report())
@@ -84,7 +82,6 @@ def main():
     except KeyboardInterrupt:
         print("Interrupted by user")
         sys.exit(130)
-
 
 if __name__ == "__main__":
     main()

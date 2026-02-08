@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 """Grisha - The Visor/Auditor
 
 Role: Result verification via Vision, Security control
@@ -61,7 +60,6 @@ class VerificationResult:
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.now()
-
 
 class Grisha(BaseAgent):
     """Grisha - The Visor/Auditor
@@ -1446,7 +1444,6 @@ class Grisha(BaseAgent):
             # EMERGENCY FALLBACK:
             # If we failed to parse the JSON, we still want to Override because the original plan was bad.
             # We create a simple plan that forces a human check or safely proceeds.
-            from src.brain.agents.atlas import TaskPlan
 
             fallback_plan = TaskPlan(
                 id="grisha_fallback_override",
@@ -1637,7 +1634,6 @@ class Grisha(BaseAgent):
         This serves as the 'single source of truth' for verification.
         """
         try:
-            from ..mcp_manager import mcp_manager
 
             # Parse step_id safely
             parsed_seq = self._safe_parse_step_id(step_id)
@@ -1715,7 +1711,6 @@ class Grisha(BaseAgent):
 
     async def _execute_verification_tools(self, tools: list[dict], step: dict) -> list[dict]:
         """Executes the selected verification tools and returns results."""
-        from ..mcp_manager import mcp_manager
 
         verification_results = []
 
@@ -2069,10 +2064,8 @@ class Grisha(BaseAgent):
         verification_evidence: list[str] | None = None,
     ) -> None:
         """Save detailed rejection report to memory and notes servers for Atlas and Tetyana to access"""
-        from datetime import datetime
 
         from ..knowledge_graph import knowledge_graph
-        from ..mcp_manager import mcp_manager
         from ..message_bus import AgentMsg, MessageType, message_bus
 
         try:
@@ -2313,7 +2306,6 @@ class Grisha(BaseAgent):
     async def _attempt_mcp_screenshot(self, save_dir: str) -> str | None:
         """Attempts to take a screenshot using the 'macos-use' MCP tool."""
         try:
-            from ..mcp_manager import mcp_manager
 
             if "macos-use" in mcp_manager.config.get("mcpServers", {}):
                 result = await mcp_manager.call_tool("macos-use", "macos-use_take_screenshot", {})
@@ -2331,7 +2323,6 @@ class Grisha(BaseAgent):
 
                 if base64_img:
                     import base64
-                    from datetime import datetime
 
                     os.makedirs(save_dir, exist_ok=True)
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -2353,7 +2344,6 @@ class Grisha(BaseAgent):
             return self._fallback_screenshot(save_dir)
 
     def _capture_screen_images(self) -> tuple[Any, Any]:  # Returns Image objects
-        import subprocess
 
         display_imgs = []
         consecutive_failures = 0
@@ -2415,7 +2405,6 @@ class Grisha(BaseAgent):
         return desktop_canvas, active_win_img
 
     def _save_composite_screenshot(self, desktop_canvas, active_win_img, save_dir) -> str:
-        from datetime import datetime
 
         target_w = 2048
         scale = target_w / max(1, desktop_canvas.width)
@@ -2431,7 +2420,6 @@ class Grisha(BaseAgent):
         return path
 
     def _fallback_screenshot(self, save_dir: str) -> str:
-        from datetime import datetime
 
         from PIL import ImageGrab
 
@@ -2516,7 +2504,6 @@ class Grisha(BaseAgent):
 
     def _extract_json_from_potential_blocks(self, text: str) -> dict[str, Any] | None:
         """Extract JSON by finding all { } pairs."""
-        import json
 
         start_indices = [m.start() for m in re.finditer(r"\{", text)]
         end_indices = [m.start() for m in re.finditer(r"\}", text)]
@@ -2542,7 +2529,6 @@ class Grisha(BaseAgent):
 
     def _fallback_json_extraction(self, text: str) -> dict[str, Any] | None:
         """Standard backtick and regex fallback."""
-        import json
 
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
@@ -2579,7 +2565,6 @@ class Grisha(BaseAgent):
         self, step: dict[str, Any], goal_analysis: dict[str, Any]
     ) -> list[dict[str, Any]]:
         """Proactive Audit: Grisha triggers 'Sherlock Mode' availability."""
-        from ..mcp_manager import mcp_manager
 
         step_action = step.get("action", "")
         # logger.info(f"[GRISHA] 🕵️ PROACTIVE AUDIT: Insufficient evidence for '{step_action}'. Taking control.")

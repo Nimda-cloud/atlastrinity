@@ -30,7 +30,6 @@ _PROFILES_PATH = os.path.join(_DATA_DIR, "mode_profiles.json")
 _MODE_PROFILES: dict[str, Any] = {}
 _PROTOCOL_REGISTRY: dict[str, str] = {}
 
-
 def _load_profiles() -> None:
     """Load mode profiles from JSON."""
     global _MODE_PROFILES, _PROTOCOL_REGISTRY
@@ -49,9 +48,7 @@ def _load_profiles() -> None:
     except Exception as e:
         logger.error(f"[MODE ROUTER] Failed to load profiles: {e}")
 
-
 _load_profiles()
-
 
 @dataclass
 class ModeProfile:
@@ -135,7 +132,6 @@ class ModeProfile:
             "use_vibe": self.use_vibe,
             "trinity_required": self.trinity_required,
         }
-
 
 class ModeRouter:
     """LLM-first mode classification with declarative profile building.
@@ -340,7 +336,6 @@ class ModeRouter:
         """Hot-reload mode profiles."""
         _load_profiles()
         logger.info("[MODE ROUTER] Profiles reloaded")
-
 
 # Global singleton
 mode_router = ModeRouter()

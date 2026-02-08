@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Validate MCP configuration file against schema.
 Ensures all required fields are present and types are correct.
 """
@@ -41,7 +40,6 @@ def validate_server_config(name: str, config: dict[str, Any]) -> list[str]:
         errors.append(f"{name}: 'env' must be a dictionary")
 
     return errors
-
 
 def validate_mcp_config(config_path: Path) -> bool:
     """Validate the entire MCP configuration file."""
@@ -101,7 +99,6 @@ def validate_mcp_config(config_path: Path) -> bool:
 
     return True
 
-
 def main():
     """Main entry point."""
     # Check both project and global config
@@ -123,7 +120,6 @@ def main():
     else:
         print("❌ MCP configuration validation failed")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

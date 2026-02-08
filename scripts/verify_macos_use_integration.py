@@ -2,7 +2,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -58,7 +57,6 @@ async def test_tetyana_macos_use():
         logger.error("❌ Step 2 failed")
 
     await mcp_manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(test_tetyana_macos_use())

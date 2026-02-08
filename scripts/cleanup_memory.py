@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.memory import long_term_memory
@@ -44,9 +43,7 @@ async def cleanup(total_wipe=False):
 
     print("\n✅ Cleanup finished.")
 
-
 if __name__ == "__main__":
-    import sys
 
     total = "--total" in sys.argv
     asyncio.run(cleanup(total_wipe=total))

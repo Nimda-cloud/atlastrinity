@@ -31,6 +31,5 @@ async def benchmark_chat():
     print(f"Response: {response}")
     print(f"Time: {end - start:.2f}s")
 
-
 if __name__ == "__main__":
     asyncio.run(benchmark_chat())

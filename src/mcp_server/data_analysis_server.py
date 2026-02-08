@@ -49,7 +49,6 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 MAX_ROWS_PREVIEW = 1000
 MAX_ROWS_FULL = 100000
 
-
 def _load_dataframe(data_source: str, **kwargs) -> tuple[pd.DataFrame | None, str | None]:
     """Load data from various sources into a DataFrame."""
     try:
@@ -90,7 +89,6 @@ def _load_dataframe(data_source: str, **kwargs) -> tuple[pd.DataFrame | None, st
     except Exception as e:
         return None, f"Failed to load data: {e!s}"
 
-
 def _get_column_stats(series: pd.Series) -> dict[str, Any]:
     """Get comprehensive statistics for a column."""
     stats: dict[str, Any] = {
@@ -129,7 +127,6 @@ def _get_column_stats(series: pd.Series) -> dict[str, Any]:
         stats["top_values"] = {str(k): int(v) for k, v in top_values.items()}
 
     return stats
-
 
 @server.tool()
 async def read_metadata(file_path: str, sheet_name: str | int | None = None) -> dict[str, Any]:
@@ -189,7 +186,6 @@ async def read_metadata(file_path: str, sheet_name: str | int | None = None) -> 
         "sample_data": sample,
     }
 
-
 @server.tool()
 async def analyze_dataset(
     data_source: str,
@@ -229,7 +225,6 @@ async def analyze_dataset(
 
     return results
 
-
 def _analyze_summary(df, results: dict[str, Any]) -> None:
     """Helper for summary statistics analysis."""
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -240,7 +235,6 @@ def _analyze_summary(df, results: dict[str, Any]) -> None:
         col: df[col].value_counts().head(10).to_dict() for col in categorical_cols[:5]
     }
     results["missing_values"] = df.isna().sum().to_dict()
-
 
 def _analyze_correlation(df, results: dict[str, Any]) -> None:
     """Helper for correlation analysis."""
@@ -271,7 +265,6 @@ def _analyze_correlation(df, results: dict[str, Any]) -> None:
         results["correlation_matrix"] = {}
         results["note"] = "Not enough numeric columns for correlation analysis"
 
-
 def _analyze_distribution(df, results: dict[str, Any]) -> None:
     """Helper for distribution analysis."""
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -296,7 +289,6 @@ def _analyze_distribution(df, results: dict[str, Any]) -> None:
             }
     results["distributions"] = distributions
 
-
 def _analyze_outliers(df, results: dict[str, Any]) -> None:
     """Helper for outlier detection."""
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -318,7 +310,6 @@ def _analyze_outliers(df, results: dict[str, Any]) -> None:
             }
     results["outliers"] = outliers
 
-
 def _save_analysis_results(results: dict[str, Any], target_path: str) -> None:
     """Save analysis results to target path."""
     output_path = Path(target_path).expanduser()
@@ -326,7 +317,6 @@ def _save_analysis_results(results: dict[str, Any], target_path: str) -> None:
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, default=str)
     results["saved_to"] = str(output_path)
-
 
 @server.tool()
 async def generate_statistics(
@@ -428,7 +418,6 @@ async def generate_statistics(
 
     return results
 
-
 @server.tool()
 async def create_visualization(
     data_source: str,
@@ -495,7 +484,6 @@ async def create_visualization(
         plt.close(fig)
         return {"success": False, "error": f"Visualization failed: {e!s}"}
 
-
 def _plot_histogram(ax, df, x_axis):
     """Helper for histogram plotting."""
     target_col = x_axis if (x_axis and x_axis in df.columns) else None
@@ -509,7 +497,6 @@ def _plot_histogram(ax, df, x_axis):
         ax.set_xlabel(str(target_col))
         ax.set_ylabel("Frequency")
 
-
 def _plot_scatter(ax, df, x_axis, y_axis):
     """Helper for scatter plotting."""
     if x_axis and y_axis and x_axis in df.columns and y_axis in df.columns:
@@ -519,10 +506,8 @@ def _plot_scatter(ax, df, x_axis, y_axis):
         return None
     return "x_axis and y_axis required for scatter plot"
 
-
 def _plot_bar(ax, df, x_axis):
     """Helper for bar chart plotting."""
-    import matplotlib.pyplot as plt  # type: ignore[import-not-found]
 
     if x_axis and x_axis in df.columns:
         value_counts = df[x_axis].value_counts().head(20)
@@ -532,7 +517,6 @@ def _plot_bar(ax, df, x_axis):
         plt.xticks(rotation=45, ha="right")
         return None
     return "x_axis required for bar chart"
-
 
 def _plot_line(ax, df, x_axis, y_axis):
     """Helper for line chart plotting."""
@@ -546,20 +530,16 @@ def _plot_line(ax, df, x_axis, y_axis):
         return None
     return "y_axis required for line chart"
 
-
 def _plot_box(ax, df):
     """Helper for box plot plotting."""
-    import matplotlib.pyplot as plt  # type: ignore[import-not-found]
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     if numeric_cols:
         df[numeric_cols[:10]].boxplot(ax=ax)
         plt.xticks(rotation=45, ha="right")
 
-
 def _plot_heatmap(ax, df):
     """Helper for heatmap plotting."""
-    import matplotlib.pyplot as plt  # type: ignore[import-not-found]
 
     numeric_df = df.select_dtypes(include=[np.number])
     if len(numeric_df.columns) > 1:
@@ -572,7 +552,6 @@ def _plot_heatmap(ax, df):
         plt.colorbar(im, ax=ax)
         return None
     return "Need at least 2 numeric columns for heatmap"
-
 
 @server.tool()
 async def data_cleaning(
@@ -623,14 +602,12 @@ async def data_cleaning(
         "output_path": str(save_path),
     }
 
-
 def _clean_remove_duplicates(df, log: list[str]):
     """Helper to remove duplicate rows."""
     before = len(df)
     df = df.drop_duplicates()
     log.append(f"Removed {before - len(df)} duplicate rows")
     return df
-
 
 def _clean_fill_missing(df, handle_missing: str, log: list[str]):
     """Helper to fill missing numeric values."""
@@ -645,7 +622,6 @@ def _clean_fill_missing(df, handle_missing: str, log: list[str]):
                 df[col] = df[col].fillna(0)
     log.append(f"Filled missing values using {handle_missing}")
 
-
 def _clean_normalize(df, log: list[str]):
     """Helper to normalize numeric columns to [0, 1]."""
     numeric_cols = df.select_dtypes(include=[np.number]).columns
@@ -656,7 +632,6 @@ def _clean_normalize(df, log: list[str]):
             df[col] = (df[col] - min_val) / (max_val - min_val)
     log.append(f"Normalized {len(numeric_cols)} numeric columns to [0, 1]")
 
-
 def _clean_standardize(df, log: list[str]):
     """Helper to standardize numeric columns (z-score)."""
     numeric_cols = df.select_dtypes(include=[np.number]).columns
@@ -666,7 +641,6 @@ def _clean_standardize(df, log: list[str]):
         if std != 0:
             df[col] = (df[col] - mean) / std
     log.append(f"Standardized {len(numeric_cols)} numeric columns (z-score)")
-
 
 def _clean_remove_outliers(df, log: list[str]):
     """Helper to remove outlier rows."""
@@ -680,7 +654,6 @@ def _clean_remove_outliers(df, log: list[str]):
     log.append(f"Removed {before - len(df)} outlier rows")
     return df
 
-
 def _clean_drop_missing(df, log: list[str]):
     """Helper to drop rows with missing values."""
     before = len(df)
@@ -689,7 +662,6 @@ def _clean_drop_missing(df, log: list[str]):
     if dropped > 0:
         log.append(f"Dropped {dropped} rows with missing values")
     return df
-
 
 def _save_cleaned_data(df, output_path: str | None):
     """Helper to save cleaned dataframe."""
@@ -700,7 +672,6 @@ def _save_cleaned_data(df, output_path: str | None):
     save_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(save_path, index=False)
     return save_path
-
 
 @server.tool()
 async def data_aggregation(
@@ -760,7 +731,6 @@ async def data_aggregation(
         "aggregated_data": result.to_dict(orient="records"),
     }
 
-
 @server.tool()
 async def interpret_column_data(
     file_path: str,
@@ -815,7 +785,6 @@ async def interpret_column_data(
         "success": True,
         "columns_interpretation": interpretations,
     }
-
 
 @server.tool()
 async def run_pandas_code(
@@ -916,7 +885,6 @@ async def run_pandas_code(
             "success": False,
             "error": f"Execution failed: {e!s}",
         }
-
 
 if __name__ == "__main__":
     try:

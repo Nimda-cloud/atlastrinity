@@ -35,7 +35,6 @@ else:
     # Ensure variables are expanded if config loader didn't (loader usually does)
     CHROMA_DIR = os.path.expandvars(CHROMA_DIR)
 
-
 def sanitize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     """Sanitize metadata for ChromaDB (no lists allowed)."""
     sanitized = {}
@@ -47,7 +46,6 @@ def sanitize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         else:
             sanitized[k] = v
     return sanitized
-
 
 class LongTermMemory:
     """Manages long-term vector memory using ChromaDB.
@@ -748,7 +746,6 @@ class LongTermMemory:
         except Exception as e:
             logger.error(f"[MEMORY] Delete failed in {collection_name}: {e}")
             return 0
-
 
 # Singleton instance
 long_term_memory = LongTermMemory()

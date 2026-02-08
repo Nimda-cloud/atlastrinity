@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Test script for the dataset parser component.
 """
@@ -56,7 +54,6 @@ def test_company_dataset():
     print(f"✗ Company dataset parsing failed: {result['error']}")
     return None
 
-
 def test_director_dataset():
     """Test parsing of director dataset."""
     print("\nTesting director dataset parsing...")
@@ -68,7 +65,6 @@ def test_director_dataset():
     ]
 
     # Save test data
-    import json
 
     test_file = str(PROJECT_ROOT / "test_data" / "test_directors.json")
     with open(test_file, "w") as f:
@@ -86,7 +82,6 @@ def test_director_dataset():
         return result
     print(f"✗ Director dataset parsing failed: {result['error']}")
     return None
-
 
 def test_auto_detection():
     """Test auto-detection of dataset type."""
@@ -108,7 +103,6 @@ def test_auto_detection():
                 print(f"✓ {test_file}: Auto-detected as {result['dataset_type']}")
             else:
                 print(f"✗ {test_file}: Failed - {result['error']}")
-
 
 def test_knowledge_graph_logging():
     """Test Knowledge Graph logging functionality."""
@@ -132,7 +126,6 @@ def test_knowledge_graph_logging():
             print(f"✗ Knowledge Graph logging exception: {e!s}")
     else:
         print("✗ Skipping KG test - no successful parsing result")
-
 
 def main():
     """Run all tests."""
@@ -162,7 +155,6 @@ def main():
 
         traceback.print_exc()
         return 1
-
 
 if __name__ == "__main__":
     sys.exit(main())

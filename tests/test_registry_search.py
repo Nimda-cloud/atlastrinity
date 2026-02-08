@@ -9,6 +9,5 @@ async def test_search():
     result = business_registry_search("Кардинал-Клінінг")
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
-
 if __name__ == "__main__":
     asyncio.run(test_search())

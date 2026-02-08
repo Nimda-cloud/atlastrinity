@@ -8,7 +8,6 @@ from typing import Any, cast
 import requests
 from mcp.server import FastMCP
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] [SEARCH-SERVER] [%(levelname)s] %(message)s",
@@ -22,7 +21,6 @@ server = FastMCP("search-server")
 # Path to protocol file (centralized configuration)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROTOCOL_PATH = os.path.join(PROJECT_ROOT, "src", "brain", "data", "search_protocol.txt")
-
 
 def _load_search_rules() -> dict[str, Any]:
     """Load search rules from the machine-readable section of the search protocol."""
@@ -40,7 +38,6 @@ def _load_search_rules() -> dict[str, Any]:
     except Exception as e:
         logger.error(f"Error loading protocol: {e}")
     return {}
-
 
 def _execute_protocol_search(rule_name: str, query_val: str, provider_name: str) -> dict[str, Any]:
     """Execute search based on rules defined in the protocol."""
@@ -73,7 +70,6 @@ def _execute_protocol_search(rule_name: str, query_val: str, provider_name: str)
         }
     except Exception as e:
         return {"error": str(e)}
-
 
 def _extract_from_match(match, seen_urls, results, max_results, is_fallback=False):
     """Extracted logic to process a single regex match."""
@@ -122,7 +118,6 @@ def _extract_from_match(match, seen_urls, results, max_results, is_fallback=Fals
         return len(results) >= max_results
     return False
 
-
 def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str, Any]]:
     url = "https://html.duckduckgo.com/html/"
     try:
@@ -166,7 +161,6 @@ def _search_ddg(query: str, max_results: int, timeout_s: float) -> list[dict[str
                 break
 
     return results
-
 
 @server.tool()
 def duckduckgo_search(
@@ -215,7 +209,6 @@ def duckduckgo_search(
         return {"success": True, "query": query.strip(), "results": results}
     except Exception as e:
         return {"error": str(e)}
-
 
 def _scrape_opendatabot(company_name: str) -> dict[str, Any]:
     """Direct web scraping fallback for Opendatabot.ua."""
@@ -302,7 +295,6 @@ def _scrape_opendatabot(company_name: str) -> dict[str, Any]:
     except Exception as e:
         logger.error(f"Opendatabot scraping failed: {e}")
         return {"error": f"Opendatabot scraping error: {e!s}"}
-
 
 def _scrape_youcontrol(company_name: str) -> dict[str, Any]:
     """Direct web scraping fallback for YouControl.com.ua."""
@@ -394,7 +386,6 @@ def _scrape_youcontrol(company_name: str) -> dict[str, Any]:
         logger.error(f"YouControl scraping failed: {e}")
         return {"error": f"YouControl scraping error: {e!s}"}
 
-
 @server.tool()
 def business_registry_search(company_name: str, step_id: str | None = None) -> dict[str, Any]:
     """Perform a specialized search for Ukrainian company data in business registries.
@@ -459,7 +450,6 @@ def business_registry_search(company_name: str, step_id: str | None = None) -> d
         },
     }
 
-
 @server.tool()
 def open_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
     """Search for datasets on the Ukrainian Open Data Portal (data.gov.ua).
@@ -480,7 +470,6 @@ def open_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
     else:
         logger.warning(f"Open data search failed: {result.get('error', 'unknown error')}")
     return result
-
 
 @server.tool()
 def structured_data_search(query: str, step_id: str | None = None) -> dict[str, Any]:
@@ -506,7 +495,6 @@ def structured_data_search(query: str, step_id: str | None = None) -> dict[str, 
     else:
         logger.warning(f"Structured data search failed: {result.get('error', 'unknown error')}")
     return result
-
 
 if __name__ == "__main__":
     logger.info("Starting DuckDuckGo Search Server")

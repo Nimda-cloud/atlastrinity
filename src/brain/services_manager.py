@@ -19,21 +19,17 @@ class ServiceStatus:
     status_message = "Initializing..."
     details: dict[str, Any] = {}
 
-
 def is_brew_available() -> bool:
     """Check if Homebrew is installed"""
     return shutil.which("brew") is not None
-
 
 def check_redis_installed() -> bool:
     """Check if redis-server is in PATH"""
     return shutil.which("redis-server") is not None
 
-
 def check_vibe_installed() -> bool:
     """Check if Mistral Vibe CLI is installed"""
     return shutil.which("vibe") is not None
-
 
 def run_command(cmd: list, timeout: int = 300) -> bool:
     """Run a system command and return success"""
@@ -43,7 +39,6 @@ def run_command(cmd: list, timeout: int = 300) -> bool:
     except Exception as e:
         logger.error(f"[Services] Command failed {' '.join(cmd)}: {e}")
         return False
-
 
 def ensure_redis(force_check: bool = False):
     """Ensure Redis is installed, updated, and running.
@@ -91,7 +86,6 @@ def ensure_redis(force_check: bool = False):
         return False
     logger.error("[Services] ✗ Failed to start Redis service.")
     return False
-
 
 def ensure_postgres(force_check: bool = False) -> bool:
     """Ensure PostgreSQL is installed and running."""
@@ -164,7 +158,6 @@ def ensure_postgres(force_check: bool = False) -> bool:
                 return True
     return False
 
-
 def ensure_database(force_check: bool = False) -> bool:
     """Ensure the configured structured database is available. Supports SQLite (default) and PostgreSQL.
     For SQLite the DB is file-based and considered available if the config root is writable.
@@ -188,7 +181,6 @@ def ensure_database(force_check: bool = False) -> bool:
         # Fallback to existing postgres check for non-sqlite URLs
         return ensure_postgres(force_check=force_check)
 
-
 def ensure_chrome(force_check: bool = False) -> bool:
     """Ensure Google Chrome is installed (required for Puppeteer execution)."""
     # Simply check for standard paths
@@ -211,7 +203,6 @@ def ensure_chrome(force_check: bool = False) -> bool:
             return True
 
     return False
-
 
 def ensure_golden_fund(force_check: bool = False) -> bool:
     """Ensure Golden Fund database is initialized."""
@@ -264,7 +255,6 @@ def ensure_golden_fund(force_check: bool = False) -> bool:
         logger.error(f"[Services] Failed to ensure Golden Fund: {e}")
         return False
 
-
 def ensure_vibe(force_check: bool = False) -> bool:
     """Ensure Mistral Vibe CLI is installed."""
     flag_file = CONFIG_ROOT / ".vibe_ready"
@@ -302,7 +292,6 @@ def ensure_vibe(force_check: bool = False) -> bool:
     except Exception as e:
         logger.error(f"[Services] Error installing Vibe CLI: {e}")
         return False
-
 
 async def ensure_all_services(force_check: bool = False):
     """Run check for all required system services asynchronously.
@@ -359,7 +348,6 @@ async def ensure_all_services(force_check: bool = False):
         logger.error(f"[Services] Error in ensure_all_services: {e}")
 
     return ServiceStatus.is_ready
-
 
 if __name__ == "__main__":
     # Test execution

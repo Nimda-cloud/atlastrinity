@@ -18,7 +18,6 @@ from src.brain.monitoring import get_monitoring_system
 
 logger = logging.getLogger("brain.parallel_healing")
 
-
 class HealingStatus(Enum):
     """Status of a parallel healing task."""
 
@@ -31,7 +30,6 @@ class HealingStatus(Enum):
     APPLIED = "applied"
     FAILED = "failed"
     ACKNOWLEDGED = "acknowledged"  # Tetyana acknowledged
-
 
 @dataclass
 class HealingTask:
@@ -70,7 +68,6 @@ class HealingTask:
             "priority": getattr(self, "priority", 1),
         }
 
-
 @dataclass
 class FixedStepInfo:
     """Information about a fixed step ready for retry."""
@@ -80,7 +77,6 @@ class FixedStepInfo:
     fix_description: str
     fixed_at: datetime
     grisha_verdict: dict[str, Any]
-
 
 class ParallelHealingManager:
     """Manages parallel self-healing tasks without blocking main execution.
@@ -406,7 +402,6 @@ class ParallelHealingManager:
     async def _test_in_sandbox(self, task: HealingTask) -> dict[str, Any]:
         """Test the proposed fix in sandbox if applicable."""
         try:
-            from src.brain.mcp_manager import mcp_manager
 
             # Only sandbox-test if we have code changes
             if not task.vibe_analysis or "```" not in task.vibe_analysis:
@@ -469,7 +464,6 @@ sys.exit(0)
     async def _notify_fix_ready(self, task: HealingTask) -> None:
         """Notify Tetyana that a fix is ready."""
         try:
-            from src.brain.message_bus import AgentMsg, MessageType, message_bus
 
             await message_bus.send(
                 AgentMsg(
@@ -543,7 +537,6 @@ sys.exit(0)
             return
 
         try:
-            from src.brain.state_manager import state_manager
 
             if state_manager.redis_client:
                 key = state_manager._key(f"healing:{task.task_id}")
@@ -592,7 +585,6 @@ sys.exit(0)
                 return line.strip()[:200]
 
         return analysis[:200]
-
 
 # Singleton instance
 parallel_healing_manager = ParallelHealingManager()

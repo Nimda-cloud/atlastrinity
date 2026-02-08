@@ -5,7 +5,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load .env
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
@@ -32,7 +31,6 @@ async def test_copilot():
         import traceback
 
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     asyncio.run(test_copilot())

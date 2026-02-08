@@ -19,7 +19,6 @@ import pytest
 # Need to patch before importing
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-
 class TestVibeConfig:
     """Tests for vibe_config.py configuration system."""
 
@@ -36,7 +35,6 @@ class TestVibeConfig:
 
     def test_tool_pattern_glob(self):
         """Glob patterns should match tool names correctly."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig(enabled_tools=["serena_*", "read_file"], disabled_tools=["mcp_*"])
 
@@ -56,7 +54,6 @@ class TestVibeConfig:
 
     def test_tool_pattern_regex(self):
         """Regex patterns (re: prefix) should match correctly."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig(enabled_tools=["re:^db_.*$"], disabled_tools=["re:^dangerous_.*"])
 
@@ -72,7 +69,6 @@ class TestVibeConfig:
 
     def test_tool_pattern_empty_enabled_means_all(self):
         """Empty enabled_tools means all tools are enabled by default."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig(enabled_tools=[], disabled_tools=["bash"])
 
@@ -109,7 +105,6 @@ class TestVibeConfig:
 
     def test_cli_args_model_override(self):
         """Model override is not supported in current Vibe CLI."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig()
 
@@ -124,7 +119,6 @@ class TestVibeConfig:
 
     def test_cli_args_session_resume(self):
         """Session ID should be included for resume."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig()
 
@@ -175,7 +169,6 @@ class TestVibeConfig:
         # Non-existent
         assert config.get_model_by_alias("nonexistent") is None
 
-
 class TestPreparePromptArg:
     """Tests for handle_long_prompt function."""
 
@@ -202,7 +195,6 @@ class TestPreparePromptArg:
     def test_large_prompt_creates_file_in_global_dir(self, mock_instructions_dir):
         """Large prompts should create files in INSTRUCTIONS_DIR."""
         with patch("src.mcp_server.vibe_server.INSTRUCTIONS_DIR", mock_instructions_dir):
-            from src.mcp_server.vibe_server import handle_long_prompt
 
             large_prompt = "B" * 2500
 
@@ -224,7 +216,6 @@ class TestPreparePromptArg:
     def test_prompt_file_contains_full_path(self, mock_instructions_dir):
         """The returned prompt arg should contain the full path."""
         with patch("src.mcp_server.vibe_server.INSTRUCTIONS_DIR", mock_instructions_dir):
-            from src.mcp_server.vibe_server import handle_long_prompt
 
             large_prompt = "C" * 3000
             result, file_path = handle_long_prompt(large_prompt)
@@ -234,7 +225,6 @@ class TestPreparePromptArg:
                 assert file_path in result or mock_instructions_dir in result
             else:
                 pytest.fail("file_path should not be None for large prompt")
-
 
 class TestCleanupOldInstructions:
     """Tests for cleanup_old_instructions function."""
@@ -277,11 +267,9 @@ class TestCleanupOldInstructions:
         nonexistent = str(tmp_path / "nonexistent")
 
         with patch("src.mcp_server.vibe_server.INSTRUCTIONS_DIR", nonexistent):
-            from src.mcp_server.vibe_server import cleanup_old_instructions
 
             cleaned = cleanup_old_instructions(max_age_hours=24)
             assert cleaned == 0
-
 
 class TestAgentMode:
     """Tests for AgentMode enum and mode switching."""
@@ -297,18 +285,15 @@ class TestAgentMode:
 
     def test_mode_from_string(self):
         """Mode should be creatable from string."""
-        from src.mcp_server.vibe_config import AgentMode
 
         assert AgentMode("auto-approve") == AgentMode.AUTO_APPROVE
         assert AgentMode("plan") == AgentMode.PLAN
-
 
 class TestEnvironmentConfig:
     """Tests for environment variable handling."""
 
     def test_get_environment_basic(self):
         """Environment should include basic CLI settings."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig()
         env = config.get_environment()
@@ -319,13 +304,11 @@ class TestEnvironmentConfig:
 
     def test_get_environment_custom_vibe_home(self):
         """Custom VIBE_HOME should be included in environment."""
-        from src.mcp_server.vibe_config import VibeConfig
 
         config = VibeConfig(vibe_home="/custom/vibe/home")
         env = config.get_environment()
 
         assert env["VIBE_HOME"] == "/custom/vibe/home"
-
 
 class TestToolPermissions:
     """Tests for tool permission configuration."""
@@ -353,7 +336,6 @@ class TestToolPermissions:
         assert config.get_tool_permission("read_file") == ToolPermission.ALWAYS
         # Default for unknown tools
         assert config.get_tool_permission("unknown") == ToolPermission.ASK
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
 
@@ -68,7 +67,6 @@ async def benchmark():
     print(f"Coordination Result: {note_res}")
 
     print("\n✅ Benchmark Complete!")
-
 
 if __name__ == "__main__":
     asyncio.run(benchmark())

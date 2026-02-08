@@ -6,13 +6,11 @@ import pytest
 from src.brain.voice.tts import VoiceManager, sanitize_text_for_tts
 
 
-# Mock config
 @pytest.fixture
 def mock_config():
     with patch("src.brain.voice.tts.config") as mock:
         mock.get.return_value = {}  # Default return
         yield mock
-
 
 @pytest.mark.asyncio
 async def test_sanitize_text_for_tts():
@@ -32,7 +30,6 @@ async def test_sanitize_text_for_tts():
     # Test 4: Abbreviations
     text = "Temp is 20°C"
     assert "градусів Цельсія" in sanitize_text_for_tts(text)
-
 
 @pytest.mark.asyncio
 async def test_prepare_speech_text(mock_config):
@@ -58,7 +55,6 @@ async def test_prepare_speech_text(mock_config):
     # 2. Translate should receive "Thought: Internal reasoning"
     vm.translate_to_ukrainian.assert_called_once()
     assert result == "Перекладений текст"
-
 
 @pytest.mark.asyncio
 async def test_prepare_speech_text_no_translation(mock_config):

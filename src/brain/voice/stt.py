@@ -20,7 +20,6 @@ from ..logger import logger
 WHISPER_AVAILABLE = None
 WhisperModel = None
 
-
 def _check_whisper_available():
     global WHISPER_AVAILABLE, WhisperModel
     if WHISPER_AVAILABLE is not None:
@@ -39,12 +38,10 @@ def _check_whisper_available():
         )
     return WHISPER_AVAILABLE
 
-
 # Lazy import for audio recording
 AUDIO_AVAILABLE = None
 sd = None
 sf = None
-
 
 def _check_audio_available():
     global AUDIO_AVAILABLE, sd, sf
@@ -66,7 +63,6 @@ def _check_audio_available():
         )
     return AUDIO_AVAILABLE
 
-
 class SpeechType(StrEnum):
     """Type of detected speech"""
 
@@ -76,7 +72,6 @@ class SpeechType(StrEnum):
     OTHER_VOICE = "other_voice"  # Another voice or side conversation
     SILENCE = "silence"  # Silence
     OFF_TOPIC = "off_topic"  # Off-topic or side conversation
-
 
 @dataclass
 class TranscriptionResult:
@@ -89,7 +84,6 @@ class TranscriptionResult:
     no_speech_prob: float = 0.0  # Probability that it's not speech
     speech_type: SpeechType = SpeechType.SAME_USER
 
-
 @dataclass
 class SmartSTTResult:
     """Result of smart STT analysis"""
@@ -101,7 +95,6 @@ class SmartSTTResult:
     combined_text: str  # Combined text if available
     is_continuation: bool  # If it continues previous phrase
     no_speech_prob: float = 0.0  # Probability of no speech
-
 
 class WhisperSTT:
     """Speech-to-Text using Faster Whisper (CTranslate2)"""
@@ -466,7 +459,6 @@ class WhisperSTT:
             if os.path.exists(wav_path):
                 os.remove(wav_path)
 
-
 # MCP Wrapper
 class WhisperMCPServer:
     def __init__(self):
@@ -479,7 +471,6 @@ class WhisperMCPServer:
     async def record_and_transcribe(self, duration: float = 5.0, language: str | None = None):
         result = await self.stt.record_and_transcribe(duration, language)
         return {"text": result.text, "confidence": result.confidence}
-
 
 if __name__ == "__main__":
     print("Whisper STT Module Loaded", file=sys.stderr)

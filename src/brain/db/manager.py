@@ -404,8 +404,6 @@ class DatabaseManager:
         if not self.available:
             return []
 
-        from sqlalchemy import select
-
         from src.brain.db.schema import Session as DBSession
 
         try:
@@ -430,6 +428,5 @@ class DatabaseManager:
     async def close(self):
         if self._engine:
             await self._engine.dispose()
-
 
 db_manager = DatabaseManager()

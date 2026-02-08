@@ -11,7 +11,6 @@ from typing import Any
 
 # import numpy as np  # unused
 
-
 # Try importing chromadb, handle failure for CI/Bootstrap
 try:
     import chromadb
@@ -23,7 +22,6 @@ except ImportError:
 from .types import StorageResult
 
 logger = logging.getLogger("golden_fund.storage.vector")
-
 
 class VectorStorage:
     """

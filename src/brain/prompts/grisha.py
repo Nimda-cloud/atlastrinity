@@ -1,4 +1,3 @@
-# pyright: reportUnusedImport=false
 from .common import (
     DATA_PROTOCOL,  # Used in string template formatting
     MAPS_PROTOCOL,  # Used in string template formatting

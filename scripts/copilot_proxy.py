@@ -9,10 +9,8 @@ import urllib.error
 import urllib.request
 
 
-# Setup logging
 def log(msg):
     print(f"[CopilotProxy] {msg}", file=sys.stderr)
-
 
 class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
     # Track processed requests and uptime
@@ -135,7 +133,6 @@ class CopilotProxyHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(str(e).encode())
 
-
 def run(port=8085):
     CopilotProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)
@@ -153,7 +150,6 @@ def run(port=8085):
     signal.signal(signal.SIGTERM, shutdown_handler)
 
     httpd.serve_forever()
-
 
 if __name__ == "__main__":
     run()

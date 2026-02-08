@@ -2,7 +2,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
 PROJECT_ROOT = str(Path(__file__).parent.parent)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
@@ -53,7 +52,6 @@ async def diagnose_db():
         msg_count = await session.scalar(select(func.count(AgentMessage.id)))
         print(f"[MESSAGING] Agent Messages count: {msg_count}")
 
-
 async def diagnose_memory():
     print("\n === 2. VECTOR MEMORY DIAGNOSTICS ===")
     stats = long_term_memory.get_stats()
@@ -64,7 +62,6 @@ async def diagnose_memory():
         print(f"[OK] Conversations: {stats.get('conversations_count')}")
     else:
         print("[FAIL] Vector memory (ChromaDB) is NOT available.")
-
 
 async def diagnose_browser():
     print("\n === 3. BROWSER/MCP DIAGNOSTICS ===")
@@ -82,13 +79,11 @@ async def diagnose_browser():
     if "macos-use" in catalog:
         print("[OK] macos-use server is registered in catalog.")
 
-
 async def main():
     await diagnose_db()
     await diagnose_memory()
     await diagnose_browser()
     await db_manager.close()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

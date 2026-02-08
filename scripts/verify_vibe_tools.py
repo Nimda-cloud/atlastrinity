@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Verify Vibe Tools Integration
 -----------------------------
@@ -111,7 +110,6 @@ async def verify_vibe_capabilities():
         logger.error(f"❌ Exception during tool call: {e}")
     finally:
         await manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(verify_vibe_capabilities())

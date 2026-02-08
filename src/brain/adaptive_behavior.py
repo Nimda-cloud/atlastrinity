@@ -23,7 +23,6 @@ class BehaviorPattern:
     success_rate: float = 0.0
     created_at: datetime = field(default_factory=datetime.now)
 
-
 class AdaptiveBehaviorEngine:
     """Manages non-standard algorithmic behavior for agents.
 
@@ -182,7 +181,6 @@ class AdaptiveBehaviorEngine:
                 for name, p in self.patterns.items()
             },
         }
-
 
 # Global singleton
 adaptive_behavior = AdaptiveBehaviorEngine()

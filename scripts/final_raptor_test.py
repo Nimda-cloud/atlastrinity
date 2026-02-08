@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Final test of raptor-mini alias with vibe"""
 
 import os

@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.brain.voice.tts import VoiceManager
@@ -32,7 +31,6 @@ async def test_tts():
         print("TTS verification script finished successfully.")
     else:
         print(f"TTS verification script failed or was interrupted: {result}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_tts())

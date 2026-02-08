@@ -48,7 +48,6 @@ async def test_sentence_splitting():
         for idx, chunk in enumerate(final_chunks):
             print(f"  {idx + 1}: {chunk} (Length: {len(chunk)})")
 
-
 async def simulate_playback():
     print("\n=== Simulating Queued Playback Loop ===")
     chunks = ["Перше речення.", "Друге речення!", "Третє речення?"]
@@ -59,7 +58,6 @@ async def simulate_playback():
         print(f"Speaking chunk {idx + 1}/{len(chunks)}: {chunk}")
         await asyncio.sleep(0.5)  # Simulate playback
         print(f"Finished chunk {idx + 1}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_sentence_splitting())

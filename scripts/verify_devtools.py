@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add project root to path
 sys.path.append(os.getcwd())
 
 from src.brain.mcp_manager import mcp_manager
@@ -28,7 +27,6 @@ async def test_diagram_update():
         print("Result:", result)
     except Exception as e:
         print(f"Error: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_diagram_update())

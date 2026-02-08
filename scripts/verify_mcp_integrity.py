@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """MCP Catalog & Schema Integrity Verifier
 Compares mcp_catalog.json and tool_schemas.json with live server data.
 """
@@ -21,7 +20,6 @@ class Colors:
     RED = "\033[91m"
     BOLD = "\033[1m"
     ENDC = "\033[0m"
-
 
 async def verify_integrity():
     print(f"\n{Colors.BOLD}=== MCP Integrity Verification ==={Colors.ENDC}\n")
@@ -147,7 +145,6 @@ async def verify_integrity():
             else (Colors.RED if item["status"] == "CONNECTION FAILED" else Colors.YELLOW)
         )
         print(f"{item['server']:<20}: {s_color}{item['status']}{Colors.ENDC}")
-
 
 if __name__ == "__main__":
     asyncio.run(verify_integrity())

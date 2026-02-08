@@ -2,7 +2,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Setup paths
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
@@ -45,7 +44,6 @@ async def run_autonomous_google_reg():
     finally:
         await mcp_manager.cleanup()
         print("\n✨ Demo cleanup complete.")
-
 
 if __name__ == "__main__":
     asyncio.run(run_autonomous_google_reg())

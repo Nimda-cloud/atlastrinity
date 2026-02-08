@@ -64,7 +64,6 @@ def analyze_project_structure(project_path: Path) -> dict[str, Any]:
 
     return analysis
 
-
 def _analyze_python_project(project_path: Path) -> dict[str, Any]:
     """Analyze Python project structure."""
     info: dict[str, Any] = {
@@ -102,7 +101,6 @@ def _analyze_python_project(project_path: Path) -> dict[str, Any]:
         info["key_files"].append("pyproject.toml")
 
     return info
-
 
 def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
     """Analyze Node.js project structure."""
@@ -146,7 +144,6 @@ def _analyze_nodejs_project(project_path: Path) -> dict[str, Any]:
 
     return info
 
-
 def _analyze_rust_project(project_path: Path) -> dict[str, Any]:
     """Analyze Rust project structure."""
     info: dict[str, Any] = {
@@ -173,7 +170,6 @@ def _analyze_rust_project(project_path: Path) -> dict[str, Any]:
 
     return info
 
-
 def _analyze_go_project(project_path: Path) -> dict[str, Any]:
     """Analyze Go project structure."""
     info = {"entry_points": [], "key_files": ["go.mod"], "components": []}
@@ -191,7 +187,6 @@ def _analyze_go_project(project_path: Path) -> dict[str, Any]:
                     info["components"].append(item.name.title())
 
     return info
-
 
 def _analyze_generic_project(project_path: Path) -> dict[str, Any]:
     """Analyze unknown project type."""
@@ -214,7 +209,6 @@ def _analyze_generic_project(project_path: Path) -> dict[str, Any]:
             info["components"].append(item.name.title())
 
     return info
-
 
 def detect_changed_components(
     project_analysis: dict[str, Any], git_diff: str, modified_files: list[str]

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Helper script to initialize database during setup"""
 
 import asyncio
@@ -20,7 +19,6 @@ async def main():
     except Exception as e:
         print(f"[DB] Error: {e}", file=sys.stderr, flush=True)
         sys.exit(1)
-
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -4,7 +4,6 @@ import sys
 import uuid
 from pathlib import Path
 
-# Setup paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..")
 sys.path.insert(0, os.path.abspath(root))
@@ -95,7 +94,6 @@ async def verify_isolation():
             )
 
     print("--- Verification Complete ---")
-
 
 if __name__ == "__main__":
     asyncio.run(verify_isolation())

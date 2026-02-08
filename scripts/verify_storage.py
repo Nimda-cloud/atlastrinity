@@ -4,7 +4,6 @@ import sys
 
 from sqlalchemy import func, select
 
-# Ensure src is in path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
 from brain.db.manager import db_manager
@@ -92,7 +91,6 @@ async def verify_storage():
 
     print("-" * 50)
     print("🏁 Verification Complete")
-
 
 if __name__ == "__main__":
     asyncio.run(verify_storage())

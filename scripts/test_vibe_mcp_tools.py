@@ -3,9 +3,7 @@ import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
 
 async def test_vibe_prompt_fallback():
     print("🧪 Testing Vibe MCP Tools (vibe_prompt) for Fallback Integration")
@@ -77,7 +75,6 @@ async def test_vibe_prompt_fallback():
                 import traceback
 
                 traceback.print_exc()
-
 
 if __name__ == "__main__":
     asyncio.run(test_vibe_prompt_fallback())

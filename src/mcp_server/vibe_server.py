@@ -164,7 +164,6 @@ DATABASE_URL = get_config_value(
     f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db",
 )
 
-
 # Allowed subcommands (CLI-only, no TUI)
 ALLOWED_SUBCOMMANDS = {
     "list-editors",
@@ -238,7 +237,6 @@ _proxy_process: subprocess.Popen | None = None
 VIBE_LOCK = asyncio.Lock()
 VIBE_QUEUE_SIZE = 0
 
-
 async def _emergency_cleanup() -> None:
     """Forcefully terminate lingering vibe and proxy processes to unblock the queue."""
     logger.warning("[VIBE] Emergency cleanup triggered. Terminating lingering processes...")
@@ -248,14 +246,12 @@ async def _emergency_cleanup() -> None:
 
         # 2. Kill any actual 'vibe' CLI processes that might be hanging
         # We use pgrep/pkill for platform-agnostic (ish) cleanup on Unix
-        import subprocess
 
         # Use -f to match the command line (more robust than exact name)
         subprocess.run(["pkill", "-9", "-f", "vibe"], capture_output=True, check=False)
 
     except Exception as e:
         logger.error(f"[VIBE] Emergency cleanup failed: {e}")
-
 
 def get_vibe_config() -> VibeConfig:
     """Get or load the Vibe configuration."""
@@ -269,7 +265,6 @@ def get_vibe_config() -> VibeConfig:
         _current_mode = _vibe_config.default_mode
 
     return _vibe_config
-
 
 def sync_vibe_configuration() -> None:
     """Sync active vibe_config.toml and support files to VIBE_HOME."""
@@ -335,13 +330,11 @@ def sync_vibe_configuration() -> None:
     except Exception as e:
         logger.error(f"Failed to sync Vibe configuration: {e}")
 
-
 def reload_vibe_config() -> VibeConfig:
     """Force reload the Vibe configuration."""
     global _vibe_config
     _vibe_config = None
     return get_vibe_config()
-
 
 # =============================================================================
 # INITIALIZATION
@@ -358,7 +351,6 @@ logger.info(
 
 # Perform startup sync
 sync_vibe_configuration()
-
 
 def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
     """Start the provider's local proxy if configured and needed."""
@@ -415,7 +407,6 @@ def _ensure_provider_proxy(p_conf: ProviderConfig) -> None:
     except Exception as e:
         logger.error(f"[VIBE] Failed to start proxy for {p_conf.name}: {e}")
 
-
 def _cleanup_provider_proxy() -> None:
     """Terminate the active provider proxy subprocess."""
     if _proxy_process:
@@ -428,23 +419,19 @@ def _cleanup_provider_proxy() -> None:
             if _proxy_process:
                 _proxy_process.kill()
 
-
 # Register cleanup
 atexit.register(_cleanup_provider_proxy)
 # Deferred startup: _start_copilot_proxy is called inside vibe_prompt when needed
 
-
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================
-
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape codes from text."""
     if not isinstance(text, str):
         return str(text)
     return ANSI_ESCAPE.sub("", text)
-
 
 async def is_network_available(
     host: str = "api.mistral.ai",
@@ -459,7 +446,6 @@ async def is_network_available(
         logger.warning(f"[VIBE] Network check failed for {host}:{port}: {e}")
         return False
 
-
 def truncate_output(text: str, max_chars: int = MAX_OUTPUT_CHARS) -> str:
     """Truncate text with indicator if exceeded."""
     if not isinstance(text, str):
@@ -467,7 +453,6 @@ def truncate_output(text: str, max_chars: int = MAX_OUTPUT_CHARS) -> str:
     if len(text) <= max_chars:
         return text
     return text[:max_chars] + f"\n...[TRUNCATED: Output exceeded {max_chars} chars]..."
-
 
 def resolve_vibe_binary() -> str | None:
     """Resolve the path to the Vibe CLI binary."""
@@ -487,7 +472,6 @@ def resolve_vibe_binary() -> str | None:
 
     logger.warning(f"Vibe binary '{VIBE_BINARY}' not found")
     return None
-
 
 def _prepare_temp_vibe_home(model_alias: str) -> str:
     """Prepare a temporary VIBE_HOME with a custom config.toml for model switching."""
@@ -657,7 +641,6 @@ def _prepare_temp_vibe_home(model_alias: str) -> str:
         shutil.rmtree(temp_dir, ignore_errors=True)
         return ""
 
-
 def prepare_workspace_and_instructions() -> None:
     """Ensure necessary directories exist."""
     try:
@@ -666,7 +649,6 @@ def prepare_workspace_and_instructions() -> None:
         logger.debug(f"Workspace ready: {VIBE_WORKSPACE}")
     except Exception as e:
         logger.error(f"Failed to create workspace: {e}")
-
 
 def cleanup_old_instructions(max_age_hours: int = 24) -> int:
     """Remove instruction files older than max_age_hours."""
@@ -691,7 +673,6 @@ def cleanup_old_instructions(max_age_hours: int = 24) -> int:
     if cleaned > 0:
         logger.info(f"Cleaned {cleaned} old instruction files")
     return cleaned
-
 
 def handle_long_prompt(prompt: str, cwd: str | None = None) -> tuple[str, str | None]:
     """Handle long prompts by offloading to a file.
@@ -724,7 +705,6 @@ def handle_long_prompt(prompt: str, cwd: str | None = None) -> tuple[str, str | 
             return prompt[:10000] + "\n[TRUNCATED]", None
         return prompt, None
 
-
 def _generate_task_session_id(prompt: str) -> str:
     """Generate a stable session ID in Vibe's native timestamp format.
     Native format: session_YYYYMMDD_HHMMSS_random
@@ -735,7 +715,6 @@ def _generate_task_session_id(prompt: str) -> str:
 
     h = hashlib.sha256(prompt.strip()[:500].encode()).hexdigest()[:8]
     return f"session_{now.strftime('%Y%m%d_%H%M%S')}_{h}"
-
 
 async def run_vibe_subprocess(
     argv: list[str],
@@ -817,7 +796,6 @@ async def run_vibe_subprocess(
                     )
                 )
 
-
 def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
     """Prepare environment variables for Vibe subprocess."""
     config = get_vibe_config()
@@ -879,7 +857,6 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
 
     return process_env
 
-
 async def _emit_vibe_log(ctx: Context | None, level: str, message: str) -> None:
     """Emit log message to the client context."""
     if not ctx:
@@ -889,7 +866,6 @@ async def _emit_vibe_log(ctx: Context | None, level: str, message: str) -> None:
         log_level = cast("Literal['debug', 'info', 'warning', 'error']", level)
         # Robustness: ensure we don't await a MagicMock or failing call
         if hasattr(ctx, "log"):
-            from unittest.mock import MagicMock
 
             if isinstance(ctx.log, MagicMock):
                 logger.debug(f"[VIBE-MOCK-LOG] {level}: {message}")
@@ -897,7 +873,6 @@ async def _emit_vibe_log(ctx: Context | None, level: str, message: str) -> None:
             await ctx.log(log_level, message, logger_name="vibe_mcp")
     except Exception as e:
         logger.debug(f"[VIBE] Failed to send log to client: {e}")
-
 
 async def _handle_vibe_line(line: str, stream_name: str, ctx: Context | None) -> None:
     """Process and log a single line of output from Vibe."""
@@ -912,7 +887,6 @@ async def _handle_vibe_line(line: str, stream_name: str, ctx: Context | None) ->
     # Fallback to standard streaming log
     await _format_and_emit_vibe_log(line, stream_name, ctx)
 
-
 def _clean_vibe_line(line: str) -> str:
     """Filter out terminal control characters and TUI artifacts."""
     if not line:
@@ -920,7 +894,6 @@ def _clean_vibe_line(line: str) -> str:
     if any(c < "\x20" for c in line if c not in "\t\n\r"):
         line = "".join(c for c in line if c >= "\x20" or c in "\t\n\r")
     return line.strip()
-
 
 async def _try_parse_structured_vibe_log(line: str, ctx: Context | None) -> bool:
     """Try to parse as JSON for structured logging."""
@@ -942,7 +915,6 @@ async def _try_parse_structured_vibe_log(line: str, ctx: Context | None) -> bool
     except (json.JSONDecodeError, ValueError):
         return False
 
-
 async def _format_and_emit_vibe_log(line: str, stream_name: str, ctx: Context | None) -> None:
     """Format and emit a standard log line."""
     if any(t in line for t in SPAM_TRIGGERS):
@@ -961,7 +933,6 @@ async def _format_and_emit_vibe_log(line: str, stream_name: str, ctx: Context | 
     logger.debug(mask_sensitive_data(f"[VIBE_{stream_name}] {line}"))
     level = "warning" if stream_name == "ERR" else "info"
     await _emit_vibe_log(ctx, level, formatted)
-
 
 async def _read_vibe_stream(
     stream: asyncio.StreamReader,
@@ -990,7 +961,6 @@ async def _read_vibe_stream(
         logger.warning(f"[VIBE] Read timeout on {stream_name} after {timeout_s}s")
     except Exception as e:
         logger.debug(f"[VIBE] Error reading {stream_name} stream: {e}")
-
 
 async def _execute_vibe_with_retries(
     argv: list[str],
@@ -1133,7 +1103,6 @@ async def _execute_vibe_with_retries(
 
     return {"success": False, "error": "Retries exhausted", "command": argv}
 
-
 async def _handle_vibe_timeout(
     process: asyncio.subprocess.Process,
     argv: list[str],
@@ -1164,7 +1133,6 @@ async def _handle_vibe_timeout(
         "stderr": truncate_output(stderr_str),
         "command": argv,
     }
-
 
 async def _handle_vibe_rate_limit(
     attempt: int,
@@ -1230,7 +1198,6 @@ async def _handle_vibe_rate_limit(
         "error": error_msg,
         "error_type": "RATE_LIMIT",
     }
-
 
 @server.tool()
 async def vibe_test_in_sandbox(
@@ -1307,11 +1274,9 @@ async def vibe_test_in_sandbox(
     except Exception as e:
         return {"success": False, "error": f"Sandbox internal error: {e}", "returncode": -1}
 
-
 # =============================================================================
 # MCP TOOLS - CORE (6 tools)
 # =============================================================================
-
 
 @server.tool()
 async def vibe_which(ctx: Context) -> dict[str, Any]:
@@ -1354,7 +1319,6 @@ async def vibe_which(ctx: Context) -> dict[str, Any]:
         "mode": _current_mode.value,
         "available_models": [m.alias for m in config.get_available_models()],
     }
-
 
 @server.tool()
 async def vibe_prompt(
@@ -1509,7 +1473,6 @@ async def vibe_prompt(
                 logger.debug(f"Cleaned up prompt file: {prompt_file_to_clean}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup prompt file: {e}")
-
 
 @server.tool()
 async def vibe_analyze_error(
@@ -1761,7 +1724,6 @@ async def vibe_analyze_error(
         ),
     )
 
-
 @server.tool()
 async def vibe_implement_feature(
     ctx: Context,
@@ -1936,7 +1898,6 @@ EXECUTE NOW
         ),
     )
 
-
 @server.tool()
 async def vibe_code_review(
     ctx: Context,
@@ -2004,7 +1965,6 @@ async def vibe_code_review(
         ),
     )
 
-
 @server.tool()
 async def vibe_smart_plan(
     ctx: Context,
@@ -2061,11 +2021,9 @@ async def vibe_smart_plan(
         ),
     )
 
-
 # =============================================================================
 # MCP TOOLS - CONFIGURATION (5 new tools)
 # =============================================================================
-
 
 @server.tool()
 async def vibe_get_config(ctx: Context) -> dict[str, Any]:
@@ -2106,7 +2064,6 @@ async def vibe_get_config(ctx: Context) -> dict[str, Any]:
         "enabled_tools": config.enabled_tools,
         "disabled_tools": config.disabled_tools,
     }
-
 
 @server.tool()
 async def vibe_configure_model(
@@ -2157,7 +2114,6 @@ async def vibe_configure_model(
         "temperature": model.temperature,
     }
 
-
 @server.tool()
 async def vibe_set_mode(
     ctx: Context,
@@ -2200,7 +2156,6 @@ async def vibe_set_mode(
             "auto-approve": "Auto-approves all tool executions",
         }.get(mode, "Unknown"),
     }
-
 
 @server.tool()
 async def vibe_configure_provider(
@@ -2257,7 +2212,6 @@ async def vibe_configure_provider(
         "note": "This change is runtime-only. Add to vibe_config.toml for persistence.",
     }
 
-
 @server.tool()
 async def vibe_session_resume(
     ctx: Context,
@@ -2311,11 +2265,9 @@ async def vibe_session_resume(
         ),
     )
 
-
 # =============================================================================
 # MCP TOOLS - UTILITY (5 tools)
 # =============================================================================
-
 
 @server.tool()
 async def vibe_ask(
@@ -2349,7 +2301,6 @@ async def vibe_ask(
             model=model,
         ),
     )
-
 
 @server.tool()
 async def vibe_execute_subcommand(
@@ -2420,7 +2371,6 @@ async def vibe_execute_subcommand(
         prompt_preview=preview,
     )
 
-
 @server.tool()
 async def vibe_list_sessions(ctx: Context, limit: int = 10) -> dict[str, Any]:
     """List recent Vibe session logs with metrics.
@@ -2481,7 +2431,6 @@ async def vibe_list_sessions(ctx: Context, limit: int = 10) -> dict[str, Any]:
             "error": f"Failed to list sessions: {e}",
         }
 
-
 @server.tool()
 async def vibe_session_details(ctx: Context, session_id_or_file: str) -> dict[str, Any]:
     """Get full details of a specific Vibe session.
@@ -2529,7 +2478,6 @@ async def vibe_session_details(ctx: Context, session_id_or_file: str) -> dict[st
             "error": f"Failed to read session: {e}",
         }
 
-
 @server.tool()
 async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
     """Reload the Vibe configuration from disk.
@@ -2561,11 +2509,9 @@ async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
             "error": f"Failed to reload config: {e}",
         }
 
-
 # =============================================================================
 # MCP TOOLS - DATABASE (2 tools)
 # =============================================================================
-
 
 @server.tool()
 async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
@@ -2638,7 +2584,6 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
         logger.error(f"Database query error: {e}")
         return {"success": False, "error": str(e)}
 
-
 @server.tool()
 async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
     """Retrieve current operational context from the database.
@@ -2649,9 +2594,6 @@ async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
         Current session, recent tasks, and errors
 
     """
-    from sqlalchemy import text
-
-    from src.brain.db.manager import db_manager
 
     try:
         await db_manager.initialize()
@@ -2699,7 +2641,6 @@ async def vibe_get_system_context(ctx: Context) -> dict[str, Any]:
     except Exception as e:
         logger.error(f"Database query error in vibe_get_system_context: {e}")
         return {"success": False, "error": str(e)}
-
 
 # =============================================================================
 # MAIN

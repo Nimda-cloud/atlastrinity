@@ -5,7 +5,6 @@ import sqlite3
 import sys
 from pathlib import Path
 
-# Setup mock environment
 MOCK_HOME = Path("/tmp/mock_atlastrinity_home")
 if MOCK_HOME.exists():
     shutil.rmtree(MOCK_HOME)
@@ -22,7 +21,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import src.brain.config
 
 src.brain.config.CONFIG_ROOT = MOCK_CONFIG
-
 
 async def test_restoration_logic():
     print("--- Simulating New Machine Setup ---")
@@ -81,7 +79,6 @@ async def test_restoration_logic():
 
     conn.close()
     print("--- Simulation Complete ---")
-
 
 if __name__ == "__main__":
     asyncio.run(test_restoration_logic())

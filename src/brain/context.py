@@ -13,7 +13,6 @@ from datetime import datetime
 ACTUAL_HOME = os.path.expanduser("~")
 GITHUB_ROOT = f"{ACTUAL_HOME}/Documents/GitHub"
 
-
 @dataclass
 class SharedContext:
     """Shared context singleton that all agents can access.
@@ -128,7 +127,6 @@ class SharedContext:
 
         # If we have a last successful path, use its directory
         if self.last_successful_path:
-            import os
 
             return os.path.dirname(self.last_successful_path)
 
@@ -274,7 +272,6 @@ class SharedContext:
 
                 logger.info(f"[CONTEXT] max_recursive_depth set to {max_depth} from config")
         except Exception as e:
-            from .logger import logger
 
             logger.warning(f"[CONTEXT] Failed to sync max_recursive_depth from config: {e}")
 
@@ -289,7 +286,6 @@ class SharedContext:
         """
         full_key = f"{category}:{key}" if category != "general" else key
         self.critical_discoveries[full_key] = value
-        from .logger import logger
 
         logger.info(f"[CONTEXT] Stored discovery: {full_key}={value[:50]}...")
 
@@ -316,7 +312,6 @@ class SharedContext:
     def clear_discoveries(self) -> None:
         """Clear all discoveries (e.g., when starting a new task)."""
         self.critical_discoveries.clear()
-
 
 # Singleton instance - import this in other modules
 shared_context = SharedContext()

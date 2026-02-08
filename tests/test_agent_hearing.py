@@ -49,11 +49,9 @@ async def test_tetyana_hearing_bus_messages():
     assert "Testing bus: change your strategy" in prompt
     assert "REAL-TIME MESSAGES FROM OTHER AGENTS (Bus):" in prompt
 
-
 @pytest.mark.asyncio
 async def test_grisha_step_centric_verification():
     """Verify that Grisha's prompt now includes step-centric instructions."""
-    from brain.prompts import AgentPrompts
 
     prompt = AgentPrompts.grisha_verification_prompt(
         strategy_context="Use terminal",

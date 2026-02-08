@@ -18,7 +18,6 @@ class MapMarker:
     icon: str | None = None
     color: str | None = None
 
-
 @dataclass
 class MapRoute:
     """Represents a navigation route"""
@@ -31,7 +30,6 @@ class MapRoute:
     duration: str
     steps: list[dict[str, Any]] = field(default_factory=list)
     mode: str = "driving"  # driving, walking, transit, bicycle
-
 
 @dataclass
 class MapState:
@@ -47,7 +45,6 @@ class MapState:
     agent_view: dict[str, Any] | None = None  # {image_path, heading, pitch, fov}
     distance_info: dict[str, Any] | None = None  # {distance, duration, origin, destination}
     show_map: bool = False  # Flag to trigger map display in frontend
-
 
 class MapStateManager:
     """Singleton manager for map state"""
@@ -217,7 +214,6 @@ class MapStateManager:
             "distance_info": self.state.distance_info,
             "show_map": self.state.show_map,
         }
-
 
 # Global singleton instance
 map_state_manager = MapStateManager()

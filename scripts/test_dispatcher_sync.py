@@ -3,14 +3,12 @@ import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
-# Prep path to import project modules
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Mock logger and config before imports
-
 
 async def test_tool_selection():
     from src.brain.tool_dispatcher import ToolDispatcher
@@ -69,7 +67,6 @@ async def test_tool_selection():
     print("\n6. Testing search routing safeguard...")
     try:
         # This should raise an exception, not route to puppeteer
-        from src.brain.tool_dispatcher import ToolDispatcher
 
         _server, _tool, _args = dispatcher._handle_browser("search", {"query": "test"})
         print("ERROR: Search was incorrectly routed to browser tools!")
@@ -82,7 +79,6 @@ async def test_tool_selection():
             raise AssertionError("Wrong error message for search routing")
 
     print("\n--- All Dispatcher Tests Passed Successfully! ---")
-
 
 if __name__ == "__main__":
     asyncio.run(test_tool_selection())

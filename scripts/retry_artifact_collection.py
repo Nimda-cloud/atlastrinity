@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import asyncio
 import json
 import re
@@ -79,7 +78,6 @@ async def run():
     print("Grisha verification:", verification.verified, verification.confidence)
 
     await mcp_manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(run())

@@ -4,7 +4,6 @@ import stat
 import sys
 from pathlib import Path
 
-# Determine CONFIG_ROOT to check creation
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
 WORKSPACE_DIR = CONFIG_ROOT / "workspace"
 
@@ -72,7 +71,6 @@ async def verify_workspace():
         traceback.print_exc()
 
     await mcp_manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(verify_workspace())

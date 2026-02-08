@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 import asyncio
 import json
 import os
@@ -10,7 +9,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from mcp.client.session import ClientSession
-
 
 def _import_mcp_sdk():
     original_sys_path = list(sys.path)
@@ -29,7 +27,6 @@ def _import_mcp_sdk():
     finally:
         sys.path = original_sys_path
 
-
 # Import preflight utilities (uses npm under the hood for registry checks)
 try:
     from .mcp_preflight import check_package_arg_for_tool
@@ -37,7 +34,6 @@ except Exception:
     # Fallback: if preflight not available, define a permissive stub
     def check_package_arg_for_tool(arg: str, tool_cmd: str = "npx") -> bool:  # type: ignore
         return True
-
 
 try:
     _McpClientSession, StdioServerParameters, stdio_client, LoggingMessageNotification = (
@@ -159,7 +155,6 @@ class MCPManager:
                 or "/Resources/brain" in result
             ) and not os.path.exists(result):
                 # Robust resolution for packaged binary
-                from .config import PROJECT_ROOT
 
                 binary_name = result.split("/")[-1]
 
@@ -297,7 +292,6 @@ class MCPManager:
         env.update(config.get("env", {}))
 
         # Ensure PYTHONPATH includes project root so that 'src.mcp_server' can be resolved
-        from .config import PROJECT_ROOT
 
         root_path = str(PROJECT_ROOT)
         current_pp = env.get("PYTHONPATH", "")
@@ -491,7 +485,6 @@ class MCPManager:
                     return {"content": [{"type": "text", "text": "Tour started successfully."}]}
 
                 if tool_name == "maps_tour_control":
-                    from src.brain.navigation.tour_driver import tour_driver
 
                     action = (arguments or {}).get("action", "")
                     val = (arguments or {}).get("value")
@@ -717,7 +710,6 @@ class MCPManager:
                 logger.warning(f"[MCP] Vibe server unhealthy, attempting auto-enable: {e}")
                 # Try to enable vibe via self-healing
                 try:
-                    from .config_loader import config
 
                     if not config.get("mcp.vibe.enabled", False):
                         logger.info("[MCP] Auto-enabling vibe server due to health check failure")
@@ -834,7 +826,6 @@ class MCPManager:
     def start_health_monitoring(self, interval: int | None = None):
         """Start the health check background task."""
         if interval is None:
-            from src.brain.behavior_engine import behavior_engine
 
             mon_config = behavior_engine.get_background_monitoring("mcp_health")
             interval = mon_config.get("interval", 60)
@@ -947,7 +938,6 @@ class MCPManager:
 
             # Final pkill for any common MCP signatures
             try:
-                import subprocess
 
                 # Targeted kills for known servers
                 sigs = ["mcp-server", "macos-use", "vibe_server", "vibe", "npx", "bunx"]
@@ -1100,7 +1090,6 @@ class MCPManager:
         """Generates a detailed summary of all available tools across all servers,
         including their input schemas (arguments) for precise LLM mapping.
         """
-        import json
 
         summary = "AVAILABLE MCP TOOLS (Full Specs):\n"
         configured_servers = [s for s in self.config.get("mcpServers", {}) if not s.startswith("_")]
@@ -1187,7 +1176,6 @@ class MCPManager:
         self._connection_tasks.clear()
         self._close_events.clear()
         self._session_futures.clear()
-
 
 # Global instance
 mcp_manager = MCPManager()

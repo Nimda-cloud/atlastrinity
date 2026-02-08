@@ -13,7 +13,6 @@ from pydantic import BaseModel, Field
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("golden_fund.validation")
 
-
 class ValidationResult:
     """Result container for validation operations."""
 
@@ -31,7 +30,6 @@ class ValidationResult:
         self.warnings = warnings or []
         self.metadata = metadata or {}
 
-
 class CompletenessCheck(BaseModel):
     """
     Validation checkpoint for data completeness.
@@ -43,7 +41,6 @@ class CompletenessCheck(BaseModel):
     passed: bool = Field(default=False)
     message: str = Field(default="")
     details: dict[str, Any] = Field(default_factory=dict)
-
 
 class DataValidator:
     """

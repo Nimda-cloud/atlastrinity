@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add project root to path
 sys.path.append(os.getcwd())
 
 from src.brain.db.manager import db_manager
@@ -68,7 +67,6 @@ async def smoke_test():
             print("❌ Node NOT found in ChromaDB")
     else:
         print("❌ Failed to add node to Graph")
-
 
 if __name__ == "__main__":
     asyncio.run(smoke_test())

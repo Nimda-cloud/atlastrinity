@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Script to run logic tests using the new ContextCheck module.
 """
@@ -22,7 +21,6 @@ def mock_runner(input_str: str) -> str:
         return '{"status": "success", "data": []}'
     return "I don't understand."
 
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python run_logic_tests.py <test_file>")
@@ -38,7 +36,6 @@ def main():
 
     if results.get("failed", 0) > 0:
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

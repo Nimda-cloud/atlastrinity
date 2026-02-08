@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Atlas Trinity Pre-Flight Cleanup
 Aggressively kills lingering processes from previous sessions to ensure a clean start.
@@ -27,7 +26,6 @@ TARGET_SIGNATURES = [
 # Ports to check and free
 TARGET_PORTS = [8000, 8080, 8085, 8090]  # Brain, Vibe, Proxy, etc.
 
-
 def get_process_list() -> list[tuple[int, str]]:
     """Get list of running processes with PIDs and command lines."""
     try:
@@ -48,7 +46,6 @@ def get_process_list() -> list[tuple[int, str]]:
         print(f"[CLEANUP] Failed to list processes: {e}")
         return []
 
-
 def kill_process(pid, name):
     """Try to kill a process gracefully, then forcefully."""
     try:
@@ -67,7 +64,6 @@ def kill_process(pid, name):
         print(f"[CLEANUP] Permission denied killing PID {pid}")
     except Exception as e:
         print(f"[CLEANUP] Error killing PID {pid}: {e}")
-
 
 def main():
     print("[CLEANUP] Checking for lingering processes...")
@@ -115,7 +111,6 @@ def main():
         time.sleep(1)
     else:
         print("[CLEANUP] System clean.")
-
 
 if __name__ == "__main__":
     main()

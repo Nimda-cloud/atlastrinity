@@ -34,7 +34,6 @@ async def test_constraint_monitor_violations():
         assert call_kwargs["priority"] == 2
         assert "User Constraint Violation" in call_kwargs["error"]
 
-
 @pytest.mark.asyncio
 async def test_constraint_monitor_compliant():
     monitor = ConstraintMonitor()

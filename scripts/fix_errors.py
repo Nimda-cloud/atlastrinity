@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Fix critical errors found in logs
 """
@@ -14,7 +13,6 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 os.environ["CONFIG_ROOT"] = os.path.expanduser("~/.config/atlastrinity")
-
 
 def fix_tool_routing():
     """Fix tool routing issues"""
@@ -45,7 +43,6 @@ def fix_tool_routing():
             print("✅ analyze_screen mapping found")
         else:
             print("⚠️ analyze_screen mapping may be missing")
-
 
 def fix_vibe_check_db():
     """Fix vibe_check_db SQL errors"""
@@ -100,7 +97,6 @@ def fix_vibe_check_db():
     except Exception as e:
         print(f"❌ Database error: {e}")
 
-
 def fix_macos_use_tools():
     """Fix macos-use tool availability"""
     print("🔧 Checking macos-use server...")
@@ -133,7 +129,6 @@ def fix_macos_use_tools():
 
         build_script = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/build.sh")
         if os.path.exists(build_script):
-            import subprocess
 
             try:
                 result = subprocess.run(
@@ -145,7 +140,6 @@ def fix_macos_use_tools():
                     print(f"❌ Build failed: {result.stderr}")
             except Exception as e:
                 print(f"❌ Build error: {e}")
-
 
 def check_grisha_verification():
     """Check Grisha verification patterns"""
@@ -174,7 +168,6 @@ def check_grisha_verification():
         if tool_errors > 10:
             print("🔧 High tool error rate detected")
 
-
 def main():
     """Run all fixes"""
     print("🔧 AtlasTrinity Error Fix Script")
@@ -196,7 +189,6 @@ def main():
 
     print("\n🎉 Error fix analysis completed!")
     print("💡 Review the output above for specific issues to fix manually")
-
 
 if __name__ == "__main__":
     main()

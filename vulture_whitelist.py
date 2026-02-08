@@ -1,6 +1,3 @@
-# Vulture whitelist — intentionally unused variables (API contracts, callbacks, etc.)
-
-# Signal handler parameters (required by signal.signal API)
 signum  # noqa
 frame  # noqa
 

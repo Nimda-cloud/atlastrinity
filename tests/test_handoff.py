@@ -3,7 +3,6 @@ import os
 import sys
 from unittest.mock import MagicMock
 
-# Mock modules
 sys.modules["langchain_core"] = MagicMock()
 sys.modules["langchain_core.messages"] = MagicMock()
 sys.modules["langgraph"] = MagicMock()
@@ -38,7 +37,6 @@ class MockAtlas:
     def get_voice_message(self, *args, **kwargs):
         return "test message"
 
-
 class MockTetyana:
     async def execute_step(self, step):
         mock_result = MagicMock()
@@ -51,11 +49,9 @@ class MockTetyana:
     def get_voice_message(self, *args, **kwargs):
         return "test message"
 
-
 class MockGrisha:
     async def verify_step(self, step, result):
         raise RuntimeError("Simulated Crash in Grisha")
-
 
 async def test_handoff_crash():
     print("Testing Handoff Crash Resilience...")
@@ -88,7 +84,6 @@ async def test_handoff_crash():
 
     except Exception as e:
         print(f"FAILURE: System crashed with exception: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_handoff_crash())

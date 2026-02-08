@@ -40,7 +40,6 @@ def mock_behavior_engine():
     }
     return be
 
-
 @pytest.mark.asyncio
 async def test_workflow_execution(mock_behavior_engine):
     # Mocking dependencies that might trigger import errors or side effects

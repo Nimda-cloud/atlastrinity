@@ -3,7 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-# Add src to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.mcp_server.vibe_server import vibe_prompt
@@ -28,7 +27,6 @@ async def test_stream():
 
     await vibe_prompt(ctx=ctx, prompt=prompt, cwd=os.getcwd(), timeout_s=30)
     print("\nFinal Result received.")
-
 
 if __name__ == "__main__":
     asyncio.run(test_stream())

@@ -2,9 +2,6 @@ import asyncio
 import os
 import sys
 
-# Add src to path. Assuming tests/ is at root, and src/ is at root.
-# Current dir: /Users/dev/Documents/GitHub/atlastrinity/tests (if we run from there) or root if we run from root.
-# We will run from root.
 sys.path.append(os.path.abspath(os.getcwd()))
 
 from src.brain.mcp_manager import mcp_manager
@@ -57,13 +54,11 @@ async def test_flow():
 
     except Exception as e:
         print(f"❌ FAILURE: Execution failed: {e}")
-        import traceback
 
         traceback.print_exc()
 
     print("\n--- Cleanup ---")
     await mcp_manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(test_flow())

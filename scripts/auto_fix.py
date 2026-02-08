@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Auto-fix script for common AtlasTrinity issues
 """
@@ -26,7 +25,6 @@ def fix_vibe_rate_limit():
         print("✅ Created default Vibe config")
     else:
         print("✅ Vibe config exists")
-
 
 def fix_macos_use_tools():
     """Fix missing macos-use tools"""
@@ -61,14 +59,12 @@ def fix_macos_use_tools():
     else:
         print("✅ macos-use binary exists")
 
-
 def fix_database_permissions():
     """Fix database file permissions"""
     print("🔧 Fixing database permissions...")
 
     db_dir = os.path.expanduser("~/.config/atlastrinity")
     if os.path.exists(db_dir):
-        import subprocess
 
         try:
             subprocess.run(["chmod", "-R", "755", db_dir], check=True)
@@ -77,7 +73,6 @@ def fix_database_permissions():
             print(f"❌ Permission fix failed: {e}")
     else:
         print("❌ Database directory not found")
-
 
 def fix_log_rotation():
     """Fix log rotation to prevent oversized logs"""
@@ -102,7 +97,6 @@ def fix_log_rotation():
     else:
         print("⚠️ Logs directory not found")
 
-
 def fix_memory_usage():
     """Fix high memory usage issues"""
     print("🔧 Checking memory usage...")
@@ -118,7 +112,6 @@ def fix_memory_usage():
             print(f"⚠️ High memory usage: {memory.percent}%")
 
             # Clear Python cache
-            import subprocess
 
             try:
                 subprocess.run(
@@ -159,7 +152,6 @@ def fix_memory_usage():
     except Exception as e:
         print(f"❌ Memory check failed: {e}")
 
-
 def fix_git_permissions():
     """Fix git repository permissions"""
     print("🔧 Fixing git permissions...")
@@ -168,7 +160,6 @@ def fix_git_permissions():
     PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
     git_dir = os.path.join(PROJECT_ROOT, ".git")
     if os.path.exists(git_dir):
-        import subprocess
 
         try:
             # Fix git hooks permissions
@@ -194,7 +185,6 @@ def fix_git_permissions():
             print(f"❌ Git fix failed: {e}")
     else:
         print("⚠️ Not a git repository")
-
 
 def main():
     """Run all auto-fixes"""
@@ -223,7 +213,6 @@ def main():
 
     print("🎉 Auto-fix completed!")
     print("💡 Run 'python3 scripts/system_health_check.py' to verify fixes")
-
 
 if __name__ == "__main__":
     main()

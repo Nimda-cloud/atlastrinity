@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Set up paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..")
 sys.path.insert(0, os.path.abspath(root))
@@ -59,7 +58,6 @@ async def test_replanning_feedback():
 
     # Verify logic
     print("\nSimulation Prompt used:\n", simulation_prompt)
-
 
 if __name__ == "__main__":
     asyncio.run(test_replanning_feedback())

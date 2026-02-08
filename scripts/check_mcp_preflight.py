@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """CLI to run MCP package preflight checks and exit non-zero on issues.
 
 Usage:
@@ -69,14 +68,12 @@ def run(config: str | None = None) -> int:
     print("No MCP package issues found.")
     return 0
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", help="Path to MCP config.json to scan", default=None)
     args = parser.parse_args()
     rc = run(args.config)
     sys.exit(rc)
-
 
 if __name__ == "__main__":
     main()

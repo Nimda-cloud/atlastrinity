@@ -2,9 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 
 async def test_routing():
     print("🔍 Testing Tetyana Workspace Re-routing Logic...")
@@ -39,7 +37,6 @@ async def test_routing():
 
     except Exception as e:
         print(f"Test error: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_routing())

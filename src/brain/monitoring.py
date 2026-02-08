@@ -13,14 +13,12 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     encoding="utf-8",
 )
 logger = logging.getLogger(__name__)
-
 
 class MonitoringSystem:
     """
@@ -525,10 +523,8 @@ class MonitoringSystem:
         except Exception:
             return False
 
-
 # Global monitoring instance - use lazy initialization to avoid duplicate metric registration
 monitoring_system = None
-
 
 def get_monitoring_system():
     """Get the global monitoring system instance (singleton pattern)."""

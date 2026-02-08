@@ -21,7 +21,6 @@ class TraceIssue(TypedDict):
     description: str
     count: int
 
-
 class LogEntry(TypedDict):
     """Parsed log entry relevant to tool execution."""
 
@@ -30,7 +29,6 @@ class LogEntry(TypedDict):
     args: str | dict | None
     status: str | None  # 'success', 'error'
     error_msg: str | None
-
 
 def parse_brain_log(log_path: str | Path) -> list[LogEntry]:
     """Parse brain.log format to extract tool calls."""
@@ -72,7 +70,6 @@ def parse_brain_log(log_path: str | Path) -> list[LogEntry]:
                 continue
 
     return entries
-
 
 def analyze_trace_issues(entries: list[LogEntry]) -> list[TraceIssue]:
     """Analyze parsed entries for logic issues."""
@@ -122,7 +119,6 @@ def analyze_trace_issues(entries: list[LogEntry]) -> list[TraceIssue]:
                 last_tool = entry["tool_name"]
 
     return issues
-
 
 def analyze_log_file(log_path: str) -> dict[str, Any]:
     """Main entry point to analyze a log file."""

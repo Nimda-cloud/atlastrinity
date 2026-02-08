@@ -87,7 +87,6 @@ class TestGrishaVerdictParsing:
         result = self.grisha._fallback_verdict_analysis(analysis, analysis.upper())
         assert result is False, "Expected False when no clear indicators"
 
-
 def run_tests():
     """Run all tests."""
     test = TestGrishaVerdictParsing()
@@ -124,7 +123,6 @@ def run_tests():
     print(f"\n{'=' * 50}")
     print(f"Results: {passed} passed, {failed} failed")
     return failed == 0
-
 
 if __name__ == "__main__":
     success = run_tests()

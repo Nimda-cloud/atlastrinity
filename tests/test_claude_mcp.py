@@ -72,6 +72,5 @@ async def verify_official_mcp():
     print("\n--- Cleanup ---")
     await mcp_manager.cleanup()
 
-
 if __name__ == "__main__":
     asyncio.run(verify_official_mcp())

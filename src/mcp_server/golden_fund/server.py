@@ -12,7 +12,6 @@ from .lib.transformer import DataTransformer
 from .tools.chain import recursive_enrichment
 from .tools.ingest import ingest_dataset as ingest_impl
 
-# Initialize logging
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("golden_fund")
 
@@ -29,7 +28,6 @@ ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Create FastMCP server
 mcp = FastMCP("golden_fund")
-
 
 @mcp.tool()
 async def search_golden_fund(query: str, mode: str = "semantic") -> str:
@@ -57,21 +55,17 @@ async def search_golden_fund(query: str, mode: str = "semantic") -> str:
 
     return str(result)
 
-
 blob_store = BlobStorage()
-
 
 @mcp.tool()
 async def store_blob(content: str, filename: str | None = None) -> str:
     """Store raw data as a blob (mock MinIO)."""
     return str(blob_store.store(content, filename))
 
-
 @mcp.tool()
 async def retrieve_blob(filename: str) -> str:
     """Retrieve raw data blob."""
     return str(blob_store.retrieve(filename))
-
 
 @mcp.tool()
 async def ingest_dataset(url: str, type: str, process_pipeline: list[str] | None = None) -> str:
@@ -86,7 +80,6 @@ async def ingest_dataset(url: str, type: str, process_pipeline: list[str] | None
     if process_pipeline is None:
         process_pipeline = []
     return await ingest_impl(url, type, process_pipeline)
-
 
 @mcp.tool()
 async def probe_entity(entity_id: str, depth: int = 1) -> str:
@@ -115,7 +108,6 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
 
     return json.dumps(entity_profile, indent=2, default=str)
 
-
 def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
     """Helper to find entity matches using vector and keyword search."""
     search_result = vector_store.search(entity_id, limit=5)
@@ -132,7 +124,6 @@ def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
             results = keyword_result.data.get("results", [])
 
     return results
-
 
 def _build_entity_profile(
     entity_id: str, results: list[dict[str, Any]], depth: int
@@ -165,7 +156,6 @@ def _build_entity_profile(
         entity_profile["matches"].append(match_info)
     return entity_profile
 
-
 def _extract_relationships(
     entity_profile: dict[str, Any], meta: dict[str, Any], seen_entities: set[str]
 ) -> None:
@@ -180,7 +170,6 @@ def _extract_relationships(
                         "relation": key,
                     }
                 )
-
 
 def _explore_deeper(entity_profile: dict[str, Any]) -> None:
     """Perform deeper recursive depth exploration."""
@@ -198,7 +187,6 @@ def _explore_deeper(entity_profile: dict[str, Any]) -> None:
                         "sub_matches_count": len(sub_matches),
                     }
                 )
-
 
 @mcp.tool()
 async def add_knowledge_node(
@@ -264,7 +252,6 @@ async def add_knowledge_node(
             "message": f"Knowledge node '{node_data['name']}' added to Golden Fund",
         }
     )
-
 
 @mcp.tool()
 async def analyze_and_store(
@@ -387,7 +374,6 @@ async def analyze_and_store(
         logger.error(f"Analysis failed: {e}")
         return json.dumps({"success": False, "error": str(e)})
 
-
 @mcp.tool()
 async def get_dataset_insights(dataset_name: str) -> str:
     """
@@ -442,7 +428,6 @@ async def get_dataset_insights(dataset_name: str) -> str:
         indent=2,
         default=str,
     )
-
 
 if __name__ == "__main__":
     mcp.run()

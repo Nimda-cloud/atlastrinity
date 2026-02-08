@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Test script for the data parsing component.
 """
@@ -30,7 +28,6 @@ def test_csv_parsing():
         print(f"✗ CSV parsing failed: {result.error}")
     print()
 
-
 def test_json_parsing():
     """Test JSON parsing functionality."""
     print("Testing JSON parsing...")
@@ -48,7 +45,6 @@ def test_json_parsing():
         print(f"✗ JSON parsing failed: {result.error}")
     print()
 
-
 def test_xml_parsing():
     """Test XML parsing functionality."""
     print("Testing XML parsing...")
@@ -62,7 +58,6 @@ def test_xml_parsing():
     else:
         print(f"✗ XML parsing failed: {result.error}")
     print()
-
 
 def test_dataframe_conversion():
     """Test DataFrame conversion functionality."""
@@ -88,7 +83,6 @@ def test_dataframe_conversion():
     )
     print()
 
-
 def test_error_handling():
     """Test error handling."""
     print("Testing error handling...")
@@ -102,7 +96,6 @@ def test_error_handling():
     result = parser.parse(str(PROJECT_ROOT / "test_data" / "test.csv"), format_hint=DataFormat.XML)
     print(f"Wrong format hint: {'✓' if not result.success else '✗'} {result.error}")
     print()
-
 
 def main():
     """Run all tests."""
@@ -127,7 +120,6 @@ def main():
         import traceback
 
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()

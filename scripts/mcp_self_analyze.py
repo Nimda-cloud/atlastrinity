@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """AtlasTrinity MCP Self-Analysis Module
 
 Comprehensive diagnostic tool that uses MCP Inspector CLI tools to:
@@ -30,7 +29,6 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-
 class Colors:
     """ANSI color codes for terminal output."""
 
@@ -43,7 +41,6 @@ class Colors:
     DIM = "\033[2m"
     ENDC = "\033[0m"
 
-
 def load_tool_schemas() -> dict:
     """Load tool_schemas.json for validation."""
     schema_path = PROJECT_ROOT / "src" / "brain" / "data" / "tool_schemas.json"
@@ -52,7 +49,6 @@ def load_tool_schemas() -> dict:
     with open(schema_path, encoding="utf-8") as f:
         return json.load(f)
 
-
 def load_mcp_config() -> dict:
     """Load MCP configuration."""
     config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
@@ -60,7 +56,6 @@ def load_mcp_config() -> dict:
         return {}
     with open(config_path, encoding="utf-8") as f:
         return json.load(f)
-
 
 def run_inspector_cmd(server_name: str, method: str, extra_args: list[str] | None = None) -> dict:
     """Run MCP Inspector CLI command and return parsed result."""
@@ -136,7 +131,6 @@ def run_inspector_cmd(server_name: str, method: str, extra_args: list[str] | Non
     except Exception as e:
         return {"error": str(e)}
 
-
 def analyze_server(server_name: str, tool_schemas: dict, verbose: bool = False) -> dict:
     """Perform full analysis of a single MCP server."""
     report = {
@@ -200,7 +194,6 @@ def analyze_server(server_name: str, tool_schemas: dict, verbose: bool = False) 
         ]
 
     return report
-
 
 async def live_verify_tool(
     server_name: str,
@@ -321,7 +314,6 @@ Respond with ONE word: PASS or FAIL, followed by a brief explanation (max 50 wor
         result["llm_verdict"] = f"Exception during live test: {str(e)[:100]}"
         return result
 
-
 async def live_verify_server(server_name: str, max_tools: int = 5) -> dict:
     """Perform LLM-driven live verification of a server's tools.
 
@@ -389,7 +381,6 @@ async def live_verify_server(server_name: str, max_tools: int = 5) -> dict:
 
     return report
 
-
 async def auto_fix_issues(issues: list[dict]) -> dict:
     """Attempt to auto-fix issues using Vibe MCP."""
     from brain.mcp_manager import mcp_manager
@@ -423,7 +414,6 @@ async def auto_fix_issues(issues: list[dict]) -> dict:
                     )
 
     return {"fixes_attempted": fixes_attempted}
-
 
 def print_human_report(reports: list[dict], total_time: float):
     """Print human-readable analysis report."""
@@ -471,7 +461,6 @@ def print_human_report(reports: list[dict], total_time: float):
     print(f"  {Colors.BOLD}Analysis time:{Colors.ENDC} {total_time:.1f}s")
     print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
 
-
 def print_live_report(reports: list[dict], total_time: float):
     """Print human-readable live verification report."""
     print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}")
@@ -516,7 +505,6 @@ def print_live_report(reports: list[dict], total_time: float):
     )
     print(f"  {Colors.BOLD}Analysis time:{Colors.ENDC} {total_time:.1f}s")
     print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
-
 
 def main():
     parser = argparse.ArgumentParser(description="MCP Self-Analysis Tool")
@@ -644,7 +632,6 @@ def main():
         print(json.dumps(output, indent=2))
     else:
         print_human_report(reports, total_time)
-
 
 if __name__ == "__main__":
     main()

@@ -24,7 +24,6 @@ except ImportError:
     def add_messages(left: Any, right: Any) -> Any:
         return left + right
 
-
 from src.brain.agents import Atlas, Grisha, Tetyana
 from src.brain.agents.tetyana import StepResult
 from src.brain.behavior_engine import workflow_engine
@@ -64,7 +63,6 @@ class SystemState(Enum):
     ERROR = "ERROR"
     CHAT = "CHAT"
 
-
 class TrinityState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     system_state: str
@@ -76,7 +74,6 @@ class TrinityState(TypedDict):
     db_session_id: str | None
     db_task_id: str | None
     _theme: str | None
-
 
 class Trinity:
     # -------------------------------------------------------------------------
@@ -151,8 +148,6 @@ class Trinity:
     async def initialize(self):
         """Async initialization of system components via Config-Driven Workflow"""
         # Синхронізація shared_context з конфігурацією
-        from src.brain.config_loader import config
-        from src.brain.context import shared_context
 
         shared_context.sync_from_config(config.all)
 
@@ -258,7 +253,6 @@ class Trinity:
             del self.state["db_task_id"]
         # Auto-backup before clearing session
         try:
-            import sys
             from pathlib import Path
 
             project_root = Path(__file__).parent.parent.parent
@@ -531,7 +525,6 @@ class Trinity:
 
     async def _speak(self, agent_id: str, text: str) -> None:
         """Voice wrapper with config-driven sanitization"""
-        from src.brain.behavior_engine import behavior_engine
 
         voice_config = behavior_engine.get_output_processing("voice")
 
@@ -607,7 +600,6 @@ class Trinity:
 
     async def _mcp_log_voice_callback(self, msg: str, server_name: str, level: str):
         """Callback to handle live log notifications from MCP servers for voice feedback."""
-        import time
 
         now = time.time()
 
@@ -624,7 +616,6 @@ class Trinity:
                 speech_text = speech_text.replace(marker, "")
 
             # Remove emojis
-            import re
 
             speech_text = re.sub(r"[^\w\s\.,!\?]", "", speech_text).strip()
 
@@ -696,7 +687,6 @@ class Trinity:
 
         if self.state:
             # Basic log format for API
-            import time
 
             log_entry = {
                 "id": f"log-{len(self.state.get('logs') or [])}-{time.time()}",
@@ -811,9 +801,6 @@ class Trinity:
         try:
             from sqlalchemy import update
 
-            from src.brain.context import shared_context
-            from src.brain.db.manager import db_manager
-
             if (
                 not db_manager
                 or not getattr(db_manager, "available", False)
@@ -842,7 +829,6 @@ class Trinity:
     async def _verify_db_ids(self):
         """Verify that restored DB IDs exist. If not, clear them."""
         try:
-            from src.brain.db.manager import db_manager
 
             if not db_manager or not getattr(db_manager, "available", False):
                 return
@@ -853,9 +839,6 @@ class Trinity:
         task_id_str = self.state.get("db_task_id")
 
         async with await db_manager.get_session() as db_sess:
-            import uuid
-
-            from sqlalchemy import select
 
             if session_id_str and isinstance(session_id_str, str):
                 try:
@@ -1095,7 +1078,6 @@ class Trinity:
     async def _create_db_task(self, user_request, plan):
         """Create DB task and knowledge graph node."""
         try:
-            from src.brain.db.manager import db_manager
 
             if not (
                 db_manager
@@ -1149,7 +1131,6 @@ class Trinity:
 
         # Language Guard: Detect English input while TTS is in Ukrainian
         if config.get("voice.tts.interaction_language_guard", False):
-            import re
 
             latin_chars = len(re.findall(r"[a-zA-Z]", user_request))
             total_chars = len(user_request.strip())
@@ -1161,7 +1142,6 @@ class Trinity:
                 )
 
         try:
-            from src.brain.state_manager import state_manager
 
             if (
                 state_manager
@@ -1210,8 +1190,6 @@ class Trinity:
 
         # DB Session creation
         try:
-            from src.brain.db.manager import db_manager
-            from src.brain.db.schema import Session as DBSession
 
             if (
                 db_manager
@@ -1234,7 +1212,6 @@ class Trinity:
         self, user_request: str, is_subtask: bool, images: list[dict[str, Any]] | None = None
     ) -> Any:
         """Retrieve or create a plan for the current run."""
-        from src.brain.context import shared_context
 
         # 1. Resumption logic
         if self.state.get("current_plan") and getattr(self, "_resumption_pending", False):
@@ -1262,7 +1239,6 @@ class Trinity:
             intent = analysis.get("intent")
 
             # Workflow routing
-            from src.brain.behavior_engine import behavior_engine
 
             if intent and intent in behavior_engine.config.get("workflows", {}):
                 self.state["system_state"] = SystemState.EXECUTING.value
@@ -1299,7 +1275,6 @@ class Trinity:
 
             # Complex task planning
             self.state["system_state"] = SystemState.PLANNING.value
-            from src.brain.mcp_manager import mcp_manager
 
             shared_context.available_mcp_catalog = await mcp_manager.get_mcp_catalog()
             await self._speak("atlas", analysis.get("voice_response") or "Аналізую запит...")
@@ -1321,7 +1296,6 @@ class Trinity:
         self, user_request: str, images: list[dict[str, Any]] | None = None
     ) -> dict[str, Any]:
         """Main orchestration loop with advanced persistence and memory"""
-        from src.brain.context import shared_context
 
         self.stop()
         self.active_task = asyncio.current_task()
@@ -1448,9 +1422,6 @@ class Trinity:
 
     async def _mark_db_golden_path(self):
         """Mark task as golden path in DB."""
-        from sqlalchemy import update
-
-        from src.brain.db.manager import db_manager
 
         async with await db_manager.get_session() as db_sess:
             await db_sess.execute(
@@ -1461,7 +1432,6 @@ class Trinity:
     async def _notify_task_finished(self, session_id):
         """Publish task finish event."""
         try:
-            from src.brain.state_manager import state_manager
 
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.publish_event(
@@ -1484,7 +1454,6 @@ class Trinity:
         """Generates a professional summary and stores it in DB and Vector memory."""
         try:
             from src.brain.db.schema import ConversationSummary as DBConvSummary
-            from src.brain.knowledge_graph import knowledge_graph
 
             messages = self.state.get("messages")
             if not isinstance(messages, list) or not messages:
@@ -1496,7 +1465,6 @@ class Trinity:
 
             # A. Store in Vector Memory
             try:
-                from src.brain.memory import long_term_memory
 
                 if long_term_memory and getattr(long_term_memory, "available", False):
                     long_term_memory.remember_conversation(
@@ -1509,7 +1477,6 @@ class Trinity:
 
             # B. Store in Structured DB
             try:
-                from src.brain.db.manager import db_manager
 
                 if db_manager and getattr(db_manager, "available", False):
                     async with await db_manager.get_session() as db_sess:
@@ -1632,7 +1599,6 @@ class Trinity:
     ) -> Any:
         """Log recovery attempt start or update to the database."""
         try:
-            from src.brain.db.manager import db_manager
             from src.brain.db.schema import RecoveryAttempt
 
             if not (db_manager and getattr(db_manager, "available", False)):
@@ -1762,8 +1728,6 @@ class Trinity:
                     f"[ORCHESTRATOR] Deep reasoning completed: {analysis.get('analysis', '')[:200]}..."
                 )
 
-            from src.brain.mcp_manager import mcp_manager
-
             await mcp_manager.call_tool(
                 "vibe",
                 "vibe_prompt",
@@ -1803,7 +1767,6 @@ class Trinity:
             return
 
         try:
-            from src.brain.mcp_manager import mcp_manager
 
             diagram_result = await mcp_manager.call_tool(
                 "devtools",
@@ -1929,7 +1892,6 @@ class Trinity:
         self, parent_prefix: str | None, depth: int, steps: list[dict[str, Any]]
     ) -> bool:
         """Push a new goal to the shared context for a recursive level."""
-        from src.brain.context import shared_context
 
         goal_description = (
             f"Recovery sub-tasks for step {parent_prefix}"
@@ -1952,7 +1914,6 @@ class Trinity:
         """Pop the goal from the shared context upon leaving a recursive level."""
         if goal_pushed:
             try:
-                from src.brain.context import shared_context
 
                 completed_goal = shared_context.pop_goal()
                 logger.info(
@@ -2063,7 +2024,6 @@ class Trinity:
         """Handle RESTART strategy by saving state and execv."""
         await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
         try:
-            from src.brain.state_manager import state_manager
 
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.save_session(self.current_session_id, self.state)
@@ -2072,9 +2032,6 @@ class Trinity:
                     await redis_client.set("restart_pending", json.dumps(meta))
         except Exception as e:
             logger.error(f"Restart preparation failed: {e}")
-
-        import os
-        import sys
 
         await asyncio.sleep(1.0)
         os.execv(sys.executable, [sys.executable, *sys.argv])  # nosec B606
@@ -2147,8 +2104,6 @@ class Trinity:
             if any(k in expected for k in ["visual", "screenshot", "ui", "interface", "window"]):
                 screenshot = await self.grisha.take_screenshot()
 
-            from src.brain.context import shared_context
-
             goal_ctx = str(shared_context.get_goal_context() or "")
             verify_result = await self.grisha.verify_step(
                 step=step,
@@ -2206,8 +2161,6 @@ class Trinity:
                 raise Exception(f"Recursive recovery stall detected for step {step_id}.")
             self._attempted_recoveries[step_id] = steps_hash
 
-            from src.brain.context import shared_context
-
             if shared_context.is_at_max_depth(depth + 1):
                 raise Exception(f"Max recursion depth exceeded at {depth + 1} for {step_id}.")
 
@@ -2224,7 +2177,6 @@ class Trinity:
         depth: int = 0,
     ) -> bool:
         """Recursively execute steps with proper goal context management."""
-        from src.brain.context import shared_context
 
         max_depth = shared_context.max_recursive_depth
 
@@ -2258,7 +2210,6 @@ class Trinity:
     def _update_current_step_id(self, step_idx: int) -> None:
         """Update current step progress in shared context."""
         try:
-            from src.brain.context import shared_context
 
             shared_context.current_step_id = step_idx
         except (ImportError, NameError, AttributeError):
@@ -2314,7 +2265,6 @@ class Trinity:
             await self._trigger_async_constraint_monitoring()
 
             # Goal alignment logging for debugging
-            from src.brain.context import shared_context
 
             if shared_context.current_goal:
                 logger.debug(
@@ -2421,7 +2371,6 @@ class Trinity:
             await self._speak("tetyana", msg)
 
         try:
-            from src.brain.state_manager import state_manager
 
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.publish_event(
@@ -2441,7 +2390,6 @@ class Trinity:
         db_step_id = None
         self.state["db_step_id"] = None
         try:
-            from src.brain.db.manager import db_manager
 
             if (
                 db_manager
@@ -2510,7 +2458,6 @@ class Trinity:
     async def _handle_imminent_restart(self) -> None:
         """Save session if a restart is pending."""
         try:
-            from src.brain.state_manager import state_manager
 
             if state_manager and getattr(state_manager, "available", False):
                 restart_key = state_manager._key("restart_pending")
@@ -2592,7 +2539,6 @@ class Trinity:
     ) -> None:
         """Log behavioral learning for approved deviations."""
         try:
-            from src.brain.memory import long_term_memory
 
             if long_term_memory and getattr(long_term_memory, "available", False):
                 evaluation = result.deviation_info or {}
@@ -2664,7 +2610,6 @@ class Trinity:
                 messages.append(HumanMessage(content=cast("Any", user_response)))
                 self.state["messages"] = messages
             try:
-                from src.brain.state_manager import state_manager
 
                 if state_manager and getattr(state_manager, "available", False):
                     await state_manager.save_session("current_session", self.state)
@@ -2737,7 +2682,6 @@ class Trinity:
     async def _log_tool_execution_db(self, result: StepResult, db_step_id: str | None) -> None:
         """Log tool execution to DB for Grisha's audit."""
         try:
-            from src.brain.db.manager import db_manager
 
             if db_manager and getattr(db_manager, "available", False) and db_step_id:
                 async with await db_manager.get_session() as db_sess:
@@ -2841,13 +2785,11 @@ class Trinity:
     ) -> None:
         """Update step status in the database."""
         try:
-            from src.brain.db.manager import db_manager
 
             if db_manager and getattr(db_manager, "available", False) and db_step_id:
                 try:
                     duration_ms = int((asyncio.get_event_loop().time() - step_start_time) * 1000)
                     async with await db_manager.get_session() as db_sess:
-                        from sqlalchemy import update
 
                         await db_sess.execute(
                             update(DBStep)
@@ -2955,7 +2897,6 @@ class Trinity:
 
         # 1. Vector Memory
         try:
-            from src.brain.memory import long_term_memory
 
             if long_term_memory and getattr(long_term_memory, "available", False):
                 long_term_memory.remember_behavioral_change(
@@ -3028,7 +2969,6 @@ class Trinity:
 
         # Publish finished event
         try:
-            from src.brain.state_manager import state_manager
 
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.publish_event(
@@ -3180,7 +3120,6 @@ class Trinity:
 
     def should_verify(self, state: TrinityState) -> str:
         """Determines the next state based on config-driven rules."""
-        from src.brain.behavior_engine import behavior_engine
 
         # Build context for rule evaluation
         context = {
@@ -3204,13 +3143,11 @@ class Trinity:
         """Clean shutdown of system components"""
         logger.info("[ORCHESTRATOR] Shutting down...")
         try:
-            from src.brain.mcp_manager import mcp_manager
 
             await mcp_manager.shutdown()
         except Exception:
             pass
         try:
-            from src.brain.db.manager import db_manager
 
             await db_manager.close()
         except Exception:
@@ -3224,7 +3161,6 @@ class Trinity:
     async def _update_knowledge_graph(self, step_id: str, result: StepResult):
         """Background task to sync execution results to Knowledge Graph"""
         try:
-            from src.brain.knowledge_graph import knowledge_graph
 
             if knowledge_graph:
                 await knowledge_graph.add_node(
@@ -3269,7 +3205,6 @@ class Trinity:
         from langchain_core.messages import HumanMessage, SystemMessage
 
         from providers.factory import create_llm
-        from src.brain.memory import long_term_memory
 
         try:
             # Use fast model for extraction
@@ -3308,7 +3243,6 @@ IMPORTANT: Extract ONLY concrete values, not descriptions. If nothing critical, 
             # Parse JSON response
             # Handle markdown code blocks
             if "```" in response_text:
-                import re
 
                 json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", response_text)
                 if json_match:

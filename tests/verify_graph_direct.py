@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Verify Graph Server Functionality"""
 
 import asyncio
@@ -35,7 +34,6 @@ async def test_graph_generation():
         return True
     print("\n❌ Graph Generation Failed (Invalid format)")
     return False
-
 
 if __name__ == "__main__":
     try:

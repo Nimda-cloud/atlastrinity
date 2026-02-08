@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from src.brain.mcp_manager import mcp_manager
@@ -12,7 +11,6 @@ from src.brain.memory import long_term_memory
 # Setup logging
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("verify_memory")
-
 
 async def verify():
     print("--- Verifying Memory System ---")
@@ -46,7 +44,6 @@ async def verify():
 
     except Exception as e:
         print(f"MCP Check Failed: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(verify())

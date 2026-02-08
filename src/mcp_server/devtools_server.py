@@ -10,20 +10,16 @@ from typing import Any, TypedDict, cast
 from mcp.server import FastMCP
 
 from .context_check import run_test_suite
-
-# Import universal modules for external project support
 from .diagram_generator import generate_architecture_diagram
 from .git_manager import ensure_git_repository, get_git_changes, setup_github_remote
 from .project_analyzer import analyze_project_structure, detect_changed_components
 from .trace_analyzer import analyze_log_file
 
-# Initialize FastMCP server
 server = FastMCP("devtools-server")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 VENV_BIN = PROJECT_ROOT / ".venv" / "bin"
 VENV_PYTHON = VENV_BIN / "python"
-
 
 class ResponseDict(TypedDict):
     success: bool
@@ -38,7 +34,6 @@ class ResponseDict(TypedDict):
     files_updated: list[str]
     timestamp: str
 
-
 @server.tool()
 def devtools_list_processes() -> dict[str, Any]:
     """List all processes tracked by the AtlasTrinity Watchdog.
@@ -50,7 +45,6 @@ def devtools_list_processes() -> dict[str, Any]:
         return watchdog.get_status()
     except Exception as e:
         return {"error": f"Failed to get process status: {e}"}
-
 
 @server.tool()
 async def devtools_restart_mcp_server(server_name: str) -> dict[str, Any]:
@@ -70,7 +64,6 @@ async def devtools_restart_mcp_server(server_name: str) -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-
 @server.tool()
 async def devtools_kill_process(pid: int, hard: bool = False) -> dict[str, Any]:
     """Forcefully terminate or kill a specific process by PID.
@@ -80,7 +73,6 @@ async def devtools_kill_process(pid: int, hard: bool = False) -> dict[str, Any]:
         hard: If True, send SIGKILL (hard kill). Otherwise SIGTERM (graceful).
     """
     try:
-        from src.brain.watchdog import watchdog
 
         success = await watchdog.terminate_process(pid, hard=hard)
         return {
@@ -89,7 +81,6 @@ async def devtools_kill_process(pid: int, hard: bool = False) -> dict[str, Any]:
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
-
 
 @server.tool()
 def devtools_check_mcp_health() -> dict[str, Any]:
@@ -118,7 +109,6 @@ def devtools_check_mcp_health() -> dict[str, Any]:
 
     except Exception as e:
         return {"error": str(e)}
-
 
 @server.tool()
 def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
@@ -220,11 +210,9 @@ def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
     except Exception as e:
         return {"error": str(e)}
 
-
 # =============================================================================
 # MCP Inspector CLI Tools - Headless verification without UI
 # =============================================================================
-
 
 def _get_inspector_server_cmd(
     server_name: str,
@@ -275,7 +263,6 @@ def _get_inspector_server_cmd(
 
     except Exception as e:
         return {"error": f"Failed to load config: {e}"}
-
 
 def _run_inspector_cli(
     server_name: str,
@@ -338,7 +325,6 @@ def _run_inspector_cli(
     except Exception as e:
         return {"error": str(e)}
 
-
 @server.tool()
 def mcp_inspector_list_tools(server_name: str) -> dict[str, Any]:
     """List all tools available on a specified MCP server via Inspector CLI.
@@ -350,7 +336,6 @@ def mcp_inspector_list_tools(server_name: str) -> dict[str, Any]:
         Dict with 'success' and 'data' (list of tools with names and schemas).
     """
     return _run_inspector_cli(server_name, "tools/list")
-
 
 @server.tool()
 def mcp_inspector_call_tool(
@@ -379,7 +364,6 @@ def mcp_inspector_call_tool(
 
     return _run_inspector_cli(server_name, "tools/call", extra_args)
 
-
 @server.tool()
 def mcp_inspector_list_resources(server_name: str) -> dict[str, Any]:
     """List all resources available on a specified MCP server via Inspector CLI.
@@ -391,7 +375,6 @@ def mcp_inspector_list_resources(server_name: str) -> dict[str, Any]:
         Dict with 'success' and 'data' (list of resources with URIs and descriptions).
     """
     return _run_inspector_cli(server_name, "resources/list")
-
 
 @server.tool()
 def mcp_inspector_read_resource(server_name: str, uri: str) -> dict[str, Any]:
@@ -407,7 +390,6 @@ def mcp_inspector_read_resource(server_name: str, uri: str) -> dict[str, Any]:
     extra_args = ["--uri", uri]
     return _run_inspector_cli(server_name, "resources/read", extra_args)
 
-
 @server.tool()
 def mcp_inspector_list_prompts(server_name: str) -> dict[str, Any]:
     """List all prompts available on a specified MCP server via Inspector CLI.
@@ -419,7 +401,6 @@ def mcp_inspector_list_prompts(server_name: str) -> dict[str, Any]:
         Dict with 'success' and 'data' (list of prompts with names and descriptions).
     """
     return _run_inspector_cli(server_name, "prompts/list")
-
 
 @server.tool()
 def mcp_inspector_get_prompt(
@@ -444,7 +425,6 @@ def mcp_inspector_get_prompt(
             extra_args.extend(["--prompt-args", f"{key}={value}"])
 
     return _run_inspector_cli(server_name, "prompts/get", extra_args)
-
 
 @server.tool()
 def mcp_inspector_get_schema(server_name: str, tool_name: str) -> dict[str, Any]:
@@ -483,7 +463,6 @@ def mcp_inspector_get_schema(server_name: str, tool_name: str) -> dict[str, Any]
             }
 
     return {"error": f"Tool '{tool_name}' not found on server '{server_name}'"}
-
 
 @server.tool()
 def devtools_run_mcp_sandbox(
@@ -560,7 +539,6 @@ def devtools_run_mcp_sandbox(
     except Exception as e:
         return {"error": str(e)}
 
-
 @server.tool()
 def devtools_validate_config() -> dict[str, Any]:
     """Validate the syntax and basic structure of the local MCP configuration file."""
@@ -583,7 +561,6 @@ def devtools_validate_config() -> dict[str, Any]:
         return {"valid": False, "error": f"JSON Syntax Error: {e}"}
     except Exception as e:
         return {"valid": False, "error": str(e)}
-
 
 @server.tool()
 def devtools_lint_python(file_path: str = ".") -> dict[str, Any]:
@@ -625,7 +602,6 @@ def devtools_lint_python(file_path: str = ".") -> dict[str, Any]:
 
     except Exception as e:
         return {"error": str(e)}
-
 
 @server.tool()
 def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
@@ -699,7 +675,6 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
 
     return results
 
-
 @server.tool()
 def devtools_run_global_lint() -> dict[str, Any]:
     """Run the complete system linting suite (npm run lint:all).
@@ -723,7 +698,6 @@ def devtools_run_global_lint() -> dict[str, Any]:
         }
     except Exception as e:
         return {"error": str(e), "success": False}
-
 
 @server.tool()
 def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
@@ -790,7 +764,6 @@ def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
 
     return results
 
-
 @server.tool()
 def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
     """Run 'pyrefly' to check code integrity and find generic coding errors."""
@@ -831,7 +804,6 @@ def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
         }
     except Exception as e:
         return {"error": str(e)}
-
 
 @server.tool()
 def devtools_check_security(path: str = "src/") -> dict[str, Any]:
@@ -902,7 +874,6 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
 
     return results
 
-
 @server.tool()
 def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
     """Run complexity audit (xenon)."""
@@ -927,7 +898,6 @@ def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
     except Exception as e:
         return {"error": str(e)}
 
-
 @server.tool()
 def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
     """Run deep type checking for Python (pyright).
@@ -942,7 +912,6 @@ def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
         stderr = res.stderr.strip()
 
         # Parse error/warning counts from pyright output
-        import re
 
         error_match = re.search(r"(\d+) error", stdout + stderr)
         warning_match = re.search(r"(\d+) warning", stdout + stderr)
@@ -958,7 +927,6 @@ def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
         }
     except Exception as e:
         return {"error": str(e)}
-
 
 @server.tool()
 def devtools_check_types_ts() -> dict[str, Any]:
@@ -987,7 +955,6 @@ def devtools_check_types_ts() -> dict[str, Any]:
             results["success"] = False
     return results
 
-
 @server.tool()
 def devtools_run_context_check(test_file: str) -> dict[str, Any]:
     """Run logic validation tests from a YAML/JSON file against a mock runner (dry run).
@@ -1000,7 +967,6 @@ def devtools_run_context_check(test_file: str) -> dict[str, Any]:
         test_file: Path to the .yaml or .json test definition file.
     """
     return run_test_suite(test_file)
-
 
 @server.tool()
 def devtools_analyze_trace(log_path: str = "") -> dict[str, Any]:
@@ -1015,7 +981,6 @@ def devtools_analyze_trace(log_path: str = "") -> dict[str, Any]:
     if not log_path:
         log_path = str(Path.home() / ".config" / "atlastrinity" / "logs" / "brain.log")
     return analyze_log_file(log_path)
-
 
 @server.tool()
 def devtools_update_architecture_diagrams(
@@ -1189,12 +1154,10 @@ def devtools_update_architecture_diagrams(
     except Exception as e:
         return {"error": f"Failed to update diagrams: {e}", "success": False}
 
-
 # Old hardcoded functions removed - replaced by universal modules:
 # - project_analyzer.py: analyze_project_structure, detect_changed_components
 # - diagram_generator.py: generate_architecture_diagram
 # - git_manager.py: ensure_git_repository, setup_github_remote, get_git_changes
-
 
 def _analyze_changes_with_reasoning(
     modified_files: list[str],
@@ -1263,7 +1226,6 @@ Task: Identify cross-component impacts and recommend diagram updates.
         # Reasoning is optional, don't fail on errors
         return {"error": str(e), "reasoning_available": False}
 
-
 def _export_diagrams(target_mode: str, project_path: Path) -> None:
     """Export diagrams to PNG/SVG using mmdc."""
     try:
@@ -1305,7 +1267,6 @@ def _export_diagrams(target_mode: str, project_path: Path) -> None:
     except Exception:
         # Export is optional, don't fail on errors
         pass
-
 
 @server.tool()
 def devtools_get_system_map() -> dict[str, Any]:
@@ -1432,7 +1393,6 @@ def devtools_get_system_map() -> dict[str, Any]:
         },
     }
 
-
 @server.tool()
 def devtools_test_all_mcp_native() -> dict[str, Any]:
     """Test ALL enabled MCP servers natively by spawning each server process,
@@ -1444,7 +1404,6 @@ def devtools_test_all_mcp_native() -> dict[str, Any]:
     Returns:
         Dict with per-server results: status, tool_count, response_time_ms, error.
     """
-    import time
 
     config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
     if not config_path.exists():
@@ -1613,7 +1572,6 @@ def devtools_test_all_mcp_native() -> dict[str, Any]:
         },
         "servers": results,
     }
-
 
 if __name__ == "__main__":
     server.run()

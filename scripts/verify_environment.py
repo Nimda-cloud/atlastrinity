@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """AtlasTrinity Environment Verification Script
 Comprehensive check of the entire system state:
 - System tools (python, node, swift, etc)
@@ -31,26 +30,20 @@ class Colors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
 
-
 def print_header(msg: str):
     print(f"\n{Colors.HEADER}{Colors.BOLD}=== {msg} ==={Colors.ENDC}")
-
 
 def print_pass(msg: str):
     print(f"{Colors.OKGREEN}✓ {msg}{Colors.ENDC}")
 
-
 def print_fail(msg: str):
     print(f"{Colors.FAIL}✗ {msg}{Colors.ENDC}")
-
 
 def print_warn(msg: str):
     print(f"{Colors.WARNING}⚠ {msg}{Colors.ENDC}")
 
-
 def print_info(msg: str):
     print(f"  {Colors.OKCYAN}ℹ {msg}{Colors.ENDC}")
-
 
 # Configuration Constants
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -73,7 +66,6 @@ DEV_TOOLS = ["ruff", "pyrefly", "oxlint", "knip"]
 
 STATUS_REPORT = {"passed": 0, "failed": 0, "warnings": 0}
 
-
 def check_tools():
     print_header("Checking System Tools")
     for tool in REQUIRED_TOOLS:
@@ -84,7 +76,6 @@ def check_tools():
         else:
             print_fail(f"Tool MISSING: {tool}")
             STATUS_REPORT["failed"] += 1
-
 
 def check_dev_tools():
     print_header("Checking Developer Integrity Tools")
@@ -102,7 +93,6 @@ def check_dev_tools():
         else:
             print_warn(f"Dev tool MISSING: {tool} (Recommended for integrity)")
             STATUS_REPORT["warnings"] += 1
-
 
 def check_directories():
     print_header("Checking Directory Structure")
@@ -129,7 +119,6 @@ def check_directories():
         else:
             print_fail(f"Directory MISSING: {subdir}")
             STATUS_REPORT["failed"] += 1
-
 
 def check_configs():
     print_header("Checking Configuration Files")
@@ -189,7 +178,6 @@ def check_configs():
             print_warn(f"Optional Variable missing: {var}")
             STATUS_REPORT["warnings"] += 1
 
-
 def check_services():
     print_header("Checking Services (Redis & SQLite)")
 
@@ -237,7 +225,6 @@ def check_services():
         print_fail(f"SQLite Database file MISSING: {db_file}")
         STATUS_REPORT["failed"] += 1
 
-
 def check_models():
     print_header("Checking AI Models")
 
@@ -263,7 +250,6 @@ def check_models():
     else:
         print_fail("TTS Model directory missing")
         STATUS_REPORT["failed"] += 1
-
 
 def check_mcp_servers():
     print_header("Checking MCP Server Binaries & Source")
@@ -327,7 +313,6 @@ def check_mcp_servers():
     mcp_config_path = CONFIG_ROOT / "mcp" / "config.json"
     if mcp_config_path.exists():
         try:
-            import json
 
             with open(mcp_config_path) as f:
                 cfg = json.load(f)
@@ -342,7 +327,6 @@ def check_mcp_servers():
                     STATUS_REPORT["warnings"] += 1
         except Exception:
             pass
-
 
 def main():
     print_header("ATLAS TRINITY ENVIRONMENT VERIFICATION")
@@ -370,7 +354,6 @@ def main():
     else:
         print(f"\n{Colors.OKGREEN}System looks good! Ready to launch.{Colors.ENDC}")
         sys.exit(0)
-
 
 if __name__ == "__main__":
     try:

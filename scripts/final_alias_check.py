@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Final verification of aliases via Vibe implementation"""
 
 import os
@@ -8,7 +7,6 @@ import time
 import requests
 
 os.chdir("/Users/hawk/Documents/GitHub/atlastrinity")
-
 
 def test_alias(alias, prompt):
     print(f"\n🧪 Testing Alias: {alias}")
@@ -62,7 +60,6 @@ def test_alias(alias, prompt):
     print(f"❌ FAILED: {alias}")
     print(f"   Error: {result.stderr.strip()[:500]}")
     return False
-
 
 # 1. Start Proxy
 print("🚀 Starting Proxy...")

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Test codex models with actual reasoning task"""
 
 import os

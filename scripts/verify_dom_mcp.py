@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Fix path to include src
 sys.path.append(os.getcwd())
 
 from src.brain.mcp_manager import MCPManager
@@ -61,7 +60,6 @@ async def verify_dom_interaction():
         traceback.print_exc()
     finally:
         await manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(verify_dom_interaction())

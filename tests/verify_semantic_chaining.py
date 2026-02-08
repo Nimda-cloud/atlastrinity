@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# Setup paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -81,7 +80,6 @@ async def verify_semantic_chaining():
         print(f"   Traversed Path: {trace_res.get('traversed_path')}")
 
     print("--- Verification Complete ---")
-
 
 if __name__ == "__main__":
     asyncio.run(verify_semantic_chaining())

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 AtlasTrinity Manual Full Backup
 Triggered via 'npm run backup:all'

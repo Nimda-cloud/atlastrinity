@@ -5,10 +5,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Constants
 CONFIG_PATH = Path.home() / ".config/atlastrinity/mcp/config.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
 
 async def run_mcp_server(name: str, config: dict[str, Any]) -> bool:
     print(f"\n--- Inspecting {name} ---")
@@ -138,7 +136,6 @@ async def run_mcp_server(name: str, config: dict[str, Any]) -> bool:
 
     return passed
 
-
 async def main():
     if not CONFIG_PATH.exists():
         print(f"Config not found at {CONFIG_PATH}")
@@ -159,7 +156,6 @@ async def main():
     for name, passed in results.items():
         status = "✅ PASS" if passed else "❌ FAIL"
         print(f"{name}: {status}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

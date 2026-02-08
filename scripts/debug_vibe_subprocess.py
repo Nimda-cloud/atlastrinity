@@ -3,10 +3,8 @@ import os
 import pty
 import subprocess
 
-# Mock constants
 VIBE_BINARY = os.path.expanduser("~/.local/bin/vibe")
 VIBE_WORKSPACE = os.path.expanduser("~/.config/atlastrinity/vibe_workspace")
-
 
 async def run_vibe():
     argv = [
@@ -91,7 +89,6 @@ async def run_vibe():
                 os.close(int(master))
             except:
                 pass
-
 
 if __name__ == "__main__":
     asyncio.run(run_vibe())

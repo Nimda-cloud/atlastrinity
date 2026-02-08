@@ -3,7 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-# Add src to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.mcp_server.vibe_server import vibe_prompt
@@ -36,7 +35,6 @@ async def demo_visibility():
         os.remove(test_file)
     else:
         print("❌ Error: File was not created.")
-
 
 if __name__ == "__main__":
     asyncio.run(demo_visibility())

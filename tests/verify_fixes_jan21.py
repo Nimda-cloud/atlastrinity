@@ -2,9 +2,7 @@ import os
 import sys
 from datetime import UTC, datetime
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 
 def test_datetime_fix():
     print("Testing datetime fix logic...")
@@ -23,7 +21,6 @@ def test_datetime_fix():
     except TypeError as e:
         print(f"Confirmed expected crash with naive datetime: {e}")
 
-
 def sanitize_metadata(metadata: dict) -> dict:
     """Sanitize metadata for ChromaDB (no lists allowed)"""
     sanitized = {}
@@ -33,7 +30,6 @@ def sanitize_metadata(metadata: dict) -> dict:
         else:
             sanitized[k] = v
     return sanitized
-
 
 def test_metadata_sanitization():
     print("\nTesting metadata sanitization...")
@@ -50,7 +46,6 @@ def test_metadata_sanitization():
     assert isinstance(sanitized["entities"], str)
     assert sanitized["entities"] == "ТзОВ Кардинал-Клінінг, м. Київ, вул. Голосіївська"
     print("Metadata sanitization SUCCESS")
-
 
 if __name__ == "__main__":
     test_datetime_fix()

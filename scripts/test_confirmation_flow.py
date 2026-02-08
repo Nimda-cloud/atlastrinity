@@ -3,7 +3,6 @@ import os
 import sys
 from unittest.mock import AsyncMock, MagicMock
 
-# Add project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from langchain_core.messages import HumanMessage
@@ -87,7 +86,6 @@ async def test_confirmation_flow():
     assert len(coffee_asks) == 1
 
     print("--- FULL INTEGRATION Test Completed Successfully ---")
-
 
 if __name__ == "__main__":
     asyncio.run(test_confirmation_flow())

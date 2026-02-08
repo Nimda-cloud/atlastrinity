@@ -1,6 +1,16 @@
 """Standalone test for Windsurf provider with free models"""
+import logging
 import os
 import sys
+from pathlib import Path
+
+# Set up logger
+logger = logging.getLogger(Path(__file__).stem)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+
 from typing import Any, Optional, Union
 
 
@@ -25,8 +35,8 @@ llm = WindsurfLLM(
 # Test query
 try:
     response = llm.invoke("Тест роботи українською. Як справи?")
-    print("Test successful! Response:")
-    print(response)
+    logger.info("Test successful! Response:")
+    logger.info(response)
 except Exception as e:
-    print(f"Test failed: {type(e).__name__}: {e}", file=sys.stderr)
+    logger.info(f"Test failed: {type(e).__name__}: {e}", file=sys.stderr)
     raise

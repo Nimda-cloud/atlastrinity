@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Ensure src module is visible
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from sqlalchemy import text
@@ -33,7 +32,6 @@ async def migrate():
         print(f"❌ Migration failed: {e}")
     finally:
         await db_manager.close()
-
 
 if __name__ == "__main__":
     asyncio.run(migrate())

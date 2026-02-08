@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Test synchronization of behavioral deviations between ChromaDB and SQL"""
 
 import asyncio
@@ -79,7 +78,6 @@ async def test_deviation_sync():
 
     await db_manager.close()
     return True
-
 
 if __name__ == "__main__":
     if asyncio.run(test_deviation_sync()):

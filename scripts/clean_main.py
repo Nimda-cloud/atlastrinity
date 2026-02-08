@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Clean Main System Data (Learning & Experience)
 Removes atlastrinity.db and memory chroma vectors.
@@ -8,7 +7,6 @@ import shutil
 from pathlib import Path
 
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
-
 
 def clean_main():
     print("🧹 Cleaning Main System Experience (Learning, DB, Memory)...")
@@ -43,7 +41,6 @@ def clean_main():
             print(f"ℹ️ {target.name} not found.")
 
     return True
-
 
 if __name__ == "__main__":
     clean_main()

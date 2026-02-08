@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Force reload AtlasTrinity configuration
 """
@@ -36,7 +35,6 @@ def force_reload_config():
         return True
     print("❌ macos_use not found in tool_routing")
     return False
-
 
 if __name__ == "__main__":
     force_reload_config()

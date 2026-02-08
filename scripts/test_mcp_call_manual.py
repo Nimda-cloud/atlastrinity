@@ -3,7 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-# Fix path to include src
 sys.path.append(os.getcwd())
 
 from src.brain.mcp_manager import MCPManager
@@ -43,7 +42,6 @@ async def test_tool_call():
         traceback.print_exc()
     finally:
         await manager.cleanup()
-
 
 if __name__ == "__main__":
     asyncio.run(test_tool_call())

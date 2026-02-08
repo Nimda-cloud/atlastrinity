@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 """Tetyana - The Executor
 
 Role: macOS interaction, executing atomic plan steps
@@ -64,7 +63,6 @@ class StepResult:
             "thought": self.thought,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
-
 
 class Tetyana(BaseAgent):
     """Tetyana - The Executor
@@ -350,10 +348,8 @@ Respond in JSON:
         """Take screenshot for Vision analysis, optionally focusing on specific app."""
         import base64
         import subprocess
-        from datetime import datetime
 
         from ..config import SCREENSHOTS_DIR
-        from ..logger import logger
 
         try:
             # Create screenshots directory if needed
@@ -438,11 +434,6 @@ Respond in JSON:
             {"found": bool, "elements": [...], "current_state": str, "suggested_action": {...}}
 
         """
-        import base64
-
-        from langchain_core.messages import HumanMessage, SystemMessage
-
-        from ..logger import logger
 
         logger.info(f"[TETYANA] Vision analysis requested: {query}")
 
@@ -535,7 +526,6 @@ IMPORTANT:
         step_id: Any,
     ) -> StepResult | None:
         """Checks if the step requires user consent and returns a StepResult if blocked."""
-        from ..logger import logger
 
         # Refined consent detection - LESS AGGRESSIVE
         step_action_lower = str(step.get("action", "")).lower()
@@ -613,7 +603,6 @@ IMPORTANT:
         attempt: int,
     ) -> tuple[dict[str, Any] | None, StepResult | None]:
         """Performs vision analysis if required. Returns (vision_result, blocking_StepResult)."""
-        from ..logger import logger
 
         vision_result = None
         if step.get("requires_vision") and attempt <= 2:
@@ -668,7 +657,6 @@ IMPORTANT:
         step_id: int,
     ) -> str:
         """Fetches Grisha's feedback for the step."""
-        from ..logger import logger
 
         grisha_feedback = step.get("grisha_feedback", "")
         if not grisha_feedback and attempt > 1:
@@ -834,7 +822,6 @@ IMPORTANT:
 
     async def _run_reasoning_llm(self, prompt: str) -> dict[str, Any]:
         """Execute reasoning LLM and parse monologue."""
-        from langchain_core.messages import HumanMessage, SystemMessage
 
         try:
             resp = await self.reasoning_llm.ainvoke(
@@ -1062,7 +1049,6 @@ IMPORTANT:
 
     async def _validate_step_alignment(self, step: dict[str, Any], attempt: int) -> None:
         """Validate step aligns with global goal and apply suggested deviations."""
-        from ..context import shared_context
 
         if attempt != 1:
             return
@@ -1129,8 +1115,6 @@ IMPORTANT:
         tool_result: dict[str, Any],
     ) -> StepResult | None:
         """Perform technical reflexion with retries, deep reasoning, and VIBE healing."""
-        from ..context import shared_context
-        from ..prompts import AgentPrompts
 
         TRANSIENT_ERRORS = [
             "Connection refused",
@@ -1414,7 +1398,6 @@ IMPORTANT:
 
     async def _execute_tool(self, tool_call: dict[str, Any]) -> dict[str, Any]:
         """Executes the tool call via unified Dispatcher"""
-        from ..mcp_manager import mcp_manager
 
         mcp_manager.dispatcher.set_pid(self._current_pid)
 
@@ -1451,7 +1434,6 @@ IMPORTANT:
             return {"success": False, "error": str(e)}
 
     async def _call_mcp_direct(self, server: str, tool: str, args: dict) -> dict[str, Any]:
-        from ..mcp_manager import mcp_manager
 
         try:
             return cast("dict[str, Any]", await mcp_manager.dispatch_tool(tool, args, server))
@@ -1461,7 +1443,6 @@ IMPORTANT:
 
     async def _run_terminal_command(self, args: dict[str, Any]) -> dict[str, Any]:
         """Executes a bash command using Terminal MCP"""
-        from ..mcp_manager import mcp_manager
 
         command = args.get("command", "") or args.get("cmd", "") or ""
 
@@ -1479,7 +1460,6 @@ IMPORTANT:
 
     async def _gui_click(self, args: dict[str, Any]) -> dict[str, Any]:
         """Perform a click action using macos-use tool."""
-        from ..mcp_manager import mcp_manager
 
         x, y = args.get("x", 0), args.get("y", 0)
         pid = int(args.get("pid", 0))
@@ -1490,7 +1470,6 @@ IMPORTANT:
 
     async def _gui_type(self, args: dict[str, Any]) -> dict[str, Any]:
         """Perform a type action using macos-use tool."""
-        from ..mcp_manager import mcp_manager
 
         text = args.get("text", "")
         pid = int(args.get("pid", 0))
@@ -1501,7 +1480,6 @@ IMPORTANT:
 
     async def _gui_hotkey(self, args: dict[str, Any]) -> dict[str, Any]:
         """Perform a hotkey action with modifier mapping."""
-        from ..mcp_manager import mcp_manager
 
         keys = args.get("keys", [])
         pid = int(args.get("pid", 0))
@@ -1565,10 +1543,6 @@ IMPORTANT:
 
     async def _gui_search_app(self, app_name: str) -> dict[str, Any]:
         """Launch an application using macos-use or fallback to Spotlight."""
-        import subprocess
-
-        from ..logger import logger
-        from ..mcp_manager import mcp_manager
 
         try:
             res = await mcp_manager.call_tool(
@@ -1595,7 +1569,6 @@ IMPORTANT:
 
     async def _gui_spotlight_fallback(self, app_name: str) -> dict[str, Any]:
         """Last resort: use Spotlight searching via UI keystrokes."""
-        import subprocess
 
         # Simplified Spotlight flow
         # Try to force English layout (ABC/U.S./English)
@@ -1670,7 +1643,6 @@ IMPORTANT:
 
     async def _perform_gui_action(self, args: dict[str, Any]) -> dict[str, Any]:
         """Performs GUI interaction (click, type, hotkey, search_app)."""
-        import asyncio
 
         action = args.get("action", "")
 
@@ -1696,11 +1668,9 @@ IMPORTANT:
         screenshot_b64: str | None = None,
     ) -> bool:
         """Save artifact files and register in notes/memory for Grisha's verification."""
-        import base64
         import time as _time
 
         from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR
-        from ..logger import logger
 
         try:
             ts = _time.strftime("%Y%m%d_%H%M%S")
@@ -1762,8 +1732,6 @@ IMPORTANT:
         self, step_id: Any, ts: str, artifacts: list[str], note_content: str
     ) -> None:
         """Register artifacts in notes and memory."""
-        from ..logger import logger
-        from ..mcp_manager import mcp_manager
 
         note_title = f"Grisha Artifact - Step {step_id} @ {ts}"
         try:
@@ -1839,8 +1807,6 @@ IMPORTANT:
         """Browser action via Puppeteer MCP with verification artifacts."""
         import asyncio  # Added import
 
-        from ..mcp_manager import mcp_manager
-
         action = args.get("action", "")
         step_id = args.get("step_id")
 
@@ -1889,8 +1855,6 @@ IMPORTANT:
 
     async def _filesystem_action(self, args: dict[str, Any]) -> dict[str, Any]:
         """Filesystem operations via MCP"""
-        from ..logger import logger
-        from ..mcp_manager import mcp_manager
 
         action = args.get("action", "")
         path = args.get("path", "")
@@ -1932,7 +1896,6 @@ IMPORTANT:
 
     async def _github_action(self, args: dict[str, Any]) -> dict[str, Any]:
         """GitHub actions"""
-        from ..mcp_manager import mcp_manager
 
         # Pass-through mostly
         mcp_tool = args.get("tool_name", "search_repositories")
@@ -1943,7 +1906,6 @@ IMPORTANT:
         return self._format_mcp_result(res)
 
     async def _applescript_action(self, args: dict[str, Any]) -> dict[str, Any]:
-        from ..mcp_manager import mcp_manager
 
         action = args.get("action", "execute_script")
         if action == "execute_script":
@@ -2105,7 +2067,6 @@ IMPORTANT:
 
     def _clean_voice_essence(self, essence: str, action: str) -> str:
         """Filter Latin characters and apply final cleanup."""
-        import re
 
         # Remove words with Latin characters
         essence = " ".join([w for w in essence.split() if not re.search(r"[a-zA-Z]", w)])
@@ -2179,7 +2140,6 @@ IMPORTANT:
                 action: "retry", "skip", "noted"
                 reason: decision rationale
         """
-        from ..logger import logger
 
         # Basic logic:
         # 1. If we are far ahead (> 2 steps), probably better to skip/note

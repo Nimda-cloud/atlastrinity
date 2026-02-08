@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# Setup paths
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -109,7 +108,6 @@ async def test_v24_logic():
         print("   FAILURE: Knowledge not found in global namespace.")
 
     print("\n--- v2.4 Logic Test Complete ---")
-
 
 if __name__ == "__main__":
     asyncio.run(test_v24_logic())

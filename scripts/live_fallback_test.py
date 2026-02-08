@@ -3,9 +3,7 @@ import os
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
 
 async def simulate_tier3_fallback():
     print("🚀 Starting Live Tier 3 Fallback Simulation")
@@ -84,7 +82,6 @@ async def simulate_tier3_fallback():
             print(f"Result success: {result.get('success')}")
         except Exception as e:
             print(f"❌ Simulation Call Failed: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(simulate_tier3_fallback())

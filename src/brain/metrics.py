@@ -4,10 +4,8 @@ from typing import Any
 
 import psutil
 
-# Set up logging
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger(__name__)
-
 
 class MetricsCollector:
     """
@@ -108,7 +106,6 @@ class MetricsCollector:
 
         except Exception as e:
             logger.error(f"Error recording custom metric: {e}")
-
 
 # Global metrics collector instance
 metrics_collector = MetricsCollector()

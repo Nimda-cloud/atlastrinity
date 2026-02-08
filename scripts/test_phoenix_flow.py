@@ -2,10 +2,8 @@ import asyncio
 import os
 import sys
 
-# Add src to path
 sys.path.append(os.getcwd())
 
-import sys
 from unittest.mock import MagicMock
 
 # MOCK Dependencies before import
@@ -43,7 +41,6 @@ async def test_phoenix():
         print(f"✅ Task created: {task.task_id}")
     except Exception as e:
         print(f"❌ Analysis setup failed: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_phoenix())

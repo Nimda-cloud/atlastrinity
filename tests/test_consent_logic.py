@@ -1,7 +1,6 @@
 import sys
 
 
-# Mock the shared_context
 class MockSharedContext:
     def to_dict(self):
         return {}
@@ -9,7 +8,6 @@ class MockSharedContext:
     @property
     def available_tools_summary(self):
         return "some tools"
-
 
 import types
 
@@ -24,7 +22,6 @@ sys.modules["..logger"] = m_logger
 m_state = types.ModuleType("state_manager")
 m_state.state_manager = None  # type: ignore
 sys.modules["..state_manager"] = m_state
-
 
 def test_consent_logic():
     # Simulate the logic inside Tetyana.execute_step
@@ -60,7 +57,6 @@ def test_consent_logic():
         assert result == expected, f"FAILED for '{action}'"
 
     print("\n✅ Consent logic test passed!")
-
 
 if __name__ == "__main__":
     test_consent_logic()

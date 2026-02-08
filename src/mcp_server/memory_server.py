@@ -10,14 +10,12 @@ from src.brain.memory import long_term_memory
 
 server = FastMCP("memory")
 
-
 def _get_id(name: str) -> str:
     """Standardize entity ID format"""
     name = str(name).strip()
     if name.startswith("entity:"):
         return name
     return f"entity:{name}"
-
 
 def _normalize_entity(ent: dict[str, Any]) -> dict[str, Any]:
     name = str(ent.get("name", "")).strip()
@@ -27,7 +25,6 @@ def _normalize_entity(ent: dict[str, Any]) -> dict[str, Any]:
         observations = [str(observations)]
     observations = [str(o) for o in observations if str(o).strip()]
     return {"name": name, "entityType": entity_type, "observations": observations}
-
 
 @server.tool()
 async def create_entities(
@@ -78,7 +75,6 @@ async def create_entities(
 
     return {"success": True, "created": created, "backend": "sqlite+chromadb"}
 
-
 @server.tool()
 async def batch_add_nodes(nodes: list[dict[str, Any]], namespace: str = "global") -> dict[str, Any]:
     """Optimized batch insertion of multiple nodes into the Knowledge Graph.
@@ -90,7 +86,6 @@ async def batch_add_nodes(nodes: list[dict[str, Any]], namespace: str = "global"
     """
     await db_manager.initialize()
     return await knowledge_graph.batch_add_nodes(nodes, namespace=namespace)
-
 
 @server.tool()
 async def bulk_ingest_table(
@@ -165,7 +160,6 @@ async def bulk_ingest_table(
     except Exception as e:
         return {"error": str(e)}
 
-
 @server.tool()
 async def add_observations(
     name: str,
@@ -221,16 +215,11 @@ async def add_observations(
 
     return {"success": True, "name": name, "observations_count": len(merged)}
 
-
 @server.tool()
 async def get_entity(name: str) -> dict[str, Any]:
     """Retrieve full details of a specific entity."""
     await db_manager.initialize()
     node_id = _get_id(name)
-
-    from sqlalchemy import select
-
-    from src.brain.db.schema import KGNode
 
     session = await db_manager.get_session()
     try:
@@ -251,15 +240,10 @@ async def get_entity(name: str) -> dict[str, Any]:
     finally:
         await session.close()
 
-
 @server.tool()
 async def list_entities() -> dict[str, Any]:
     """List all entity names in the knowledge graph."""
     await db_manager.initialize()
-
-    from sqlalchemy import select
-
-    from src.brain.db.schema import KGNode
 
     session = await db_manager.get_session()
     try:
@@ -270,7 +254,6 @@ async def list_entities() -> dict[str, Any]:
         await session.close()
 
     return {"success": True, "names": sorted(names), "count": len(names)}
-
 
 @server.tool()
 async def search(query: str, limit: int = 10, namespace: str | None = None) -> dict[str, Any]:
@@ -299,7 +282,6 @@ async def search(query: str, limit: int = 10, namespace: str | None = None) -> d
         "count": len(results),
         "method": "sql_fallback",
     }
-
 
 def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[dict[str, Any]]:
     """Helper for semantic search via ChromaDB."""
@@ -339,14 +321,11 @@ def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[di
                 )
     return formatted
 
-
 async def _perform_sql_fallback_search(
     q: str, lim: int, namespace: str | None
 ) -> list[dict[str, Any]]:
     """Helper for SQL-based fallback search."""
     from sqlalchemy import or_, select
-
-    from src.brain.db.schema import KGNode
 
     await db_manager.initialize()
     session = await db_manager.get_session()
@@ -373,7 +352,6 @@ async def _perform_sql_fallback_search(
         return results
     finally:
         await session.close()
-
 
 @server.tool()
 async def create_relation(
@@ -407,12 +385,10 @@ async def create_relation(
 
     return {"success": True, "source": source, "target": target, "relation": relation}
 
-
 @server.tool()
 async def search_nodes(query: str, limit: int = 10, namespace: str | None = None) -> dict[str, Any]:
     """Alias for search function to maintain compatibility"""
     return cast("dict[str, Any]", await search(query, limit, namespace))
-
 
 @server.tool()
 async def delete_entity(name: str, namespace: str | None = None) -> dict[str, Any]:
@@ -425,8 +401,6 @@ async def delete_entity(name: str, namespace: str | None = None) -> dict[str, An
     node_id = _get_id(name)
 
     from sqlalchemy import delete
-
-    from src.brain.db.schema import KGNode
 
     session = await db_manager.get_session()
     try:
@@ -446,7 +420,6 @@ async def delete_entity(name: str, namespace: str | None = None) -> dict[str, An
 
     return {"success": True, "deleted": True}
 
-
 @server.tool()
 async def ingest_verified_dataset(
     file_path: str,
@@ -460,9 +433,6 @@ async def ingest_verified_dataset(
     3. Indexes metadata in the Knowledge Graph.
     4. Syncs semantic preview to Vector Memory.
     """
-    from pathlib import Path
-
-    import pandas as pd
 
     from src.brain.data_guard import data_guard
 
@@ -542,7 +512,6 @@ async def ingest_verified_dataset(
         "message": f"Dataset '{dataset_name}' ingested and semantically linked ({len(links)} links) in {namespace}.",
     }
 
-
 @server.tool()
 async def query_db(query: str) -> dict[str, Any]:
     """Execute a raw SQL query against the system database (READ-ONLY).
@@ -581,7 +550,6 @@ async def query_db(query: str) -> dict[str, Any]:
     finally:
         await session.close()
 
-
 @server.tool()
 async def get_db_schema() -> dict[str, Any]:
     """Retrieve the database schema (tables and columns) for technical audits."""
@@ -610,7 +578,6 @@ async def get_db_schema() -> dict[str, Any]:
 
     return {"success": True, "tables": tables}
 
-
 @server.tool()
 async def trace_data_chain(
     start_value: Any,
@@ -621,7 +588,6 @@ async def trace_data_chain(
     """Recursively follows LINKED_TO edges in the KG to reconstruct a unified record
     accross multiple datasets.
     """
-    from sqlalchemy import text
 
     await db_manager.initialize()
     chain = []
@@ -639,7 +605,6 @@ async def trace_data_chain(
 
             # A. Fetch dataset metadata
             async with await db_manager.get_session() as session:
-                from src.brain.db.schema import KGNode
 
                 ds_node = await session.get(KGNode, dataset_id)
                 if not ds_node:
@@ -697,9 +662,7 @@ async def trace_data_chain(
         "value_searched": start_value,
     }
 
-
 if __name__ == "__main__":
-    import sys
 
     try:
         server.run()

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Verification Script for Golden Fund MCP
 Tests:
@@ -26,7 +25,6 @@ from src.mcp_server.golden_fund.lib.transformer import DataTransformer
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("verify_golden_fund")
-
 
 async def test_vector_storage():
     logger.info("--- Testing Vector Storage (ChromaDB) ---")
@@ -57,7 +55,6 @@ async def test_vector_storage():
     # Cleanup
     shutil.rmtree(test_path, ignore_errors=True)
 
-
 async def test_blob_storage():
     logger.info("--- Testing Blob Storage ---")
     test_root = Path.home() / ".config" / "atlastrinity" / "data" / "golden_fund" / "test_blobs"
@@ -80,7 +77,6 @@ async def test_blob_storage():
 
     shutil.rmtree(test_root, ignore_errors=True)
 
-
 async def test_transformer():
     logger.info("--- Testing Transformer ---")
     transformer = DataTransformer()
@@ -92,13 +88,11 @@ async def test_transformer():
     else:
         logger.error(f"Transformation failed: {res.error}")
 
-
 async def main():
     await test_vector_storage()
     await test_blob_storage()
     await test_transformer()
     logger.info("\nVerification Complete.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
