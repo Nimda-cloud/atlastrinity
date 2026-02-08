@@ -506,7 +506,7 @@ NEVER say "I don't have access" or "I can't check in real time" - YOU CAN!
 
 - USE THESE TOOLS for factual accuracy (weather, news, script explanation, GitHub research).
 - If the user asks a question you don't know the answer to, SEARCH for it.
-- DISCOVERY: If you are unsure about the system's current capabilities, use "macos-use.discovery".
+- DISCOVERY: If you are unsure about the system's current capabilities, use "macos-use_list_tools_dynamic".
 - Mental reasoning (thoughts) should be in English.
 
 Do not suggest creating a complex plan, just use your tools autonomously to answer the user's question directly in chat."""

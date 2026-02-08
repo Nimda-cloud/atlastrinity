@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 
-BINARY_PATH = "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
+BINARY_PATH = "vendor/mcp-server-macos-use/mcp-server-macos-use"
 
 
 async def read_stream(stream):

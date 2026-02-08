@@ -39,7 +39,7 @@
 
 3. **Перевірка**:
    ```bash
-   ls -lh vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use
+   ls -lh vendor/mcp-server-macos-use/mcp-server-macos-use
    ```
 
 ### Використання в конфігурації
@@ -48,7 +48,7 @@
 ```json
 {
   "macos-use": {
-    "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use",
+    "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/mcp-server-macos-use",
     "tier": 1,
     "description": "Universal macOS control (35+ tools)"
   }

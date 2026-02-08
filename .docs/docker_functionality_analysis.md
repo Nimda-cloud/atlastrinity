@@ -137,7 +137,7 @@ if redis_ok and db_ok:
 **НІЧОГО.** Усі MCP сервери працюють нативно:
 - Python-based серверів: через `python3 -m src.mcp_server.*`
 - Node.js-based сервери: через `npx` або `bunx`
-- Swift-based сервери: compiled binary (`vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use`)
+- Swift-based сервери: compiled binary (`vendor/mcp-server-macos-use/mcp-server-macos-use`)
 
 ---
 

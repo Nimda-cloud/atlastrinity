@@ -76,7 +76,7 @@ macos_use:
 
 - `~/.config/atlastrinity/behavior_config.yaml`
 - `config/behavior_config.yaml.template`
-- `vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use` (binary updated)
+- `vendor/mcp-server-macos-use/mcp-server-macos-use` (binary updated)
 
 ---
 

@@ -157,13 +157,13 @@ swift build -c release
 
 ### 1. Перевірка бінарника macos-use
 ```bash
-ls -lh vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use
+ls -lh vendor/mcp-server-macos-use/mcp-server-macos-use
 # Очікується: 5.7M
 ```
 
 ### 2. Тест запуску сервера
 ```bash
-vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use
+vendor/mcp-server-macos-use/mcp-server-macos-use
 # Має запуститися без помилок
 ```
 

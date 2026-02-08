@@ -35,9 +35,7 @@ def fix_macos_use_tools():
     # Check if binary exists
     HOME = os.path.expanduser("~")
     PROJECT_ROOT = os.path.join(HOME, "Documents/GitHub/atlastrinity")
-    binary_path = os.path.join(
-        PROJECT_ROOT, "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
-    )
+    binary_path = os.path.join(PROJECT_ROOT, "vendor/mcp-server-macos-use/mcp-server-macos-use")
     if not os.path.exists(binary_path):
         print("❌ macos-use binary not found")
         print("🔨 Building macos-use...")

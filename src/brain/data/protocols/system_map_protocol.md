@@ -85,7 +85,7 @@ atlastrinity/
 │
 ├── vendor/                       # Third-party MCP binaries (Swift)
 │   ├── mcp-server-macos-use/     # macOS Universal Commander (42+ tools)
-│   │   └── .build/release/mcp-server-macos-use  # Compiled binary
+│   │   └── mcp-server-macos-use  # Prebuilt binary
 │   ├── mcp-server-googlemaps/    # Google Maps MCP (12 tools)
 │   │   └── .build/release/mcp-server-googlemaps  # Compiled binary
 │   └── (XcodeBuildMCP via npx)    # Xcode Build & Test (94+ tools)
@@ -224,7 +224,7 @@ VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 ### Tier 1 — Core (Always loaded)
 | Server | Transport | Command | Source | Tools |
 |--------|-----------|---------|--------|-------|
-| `macos-use` | stdio | `vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use` | Swift binary | 42+ |
+| `macos-use` | stdio | `vendor/mcp-server-macos-use/mcp-server-macos-use` | Swift binary | 42+ |
 | `filesystem` | stdio | `npx @modelcontextprotocol/server-filesystem` | npm | ~10 |
 | `sequential-thinking` | stdio | `bunx @modelcontextprotocol/server-sequential-thinking` | npm | 1 |
 

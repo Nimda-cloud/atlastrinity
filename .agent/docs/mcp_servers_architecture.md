@@ -263,7 +263,7 @@ Return to Agent
 
 #### 1. macos-use
 - **Type:** Swift binary (compiled native)
-- **Path:** `vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use`
+- **Path:** `vendor/mcp-server-macos-use/mcp-server-macos-use`
 - **Tools:** 35+ (GUI, Terminal, Vision, System)
 - **Key Features:**
   - Universal macOS control

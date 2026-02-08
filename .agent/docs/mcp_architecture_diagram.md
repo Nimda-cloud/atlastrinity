@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T06:35:31.491424 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/check_mcp_preflight.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T06:31:03.824366 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/mcp_servers.json.template -->
 
