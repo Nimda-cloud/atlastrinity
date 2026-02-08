@@ -84,13 +84,16 @@ async def verify_chromadb():
         # Just try to instantiate client
         # Cast to Any to satisfy linters that might not see PersistentClient
         cli = cast("Any", chromadb).PersistentClient(path=str(db_path))
-        collections = cli.list_collections()
+        collection_names = cli.list_collections()
         print("[DB]   - ChromaDB Client Initialized")
-        print(f"[DB]   - Collections found: {len(collections)}")
-        for col in collections:
-            # Cast to Any to satisfy Pyright's strictness on ChromaDB collection count()
-            c: Any = col
-            print(f"[DB]     * {c.name} (count: {c.count()})")
+        print(f"[DB]   - Collections found: {len(collection_names)}")
+        for name in collection_names:
+            # ChromaDB v0.6.0+: list_collections() returns strings, not objects
+            try:
+                col = cli.get_collection(str(name))
+                print(f"[DB]     * {name} (count: {col.count()})")
+            except Exception:
+                print(f"[DB]     * {name} (count: ?)")
 
         return True
     except ImportError:
