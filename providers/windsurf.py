@@ -4,11 +4,13 @@ import re
 import struct
 import subprocess
 import sys
+import threading
 import time
 import uuid
 from collections.abc import Callable
 from typing import Any
 
+import grpc
 import httpx
 import requests
 from langchain_core.language_models import BaseChatModel
@@ -27,33 +29,209 @@ ContentItem = str | dict[str, Any]
 # Only FREE tier models from Windsurf/Codeium
 # These do not consume premium credits
 
-WINDSURF_FREE_MODELS: dict[str, str] = {
-    # Display name -> Windsurf internal model ID
+WINDSURF_MODELS: dict[str, str] = {
+    # Display name -> Windsurf internal model UID
+    # Premium models (use Cascade message quota)
+    "claude-4.5-opus": "MODEL_CLAUDE_4_5_OPUS",
+    "claude-4-sonnet": "MODEL_CLAUDE_4_SONNET",
+    "claude-4.5-sonnet": "MODEL_PRIVATE_2",
+    "claude-haiku-4.5": "MODEL_PRIVATE_11",
+    "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
+    "gpt-5.1": "MODEL_PRIVATE_12",
+    "swe-1.5": "MODEL_SWE_1_5",
+    "windsurf-fast": "MODEL_CHAT_11121",
+    # Free / unlimited models
     "deepseek-v3": "MODEL_DEEPSEEK_V3",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
-    "swe-1.5": "MODEL_SWE_1_5",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
-    "gpt-5.1-codex": "MODEL_PRIVATE_9",
-    "gpt-5.1-codex-mini": "MODEL_PRIVATE_19",
-    "gpt-5.1-codex-max-low": "MODEL_GPT_5_1_CODEX_MAX_LOW",
-    "gpt-5.1-codex-low": "MODEL_GPT_5_1_CODEX_LOW",
-    "gpt-5.1-codex-mini-low": "MODEL_GPT_5_1_CODEX_MINI_LOW",
     "kimi-k2.5": "kimi-k2-5",
 }
 
-# Default free model
-WINDSURF_DEFAULT_MODEL = "deepseek-v3"
+# For backward compat
+WINDSURF_FREE_MODELS = WINDSURF_MODELS
 
-# Windsurf Connect-RPC role mapping
-ROLE_SYSTEM = 0
-ROLE_USER = 1
-ROLE_ASSISTANT = 2
+# Default model
+WINDSURF_DEFAULT_MODEL = "windsurf-fast"
 
-# Language Server endpoints
+# Windsurf Connect-RPC source enum (proto: ChatMessageSource)
+SOURCE_SYSTEM = 0
+SOURCE_USER = 1
+SOURCE_ASSISTANT = 2
+
+# Backward compat aliases
+ROLE_SYSTEM = SOURCE_SYSTEM
+ROLE_USER = SOURCE_USER
+ROLE_ASSISTANT = SOURCE_ASSISTANT
+
+# Language Server endpoints (Connect-RPC / HTTP)
 LS_RAW_CHAT = "/exa.language_server_pb.LanguageServerService/RawGetChatMessage"
 LS_CHECK_CAPACITY = "/exa.language_server_pb.LanguageServerService/CheckChatCapacity"
 LS_HEARTBEAT = "/exa.language_server_pb.LanguageServerService/Heartbeat"
+
+# Language Server gRPC service path prefix
+_GRPC_SVC = "/exa.language_server_pb.LanguageServerService/"
+
+# Cascade default model (must NOT be a "legacy mode" model like MODEL_CHAT_11121)
+CASCADE_DEFAULT_MODEL = "MODEL_CLAUDE_4_SONNET"
+
+# Map display names to Cascade-compatible model UIDs
+CASCADE_MODEL_MAP: dict[str, str] = {
+    "claude-4.5-opus": "MODEL_CLAUDE_4_5_OPUS",
+    "claude-4-sonnet": "MODEL_CLAUDE_4_SONNET",
+    "claude-4.5-sonnet": "MODEL_PRIVATE_2",
+    "claude-haiku-4.5": "MODEL_PRIVATE_11",
+    "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
+    "gpt-5.1": "MODEL_PRIVATE_12",
+    "swe-1.5": "MODEL_SWE_1_5",
+}
+
+# Max seconds to wait for Cascade AI response
+CASCADE_TIMEOUT = 90
+
+
+# ─── Proto Binary Helpers ────────────────────────────────────────────────────
+
+
+def _proto_varint(val: int) -> bytes:
+    """Encode an integer as a protobuf varint."""
+    r = b""
+    while val > 0x7F:
+        r += bytes([(val & 0x7F) | 0x80])
+        val >>= 7
+    r += bytes([val])
+    return r
+
+
+def _proto_str(field_num: int, s: str) -> bytes:
+    """Encode a string field in protobuf binary format."""
+    b = s.encode("utf-8")
+    return _proto_varint((field_num << 3) | 2) + _proto_varint(len(b)) + b
+
+
+def _proto_msg(field_num: int, inner: bytes) -> bytes:
+    """Encode a sub-message field in protobuf binary format."""
+    return _proto_varint((field_num << 3) | 2) + _proto_varint(len(inner)) + inner
+
+
+def _proto_int(field_num: int, val: int) -> bytes:
+    """Encode a varint field in protobuf binary format."""
+    return _proto_varint((field_num << 3) | 0) + _proto_varint(val)
+
+
+def _proto_extract_string(data: bytes, target_field: int) -> str:
+    """Extract first string at target_field from proto binary."""
+    offset = 0
+    while offset < len(data):
+        tag = 0
+        shift = 0
+        while offset < len(data):
+            b = data[offset]
+            offset += 1
+            tag |= (b & 0x7F) << shift
+            shift += 7
+            if not (b & 0x80):
+                break
+        fn = tag >> 3
+        wt = tag & 0x07
+        if fn == 0:
+            break
+        if wt == 0:  # varint
+            while offset < len(data) and data[offset] & 0x80:
+                offset += 1
+            if offset < len(data):
+                offset += 1
+        elif wt == 2:  # length-delimited
+            ln = 0
+            s = 0
+            while offset < len(data):
+                b = data[offset]
+                offset += 1
+                ln |= (b & 0x7F) << s
+                s += 7
+                if not (b & 0x80):
+                    break
+            payload = data[offset : offset + ln]
+            offset += ln
+            if fn == target_field:
+                try:
+                    return payload.decode("utf-8")
+                except UnicodeDecodeError:
+                    pass
+        elif wt == 1:
+            offset += 8
+        elif wt == 5:
+            offset += 4
+        else:
+            break
+    return ""
+
+
+def _proto_find_strings(data: bytes, min_len: int = 4) -> list[str]:
+    """Recursively extract all readable strings from proto binary."""
+    results: list[str] = []
+    offset = 0
+    while offset < len(data):
+        tag = 0
+        shift = 0
+        while offset < len(data):
+            b = data[offset]
+            offset += 1
+            tag |= (b & 0x7F) << shift
+            shift += 7
+            if not (b & 0x80):
+                break
+        fn = tag >> 3
+        wt = tag & 0x07
+        if fn == 0 or fn > 200:
+            break
+        if wt == 0:
+            while offset < len(data) and data[offset] & 0x80:
+                offset += 1
+            if offset < len(data):
+                offset += 1
+        elif wt == 2:
+            ln = 0
+            s = 0
+            while offset < len(data):
+                b = data[offset]
+                offset += 1
+                ln |= (b & 0x7F) << s
+                s += 7
+                if not (b & 0x80):
+                    break
+            payload = data[offset : offset + ln]
+            offset += ln
+            try:
+                text = payload.decode("utf-8")
+                if len(text) >= min_len and all(
+                    32 <= ord(c) < 127 or c in "\n\r\t" for c in text
+                ):
+                    results.append(text)
+            except UnicodeDecodeError:
+                pass
+            # Always recurse into sub-messages
+            results.extend(_proto_find_strings(payload, min_len))
+        elif wt == 1:
+            offset += 8
+        elif wt == 5:
+            offset += 4
+        else:
+            break
+    return results
+
+
+def _build_metadata_proto(api_key: str, session_id: str) -> bytes:
+    """Build Metadata proto binary (exa.codeium_common_pb.Metadata)."""
+    return (
+        _proto_str(1, "windsurf")
+        + _proto_str(2, "1.42.0")
+        + _proto_str(3, api_key)
+        + _proto_str(4, "en")
+        + _proto_str(7, "1.9544.35")
+        + _proto_int(9, 1)
+        + _proto_str(10, session_id)
+    )
 
 
 # ─── Language Server Auto-Detection ──────────────────────────────────────────
@@ -167,12 +345,13 @@ class WindsurfLLM(BaseChatModel):
         # Model
         self.model_name = model_name or os.getenv("WINDSURF_MODEL", WINDSURF_DEFAULT_MODEL)
 
-        # Validate model is in free tier
-        if self.model_name not in WINDSURF_FREE_MODELS:
-            available = ", ".join(sorted(WINDSURF_FREE_MODELS.keys()))
-            raise ValueError(
-                f"WindsurfLLM: Model '{self.model_name}' is not in the FREE tier. "
-                f"Available free models: {available}"
+        # Validate model is known
+        if self.model_name not in WINDSURF_MODELS:
+            available = ", ".join(sorted(WINDSURF_MODELS.keys()))
+            print(
+                f"[WINDSURF] Warning: Model '{self.model_name}' not in known models. "
+                f"Available: {available}",
+                file=sys.stderr, flush=True,
             )
 
         self.max_tokens = max_tokens or 4096
@@ -197,15 +376,15 @@ class WindsurfLLM(BaseChatModel):
 
         # Mode selection
         forced_mode = os.getenv("WINDSURF_MODE", "").lower()
-        if forced_mode in ("local", "proxy", "direct"):
+        if forced_mode in ("cascade", "local", "proxy", "direct"):
             self._mode = forced_mode
         elif direct_mode or os.getenv("WINDSURF_DIRECT", "").lower() == "true":
             self._mode = "direct"
         else:
             self._mode = "proxy"
 
-        # Auto-detect local LS if mode is local or auto
-        if self._mode == "local" or forced_mode == "":
+        # Auto-detect local LS if mode needs it or auto-detection
+        if self._mode in ("cascade", "local") or forced_mode == "":
             ls_port = int(os.getenv("WINDSURF_LS_PORT", "0"))
             ls_csrf = os.getenv("WINDSURF_LS_CSRF", "")
             if not ls_port or not ls_csrf:
@@ -217,13 +396,17 @@ class WindsurfLLM(BaseChatModel):
             if ls_port and ls_csrf and _ls_heartbeat(ls_port, ls_csrf):
                 self.ls_port = ls_port
                 self.ls_csrf = ls_csrf
-                self._mode = "local"
+                # Prefer cascade mode (uses Cascade quota, bypasses Chat API block)
+                if forced_mode == "" or forced_mode == "cascade":
+                    self._mode = "cascade"
+                else:
+                    self._mode = "local"
 
         self.direct_mode = self._mode == "direct"
 
         print(
             f"[WINDSURF] Initialized: model='{self.model_name}', mode={self._mode}"
-            + (f" (ls_port={self.ls_port})" if self._mode == "local" else ""),
+            + (f" (ls_port={self.ls_port})" if self._mode in ("local", "cascade") else ""),
             file=sys.stderr,
             flush=True,
         )
@@ -318,15 +501,25 @@ class WindsurfLLM(BaseChatModel):
         }
 
     def _build_connect_rpc_payload(self, messages: list[BaseMessage]) -> dict:
-        """Build Connect-RPC payload for direct Windsurf API mode."""
+        """Build Connect-RPC payload for Windsurf RawGetChatMessage.
+
+        Proto schema (RawGetChatMessageRequest):
+          f1: Metadata, f2: repeated ChatMessage, f5: chatModelName
+        ChatMessage:
+          f1: messageId, f2: source(enum), f3: Timestamp, f4: conversationId,
+          f5: ChatMessageIntent { f1: IntentGeneric { f1: text } }
+        """
+        now_rfc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        conv_id = str(uuid.uuid4())
         chat_messages = []
+
         for m in messages:
             if isinstance(m, SystemMessage):
-                role = ROLE_SYSTEM
+                source = SOURCE_SYSTEM
             elif isinstance(m, AIMessage):
-                role = ROLE_ASSISTANT
+                source = SOURCE_ASSISTANT
             else:
-                role = ROLE_USER
+                source = SOURCE_USER
 
             content = m.content
             if isinstance(content, list):
@@ -338,24 +531,23 @@ class WindsurfLLM(BaseChatModel):
                         text_parts.append(item)
                 content = " ".join(text_parts)
 
-            chat_messages.append({"role": role, "content": content})
+            chat_messages.append({
+                "messageId": str(uuid.uuid4()),
+                "source": source,
+                "timestamp": now_rfc,
+                "conversationId": conv_id,
+                "intent": {"generic": {"text": content}},
+            })
 
-        model_id = WINDSURF_FREE_MODELS.get(
-            self.model_name or WINDSURF_DEFAULT_MODEL, self.model_name or WINDSURF_DEFAULT_MODEL
+        model_id = WINDSURF_MODELS.get(
+            self.model_name or WINDSURF_DEFAULT_MODEL,
+            self.model_name or WINDSURF_DEFAULT_MODEL,
         )
 
         return {
             "chatMessages": chat_messages,
-            "metadata": {
-                "ideName": "windsurf",
-                "ideVersion": "1.98.0",
-                "extensionVersion": "1.42.0",
-                "locale": "en",
-                "sessionId": f"atlastrinity-{os.getpid()}",
-                "requestId": "1",
-                "installationId": self.installation_id,
-            },
-            "modelName": model_id,
+            "metadata": self._build_ls_metadata(),
+            "chatModelName": model_id,
         }
 
     # ─── Proxy Mode ──────────────────────────────────────────────────────
@@ -393,15 +585,19 @@ class WindsurfLLM(BaseChatModel):
     # ─── Local Language Server Mode ────────────────────────────────────────
 
     def _build_ls_metadata(self) -> dict:
-        """Build metadata dict for local LS requests."""
+        """Build metadata dict for LS requests.
+
+        Proto schema (Metadata / exa.codeium_common_pb):
+          f1: ideName, f2: extensionVersion, f3: apiKey, f4: locale,
+          f7: ideVersion, f9: requestId(uint64), f10: sessionId
+        """
         return {
             "ideName": "windsurf",
-            "ideVersion": "1.98.0",
+            "ideVersion": "1.9544.35",
             "extensionVersion": "1.42.0",
             "locale": "en",
             "sessionId": f"atlastrinity-{os.getpid()}",
             "requestId": str(int(time.time())),
-            "installationId": self.installation_id,
             "apiKey": self.api_key,
         }
 
@@ -462,32 +658,15 @@ class WindsurfLLM(BaseChatModel):
         return False
 
     def _call_local_ls(self, payload: dict) -> str:
-        """Send chat request via local language server's RawGetChatMessage."""
+        """Send chat request via local language server's RawGetChatMessage.
+
+        The payload should already be in Connect-RPC format from
+        _build_connect_rpc_payload (with chatMessages, metadata, chatModelName).
+        """
         if not self._refresh_ls_connection():
             raise RuntimeError("Windsurf language server not available")
 
-        now_rfc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conv_id = str(uuid.uuid4())
-        model_id = WINDSURF_FREE_MODELS.get(
-            self.model_name or WINDSURF_DEFAULT_MODEL,
-            self.model_name or WINDSURF_DEFAULT_MODEL,
-        )
-
-        ls_payload = {
-            "chatMessages": [
-                {
-                    **msg,
-                    "messageId": str(uuid.uuid4()),
-                    "timestamp": now_rfc,
-                    "conversationId": conv_id,
-                }
-                for msg in payload.get("chatMessages", [])
-            ],
-            "metadata": self._build_ls_metadata(),
-            "modelName": model_id,
-        }
-
-        envelope = self._make_envelope(ls_payload)
+        envelope = self._make_envelope(payload)
         headers = {
             "Content-Type": "application/connect+json",
             "Connect-Protocol-Version": "1",
@@ -515,28 +694,7 @@ class WindsurfLLM(BaseChatModel):
         if not self._refresh_ls_connection():
             raise RuntimeError("Windsurf language server not available")
 
-        now_rfc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        conv_id = str(uuid.uuid4())
-        model_id = WINDSURF_FREE_MODELS.get(
-            self.model_name or WINDSURF_DEFAULT_MODEL,
-            self.model_name or WINDSURF_DEFAULT_MODEL,
-        )
-
-        ls_payload = {
-            "chatMessages": [
-                {
-                    **msg,
-                    "messageId": str(uuid.uuid4()),
-                    "timestamp": now_rfc,
-                    "conversationId": conv_id,
-                }
-                for msg in payload.get("chatMessages", [])
-            ],
-            "metadata": self._build_ls_metadata(),
-            "modelName": model_id,
-        }
-
-        envelope = self._make_envelope(ls_payload)
+        envelope = self._make_envelope(payload)
         headers = {
             "Content-Type": "application/connect+json",
             "Connect-Protocol-Version": "1",
@@ -595,6 +753,331 @@ class WindsurfLLM(BaseChatModel):
         if error_msg:
             raise RuntimeError(f"Windsurf API error: {error_msg}")
         return result_text
+
+    # ─── Cascade Mode (gRPC via local LS) ────────────────────────────────
+
+    def _call_cascade(self, messages: list[BaseMessage]) -> str:
+        """Send chat via Cascade pipeline through the local Language Server.
+
+        Flow:
+          1. StartCascade → cascadeId
+          2. StreamCascadeReactiveUpdates (background, protocol_version=1)
+          3. QueueCascadeMessage (items + cascade_config with model)
+          4. InterruptWithQueuedMessage → triggers AI processing
+          5. Collect AI response text from stream frames
+        """
+        if not self._refresh_ls_connection():
+            raise RuntimeError("Windsurf language server not available")
+
+        session_id = f"atlastrinity-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+        meta = _build_metadata_proto(self.api_key or "", session_id)
+        grpc_md = (("x-codeium-csrf-token", self.ls_csrf),)
+
+        channel = grpc.insecure_channel(f"127.0.0.1:{self.ls_port}")
+        try:
+            grpc.channel_ready_future(channel).result(timeout=10)
+        except grpc.FutureTimeoutError:
+            channel.close()
+            raise RuntimeError("Cannot connect to Windsurf LS gRPC")
+
+        _id = lambda x: x  # noqa: E731
+        try:
+            # Step 1: StartCascade
+            start_rpc = channel.unary_unary(
+                f"{_GRPC_SVC}StartCascade",
+                request_serializer=_id,
+                response_deserializer=_id,
+            )
+            resp = start_rpc(_proto_msg(1, meta), metadata=grpc_md, timeout=15)
+            cascade_id = _proto_extract_string(resp, 1)
+            if not cascade_id:
+                raise RuntimeError("StartCascade returned no cascadeId")
+
+            # Step 2: Start streaming reactive updates
+            stream_rpc = channel.unary_stream(
+                f"{_GRPC_SVC}StreamCascadeReactiveUpdates",
+                request_serializer=_id,
+                response_deserializer=_id,
+            )
+            stream_req = _proto_int(1, 1) + _proto_str(2, cascade_id)
+            raw_frames: list[bytes] = []
+            stream_done = threading.Event()
+
+            def _listen() -> None:
+                try:
+                    for frame in stream_rpc(
+                        stream_req, metadata=grpc_md, timeout=CASCADE_TIMEOUT + 30
+                    ):
+                        raw_frames.append(frame)
+                except grpc.RpcError:
+                    pass
+                stream_done.set()
+
+            listener = threading.Thread(target=_listen, daemon=True)
+            listener.start()
+            time.sleep(0.3)
+
+            # Step 3: QueueCascadeMessage
+            # Combine all messages into a single user prompt
+            prompt_parts: list[str] = []
+            for m in messages:
+                content = m.content
+                if isinstance(content, list):
+                    text_parts = []
+                    for item in content:
+                        if isinstance(item, dict) and item.get("type") == "text":
+                            text_parts.append(item.get("text", ""))
+                        elif isinstance(item, str):
+                            text_parts.append(item)
+                    content = " ".join(text_parts)
+                if isinstance(m, SystemMessage):
+                    prompt_parts.insert(0, f"[System]: {content}")
+                elif isinstance(m, AIMessage):
+                    prompt_parts.append(f"[Assistant]: {content}")
+                else:
+                    prompt_parts.append(content)
+            user_text = "\n\n".join(prompt_parts)
+
+            # Resolve model UID for Cascade
+            model_uid = CASCADE_MODEL_MAP.get(
+                self.model_name or "", CASCADE_DEFAULT_MODEL
+            )
+
+            queue_rpc = channel.unary_unary(
+                f"{_GRPC_SVC}QueueCascadeMessage",
+                request_serializer=_id,
+                response_deserializer=_id,
+            )
+            # QueueCascadeMessageRequest: f1=metadata, f2=cascade_id,
+            #   f3=items(repeated TextOrScopeItem), f5=cascade_config
+            # TextOrScopeItem: oneof chunk { f1=text(str) }
+            # CascadeConfig.f1=PlannerConfig, PlannerConfig.f34=plan_model_uid, f35=requested_model_uid
+            item_proto = _proto_str(1, user_text)
+            planner_proto = _proto_str(34, model_uid) + _proto_str(35, model_uid)
+            cascade_config = _proto_msg(1, planner_proto)
+
+            queue_req = (
+                _proto_msg(1, meta)
+                + _proto_str(2, cascade_id)
+                + _proto_msg(3, item_proto)
+                + _proto_msg(5, cascade_config)
+            )
+            queue_resp = queue_rpc(queue_req, metadata=grpc_md, timeout=15)
+            queue_id = _proto_extract_string(queue_resp, 1)
+            if not queue_id:
+                raise RuntimeError("QueueCascadeMessage returned no queueId")
+
+            # Step 4: InterruptWithQueuedMessage → triggers processing
+            interrupt_rpc = channel.unary_unary(
+                f"{_GRPC_SVC}InterruptWithQueuedMessage",
+                request_serializer=_id,
+                response_deserializer=_id,
+            )
+            interrupt_req = (
+                _proto_msg(1, meta)
+                + _proto_str(2, cascade_id)
+                + _proto_str(3, queue_id)
+            )
+            interrupt_rpc(interrupt_req, metadata=grpc_md, timeout=15)
+
+            # Step 5: Wait for AI response in stream
+            prev_count = 0
+            stable_ticks = 0
+            for _ in range(CASCADE_TIMEOUT // 2):
+                time.sleep(2)
+                cur = len(raw_frames)
+                if cur > 3 and cur == prev_count:
+                    stable_ticks += 1
+                    if stable_ticks >= 3:
+                        break
+                else:
+                    stable_ticks = 0
+                prev_count = cur
+
+            # Step 6: Extract AI response text from stream frames
+            return self._extract_cascade_response(raw_frames, user_text)
+
+        finally:
+            channel.close()
+
+    @staticmethod
+    def _extract_proto_strings_at_field(data: bytes, target_fn: int) -> list[str]:
+        """Extract all string values at a specific proto field number (top-level only)."""
+        results: list[str] = []
+        offset = 0
+        while offset < len(data):
+            tag = 0
+            shift = 0
+            while offset < len(data):
+                b = data[offset]
+                offset += 1
+                tag |= (b & 0x7F) << shift
+                shift += 7
+                if not (b & 0x80):
+                    break
+            fn = tag >> 3
+            wt = tag & 0x07
+            if fn == 0 or fn > 200:
+                break
+            if wt == 0:
+                while offset < len(data) and data[offset] & 0x80:
+                    offset += 1
+                if offset < len(data):
+                    offset += 1
+            elif wt == 2:
+                ln = 0
+                s = 0
+                while offset < len(data):
+                    b = data[offset]
+                    offset += 1
+                    ln |= (b & 0x7F) << s
+                    s += 7
+                    if not (b & 0x80):
+                        break
+                payload = data[offset : offset + ln]
+                offset += ln
+                if fn == target_fn:
+                    try:
+                        text = payload.decode("utf-8")
+                        results.append(text)
+                    except UnicodeDecodeError:
+                        pass
+            elif wt == 1:
+                offset += 8
+            elif wt == 5:
+                offset += 4
+            else:
+                break
+        return results
+
+    @staticmethod
+    def _extract_cascade_response(frames: list[bytes], user_text: str) -> str:
+        """Extract the AI assistant's response text from Cascade stream frames.
+
+        Strategy:
+        1. Check for error messages (permission_denied, not enough credits)
+        2. Find the bot response using proto field 5 pattern near bot- UUID:
+           The AI response text is encoded as proto field 5 (tag 0x2A),
+           wire type 2, and appears in the same message as bot-<uuid>.
+           The response text also appears duplicated at field 4 (tag 0x27).
+        3. Fallback: search for the summary in the last frames.
+        """
+        # Phase 1: Check for errors in all frames
+        for frame in frames:
+            if b"permission_denied" in frame or b"not enough credits" in frame:
+                raise RuntimeError(
+                    "Windsurf Cascade: not enough credits (quota exhausted)"
+                )
+            if b"resource_exhausted" in frame:
+                raise RuntimeError(
+                    "Windsurf Cascade: resource exhausted (quota limit)"
+                )
+
+        # Phase 2: Find bot response using proto byte pattern
+        # The bot message appears as: ...{response_text}...{response_text}...*z{len}bot-{uuid}
+        # Where * = 0x2A (field 5, wire type 2) and z = 0x7A (field 15, wire type 2)
+        # The response text is at field 5 or field 4 in the same sub-message
+        for i in range(len(frames) - 1, 1, -1):  # Search backwards
+            frame = frames[i]
+            bot_idx = frame.find(b"bot-")
+            if bot_idx < 0:
+                continue
+
+            # Look for proto field 5 strings (tag 0x2A) in the vicinity of bot-
+            # The bot response is in the same sub-message, typically within 500 bytes before bot-
+            search_start = max(0, bot_idx - 2000)
+            window = frame[search_start:bot_idx]
+
+            # Scan for field 5 (0x2A) length-delimited strings in the window
+            offset = 0
+            candidates: list[str] = []
+            while offset < len(window) - 2:
+                if window[offset] == 0x2A:  # field 5, wire type 2
+                    offset += 1
+                    # Read varint length
+                    ln = 0
+                    shift = 0
+                    while offset < len(window):
+                        b = window[offset]
+                        offset += 1
+                        ln |= (b & 0x7F) << shift
+                        shift += 7
+                        if not (b & 0x80):
+                            break
+                    if 1 <= ln <= 10000 and offset + ln <= len(window):
+                        payload = window[offset : offset + ln]
+                        try:
+                            text = payload.decode("utf-8")
+                            if text and len(text) >= 1:
+                                candidates.append(text)
+                        except UnicodeDecodeError:
+                            pass
+                        offset += ln
+                    else:
+                        pass  # Skip invalid
+                else:
+                    offset += 1
+
+            # Also scan for field 4 (0x22) strings
+            offset = 0
+            while offset < len(window) - 2:
+                if window[offset] == 0x22:  # field 4, wire type 2
+                    offset += 1
+                    ln = 0
+                    shift = 0
+                    while offset < len(window):
+                        b = window[offset]
+                        offset += 1
+                        ln |= (b & 0x7F) << shift
+                        shift += 7
+                        if not (b & 0x80):
+                            break
+                    if 1 <= ln <= 10000 and offset + ln <= len(window):
+                        payload = window[offset : offset + ln]
+                        try:
+                            text = payload.decode("utf-8")
+                            if text and len(text) >= 1:
+                                candidates.append(text)
+                        except UnicodeDecodeError:
+                            pass
+                        offset += ln
+                    else:
+                        pass
+                else:
+                    offset += 1
+
+            # Filter candidates: skip UUIDs, model names, noise
+            filtered: list[str] = []
+            user_prefix = user_text[:30].strip()
+            for c in candidates:
+                c = c.strip()
+                if not c:
+                    continue
+                if c.count("-") >= 4 and len(c) < 50:
+                    continue  # UUID
+                if c.startswith(("MODEL_", "file://", "http", "bot-")):
+                    continue
+                if user_prefix and c == user_text.strip():
+                    continue  # Exact user input echo
+                filtered.append(c)
+
+            if filtered:
+                # The response text appears duplicated; return the first unique one
+                return filtered[0]
+
+        # Phase 3: Fallback - look for summary text in last frames (field 15)
+        for i in range(len(frames) - 1, max(1, len(frames) - 5), -1):
+            strings = _proto_find_strings(frames[i], min_len=15)
+            for s in strings:
+                s = s.strip()
+                if (
+                    len(s) > 20
+                    and s.count("-") < 3
+                    and not s.startswith(("file://", "http", "MODEL_", "{", "<"))
+                ):
+                    return s
+
+        return ""
 
     # ─── Result Processing ───────────────────────────────────────────────
 
@@ -662,6 +1145,9 @@ class WindsurfLLM(BaseChatModel):
     ) -> ChatResult:
         """Synchronous generation."""
         try:
+            if self._mode == "cascade":
+                content = self._call_cascade(messages)
+                return self._process_content(content)
             if self._mode == "local":
                 payload = self._build_connect_rpc_payload(messages)
                 content = self._call_local_ls(payload)
@@ -688,6 +1174,11 @@ class WindsurfLLM(BaseChatModel):
     ) -> ChatResult:
         """Asynchronous generation."""
         try:
+            if self._mode == "cascade":
+                # Cascade is sync-only (gRPC streaming), run in thread
+                import asyncio
+                content = await asyncio.to_thread(self._call_cascade, messages)
+                return self._process_content(content)
             if self._mode == "local":
                 payload = self._build_connect_rpc_payload(messages)
                 content = await self._call_local_ls_async(payload)
@@ -713,7 +1204,9 @@ class WindsurfLLM(BaseChatModel):
     ) -> AIMessage:
         """Streaming invoke compatible with CopilotLLM interface."""
         try:
-            if self._mode == "local":
+            if self._mode == "cascade":
+                content = self._call_cascade(messages)
+            elif self._mode == "local":
                 payload = self._build_connect_rpc_payload(messages)
                 content = self._call_local_ls(payload)
             elif self._mode == "direct":
