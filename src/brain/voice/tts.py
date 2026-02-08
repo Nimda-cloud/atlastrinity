@@ -28,10 +28,17 @@ from ..config import MODELS_DIR
 from ..config_loader import config
 from ..logger import logger
 
+# Lazy imports for optional dependencies
+try:
+    from ukrainian_tts import UkrainianTTS
+    from ukrainian_tts.tts import Voices
+except ImportError:
+    UkrainianTTS = None
+    Voices = None
+
 # Lazy import to avoid loading heavy dependencies at startup
 TTS_AVAILABLE = None
 TTS = None
-
 
 def _check_tts_available():
     global TTS_AVAILABLE
@@ -56,7 +63,6 @@ def _check_tts_available():
         )
     return TTS_AVAILABLE
 
-
 def _patch_tts_config(cache_dir: Path):
     """Ensures config.yaml in cache_dir uses absolute paths for stats_file.
     This fixes FileNotFoundError in espnet2 on some systems.
@@ -67,7 +73,6 @@ def _patch_tts_config(cache_dir: Path):
 
     try:
         content = config_path.read_text()
-        import re
 
         # Regex to find 'stats_file: some_file.npz' anywhere in the file
         # We look for 'stats_file:' followed by a filename, potentially with whitespace
@@ -102,12 +107,10 @@ def _patch_tts_config(cache_dir: Path):
     except Exception as e:
         print(f"[TTS] Warning: Failed to patch config.yaml: {e}", file=sys.stderr)
 
-
 def sanitize_text_for_tts(text: str) -> str:
     """Cleans text for better TTS pronunciation.
     Removes/replaces characters and expands abbreviations.
     """
-    import re
 
     # 1. Remove markdown links [text](url) -> text
     text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
@@ -211,7 +214,6 @@ def sanitize_text_for_tts(text: str) -> str:
 
     return text.strip()
 
-
 @dataclass
 class VoiceConfig:
     """Voice configuration for an agent"""
@@ -219,7 +221,6 @@ class VoiceConfig:
     name: str
     voice_id: str
     description: str
-
 
 # Agent voice mappings
 AGENT_VOICES = {
@@ -235,7 +236,6 @@ AGENT_VOICES = {
     ),
     "grisha": VoiceConfig(name="Grisha", voice_id="Mykyta", description="Male voice for Visor"),
 }
-
 
 class AgentVoice:
     """TTS wrapper for agent voices
@@ -408,7 +408,6 @@ class AgentVoice:
             print(f"[TTS] Error playing audio: {e}", file=sys.stderr)
             return False
 
-
 class VoiceManager:
     """Centralized TTS manager for all agents"""
 
@@ -425,7 +424,6 @@ class VoiceManager:
         self.last_speak_time = 0.0
 
         # Concurrency control
-        import asyncio
 
         self._lock = asyncio.Lock()
         self._stop_event = asyncio.Event()
@@ -472,10 +470,7 @@ class VoiceManager:
 
         try:
             print("[TTS] Loading ukrainian-tts and Stanza resources...", file=sys.stderr)
-            import os
             from contextlib import contextmanager
-
-            from ukrainian_tts.tts import TTS as UkrainianTTS
 
             @contextmanager
             def tmp_cwd(path):
@@ -498,7 +493,6 @@ class VoiceManager:
     async def _get_translator(self):
         """Lazy load a small/fast model for translation defense."""
         if self._translator_llm is None:
-            import sys
 
             from ..config import PROJECT_ROOT
 
@@ -633,8 +627,6 @@ Ukrainian:"""
                 print(f"[TTS] Unknown agent: {agent_id}", file=sys.stderr)
                 return None
 
-            from ukrainian_tts.tts import Voices
-
             agent_conf = AGENT_VOICES[agent_id]
             voice_enum = getattr(Voices, agent_conf.voice_id).value
 
@@ -650,7 +642,6 @@ Ukrainian:"""
 
     def _chunk_text_for_tts(self, text: str) -> list[str]:
         """Split text into manageable chunks for TTS engine."""
-        import re
 
         # Split by punctuation
         raw_chunks = re.split(r"([.!?]+(?:\s+|$))", text)

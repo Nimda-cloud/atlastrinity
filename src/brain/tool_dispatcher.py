@@ -7,7 +7,7 @@ from typing import Any, cast
 from .config import CONFIG_ROOT, PROJECT_ROOT
 from .config_loader import config
 from .logger import logger
-from .mcp_registry import get_server_for_tool, get_tool_schema
+from .mcp_registry import SERVER_CATALOG, TOOL_SCHEMAS, get_server_for_tool, get_tool_schema
 from .state_manager import state_manager
 
 
@@ -763,7 +763,6 @@ class ToolDispatcher:
         Returns:
             (is_valid: bool, error_message: str)
         """
-        from .mcp_registry import SERVER_CATALOG, TOOL_SCHEMAS
 
         # Get server capabilities and key tools
         server_info = SERVER_CATALOG.get(server)
