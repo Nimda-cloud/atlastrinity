@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T18:03:47.633177 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_factory_connection.py, scripts/test_windsurf_free_models.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T18:03:11.460528 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/base_agent.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

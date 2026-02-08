@@ -16,7 +16,6 @@ Environment variables:
 import os
 import sys
 import time
-from typing import Optional, Tuple
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -45,7 +44,7 @@ Sum: [sum]
 """
 
 
-def test_model(model_name: str, mode: Optional[str] = None) -> Tuple[bool, str]:
+def test_model(model_name: str, mode: str | None = None) -> tuple[bool, str]:
     """Test a single model with the given mode."""
     print(f"\n{'='*80}")
     print(f"Testing model: {model_name}" + (f" (mode: {mode})" if mode else ""))
