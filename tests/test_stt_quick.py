@@ -20,5 +20,6 @@ async def main():
 
     print("Verification SUCCESS: Faster-Whisper engine is working.")
 
+
 if __name__ == "__main__":
     asyncio.run(main())

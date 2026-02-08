@@ -41,6 +41,7 @@ def check_mps_availability():
     print("   Ви НЕ на Apple Silicon Mac, або PyTorch застарілий")
     return False
 
+
 def test_whisper_device(device_name: str):
     """Тестує Whisper на вказаному device"""
     print(f"\n{'=' * 60}")
@@ -92,6 +93,7 @@ def test_whisper_device(device_name: str):
         traceback.print_exc()
 
         pytest.fail(f"Whisper test failed on {device_name}: {e}")
+
 
 def main():
     print("\n" + "=" * 60)
@@ -158,6 +160,7 @@ def main():
         print("       device: 'cpu'")
 
     print(f"\n{'=' * 60}\n")
+
 
 if __name__ == "__main__":
     main()

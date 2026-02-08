@@ -18,6 +18,7 @@ if env_path.exists():
                 os.environ[k] = v
     print("Loaded .env")
 
+
 async def test_final_verification():
     print("--- Starting Final Verification ---")
 
@@ -43,6 +44,7 @@ async def test_final_verification():
             print(f"File content: {f.read()}")
     else:
         print("❌ FAILURE: scripts/final_verify.py was NOT created.")
+
 
 if __name__ == "__main__":
     asyncio.run(test_final_verification())

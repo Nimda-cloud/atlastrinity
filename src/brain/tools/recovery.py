@@ -9,6 +9,7 @@ from src.brain.state_manager import state_manager
 
 RECOVERY_FILE = Path(".recovery_state.json")
 
+
 class RecoveryManager:
     """
     Manages state snapshots for the 'Phoenix Protocol' (Self-Healing Restart).
@@ -95,6 +96,7 @@ class RecoveryManager:
                 logger.info("[RECOVERY] Snapshot cleared.")
             except Exception as e:
                 logger.error(f"[RECOVERY] Failed to clear snapshot: {e}")
+
 
 # Singleton
 recovery_manager = RecoveryManager()

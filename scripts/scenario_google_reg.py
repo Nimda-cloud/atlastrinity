@@ -39,5 +39,6 @@ async def test_google_registration_scenario():
     finally:
         await mcp_manager.cleanup()
 
+
 if __name__ == "__main__":
     asyncio.run(test_google_registration_scenario())

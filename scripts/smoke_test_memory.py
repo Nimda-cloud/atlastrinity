@@ -68,5 +68,6 @@ async def smoke_test():
     else:
         print("❌ Failed to add node to Graph")
 
+
 if __name__ == "__main__":
     asyncio.run(smoke_test())

@@ -79,6 +79,7 @@ async def test_deviation_sync():
     await db_manager.close()
     return True
 
+
 if __name__ == "__main__":
     if asyncio.run(test_deviation_sync()):
         print("\n✅ Behavioral Deviation Sync Test PASSED!")

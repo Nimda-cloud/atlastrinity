@@ -14,6 +14,7 @@ from src.brain.state_manager import state_manager
 # Action registry
 _INTERNAL_ACTIONS: dict[str, Callable] = {}
 
+
 def register_action(name: str):
     """Decorator to register an internal action."""
 
@@ -23,11 +24,14 @@ def register_action(name: str):
 
     return decorator
 
+
 def get_action(name: str) -> Callable | None:
     """Retrieve a registered action by name."""
     return _INTERNAL_ACTIONS.get(name)
 
+
 # --- Standard Actions ---
+
 
 @register_action("internal.log")
 async def log_action(context: dict, msg: str, level: str = "info"):
@@ -39,12 +43,14 @@ async def log_action(context: dict, msg: str, level: str = "info"):
         log_method = getattr(logger, level.lower(), logger.info)
         log_method(f"[WORKFLOW] {msg}")
 
+
 @register_action("internal.check_services")
 async def check_services_action(context: dict, timeout: int = 60):
     """Ensure all dependent services (Redis, etc.) are running."""
     logger.info("[WORKFLOW] Checking services...")
     await ensure_all_services()
     logger.info("[WORKFLOW] Services checked.")
+
 
 @register_action("internal.state_init")
 async def state_init_action(context: dict, reset: bool = False):
@@ -60,6 +66,7 @@ async def state_init_action(context: dict, reset: bool = False):
             pass
     logger.info("[WORKFLOW] State initialized.")
 
+
 @register_action("internal.db_init")
 async def db_init_action(context: dict):
     """Initialize database connection."""
@@ -67,6 +74,7 @@ async def db_init_action(context: dict):
     if db_manager:
         await db_manager.initialize()
     logger.info("[WORKFLOW] Database initialized.")
+
 
 @register_action("internal.memory_warmup")
 async def memory_warmup_action(context: dict, async_warmup: bool = True):
@@ -76,6 +84,7 @@ async def memory_warmup_action(context: dict, async_warmup: bool = True):
     if orchestrator:
         await orchestrator.warmup(async_warmup=async_warmup)
     logger.info("[WORKFLOW] Warmup triggered.")
+
 
 @register_action("internal.analyze_error")
 async def analyze_error_action(context: dict):
@@ -92,6 +101,7 @@ async def analyze_error_action(context: dict):
     logger.info(f"[WORKFLOW] Error analysis complete: {analysis}")
     return analysis
 
+
 @register_action("internal.apply_fix")
 async def apply_fix_action(context: dict, fix_id: str):
     """Apply a corrective action based on fix_id."""
@@ -99,6 +109,7 @@ async def apply_fix_action(context: dict, fix_id: str):
     # Mock implementation of applying a fix
     await asyncio.sleep(1)
     logger.info(f"[WORKFLOW] Fix '{fix_id}' applied.")
+
 
 @register_action("internal.escalate")
 async def escalate_action(context: dict, target: str = "user"):

@@ -114,5 +114,6 @@ async def verify_ingestion_pipeline():
 
     print("--- Verification Complete ---")
 
+
 if __name__ == "__main__":
     asyncio.run(verify_ingestion_pipeline())

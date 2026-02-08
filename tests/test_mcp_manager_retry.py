@@ -22,6 +22,7 @@ async def test_restart_retry_success(monkeypatch):
     assert res is True
     assert calls["n"] == 3
 
+
 @pytest.mark.asyncio
 async def test_restart_retry_fail(monkeypatch):
     manager = MCPManager()

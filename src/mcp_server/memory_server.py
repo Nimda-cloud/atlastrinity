@@ -1,14 +1,19 @@
 import sys
+from pathlib import Path
 from typing import Any, cast
 
+import pandas as pd
 from mcp.server import FastMCP
+from sqlalchemy import select, text
 
 from src.brain.db.manager import db_manager
+from src.brain.db.schema import KGNode
 from src.brain.knowledge_graph import knowledge_graph
 from src.brain.logger import logger
 from src.brain.memory import long_term_memory
 
 server = FastMCP("memory")
+
 
 def _get_id(name: str) -> str:
     """Standardize entity ID format"""
@@ -16,6 +21,7 @@ def _get_id(name: str) -> str:
     if name.startswith("entity:"):
         return name
     return f"entity:{name}"
+
 
 def _normalize_entity(ent: dict[str, Any]) -> dict[str, Any]:
     name = str(ent.get("name", "")).strip()
@@ -25,6 +31,7 @@ def _normalize_entity(ent: dict[str, Any]) -> dict[str, Any]:
         observations = [str(observations)]
     observations = [str(o) for o in observations if str(o).strip()]
     return {"name": name, "entityType": entity_type, "observations": observations}
+
 
 @server.tool()
 async def create_entities(
@@ -75,6 +82,7 @@ async def create_entities(
 
     return {"success": True, "created": created, "backend": "sqlite+chromadb"}
 
+
 @server.tool()
 async def batch_add_nodes(nodes: list[dict[str, Any]], namespace: str = "global") -> dict[str, Any]:
     """Optimized batch insertion of multiple nodes into the Knowledge Graph.
@@ -86,6 +94,7 @@ async def batch_add_nodes(nodes: list[dict[str, Any]], namespace: str = "global"
     """
     await db_manager.initialize()
     return await knowledge_graph.batch_add_nodes(nodes, namespace=namespace)
+
 
 @server.tool()
 async def bulk_ingest_table(
@@ -160,6 +169,7 @@ async def bulk_ingest_table(
     except Exception as e:
         return {"error": str(e)}
 
+
 @server.tool()
 async def add_observations(
     name: str,
@@ -215,6 +225,7 @@ async def add_observations(
 
     return {"success": True, "name": name, "observations_count": len(merged)}
 
+
 @server.tool()
 async def get_entity(name: str) -> dict[str, Any]:
     """Retrieve full details of a specific entity."""
@@ -240,6 +251,7 @@ async def get_entity(name: str) -> dict[str, Any]:
     finally:
         await session.close()
 
+
 @server.tool()
 async def list_entities() -> dict[str, Any]:
     """List all entity names in the knowledge graph."""
@@ -254,6 +266,7 @@ async def list_entities() -> dict[str, Any]:
         await session.close()
 
     return {"success": True, "names": sorted(names), "count": len(names)}
+
 
 @server.tool()
 async def search(query: str, limit: int = 10, namespace: str | None = None) -> dict[str, Any]:
@@ -282,6 +295,7 @@ async def search(query: str, limit: int = 10, namespace: str | None = None) -> d
         "count": len(results),
         "method": "sql_fallback",
     }
+
 
 def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[dict[str, Any]]:
     """Helper for semantic search via ChromaDB."""
@@ -321,6 +335,7 @@ def _perform_semantic_search(q: str, lim: int, namespace: str | None) -> list[di
                 )
     return formatted
 
+
 async def _perform_sql_fallback_search(
     q: str, lim: int, namespace: str | None
 ) -> list[dict[str, Any]]:
@@ -352,6 +367,7 @@ async def _perform_sql_fallback_search(
         return results
     finally:
         await session.close()
+
 
 @server.tool()
 async def create_relation(
@@ -385,10 +401,12 @@ async def create_relation(
 
     return {"success": True, "source": source, "target": target, "relation": relation}
 
+
 @server.tool()
 async def search_nodes(query: str, limit: int = 10, namespace: str | None = None) -> dict[str, Any]:
     """Alias for search function to maintain compatibility"""
     return cast("dict[str, Any]", await search(query, limit, namespace))
+
 
 @server.tool()
 async def delete_entity(name: str, namespace: str | None = None) -> dict[str, Any]:
@@ -419,6 +437,7 @@ async def delete_entity(name: str, namespace: str | None = None) -> dict[str, An
             logger.warning(f"Failed to delete from vector memory: {e}")
 
     return {"success": True, "deleted": True}
+
 
 @server.tool()
 async def ingest_verified_dataset(
@@ -512,6 +531,7 @@ async def ingest_verified_dataset(
         "message": f"Dataset '{dataset_name}' ingested and semantically linked ({len(links)} links) in {namespace}.",
     }
 
+
 @server.tool()
 async def query_db(query: str) -> dict[str, Any]:
     """Execute a raw SQL query against the system database (READ-ONLY).
@@ -550,6 +570,7 @@ async def query_db(query: str) -> dict[str, Any]:
     finally:
         await session.close()
 
+
 @server.tool()
 async def get_db_schema() -> dict[str, Any]:
     """Retrieve the database schema (tables and columns) for technical audits."""
@@ -578,6 +599,7 @@ async def get_db_schema() -> dict[str, Any]:
 
     return {"success": True, "tables": tables}
 
+
 @server.tool()
 async def trace_data_chain(
     start_value: Any,
@@ -605,7 +627,6 @@ async def trace_data_chain(
 
             # A. Fetch dataset metadata
             async with await db_manager.get_session() as session:
-
                 ds_node = await session.get(KGNode, dataset_id)
                 if not ds_node:
                     continue
@@ -662,8 +683,8 @@ async def trace_data_chain(
         "value_searched": start_value,
     }
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     try:
         server.run()
     except (BrokenPipeError, KeyboardInterrupt):

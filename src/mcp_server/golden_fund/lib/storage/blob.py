@@ -14,6 +14,7 @@ from .types import StorageResult
 
 logger = logging.getLogger("golden_fund.storage.blob")
 
+
 class BlobStorage:
     """
     Blob storage adapter (MinIO-style).

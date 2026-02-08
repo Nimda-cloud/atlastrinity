@@ -20,5 +20,6 @@ async def main():
         print(f"[DB] Error: {e}", file=sys.stderr, flush=True)
         sys.exit(1)
 
+
 if __name__ == "__main__":
     asyncio.run(main())

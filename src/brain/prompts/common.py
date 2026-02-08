@@ -34,17 +34,20 @@ __all__ = [
     "get_vibe_documentation",
 ]
 
+
 def get_realm_catalog() -> str:
     """Get current realm catalog, generated dynamically from mcp_registry.
     This replaces the hardcoded DEFAULT_REALM_CATALOG.
     """
     return get_server_catalog_for_prompt(include_key_tools=True)
 
+
 def get_vibe_documentation() -> str:
     """Get Vibe tools documentation from registry.
     This replaces the hardcoded VIBE_TOOLS_DOCUMENTATION.
     """
     return VIBE_DOCUMENTATION
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #                    LEGACY COMPATIBILITY (will be removed in future)

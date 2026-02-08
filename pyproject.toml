@@ -143,10 +143,18 @@ ignore = [
 "scripts/**/*.py" = ["E402", "PLC0415", "F403", "F405", "E722", "E741", "PTH", "T20"]
 "providers/**/*.py" = ["T20"] # Provider debug/status prints
 "example_vibe_prompt_usage.py" = ["E402"]
-"src/mcp_server/**/*.py" = ["PLC0415", "T20"] # Late imports for performance, server status prints
+"src/mcp_server/**/*.py" = ["E402", "PLC0415", "T20"] # Late imports for performance, server status prints
 "src/brain/**/*.py" = ["T20"] # Brain module status/debug prints
+"src/brain/agents/*.py" = ["E402", "T20"] # sys.path setup before imports
+"src/brain/mcp_manager.py" = ["E402", "T20"] # try/except SDK import before other imports
 "src/brain/voice/tts.py" = ["E402", "F401", "T20"] # Special initialization, lazy checks, TTS status prints
 "src/brain/server.py" = ["E402", "F401", "T20"] # Env load before imports, startup prints
+"fix_*.py" = ["T20"] # Fix scripts use print for status output
+"*_test.py" = ["T20"] # Test scripts use print for output
+"cascade_flow_test.py" = ["T20"]
+"direct_windsurf_test.py" = ["T20"]
+"standalone_windsurf_test.py" = ["E402", "T20"]
+"test_cascade_flow.py" = ["E402", "T20"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

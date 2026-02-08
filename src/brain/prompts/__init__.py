@@ -14,6 +14,7 @@ __all__ = [
     "AgentPrompts",
 ]
 
+
 class AgentPrompts:
     """Compatibility wrapper that exposes the same interface while sourcing prompts from modular files"""
 

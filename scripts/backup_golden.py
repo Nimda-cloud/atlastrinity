@@ -15,6 +15,7 @@ GOLDEN_FUND_LIVE = CONFIG_ROOT / "data" / "golden_fund"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 GOLDEN_FUND_BACKUP = PROJECT_ROOT / "backups" / "databases" / "golden_fund"
 
+
 def backup_golden_fund():
     print("--- Golden Fund Backup ---")
 
@@ -54,6 +55,7 @@ def backup_golden_fund():
 
     print(f"🎉 Backup complete at {datetime.now()}")
     return True
+
 
 if __name__ == "__main__":
     success = backup_golden_fund()

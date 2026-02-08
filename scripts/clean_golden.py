@@ -9,6 +9,7 @@ from pathlib import Path
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
 GOLDEN_FUND_LIVE = CONFIG_ROOT / "data" / "golden_fund"
 
+
 def clean_golden_fund():
     print("🧹 Cleaning Golden Fund Data...")
 
@@ -32,6 +33,7 @@ def clean_golden_fund():
             print(f"ℹ️ {target.name} not found.")
 
     return True
+
 
 if __name__ == "__main__":
     clean_golden_fund()

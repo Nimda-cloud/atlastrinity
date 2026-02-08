@@ -44,5 +44,6 @@ def test_stt_blacklist():
     else:
         print(f"STT Blacklist verification FAILED ({success_count}/{len(test_cases)} passed).")
 
+
 if __name__ == "__main__":
     test_stt_blacklist()

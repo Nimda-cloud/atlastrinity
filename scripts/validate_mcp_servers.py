@@ -20,21 +20,27 @@ class Colors:
     BOLD = "\033[1m"
     OKCYAN = "\033[96m"
 
+
 def print_success(msg: str):
     print(f"{Colors.OKGREEN}✓{Colors.ENDC} {msg}")
+
 
 def print_warning(msg: str):
     print(f"{Colors.WARNING}⚠{Colors.ENDC} {msg}")
 
+
 def print_error(msg: str):
     print(f"{Colors.FAIL}✗{Colors.ENDC} {msg}")
+
 
 def print_info(msg: str):
     print(f"{Colors.OKCYAN}ℹ{Colors.ENDC} {msg}")
 
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
 VENV_PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python"
+
 
 def load_mcp_config() -> dict[str, Any]:
     """Завантажує конфігурацію MCP серверів"""
@@ -48,6 +54,7 @@ def load_mcp_config() -> dict[str, Any]:
 
     with open(config_path, encoding="utf-8") as f:
         return json.load(f)
+
 
 def validate_python_server(name: str, config: dict) -> bool:
     """Перевіряє Python MCP сервер"""
@@ -94,6 +101,7 @@ def validate_python_server(name: str, config: dict) -> bool:
     print_success(f"{name}: Python модуль OK ({server_file.name})")
     return True
 
+
 def validate_node_server(name: str, config: dict) -> bool:
     """Перевіряє Node/NPM MCP сервер"""
     command = config.get("command")
@@ -120,6 +128,7 @@ def validate_node_server(name: str, config: dict) -> bool:
     print_success(f"{name}: Node конфігурація OK")
     return True
 
+
 def validate_direct_node_server(name: str, config: dict) -> bool:
     """Перевіряє Node MCP сервер з прямим node command"""
     args = config.get("args", [])
@@ -142,6 +151,7 @@ def validate_direct_node_server(name: str, config: dict) -> bool:
 
     print_success(f"{name}: Node script OK ({script_file.name})")
     return True
+
 
 def validate_swift_server(name: str, config: dict) -> bool:
     """Перевіряє Swift MCP сервер"""
@@ -168,6 +178,7 @@ def validate_swift_server(name: str, config: dict) -> bool:
 
     print_success(f"{name}: Swift binary OK ({binary_path.name})")
     return True
+
 
 def validate_server(name: str, config: dict) -> dict:
     """Валідує окремий MCP сервер"""
@@ -213,6 +224,7 @@ def validate_server(name: str, config: dict) -> dict:
         print_warning(f"{name}: Невідомий тип команди: {command}")
 
     return result
+
 
 def main():
     print(f"\n{Colors.BOLD}=== MCP Servers Validation ==={Colors.ENDC}\n")
@@ -281,6 +293,7 @@ def main():
 
     print_success("\n✓ Всі активні MCP сервери пройшли валідацію!\n")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -11,7 +11,7 @@ from providers.windsurf import WindsurfLLM
 logger = logging.getLogger(Path(__file__).stem)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 logger.addHandler(handler)
 #!/usr/bin/env python3
 """
@@ -21,11 +21,13 @@ Simple test for Windsurf Cascade mode.
 logger = logging.getLogger(Path(__file__).stem)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 logger.addHandler(handler)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Set environment variables for Windsurf
-os.environ["WINDSURF_API_KEY"] = "sk-ws-01-GBW0muKg37rVCHFNsbELDH3nQh3XoscPUzngD-JBg4Y9h1JmnMoV3dKtAee78w6HL_rN_CDf6Cr2uBJjxthKBYLWPctH7g"
+os.environ["WINDSURF_API_KEY"] = (
+    "sk-ws-01-GBW0muKg37rVCHFNsbELDH3nQh3XoscPUzngD-JBg4Y9h1JmnMoV3dKtAee78w6HL_rN_CDf6Cr2uBJjxthKBYLWPctH7g"
+)
 os.environ["WINDSURF_LS_PORT"] = "54336"
 os.environ["WINDSURF_LS_CSRF"] = "da9755d1-18ce-4087-b94c-3cc4e6b67f08"
 os.environ["WINDSURF_MODEL"] = "deepseek-v3"  # Free model
@@ -38,7 +40,7 @@ try:
     # Simple test message
     messages = [
         SystemMessage(content="You are helpful. Answer briefly."),
-        HumanMessage(content="Hello, what is 2+2?")
+        HumanMessage(content="Hello, what is 2+2?"),
     ]
     logger.info("Sending test message...")
     result = llm.invoke(messages)

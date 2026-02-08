@@ -30,5 +30,6 @@ async def check():
             print(f"Result: {row.result}")
             print("-" * 40)
 
+
 if __name__ == "__main__":
     asyncio.run(check())

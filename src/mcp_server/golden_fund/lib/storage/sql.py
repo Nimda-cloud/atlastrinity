@@ -9,6 +9,7 @@ from .types import StorageResult
 
 logger = logging.getLogger("golden_fund.storage.sql")
 
+
 class SQLStorage:
     def __init__(self, db_path: Path | None = None):
         if db_path is None:

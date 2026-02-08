@@ -8,6 +8,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
 class SandboxRunner:
     """
     Executes code in a temporary sandbox environment to verify fixes
@@ -111,6 +112,7 @@ class SandboxRunner:
             return False, "", "Verification Sandbox Timeout (30s)"
         except Exception as e:
             return False, "", str(e)
+
 
 # Singleton for easy import
 sandbox_runner = SandboxRunner(os.getcwd())

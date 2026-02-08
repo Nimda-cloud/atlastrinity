@@ -45,5 +45,6 @@ async def run_autonomous_google_reg():
         await mcp_manager.cleanup()
         print("\n✨ Demo cleanup complete.")
 
+
 if __name__ == "__main__":
     asyncio.run(run_autonomous_google_reg())

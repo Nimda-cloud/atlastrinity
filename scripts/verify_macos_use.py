@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
+
 async def run_mcp_test():
     print("=== TESTING MACOS-USE SWIFT BINARY TOOLS ===")
 
@@ -291,6 +292,7 @@ async def run_mcp_test():
 
     print("\nAll tests completed.")
     process.terminate()
+
 
 if __name__ == "__main__":
     asyncio.run(run_mcp_test())

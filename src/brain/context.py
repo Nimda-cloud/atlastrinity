@@ -5,13 +5,17 @@ Solves the problem of agents using wrong paths or lacking awareness
 of the current working directory and recent operations.
 """
 
+import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
 
+logger = logging.getLogger("brain.context")
+
 # Get the actual user home directory
 ACTUAL_HOME = os.path.expanduser("~")
 GITHUB_ROOT = f"{ACTUAL_HOME}/Documents/GitHub"
+
 
 @dataclass
 class SharedContext:
@@ -127,7 +131,6 @@ class SharedContext:
 
         # If we have a last successful path, use its directory
         if self.last_successful_path:
-
             return os.path.dirname(self.last_successful_path)
 
         # Default to GitHub directory
@@ -272,7 +275,6 @@ class SharedContext:
 
                 logger.info(f"[CONTEXT] max_recursive_depth set to {max_depth} from config")
         except Exception as e:
-
             logger.warning(f"[CONTEXT] Failed to sync max_recursive_depth from config: {e}")
 
     # --- Critical Discoveries API ---
@@ -312,6 +314,7 @@ class SharedContext:
     def clear_discoveries(self) -> None:
         """Clear all discoveries (e.g., when starting a new task)."""
         self.critical_discoveries.clear()
+
 
 # Singleton instance - import this in other modules
 shared_context = SharedContext()

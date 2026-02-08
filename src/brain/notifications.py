@@ -207,5 +207,6 @@ class NotificationManager:
         """Get recent notification history."""
         return self.notification_history[-limit:]
 
+
 # Singleton instance
 notifications = NotificationManager()

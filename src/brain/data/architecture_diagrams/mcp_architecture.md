@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T02:57:07.315065 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, cascade_flow_test.py, direct_windsurf_test.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-08T02:55:17.003733 -->
+<!-- Modified: .secrets.baseline, scripts/setup_dev.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T18:04:24.344174 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_windsurf_free_models.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

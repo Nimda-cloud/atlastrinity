@@ -13,6 +13,7 @@ from src.brain.knowledge_graph import knowledge_graph
 
 server = FastMCP("graph")
 
+
 @server.tool()
 async def get_graph_json(namespace: str | None = None) -> dict[str, Any]:
     """Returns the Knowledge Graph in JSON format.
@@ -23,6 +24,7 @@ async def get_graph_json(namespace: str | None = None) -> dict[str, Any]:
     """
     await db_manager.initialize()
     return await knowledge_graph.get_graph_data(namespace=namespace)
+
 
 @server.tool()
 async def generate_mermaid(node_type: str | None = None, namespace: str | None = None) -> str:
@@ -86,6 +88,7 @@ async def generate_mermaid(node_type: str | None = None, namespace: str | None =
 
     return mermaid
 
+
 @server.tool()
 async def get_node_details(node_id: str) -> dict[str, Any]:
     """Retrieve all attributes of a specific node."""
@@ -109,6 +112,7 @@ async def get_node_details(node_id: str) -> dict[str, Any]:
         }
     finally:
         await session.close()
+
 
 @server.tool()
 async def get_related_nodes(node_id: str) -> dict[str, Any]:
@@ -134,8 +138,8 @@ async def get_related_nodes(node_id: str) -> dict[str, Any]:
     finally:
         await session.close()
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     try:
         server.run()
     except (BrokenPipeError, KeyboardInterrupt):

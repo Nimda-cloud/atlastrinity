@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from .agents.atlas import Atlas
+from .db.manager import db_manager
 from .logger import logger
 from .memory import long_term_memory
 
@@ -197,6 +198,7 @@ class ConsolidationModule:
 
         # Nighttime (3 AM)
         return bool(now.hour == 3 and (now - self.last_consolidation).total_seconds() > 3600)
+
 
 # Singleton instance
 consolidation_module = ConsolidationModule()

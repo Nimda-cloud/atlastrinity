@@ -18,6 +18,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
 sys.path.insert(0, PROJECT_ROOT)  # Ensure src.brain etc works if imported as src.brain
 
+
 class Colors:
     """ANSI color codes for terminal output."""
 
@@ -29,6 +30,7 @@ class Colors:
     BOLD = "\033[1m"
     DIM = "\033[2m"
     ENDC = "\033[0m"
+
 
 async def check_mcp(output_json: bool = False, show_tools: bool = False, check_all: bool = False):
     """Run MCP health checks for all servers."""
@@ -239,6 +241,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
 
         print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.ENDC}\n")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Check MCP server health")
     parser.add_argument("--json", action="store_true", help="Output in JSON format for automation")
@@ -249,6 +252,7 @@ def main():
     args = parser.parse_args()
 
     asyncio.run(check_mcp(output_json=args.json, show_tools=args.tools, check_all=args.all))
+
 
 if __name__ == "__main__":
     main()

@@ -31,6 +31,7 @@ async def test_chat_intelligence():
     analysis = await atlas.analyze_request("Створи файл test.txt на робочому столі")
     print(f"Intent detected: {analysis.get('intent')} (Reason: {analysis.get('reason')})")
 
+
 async def test_persona_intelligence():
     print("\n=== Testing Adaptive Persona Intelligence ===")
     atlas = Atlas()
@@ -87,6 +88,7 @@ async def test_persona_intelligence():
         print("✓ Dynamic Tool test PASSED")
     else:
         print("⚠ Dynamic Tool test FAILED (Could not use dynamic tools)")
+
 
 if __name__ == "__main__":
     asyncio.run(test_chat_intelligence())

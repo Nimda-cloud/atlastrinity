@@ -58,5 +58,6 @@ class TestSecretFilter(unittest.TestCase):
         self.assertNotIn("Dima@1203", record.msg)
         self.assertIn("[MASKED]", record.msg)
 
+
 if __name__ == "__main__":
     unittest.main()

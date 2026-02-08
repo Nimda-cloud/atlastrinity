@@ -19,6 +19,7 @@ async def fake_stdio_client(server_params):
         # nothing special
         pass
 
+
 class FakeClientSession:
     def __init__(self, read, write):
         self.read = read
@@ -38,6 +39,7 @@ class FakeClientSession:
 
     async def list_tools(self):
         return SimpleNamespace(tools=["a", "b"])
+
 
 @pytest.mark.asyncio
 async def test_connect_and_cleanup(monkeypatch):

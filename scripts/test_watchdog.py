@@ -14,5 +14,6 @@ async def test():
     status = watchdog.get_status()
     print(json.dumps(status, indent=2))
 
+
 if __name__ == "__main__":
     asyncio.run(test())

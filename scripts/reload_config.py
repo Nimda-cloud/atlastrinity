@@ -57,5 +57,6 @@ def reload_atlastrinity_config():
     print("🎉 Configuration reload completed!")
     return True
 
+
 if __name__ == "__main__":
     reload_atlastrinity_config()

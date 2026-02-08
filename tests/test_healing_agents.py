@@ -23,6 +23,7 @@ async def test_grisha_audit():
     assert "audit_verdict" in result
     print("Grisha Audit Test Passed!")
 
+
 async def test_atlas_review():
     print("\nTesting Atlas Agent Healing Review...")
     atlas = Atlas()
@@ -39,6 +40,7 @@ async def test_atlas_review():
     print(f"Reason: {result.get('reason')}")
     assert "decision" in result
     print("Atlas Review Test Passed!")
+
 
 if __name__ == "__main__":
     asyncio.run(test_grisha_audit())

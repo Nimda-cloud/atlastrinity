@@ -6,6 +6,7 @@ project_root = Path(__file__).resolve().parents[1]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+
 async def test_servers():
     import logging
 
@@ -50,6 +51,7 @@ async def test_servers():
     else:
         print("\nSome servers failed. Check logs for details.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(test_servers())

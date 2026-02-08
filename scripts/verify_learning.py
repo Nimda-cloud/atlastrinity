@@ -56,5 +56,6 @@ async def test_learning_and_vibe():
     finally:
         await mcp_manager.cleanup()
 
+
 if __name__ == "__main__":
     asyncio.run(test_learning_and_vibe())

@@ -29,5 +29,6 @@ class TestErrorLoop(unittest.TestCase):
         self.assertEqual(strategy_4.action, "ASK_USER")
         print("SUCCESS: Loop break verified.")
 
+
 if __name__ == "__main__":
     unittest.main()

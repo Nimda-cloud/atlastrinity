@@ -5,7 +5,10 @@ LangGraph-based state machine that coordinates Agents (Atlas, Tetyana, Grisha)
 import ast
 import asyncio
 import json
+import os
+import re
 import sys
+import time
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
@@ -13,6 +16,7 @@ from typing import Annotated, Any, TypedDict, cast
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage  # type: ignore
 from langgraph.graph import END, StateGraph
+from sqlalchemy import select, update
 
 try:
     from langgraph.graph.message import add_messages as _add_messages
@@ -24,9 +28,10 @@ except ImportError:
     def add_messages(left: Any, right: Any) -> Any:
         return left + right
 
+
 from src.brain.agents import Atlas, Grisha, Tetyana
 from src.brain.agents.tetyana import StepResult
-from src.brain.behavior_engine import workflow_engine
+from src.brain.behavior_engine import behavior_engine, workflow_engine
 from src.brain.config import IS_MACOS, PLATFORM_NAME
 from src.brain.config_loader import config
 from src.brain.context import shared_context
@@ -44,6 +49,7 @@ from src.brain.knowledge_graph import knowledge_graph
 from src.brain.logger import logger
 from src.brain.map_state import map_state_manager
 from src.brain.mcp_manager import mcp_manager
+from src.brain.memory import long_term_memory
 from src.brain.message_bus import AgentMsg, MessageType, message_bus
 from src.brain.metrics import metrics_collector
 from src.brain.navigation.tour_driver import tour_driver
@@ -63,6 +69,7 @@ class SystemState(Enum):
     ERROR = "ERROR"
     CHAT = "CHAT"
 
+
 class TrinityState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     system_state: str
@@ -74,6 +81,7 @@ class TrinityState(TypedDict):
     db_session_id: str | None
     db_task_id: str | None
     _theme: str | None
+
 
 class Trinity:
     # -------------------------------------------------------------------------
@@ -829,7 +837,6 @@ class Trinity:
     async def _verify_db_ids(self):
         """Verify that restored DB IDs exist. If not, clear them."""
         try:
-
             if not db_manager or not getattr(db_manager, "available", False):
                 return
         except (ImportError, NameError):
@@ -839,7 +846,6 @@ class Trinity:
         task_id_str = self.state.get("db_task_id")
 
         async with await db_manager.get_session() as db_sess:
-
             if session_id_str and isinstance(session_id_str, str):
                 try:
                     session_id = uuid.UUID(session_id_str)
@@ -1078,7 +1084,6 @@ class Trinity:
     async def _create_db_task(self, user_request, plan):
         """Create DB task and knowledge graph node."""
         try:
-
             if not (
                 db_manager
                 and getattr(db_manager, "available", False)
@@ -1131,7 +1136,6 @@ class Trinity:
 
         # Language Guard: Detect English input while TTS is in Ukrainian
         if config.get("voice.tts.interaction_language_guard", False):
-
             latin_chars = len(re.findall(r"[a-zA-Z]", user_request))
             total_chars = len(user_request.strip())
             if total_chars > 5 and (latin_chars / total_chars) > 0.3:
@@ -1142,7 +1146,6 @@ class Trinity:
                 )
 
         try:
-
             if (
                 state_manager
                 and getattr(state_manager, "available", False)
@@ -1190,7 +1193,6 @@ class Trinity:
 
         # DB Session creation
         try:
-
             if (
                 db_manager
                 and getattr(db_manager, "available", False)
@@ -1432,7 +1434,6 @@ class Trinity:
     async def _notify_task_finished(self, session_id):
         """Publish task finish event."""
         try:
-
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.publish_event(
                     "tasks",
@@ -1465,7 +1466,6 @@ class Trinity:
 
             # A. Store in Vector Memory
             try:
-
                 if long_term_memory and getattr(long_term_memory, "available", False):
                     long_term_memory.remember_conversation(
                         session_id=session_id,
@@ -1477,7 +1477,6 @@ class Trinity:
 
             # B. Store in Structured DB
             try:
-
                 if db_manager and getattr(db_manager, "available", False):
                     async with await db_manager.get_session() as db_sess:
                         new_summary = DBConvSummary(
@@ -1767,7 +1766,6 @@ class Trinity:
             return
 
         try:
-
             diagram_result = await mcp_manager.call_tool(
                 "devtools",
                 "devtools_update_architecture_diagrams",
@@ -1914,7 +1912,6 @@ class Trinity:
         """Pop the goal from the shared context upon leaving a recursive level."""
         if goal_pushed:
             try:
-
                 completed_goal = shared_context.pop_goal()
                 logger.info(
                     f"[ORCHESTRATOR] ✅ Completed recursive level {depth}: {completed_goal}"
@@ -2024,7 +2021,6 @@ class Trinity:
         """Handle RESTART strategy by saving state and execv."""
         await self._log(f"CRITICAL: {strategy.reason}. Restarting...", "system", type="error")
         try:
-
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.save_session(self.current_session_id, self.state)
                 if redis_client := getattr(state_manager, "redis_client", None):
@@ -2210,7 +2206,6 @@ class Trinity:
     def _update_current_step_id(self, step_idx: int) -> None:
         """Update current step progress in shared context."""
         try:
-
             shared_context.current_step_id = step_idx
         except (ImportError, NameError, AttributeError):
             pass
@@ -2371,7 +2366,6 @@ class Trinity:
             await self._speak("tetyana", msg)
 
         try:
-
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.publish_event(
                     "steps",
@@ -2390,7 +2384,6 @@ class Trinity:
         db_step_id = None
         self.state["db_step_id"] = None
         try:
-
             if (
                 db_manager
                 and getattr(db_manager, "available", False)
@@ -2458,7 +2451,6 @@ class Trinity:
     async def _handle_imminent_restart(self) -> None:
         """Save session if a restart is pending."""
         try:
-
             if state_manager and getattr(state_manager, "available", False):
                 restart_key = state_manager._key("restart_pending")
                 try:
@@ -2539,7 +2531,6 @@ class Trinity:
     ) -> None:
         """Log behavioral learning for approved deviations."""
         try:
-
             if long_term_memory and getattr(long_term_memory, "available", False):
                 evaluation = result.deviation_info or {}
                 reason_text = str(evaluation.get("reason", "Unknown"))
@@ -2610,7 +2601,6 @@ class Trinity:
                 messages.append(HumanMessage(content=cast("Any", user_response)))
                 self.state["messages"] = messages
             try:
-
                 if state_manager and getattr(state_manager, "available", False):
                     await state_manager.save_session("current_session", self.state)
             except (ImportError, NameError):
@@ -2682,7 +2672,6 @@ class Trinity:
     async def _log_tool_execution_db(self, result: StepResult, db_step_id: str | None) -> None:
         """Log tool execution to DB for Grisha's audit."""
         try:
-
             if db_manager and getattr(db_manager, "available", False) and db_step_id:
                 async with await db_manager.get_session() as db_sess:
                     tool_call_data = result.tool_call or {}
@@ -2785,12 +2774,10 @@ class Trinity:
     ) -> None:
         """Update step status in the database."""
         try:
-
             if db_manager and getattr(db_manager, "available", False) and db_step_id:
                 try:
                     duration_ms = int((asyncio.get_event_loop().time() - step_start_time) * 1000)
                     async with await db_manager.get_session() as db_sess:
-
                         await db_sess.execute(
                             update(DBStep)
                             .where(DBStep.id == db_step_id)
@@ -2897,7 +2884,6 @@ class Trinity:
 
         # 1. Vector Memory
         try:
-
             if long_term_memory and getattr(long_term_memory, "available", False):
                 long_term_memory.remember_behavioral_change(
                     original_intent=str(step.get("action") or "Unknown"),
@@ -2969,7 +2955,6 @@ class Trinity:
 
         # Publish finished event
         try:
-
             if state_manager and getattr(state_manager, "available", False):
                 await state_manager.publish_event(
                     "steps",
@@ -3143,12 +3128,10 @@ class Trinity:
         """Clean shutdown of system components"""
         logger.info("[ORCHESTRATOR] Shutting down...")
         try:
-
             await mcp_manager.shutdown()
         except Exception:
             pass
         try:
-
             await db_manager.close()
         except Exception:
             pass
@@ -3161,7 +3144,6 @@ class Trinity:
     async def _update_knowledge_graph(self, step_id: str, result: StepResult):
         """Background task to sync execution results to Knowledge Graph"""
         try:
-
             if knowledge_graph:
                 await knowledge_graph.add_node(
                     node_type="STEP_EXECUTION",
@@ -3243,7 +3225,6 @@ IMPORTANT: Extract ONLY concrete values, not descriptions. If nothing critical, 
             # Parse JSON response
             # Handle markdown code blocks
             if "```" in response_text:
-
                 json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", response_text)
                 if json_match:
                     response_text = json_match.group(1)

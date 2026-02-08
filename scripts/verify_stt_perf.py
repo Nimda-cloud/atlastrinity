@@ -20,5 +20,6 @@ async def main():
 
     print("System is ready for STT.")
 
+
 if __name__ == "__main__":
     asyncio.run(main())

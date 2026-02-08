@@ -4,12 +4,14 @@ import os
 
 BINARY_PATH = "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
 
+
 async def read_stream(stream):
     while True:
         line = await stream.readline()
         if not line:
             break
         yield line
+
 
 async def main():
     if not os.path.exists(BINARY_PATH):
@@ -136,6 +138,7 @@ async def main():
         print(f"Error: {e}")
     finally:
         process.terminate()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

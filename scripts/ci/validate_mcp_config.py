@@ -41,6 +41,7 @@ def validate_server_config(name: str, config: dict[str, Any]) -> list[str]:
 
     return errors
 
+
 def validate_mcp_config(config_path: Path) -> bool:
     """Validate the entire MCP configuration file."""
     print(f"🔍 Validating MCP config: {config_path}")
@@ -99,6 +100,7 @@ def validate_mcp_config(config_path: Path) -> bool:
 
     return True
 
+
 def main():
     """Main entry point."""
     # Check both project and global config
@@ -120,6 +122,7 @@ def main():
     else:
         print("❌ MCP configuration validation failed")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

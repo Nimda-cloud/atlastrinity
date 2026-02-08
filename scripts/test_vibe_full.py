@@ -14,6 +14,7 @@ from src.mcp_server import vibe_server
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("test_vibe")
 
+
 class MockContext:
     def __init__(self):
         self.request_id = "test-req"
@@ -25,6 +26,7 @@ class MockContext:
             print(f"[CTX-LOG] {level.upper()}: {message}")
 
         self.log.side_effect = log_side_effect
+
 
 async def run_test():
     logger.info("--- STARTING VIBE MCP FULL TEST ---")
@@ -120,6 +122,7 @@ async def run_test():
     logger.info(f"Answer received: {str(answer)[:100]}...")
 
     logger.info("\n--- TEST COMPLETE ---")
+
 
 if __name__ == "__main__":
     asyncio.run(run_test())

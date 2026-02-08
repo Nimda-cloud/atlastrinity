@@ -55,6 +55,7 @@ from pathlib import Path
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 
+
 class C:
     BOLD = "\033[1m"
     DIM = "\033[2m"
@@ -70,6 +71,7 @@ class C:
     BG_GREEN = "\033[42m"
     BG_BLUE = "\033[44m"
     BG_MAGENTA = "\033[45m"
+
 
 # ─── Known Endpoints ─────────────────────────────────────────────────────────
 
@@ -143,6 +145,7 @@ KNOWN_ENDPOINTS: dict[str, dict[str, str]] = {
 ROLE_NAMES = {0: "SYSTEM", 1: "USER", 2: "ASSISTANT"}
 
 # ─── Connect-RPC Frame Decoder ──────────────────────────────────────────────
+
 
 def decode_connect_rpc_frames(data: bytes) -> list[dict]:
     """Decode Connect-RPC streaming envelope frames.
@@ -238,6 +241,7 @@ def decode_connect_rpc_frames(data: bytes) -> list[dict]:
 
     return frames
 
+
 def extract_chat_content(frames: list[dict]) -> dict:
     """Extract human-readable chat content from decoded frames.
 
@@ -325,13 +329,17 @@ def extract_chat_content(frames: list[dict]) -> dict:
 
     return result
 
+
 # ─── Pretty Printer ──────────────────────────────────────────────────────────
+
 
 def format_timestamp() -> str:
     return datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
+
 def print_separator(char: str = "─", width: int = 90) -> None:
     print(f"{C.DIM}{char * width}{C.RESET}")
+
 
 def print_request_header(method: str, path: str, req_num: int, content_type: str = "") -> None:
     ts = format_timestamp()
@@ -352,6 +360,7 @@ def print_request_header(method: str, path: str, req_num: int, content_type: str
     print(f"  {C.DIM}{method} {path}{C.RESET}")
     if content_type:
         print(f"  {C.DIM}Content-Type: {content_type}{C.RESET}")
+
 
 def print_request_body(frames: list[dict], chat: dict) -> None:
     """Print decoded request body."""
@@ -387,6 +396,7 @@ def print_request_body(frames: list[dict], chat: dict) -> None:
                 if len(compact) > 200:
                     compact = compact[:200] + "..."
                 print(f"  {C.DIM}Frame[{frame['index']}]: {compact}{C.RESET}")
+
 
 def print_response_body(
     frames: list[dict], chat: dict, status_code: int, elapsed_ms: float
@@ -428,7 +438,9 @@ def print_response_body(
                     compact = compact[:300] + "..."
                 print(f"  {C.DIM}Frame[{frame['index']}]: {compact}{C.RESET}")
 
+
 # ─── Dump Writer ─────────────────────────────────────────────────────────────
+
 
 class DumpWriter:
     """Writes intercepted traffic to NDJSON file for later analysis."""
@@ -498,6 +510,7 @@ class DumpWriter:
             with open(self.filepath, "a") as f:
                 f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
 
+
 def _sanitize_frames_for_dump(frames: list[dict]) -> list[dict]:
     """Prepare frames for JSON serialization (remove non-serializable data)."""
     clean = []
@@ -507,7 +520,9 @@ def _sanitize_frames_for_dump(frames: list[dict]) -> list[dict]:
         clean.append(cf)
     return clean
 
+
 # ─── Language Server Detection ───────────────────────────────────────────────
+
 
 def detect_language_server() -> tuple[int, str]:
     """Detect running Windsurf language server port and CSRF token."""
@@ -555,7 +570,9 @@ def detect_language_server() -> tuple[int, str]:
         pass
     return 0, ""
 
+
 # ─── Sniffer Proxy Handler ──────────────────────────────────────────────────
+
 
 class SnifferProxyHandler(http.server.BaseHTTPRequestHandler):
     """Transparent proxy that logs all traffic between IDE and Language Server."""
@@ -689,7 +706,9 @@ class SnifferProxyHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(resp_body)
 
+
 # ─── Main ────────────────────────────────────────────────────────────────────
+
 
 def run_sniffer(
     listen_port: int = 18080,
@@ -799,6 +818,7 @@ def run_sniffer(
 
     server.serve_forever()
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Windsurf Traffic Sniffer — passive interceptor for IDE ↔ LS traffic",
@@ -874,6 +894,7 @@ Examples:
         filter_heartbeat=not args.no_filter,
         verbose=args.verbose,
     )
+
 
 if __name__ == "__main__":
     main()

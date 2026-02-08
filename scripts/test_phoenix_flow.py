@@ -42,5 +42,6 @@ async def test_phoenix():
     except Exception as e:
         print(f"❌ Analysis setup failed: {e}")
 
+
 if __name__ == "__main__":
     asyncio.run(test_phoenix())

@@ -104,6 +104,7 @@ LIMIT 50
     print(f"✅ SQL patch created: {patch_file}")
     return patch_file
 
+
 def test_fixed_query():
     """Test the fixed SQL query"""
 
@@ -163,6 +164,7 @@ def test_fixed_query():
     except Exception as e:
         print(f"❌ Fixed query failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     create_vibe_check_db_patch()

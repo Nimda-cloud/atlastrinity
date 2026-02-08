@@ -62,5 +62,6 @@ def fix_vibe_check_query():
         print(f"❌ Query failed: {e}")
         return None
 
+
 if __name__ == "__main__":
     fix_vibe_check_query()

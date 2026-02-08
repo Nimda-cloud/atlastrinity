@@ -56,6 +56,7 @@ def generate_architecture_diagram(project_path: Path, project_analysis: dict[str
 **Type:** {project_type}
 """
 
+
 def _generate_python_diagram(project_name: str, analysis: dict[str, Any]) -> str:
     """Generate diagram for Python projects."""
     entry_points = analysis.get("entry_points", ["main.py"])
@@ -92,6 +93,7 @@ flowchart TD
     style End fill:#e1ffe1
 ```"""
 
+
 def _generate_nodejs_diagram(project_name: str, analysis: dict[str, Any]) -> str:
     """Generate diagram for Node.js projects."""
     entry_points = analysis.get("entry_points", ["index.js"])
@@ -123,6 +125,7 @@ flowchart LR
     style Routes fill:#ffe1e1
 ```"""
 
+
 def _generate_rust_diagram(project_name: str, analysis: dict[str, Any]) -> str:
     """Generate diagram for Rust projects."""
     components = analysis.get("components", ["Core"])
@@ -145,6 +148,7 @@ flowchart TD
     style Core fill:#ffe1e1
 ```"""
 
+
 def _generate_go_diagram(project_name: str, analysis: dict[str, Any]) -> str:
     """Generate diagram for Go projects."""
     components = analysis.get("components", ["Main"])
@@ -165,6 +169,7 @@ flowchart TD
     
     style Router fill:#e1f5ff
 ```"""
+
 
 def _generate_generic_diagram(project_name: str, analysis: dict[str, Any]) -> str:
     """Generate generic diagram for unknown project types."""
@@ -189,6 +194,7 @@ flowchart TD
     style Init fill:#e1f5ff
     style Core fill:#ffe1e1
 ```"""
+
 
 def _generate_components_list(analysis: dict[str, Any]) -> str:
     """Generate markdown list of detected components."""

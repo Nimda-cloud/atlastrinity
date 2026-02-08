@@ -37,6 +37,7 @@ def get_provider_name() -> str:
 
     return "copilot"
 
+
 def create_llm(
     model_name: str | None = None,
     vision_model_name: str | None = None,

@@ -20,6 +20,7 @@ REQUIRED_SERVICES = [
     "addressvalidation.googleapis.com",  # Added for additional verification/autocomplete
 ]
 
+
 class Colors:
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -30,17 +31,22 @@ class Colors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
 
+
 def print_step(msg):
     print(f"{Colors.BOLD}{Colors.OKBLUE}[GCP]{Colors.ENDC} {msg}")
+
 
 def print_success(msg):
     print(f"{Colors.OKGREEN}✓{Colors.ENDC} {msg}")
 
+
 def print_warning(msg):
     print(f"{Colors.WARNING}⚠{Colors.ENDC} {msg}")
 
+
 def print_error(msg):
     print(f"{Colors.FAIL}✗{Colors.ENDC} {msg}")
+
 
 def run_command(cmd, capture_output=True, check=True):
     try:
@@ -53,6 +59,7 @@ def run_command(cmd, capture_output=True, check=True):
             raise e
         return e
 
+
 def check_gcloud():
     print_step("Checking gcloud installation...")
     if subprocess.run(["which", "gcloud"], capture_output=True).returncode != 0:
@@ -60,6 +67,7 @@ def check_gcloud():
         print("Install link: https://cloud.google.com/sdk/docs/install")
         sys.exit(1)
     print_success("gcloud found")
+
 
 def check_auth():
     print_step("Checking Google Cloud authentication...")
@@ -78,6 +86,7 @@ def check_auth():
                 run_command(["gcloud", "auth", "login"], capture_output=False)
         except Exception:
             run_command(["gcloud", "auth", "login"], capture_output=False)
+
 
 def get_or_create_project():
     print_step("Managing GCP Project...")
@@ -119,6 +128,7 @@ def get_or_create_project():
         print_error("Invalid selection")
         sys.exit(1)
 
+
 def create_project():
     suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
     project_id = f"atlastrinity-maps-{suffix}"
@@ -137,6 +147,7 @@ def create_project():
     input("\nPress Enter after you have linked a billing account to continue setup...")
 
     return project_id
+
 
 def check_billing(project_id):
     """Перевірка прив'язки Білінгу до проекту"""
@@ -160,6 +171,7 @@ def check_billing(project_id):
         print_warning(f"Could not verify billing status: {e}")
         return True  # Continue anyway
 
+
 def enable_apis(project_id):
     print_step("Verifying & Enabling required Google Maps APIs...")
 
@@ -176,6 +188,7 @@ def enable_apis(project_id):
             print(f"  Enabling {service}...")
             run_command(["gcloud", "services", "enable", service, "--project", project_id])
     print_success("All required APIs enabled")
+
 
 def ensure_key_unrestricted(project_id, key_name):
     """Знімає обмеження з ключа для уникнення ApiTargetBlockedMapError"""
@@ -199,6 +212,7 @@ def ensure_key_unrestricted(project_id, key_name):
         print_success("API Key restrictions cleared (Full access enabled)")
     except Exception as e:
         print_warning(f"Could not clear restrictions automatically: {e}")
+
 
 def get_or_create_api_key(project_id):
     print_step("Managing API Key...")
@@ -281,6 +295,7 @@ def get_or_create_api_key(project_id):
         api_key = input("Enter your API Key: ").strip()
         return api_key
 
+
 def update_env(api_key):
     print_step("Updating .env file...")
     if not ENV_FILE.exists():
@@ -320,8 +335,10 @@ def update_env(api_key):
         f.write(content)
     print_success(".env file updated with GOOGLE_MAPS_API_KEY")
 
+
 def print_info(msg):
     print(f"{Colors.OKCYAN}ℹ{Colors.ENDC} {msg}")
+
 
 def main():
     print(f"\n{Colors.BOLD}{Colors.HEADER}=== AtlasTrinity Google Maps Setup ==={Colors.ENDC}\n")
@@ -339,6 +356,7 @@ def main():
         print_success("Setup completed successfully!")
     else:
         print_error("Failed to retrieve API key.")
+
 
 if __name__ == "__main__":
     main()

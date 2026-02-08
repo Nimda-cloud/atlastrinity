@@ -2,6 +2,7 @@
 Bridges Structured Data (SQL/SQLite) and Semantic Data (ChromaDB)
 """
 
+import asyncio
 import json
 import logging
 import uuid
@@ -16,6 +17,7 @@ from .db.schema import KGEdge, KGNode
 from .memory import long_term_memory
 
 logger = logging.getLogger("brain.knowledge_graph")
+
 
 class KnowledgeGraph:
     """Manages the Knowledge Graph.
@@ -360,5 +362,6 @@ class KnowledgeGraph:
         except Exception as e:
             logger.error(f"[GRAPH] Failed to fetch graph data: {e}")
             return {"nodes": [], "edges": [], "error": str(e)}
+
 
 knowledge_graph = KnowledgeGraph()

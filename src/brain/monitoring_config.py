@@ -17,6 +17,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 class MonitoringConfig:
     """
     Monitoring configuration loader and manager.
@@ -118,6 +119,7 @@ class MonitoringConfig:
         except Exception as e:
             logger.error(f"Error saving monitoring config: {e}")
             return False
+
 
 # Global monitoring config instance
 monitoring_config = MonitoringConfig()

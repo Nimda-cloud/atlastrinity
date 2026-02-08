@@ -10,6 +10,7 @@ import requests
 
 logger = logging.getLogger("golden_fund.connectors.ckan")
 
+
 class CKANConnector:
     def __init__(self, base_url: str = "https://data.gov.ua/api/3"):
         self.base_url = base_url.rstrip("/")

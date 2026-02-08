@@ -21,7 +21,9 @@ from pydantic import BaseModel
 # Suppress common third-party warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="espnet2.torch_utils.device_funcs")
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
-warnings.filterwarnings("ignore", message=".*make_pad_mask with a list of lengths is not tracable.*")
+warnings.filterwarnings(
+    "ignore", message=".*make_pad_mask with a list of lengths is not tracable.*"
+)
 
 # Local application imports
 from .config_loader import config
@@ -35,7 +37,8 @@ from .watchdog import watchdog
 # Type hints for static type checking
 if TYPE_CHECKING:
     from .orchestrator import Trinity
-    trinity: 'Trinity'  # Type hint for static type checkers
+
+    trinity: "Trinity"  # Type hint for static type checkers
 else:
     trinity = None  # Will be initialized later
 
@@ -67,19 +70,22 @@ if github_token:
 trinity = Trinity()  # type: ignore
 # stt is now part of trinity orchestrator
 
+
 class TaskRequest(BaseModel):
     request: str
+
 
 class AudioRequest(BaseModel):
     action: str  # 'start_recording', 'stop_recording'
 
+
 class SmartSTTRequest(BaseModel):
     previous_text: str = ""  # Accumulated transcript from previous chunks
+
 
 # State
 current_task = None
 is_recording = False
-
 
 
 @asynccontextmanager
@@ -134,7 +140,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown monitoring
     try:
-
         monitoring_system = get_monitoring_system()
         monitoring_system.log_for_grafana("Server shutdown initiated", level="info")
     except ImportError:
@@ -148,6 +153,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error during trinity shutdown: {e}")
 
+
 app = FastAPI(title="AtlasTrinity Brain", lifespan=lifespan)
 
 # CORS setup for Electron
@@ -157,6 +163,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.post("/api/chat")
 async def chat(
@@ -191,7 +198,6 @@ async def chat(
     # Start monitoring for this request
     start_time = time.time()
     try:
-
         monitoring_system = get_monitoring_system()
         monitoring_system.start_request()
         monitoring_system.log_for_grafana(
@@ -208,7 +214,6 @@ async def chat(
         # Record successful request
         request_duration = time.time() - start_time
         try:
-
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "success", request_duration)
             monitoring_system.log_for_grafana(
@@ -228,7 +233,6 @@ async def chat(
         # Record cancelled request
         request_duration = time.time() - start_time
         try:
-
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "cancelled", request_duration)
             monitoring_system.log_for_grafana(
@@ -248,7 +252,6 @@ async def chat(
         # Record failed request
         request_duration = time.time() - start_time
         try:
-
             monitoring_system = get_monitoring_system()
             monitoring_system.record_request("chat", "error", request_duration)
             monitoring_system.log_for_grafana(
@@ -265,22 +268,22 @@ async def chat(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         try:
-
             monitoring_system = get_monitoring_system()
             monitoring_system.end_request()
         except ImportError:
             pass
+
 
 @app.get("/api/health")
 async def health():
     """Health check for UI"""
     return {"status": "ok", "version": "1.0.1"}
 
+
 @app.get("/api/monitoring/metrics")
 async def get_metrics():
     """Get current monitoring metrics"""
     try:
-
         monitoring_system = get_monitoring_system()
         metrics = monitoring_system.get_metrics_snapshot()
 
@@ -294,21 +297,21 @@ async def get_metrics():
         logger.error(f"Error getting monitoring metrics: {e}")
         return {"status": "error", "message": str(e)}
 
+
 @app.get("/api/monitoring/processes")
 async def get_processes():
     """Get status of all tracked processes from Watchdog."""
     try:
-
         return {"status": "success", "data": watchdog.get_status()}
     except Exception as e:
         logger.error(f"Error getting process status: {e}")
         return {"status": "error", "message": str(e)}
 
+
 @app.get("/api/monitoring/health")
 async def monitoring_health():
     """Check monitoring system health"""
     try:
-
         monitoring_system = get_monitoring_system()
         return {
             "status": "healthy" if monitoring_system.is_healthy() else "unhealthy",
@@ -319,10 +322,12 @@ async def monitoring_health():
     except ImportError:
         return {"status": "disabled", "message": "Monitoring system not available"}
 
+
 @app.post("/api/session/reset")
 async def reset_session():
     """Reset current session"""
     return await trinity.reset_session()
+
 
 @app.get("/api/sessions")
 async def get_sessions():
@@ -360,6 +365,7 @@ async def get_sessions():
 
     return result
 
+
 @app.post("/api/sessions/restore")
 async def restore_session(payload: dict[str, str]):
     """Restore a specific session"""
@@ -367,6 +373,7 @@ async def restore_session(payload: dict[str, str]):
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id required")
     return await trinity.load_session(session_id)
+
 
 @app.get("/api/state")
 async def get_state():
@@ -381,6 +388,7 @@ async def get_state():
         }
 
     return state
+
 
 @app.post("/api/stt")
 async def speech_to_text(audio: UploadFile = File(...)):
@@ -489,6 +497,7 @@ async def speech_to_text(audio: UploadFile = File(...)):
         logger.exception(f"STT error: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 async def _prepare_audio_file(audio: UploadFile) -> tuple[str, str]:
     """Determine extension and save audio temporarily."""
     content_type = audio.content_type or "audio/wav"
@@ -504,6 +513,7 @@ async def _prepare_audio_file(audio: UploadFile) -> tuple[str, str]:
         content = await audio.read()
         temp_file.write(content)
         return temp_file.name, suffix
+
 
 async def _convert_to_wav(temp_file_path: str, suffix: str) -> str:
     """Convert non-WAV audio to WAV using FFmpeg."""
@@ -542,6 +552,7 @@ async def _convert_to_wav(temp_file_path: str, suffix: str) -> str:
         logger.error(f"[STT] FFmpeg error: {e}")
 
     return temp_file_path
+
 
 def _check_echo_and_noise(text: str, confidence: float, previous_text: str) -> bool:
     """Detect if the text is an echo of agent's speech or noise."""
@@ -587,6 +598,7 @@ def _check_echo_and_noise(text: str, confidence: float, previous_text: str) -> b
 
     return False
 
+
 def _handle_barge_in(text: str, confidence: float) -> bool:
     """Check for explicit stop commands and trigger barge-in."""
     trinity_voice = getattr(trinity, "voice", None)
@@ -610,6 +622,7 @@ def _handle_barge_in(text: str, confidence: float) -> bool:
         trinity.stop()
         return True
     return False
+
 
 @app.post("/api/stt/smart")
 async def smart_speech_to_text(
@@ -671,11 +684,13 @@ async def smart_speech_to_text(
             "ignored": True,
         }
 
+
 @app.post("/api/voice/transcribe")
 async def transcribe_audio(file_path: str):
     """Transcribe a wav file"""
     result = await trinity.stt.transcribe_file(file_path)
     return {"text": result.text, "confidence": result.confidence}
+
 
 # =============================================================================
 # Google Maps API Endpoints
@@ -731,6 +746,7 @@ async def maps_search(payload: dict[str, Any]):
     except Exception as e:
         logger.exception(f"Maps search error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/maps/directions")
 async def maps_directions(payload: dict[str, Any]):
@@ -801,6 +817,7 @@ async def maps_directions(payload: dict[str, Any]):
         logger.exception(f"Maps directions error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/api/maps/place-details")
 async def maps_place_details(payload: dict[str, Any]):
     """
@@ -825,6 +842,7 @@ async def maps_place_details(payload: dict[str, Any]):
     except Exception as e:
         logger.exception(f"Maps place details error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/maps/street-view")
 async def maps_street_view(payload: dict[str, Any]):
@@ -860,6 +878,7 @@ async def maps_street_view(payload: dict[str, Any]):
         logger.exception(f"Maps street view error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/api/maps/state")
 async def get_map_state():
     """Get current map state (markers, routes, center, etc.)"""
@@ -868,6 +887,7 @@ async def get_map_state():
     except Exception as e:
         logger.exception(f"Maps state error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/maps/clear")
 async def clear_map():
@@ -878,6 +898,7 @@ async def clear_map():
     except Exception as e:
         logger.exception(f"Maps clear error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 def _categorize_place(types: list[str]) -> str:
     """Categorize a place based on Google Maps types"""
@@ -896,6 +917,7 @@ def _categorize_place(types: list[str]) -> str:
         return "attraction"
     return "custom"
 
+
 # MCP Wrapper
 class WhisperMCPServer:
     def __init__(self):
@@ -910,6 +932,7 @@ class WhisperMCPServer:
     async def record_and_transcribe(self, duration: float = 5.0, language: str | None = None):
         result = await self.stt.record_and_transcribe(duration, language)
         return {"text": result.text, "confidence": result.confidence}
+
 
 if __name__ == "__main__":
     import uvicorn

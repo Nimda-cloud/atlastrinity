@@ -31,6 +31,7 @@ from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
 from src.brain.context import shared_context
 from src.brain.logger import logger
+from src.brain.mcp_manager import mcp_manager
 from src.brain.prompts import AgentPrompts
 from src.brain.prompts.grisha import (
     GRISHA_DEEP_VALIDATION_REASONING,
@@ -60,6 +61,7 @@ class VerificationResult:
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.now()
+
 
 class Grisha(BaseAgent):
     """Grisha - The Visor/Auditor
@@ -1634,7 +1636,6 @@ class Grisha(BaseAgent):
         This serves as the 'single source of truth' for verification.
         """
         try:
-
             # Parse step_id safely
             parsed_seq = self._safe_parse_step_id(step_id)
 
@@ -2306,7 +2307,6 @@ class Grisha(BaseAgent):
     async def _attempt_mcp_screenshot(self, save_dir: str) -> str | None:
         """Attempts to take a screenshot using the 'macos-use' MCP tool."""
         try:
-
             if "macos-use" in mcp_manager.config.get("mcpServers", {}):
                 result = await mcp_manager.call_tool("macos-use", "macos-use_take_screenshot", {})
 

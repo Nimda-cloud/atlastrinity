@@ -57,5 +57,6 @@ async def test_orchestrator_planning():
     else:
         print("FAIL: Orchestrator did NOT reach planning phase.")
 
+
 if __name__ == "__main__":
     asyncio.run(test_orchestrator_planning())

@@ -22,6 +22,7 @@ import src.brain.config
 
 src.brain.config.CONFIG_ROOT = MOCK_CONFIG
 
+
 async def test_restoration_logic():
     print("--- Simulating New Machine Setup ---")
 
@@ -79,6 +80,7 @@ async def test_restoration_logic():
 
     conn.close()
     print("--- Simulation Complete ---")
+
 
 if __name__ == "__main__":
     asyncio.run(test_restoration_logic())

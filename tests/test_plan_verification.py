@@ -31,6 +31,7 @@ def test_grisha_verifies_safe_plan():
 
     asyncio.run(run_test())
 
+
 def test_grisha_rejects_unsafe_plan():
     async def run_test():
         # Setup
@@ -53,6 +54,7 @@ def test_grisha_rejects_unsafe_plan():
         assert len(result.issues) > 0
 
     asyncio.run(run_test())
+
 
 def test_grisha_approves_creator_request():
     async def run_test():

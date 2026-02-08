@@ -29,6 +29,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+from providers.factory import create_llm
+from src.brain.config_loader import config
+
+
 class SimpleMistralLLM:
     def __init__(self, api_key=None, model="mistral-large-latest"):
         self.api_key = api_key or os.getenv("MISTRAL_API_KEY")
@@ -81,10 +85,12 @@ class SimpleMistralLLM:
             r = MockResponse(content)
             return r
 
+
 # Sandbox configuration
 SANDBOX_ROOT = Path("/tmp/atlas_sandbox")
 SANDBOX_HOME = SANDBOX_ROOT / "home"
 SANDBOX_FS = SANDBOX_ROOT / "fs"
+
 
 class Colors:
     """ANSI color codes for terminal output."""
@@ -98,6 +104,7 @@ class Colors:
     BOLD = "\033[1m"
     DIM = "\033[2m"
     ENDC = "\033[0m"
+
 
 def setup_sandbox() -> Path:
     """Create isolated sandbox environment."""
@@ -120,10 +127,12 @@ def setup_sandbox() -> Path:
 
     return SANDBOX_ROOT
 
+
 def cleanup_sandbox():
     """Remove sandbox after testing."""
     if SANDBOX_ROOT.exists():
         shutil.rmtree(SANDBOX_ROOT)
+
 
 def sandbox_path(original_path: str) -> str:
     """Convert original path to sandbox path for safety."""
@@ -141,6 +150,7 @@ def sandbox_path(original_path: str) -> str:
 
     return str(SANDBOX_FS / original_path)
 
+
 def load_mcp_config() -> dict:
     """Load MCP configuration."""
     config_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
@@ -148,6 +158,7 @@ def load_mcp_config() -> dict:
         return {}
     with open(config_path, encoding="utf-8") as f:
         return json.load(f)
+
 
 def run_inspector_cmd(
     server_name: str,
@@ -237,6 +248,7 @@ def run_inspector_cmd(
         return {"error": f"Timeout after {timeout}s"}
     except Exception as e:
         return {"error": str(e)}
+
 
 async def generate_test_scenario(
     server_name: str,
@@ -334,6 +346,7 @@ Generate the test scenario:"""
     except Exception as e:
         return {"error": f"Provider error: {e}"}
 
+
 async def execute_test_step(
     server_name: str,
     step: dict,
@@ -375,6 +388,7 @@ async def execute_test_step(
         "result": result,
         "success": result.get("success", False) and not result.get("error"),
     }
+
 
 async def analyze_test_result(
     step_result: dict,
@@ -431,6 +445,7 @@ Respond with: PASS or FAIL followed by a brief explanation (max 30 words)."""
             "verdict": f"LLM analysis failed: {e}",
         }
 
+
 async def run_scenario(
     server_name: str,
     scenario: dict,
@@ -486,6 +501,7 @@ async def run_scenario(
 
     return results
 
+
 async def auto_fix_failure(
     server_name: str,
     step_result: dict,
@@ -523,6 +539,7 @@ async def auto_fix_failure(
             "attempted": True,
             "error": str(e),
         }
+
 
 async def test_server_full(
     server_name: str,
@@ -613,6 +630,7 @@ async def test_server_full(
 
     return report
 
+
 def print_sandbox_report(reports: list[dict], total_time: float):
     """Print human-readable sandbox test report."""
     print(f"\n{Colors.BOLD}{Colors.MAGENTA}{'=' * 70}{Colors.ENDC}")
@@ -653,6 +671,7 @@ def print_sandbox_report(reports: list[dict], total_time: float):
     print(f"  {Colors.BOLD}Time:{Colors.ENDC} {total_time:.1f}s")
     print(f"  {Colors.BOLD}Sandbox:{Colors.ENDC} {SANDBOX_ROOT}")
     print(f"{Colors.BOLD}{Colors.MAGENTA}{'=' * 70}{Colors.ENDC}\n")
+
 
 async def main_async(args):
     """Async main entry point."""
@@ -745,6 +764,7 @@ async def main_async(args):
 
     return 0
 
+
 def main():
     parser = argparse.ArgumentParser(description="MCP Testing Sandbox - Full Coverage")
     parser.add_argument("--server", type=str, help="Test specific server")
@@ -768,6 +788,7 @@ def main():
     args.chain = max(1, min(5, args.chain))
 
     sys.exit(asyncio.run(main_async(args)))
+
 
 if __name__ == "__main__":
     main()

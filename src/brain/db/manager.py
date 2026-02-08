@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.brain.config import CONFIG_ROOT
@@ -428,5 +429,6 @@ class DatabaseManager:
     async def close(self):
         if self._engine:
             await self._engine.dispose()
+
 
 db_manager = DatabaseManager()

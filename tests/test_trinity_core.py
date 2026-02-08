@@ -112,6 +112,7 @@ class TestAtlasCore:
         result3 = atlas._parse_response("Not JSON at all")
         assert "raw" in result3
 
+
 class TestSharedContext:
     """Test shared context functionality"""
 
@@ -130,6 +131,7 @@ class TestSharedContext:
         context_dict = shared_context.to_dict()
         assert test_path in context_dict["recent_files"]
 
+
 class TestTaskPlan:
     """Test TaskPlan dataclass"""
 
@@ -146,6 +148,7 @@ class TestTaskPlan:
         assert len(plan.steps) == 1
         assert plan.status == "pending"
         assert plan.created_at is not None
+
 
 class TestPerformance:
     """Test performance characteristics"""
@@ -166,6 +169,7 @@ class TestPerformance:
 
         # Should parse 100 times in less than 0.1 seconds
         assert elapsed < 0.1, f"Parsing too slow: {elapsed}s"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

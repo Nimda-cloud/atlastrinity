@@ -3,6 +3,7 @@ Test script for the dataset parser component.
 """
 
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -54,6 +55,7 @@ def test_company_dataset():
     print(f"✗ Company dataset parsing failed: {result['error']}")
     return None
 
+
 def test_director_dataset():
     """Test parsing of director dataset."""
     print("\nTesting director dataset parsing...")
@@ -83,6 +85,7 @@ def test_director_dataset():
     print(f"✗ Director dataset parsing failed: {result['error']}")
     return None
 
+
 def test_auto_detection():
     """Test auto-detection of dataset type."""
     print("\nTesting auto-detection...")
@@ -103,6 +106,7 @@ def test_auto_detection():
                 print(f"✓ {test_file}: Auto-detected as {result['dataset_type']}")
             else:
                 print(f"✗ {test_file}: Failed - {result['error']}")
+
 
 def test_knowledge_graph_logging():
     """Test Knowledge Graph logging functionality."""
@@ -126,6 +130,7 @@ def test_knowledge_graph_logging():
             print(f"✗ Knowledge Graph logging exception: {e!s}")
     else:
         print("✗ Skipping KG test - no successful parsing result")
+
 
 def main():
     """Run all tests."""
@@ -155,6 +160,7 @@ def main():
 
         traceback.print_exc()
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

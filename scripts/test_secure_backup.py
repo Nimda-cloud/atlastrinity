@@ -10,6 +10,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+
 def create_test_database_with_secrets():
     """Create a test SQLite database with secret-like data (placeholders only)"""
     test_db = PROJECT_ROOT / "test_secrets.db"
@@ -50,6 +51,7 @@ def create_test_database_with_secrets():
 
     print(f"✅ Created test database: {test_db}")
     return test_db
+
 
 def test_secure_backup():
     """Test the secure backup functionality"""
@@ -126,6 +128,7 @@ def test_secure_backup():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     success = test_secure_backup()

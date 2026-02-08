@@ -68,5 +68,6 @@ async def benchmark():
 
     print("\n✅ Benchmark Complete!")
 
+
 if __name__ == "__main__":
     asyncio.run(benchmark())

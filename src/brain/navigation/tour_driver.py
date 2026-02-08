@@ -23,6 +23,7 @@ class PrefetchedImage:
     heading: int
     image_path: str
 
+
 class TourDriver:
     """Controls the automated navigation loop with image prefetching."""
 
@@ -400,6 +401,7 @@ class TourDriver:
 
         bearing = math.atan2(y, x)
         return (math.degrees(bearing) + 360) % 360
+
 
 # Global instance
 tour_driver = TourDriver()

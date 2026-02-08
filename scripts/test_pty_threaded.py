@@ -6,6 +6,7 @@ import threading
 VIBE_BINARY = os.path.expanduser("~/.local/bin/vibe")
 VIBE_WORKSPACE = os.path.expanduser("~/.config/atlastrinity/vibe_workspace")
 
+
 def read_master(master_fd, loop, callback):
     """Read from PTY master in a thread."""
     try:
@@ -29,6 +30,7 @@ def read_master(master_fd, loop, callback):
             os.close(master_fd)
         except:
             pass
+
 
 async def run_vibe_pty_threaded():
     prompt = "Create a file called '/tmp/hello_vibe_test.py' with a simple hello world script that prints 'Hello from Vibe MCP!'."
@@ -83,6 +85,7 @@ async def run_vibe_pty_threaded():
     # Wait for thread usually? It ends when master closes (process exit closes slave -> master EOF)
     reader_thread.join(timeout=1.0)
     print(f"Exit code: {process.returncode}")
+
 
 if __name__ == "__main__":
     asyncio.run(run_vibe_pty_threaded())

@@ -51,6 +51,7 @@ _tool_lookup_cache: dict[str, str | None] = {}  # tool_name -> server_name
 _schema_cache_hits: int = 0
 _schema_cache_misses: int = 0
 
+
 def load_registry():
     """Load registry data from JSON and text files."""
     global \
@@ -167,12 +168,14 @@ def load_registry():
     except Exception as e:
         print(f"[Here be Dragons] Error loading MCP registry: {e}", file=sys.stderr)
 
+
 # Load data immediately on import
 load_registry()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #                           UTILITY FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def get_server_catalog_for_prompt(include_key_tools: bool = True) -> str:
     """Generate LLM-readable server catalog for prompts.
@@ -229,6 +232,7 @@ def get_server_catalog_for_prompt(include_key_tools: bool = True) -> str:
 
     return "\n".join(lines)
 
+
 def get_tool_schema(tool_name: str) -> dict[str, Any] | None:
     """Get schema for a specific tool.
     Resolves aliases to their canonical form.
@@ -246,6 +250,7 @@ def get_tool_schema(tool_name: str) -> dict[str, Any] | None:
 
     _schema_cache_misses += 1
     return None
+
 
 def get_server_for_tool(tool_name: str) -> str | None:
     """Get the server name for a tool.
@@ -268,6 +273,7 @@ def get_server_for_tool(tool_name: str) -> str | None:
     _tool_lookup_cache[tool_name] = result
     return result
 
+
 def get_servers_for_task(task_type: str) -> list[str]:
     """Suggest servers based on task type.
     Now delegates to BehaviorEngine for config-driven classification.
@@ -283,9 +289,11 @@ def get_servers_for_task(task_type: str) -> list[str]:
     # Default fallback
     return ["macos-use", "filesystem"]
 
+
 def get_all_tool_names() -> list[str]:
     """Get list of all available tool names (excluding aliases)."""
     return [name for name, schema in TOOL_SCHEMAS.items() if "alias_for" not in schema]
+
 
 def get_tool_names_for_server(server_name: str) -> list[str]:
     """Get all tool names for a specific server."""
@@ -294,6 +302,7 @@ def get_tool_names_for_server(server_name: str) -> list[str]:
         for name, schema in TOOL_SCHEMAS.items()
         if schema.get("server") == server_name and "alias_for" not in schema
     ]
+
 
 def get_registry_stats() -> dict[str, Any]:
     """Get statistics about registry usage and cache performance."""
@@ -310,6 +319,7 @@ def get_registry_stats() -> dict[str, Any]:
         "schemas_loaded": bool(TOOL_SCHEMAS),
         "catalog_loaded": bool(SERVER_CATALOG),
     }
+
 
 def get_protocols_by_names(protocol_names: list[str]) -> dict[str, str]:
     """Return protocol contents for the given protocol names.
@@ -347,6 +357,7 @@ def get_protocols_by_names(protocol_names: list[str]) -> dict[str, str]:
             result[name] = f"Protocol '{name}' not loaded."
     return result
 
+
 def get_protocols_text_for_mode(protocol_names: list[str]) -> str:
     """Return concatenated protocol text for a mode, ready for prompt injection.
 
@@ -366,6 +377,7 @@ def get_protocols_text_for_mode(protocol_names: list[str]) -> str:
             sections.append(content)
     return "\n\n".join(sections)
 
+
 def clear_caches() -> None:
     """Clear all internal caches. Useful for testing or after registry reload."""
     global _schema_cache_hits, _schema_cache_misses  # noqa: PLW0603
@@ -373,6 +385,7 @@ def clear_caches() -> None:
     _tool_lookup_cache.clear()
     _schema_cache_hits = 0
     _schema_cache_misses = 0
+
 
 def validate_tool_call(tool_name: str, arguments: dict[str, Any]) -> tuple[bool, str | None]:
     """Validate if a tool call has all required arguments.

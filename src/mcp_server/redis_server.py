@@ -18,6 +18,7 @@ server = FastMCP("redis")
 # Global Redis Client
 _redis_client: redis.Redis | None = None
 
+
 def get_redis_client() -> redis.Redis:
     global _redis_client
     if _redis_client is None:
@@ -39,6 +40,7 @@ def get_redis_client() -> redis.Redis:
             logger.error(f"[REDIS-MCP] Failed to connect to Redis: {e}")
             raise RuntimeError(f"Could not connect to Redis: {e}")
     return _redis_client
+
 
 @server.tool()
 async def redis_get(key: str) -> dict[str, Any]:
@@ -65,6 +67,7 @@ async def redis_get(key: str) -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @server.tool()
 async def redis_set(key: str, value: Any, ex_seconds: int | None = None) -> dict[str, Any]:
     """Set the value of a key in Redis.
@@ -85,6 +88,7 @@ async def redis_set(key: str, value: Any, ex_seconds: int | None = None) -> dict
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @server.tool()
 async def redis_keys(pattern: str = "*") -> dict[str, Any]:
     """List keys matching a pattern.
@@ -100,6 +104,7 @@ async def redis_keys(pattern: str = "*") -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @server.tool()
 async def redis_delete(key: str) -> dict[str, Any]:
     """Delete a key from Redis.
@@ -114,6 +119,7 @@ async def redis_delete(key: str) -> dict[str, Any]:
         return {"success": True, "key": key, "deleted": bool(deleted)}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 @server.tool()
 async def redis_info() -> dict[str, Any]:
@@ -133,6 +139,7 @@ async def redis_info() -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @server.tool()
 async def redis_ttl(key: str) -> dict[str, Any]:
     """Get the time-to-live (TTL) for a key in seconds.
@@ -149,6 +156,7 @@ async def redis_ttl(key: str) -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @server.tool()
 async def redis_hgetall(key: str) -> dict[str, Any]:
     """Get all fields and values in a hash.
@@ -163,6 +171,7 @@ async def redis_hgetall(key: str) -> dict[str, Any]:
         return {"success": True, "hash": val}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 @server.tool()
 async def redis_hset(key: str, mapping: dict[str, Any]) -> dict[str, Any]:
@@ -179,6 +188,7 @@ async def redis_hset(key: str, mapping: dict[str, Any]) -> dict[str, Any]:
         return {"success": True, "key": key}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 if __name__ == "__main__":
     try:

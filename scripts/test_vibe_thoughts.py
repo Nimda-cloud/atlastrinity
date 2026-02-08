@@ -28,5 +28,6 @@ async def main():
     else:
         print(f"❌ Помилка: {result.get('error')}")
 
+
 if __name__ == "__main__":
     asyncio.run(main())

@@ -9,6 +9,7 @@ from .types import StorageResult
 
 logger = logging.getLogger("golden_fund.storage.search")
 
+
 class SearchStorage:
     """
     Search engine storage adapter (SQLite with FTS5).

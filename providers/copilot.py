@@ -1,16 +1,17 @@
+from __future__ import annotations
+
+import base64
 import json
 import os
 import sys
+from collections.abc import Callable
+from io import BytesIO
 from typing import Any, cast
+
+import httpx
 import requests
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import (
-
-import base64
-from collections.abc import Callable
-from io import BytesIO
-import httpx
-
     AIMessage,
     BaseMessage,
     HumanMessage,
@@ -22,6 +23,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 # Type aliases for better type safety
 ContentItem = str | dict[str, Any]
+
 
 class CopilotLLM(BaseChatModel):
     # Model translation: custom names -> real API model names
@@ -107,7 +109,7 @@ class CopilotLLM(BaseChatModel):
     def _llm_type(self) -> str:
         return "copilot-chat"
 
-    def bind_tools(self, tools: Any, **kwargs: Any) -> "CopilotLLM":
+    def bind_tools(self, tools: Any, **kwargs: Any) -> CopilotLLM:
         # Store tools to describe them in the system prompt and instruct the model
         # to generate JSON tool_calls structure. MacSystemAgent calls CopilotLLM without tools,
         # so its own JSON protocol is not affected.

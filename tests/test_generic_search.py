@@ -9,5 +9,6 @@ async def test_generic():
     result = duckduckgo_search("Україна")
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
+
 if __name__ == "__main__":
     asyncio.run(test_generic())

@@ -35,6 +35,7 @@ def test_auto_detection():
         print("  LS not detected (Windsurf IDE not running?)")
     return port, csrf
 
+
 def test_mode(mode: str):
     """Test a specific mode."""
     print(f"\n=== Mode: {mode} ===")
@@ -58,6 +59,7 @@ def test_mode(mode: str):
         return False
     finally:
         os.environ.pop("WINDSURF_MODE", None)
+
 
 def main():
     print("Windsurf Provider Test")
@@ -91,6 +93,7 @@ def main():
         print("  - Trial tier limits reached")
         print("  - Network connectivity issues")
         print("  Try again later or check: python -m providers.get_windsurf_token --test")
+
 
 if __name__ == "__main__":
     main()

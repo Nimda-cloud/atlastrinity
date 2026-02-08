@@ -75,6 +75,7 @@ async def report(limit_tasks: int = 50, limit_logs: int = 200):
 
     return 0
 
+
 def main():
     try:
         rc = asyncio.run(report())
@@ -82,6 +83,7 @@ def main():
     except KeyboardInterrupt:
         print("Interrupted by user")
         sys.exit(130)
+
 
 if __name__ == "__main__":
     main()

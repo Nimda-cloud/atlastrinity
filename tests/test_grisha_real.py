@@ -70,5 +70,6 @@ async def test_grisha_real():
         if screenshot_path and os.path.exists(screenshot_path):
             os.remove(screenshot_path)
 
+
 if __name__ == "__main__":
     asyncio.run(test_grisha_real())

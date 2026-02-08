@@ -26,6 +26,7 @@ try:
 except ImportError:
     yaml = None
 
+
 def check_yaml_syntax():
     """Check YAML syntax in behavior config"""
     print("🔍 Checking YAML syntax...")
@@ -45,6 +46,7 @@ def check_yaml_syntax():
         return {"status": "error", "message": f"YAML syntax error: {e}"}
     except Exception as e:
         return {"status": "error", "message": f"Error reading YAML: {e}"}
+
 
 def check_mcp_servers():
     """Check MCP server configuration"""
@@ -74,6 +76,7 @@ def check_mcp_servers():
     except Exception as e:
         return {"status": "error", "message": f"Error reading MCP config: {e}"}
 
+
 def check_database():
     """Check database connectivity"""
     print("🔍 Checking database connectivity...")
@@ -97,6 +100,7 @@ def check_database():
     except Exception as e:
         return {"status": "error", "message": f"Database import error: {e}"}
 
+
 def check_python_deps():
     """Check Python dependencies"""
     print("🔍 Checking Python dependencies...")
@@ -117,6 +121,7 @@ def check_python_deps():
         return {"status": "error", "message": f"Missing dependencies: {missing_deps}"}
     return {"status": "ok", "message": "All critical dependencies available"}
 
+
 def check_vibe_server():
     """Check Vibe server status"""
     print("🔍 Checking Vibe server...")
@@ -135,6 +140,7 @@ def check_vibe_server():
     except Exception as e:
         return {"status": "error", "message": f"Vibe server check failed: {e}"}
 
+
 def check_memory_usage():
     """Check system memory usage"""
     print("🔍 Checking system resources...")
@@ -150,6 +156,7 @@ def check_memory_usage():
         return {"status": "warning", "message": "psutil not available - cannot check memory"}
     except Exception as e:
         return {"status": "error", "message": f"Memory check failed: {e}"}
+
 
 def check_recent_errors():
     """Check for recent errors in logs"""
@@ -174,6 +181,7 @@ def check_recent_errors():
         return {"status": "ok", "message": f"Found {error_count} errors in recent logs"}
     except Exception as e:
         return {"status": "error", "message": f"Log check failed: {e}"}
+
 
 def main():
     """Run all health checks"""
@@ -222,6 +230,7 @@ def main():
         return 1
     print("🎉 All systems operational!")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

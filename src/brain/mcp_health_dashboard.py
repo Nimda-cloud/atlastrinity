@@ -29,6 +29,7 @@ class ServerStatus:
     failure_count: int = 0
     description: str = ""
 
+
 @dataclass
 class HealthCheckResult:
     """Result of a complete health check cycle."""
@@ -46,6 +47,7 @@ class HealthCheckResult:
             return 0.0
         return (self.online_count / self.total_servers) * 100
 
+
 class Colors:
     """ANSI color codes for terminal output."""
 
@@ -58,6 +60,7 @@ class Colors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
+
 
 class MCPHealthDashboard:
     """Centralized health monitoring dashboard for MCP servers.
@@ -322,6 +325,7 @@ class MCPHealthDashboard:
     def get_server_status(self, server_name: str) -> ServerStatus | None:
         """Get cached status for a specific server."""
         return self._server_metrics.get(server_name)
+
 
 # Global instance
 health_dashboard = MCPHealthDashboard()

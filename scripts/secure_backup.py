@@ -413,6 +413,7 @@ class SecureBackupManager:
         print(f"🔓 Secure restore completed: {success_count} items restored")
         return True
 
+
 if __name__ == "__main__":
     import sys
 

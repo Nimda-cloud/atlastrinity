@@ -23,5 +23,6 @@ async def get_schemas():
             result.append(schema)
         print(json.dumps(result, indent=2))
 
+
 if __name__ == "__main__":
     asyncio.run(get_schemas())

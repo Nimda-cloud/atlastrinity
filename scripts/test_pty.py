@@ -6,6 +6,7 @@ import subprocess
 VIBE_BINARY = os.path.expanduser("~/.local/bin/vibe")
 VIBE_WORKSPACE = os.path.expanduser("~/.config/atlastrinity/vibe_workspace")
 
+
 async def run_vibe_pty():
     prompt = "Create a file called '/tmp/hello_vibe_test.py' with a simple hello world script that prints 'Hello from Vibe MCP!'."
     argv = [
@@ -80,6 +81,7 @@ async def run_vibe_pty():
                 os.close(master)
             except:
                 pass
+
 
 if __name__ == "__main__":
     asyncio.run(run_vibe_pty())

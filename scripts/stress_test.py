@@ -15,6 +15,7 @@ RESEARCH COMPLEXITY STRESS TEST:
 4. Verify the file exists and is not empty.
 """
 
+
 def wait_for_server():
     print("Waiting for server...")
     for _ in range(120):  # 2 minutes wait
@@ -27,6 +28,7 @@ def wait_for_server():
             time.sleep(1)
             print(".", end="", flush=True)
     return False
+
 
 if __name__ == "__main__":
     if not wait_for_server():

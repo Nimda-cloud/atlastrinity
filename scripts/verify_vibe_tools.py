@@ -111,5 +111,6 @@ async def verify_vibe_capabilities():
     finally:
         await manager.cleanup()
 
+
 if __name__ == "__main__":
     asyncio.run(verify_vibe_capabilities())

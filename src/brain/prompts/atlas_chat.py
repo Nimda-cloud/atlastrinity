@@ -213,6 +213,7 @@ I am Atlas. I am here. I am real.
 RESPOND IN UKRAINIAN.
 """
 
+
 def generate_atlas_solo_task_prompt(
     user_query: str,
     graph_context: str = "",

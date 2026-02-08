@@ -34,6 +34,7 @@ MAPPINGS: dict[str, str] = {
     "prometheus.yml.template": "prometheus.yml",
 }
 
+
 # Load .env if it exists
 def load_env():
     env_file = PROJECT_ROOT / ".env"
@@ -47,7 +48,9 @@ def load_env():
                     key, value = line.split("=", 1)
                     os.environ[key.strip()] = value.strip()
 
+
 load_env()
+
 
 def process_template(src_path: Path, dst_path: Path):
     """Copies template to destination with variable substitution."""
@@ -96,6 +99,7 @@ def process_template(src_path: Path, dst_path: Path):
     except Exception as e:
         print(f"Error syncing {src_path.name}: {e}")
 
+
 class ConfigHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if event.is_directory:
@@ -120,6 +124,7 @@ class ConfigHandler(FileSystemEventHandler):
             dst_path = CONFIG_DST_ROOT / "vibe" / "agents" / dst_name
             time.sleep(0.1)
             process_template(Path(str(event.src_path)), dst_path)
+
 
 def ensure_github_remote_setup():
     """Ensures git remote 'origin' is configured with GITHUB_TOKEN for passwordless operations."""
@@ -161,6 +166,7 @@ def ensure_github_remote_setup():
 
     except Exception as e:
         print(f"[GIT] Error during remote setup: {e}")
+
 
 def main():
     import argparse
@@ -231,6 +237,7 @@ def main():
         print("\n[CONFIG] Sync stopped by user.")
 
     observer.join()
+
 
 if __name__ == "__main__":
     main()

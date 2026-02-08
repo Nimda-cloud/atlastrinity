@@ -1,6 +1,7 @@
 import pytest
 
 from brain.message_bus import AgentMsg, MessageType, message_bus
+from brain.prompts import AgentPrompts
 
 
 @pytest.mark.asyncio
@@ -48,6 +49,7 @@ async def test_tetyana_hearing_bus_messages():
 
     assert "Testing bus: change your strategy" in prompt
     assert "REAL-TIME MESSAGES FROM OTHER AGENTS (Bus):" in prompt
+
 
 @pytest.mark.asyncio
 async def test_grisha_step_centric_verification():

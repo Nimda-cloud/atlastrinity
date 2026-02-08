@@ -38,6 +38,7 @@ except ImportError:
     WORKSPACE_DIR = CONFIG_ROOT / "workspace"
     VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 
+
 class SetupStep(Enum):
     CHECK_SYSTEM = "check_system"
     CHECK_PERMISSIONS = "check_permissions"
@@ -53,6 +54,7 @@ class SetupStep(Enum):
     INSTALL_VIBE = "install_vibe"
     SETUP_COMPLETE = "setup_complete"
 
+
 @dataclass
 class SetupProgress:
     step: SetupStep
@@ -61,8 +63,10 @@ class SetupProgress:
     success: bool = True
     error: str | None = None
 
+
 # Progress callback type
 ProgressCallback = Callable[[SetupProgress], None]
+
 
 def _run_command(cmd: list, timeout: int = 300, capture: bool = True) -> tuple[int, str, str]:
     """Execute command and return (returncode, stdout, stderr)"""
@@ -75,6 +79,7 @@ def _run_command(cmd: list, timeout: int = 300, capture: bool = True) -> tuple[i
         return -1, "", "Command timed out"
     except Exception as e:
         return -1, "", str(e)
+
 
 def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
     """Execute shell command with pipe handling"""
@@ -90,6 +95,7 @@ def _run_command_async(cmd: str, timeout: int = 600) -> tuple[int, str, str]:
         return result.returncode, result.stdout, result.stderr
     except Exception as e:
         return -1, "", str(e)
+
 
 class FirstRunInstaller:
     """Orchestrates first-run setup on a new Mac"""
@@ -404,6 +410,8 @@ class FirstRunInstaller:
 
     def start_services(self) -> bool:
         """Start Redis and PostgreSQL services"""
+        from .config_loader import config as sys_config
+
         self._report(SetupStep.START_SERVICES, 0.0, "Запуск сервісів...")
 
         # Only include PostgreSQL service if backend requires it
@@ -476,6 +484,8 @@ class FirstRunInstaller:
 
     async def create_database(self) -> bool:
         """Create structured database and tables (supports SQLite or PostgreSQL)"""
+        from .config_loader import config as sys_config
+
         self._report(SetupStep.CREATE_DATABASE, 0.0, "Створення бази даних...")
 
         # Use config.get
@@ -654,6 +664,8 @@ class FirstRunInstaller:
         """Run complete first-run setup.
         Returns True if all critical steps succeeded.
         """
+        from .config_loader import config as sys_config  # noqa: F841 - used below
+
         print("\n" + "=" * 60, file=sys.stderr)
         print("🔱 AtlasTrinity First Run Setup", file=sys.stderr)
         print("=" * 60 + "\n", file=sys.stderr)
@@ -694,7 +706,6 @@ class FirstRunInstaller:
 
         # 9. Project Workspace
         try:
-
             project_ws = (
                 Path(sys_config.get("system.workspace_path", str(CONFIG_ROOT / "workspace")))
                 .expanduser()
@@ -729,7 +740,9 @@ class FirstRunInstaller:
         """Check if first-run setup was already completed"""
         return (CONFIG_ROOT / "setup_complete").exists()
 
+
 # ============ CLI ENTRY POINT ============
+
 
 async def main():
     """CLI entry point for testing"""
@@ -742,6 +755,7 @@ async def main():
 
     success = await installer.run_full_setup()
     sys.exit(0 if success else 1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -44,5 +44,6 @@ class TestFallbackChain(unittest.IsolatedAsyncioTestCase):
             "[TEST] Success: Fallback chain (Copilot -> Mistral -> OpenRouter) verified via VIBE_HOME switching.\n"
         )
 
+
 if __name__ == "__main__":
     unittest.main()

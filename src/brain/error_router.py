@@ -24,6 +24,7 @@ class ErrorCategory(Enum):
     VERIFICATION = "verification"  # Grisha's verification logic failed (Immediate escalation)
     UNKNOWN = "unknown"  # Unclassified (Default fallback)
 
+
 @dataclass
 class RecoveryStrategy:
     """Action plan for recovering from an error"""
@@ -33,6 +34,7 @@ class RecoveryStrategy:
     max_retries: int = 3
     context_needed: bool = False  # Does Vibe need logs/context?
     reason: str = ""
+
 
 class SmartErrorRouter:
     """Routes exceptions to the optimal recovery strategy"""
@@ -327,6 +329,7 @@ class SmartErrorRouter:
             context_needed=True,
             reason="Persistent unknown error. Escalating for strategic re-evaluation and discovery.",
         )
+
 
 # Global Instance
 error_router = SmartErrorRouter()

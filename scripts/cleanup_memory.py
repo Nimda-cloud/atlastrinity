@@ -43,7 +43,7 @@ async def cleanup(total_wipe=False):
 
     print("\n✅ Cleanup finished.")
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     total = "--total" in sys.argv
     asyncio.run(cleanup(total_wipe=total))

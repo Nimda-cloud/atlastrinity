@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.abspath(root))
 
 import asyncio
 import json
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -28,6 +29,7 @@ from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
 from src.brain.context import shared_context
 from src.brain.logger import logger
+from src.brain.mcp_manager import mcp_manager
 from src.brain.memory import long_term_memory
 from src.brain.mode_router import ModeProfile, mode_router
 from src.brain.prompts import AgentPrompts
@@ -47,6 +49,7 @@ class TaskPlan:
     created_at: datetime = field(default_factory=datetime.now)
     status: str = "pending"  # pending, active, completed, failed
     context: dict[str, Any] = field(default_factory=dict)
+
 
 class Atlas(BaseAgent):
     """Atlas - The Strategist

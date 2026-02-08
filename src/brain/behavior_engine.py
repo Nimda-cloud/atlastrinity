@@ -12,6 +12,7 @@ Previously scattered across:
 """
 
 import asyncio
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,10 +35,12 @@ class Pattern:
     usage_count: int = 0
     success_rate: float = 0.0
 
+
 class RuleEvaluator(Protocol):
     """Protocol for custom rule evaluation strategies."""
 
     def evaluate(self, context: dict[str, Any]) -> bool: ...
+
 
 class BehaviorEngine:
     """Config-driven behavior interpreter.
@@ -526,6 +529,7 @@ class BehaviorEngine:
             "config_loaded": bool(self.config),
         }
 
+
 class WorkflowEngine:
     """Deterministic Finite State Machine for executing workflows defined in config."""
 
@@ -657,6 +661,7 @@ class WorkflowEngine:
             # This requires the context to have access to tool execution capability
             # For startup workflows, we mostly use internal actions.
             pass
+
 
 # Global singleton
 behavior_engine = BehaviorEngine()

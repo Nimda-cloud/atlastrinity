@@ -21,6 +21,7 @@ class Expectation(TypedDict):
     value: Any
     key: str | None  # For json_field checks
 
+
 class TestScenario(TypedDict):
     """Definition of a single test scenario."""
 
@@ -28,6 +29,7 @@ class TestScenario(TypedDict):
     description: str | None
     input: str
     expected: list[Expectation]
+
 
 class TestResult(TypedDict):
     """Result of a single test execution."""
@@ -37,6 +39,7 @@ class TestResult(TypedDict):
     input: str
     output: str
     failures: list[str]
+
 
 def load_tests(file_path: str | Path) -> list[TestScenario]:
     """Load test scenarios from a YAML or JSON file."""
@@ -59,6 +62,7 @@ def load_tests(file_path: str | Path) -> list[TestScenario]:
         return cast("list[TestScenario]", data)
 
     raise ValueError("Invalid test file structure. Expected list of tests or {'tests': [...]}")
+
 
 def validate_output(output: str, expectations: list[Expectation]) -> list[str]:
     """Validate output string against a list of expectations.
@@ -116,6 +120,7 @@ def validate_output(output: str, expectations: list[Expectation]) -> list[str]:
             failures.append(f"Unknown check type: {check_type}")
 
     return failures
+
 
 def run_test_suite(
     test_file: str, runner_func: Callable[[str], str] | None = None

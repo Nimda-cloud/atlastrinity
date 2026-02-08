@@ -295,4 +295,5 @@ class SystemConfig:
     def all(self) -> dict[str, Any]:
         return self._config
 
+
 config = SystemConfig()

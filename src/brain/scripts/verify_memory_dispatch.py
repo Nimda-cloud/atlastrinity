@@ -11,6 +11,7 @@ from src.brain.mcp_manager import mcp_manager
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger("verify_dispatch")
 
+
 async def verify():
     print("--- Verifying Memory Dispatcher Fix ---")
 
@@ -49,6 +50,7 @@ async def verify():
     except Exception as e:
         print(f"FAILURE: Exception occurred: {e}")
         # If it says "Tool 'memory' not listed", then the fix failed.
+
 
 if __name__ == "__main__":
     asyncio.run(verify())

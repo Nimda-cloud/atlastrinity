@@ -55,5 +55,6 @@ async def test_restart():
     # 4. Cleanup
     await manager.cleanup()
 
+
 if __name__ == "__main__":
     asyncio.run(test_restart())

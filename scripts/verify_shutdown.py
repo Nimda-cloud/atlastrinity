@@ -18,6 +18,7 @@ def find_procs_by_name(names):
             continue
     return ls
 
+
 def test_shutdown():
     print("Step 1: Spawning brain.server...")
     # Use the same python as current
@@ -69,6 +70,7 @@ def test_shutdown():
                 p.kill()
             except:
                 pass
+
 
 if __name__ == "__main__":
     test_shutdown()

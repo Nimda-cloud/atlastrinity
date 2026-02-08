@@ -30,6 +30,7 @@ DEFAULT_SERVERS = [
     "devtools",
 ]
 
+
 @pytest.fixture(scope="session")
 def mcp_credentials_available():
     """Check if MCP credentials are available in environment."""
@@ -41,15 +42,18 @@ def mcp_credentials_available():
         "postgres": bool(postgres_url),
     }
 
+
 @pytest.fixture(params=DEFAULT_SERVERS)
 def server_name(request):
     """Parametrized server name for MCP tests."""
     return request.param
 
+
 @pytest.fixture(params=DEFAULT_SERVERS)
 def name(request):
     """Alias fixture used by some tests expecting 'name'."""
     return request.param
+
 
 @pytest.fixture
 def test_cases(server_name):
@@ -98,6 +102,7 @@ def test_cases(server_name):
         ],
     }
     return test_plan.get(server_name, [])
+
 
 @pytest.fixture(params=["cpu"] + (["mps"] if (torch and torch.backends.mps.is_available()) else []))
 def device_name(request):

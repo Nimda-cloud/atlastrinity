@@ -19,6 +19,10 @@ import pytest
 # Need to patch before importing
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.mcp_server.vibe_config import AgentMode, VibeConfig
+from src.mcp_server.vibe_server import cleanup_old_instructions, handle_long_prompt
+
+
 class TestVibeConfig:
     """Tests for vibe_config.py configuration system."""
 
@@ -169,6 +173,7 @@ class TestVibeConfig:
         # Non-existent
         assert config.get_model_by_alias("nonexistent") is None
 
+
 class TestPreparePromptArg:
     """Tests for handle_long_prompt function."""
 
@@ -195,7 +200,6 @@ class TestPreparePromptArg:
     def test_large_prompt_creates_file_in_global_dir(self, mock_instructions_dir):
         """Large prompts should create files in INSTRUCTIONS_DIR."""
         with patch("src.mcp_server.vibe_server.INSTRUCTIONS_DIR", mock_instructions_dir):
-
             large_prompt = "B" * 2500
 
             # Pass a different cwd - should be ignored
@@ -216,7 +220,6 @@ class TestPreparePromptArg:
     def test_prompt_file_contains_full_path(self, mock_instructions_dir):
         """The returned prompt arg should contain the full path."""
         with patch("src.mcp_server.vibe_server.INSTRUCTIONS_DIR", mock_instructions_dir):
-
             large_prompt = "C" * 3000
             result, file_path = handle_long_prompt(large_prompt)
 
@@ -225,6 +228,7 @@ class TestPreparePromptArg:
                 assert file_path in result or mock_instructions_dir in result
             else:
                 pytest.fail("file_path should not be None for large prompt")
+
 
 class TestCleanupOldInstructions:
     """Tests for cleanup_old_instructions function."""
@@ -267,9 +271,9 @@ class TestCleanupOldInstructions:
         nonexistent = str(tmp_path / "nonexistent")
 
         with patch("src.mcp_server.vibe_server.INSTRUCTIONS_DIR", nonexistent):
-
             cleaned = cleanup_old_instructions(max_age_hours=24)
             assert cleaned == 0
+
 
 class TestAgentMode:
     """Tests for AgentMode enum and mode switching."""
@@ -288,6 +292,7 @@ class TestAgentMode:
 
         assert AgentMode("auto-approve") == AgentMode.AUTO_APPROVE
         assert AgentMode("plan") == AgentMode.PLAN
+
 
 class TestEnvironmentConfig:
     """Tests for environment variable handling."""
@@ -309,6 +314,7 @@ class TestEnvironmentConfig:
         env = config.get_environment()
 
         assert env["VIBE_HOME"] == "/custom/vibe/home"
+
 
 class TestToolPermissions:
     """Tests for tool permission configuration."""
@@ -336,6 +342,7 @@ class TestToolPermissions:
         assert config.get_tool_permission("read_file") == ToolPermission.ALWAYS
         # Default for unknown tools
         assert config.get_tool_permission("unknown") == ToolPermission.ASK
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -23,6 +23,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 RAW_DIR = DATA_DIR / "raw"
 RAW_DIR.mkdir(exist_ok=True)
 
+
 def _get_scrape_result(url: str, type: str, scraper: DataScraper):
     """Helper to handle the first stage of ingestion: scraping."""
     if type == "api":
@@ -41,6 +42,7 @@ def _get_scrape_result(url: str, type: str, scraper: DataScraper):
         ext = path.suffix or ".bin"
     return result, ext
 
+
 def _parse_raw_data(raw_file: Path, ext: str, type: str, parser: DataParser):
     """Helper to handle the second stage: parsing."""
     format_hint = ext.lstrip(".").lower()
@@ -48,6 +50,7 @@ def _parse_raw_data(raw_file: Path, ext: str, type: str, parser: DataParser):
         format_hint = type
 
     return parser.parse(raw_file, format_hint=format_hint)
+
 
 async def ingest_dataset(
     url: str, type: str = "web_page", process_pipeline: list[str] | None = None
@@ -100,6 +103,7 @@ async def ingest_dataset(
 
     return " ".join(summary_parts)
 
+
 def _perform_parsing(
     raw_file: Path, ext: str, type: str, parser: DataParser
 ) -> tuple[pd.DataFrame | None, str]:
@@ -120,6 +124,7 @@ def _perform_parsing(
     count = len(df) if df is not None else 0
     return df, f"Parsed {count} records."
 
+
 def _perform_sql_storage(df: pd.DataFrame, run_id: str, url: str, sql_storage: SQLStorage) -> str:
     """Helper to store dataset in SQL database."""
     table_name = f"dataset_{run_id}"
@@ -127,6 +132,7 @@ def _perform_sql_storage(df: pd.DataFrame, run_id: str, url: str, sql_storage: S
     if store_res.success:
         return f"Stored in SQL table '{store_res.target}'."
     return f"SQL Storage failed: {store_res.error}"
+
 
 def _perform_vector_storage(
     df: pd.DataFrame, run_id: str, url: str, ext: str, vector_storage: VectorStorage
@@ -147,6 +153,7 @@ def _perform_vector_storage(
     if vec_res.success:
         return "Indexed for semantic search."
     return f"Vector indexing failed: {vec_res.error}"
+
 
 def _perform_validation(df: pd.DataFrame, run_id: str, validator: DataValidator) -> str:
     """Helper to validate ingested data completeness."""

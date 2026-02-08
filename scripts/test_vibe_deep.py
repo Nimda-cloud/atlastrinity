@@ -24,6 +24,7 @@ TOOLS_TO_TEST = [
     ("vibe_execute_subcommand", {"subcommand": "invalid-subcommand"}),
 ]
 
+
 async def run_vibe_tool(
     server_config: dict[str, Any],
     tool_name: str,
@@ -208,6 +209,7 @@ async def run_vibe_tool(
 
     return success
 
+
 async def main():
     if not CONFIG_PATH.exists():
         print("Config not found")
@@ -235,6 +237,7 @@ async def main():
 
     if not all_pass:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -33,5 +33,6 @@ async def migrate():
     finally:
         await db_manager.close()
 
+
 if __name__ == "__main__":
     asyncio.run(migrate())

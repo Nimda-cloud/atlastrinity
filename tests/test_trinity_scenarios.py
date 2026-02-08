@@ -16,6 +16,7 @@ providers_mod = types.ModuleType("providers")
 providers_copilot_mod = types.ModuleType("providers.copilot")
 providers_factory_mod = types.ModuleType("providers.factory")
 
+
 class _StubCopilotLLM:
     def __init__(self, *args, **kwargs):
         pass
@@ -23,8 +24,10 @@ class _StubCopilotLLM:
     async def ainvoke(self, *args, **kwargs):
         return SimpleNamespace(content="{}")
 
+
 def _stub_create_llm(*args, **kwargs):
     return _StubCopilotLLM(*args, **kwargs)
+
 
 providers_copilot_mod.CopilotLLM = _StubCopilotLLM  # type: ignore
 providers_factory_mod.create_llm = _stub_create_llm  # type: ignore
@@ -37,6 +40,7 @@ sys.modules.setdefault("providers.factory", providers_factory_mod)
 # Stub langgraph.graph used during Trinity graph build
 langgraph_mod = types.ModuleType("langgraph")
 langgraph_graph_mod = types.ModuleType("langgraph.graph")
+
 
 class _StubStateGraph:
     def __init__(self, *args, **kwargs):
@@ -57,6 +61,7 @@ class _StubStateGraph:
     def compile(self):
         return SimpleNamespace()
 
+
 langgraph_graph_mod.StateGraph = _StubStateGraph  # type: ignore
 langgraph_graph_mod.END = "__END__"  # type: ignore
 langgraph_graph_mod.add_messages = lambda *args, **kwargs: None  # type: ignore
@@ -68,19 +73,24 @@ sys.modules.setdefault("langgraph.graph", langgraph_graph_mod)
 langchain_core_mod = types.ModuleType("langchain_core")
 langchain_core_messages_mod = types.ModuleType("langchain_core.messages")
 
+
 class _BaseMessage:
     def __init__(self, content=None, **kwargs):
         self.content = content
         self.additional_kwargs = kwargs.get("additional_kwargs", {})
 
+
 class _HumanMessage(_BaseMessage):
     pass
+
 
 class _AIMessage(_BaseMessage):
     pass
 
+
 class _SystemMessage(_BaseMessage):
     pass
+
 
 langchain_core_messages_mod.BaseMessage = _BaseMessage  # type: ignore
 langchain_core_messages_mod.HumanMessage = _HumanMessage  # type: ignore
@@ -98,6 +108,7 @@ sys.modules.setdefault("ukrainian_tts.tts", types.ModuleType("ukrainian_tts.tts"
 # Stub src.brain.mcp_manager to avoid importing MCP client stack in unit tests
 brain_mcp_manager_mod = types.ModuleType("src.brain.mcp_manager")
 
+
 class _StubMCPManager:
     def start_health_monitoring(self, interval: int = 60):
         return None
@@ -105,12 +116,14 @@ class _StubMCPManager:
     def register_log_callback(self, callback):
         return None
 
+
 brain_mcp_manager_mod.mcp_manager = _StubMCPManager()  # type: ignore
 sys.modules.setdefault("src.brain.mcp_manager", brain_mcp_manager_mod)
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import src.brain.orchestrator as orch
 from src.brain.agents.tetyana import StepResult
 from src.brain.orchestrator import Trinity
 
@@ -124,6 +137,7 @@ class DummyVoice:
 
     async def prepare_speech_text(self, text: str) -> str:
         return text
+
 
 class StubNotifications:
     def __init__(self):
@@ -149,8 +163,10 @@ class StubNotifications:
         self.completions.append((task, success, duration_seconds))
         return True
 
+
 def _plan(steps):
     return SimpleNamespace(steps=steps, goal="Тестовий план")
+
 
 @pytest.fixture
 def fast_sleep(monkeypatch):
@@ -160,6 +176,7 @@ def fast_sleep(monkeypatch):
         return None
 
     monkeypatch.setattr(orch.asyncio, "sleep", _no_sleep)
+
 
 @pytest.fixture
 def isolated_globals(monkeypatch):
@@ -184,6 +201,7 @@ def isolated_globals(monkeypatch):
             raising=False,
         )
 
+
 @pytest.fixture
 def stub_notifications(monkeypatch):
 
@@ -191,11 +209,13 @@ def stub_notifications(monkeypatch):
     monkeypatch.setattr(orch, "notifications", stub, raising=True)
     return stub
 
+
 @pytest.fixture
 def trinity_base(isolated_globals, stub_notifications, fast_sleep):
     t = Trinity()
     t.voice = DummyVoice()  # type: ignore
     return t
+
 
 def test_chat_intent_returns_chat_result(trinity_base):
     class MockAtlas:
@@ -212,6 +232,7 @@ def test_chat_intent_returns_chat_result(trinity_base):
     assert res["type"] == "chat"
     assert "Привіт" in res["result"]
 
+
 def test_planning_error_returns_error(trinity_base):
     class MockAtlas:
         async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
@@ -225,6 +246,7 @@ def test_planning_error_returns_error(trinity_base):
     res = asyncio.run(trinity_base.run("зроби щось"))
     assert res["status"] == "error"
     assert "boom" in res["error"]
+
 
 def test_empty_plan_returns_no_steps_message(trinity_base):
     class MockAtlas:
@@ -246,6 +268,7 @@ def test_empty_plan_returns_no_steps_message(trinity_base):
     assert res["status"] == "completed"
     assert res["type"] == "chat"
     assert "Не знайдено кроків" in res["result"]
+
 
 def test_simple_execution_appends_step_result(trinity_base):
     class MockAtlas:
@@ -282,6 +305,7 @@ def test_simple_execution_appends_step_result(trinity_base):
     assert isinstance(res["result"], list)
     assert len(res["result"]) == 1
     assert res["result"][0]["success"] is True
+
 
 def test_verification_rejection_marks_step_failed(trinity_base):
     class MockAtlas:
@@ -336,6 +360,7 @@ def test_verification_rejection_marks_step_failed(trinity_base):
     assert isinstance(step_results, list)
     assert any("Grisha rejected" in (r.get("error") or "") for r in step_results)
 
+
 def test_verification_crash_is_caught_and_logged(trinity_base):
     class MockAtlas:
         async def analyze_request(self, user_request: str, history=None, context=None, **kwargs):
@@ -387,6 +412,7 @@ def test_verification_crash_is_caught_and_logged(trinity_base):
     logs = trinity_base.state.get("logs", [])
     assert any("Verification crashed" in str(l.get("message")) for l in logs)
 
+
 def test_retries_then_user_rejects_recovery_aborts(trinity_base, stub_notifications):
     stub_notifications.next_approval = False
 
@@ -432,6 +458,7 @@ def test_retries_then_user_rejects_recovery_aborts(trinity_base, stub_notificati
     assert "Task aborted" in res["error"]
     assert len(stub_notifications.stuck_alerts) == 1
     assert len(stub_notifications.approvals) == 1
+
 
 def test_subtask_step_triggers_recursive_run(trinity_base):
     class MockAtlas:

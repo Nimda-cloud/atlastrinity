@@ -11,7 +11,10 @@ from enum import Enum
 from typing import Any
 from uuid import UUID
 
+from .db.manager import db_manager
+
 logger = logging.getLogger("brain.message_bus")
+
 
 class MessageType(Enum):
     """Types of messages that can be sent between agents"""
@@ -34,6 +37,7 @@ class MessageType(Enum):
     FIX_READY = "fix_ready"  # Atlas -> Tetyana: parallel fix is ready to apply
     FIX_ACKNOWLEDGED = "fix_ack"  # Tetyana -> Atlas: acknowledged fix decision
     HEALING_STARTED = "heal_start"  # Atlas -> All: parallel healing task started
+
 
 @dataclass
 class AgentMsg:
@@ -60,6 +64,7 @@ class AgentMsg:
             "session_id": str(self.session_id) if self.session_id else None,
             "timestamp": self.timestamp.isoformat(),
         }
+
 
 class MessageBus:
     """Typed inter-agent communication bus with optional DB persistence.
@@ -205,6 +210,7 @@ class MessageBus:
         else:
             for key in self._queue:
                 self._queue[key] = []
+
 
 # Singleton instance
 message_bus = MessageBus()

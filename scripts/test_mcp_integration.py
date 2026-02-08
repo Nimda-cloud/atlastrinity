@@ -10,6 +10,7 @@ from typing import Any
 CONFIG_PATH = Path.home() / ".config/atlastrinity/mcp/config.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+
 # Helper to create a dummy audio file
 def create_dummy_wav(filename="test_audio.wav"):
     path = PROJECT_ROOT / filename
@@ -20,6 +21,7 @@ def create_dummy_wav(filename="test_audio.wav"):
             f.setframerate(16000)
             f.writeframes(struct.pack("<h", 0) * 16000)  # 1 sec silence
     return str(path)
+
 
 DUMMY_AUDIO = create_dummy_wav()
 
@@ -50,6 +52,7 @@ TEST_CASES = {
     "whisper-stt": ("transcribe_audio", {"audio_path": DUMMY_AUDIO}),
     "chrome-devtools": ("list_targets", {}),  # Guessing a safe tool, or maybe just check init
 }
+
 
 async def run_mcp_tool(
     server_name: str,
@@ -208,6 +211,7 @@ async def run_mcp_tool(
 
     return success
 
+
 async def main():
     if not CONFIG_PATH.exists():
         print("Config not found")
@@ -235,6 +239,7 @@ async def main():
 
     if not all_pass:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

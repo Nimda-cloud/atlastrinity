@@ -6,8 +6,10 @@ Model: Configured model
 """
 
 import asyncio
+import base64
 import os
 import re
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -63,6 +65,7 @@ class StepResult:
             "thought": self.thought,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
+
 
 class Tetyana(BaseAgent):
     """Tetyana - The Executor

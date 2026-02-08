@@ -5,6 +5,7 @@ PROJECT_ROOT = str(Path(__file__).parent.parent)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+
 def test_setup():
     print("--- 🔍 Testing Setup Logic ---")
 
@@ -57,6 +58,7 @@ def test_setup():
         print(
             f"⚠️  Vibe REPOSITORY_ROOT ({REPOSITORY_ROOT}) differs from config ({repo_path}) - check symlinks/paths.",
         )
+
 
 if __name__ == "__main__":
     test_setup()

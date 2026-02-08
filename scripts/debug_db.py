@@ -15,6 +15,7 @@ from src.brain.db.schema import TaskStep, ToolExecution
 # Ensure CONFIG_ROOT is set correctly
 os.environ["CONFIG_ROOT"] = os.path.expanduser("~/.config/atlastrinity")
 
+
 async def inspect():
     await db_manager.initialize()
     async with await db_manager.get_session() as session:
@@ -43,6 +44,7 @@ async def inspect():
             print(f"Sequence Num: {s.sequence_number}")
             print(f"Action: {s.action[:50]}...")
             print("-" * 20)
+
 
 if __name__ == "__main__":
     asyncio.run(inspect())

@@ -17,6 +17,9 @@ import pytest
 # Ensure src is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src.brain.mode_router import ModeRouter
+
+
 class TestModeProfilesJSON:
     """Validate mode_profiles.json structure and completeness."""
 
@@ -86,6 +89,7 @@ class TestModeProfilesJSON:
     def test_task_requires_planning(self, profiles_data):
         assert profiles_data["task"]["require_planning"] is True
         assert profiles_data["task"]["trinity_required"] is True
+
 
 class TestModeRouterBuildProfile:
     """Test ModeRouter.build_profile() — the core profile building logic."""
@@ -190,6 +194,7 @@ class TestModeRouterBuildProfile:
         assert isinstance(d["protocols"], list)
         assert isinstance(d["servers"], list)
 
+
 class TestModeRouterNormalization:
     """Test mode name normalization."""
 
@@ -225,6 +230,7 @@ class TestModeRouterNormalization:
     def test_unknown_mode_with_deep_persona_goes_to_deep_chat(self, router):
         profile = router.build_profile({"intent": "xyz", "use_deep_persona": True})
         assert profile.mode == "deep_chat"
+
 
 class TestModeRouterFallback:
     """Test fallback_classify() — emergency heuristic."""
@@ -264,6 +270,7 @@ class TestModeRouterFallback:
     def test_medium_request_defaults_to_solo_task(self, router):
         profile = router.fallback_classify("Покажи мені останні новини")
         assert profile.mode == "solo_task"
+
 
 class TestModeRouterStats:
     """Test statistics tracking."""

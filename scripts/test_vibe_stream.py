@@ -28,5 +28,6 @@ async def test_stream():
     await vibe_prompt(ctx=ctx, prompt=prompt, cwd=os.getcwd(), timeout_s=30)
     print("\nFinal Result received.")
 
+
 if __name__ == "__main__":
     asyncio.run(test_stream())

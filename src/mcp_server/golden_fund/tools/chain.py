@@ -6,6 +6,7 @@ from .ingest import ingest_dataset
 
 logger = logging.getLogger("golden_fund.tools.chain")
 
+
 class RecursiveEnricher:
     def __init__(self):
         self.ckan = CKANConnector()
@@ -67,8 +68,10 @@ class RecursiveEnricher:
             + f"\n\nFinal Search Results:\n{retry_results.data}"
         )
 
+
 # Singleton instance
 enricher = RecursiveEnricher()
+
 
 async def recursive_enrichment(query: str, depth: int = 2) -> str:
     """Public entry point for the tool."""

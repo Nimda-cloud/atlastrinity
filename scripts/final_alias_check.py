@@ -8,6 +8,7 @@ import requests
 
 os.chdir("/Users/hawk/Documents/GitHub/atlastrinity")
 
+
 def test_alias(alias, prompt):
     print(f"\n🧪 Testing Alias: {alias}")
     print(f"   Prompt: {prompt}")
@@ -60,6 +61,7 @@ def test_alias(alias, prompt):
     print(f"❌ FAILED: {alias}")
     print(f"   Error: {result.stderr.strip()[:500]}")
     return False
+
 
 # 1. Start Proxy
 print("🚀 Starting Proxy...")

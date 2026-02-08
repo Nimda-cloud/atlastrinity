@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from typing import cast
 
 
 async def run_verification():
@@ -212,6 +213,7 @@ async def run_verification():
     if stderr_output:
         print("\n=== STDERR LOGS ===")
         print(stderr_output)
+
 
 if __name__ == "__main__":
     asyncio.run(run_verification())

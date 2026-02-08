@@ -28,6 +28,7 @@ class SecretFilter(logging.Filter):
 
         return True
 
+
 def setup_logging(name: str = "brain"):
     """Setup logging configuration"""
     from .config import LOG_DIR
@@ -128,6 +129,7 @@ def setup_logging(name: str = "brain"):
         print(f"Failed to setup UI Log Handler: {e}", file=sys.stderr)
 
     return logger
+
 
 # Create a default logger instance for convenient import
 logger = setup_logging()

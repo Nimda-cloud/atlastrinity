@@ -15,16 +15,17 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from .logger import logger
 from .mcp_manager import mcp_manager
 
 logger = logging.getLogger("brain.healing")
+
 
 class HealingStrategy(Enum):
     HOT_PATCH = "hot_patch"  # Apply code fix, no restart
     SERVICE_RESTART = "service_restart"  # Restart specific component (e.g. MCP)
     PHOENIX_RESTART = "phoenix_restart"  # Full system pause -> save -> restart -> resume
     USER_INTERVENTION = "user_intervention"  # Too complex/risky for auto-heal
+
 
 @dataclass
 class AnalysisResult:
@@ -33,6 +34,7 @@ class AnalysisResult:
     suggested_strategy: HealingStrategy
     fix_plan: str
     confidence: float
+
 
 @dataclass
 class HealingTask:
@@ -43,6 +45,7 @@ class HealingTask:
     strategy: HealingStrategy = HealingStrategy.HOT_PATCH
     analysis: AnalysisResult | None = None
     created_at: datetime = field(default_factory=datetime.now)
+
 
 class DeepAnalysis:
     """Analyzes errors using system context and Vibe."""
@@ -152,6 +155,7 @@ class DeepAnalysis:
         except:
             return {}
 
+
 class StrategyEngine:
     """Decides on the best course of action."""
 
@@ -167,6 +171,7 @@ class StrategyEngine:
             return HealingStrategy.USER_INTERVENTION
 
         return analysis.suggested_strategy
+
 
 class HealingOrchestrator:
     """Manages the Healing Lifecycle."""
@@ -287,6 +292,7 @@ class HealingOrchestrator:
         if "fs" in text or "filesystem" in text:
             return "filesystem"
         return None
+
 
 # Singleton
 healing_orchestrator = HealingOrchestrator()

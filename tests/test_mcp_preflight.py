@@ -21,10 +21,12 @@ class DummyCompleted:
         self.stdout = out
         self.stderr = err
 
+
 def test_parse_package_arg_simple():
     assert _parse_package_arg("pkg@1.2.3") == ("pkg", "1.2.3")
     assert _parse_package_arg("@scope/pkg@2025.12.18") == ("@scope/pkg", "2025.12.18")
     assert _parse_package_arg("no-version") is None
+
 
 def test_npm_package_exists_success(monkeypatch):
     def fake_run(cmd, capture_output, text, timeout):
@@ -33,12 +35,14 @@ def test_npm_package_exists_success(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
     assert npm_package_exists("pkg", "1.2.3")
 
+
 def test_npm_package_exists_not_found(monkeypatch):
     def fake_run(cmd, capture_output, text, timeout):
         return DummyCompleted(rc=1, out="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     assert not npm_package_exists("pkg", "0.0.0")
+
 
 def test_check_package_arg_for_tool_npx(monkeypatch):
     # Simulate registry returning version object for pkg@1.0.0 and 404 for pkg@0.0.1
@@ -65,6 +69,7 @@ def test_check_package_arg_for_tool_npx(monkeypatch):
     assert check_package_arg_for_tool("pkg@1.0.0", tool_cmd="npx")
     assert not check_package_arg_for_tool("pkg@0.0.1", tool_cmd="npx")
 
+
 def test_bunx_package_exists_registry(monkeypatch):
     # simulate registry returning 200 for bun package version endpoint
 
@@ -86,12 +91,14 @@ def test_bunx_package_exists_registry(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry)
     assert bunx_package_exists("somepkg", "1.0.0")
 
+
 def test_bunx_package_not_exists(monkeypatch):
     def fake_registry(url, timeout):
         raise urllib.error.HTTPError(url, 404, "Not found", hdrs=email.message.Message(), fp=None)
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry)
     assert not bunx_package_exists("otherpkg", "0.0.1")
+
 
 def test_npm_registry_latest(monkeypatch):
     # Prepare fake package metadata with dist-tags.latest
@@ -113,6 +120,7 @@ def test_npm_registry_latest(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry_meta)
     assert npm_registry_has_version("somepkg", "latest")
 
+
 def test_check_package_arg_for_tool_latest(monkeypatch):
     def fake_registry_meta(url, timeout):
         class R:
@@ -131,6 +139,7 @@ def test_check_package_arg_for_tool_latest(monkeypatch):
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_registry_meta)
     assert check_package_arg_for_tool("@scope/pkg@latest", tool_cmd="npx")
+
 
 def test_scan_mcp_config_for_package_issues(tmp_path, monkeypatch):
     cfg = {
@@ -190,6 +199,7 @@ def test_scan_mcp_config_for_package_issues(tmp_path, monkeypatch):
     assert len(issues) == 1
     assert "otherpkg@0.0.1" in issues[0]
 
+
 def test_scan_mcp_config_for_python_missing(tmp_path, monkeypatch):
     cfg = {
         "mcpServers": {
@@ -212,6 +222,7 @@ def test_scan_mcp_config_for_python_missing(tmp_path, monkeypatch):
 
     issues = scan_mcp_config_for_package_issues(p)
     assert any("mcp_server_docker" in s for s in issues)
+
 
 def test_scan_mcp_config_for_python_present(tmp_path, monkeypatch):
     cfg = {

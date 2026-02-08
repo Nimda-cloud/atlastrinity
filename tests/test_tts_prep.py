@@ -12,6 +12,7 @@ def mock_config():
         mock.get.return_value = {}  # Default return
         yield mock
 
+
 @pytest.mark.asyncio
 async def test_sanitize_text_for_tts():
     # Test 1: Markdown links
@@ -30,6 +31,7 @@ async def test_sanitize_text_for_tts():
     # Test 4: Abbreviations
     text = "Temp is 20°C"
     assert "градусів Цельсія" in sanitize_text_for_tts(text)
+
 
 @pytest.mark.asyncio
 async def test_prepare_speech_text(mock_config):
@@ -55,6 +57,7 @@ async def test_prepare_speech_text(mock_config):
     # 2. Translate should receive "Thought: Internal reasoning"
     vm.translate_to_ukrainian.assert_called_once()
     assert result == "Перекладений текст"
+
 
 @pytest.mark.asyncio
 async def test_prepare_speech_text_no_translation(mock_config):

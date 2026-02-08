@@ -105,6 +105,7 @@ def validate_union_all_query(query: str) -> str:
 
     return True
 
+
 def create_vibe_readme():
     """Create README for Vibe SQL fixes"""
 
@@ -140,6 +141,7 @@ python3 scripts/fix_vibe_sql.py
         f.write(readme_content)
 
     print(f"✅ Vibe SQL fixes README created: {readme_path}")
+
 
 if __name__ == "__main__":
     print("🔧 Updating Vibe server with SQL fixes...")

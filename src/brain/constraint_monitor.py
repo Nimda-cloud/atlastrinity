@@ -12,6 +12,7 @@ from src.brain.parallel_healing import parallel_healing_manager
 
 CONSTRAINTS_FILE = os.path.join(BRAIN_DIR, "data", "user_constraints.txt")
 
+
 class ConstraintMonitor:
     """Monitors system behavior against user constraints."""
 
@@ -157,5 +158,6 @@ class ConstraintMonitor:
             return [l.strip() for l in lines if l.strip() and not l.strip().startswith("#")]
         except Exception:
             return []
+
 
 constraint_monitor = ConstraintMonitor()

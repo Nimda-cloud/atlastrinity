@@ -7,6 +7,7 @@ from src.brain.knowledge_graph import knowledge_graph
 
 logger = logging.getLogger("brain.semantic_linker")
 
+
 class SemanticLinker:
     """Analyzes datasets to find semantic intersections with existing data.
     Enables 'chaining' of tables via shared keys.
@@ -98,5 +99,6 @@ class SemanticLinker:
                 possible_keys.append(col_lower)
 
         return list(set(possible_keys))
+
 
 semantic_linker = SemanticLinker()

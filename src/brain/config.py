@@ -18,6 +18,7 @@ except ImportError:  # pragma: no cover
     ) -> bool:  # type: ignore[override]
         return False
 
+
 # Project root (where the running code is)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 BRAIN_DIR = PROJECT_ROOT / "src" / "brain"
@@ -65,6 +66,7 @@ os.environ["NLTK_DATA"] = str(NLTK_DIR)
 os.environ["HF_HOME"] = str(CONFIG_ROOT / "models" / "huggingface")
 os.environ["XDG_CACHE_HOME"] = str(CONFIG_ROOT / "cache")
 
+
 def ensure_dirs():
     """Ensure all required data directories exist and set global workspace permissions"""
     for d in [
@@ -105,16 +107,20 @@ def ensure_dirs():
             if ws != project_ws:
                 print(f"Warning: Failed to set 777 permissions on {ws.name}: {e}", file=sys.stderr)
 
+
 # Initialize directories on import to ensure they exist for logger/agents
 ensure_dirs()
+
 
 def get_log_path(name: str) -> Path:
     """Get full path for a log file"""
     return LOG_DIR / f"{name}.log"
 
+
 def get_screenshot_path(filename: str) -> str:
     """Get full path for a screenshot (string for compatibility with tools)"""
     return str(SCREENSHOTS_DIR / filename)
+
 
 def deep_merge(base: dict, overlay: dict) -> dict:
     """Recursively merge overlay into base."""

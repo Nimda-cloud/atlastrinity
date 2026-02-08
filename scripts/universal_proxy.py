@@ -80,12 +80,15 @@ WINDSURF_MODEL_MAPPING = {
 # Default ports
 DEFAULT_PORT = 8085
 
+
 # Windsurf Session State
 class WindsurfState:
     session_id: str = str(uuid.uuid4())
     request_count: int = 0
 
+
 # ─── Colors ──────────────────────────────────────────────────────────────────
+
 
 class C:
     BOLD = "\033[1m"
@@ -96,19 +99,25 @@ class C:
     DIM = "\033[2m"
     RESET = "\033[0m"
 
+
 def log(msg: str) -> None:
     print(f"[UniversalProxy] {msg}", file=sys.stderr, flush=True)
+
 
 def info(msg: str) -> None:
     print(f"{C.GREEN}✓{C.RESET} {msg}")
 
+
 def warn(msg: str) -> None:
     print(f"{C.YELLOW}⚠{C.RESET} {msg}")
+
 
 def error(msg: str) -> None:
     print(f"{C.RED}✗{C.RESET} {msg}")
 
+
 # ─── Provider Detection ─────────────────────────────────────────────────────
+
 
 def detect_provider(model_name: str, provider_header: str | None = None) -> str:
     """Detect which provider should handle the request."""
@@ -139,7 +148,9 @@ def detect_provider(model_name: str, provider_header: str | None = None) -> str:
     # 4. Default fallback
     return "copilot"
 
+
 # ─── Copilot Handler ───────────────────────────────────────────────────────────
+
 
 def handle_copilot_request(
     method: str, path: str, headers: dict, body: bytes
@@ -236,7 +247,9 @@ def handle_copilot_request(
         traceback.print_exc()
         return 502, {"error": f"Copilot request failed: {e}"}, str(e).encode()
 
+
 # ─── Windsurf Handler ───────────────────────────────────────────────────────────
+
 
 def handle_windsurf_request(
     method: str, path: str, headers: dict, body: bytes
@@ -402,7 +415,9 @@ def handle_windsurf_request(
         error(f"Windsurf request failed: {e}")
         return 502, {"error": f"Windsurf request failed: {e}"}, str(e).encode()
 
+
 # ─── Proxy Server ───────────────────────────────────────────────────────────────
+
 
 class UniversalProxyHandler(http.server.BaseHTTPRequestHandler):
     processed_requests: int = 0
@@ -575,6 +590,7 @@ class UniversalProxyHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+
 def run(port: int = DEFAULT_PORT) -> None:
     # Check environment
     copilot_key = os.getenv("COPILOT_API_KEY")
@@ -623,6 +639,7 @@ def run(port: int = DEFAULT_PORT) -> None:
     signal.signal(signal.SIGTERM, shutdown_handler)
 
     httpd.serve_forever()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

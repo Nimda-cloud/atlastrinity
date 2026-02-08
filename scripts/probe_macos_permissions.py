@@ -28,5 +28,6 @@ async def probe():
     print("\n--- Cleanup ---")
     await mcp_manager.cleanup()
 
+
 if __name__ == "__main__":
     asyncio.run(probe())

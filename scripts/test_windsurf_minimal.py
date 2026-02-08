@@ -29,50 +29,52 @@ except ImportError as e:
 # Test with a single free model
 TEST_MODEL = "deepseek-v3"  # Using a single free model to minimize dependencies
 
+
 def main():
     print("Windsurf Minimal Test")
     print("=" * 50)
-    
+
     # Check API key
     api_key = os.environ.get("WINDSURF_API_KEY")
     if not api_key:
         print("ERROR: WINDSURF_API_KEY environment variable is required")
         print("Run: python -m providers.get_windsurf_token")
         sys.exit(1)
-    
+
     print(f"Testing model: {TEST_MODEL}")
     print("-" * 50)
-    
+
     try:
         # Initialize the model with direct mode to avoid LS detection
         print("Initializing WindsurfLLM...")
         llm = WindsurfLLM(model_name=TEST_MODEL)
-        
+
         # Simple test prompt
         prompt = "What is the capital of France? Answer in one word."
         print(f"\nSending prompt: {prompt}")
-        
+
         # Make the API call
         start_time = time.time()
         response = llm.invoke([{"role": "user", "content": prompt}])
         elapsed = time.time() - start_time
-        
+
         # Process the response
-        if hasattr(response, 'content'):
+        if hasattr(response, "content"):
             content = str(response.content)
         else:
             content = str(response)
-            
+
         print(f"\nResponse ({elapsed:.2f}s):")
         print("-" * 40)
         print(content.strip() if isinstance(content, str) else str(content))
         print("-" * 40)
-        
+
     except Exception as e:
         print(f"\n❌ Error: {e!s}")
         print("\nMake sure you have the required dependencies installed:")
         print("  pip install requests tenacity")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

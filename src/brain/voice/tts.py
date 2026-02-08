@@ -40,6 +40,7 @@ except ImportError:
 TTS_AVAILABLE = None
 TTS = None
 
+
 def _check_tts_available():
     global TTS_AVAILABLE
     if TTS_AVAILABLE is not None:
@@ -62,6 +63,7 @@ def _check_tts_available():
             "[TTS] Warning: ukrainian-tts not installed. Run: pip install git+https://github.com/robinhad/ukrainian-tts.git",
         )
     return TTS_AVAILABLE
+
 
 def _patch_tts_config(cache_dir: Path):
     """Ensures config.yaml in cache_dir uses absolute paths for stats_file.
@@ -106,6 +108,7 @@ def _patch_tts_config(cache_dir: Path):
 
     except Exception as e:
         print(f"[TTS] Warning: Failed to patch config.yaml: {e}", file=sys.stderr)
+
 
 def sanitize_text_for_tts(text: str) -> str:
     """Cleans text for better TTS pronunciation.
@@ -214,6 +217,7 @@ def sanitize_text_for_tts(text: str) -> str:
 
     return text.strip()
 
+
 @dataclass
 class VoiceConfig:
     """Voice configuration for an agent"""
@@ -221,6 +225,7 @@ class VoiceConfig:
     name: str
     voice_id: str
     description: str
+
 
 # Agent voice mappings
 AGENT_VOICES = {
@@ -236,6 +241,7 @@ AGENT_VOICES = {
     ),
     "grisha": VoiceConfig(name="Grisha", voice_id="Mykyta", description="Male voice for Visor"),
 }
+
 
 class AgentVoice:
     """TTS wrapper for agent voices
@@ -408,6 +414,7 @@ class AgentVoice:
             print(f"[TTS] Error playing audio: {e}", file=sys.stderr)
             return False
 
+
 class VoiceManager:
     """Centralized TTS manager for all agents"""
 
@@ -493,7 +500,6 @@ class VoiceManager:
     async def _get_translator(self):
         """Lazy load a small/fast model for translation defense."""
         if self._translator_llm is None:
-
             from ..config import PROJECT_ROOT
 
             if str(PROJECT_ROOT) not in sys.path:

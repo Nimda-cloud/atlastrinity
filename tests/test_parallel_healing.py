@@ -12,6 +12,7 @@ def manager():
         mgr = ParallelHealingManager()
         return mgr
 
+
 @pytest.mark.asyncio
 async def test_submit_healing_task(manager):
     # Mock dependencies
@@ -35,6 +36,7 @@ async def test_submit_healing_task(manager):
         mock_create_task.assert_called_once()
         mock_notify.assert_called_once_with(task)
 
+
 @pytest.mark.asyncio
 async def test_max_concurrent_tasks(manager):
     # Fill up tasks
@@ -49,6 +51,7 @@ async def test_max_concurrent_tasks(manager):
     # Try to add 3rd
     with pytest.raises(RuntimeError, match="Max concurrent healing tasks reached"):
         await manager.submit_healing_task("s3", "err", {}, "")
+
 
 @pytest.mark.asyncio
 async def test_acknowledge_fix(manager):
@@ -75,6 +78,7 @@ async def test_acknowledge_fix(manager):
     assert result is True
     assert len(manager._fixed_queue) == 0
     assert t1.status == HealingStatus.ACKNOWLEDGED
+
 
 @pytest.mark.asyncio
 async def test_run_healing_workflow_success(manager):
@@ -103,6 +107,7 @@ async def test_run_healing_workflow_success(manager):
         assert task.fix_description is not None and "Use the foo bar" in task.fix_description
         assert len(manager._fixed_queue) == 1
         mock_notify.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_run_healing_workflow_grisha_reject(manager):

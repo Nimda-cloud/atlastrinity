@@ -20,6 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 class MonitoringSystem:
     """
     Comprehensive monitoring system.
@@ -523,8 +524,10 @@ class MonitoringSystem:
         except Exception:
             return False
 
+
 # Global monitoring instance - use lazy initialization to avoid duplicate metric registration
 monitoring_system = None
+
 
 def get_monitoring_system():
     """Get the global monitoring system instance (singleton pattern)."""

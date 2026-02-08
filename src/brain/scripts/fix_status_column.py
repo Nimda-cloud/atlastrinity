@@ -5,6 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
+
 async def fix_schema():
     from pathlib import Path
 
@@ -37,6 +38,7 @@ async def fix_schema():
         print("✅ Database schema fix completed successfully.")
     except Exception as e:
         print(f"❌ Failed to fix database schema: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(fix_schema())

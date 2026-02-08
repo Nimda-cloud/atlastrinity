@@ -69,10 +69,12 @@ def check_secrets() -> bool:
     print("✅ Secret check complete")
     return True
 
+
 def main():
     """Main entry point."""
     success = check_secrets()
     sys.exit(0 if success else 1)
+
 
 if __name__ == "__main__":
     main()

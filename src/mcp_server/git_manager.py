@@ -73,6 +73,7 @@ node_modules/
     except Exception as e:
         return {"initialized": False, "error": str(e)}
 
+
 def setup_github_remote(
     project_path: Path, repo_name: str | None = None, github_token: str | None = None
 ) -> dict[str, Any]:
@@ -153,6 +154,7 @@ def setup_github_remote(
     except Exception as e:
         return {"configured": False, "error": str(e)}
 
+
 def _get_github_token_from_env(project_path: Path) -> str | None:
     """Read GITHUB_TOKEN from global .env (~/.config/atlastrinity/.env).
 
@@ -198,6 +200,7 @@ def _get_github_token_from_env(project_path: Path) -> str | None:
     # Fallback to environment variable
     return os.environ.get("GITHUB_TOKEN")
 
+
 def _get_existing_remote(project_path: Path) -> str | None:
     """Get existing origin remote URL."""
     try:
@@ -214,6 +217,7 @@ def _get_existing_remote(project_path: Path) -> str | None:
         pass
     return None
 
+
 def _extract_repo_name(remote_url: str) -> str | None:
     """Extract 'user/repo' from git remote URL."""
     # Handle HTTPS URLs
@@ -229,6 +233,7 @@ def _extract_repo_name(remote_url: str) -> str | None:
         return parts if "/" in parts else None
 
     return None
+
 
 def _configure_git_user(project_path: Path) -> None:
     """Configure git user.name and user.email if not set."""
@@ -256,6 +261,7 @@ def _configure_git_user(project_path: Path) -> None:
             )
     except Exception:
         pass
+
 
 def get_git_changes(project_path: Path, commits_back: int = 1) -> dict[str, Any]:
     """Get git log and diff for analysis.

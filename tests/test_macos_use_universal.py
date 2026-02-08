@@ -4,6 +4,7 @@ import os
 
 BINARY_PATH = "vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use"
 
+
 async def main():
     if not os.path.exists(BINARY_PATH):
         print(f"Binary not found at {BINARY_PATH}")
@@ -133,6 +134,7 @@ async def main():
         print(f"Error: {e}")
     finally:
         process.terminate()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

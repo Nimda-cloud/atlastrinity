@@ -27,6 +27,7 @@ REQUIRED_SERVICES = [
     "addressvalidation.googleapis.com",
 ]
 
+
 class Colors:
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -37,20 +38,26 @@ class Colors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
 
+
 def print_step(msg):
     print(f"{Colors.BOLD}{Colors.OKBLUE}[GCP]{Colors.ENDC} {msg}")
+
 
 def print_success(msg):
     print(f"{Colors.OKGREEN}✓{Colors.ENDC} {msg}")
 
+
 def print_warning(msg):
     print(f"{Colors.WARNING}⚠{Colors.ENDC} {msg}")
+
 
 def print_error(msg):
     print(f"{Colors.FAIL}✗{Colors.ENDC} {msg}")
 
+
 def print_info(msg):
     print(f"{Colors.OKCYAN}ℹ{Colors.ENDC} {msg}")
+
 
 def run_command(cmd, capture_output=True, check=True):
     try:
@@ -62,6 +69,7 @@ def run_command(cmd, capture_output=True, check=True):
         if check:
             raise e
         return e
+
 
 def check_current_key():
     """Перевірка наявності ключа в .env"""
@@ -83,6 +91,7 @@ def check_current_key():
 
     print_success(f"Знайдено діючий ключ: {key[:10]}...")
     return key
+
 
 def check_gcloud():
     """Перевірка та встановлення gcloud CLI якщо потрібно"""
@@ -134,6 +143,7 @@ def check_gcloud():
     print_success("gcloud знайдено")
     return True
 
+
 def check_auth():
     print_step("Перевірка Google Cloud authentication...")
     result = run_command(["gcloud", "auth", "list", "--format=json"], check=False)
@@ -151,6 +161,7 @@ def check_auth():
                 run_command(["gcloud", "auth", "login"], capture_output=False)
         except Exception:
             run_command(["gcloud", "auth", "login"], capture_output=False)
+
 
 def get_or_create_project():
     print_step("Управління GCP проектом...")
@@ -191,6 +202,7 @@ def get_or_create_project():
     except (ValueError, IndexError):
         print_error("Невірний вибір")
         sys.exit(1)
+
 
 def create_project():
     """Створення нового GCP проекту з обробкою помилок"""
@@ -281,6 +293,7 @@ def create_project():
         )
         sys.exit(1)
 
+
 def check_billing(project_id):
     """Перевірка прив'язки Білінгу до проекту"""
     print_step("Перевірка статусу Billing...")
@@ -302,6 +315,7 @@ def check_billing(project_id):
     except Exception as e:
         print_warning(f"Не вдалося перевірити статус білінгу: {e}")
         return True
+
 
 def enable_apis(project_id):
     print_step("Перевірка та увімкнення необхідних Google Maps API...")
@@ -325,6 +339,7 @@ def enable_apis(project_id):
                 print_info("Продовжуємо налаштування інших API...")
     print_success("Процес увімкнення API завершено")
 
+
 def ensure_key_unrestricted(project_id, key_name):
     """Знімає обмеження з ключа для уникнення ApiTargetBlockedMapError"""
     print_step("Оптимізація обмежень API ключа...")
@@ -346,6 +361,7 @@ def ensure_key_unrestricted(project_id, key_name):
         print_success("Обмеження API ключа очищено (Повний доступ увімкнено)")
     except Exception as e:
         print_warning(f"Не вдалося очистити обмеження автоматично: {e}")
+
 
 def get_or_create_api_key(project_id):
     print_step("Управління API ключем...")
@@ -416,6 +432,7 @@ def get_or_create_api_key(project_id):
         api_key = input("Введіть ваш API ключ: ").strip()
         return api_key
 
+
 def offer_manual_setup():
     """Ручне налаштування через веб-консоль"""
     print_step("Ручне налаштування Google Maps API")
@@ -453,6 +470,7 @@ def offer_manual_setup():
         sys.exit(1)
 
     return api_key
+
 
 def update_env(api_key):
     print_step("Оновлення .env файлу...")
@@ -502,6 +520,7 @@ def update_env(api_key):
     except Exception as e:
         print_warning(f"Не вдалося синхронізувати: {e}")
 
+
 def main():
     print(f"\n{Colors.BOLD}{Colors.HEADER}=== AtlasTrinity Google Maps Setup ==={Colors.ENDC}\n")
 
@@ -547,6 +566,7 @@ def main():
         print(f"{Colors.BOLD}{'=' * 60}{Colors.ENDC}\n")
     else:
         print_error("Не вдалося отримати API ключ.")
+
 
 if __name__ == "__main__":
     main()

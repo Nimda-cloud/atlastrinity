@@ -22,12 +22,14 @@ server = FastMCP("whisper-stt")
 # Shared STT instance (lazy-loaded fallback)
 _local_stt = None
 
+
 async def get_local_stt() -> Any:
     global _local_stt
     if _local_stt is None:
         model_name = config.get("voice.stt.model", "large-v3")
         _local_stt = WhisperSTT(model_name=model_name)
     return _local_stt
+
 
 async def _transcribe_via_brain(audio_path: str) -> str | None:
     """Спроба відправити аудіо на основний сервер AtlasBrain для економії пам'яті"""
@@ -45,6 +47,7 @@ async def _transcribe_via_brain(audio_path: str) -> str | None:
         print(f"[MCP Whisper] Brain API fallback: {e}")
     return None
 
+
 @server.tool()
 async def transcribe_audio(audio_path: str, language: str | None = None) -> str:
     """Transcribe an audio file to text. Uses Brain server if available to save VRAM."""
@@ -59,6 +62,7 @@ async def transcribe_audio(audio_path: str, language: str | None = None) -> str:
     result = await stt.transcribe_file(audio_path, language=lang)
     return cast("str", result.text)
 
+
 @server.tool()
 async def record_and_transcribe(duration: float = 5.0, language: str | None = None) -> str:
     """Record audio from microphone and transcribe it."""
@@ -67,6 +71,7 @@ async def record_and_transcribe(duration: float = 5.0, language: str | None = No
     lang = language or config.get("voice.stt.language", "uk")
     result = await stt.record_and_transcribe(duration, language=lang)
     return cast("str", result.text)
+
 
 if __name__ == "__main__":
     server.run()

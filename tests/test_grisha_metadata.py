@@ -40,5 +40,6 @@ def test_grisha_metadata_logic():
     assert isinstance(attributes["issues"], str), "FAILED: 'issues' should be a string"
     print("\n✅ Grisha metadata logic test passed!")
 
+
 if __name__ == "__main__":
     test_grisha_metadata_logic()

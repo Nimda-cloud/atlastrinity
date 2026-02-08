@@ -30,6 +30,7 @@ MAPPINGS = {
     "prometheus.yml.template": "prometheus.yml",
 }
 
+
 def load_env():
     env_file = PROJECT_ROOT / ".env"
     if env_file.exists():
@@ -41,6 +42,7 @@ def load_env():
                 if "=" in line:
                     key, value = line.split("=", 1)
                     os.environ[key.strip()] = value.strip()
+
 
 def substitute_vars(content: str) -> str:
     replacements = {
@@ -58,6 +60,7 @@ def substitute_vars(content: str) -> str:
         if env_val is not None:
             content = content.replace(f"${{{var_name}}}", env_val)
     return content
+
 
 def validate_yaml(template_content: str, target_path: Path):
     """
@@ -110,6 +113,7 @@ def validate_yaml(template_content: str, target_path: Path):
     except Exception as e:
         print(f"  [!] Could not perform logic check for {target_path.name}: {e}")
 
+
 def sync_file(rel_src: str, rel_dst: str):
     src_path = CONFIG_SRC_ROOT / rel_src
     dst_path = CONFIG_DST_ROOT / rel_dst
@@ -139,12 +143,14 @@ def sync_file(rel_src: str, rel_dst: str):
         # or we could implement a deep merge. Let's do a simple check first.
         validate_yaml(template_content, dst_path)
 
+
 def main():
     load_env()
     print("=== AtlasTrinity Advanced Config Sync & Validator ===")
     for rel_src, rel_dst in MAPPINGS.items():
         sync_file(rel_src, rel_dst)
     print("=====================================================")
+
 
 if __name__ == "__main__":
     main()

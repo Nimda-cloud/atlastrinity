@@ -44,5 +44,6 @@ async def verify_mission_depth():
     else:
         print("⚠ WARNING: Response might be too brief")
 
+
 if __name__ == "__main__":
     asyncio.run(verify_mission_depth())

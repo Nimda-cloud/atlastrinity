@@ -38,6 +38,7 @@ class MockContext:
         print(f"[{level.upper()}] {message}")
         self.output.append(message)
 
+
 async def test_vibe_which():
     """Test that vibe_which locates the binary."""
     print("\n=== TEST: vibe_which ===")
@@ -52,6 +53,7 @@ async def test_vibe_which():
     print(f"❌ Failed: {result.get('error')}")
     return False
 
+
 async def test_prepare_prompt_small():
     """Test that small prompts don't create files."""
     print("\n=== TEST: handle_long_prompt (small) ===")
@@ -64,6 +66,7 @@ async def test_prepare_prompt_small():
         return True
     print(f"❌ Unexpected file created: {file_path}")
     return False
+
 
 async def test_prepare_prompt_large():
     """Test that large prompts create files in INSTRUCTIONS_DIR."""
@@ -81,6 +84,7 @@ async def test_prepare_prompt_large():
         return True
     print(f"❌ File not in correct location: {file_path}")
     return False
+
 
 async def test_vibe_prompt_small_task():
     """Test vibe_prompt with a simple task."""
@@ -120,6 +124,7 @@ async def test_vibe_prompt_small_task():
     print(f"⚠️ Vibe ran but file not found at {test_file}")
     return False
 
+
 async def test_vibe_arg_filtering():
     """Test that forbidden arguments like --no-tui are filtered out."""
     print("\n=== TEST: vibe_prompt (argument filtering) ===")
@@ -144,6 +149,7 @@ async def test_vibe_arg_filtering():
     print(f"   Command run: {' '.join(command)}")
     return False
 
+
 async def test_vibe_analyze_error():
     """Test vibe_analyze_error to ensure prompt variable is fixed."""
     print("\n=== TEST: vibe_analyze_error ===")
@@ -161,6 +167,7 @@ async def test_vibe_analyze_error():
         return True
     print(f"❌ Failed: {result.get('error')}")
     return False
+
 
 async def main():
     print("=" * 60)
@@ -201,6 +208,7 @@ async def main():
     print(f"\nTotal: {passed}/{total} tests passed")
 
     return passed == total
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

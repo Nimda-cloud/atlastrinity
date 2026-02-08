@@ -5,6 +5,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+
 async def inspect_github():
     print("--- Inspecting GitHub MCP Server Tools ---")
 
@@ -92,6 +93,7 @@ async def inspect_github():
             await process.wait()
         except:
             pass
+
 
 if __name__ == "__main__":
     asyncio.run(inspect_github())
