@@ -1,7 +1,6 @@
 # Auto-approve agent configuration for Vibe
-# Automatically approves ALL tool executions
+# Full automation: ALL tools auto-approved without confirmation
 
-# Use raptor-mini for high-speed automated tasks
 active_model = "raptor-mini"
 system_prompt_id = "cli"
 

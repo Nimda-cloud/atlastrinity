@@ -1,61 +1,21 @@
 # =============================================================================
 # AtlasTrinity Behavior Configuration
 # =============================================================================
-# Single source of truth template. Auto-synced by watch_config.py.
-# Version: 2.0.0 (Optimized Config Templates)
-# Last Updated: 2026-01-31
-# =============================================================================
-
-# =============================================================================
-# ADAPTIVE BEHAVIOR CONFIGURATION
-# =============================================================================
-# Purpose: Centralized decision-making config for behavior_engine.py
-# 
+# Single source of truth for behavioral decision-making.
+# Version: 3.0.0 (Deduplicated & Optimized)
+# Last Updated: 2026-02-08
+#
 # This configuration drives:
-# - Intent detection & classification
-# - Strategy selection
-# - Tool routing
-# - Agent coordination
-# - Self-healing & escalation
-# - Project creation automation
-# 
-# Related Protocols (Internal Agents):
-# - src/brain/data/protocols/self-healing-protocol.md
-# - src/brain/data/protocols/create-new-program.md
-# - src/brain/data/protocols/*.txt (data, sdlc, search, storage, system_mastery, task, voice)
-# 
-# Windsurf Agent Workflows:
-# - .agent/workflows/github-operations.md (git operations for Windsurf)
-# - .agent/workflows/git-setup.md (git identity setup)
-# - .agent/workflows/integrity.md (integrity checks)
-# =============================================================================
-
-# =============================================================================
-# PROTOCOL DEFINITIONS
-# =============================================================================
-# Agent operational protocols are loaded from src/brain/data/protocols/
-# These protocols define behavior rules for Atlas, Tetyana, Grisha, and Vibe.
+# - Adaptive behavior patterns & self-healing
+# - Intent detection (LEGACY fallback for LLM-first classification)
+# - Tool routing & task classification
+# - Strategy selection & orchestration flow
+# - Workflow stages & execution parameters
+# - Software development & project creation workflows
 #
-# Protocol Files (loaded via mcp_registry.py):
-# - data_protocol.txt         : Data processing, ingestion, hygiene rules
-# - sdlc_protocol.txt          : Software development lifecycle (MANDATORY Vibe usage)
-# - search_protocol.txt        : Search strategies and data extraction
-# - storage_protocol.txt       : Memory schemas and storage locations
-# - system_mastery_protocol.txt: System understanding and recursive analysis
-# - task_protocol.txt          : Task execution doctrine
-# - voice_protocol.txt         : Voice communication rules (Ukrainian only)
-# - vibe_docs.txt              : Vibe MCP server documentation
-# - create-new-program.md      : Project creation workflow
-# - self-healing-protocol.md   : Autonomous recovery procedures
-# - system_monitoring_protocol.md: System state verification
-#
-# Protocol Integration:
-# - Loaded at startup via src/brain/mcp_registry.py:load_registry()
-# - Injected into agent prompts via src/brain/prompts/ (ATLAS, TETYANA, GRISHA)
-# - Atlas chat/solo_task: SELECTIVE injection via ModeProfile (mode_profiles.json)
-#   e.g. chat gets only ["voice"], solo_task gets ["voice", "search"]
-# - Tetyana/Grisha (task/dev): receive full protocol set for execution
-# - Protocol selection: src/brain/mcp_registry.py:get_protocols_by_names()
+# Protocols loaded from: src/brain/data/protocols/ (via mcp_registry.py)
+# Mode definitions: src/brain/data/mode_profiles.json (via mode_router.py)
+# System config (models, paths, DB, monitoring): config.yaml
 # =============================================================================
 
 patterns:
@@ -223,7 +183,6 @@ intent_detection:
       - 'mission'
       - 'хто тебе створив'
       - 'хто твій батько'
-      - 'твоя мета'
     intent: chat
     priority: highest
     use_deep_persona: true
@@ -1101,9 +1060,8 @@ engine:
   pattern_confidence_threshold: 0.6
   max_pattern_evaluations_per_request: 10
 
-  # Logging
+  # Logging (log level inherited from config.yaml logging.level)
   log_decisions: true
-  log_level: INFO
 
 # =============================================================================
 # ADVANCED ORCHESTRATOR SETTINGS
@@ -1313,21 +1271,11 @@ advanced:
       base_step_timeout: 120          # Base timeout in seconds
       timeout_multiplier_on_retry: 1.5
       
-    # Verification phase
+    # Verification phase (two_phase settings → workflow_stages.task.verification)
     verification:
       require_grisha_audit: false     # Require Grisha verification
       audit_frequency: on_failure     # always | on_failure | never
       quality_threshold: 0.7          # Minimum quality to pass
-      
-      # NEW: Two-Phase Sequential-Thinking Verification
-      two_phase_verification:
-        enabled: true                 # Use enhanced logical verification
-        phase1_thoughts: 3            # Sequential-thinking iterations for goal analysis
-        phase2_thoughts: 4            # Sequential-thinking iterations for verdict formation
-        single_success_rule: true     # Allow 1 successful tool to verify step
-        fallback_to_mechanical: true  # Use old logic if sequential-thinking fails
-        empty_results_as_error: true  # Treat empty results in info-tasks as errors
-        max_tools_per_verification: 4 # Maximum verification tools to execute
   
   # ---------------------------------------------------------------------------
   # MEMORY AND LEARNING
@@ -1350,32 +1298,9 @@ advanced:
     compression_threshold: 50
 
 # =============================================================================
-# MODEL-SPECIFIC OVERRIDES
-# =============================================================================
-# Fine-tune model behavior for specific scenarios
-
-model_overrides:
-  # Use different models for specific task types
-  task_specific:
-    vision_tasks:
-      preferred_model: vision        # From models.vision in config.yaml
-      fallback_model: default
-      
-    code_tasks:
-      preferred_model: code_analysis
-      fallback_model: vibe_default   # Route to Vibe binary
-      
-    deep_reasoning:
-      preferred_model: reasoning
-      enable_sequential_thinking: true
-      
-    simple_chat:
-      preferred_model: fallback      # Use faster model for chat
-      skip_planning: true
-
-# =============================================================================
 # WORKFLOW STAGES CONFIGURATION (SUPPLEMENTARY)
 # =============================================================================
+# Model selection per stage is defined inline via preferred_model / model_selection.
 # Define execution stages and their detailed behavior parameters.
 #
 # NOTE (v2.1.0): The authoritative MODE DEFINITIONS (which mode to select,
@@ -1426,17 +1351,9 @@ workflow_stages:
     skip_planning: true
     include_system_history: true     # Include our shared history
     
-    # Triggers
+    # Triggers (keywords defined in intent_detection.philosophical_query)
     triggers:
       identity_topics: true          # Questions about Atlas identity
-      philosophical_keywords: 
-        - "хто ти"
-        - "душа"
-        - "призначення"
-        - "філософія"
-        - "who are you"
-        - "your purpose"
-        - "your soul"
       emotional_topics: true         # Heart-to-heart discussions
       
     # Model selection
@@ -1561,13 +1478,15 @@ workflow_stages:
       on_failure_only: true
       quality_threshold: 0.7
       
-      # Two-Phase Sequential-Thinking Verification (NEW)
+      # Two-Phase Sequential-Thinking Verification (canonical location)
       two_phase_verification:
         enabled: true                 # Enhanced logical verification
         phase1_thoughts: 3            # Goal analysis depth
         phase2_thoughts: 4            # Verdict analysis depth
         single_success_rule: true     # 1 success can verify step
+        fallback_to_mechanical: true  # Use old logic if sequential-thinking fails
         empty_results_as_error: true  # Empty data = failure for info tasks
+        max_tools_per_verification: 4 # Maximum verification tools to execute
       
     # Model selection (cascading from task type)
     model_selection:
@@ -1603,11 +1522,6 @@ workflow_stages:
       execution: code_analysis
       verification: default
       code_review: vibe_default       # Use Vibe for code review
-
-# =============================================================================
-# PATH CONFIGURATION
-# =============================================================================
-# Centralized path management for all system components
 
 # =============================================================================
 # BEHAVIOR-SPECIFIC PATHS

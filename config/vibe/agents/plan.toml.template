@@ -1,21 +1,10 @@
 # Plan agent configuration for Vibe
-# Conservative mode for planning and exploration
+# Conservative mode: read-only exploration, write/execute require confirmation
 
-# Use raptor-mini for deep planning and reasoning (Verified Raptor Preview)
 active_model = "raptor-mini"
 system_prompt_id = "cli"
 
-# Optimize: Unrestricted access to all native tools for exploration
-
-[tools.bash]
-permission = "always"
-
-[tools.write_file]
-permission = "always"
-
-[tools.search_replace]
-permission = "always"
-
+# Read-only tools — safe for exploration
 [tools.read_file]
 permission = "always"
 
@@ -25,7 +14,17 @@ permission = "always"
 [tools.ls]
 permission = "always"
 
-# MCP Tools
+# Write/execute tools — require confirmation during planning
+[tools.bash]
+permission = "ask"
+
+[tools.write_file]
+permission = "ask"
+
+[tools.search_replace]
+permission = "ask"
+
+# MCP Tools — analysis only
 [tools.devtools_devtools_lint_python]
 permission = "always"
 

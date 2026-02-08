@@ -65,11 +65,6 @@ class SystemConfig:
                 "use_defaults": False,
             },
             {
-                "global": CONFIG_ROOT / "vibe_config.toml",
-                "template": PROJECT_ROOT / "config" / "vibe_config.toml.template",
-                "use_defaults": False,
-            },
-            {
                 "global": MCP_DIR / "config.json",
                 "template": PROJECT_ROOT / "src" / "mcp_server" / "config.json.template",
                 "use_defaults": False,

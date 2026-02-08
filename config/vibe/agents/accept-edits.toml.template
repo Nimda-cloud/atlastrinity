@@ -1,13 +1,11 @@
 # Accept-edits agent configuration for Vibe
-# Automatically approves file modification tools
+# Auto-approves file reads/writes; bash requires confirmation
 
-# Use gpt-5-mini for fast and precise edits
 active_model = "gpt-5-mini"
 system_prompt_id = "cli"
 
-# Optimize: Unrestricted access to all native tools for applying edits
-
-[tools.bash]
+# File tools — auto-approved for applying edits
+[tools.read_file]
 permission = "always"
 
 [tools.write_file]
@@ -16,16 +14,17 @@ permission = "always"
 [tools.search_replace]
 permission = "always"
 
-[tools.read_file]
-permission = "always"
-
 [tools.grep]
 permission = "always"
 
 [tools.ls]
 permission = "always"
 
-# MCP Tools - DevTools
+# Shell execution — requires confirmation (may have side effects)
+[tools.bash]
+permission = "ask"
+
+# MCP Tools — lint after edits
 [tools.devtools_devtools_lint_python]
 permission = "always"
 

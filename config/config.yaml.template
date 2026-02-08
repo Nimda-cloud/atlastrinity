@@ -1,26 +1,7 @@
-# Синхронізовано: 2026-01-31 (v5.0 - Optimized Config Templates)
-
-# =============================================================================
-# PROTOCOL DEFINITIONS
-# =============================================================================
-# Agent operational protocols define behavior rules for Atlas, Tetyana, Grisha.
-# Protocols are loaded from: src/brain/data/protocols/
-#
-# Available Protocols:
-# - data_protocol.txt          : Data processing and ingestion rules
-# - sdlc_protocol.txt          : Software development (MANDATORY Vibe MCP usage)
-# - search_protocol.txt        : Search strategies
-# - storage_protocol.txt       : Memory and storage management
-# - system_mastery_protocol.txt: System understanding
-# - task_protocol.txt          : Task execution doctrine
-# - voice_protocol.txt         : Voice communication (Ukrainian only)
-# - vibe_docs.txt              : Vibe MCP documentation
-# - create-new-program.md      : Project creation workflow
-# - self-healing-protocol.md   : Autonomous recovery
-# - system_monitoring_protocol.md: System state verification
-#
-# Protocols are loaded at startup via src/brain/mcp_registry.py
-# =============================================================================
+# Синхронізовано: 2026-02-08 (v6.0 - Deduplicated & Optimized)
+# Protocol definitions → behavior_config.yaml
+# Monitoring scrape/eval intervals → prometheus.yml
+# Tool routing & intent detection → behavior_config.yaml
 
 # =============================================================================
 # GLOBAL MODEL CONFIGURATION
@@ -98,8 +79,8 @@ agents:
 # =============================================================================
 # MCP SERVER CONFIGURATION
 # =============================================================================
-# Feature Flags Only.
-# Detailed configuration (command, args, env) is in mcp_servers.json.
+# Feature flags only. Full server config (command, args, env) → mcp_servers.json
+# Server names must match keys in mcp_servers.json exactly.
 
 mcp_enhanced:
   retry_attempts: 3
@@ -107,61 +88,35 @@ mcp_enhanced:
 
 mcp:
   # === TIER 1: MUST-HAVE (Ядро системи) ===
-  macos_use:
-    enabled: true
-
-  filesystem:
-    enabled: true
-
+  macos_use:           { enabled: true }
+  filesystem:          { enabled: true }
   sequential_thinking:
     enabled: true
     model: "oswe-vscode-secondary"   # Critical for complex reasoning
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
-  googlemaps:
-    enabled: true
-
-  vibe:
-    enabled: true
-    # Configuration is in vibe_config.toml
-
-  memory:
-    enabled: true
-
-  graph:
-    enabled: true
-
-  redis:
-    enabled: true
-
-  duckduckgo_search:
-    enabled: true
-
-  golden_fund:
-    enabled: true
-
-  data_analysis:
-    enabled: true
-
-  github:
-    enabled: true
-
-  whisper_stt:
-    enabled: true
-
-  devtools:
-    enabled: true
+  googlemaps:          { enabled: true }
+  xcodebuild:          { enabled: true }
+  vibe:                { enabled: true }  # Config → vibe_config.toml
+  memory:              { enabled: true }
+  graph:               { enabled: true }
+  redis:               { enabled: true }
+  duckduckgo_search:   { enabled: true }
+  golden_fund:         { enabled: true }
+  data_analysis:       { enabled: true }
+  github:              { enabled: true }
+  whisper_stt:         { enabled: true }
+  devtools:            { enabled: true }
+  tour_guide:          { enabled: true }
 
   # === TIER 3: ADDITIONAL (Додаткові) ===
-  puppeteer:
-    enabled: true
+  puppeteer:           { enabled: true }
+  context7:            { enabled: true }
+  react_devtools:      { enabled: true }
 
   # === TIER 4: SPECIALIZED (Спеціалізовані / Дебаг) ===
-  chrome_devtools:
-    enabled: true
-
-  context7:
-    enabled: true # External documentation server
+  chrome_devtools:     { enabled: true }
+  postgres:            { enabled: false }  # Experimental, disabled by default
 
 # =============================================================================
 # ORCHESTRATOR CONFIGURATION
@@ -221,24 +176,6 @@ system:
     stt: ${CONFIG_ROOT}/models/faster-whisper
     stanza: ${CONFIG_ROOT}/models/stanza
     huggingface: ${CONFIG_ROOT}/models/huggingface
-
-# =============================================================================
-# API CONFIGURATION
-# =============================================================================
-
-api:
-  timeout: 60
-  retry_count: 3
-
-# =============================================================================
-# DATABASE CONFIGURATION
-# =============================================================================
-# Database configuration moved to database_management section below for centralized management
-
-# =============================================================================
-# STATE MANAGEMENT
-# =============================================================================
-# Redis URL configured in database_management.redis.url section below
 
 # =============================================================================
 # LOGGING CONFIGURATION
@@ -441,12 +378,10 @@ voice:
 # Settings for Prometheus, Grafana, and OpenSearch integration
 
 monitoring:
-  # Prometheus configuration
+  # Prometheus configuration (scrape/eval intervals → prometheus.yml)
   prometheus:
     enabled: true
     port: 8001
-    scrape_interval: 15s
-    evaluation_interval: 15s
     
   # Grafana configuration
   grafana:

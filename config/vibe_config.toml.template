@@ -140,22 +140,27 @@ output_price = 0.0
 
 # =============================================================================
 # Built-in Tool Permissions
-
 # =============================================================================
-[tools.bash]
-permission = "always"
-
-[tools.write_file]
-permission = "always"
-
+# Per-mode permissions are defined in config/vibe/agents/*.toml.template:
+#   plan.toml         — read-only tools auto, write/exec requires confirmation
+#   accept-edits.toml — file tools auto, bash requires confirmation
+#   auto-approve.toml — all tools auto-approved
+#
+# Fallback permissions when no agent mode is active:
 [tools.read_file]
 permission = "always"
 
 [tools.grep]
 permission = "always"
 
+[tools.bash]
+permission = "ask"
+
+[tools.write_file]
+permission = "ask"
+
 [tools.search_replace]
-permission = "always"
+permission = "ask"
 
 # =============================================================================
 # MCP Server Configuration (Optional)
