@@ -21,7 +21,7 @@ server = FastMCP("redis")
 _redis_client: redis.Redis | None = None
 
 
-def get_redis_client():
+def get_redis_client() -> redis.Redis:
     global _redis_client
     if _redis_client is None:
         # Use central config

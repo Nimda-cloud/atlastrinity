@@ -204,9 +204,7 @@ def _proto_find_strings(data: bytes, min_len: int = 4) -> list[str]:
             offset += ln
             try:
                 text = payload.decode("utf-8")
-                if len(text) >= min_len and all(
-                    32 <= ord(c) < 127 or c in "\n\r\t" for c in text
-                ):
+                if len(text) >= min_len and all(32 <= ord(c) < 127 or c in "\n\r\t" for c in text):
                     results.append(text)
             except UnicodeDecodeError:
                 pass
@@ -351,7 +349,8 @@ class WindsurfLLM(BaseChatModel):
             print(
                 f"[WINDSURF] Warning: Model '{self.model_name}' not in known models. "
                 f"Available: {available}",
-                file=sys.stderr, flush=True,
+                file=sys.stderr,
+                flush=True,
             )
 
         self.max_tokens = max_tokens or 4096
@@ -397,7 +396,7 @@ class WindsurfLLM(BaseChatModel):
                 self.ls_port = ls_port
                 self.ls_csrf = ls_csrf
                 # Prefer cascade mode (uses Cascade quota, bypasses Chat API block)
-                if forced_mode == "" or forced_mode == "cascade":
+                if forced_mode in ("", "cascade"):
                     self._mode = "cascade"
                 else:
                     self._mode = "local"
@@ -531,13 +530,15 @@ class WindsurfLLM(BaseChatModel):
                         text_parts.append(item)
                 content = " ".join(text_parts)
 
-            chat_messages.append({
-                "messageId": str(uuid.uuid4()),
-                "source": source,
-                "timestamp": now_rfc,
-                "conversationId": conv_id,
-                "intent": {"generic": {"text": content}},
-            })
+            chat_messages.append(
+                {
+                    "messageId": str(uuid.uuid4()),
+                    "source": source,
+                    "timestamp": now_rfc,
+                    "conversationId": conv_id,
+                    "intent": {"generic": {"text": content}},
+                }
+            )
 
         model_id = WINDSURF_MODELS.get(
             self.model_name or WINDSURF_DEFAULT_MODEL,
@@ -839,9 +840,7 @@ class WindsurfLLM(BaseChatModel):
             user_text = "\n\n".join(prompt_parts)
 
             # Resolve model UID for Cascade
-            model_uid = CASCADE_MODEL_MAP.get(
-                self.model_name or "", CASCADE_DEFAULT_MODEL
-            )
+            model_uid = CASCADE_MODEL_MAP.get(self.model_name or "", CASCADE_DEFAULT_MODEL)
 
             queue_rpc = channel.unary_unary(
                 f"{_GRPC_SVC}QueueCascadeMessage",
@@ -874,9 +873,7 @@ class WindsurfLLM(BaseChatModel):
                 response_deserializer=_id,
             )
             interrupt_req = (
-                _proto_msg(1, meta)
-                + _proto_str(2, cascade_id)
-                + _proto_str(3, queue_id)
+                _proto_msg(1, meta) + _proto_str(2, cascade_id) + _proto_str(3, queue_id)
             )
             interrupt_rpc(interrupt_req, metadata=grpc_md, timeout=15)
 
@@ -965,13 +962,9 @@ class WindsurfLLM(BaseChatModel):
         # Phase 1: Check for errors in all frames
         for frame in frames:
             if b"permission_denied" in frame or b"not enough credits" in frame:
-                raise RuntimeError(
-                    "Windsurf Cascade: not enough credits (quota exhausted)"
-                )
+                raise RuntimeError("Windsurf Cascade: not enough credits (quota exhausted)")
             if b"resource_exhausted" in frame:
-                raise RuntimeError(
-                    "Windsurf Cascade: resource exhausted (quota limit)"
-                )
+                raise RuntimeError("Windsurf Cascade: resource exhausted (quota limit)")
 
         # Phase 2: Find bot response using proto byte pattern
         # The bot message appears as: ...{response_text}...{response_text}...*z{len}bot-{uuid}
@@ -1177,6 +1170,7 @@ class WindsurfLLM(BaseChatModel):
             if self._mode == "cascade":
                 # Cascade is sync-only (gRPC streaming), run in thread
                 import asyncio
+
                 content = await asyncio.to_thread(self._call_cascade, messages)
                 return self._process_content(content)
             if self._mode == "local":

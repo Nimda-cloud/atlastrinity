@@ -4,7 +4,7 @@ import os
 import sys
 from collections.abc import Callable
 from io import BytesIO
-from typing import Any, ClassVar, Optional, Union, cast
+from typing import Any, cast
 
 import httpx
 import requests
