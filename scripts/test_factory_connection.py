@@ -2,6 +2,12 @@
 import os
 import sys
 
+<<<<<<< /Users/hawk/Documents/GitHub/atlastrinity/scripts/test_factory_connection.py
+=======
+# Add project root and src to path
+import os
+
+>>>>>>> /Users/hawk/.windsurf/worktrees/atlastrinity/atlastrinity-082ccc46/scripts/test_factory_connection.py
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))

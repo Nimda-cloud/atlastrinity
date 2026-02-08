@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T18:01:31.423632 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_factory_connection.py, src/brain/config_loader.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T17:28:41.623712 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/base_agent.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

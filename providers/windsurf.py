@@ -8,7 +8,7 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Union
 
 import grpc
 import httpx
@@ -23,7 +23,7 @@ from langchain_core.messages import (
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 # Type aliases
-ContentItem = str | dict[str, Any]
+ContentItem = Union[str, dict[str, Any]]
 
 # ─── Windsurf Free Models ────────────────────────────────────────────────────
 # Only FREE tier models from Windsurf/Codeium
@@ -324,15 +324,15 @@ class WindsurfLLM(BaseChatModel):
         WINDSURF_MODE        - Force mode: "local", "proxy", or "direct"
     """
 
-    model_name: str | None = None
-    vision_model_name: str | None = None
-    api_key: str | None = None
+    model_name: Union[str, None] = None
+    vision_model_name: Union[str, None] = None
+    api_key: Union[str, None] = None
     max_tokens: int = 4096
     proxy_url: str = "http://127.0.0.1:8085"
     direct_mode: bool = False
     api_server: str = "https://server.self-serve.windsurf.com"
     installation_id: str = ""
-    _tools: list[Any] | None = None
+    _tools: Union[list[Any], None] = None
     # Local LS mode fields
     ls_port: int = 0
     ls_csrf: str = ""
@@ -340,12 +340,12 @@ class WindsurfLLM(BaseChatModel):
 
     def __init__(
         self,
-        model_name: str | None = None,
-        vision_model_name: str | None = None,
-        api_key: str | None = None,
-        max_tokens: int | None = None,
-        proxy_url: str | None = None,
-        direct_mode: bool | None = None,
+        model_name: Union[str, None] = None,
+        vision_model_name: Union[str, None] = None,
+        api_key: Union[str, None] = None,
+        max_tokens: Union[int, None] = None,
+        proxy_url: Union[str, None] = None,
+        direct_mode: Union[bool, None] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -626,7 +626,7 @@ class WindsurfLLM(BaseChatModel):
         return struct.pack(">BI", 0, len(payload_bytes)) + payload_bytes
 
     @staticmethod
-    def _parse_streaming_frames(data: bytes) -> tuple[str, str | None]:
+    def _parse_streaming_frames(data: bytes) -> tuple[str, Union[str, None]]:
         """Parse Connect-RPC streaming frames.
 
         Returns:
@@ -1182,8 +1182,8 @@ class WindsurfLLM(BaseChatModel):
     def _generate(
         self,
         messages: list[BaseMessage],
-        stop: list[str] | None = None,
-        run_manager: Any | None = None,
+        stop: Union[list[str], None] = None,
+        run_manager: Union[Any, None] = None,
         **kwargs: Any,
     ) -> ChatResult:
         """Synchronous generation."""
@@ -1218,8 +1218,8 @@ class WindsurfLLM(BaseChatModel):
     async def _agenerate(
         self,
         messages: list[BaseMessage],
-        stop: list[str] | None = None,
-        run_manager: Any | None = None,
+        stop: Union[list[str], None] = None,
+        run_manager: Union[Any, None] = None,
         **kwargs: Any,
     ) -> ChatResult:
         """Asynchronous generation."""
@@ -1251,7 +1251,7 @@ class WindsurfLLM(BaseChatModel):
         self,
         messages: list[BaseMessage],
         *,
-        on_delta: Callable[[str], None] | None = None,
+        on_delta: Union[Callable[[str], None], None] = None,
     ) -> AIMessage:
         """Streaming invoke compatible with CopilotLLM interface."""
         try:
