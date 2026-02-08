@@ -55,25 +55,33 @@ COPILOT_MODEL_PATTERNS = [
 ]
 
 WINDSURF_MODEL_PATTERNS = [
-    "deepseek-v3",
-    "deepseek-r1",
+    # Windsurf-only models (used for auto-detection of provider)
+    "windsurf-fast",
     "swe-1",
     "swe-1.5",
+    # Free / unlimited Windsurf models
+    "deepseek-v3",
+    "deepseek-r1",
     "grok-code-fast-1",
-    "gpt-5.1-codex",
-    "gpt-5.1-codex-mini",
     "kimi-k2.5",
 ]
 
-# Windsurf internal model mapping
+# Windsurf internal model mapping (synced with providers/windsurf.py WINDSURF_MODELS)
 WINDSURF_MODEL_MAPPING = {
+    # Premium models (use Cascade message quota)
+    "claude-4.5-opus": "MODEL_CLAUDE_4_5_OPUS",
+    "claude-4-sonnet": "MODEL_CLAUDE_4_SONNET",
+    "claude-4.5-sonnet": "MODEL_PRIVATE_2",
+    "claude-haiku-4.5": "MODEL_PRIVATE_11",
+    "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
+    "gpt-5.1": "MODEL_PRIVATE_12",
+    "swe-1.5": "MODEL_SWE_1_5",
+    "windsurf-fast": "MODEL_CHAT_11121",
+    # Free / unlimited models
     "deepseek-v3": "MODEL_DEEPSEEK_V3",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
-    "swe-1.5": "MODEL_SWE_1_5",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
-    "gpt-5.1-codex": "MODEL_PRIVATE_9",
-    "gpt-5.1-codex-mini": "MODEL_PRIVATE_19",
     "kimi-k2.5": "kimi-k2-5",
 }
 

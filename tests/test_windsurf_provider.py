@@ -14,6 +14,7 @@ Tests cover:
 - invoke_with_stream
 - Parity with CopilotLLM interface
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -52,6 +53,7 @@ from providers.windsurf import (
 )
 
 # ─── Fixtures ──────────────────────────────────────────────────────────────
+
 
 @pytest.fixture(autouse=True)
 def _force_proxy_mode(monkeypatch):
@@ -92,12 +94,20 @@ def messages_with_tool_result():
     return [
         SystemMessage(content="You are helpful."),
         HumanMessage(content="Search for Python"),
-        AIMessage(content="", tool_calls=[{"id": "call_0", "type": "tool_call", "name": "search", "args": {"query": "Python"}}]),
-        ToolMessage(content="Python is a programming language.", name="search", tool_call_id="call_0"),
+        AIMessage(
+            content="",
+            tool_calls=[
+                {"id": "call_0", "type": "tool_call", "name": "search", "args": {"query": "Python"}}
+            ],
+        ),
+        ToolMessage(
+            content="Python is a programming language.", name="search", tool_call_id="call_0"
+        ),
     ]
 
 
 # ─── Test Initialization ──────────────────────────────────────────────────
+
 
 class TestInit:
     def test_basic_init(self, llm):
@@ -153,29 +163,35 @@ class TestInit:
 
 # ─── Test _has_image ──────────────────────────────────────────────────────
 
+
 class TestHasImage:
     def test_no_images(self, llm, simple_messages):
         assert llm._has_image(simple_messages) is False
 
     def test_with_image(self, llm):
         messages = [
-            HumanMessage(content=[
-                {"type": "text", "text": "What is this?"},
-                {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
-            ])
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "What is this?"},
+                    {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
+                ]
+            )
         ]
         assert llm._has_image(messages) is True
 
     def test_text_only_list_content(self, llm):
         messages = [
-            HumanMessage(content=[
-                {"type": "text", "text": "Just text"},
-            ])
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "Just text"},
+                ]
+            )
         ]
         assert llm._has_image(messages) is False
 
 
 # ─── Test bind_tools ──────────────────────────────────────────────────────
+
 
 class TestBindTools:
     def test_bind_list(self, llm):
@@ -191,6 +207,7 @@ class TestBindTools:
 
 
 # ─── Test _build_openai_payload ───────────────────────────────────────────
+
 
 class TestBuildOpenaiPayload:
     def test_basic_payload(self, llm, simple_messages):
@@ -229,10 +246,12 @@ class TestBuildOpenaiPayload:
 
     def test_image_stripped(self, llm):
         messages = [
-            HumanMessage(content=[
-                {"type": "text", "text": "Describe this"},
-                {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
-            ])
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "Describe this"},
+                    {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
+                ]
+            )
         ]
         payload = llm._build_openai_payload(messages)
         user_msg = payload["messages"][1]
@@ -252,6 +271,7 @@ class TestBuildOpenaiPayload:
 
 
 # ─── Test _build_connect_rpc_payload ──────────────────────────────────────
+
 
 class TestBuildConnectRpcPayload:
     def test_basic_structure(self, llm, simple_messages):
@@ -273,18 +293,21 @@ class TestBuildConnectRpcPayload:
 
 # ─── Test _process_content ────────────────────────────────────────────────
 
+
 class TestProcessContent:
     def test_plain_text_no_tools(self, llm):
         result = llm._process_content("Hello world")
         assert result.generations[0].message.content == "Hello world"
 
     def test_tool_call_extraction(self, llm_with_tools):
-        content = json.dumps({
-            "tool_calls": [
-                {"name": "search", "args": {"query": "Python"}},
-            ],
-            "final_answer": "Шукаю...",
-        })
+        content = json.dumps(
+            {
+                "tool_calls": [
+                    {"name": "search", "args": {"query": "Python"}},
+                ],
+                "final_answer": "Шукаю...",
+            }
+        )
         result = llm_with_tools._process_content(content)
         msg = result.generations[0].message
         assert len(msg.tool_calls) == 1
@@ -307,6 +330,7 @@ class TestProcessContent:
 
 # ─── Test _generate (test/dummy mode) ────────────────────────────────────
 
+
 class TestGenerateTestMode:
     def test_sync_invoke(self, llm, simple_messages):
         result = llm.invoke(simple_messages)
@@ -319,9 +343,7 @@ class TestGenerateTestMode:
         assert "[WINDSURF TEST] OK" in result.content
 
     def test_async_invoke(self, llm, simple_messages):
-        result = asyncio.get_event_loop().run_until_complete(
-            llm.ainvoke(simple_messages)
-        )
+        result = asyncio.get_event_loop().run_until_complete(llm.ainvoke(simple_messages))
         assert "[WINDSURF TEST]" in result.content
 
     def test_test_mode_with_tools(self, llm_with_tools):
@@ -331,16 +353,19 @@ class TestGenerateTestMode:
 
     def test_list_content_in_test_mode(self, llm):
         messages = [
-            HumanMessage(content=[
-                {"type": "text", "text": "Describe image"},
-                {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
-            ])
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "Describe image"},
+                    {"type": "image_url", "image_url": {"url": "data:image/png;base64,abc"}},
+                ]
+            )
         ]
         result = llm.invoke(messages)
         assert "Describe image" in result.content
 
 
 # ─── Test invoke_with_stream ──────────────────────────────────────────────
+
 
 class TestInvokeWithStream:
     def test_stream_test_mode(self, llm, simple_messages):
@@ -354,6 +379,7 @@ class TestInvokeWithStream:
 
 
 # ─── Test _parse_streaming_frames ─────────────────────────────────────────
+
 
 class TestParseStreamingFrames:
     def test_empty_data(self):
@@ -377,7 +403,9 @@ class TestParseStreamingFrames:
         assert err == "Error!"
 
     def test_trailer_error(self):
-        frame_data = json.dumps({"error": {"code": "not_found", "message": "Model not found"}}).encode()
+        frame_data = json.dumps(
+            {"error": {"code": "not_found", "message": "Model not found"}}
+        ).encode()
         data = struct.pack(">BI", 0x02, len(frame_data)) + frame_data
         text, err = WindsurfLLM._parse_streaming_frames(data)
         assert "not_found" in err
@@ -398,6 +426,7 @@ class TestParseStreamingFrames:
 
 # ─── Test _make_envelope ──────────────────────────────────────────────────
 
+
 class TestMakeEnvelope:
     def test_envelope_format(self):
         payload = {"key": "value"}
@@ -410,6 +439,7 @@ class TestMakeEnvelope:
 
 
 # ─── Test Proto Helpers ───────────────────────────────────────────────────
+
 
 class TestProtoHelpers:
     def test_proto_varint_small(self):
@@ -440,6 +470,7 @@ class TestProtoHelpers:
 
 # ─── Test _extract_cascade_response ───────────────────────────────────────
 
+
 class TestExtractCascadeResponse:
     def test_empty_frames(self):
         result = WindsurfLLM._extract_cascade_response([], "user text")
@@ -458,6 +489,7 @@ class TestExtractCascadeResponse:
 
 # ─── Test _process_openai_result ──────────────────────────────────────────
 
+
 class TestProcessOpenaiResult:
     def test_empty_choices(self, llm):
         result = llm._process_openai_result({}, [])
@@ -471,6 +503,7 @@ class TestProcessOpenaiResult:
 
 # ─── Test _internal_text_invoke ───────────────────────────────────────────
 
+
 class TestInternalTextInvoke:
     def test_returns_ai_message(self, llm):
         messages = [HumanMessage(content="test")]
@@ -481,20 +514,24 @@ class TestInternalTextInvoke:
 
 # ─── Test Factory Integration ─────────────────────────────────────────────
 
+
 class TestFactory:
     def test_create_windsurf(self):
         from providers.factory import create_llm
+
         llm = create_llm(provider="windsurf", api_key="test")
         assert isinstance(llm, WindsurfLLM)
 
     def test_create_copilot(self):
         from providers.copilot import CopilotLLM
         from providers.factory import create_llm
+
         llm = create_llm(provider="copilot", model_name="gpt-4o", api_key="dummy")
         assert isinstance(llm, CopilotLLM)
 
 
 # ─── Test CopilotLLM Interface Parity ─────────────────────────────────────
+
 
 class TestCopilotParity:
     """Verify WindsurfLLM exposes the same interface as CopilotLLM."""
@@ -525,6 +562,7 @@ class TestCopilotParity:
 
 
 # ─── Test Model Maps ─────────────────────────────────────────────────────
+
 
 class TestModelMaps:
     def test_free_models_exist(self):
