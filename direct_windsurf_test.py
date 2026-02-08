@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Union, Any
+from typing import Any, Union
 
 # Minimal imports to avoid dependencies
 from providers.windsurf import WindsurfLLM

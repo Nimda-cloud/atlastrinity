@@ -1,8 +1,10 @@
 import os
 import sys
 import time
+
+from langchain_core.messages import HumanMessage, SystemMessage
+
 from providers.windsurf import WindsurfLLM
-from langchain_core.messages import SystemMessage, HumanMessage
 
 print(f"Using Python {sys.version}")
 
@@ -47,7 +49,7 @@ try:
     print("✅ Test successful! Cascade pipeline is working with free model.")
 
 except Exception as e:
-    print(f"\n❌ Test failed: {str(e)}")
+    print(f"\n❌ Test failed: {e!s}")
     print("Possible solutions:")
     print("1. Ensure language_server_macos_arm is running")
     print("2. Verify your API key has sufficient quota")

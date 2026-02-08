@@ -1,6 +1,7 @@
 """Test Windsurf Cascade flow with Python 3.12"""
 import os
 import sys
+
 from providers.windsurf import WindsurfLLM
 
 # Configure with free model in cascade mode

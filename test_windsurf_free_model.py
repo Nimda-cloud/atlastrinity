@@ -1,5 +1,7 @@
+from langchain_core.messages import HumanMessage, SystemMessage
+
 from providers.windsurf import WindsurfLLM
-from langchain_core.messages import SystemMessage, HumanMessage
+
 
 # Test Windsurf provider with free model
 def test_windsurf_free_model():

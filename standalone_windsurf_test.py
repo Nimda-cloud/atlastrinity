@@ -1,7 +1,8 @@
 """Standalone test for Windsurf provider with free models"""
 import os
 import sys
-from typing import Union, Any, Optional
+from typing import Any, Optional, Union
+
 
 # Copy of minimal required code from providers/windsurf.py
 class WindsurfLLM:

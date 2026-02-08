@@ -1,5 +1,6 @@
 import os
-from typing import Union, Any
+from typing import Any, Union
+
 from providers.windsurf import WindsurfLLM
 
 # Configure with free model
