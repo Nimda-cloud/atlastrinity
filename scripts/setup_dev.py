@@ -22,6 +22,7 @@ import sys
 import time
 from pathlib import Path
 
+
 # Кольори для консолі
 class Colors:
     HEADER = "\033[95m"
