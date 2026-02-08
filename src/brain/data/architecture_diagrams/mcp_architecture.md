@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T18:02:15.684590 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, cascade_flow_test.py, direct_windsurf_test.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T18:01:31.423632 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/test_factory_connection.py, src/brain/config_loader.py -->
 

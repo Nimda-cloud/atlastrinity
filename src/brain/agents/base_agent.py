@@ -116,11 +116,7 @@ class BaseAgent:
         try:
             thinker_llm = create_llm(model_name=model_name)
         except ImportError:
-<<<<<<< /Users/hawk/Documents/GitHub/atlastrinity/src/brain/agents/base_agent.py
-            logger.error("Could not import create_llm. Ensure 'providers' is in sys.path")
-=======
             logger.error("Could not import LLM provider factory. Ensure 'providers' is in sys.path")
->>>>>>> /Users/hawk/.windsurf/worktrees/atlastrinity/atlastrinity-082ccc46/src/brain/agents/base_agent.py
             return {"success": False, "analysis": "Reflexion failed due to import error"}
 
         full_analysis = ""
