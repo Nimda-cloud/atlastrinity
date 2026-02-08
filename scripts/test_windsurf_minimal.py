@@ -60,17 +60,17 @@ def main():
         
         # Process the response
         if hasattr(response, 'content'):
-            content = response.content
+            content = str(response.content)
         else:
             content = str(response)
             
         print(f"\nResponse ({elapsed:.2f}s):")
         print("-" * 40)
-        print(content.strip())
+        print(content.strip() if isinstance(content, str) else str(content))
         print("-" * 40)
         
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
+        print(f"\n❌ Error: {e!s}")
         print("\nMake sure you have the required dependencies installed:")
         print("  pip install requests tenacity")
         sys.exit(1)

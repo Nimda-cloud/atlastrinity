@@ -16,12 +16,13 @@ Environment variables:
 import os
 import sys
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from langchain_core.messages import HumanMessage, SystemMessage
+
 from providers.windsurf import WindsurfLLM, _detect_language_server, _ls_heartbeat
 
 # Free models to test
@@ -69,7 +70,8 @@ def test_model(model_name: str, mode: Optional[str] = None) -> Tuple[bool, str]:
         )
         
         # Process the response
-        content = response.content.strip()
+        # Ensure content is a string before calling strip()
+        content = str(response.content).strip() if hasattr(response, 'content') else str(response).strip()
         elapsed = time.time() - start_time
         
         print(f"Response ({elapsed:.2f}s):")
@@ -81,13 +83,12 @@ def test_model(model_name: str, mode: Optional[str] = None) -> Tuple[bool, str]:
         if "Capital:" in content and "Sum:" in content:
             print("✅ Response format looks good!")
             return True, content
-        else:
-            print("⚠️  Response format doesn't match expected format")
-            return False, content
+        print("⚠️  Response format doesn't match expected format")
+        return False, content
             
     except Exception as e:
         elapsed = time.time() - start_time
-        error_msg = f"Error after {elapsed:.2f}s: {str(e)}"
+        error_msg = f"Error after {elapsed:.2f}s: {e!s}"
         print(f"❌ {error_msg}")
         return False, error_msg
         
