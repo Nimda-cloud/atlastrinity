@@ -3,7 +3,7 @@
     "_comment_tier1": "=== TIER 1: MUST-HAVE (Ядро системи) ===",
     "macos-use": {
       "transport": "stdio",
-      "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use",
+      "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/mcp-server-macos-use",
       "connect_timeout": 3600,
       "description": "UNIVERSAL macOS control (42+ tools): GUI automation, Vision/OCR, System Monitoring, Terminal, Fetch URL, Time, AppleScript, Calendar, Reminders, Notes, Mail, Finder, Spotlight, Notifications. PRIMARY server for ALL macOS interactions.",
       "permissions": {

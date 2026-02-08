@@ -12,9 +12,11 @@ async def run_mcp_test():
 
     # 1. Locate Binary
     project_root = Path(__file__).parent.parent
-    config_path = project_root / "src" / "mcp_server" / "config.json"
+    global_cfg = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
+    template_cfg = project_root / "config" / "mcp_servers.json.template"
+    config_path = global_cfg if global_cfg.exists() else template_cfg
 
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         config = json.load(f)
 
     cmd_template = config["mcpServers"]["macos-use"]["command"]

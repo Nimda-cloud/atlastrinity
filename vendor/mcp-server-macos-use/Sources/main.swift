@@ -241,11 +241,19 @@ func runAppleScript(_ script: String) -> (success: Bool, output: String, error: 
         if let error = errorDict {
             let errorMessage =
                 error[NSAppleScript.errorMessage] as? String ?? "Unknown AppleScript error"
+            fputs("error: runAppleScript: \(errorMessage)\n", stderr)
             return (false, "", errorMessage)
         }
         return (true, descriptor.stringValue ?? "", nil)
     }
     return (false, "", "Failed to initialize NSAppleScript")
+}
+
+// --- Helper for safe AppleScript string escaping ---
+func escapeForAppleScript(_ str: String) -> String {
+    return str
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "\"", with: "\\\"")
 }
 
 // --- Helper to serialize Swift structs to JSON String ---
@@ -1438,7 +1446,7 @@ func setupAndStartServer() async throws -> Server {
                 let message = try getRequiredString(from: params.arguments, key: "message")
 
                 let script =
-                    "display notification \"\(message.replacingOccurrences(of: "\"", with: "\\\""))\" with title \"\(title.replacingOccurrences(of: "\"", with: "\\\""))\""
+                    "display notification \"\(escapeForAppleScript(message))\" with title \"\(escapeForAppleScript(title))\""
                 _ = runShellCommand("osascript -e '\(script)'")
                 return CallTool.Result(content: [.text("Notification sent via AppleScript.")])
 
@@ -1461,9 +1469,8 @@ func setupAndStartServer() async throws -> Server {
             case notesCreateTool.name:
                 let body = try getRequiredString(from: params.arguments, key: "body")
                 let folder = try getOptionalString(from: params.arguments, key: "folder") ?? "Notes"
-                // Escape quotes for AppleScript
-                let safeBody = body.replacingOccurrences(of: "\"", with: "\\\"")
-                let safeFolder = folder.replacingOccurrences(of: "\"", with: "\\\"")
+                let safeBody = escapeForAppleScript(body)
+                let safeFolder = escapeForAppleScript(folder)
 
                 let script = """
                     tell application "Notes"
@@ -1484,7 +1491,7 @@ func setupAndStartServer() async throws -> Server {
 
             case notesGetTool.name:
                 let name = try getRequiredString(from: params.arguments, key: "name")
-                let safeName = name.replacingOccurrences(of: "\"", with: "\\\"")
+                let safeName = escapeForAppleScript(name)
                 let script = """
                     tell application "Notes"
                         try
@@ -1509,9 +1516,9 @@ func setupAndStartServer() async throws -> Server {
                 let subject = try getRequiredString(from: params.arguments, key: "subject")
                 let body = try getRequiredString(from: params.arguments, key: "body")
 
-                let safeTo = to.replacingOccurrences(of: "\"", with: "\\\"")
-                let safeSubject = subject.replacingOccurrences(of: "\"", with: "\\\"")
-                let safeBody = body.replacingOccurrences(of: "\"", with: "\\\"")
+                let safeTo = escapeForAppleScript(to)
+                let safeSubject = escapeForAppleScript(subject)
+                let safeBody = escapeForAppleScript(body)
 
                 let script = """
                     tell application "Mail"
@@ -1566,7 +1573,7 @@ func setupAndStartServer() async throws -> Server {
                     script = """
                         tell application "Finder"
                             try
-                                set targetFolder to POSIX file "\(p.replacingOccurrences(of: "\"", with: "\\\""))" as alias
+                                set targetFolder to POSIX file "\(escapeForAppleScript(p))" as alias
                                 set fileList to name of every item of targetFolder
                                 set AppleScript's text item delimiters to ", "
                                 return fileList as string
@@ -1615,7 +1622,7 @@ func setupAndStartServer() async throws -> Server {
             case finderOpenPathTool.name:
                 let path = try getRequiredString(from: params.arguments, key: "path")
                 let script =
-                    "tell application \"Finder\" to open POSIX file \"\(path.replacingOccurrences(of: "\"", with: "\\\""))\""
+                    "tell application \"Finder\" to open POSIX file \"\(escapeForAppleScript(path))\""
                 let (success, _, error) = runAppleScript(script)
                 return .init(
                     content: [
@@ -1626,7 +1633,7 @@ func setupAndStartServer() async throws -> Server {
             case finderMoveToTrashTool.name:
                 let path = try getRequiredString(from: params.arguments, key: "path")
                 let script =
-                    "tell application \"Finder\" to delete POSIX file \"\(path.replacingOccurrences(of: "\"", with: "\\\""))\""
+                    "tell application \"Finder\" to delete POSIX file \"\(escapeForAppleScript(path))\""
                 let (success, _, error) = runAppleScript(script)
                 return .init(
                     content: [
@@ -1657,7 +1664,7 @@ func setupAndStartServer() async throws -> Server {
 
             // --- List Browser Tabs Handler ---
             case listTabsTool.name:
-                let browser = (params.arguments?["browser"] as? String)?.lowercased()
+                let browser = try getOptionalString(from: params.arguments, key: "browser")?.lowercased()
                 var allTabs: [[String: String]] = []
 
                 // Use AppleScript to get browser tabs
@@ -1709,6 +1716,27 @@ func setupAndStartServer() async throws -> Server {
                     end listToString
                     """
 
+                let firefoxScript = """
+                    tell application "System Events"
+                        if exists (process "firefox") then
+                            tell application "Firefox"
+                                if (count of windows) > 0 then
+                                    set tabList to {}
+                                    repeat with w in windows
+                                        set end of tabList to name of w
+                                    end repeat
+                                    set AppleScript's text item delimiters to "\\n"
+                                    return tabList as string
+                                else
+                                    return "No windows open"
+                                end if
+                            end tell
+                        else
+                            return "Firefox not running"
+                        end if
+                    end tell
+                    """
+
                 var scripts: [(String, String)] = []
                 if browser == nil || browser == "safari" {
                     scripts.append(("Safari", safariScript))
@@ -1716,25 +1744,17 @@ func setupAndStartServer() async throws -> Server {
                 if browser == nil || browser == "chrome" {
                     scripts.append(("Chrome", chromeScript))
                 }
+                if browser == nil || browser == "firefox" {
+                    scripts.append(("Firefox", firefoxScript))
+                }
 
                 for (browserName, script) in scripts {
-                    let task = Process()
-                    task.launchPath = "/usr/bin/osascript"
-                    task.arguments = ["-e", script]
-
-                    let pipe = Pipe()
-                    task.standardOutput = pipe
-                    task.launch()
-                    task.waitUntilExit()
-
-                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    if let output = String(data: data, encoding: .utf8) {
-                        if !output.contains("No windows") && !output.contains("Error") {
-                            allTabs.append([
-                                "browser": browserName,
-                                "tabs": output,
-                            ])
-                        }
+                    let (success, output, _) = runAppleScript(script)
+                    if success && !output.contains("No windows") && !output.contains("not running") {
+                        allTabs.append([
+                            "browser": browserName,
+                            "tabs": output,
+                        ])
                     }
                 }
 
@@ -1894,7 +1914,7 @@ func setupAndStartServer() async throws -> Server {
 
             case scrollTool.name:
                 let direction = try getRequiredString(from: params.arguments, key: "direction")
-                let amount = (params.arguments?["amount"] as? NSNumber)?.intValue ?? 3
+                let amount = try getOptionalInt(from: params.arguments, key: "amount") ?? 3
 
                 // Native CGEvent scroll
                 let dy =
@@ -1955,6 +1975,7 @@ func setupAndStartServer() async throws -> Server {
 
                 mouseDown1?.post(tap: .cghidEventTap)
                 mouseUp1?.post(tap: .cghidEventTap)
+                try? await Task.sleep(nanoseconds: 50_000_000)  // 50ms delay for reliable double-click
                 mouseDown2?.post(tap: .cghidEventTap)
                 mouseUp2?.post(tap: .cghidEventTap)
 
@@ -2003,8 +2024,28 @@ func setupAndStartServer() async throws -> Server {
                         AXUIElementSetAttributeValue(
                             window, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
                     case "maximize":
-                        AXUIElementSetAttributeValue(
-                            window, kAXMainAttribute as CFString, kCFBooleanTrue)
+                        // Try to use the zoom button to maximize
+                        var zoomButton: AnyObject?
+                        let zoomResult = AXUIElementCopyAttributeValue(
+                            window, kAXZoomButtonAttribute as CFString, &zoomButton)
+                        if zoomResult == .success, let button = zoomButton as! AXUIElement? {
+                            AXUIElementPerformAction(button, kAXPressAction as CFString)
+                        } else {
+                            // Fallback: set window to screen bounds
+                            if let screen = NSScreen.main {
+                                let frame = screen.visibleFrame
+                                var position = CGPoint(x: frame.origin.x, y: frame.origin.y)
+                                var size = CGSize(width: frame.width, height: frame.height)
+                                if let posValue = AXValueCreate(.cgPoint, &position) {
+                                    AXUIElementSetAttributeValue(
+                                        window, kAXPositionAttribute as CFString, posValue)
+                                }
+                                if let sizeValue = AXValueCreate(.cgSize, &size) {
+                                    AXUIElementSetAttributeValue(
+                                        window, kAXSizeAttribute as CFString, sizeValue)
+                                }
+                            }
+                        }
                     case "make_front":
                         let app = NSRunningApplication(processIdentifier: pid_t(convertedPid))
                         app?.activate(options: .activateIgnoringOtherApps)

@@ -182,7 +182,7 @@ class AgentPrompts:
         2. ADHERE STRICTLY to the plan sequence above. Do not skip or reorder steps.
         3. If there is feedback from Grisha or other agents above, ADAPT your strategy to address their concerns.
         4. If you are unsure or need clarification from Atlas to proceed, use the "question_to_atlas" field.
-        5. DISCOVERY FIRST: If your plan involves 'macos-use', your FIRST step should always be "macos-use.discovery" to synchronize your knowledge with the server's 39+ real-time tool definitions.
+        5. DISCOVERY FIRST: If your plan involves 'macos-use', your FIRST step should always be "macos-use_list_tools_dynamic" to synchronize your knowledge with the server's real-time tool definitions.
         6. Precise Arguments: Use the exact data from Discovery to fill tool arguments.
         7. **SELF-HEALING RESTARTS**: If you detect that a tool failed because of logic errors that require a system reboot (e.g., code modified by Vibe), or if a core server is dead, inform Atlas via `question_to_atlas`. ONLY Atlas has the authority to trigger a full system restart.
         8. **EXPLAIN THE 'HOW'**: The user wants to understand *how* you are performing tasks. In your `voice_message`, explicitly mention the tool or method you are using in natural Ukrainian (e.g., 'Використовую Vibe для написання коду', 'Аналізую систему через термінал').

@@ -22,7 +22,7 @@ def run(config: str | None = None) -> int:
     else:
         cfg_path = Path.home() / ".config" / "atlastrinity" / "mcp" / "config.json"
         if not cfg_path.exists():
-            cfg_path = Path(__file__).resolve().parents[1] / "src" / "mcp_server" / "config.json"
+            cfg_path = Path(__file__).resolve().parents[1] / "config" / "mcp_servers.json.template"
 
     print(f"MCP preflight: scanning config {cfg_path}")
     pkg_issues = scan_mcp_config_for_package_issues(cfg_path)

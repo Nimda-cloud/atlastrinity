@@ -66,7 +66,7 @@ class SystemConfig:
             },
             {
                 "global": MCP_DIR / "config.json",
-                "template": PROJECT_ROOT / "src" / "mcp_server" / "config.json.template",
+                "template": PROJECT_ROOT / "config" / "mcp_servers.json.template",
                 "use_defaults": False,
             },
         ]
