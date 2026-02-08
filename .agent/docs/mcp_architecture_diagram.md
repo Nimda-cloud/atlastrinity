@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T13:55:12.778791 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .agent/docs/mcp_servers_architecture.md, .docs/docker_functionality_analysis.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T06:35:31.491424 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/check_mcp_preflight.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

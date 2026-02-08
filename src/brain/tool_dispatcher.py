@@ -276,34 +276,23 @@ class ToolDispatcher:
         "build_project",
         "build-project",
         "run_tests",
-        "run-tests",
         "simulator",
-        "ios_simulator",
-        "ios-simulator",
-        "device_deployment",
-        "device-deployment",
-        "code_coverage",
-        "code-coverage",
-        "archive_project",
-        "archive-project",
-        "swift_package",
-        "swift-package",
-        "xcode_logs",
-        "xcode-logs",
+        "simulators",
+        "simctl",
         "xcodeproj",
         "xcworkspace",
         "testflight",
         "app_store",
-        "xcodebuild_build_project",
-        "xcodebuild_run_tests",
-        "xcodebuild_list_simulators",
-        "xcodebuild_boot_simulator",
-        "xcodebuild_install_app",
-        "xcodebuild_launch_app",
-        "xcodebuild_analyze_logs",
-        "xcodebuild_get_coverage",
-        "xcodebuild_archive_project",
-        "xcodebuild_clean_build",
+        "build_project",
+        "run_tests",
+        "list_simulators",
+        "boot_simulator",
+        "install_app",
+        "launch_app",
+        "analyze_logs",
+        "get_coverage",
+        "archive_project",
+        "clean_build",
     ]
 
     MAPS_SYNONYMS = [
@@ -1237,50 +1226,37 @@ class ToolDispatcher:
 
         # Action mappings for common synonyms
         mapping = {
-            "build_project": "xcodebuild_build_project",
-            "build-project": "xcodebuild_build_project",
-            "xcode": "xcodebuild_build_project",
-            "run_tests": "xcodebuild_run_tests",
-            "run-tests": "xcodebuild_run_tests",
-            "simulator": "xcodebuild_list_simulators",
-            "ios_simulator": "xcodebuild_list_simulators",
-            "ios-simulator": "xcodebuild_list_simulators",
-            "list_simulators": "xcodebuild_list_simulators",
-            "boot_simulator": "xcodebuild_boot_simulator",
-            "install_app": "xcodebuild_install_app",
-            "launch_app": "xcodebuild_launch_app",
-            "analyze_logs": "xcodebuild_analyze_logs",
-            "xcode_logs": "xcodebuild_analyze_logs",
-            "xcode-logs": "xcodebuild_analyze_logs",
-            "coverage": "xcodebuild_get_coverage",
-            "code_coverage": "xcodebuild_get_coverage",
-            "code-coverage": "xcodebuild_get_coverage",
-            "archive": "xcodebuild_archive_project",
-            "archive_project": "xcodebuild_archive_project",
-            "archive-project": "xcodebuild_archive_project",
-            "clean": "xcodebuild_clean_build",
-            "clean_build": "xcodebuild_clean_build",
+            # NOTE: xcodebuildmcp uses tool names like build_sim/list_sims/boot_sim/etc.
+            # Keep this mapping aligned with live tools/list.
+            "build_project": "discover_projs",
+            "build-project": "discover_projs",
+            "xcode": "discover_projs",
+            "run_tests": "test_sim",
+            "run-tests": "test_sim",
+            "simulator": "list_sims",
+            "ios_simulator": "list_sims",
+            "ios-simulator": "list_sims",
+            "list_simulators": "list_sims",
+            "boot_simulator": "boot_sim",
+            "install_app": "install_app_sim",
+            "launch_app": "launch_app_sim",
+            "analyze_logs": "doctor",
+            "xcode_logs": "doctor",
+            "xcode-logs": "doctor",
+            "coverage": "doctor",
+            "code_coverage": "doctor",
+            "code-coverage": "doctor",
+            "archive": "doctor",
+            "archive_project": "doctor",
+            "archive-project": "doctor",
+            "clean": "clean",
+            "clean_build": "clean",
         }
         resolved_tool = mapping.get(action, action)
 
-        # If tool name doesn't start with xcodebuild_, add prefix
-        if not resolved_tool.startswith("xcodebuild_") and resolved_tool in [
-            "build_project",
-            "run_tests",
-            "list_simulators",
-            "boot_simulator",
-            "install_app",
-            "launch_app",
-            "analyze_logs",
-            "get_coverage",
-            "archive_project",
-            "clean_build",
-        ]:
-            resolved_tool = f"xcodebuild_{resolved_tool}"
-
-        # Default to build if generic xcodebuild call
+        # Default action for generic xcodebuild call
         if resolved_tool in ["xcodebuild", "xcode", "ios_development", "macos_development"]:
-            resolved_tool = "xcodebuild_build_project"
+            resolved_tool = "discover_projs"
 
         return "xcodebuild", resolved_tool, args
 
@@ -1634,7 +1610,7 @@ class ToolDispatcher:
         self, tool_name: str, args: dict[str, Any]
     ) -> tuple[str, str, dict[str, Any]]:
         """Maps Context7 synonyms and legacy tools to working canonical tools."""
-        # 1. Map synonyms and legacy tools to new working names
+        # 1. Map synonyms and legacy tools to live Context7 tool names
         if tool_name in [
             "docs",
             "documentation",
@@ -1643,28 +1619,23 @@ class ToolDispatcher:
             "c7_search",
             "c7_list_libraries",
         ]:
-            resolved_tool = "resolve-library-id"
+            resolved_tool = "c7_search"
         elif tool_name in ["c7_query", "c7_info", "get_context", "c7_get_context"]:
-            resolved_tool = "get-library-docs"
+            resolved_tool = "c7_query"
         else:
             resolved_tool = tool_name
 
         # 2. Argument normalization/mapping
-        if resolved_tool == "resolve-library-id":
-            if "term" in args:
-                args["libraryName"] = args.pop("term")
-            elif "projectIdentifier" in args:  # Some agents might use this incorrectly
-                args["libraryName"] = args.pop("projectIdentifier")
-
-        elif resolved_tool == "get-library-docs":
-            if "projectIdentifier" in args:
-                args["context7CompatibleLibraryID"] = args.pop("projectIdentifier")
-            elif "libraryID" in args:
-                args["context7CompatibleLibraryID"] = args.pop("libraryID")
-
-            # Legacy c7_query used 'query'
-            if "query" in args and "topic" not in args:
-                args["topic"] = args.pop("query")
+        if resolved_tool == "c7_search":
+            # Live schema expects: term
+            if "libraryName" in args and "term" not in args:
+                args["term"] = args.pop("libraryName")
+        elif resolved_tool == "c7_query":
+            # Live schema expects: projectIdentifier + query
+            if "context7CompatibleLibraryID" in args and "projectIdentifier" not in args:
+                args["projectIdentifier"] = args.pop("context7CompatibleLibraryID")
+            if "topic" in args and "query" not in args:
+                args["query"] = args.pop("topic")
 
         return "context7", resolved_tool, args
 

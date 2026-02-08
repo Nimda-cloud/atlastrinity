@@ -393,8 +393,9 @@
       "Resolve library names to Context7-compatible IDs"
     ],
     "key_tools": [
-      "resolve-library-id",
-      "get-library-docs"
+      "c7_search",
+      "c7_query",
+      "c7_info"
     ],
     "when_to_use": "When you need to look up documentation, API references, or examples for external libraries."
   },

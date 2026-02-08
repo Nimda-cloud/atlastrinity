@@ -349,7 +349,7 @@ ALL_SERVERS_TOOLS: dict[str, dict[str, Any]] = {
         "transport": "stdio",
         "binary": True,
         "min_tools": 10,
-        "sample_tools": ["geocode", "directions", "search_places"],
+        "sample_tools": ["maps_geocode", "maps_directions", "maps_search_places"],
     },
     "xcodebuild": {
         "transport": "stdio",

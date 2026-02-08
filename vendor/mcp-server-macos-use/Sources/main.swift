@@ -1344,23 +1344,30 @@ func setupAndStartServer() async throws -> Server {
                         ], isError: true)
                 }
 
-                let resultText: String = await withCheckedContinuation { continuation in
-                    eventStore.requestAccess(to: .event) { granted, error in
-                        if !granted {
-                            continuation.resume(returning: "Access denied")
-                            return
-                        }
+                let df = DateFormatter()
+                df.dateFormat = "yyyy-MM-dd"
+                let startDateStr = df.string(from: start)
+                let endDateStr = df.string(from: end)
 
-                        let predicate = eventStore.predicateForEvents(
-                            withStart: start, end: end, calendars: nil)
-                        let events = eventStore.events(matching: predicate)
-                        let text = events.map {
-                            "\($0.title ?? "No Title") (\($0.startDate.description) - \($0.endDate.description))"
-                        }.joined(separator: "\n")
-                        continuation.resume(returning: text)
-                    }
+                let script = """
+                    tell application "Calendar"
+                        set output to ""
+                        repeat with cal in calendars
+                            set evts to (every event of cal whose start date ≥ date "\(startDateStr)" and start date < date "\(endDateStr)")
+                            repeat with e in evts
+                                set output to output & summary of e & " (" & (start date of e as string) & " - " & (end date of e as string) & ")" & linefeed
+                            end repeat
+                        end repeat
+                        if output is "" then return "No events found."
+                        return output
+                    end tell
+                    """
+                let (success, output, error) = runAppleScript(script)
+                if success {
+                    return CallTool.Result(content: [.text(output.isEmpty ? "No events found." : output)])
+                } else {
+                    return CallTool.Result(content: [.text("Error: \(error ?? "Unknown")")], isError: true)
                 }
-                return CallTool.Result(content: [.text(resultText)])
 
             case createEventTool.name:
                 let title = try getRequiredString(from: params.arguments, key: "title")
@@ -1374,67 +1381,101 @@ func setupAndStartServer() async throws -> Server {
                         ], isError: true)
                 }
 
-                let resultText: String = await withCheckedContinuation { continuation in
-                    eventStore.requestAccess(to: .event) { granted, error in
-                        if !granted {
-                            continuation.resume(returning: "Access denied")
-                            return
-                        }
+                let safeTitle = escapeForAppleScript(title)
+                let cal = Foundation.Calendar.current
+                let comps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+                let endDate = date.addingTimeInterval(3600)
+                let endComps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: endDate)
 
-                        let event = EKEvent(eventStore: eventStore)
-                        event.title = title
-                        event.startDate = date
-                        event.endDate = date.addingTimeInterval(3600)  // Default 1h
-                        event.calendar = eventStore.defaultCalendarForNewEvents
-                        do {
-                            try eventStore.save(event, span: .thisEvent)
-                            continuation.resume(returning: "Event created.")
-                        } catch {
-                            continuation.resume(returning: "Error: \(error)")
-                        }
-                    }
+                let script = """
+                    tell application "Calendar"
+                        set startD to current date
+                        set year of startD to \(comps.year!)
+                        set month of startD to \(comps.month!)
+                        set day of startD to \(comps.day!)
+                        set hours of startD to \(comps.hour!)
+                        set minutes of startD to \(comps.minute!)
+                        set seconds of startD to \(comps.second!)
+                        set endD to current date
+                        set year of endD to \(endComps.year!)
+                        set month of endD to \(endComps.month!)
+                        set day of endD to \(endComps.day!)
+                        set hours of endD to \(endComps.hour!)
+                        set minutes of endD to \(endComps.minute!)
+                        set seconds of endD to \(endComps.second!)
+                        tell calendar 1
+                            make new event with properties {summary:"\(safeTitle)", start date:startD, end date:endD}
+                        end tell
+                        return "Event created."
+                    end tell
+                    """
+                let (success, output, error) = runAppleScript(script)
+                if success {
+                    return CallTool.Result(content: [.text(output)])
+                } else {
+                    return CallTool.Result(content: [.text("Error: \(error ?? "Unknown")")], isError: true)
                 }
-                return CallTool.Result(content: [.text(resultText)])
 
             case remindersTool.name:
-                let resultText: String = await withCheckedContinuation { continuation in
-                    eventStore.requestAccess(to: .reminder) { granted, error in
-                        if !granted {
-                            continuation.resume(returning: "Access denied")
-                            return
-                        }
-                        let predicate = eventStore.predicateForIncompleteReminders(
-                            withDueDateStarting: nil, ending: nil, calendars: nil)
-                        eventStore.fetchReminders(matching: predicate) { reminders in
-                            let text =
-                                reminders?.map { $0.title ?? "No Title" }.joined(separator: "\n")
-                                ?? "No reminders"
-                            continuation.resume(returning: text)
-                        }
-                    }
+                let listFilter = try getOptionalString(from: params.arguments, key: "list")
+                let script: String
+                if let listName = listFilter {
+                    let safeName = escapeForAppleScript(listName)
+                    script = """
+                        tell application "Reminders"
+                            set output to ""
+                            try
+                                set theList to list "\(safeName)"
+                                set rems to (every reminder of theList whose completed is false)
+                                repeat with r in rems
+                                    set output to output & name of r & linefeed
+                                end repeat
+                            on error
+                                return "List not found: \(safeName)"
+                            end try
+                            if output is "" then return "No incomplete reminders."
+                            return output
+                        end tell
+                        """
+                } else {
+                    script = """
+                        tell application "Reminders"
+                            set output to ""
+                            repeat with theList in every list
+                                set rems to (every reminder of theList whose completed is false)
+                                repeat with r in rems
+                                    set output to output & name of r & " [" & name of theList & "]" & linefeed
+                                end repeat
+                            end repeat
+                            if output is "" then return "No incomplete reminders."
+                            return output
+                        end tell
+                        """
                 }
-                return CallTool.Result(content: [.text(resultText)])
+                let (success, output, error) = runAppleScript(script)
+                if success {
+                    return CallTool.Result(content: [.text(output)])
+                } else {
+                    return CallTool.Result(content: [.text("Error: \(error ?? "Unknown")")], isError: true)
+                }
 
             case createReminderTool.name:
                 let title = try getRequiredString(from: params.arguments, key: "title")
-                let resultText: String = await withCheckedContinuation { continuation in
-                    eventStore.requestAccess(to: .reminder) { granted, error in
-                        if !granted {
-                            continuation.resume(returning: "Access denied")
-                            return
-                        }
-                        let reminder = EKReminder(eventStore: eventStore)
-                        reminder.title = title
-                        reminder.calendar = eventStore.defaultCalendarForNewReminders()
-                        do {
-                            try eventStore.save(reminder, commit: true)
-                            continuation.resume(returning: "Reminder saved.")
-                        } catch {
-                            continuation.resume(returning: "Error: \(error)")
-                        }
-                    }
+                let safeRemTitle = escapeForAppleScript(title)
+                let remScript = """
+                    tell application "Reminders"
+                        tell default list
+                            make new reminder with properties {name:"\(safeRemTitle)"}
+                        end tell
+                        return "Reminder saved."
+                    end tell
+                    """
+                let (success, output, error) = runAppleScript(remScript)
+                if success {
+                    return CallTool.Result(content: [.text(output)])
+                } else {
+                    return CallTool.Result(content: [.text("Error: \(error ?? "Unknown")")], isError: true)
                 }
-                return CallTool.Result(content: [.text(resultText)])
 
             case spotlightTool.name:
                 let query = try getRequiredString(from: params.arguments, key: "query")

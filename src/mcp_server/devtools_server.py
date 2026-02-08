@@ -103,7 +103,9 @@ def devtools_check_mcp_health() -> dict[str, Any]:
     try:
         # Run scripts/check_mcp_health.py --json
         cmd = [sys.executable, str(script_path), "--json"]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
 
         output = result.stdout.strip()
         if not output:
@@ -179,6 +181,7 @@ def devtools_launch_inspector(server_name: str) -> dict[str, Any]:
 
         proc = subprocess.Popen(
             resolved_inspector_cmd,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -283,6 +286,11 @@ def _run_inspector_cli(
     timeout: float = 30.0,
 ) -> dict[str, Any]:
     """Run MCP Inspector CLI with specified method and return parsed JSON result."""
+    if server_name == "devtools":
+        return {
+            "error": "Cannot inspect 'devtools' from within devtools (recursive). Use another server name."
+        }
+
     result = _get_inspector_server_cmd(server_name)
     if isinstance(result, dict):
         return result  # Error dict
@@ -310,6 +318,7 @@ def _run_inspector_cli(
             env=env,
             timeout=timeout,
             check=False,
+            stdin=subprocess.DEVNULL,  # Isolate stdin to prevent interference with MCP stdio
         )
 
         stdout = proc_result.stdout.strip()
@@ -534,6 +543,7 @@ def devtools_run_mcp_sandbox(
             text=True,
             timeout=300,  # 5 minute timeout for full test
             check=False,
+            stdin=subprocess.DEVNULL,
         )
 
         stdout = result.stdout.strip()
@@ -596,7 +606,9 @@ def devtools_lint_python(file_path: str = ".") -> dict[str, Any]:
     try:
         # Run ruff check --output-format=json
         cmd = ["ruff", "check", "--output-format=json", file_path]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
 
         # If exit code is 0, no errors (usually). But ruff returns non-zero on lint errors too.
         # We parse stdout.
@@ -637,7 +649,9 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
     if shutil.which("oxlint"):
         try:
             cmd = ["oxlint", "--format", "json", file_path]
-            res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            res = subprocess.run(
+                cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+            )
             output = res.stdout.strip()
             if output:
                 try:
@@ -672,7 +686,9 @@ def devtools_lint_js(file_path: str = ".") -> dict[str, Any]:
             if has_config:
                 cmd = ["npx", "eslint", "--format", "json", file_path]
                 # Filter out non-JSON lines (sometimes npx prints update notifications)
-                res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                res = subprocess.run(
+                    cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+                )
                 output = res.stdout.strip()
                 if output:
                     # Find the first '[' which usually starts the JSON array
@@ -711,7 +727,12 @@ def devtools_run_global_lint() -> dict[str, Any]:
         # npm run lint:all is defined in package.json at project root
         cmd = ["npm", "run", "lint:all"]
         result = subprocess.run(
-            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
         )
 
         return {
@@ -736,7 +757,9 @@ def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
         try:
             cwd = target_path if os.path.isdir(target_path) else "."
             cmd = ["npx", "knip", "--reporter", "json"]
-            result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)
+            result = subprocess.run(
+                cmd, cwd=cwd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+            )
             output = result.stdout.strip()
             if output:
                 try:
@@ -773,7 +796,12 @@ def devtools_find_dead_code(target_path: str = ".") -> dict[str, Any]:
                 ".venv,dist_venv,node_modules,__pycache__",
             ]
             result = subprocess.run(
-                cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+                cmd,
+                cwd=str(PROJECT_ROOT),
+                capture_output=True,
+                text=True,
+                check=False,
+                stdin=subprocess.DEVNULL,
             )
             lines = [l for l in result.stdout.strip().splitlines() if l.strip()]
             results["vulture"] = {
@@ -808,7 +836,9 @@ def devtools_check_integrity(path: str = "src/") -> dict[str, Any]:
     try:
         # Run pyrefly check
         cmd = [pyrefly_bin, "check", path]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
 
         stdout = result.stdout.strip()
         stderr = result.stderr.strip()
@@ -849,7 +879,9 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
     )
     try:
         cmd = [bandit_bin, "-r", path, "-ll", "--format", "json"]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
         results["bandit"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
     except Exception as e:
         results["bandit"] = {"error": str(e)}
@@ -866,7 +898,9 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
     )
     try:
         cmd = [safety_bin, "check", "--json"]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
         results["safety"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
     except Exception as e:
         results["safety"] = {"error": str(e)}
@@ -883,7 +917,9 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
     )
     try:
         cmd = [ds_bin, "scan", path]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
         results["secrets"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
     except Exception as e:
         results["secrets"] = {"error": str(e)}
@@ -893,7 +929,12 @@ def devtools_check_security(path: str = "src/") -> dict[str, Any]:
         try:
             cmd = ["npm", "audit", "--json"]
             res = subprocess.run(
-                cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+                cmd,
+                cwd=str(PROJECT_ROOT),
+                capture_output=True,
+                text=True,
+                check=False,
+                stdin=subprocess.DEVNULL,
             )
             results["npm_audit"] = json.loads(res.stdout) if res.stdout else {"error": res.stderr}
         except Exception as e:
@@ -917,7 +958,9 @@ def devtools_check_complexity(path: str = "src/") -> dict[str, Any]:
     try:
         # xenon --max-absolute B --max-modules B --max-average A <path>
         cmd = [xenon_bin, "--max-absolute", "B", "--max-modules", "B", "--max-average", "A", path]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+        )
         return {
             "success": res.returncode == 0,
             "stdout": res.stdout.strip(),
@@ -935,7 +978,12 @@ def devtools_check_types_python(path: str = "src") -> dict[str, Any]:
     try:
         cmd = ["npx", "pyright", path]
         res = subprocess.run(
-            cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
         )
         stdout = res.stdout.strip()
         stderr = res.stderr.strip()
@@ -971,7 +1019,12 @@ def devtools_check_types_ts() -> dict[str, Any]:
         try:
             cmd = ["npx", "tsc", "--noEmit", "-p", cfg]
             res = subprocess.run(
-                cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, check=False
+                cmd,
+                cwd=str(PROJECT_ROOT),
+                capture_output=True,
+                text=True,
+                check=False,
+                stdin=subprocess.DEVNULL,
             )
             results[cfg] = {
                 "success": res.returncode == 0,
@@ -1298,7 +1351,7 @@ def _export_diagrams(target_mode: str, project_path: Path) -> None:
             "transparent",
         ]
 
-        subprocess.run(cmd, capture_output=True, check=False)
+        subprocess.run(cmd, capture_output=True, check=False, stdin=subprocess.DEVNULL)
 
     except Exception:
         # Export is optional, don't fail on errors

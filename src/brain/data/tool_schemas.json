@@ -2008,6 +2008,30 @@
     },
     "description": "Find Xcode project and workspace files."
   },
+  "xcodebuild_get_coverage": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [
+      "extraArgs"
+    ],
+    "types": {
+      "extraArgs": "str"
+    },
+    "description": "Get code coverage report from last test run."
+  },
+  "xcodebuild_archive_project": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [
+      "extraArgs",
+      "scheme"
+    ],
+    "types": {
+      "extraArgs": "str",
+      "scheme": "str"
+    },
+    "description": "Archive Xcode project for distribution."
+  },
   "react_get_introspection_script": {
     "server": "react-devtools",
     "required": [
