@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T17:25:12.917935 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/voice/tts.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-07T17:24:28.972639 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/factory.py, providers/windsurf.py -->
 
