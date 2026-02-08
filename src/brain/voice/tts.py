@@ -30,11 +30,11 @@ from ..logger import logger
 
 # Lazy imports for optional dependencies
 try:
-    from ukrainian_tts import UkrainianTTS
+    from ukrainian_tts import UkrainianTTS  # type: ignore[reportAttributeAccessIssue]
     from ukrainian_tts.tts import Voices
 except ImportError:
-    UkrainianTTS = None
-    Voices = None
+    UkrainianTTS = None  # type: ignore[reportAssignmentType]
+    Voices = None  # type: ignore[reportAssignmentType]
 
 # Lazy import to avoid loading heavy dependencies at startup
 TTS_AVAILABLE = None
@@ -491,7 +491,7 @@ class VoiceManager:
             with tmp_cwd(str(cache_dir)):
                 print("[TTS] Downloading/Verifying models in models/tts...", file=sys.stderr)
                 _patch_tts_config(cache_dir)
-                self._tts = UkrainianTTS(cache_folder=str(cache_dir), device=self.device)
+                self._tts = UkrainianTTS(cache_folder=str(cache_dir), device=self.device)  # type: ignore[reportOptionalCall]
                 print("[TTS] Engine object created successfully.", file=sys.stderr)
         except Exception as e:
             print(f"[TTS] Failed to initialize engine: {e}", file=sys.stderr)

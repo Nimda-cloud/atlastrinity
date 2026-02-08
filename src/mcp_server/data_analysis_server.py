@@ -24,7 +24,7 @@ import uuid
 from pathlib import Path
 from typing import Any, cast
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore[reportMissingImports]
 import numpy as np
 import pandas as pd
 from mcp.server import FastMCP

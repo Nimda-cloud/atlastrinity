@@ -1405,6 +1405,10 @@ class Grisha(BaseAgent):
         self, raw_text: str, user_request: str = "Unknown Goal"
     ) -> Any | None:
         """Parses the JSON response for the fixed plan with extreme resilience."""
+        import inspect
+
+        from src.brain.agents.atlas import TaskPlan
+
         fixed_plan = None
         try:
             cleaned_text = str(raw_text).strip()
@@ -1418,10 +1422,6 @@ class Grisha(BaseAgent):
 
             if not plan_data:
                 return None
-
-            import inspect
-
-            from src.brain.agents.atlas import TaskPlan
 
             # Validate and filter
             valid_keys = set(inspect.signature(TaskPlan.__init__).parameters.keys())

@@ -4,6 +4,7 @@ Fix critical errors found in logs
 
 import os
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path
 
@@ -114,8 +115,6 @@ def fix_macos_use_tools():
         print("✅ macos-use binary exists")
 
         # Try to list available tools
-        import subprocess
-
         try:
             result = subprocess.run(
                 [binary_path, "--help"], capture_output=True, text=True, timeout=10

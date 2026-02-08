@@ -1,14 +1,3 @@
-from .common import (
-    DATA_PROTOCOL,  # Used in string template formatting
-    MAPS_PROTOCOL,  # Used in string template formatting
-    SDLC_PROTOCOL,  # Used in string template formatting
-    SEARCH_PROTOCOL,  # Used in string template formatting
-    STORAGE_PROTOCOL,  # Used in string template formatting
-    TASK_PROTOCOL,  # Used in string template formatting
-    VIBE_TOOLS_DOCUMENTATION,  # Used in string template formatting
-    VOICE_PROTOCOL,  # Used in string template formatting
-)
-
 # New verification prompts for Grisha
 GRISHA_VERIFICATION_GOAL_ANALYSIS = """VERIFICATION GOAL ANALYSIS (ATOMIC LEVEL):
 

@@ -171,7 +171,7 @@ def check_configs():
     # Check Critical Env Vars
     print_header("Checking Environment Variables")
     critical_vars = ["COPILOT_API_KEY"]
-    optional_vars = ["GITHUB_TOKEN"]
+    optional_vars = ["GITHUB_TOKEN", "WINDSURF_API_KEY", "WINDSURF_INSTALL_ID"]
 
     for var in critical_vars:
         if env_vars.get(var):
@@ -341,6 +341,53 @@ def check_mcp_servers():
             pass
 
 
+def check_llm_providers():
+    """Verify that LLM provider modules can be imported and instantiated."""
+    print_header("Checking LLM Providers")
+
+    # Check CopilotLLM import
+    try:
+        from providers.copilot import CopilotLLM  # noqa: F811  # type: ignore[reportUnusedImport]
+
+        print_pass("CopilotLLM import OK")
+        STATUS_REPORT["passed"] += 1
+    except Exception as e:
+        print_fail(f"CopilotLLM import FAILED: {e}")
+        STATUS_REPORT["failed"] += 1
+
+    # Check WindsurfLLM import
+    try:
+        from providers.windsurf import (  # noqa: F811
+            WINDSURF_MODELS,  # type: ignore[reportUnusedImport]
+            WindsurfLLM,  # type: ignore[reportUnusedImport]
+        )
+
+        print_pass(f"WindsurfLLM import OK ({len(WINDSURF_MODELS)} models available)")
+        STATUS_REPORT["passed"] += 1
+    except Exception as e:
+        print_fail(f"WindsurfLLM import FAILED: {e}")
+        STATUS_REPORT["failed"] += 1
+
+    # Check factory
+    try:
+        from providers.factory import create_llm  # noqa: F811  # type: ignore[reportUnusedImport]
+
+        print_pass("LLM factory import OK")
+        STATUS_REPORT["passed"] += 1
+    except Exception as e:
+        print_fail(f"LLM factory import FAILED: {e}")
+        STATUS_REPORT["failed"] += 1
+
+    # Check universal proxy script exists
+    proxy_script = PROJECT_ROOT / "scripts" / "universal_proxy.py"
+    if proxy_script.exists():
+        print_pass("Universal proxy script found")
+        STATUS_REPORT["passed"] += 1
+    else:
+        print_fail("Universal proxy script MISSING (scripts/universal_proxy.py)")
+        STATUS_REPORT["failed"] += 1
+
+
 def main():
     print_header("ATLAS TRINITY ENVIRONMENT VERIFICATION")
     print_info(f"Project Root: {PROJECT_ROOT}")
@@ -353,6 +400,7 @@ def main():
     check_models()
     check_mcp_servers()
     check_dev_tools()
+    check_llm_providers()
 
     print_header("Summary")
     print(f"Passed:   {STATUS_REPORT['passed']}")

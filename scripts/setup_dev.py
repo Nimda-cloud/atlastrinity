@@ -1653,6 +1653,53 @@ def ensure_frontend_config():
             print_success("MapView.tsx: Хардкод-ключ видалено")
 
 
+def verify_llm_providers():
+    """Verify that LLM provider modules (Copilot & Windsurf) can be imported."""
+    print_step("Перевірка LLM провайдерів (Copilot + Windsurf)...")
+    venv_python = str(VENV_PATH / "bin" / "python")
+
+    check_script = (
+        "import sys; sys.path.insert(0, '.');"
+        "from providers.copilot import CopilotLLM; print('copilot:ok');"
+        "from providers.windsurf import WindsurfLLM, WINDSURF_MODELS; "
+        "print(f'windsurf:ok:{len(WINDSURF_MODELS)} models');"
+        "from providers.factory import create_llm; print('factory:ok')"
+    )
+
+    try:
+        result = subprocess.run(
+            [venv_python, "-c", check_script],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(PROJECT_ROOT),
+            env={**os.environ, "WINDSURF_API_KEY": "test", "COPILOT_API_KEY": "test"},
+        )
+        output = result.stdout.strip()
+        if "copilot:ok" in output:
+            print_success("CopilotLLM імпортується коректно")
+        else:
+            print_warning(f"CopilotLLM імпорт не підтверджено: {result.stderr[:200]}")
+
+        if "windsurf:ok" in output:
+            model_info = [l for l in output.splitlines() if l.startswith("windsurf:ok")]
+            print_success(
+                f"WindsurfLLM імпортується коректно ({model_info[0].split(':', 2)[-1] if model_info else ''})"
+            )
+        else:
+            print_warning(f"WindsurfLLM імпорт не підтверджено: {result.stderr[:200]}")
+
+        if "factory:ok" in output:
+            print_success("LLM Factory працює коректно")
+        else:
+            print_warning(f"LLM Factory не підтверджено: {result.stderr[:200]}")
+
+        if result.returncode != 0:
+            print_warning(f"Деякі провайдери мають проблеми: {result.stderr[:300]}")
+    except Exception as e:
+        print_warning(f"Не вдалося перевірити LLM провайдери: {e}")
+
+
 def main():
     print(
         f"\n{Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.ENDC}",
@@ -1846,6 +1893,7 @@ def main():
 
     check_services()
     run_integrity_check()
+    verify_llm_providers()
 
     # Install watchdog if missing (it might be in requirements.txt but we want to be sure for the watcher)
     print_step("Перевірка наявності Watchdog для авто-синхронізації...")
@@ -1881,7 +1929,9 @@ def main():
     print_success("✅ Налаштування завершено!")
     print_info("Кроки для початку роботи:")
     print("  1. Додайте API ключі в ~/.config/atlastrinity/.env")
-    print("     - COPILOT_API_KEY (обов'язково)")
+    print("     - COPILOT_API_KEY (обов'язково для Copilot провайдера)")
+    print("     - WINDSURF_API_KEY (обов'язково для Windsurf провайдера)")
+    print("     - WINDSURF_INSTALL_ID (опціонально, для Windsurf)")
     print("     - GITHUB_TOKEN (опціонально)")
     print("  2. Запустіть систему: npm run dev")
     print()

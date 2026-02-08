@@ -267,12 +267,12 @@ class SharedContext:
 
     def sync_from_config(self, config: dict) -> None:
         """Синхронізує max_recursive_depth з конфігурації orchestrator.max_recursion_depth"""
+        from .logger import logger
+
         try:
             max_depth = config.get("orchestrator", {}).get("max_recursion_depth", 5)
             if isinstance(max_depth, int) and 1 <= max_depth <= 10:
                 self.max_recursive_depth = max_depth
-                from .logger import logger
-
                 logger.info(f"[CONTEXT] max_recursive_depth set to {max_depth} from config")
         except Exception as e:
             logger.warning(f"[CONTEXT] Failed to sync max_recursive_depth from config: {e}")

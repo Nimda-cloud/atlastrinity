@@ -1,15 +1,3 @@
-from .common import (
-    DATA_PROTOCOL,  # Used in string template formatting
-    HACKING_PROTOCOL,  # Used in string template formatting
-    MAPS_PROTOCOL,  # Used in string template formatting
-    SDLC_PROTOCOL,  # Used in string template formatting
-    SEARCH_PROTOCOL,  # Used in string template formatting
-    STORAGE_PROTOCOL,  # Used in string template formatting
-    TASK_PROTOCOL,  # Used in string template formatting
-    VIBE_TOOLS_DOCUMENTATION,  # Used in string template formatting
-    VOICE_PROTOCOL,  # Used in string template formatting
-)
-
 TETYANA = {
     "NAME": "TETYANA",
     "DISPLAY_NAME": "Tetyana",

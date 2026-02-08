@@ -123,7 +123,7 @@ class CopilotLLM(BaseChatModel):
         try:
             # Dynamic import to avoid circular dependency
 
-            from langchain_google_genai import (
+            from langchain_google_genai import (  # type: ignore[reportMissingImports]
                 ChatGoogleGenerativeAI,  # pyrefly: ignore[missing-import]
             )
 
@@ -154,7 +154,9 @@ class CopilotLLM(BaseChatModel):
             print("[LOCAL VISION FALLBACK] Using Vision Module (OCR + BLIP)...", flush=True)
             import tempfile
 
-            from vision_module import get_vision_module  # pyrefly: ignore[missing-import]
+            from vision_module import (  # type: ignore[reportMissingImports]
+                get_vision_module,  # pyrefly: ignore[missing-import]
+            )
 
             # Find the image in messages
             image_b64 = None

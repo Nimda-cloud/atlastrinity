@@ -95,11 +95,16 @@ async def lifespan(app: FastAPI):
 
     # Initialize monitoring system
     try:
-        from .monitoring import get_monitoring_system
-
-        monitoring_system = get_monitoring_system()
-        monitoring_system.log_for_grafana("Server startup initiated", level="info")
+        from .monitoring import get_monitoring_system  # noqa: F811
     except ImportError:
+        get_monitoring_system = None  # type: ignore[assignment]
+        logger.warning("Monitoring system not available")
+
+    try:
+        if get_monitoring_system is not None:
+            monitoring_system = get_monitoring_system()
+            monitoring_system.log_for_grafana("Server startup initiated", level="info")
+    except Exception:
         logger.warning("Monitoring system not available")
 
     # Initialize services in background (handled by startup workflow)
@@ -140,9 +145,10 @@ async def lifespan(app: FastAPI):
 
     # Shutdown monitoring
     try:
-        monitoring_system = get_monitoring_system()
-        monitoring_system.log_for_grafana("Server shutdown initiated", level="info")
-    except ImportError:
+        if get_monitoring_system is not None:
+            monitoring_system = get_monitoring_system()
+            monitoring_system.log_for_grafana("Server shutdown initiated", level="info")
+    except Exception:
         pass
 
     # Clean shutdown of orchestrator
