@@ -883,6 +883,13 @@ async def run_pandas_code(
         # Get result (last assigned variable or 'result')
         result = local_vars.get("result", local_vars.get("df"))
 
+        if result is None:
+            return {
+                "success": True,
+                "result_type": "NoneType",
+                "result": "None",
+            }
+
         if isinstance(result, pd.DataFrame):
             return {
                 "success": True,
