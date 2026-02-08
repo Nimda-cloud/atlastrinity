@@ -1325,7 +1325,9 @@ def download_models():
         try:
             print_info("Ініціалізація TTS моделей (з пакуванням)...")
             python_script = f"""
-import os, sys
+import os, sys, warnings
+warnings.filterwarnings('ignore')
+from pathlib import Path
 from ukrainian_tts.tts import TTS
 
 # Set resources dir for stanza which is used under the hood
@@ -1339,20 +1341,30 @@ TTS(cache_folder='.', device='cpu')
 print('TTS OK')
 """
             env = os.environ.copy()
-            cmd = [venv_python, "-c", python_script]
-            subprocess.run(cmd, check=True, timeout=1800, env=env)
+            env["PYTHONWARNINGS"] = "ignore"
+            cmd = [venv_python, "-W", "ignore", "-c", python_script]
+            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=1800, env=env)
             print_success("TTS моделі готові")
         except Exception as e:
             print_warning(f"Помилка завантаження TTS: {e}")
 
 
 def _pip_install_safe(package: str):
-    """Install a pip package using venv python if available, otherwise --user flag."""
+    """Install a pip package using venv python if available.
+    Skips install if venv doesn't exist (avoids PEP 668 errors on macOS).
+    """
     venv_python = VENV_PATH / "bin" / "python"
     if venv_python.exists():
-        subprocess.run([str(venv_python), "-m", "pip", "install", package], check=False)
+        subprocess.run(
+            [str(venv_python), "-m", "pip", "install", package],
+            check=False,
+            capture_output=True,
+        )
     else:
-        subprocess.run([sys.executable, "-m", "pip", "install", "--user", package], check=False)
+        print_warning(
+            f"Не вдалося встановити '{package}': .venv ще не створено. "
+            "Буде використано legacy метод."
+        )
 
 
 def backup_databases():
@@ -1434,6 +1446,13 @@ def _legacy_backup_databases():
 def restore_databases():
     """Відновлює всі бази даних та вектори з архіву репозиторію (Secure Restore)"""
     print_step("Відновлення баз даних з резервних копій...")
+
+    # If venv doesn't exist yet, skip secure restore (cryptography requires venv)
+    venv_python = VENV_PATH / "bin" / "python"
+    if not venv_python.exists():
+        print_info("Venv ще не створено — використовується legacy відновлення...")
+        _legacy_restore_databases()
+        return
 
     try:
         # Auto-install cryptography if missing

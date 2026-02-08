@@ -255,7 +255,11 @@ class SecureBackupManager:
             dest = mapping["dest"]
 
             if not source.exists():
-                print(f"⚠️  Source not found: {source.name}")
+                # Chroma directories may not exist on fresh installs - this is normal
+                if "chroma" in source.name:
+                    print(f"ℹ️  Skipping (not yet created): {source.name}")
+                else:
+                    print(f"⚠️  Source not found: {source.name}")
                 continue
 
             try:
@@ -379,7 +383,11 @@ class SecureBackupManager:
             dest = mapping["dest"]
 
             if not source.exists():
-                print(f"⚠️  Backup file not found: {source.name}")
+                # Chroma directories may not have been backed up - this is normal
+                if "chroma" in source.name:
+                    print(f"ℹ️  Skipping (no backup found): {source.name}")
+                else:
+                    print(f"⚠️  Backup file not found: {source.name}")
                 continue
 
             try:
