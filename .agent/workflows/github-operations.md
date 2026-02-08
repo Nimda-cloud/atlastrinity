@@ -77,11 +77,24 @@ git push origin main
 
 ### Секрети для Actions
 
-У GitHub репозиторії мають бути налаштовані такі секрети:
+У GitHub репозиторії налаштовані такі секрети:
 - `GITHUB_TOKEN` - автоматично надається GitHub Actions
-- `MISTRAL_API_KEY` - для AI функціоналу
 - `COPILOT_API_KEY` - для Copilot інтеграції
-- інші ключі з `.env.example`
+- `MISTRAL_API_KEY` - для AI функціоналу
+- `OPENROUTER_API_KEY` - для OpenRouter API
+- `VISION_API_KEY` - для Vision моделей
+- `GOOGLE_MAPS_API_KEY` - для Google Maps (backend)
+- `VITE_GOOGLE_MAPS_API_KEY` - для Google Maps (frontend/Vite)
+- `WINDSURF_API_KEY` - для Windsurf/Codeium провайдера
+- `WINDSURF_INSTALL_ID` - Installation ID Windsurf
+- `WINDSURF_LS_CSRF` - Windsurf Language Server CSRF
+- `WINDSURF_LS_PORT` - Windsurf Language Server порт
+- `WINDSURF_MODEL` - модель Windsurf
+- `REDIS_URL` - URL Redis сервера
+- `LOG_LEVEL` - рівень логування
+- `PRODUCTION` - прапорець production режиму
+- `PUPPETEER_ALLOW_DANGEROUS` - дозвіл небезпечних Puppeteer операцій
+- `PYTHONPATH` - шлях Python модулів
 
 ### Використання в Workflows
 
@@ -89,6 +102,7 @@ git push origin main
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+  OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 ```
 
 ## 📋 Чеклист перед Push

@@ -16,6 +16,7 @@ import platform
 import re
 import select
 import shutil
+import sqlite3
 import subprocess
 import sys
 import time
@@ -340,8 +341,6 @@ def ensure_database():
     if not trinity_db_path.exists():
         print_info("Створення порожньої legacy бази trinity.db...")
         try:
-            import sqlite3
-
             with sqlite3.connect(trinity_db_path) as conn:
                 conn.execute("PRAGMA journal_mode=WAL;")
                 conn.commit()
@@ -1412,9 +1411,12 @@ def restore_databases():
     try:
         # Auto-install cryptography if missing
         try:
+            import cryptography as cryptography  # noqa: F401, PLC0414
         except ImportError:
             print_info("Модуль 'cryptography' відсутній. Встановлення...")
             _pip_install_safe("cryptography")
+
+        from scripts.secure_backup import SecureBackupManager
 
         backup_manager = SecureBackupManager(PROJECT_ROOT)
         success = backup_manager.restore_secure_backup()
