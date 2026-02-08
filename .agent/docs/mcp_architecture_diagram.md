@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-07T17:05:34.256258 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/__init__.py, providers/copilot.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-07T17:05:00.687578 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/__init__.py, providers/copilot.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-07T17:04:18.896249 -->
+<!-- Modified: providers/windsurf.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T01:24:14.931067 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, package.json -->
 

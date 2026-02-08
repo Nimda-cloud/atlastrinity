@@ -79,8 +79,8 @@ class SystemConfig:
 
         # Sync each config file (first run only)
         for config_spec in configs_to_sync:
-            global_path = config_spec["global"]
-            template_path = config_spec["template"]
+            global_path: Path = cast(Path, config_spec["global"])
+            template_path: Path = cast(Path, config_spec["template"])
 
             if not global_path.exists():
                 if config_spec["use_defaults"]:
@@ -94,7 +94,7 @@ class SystemConfig:
                         )
                 elif template_path.exists():
                     # Copy from template
-                    shutil.copy2(template_path, global_path)
+                    shutil.copy2(str(template_path), str(global_path))
 
         # Load .env secrets into process environment (do NOT rewrite config files)
         env_path = CONFIG_ROOT / ".env"
