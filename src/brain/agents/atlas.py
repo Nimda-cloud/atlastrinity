@@ -24,7 +24,7 @@ from typing import Any, cast
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from providers.copilot import CopilotLLM
+from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
 from src.brain.context import shared_context
@@ -99,8 +99,8 @@ class Atlas(BaseAgent):
             max_tokens_deep = agent_config.get("max_tokens_deep", 12000)
 
             # Create two LLM instances: standard and deep persona with different models
-            self.llm = CopilotLLM(model_name=final_model, max_tokens=max_tokens_standard)
-            self.llm_deep = CopilotLLM(model_name=deep_model, max_tokens=max_tokens_deep)
+            self.llm = create_llm(model_name=final_model, max_tokens=max_tokens_standard)
+            self.llm_deep = create_llm(model_name=deep_model, max_tokens=max_tokens_deep)
 
             logger.info(
                 f"[ATLAS] Initialized with models: {final_model} (standard), {deep_model} (deep persona) | "

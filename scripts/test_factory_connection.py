@@ -1,8 +1,11 @@
 import sys
 
 # Add project root and src to path
-sys.path.append("/Users/hawk/Documents/GitHub/atlastrinity")
-sys.path.append("/Users/hawk/Documents/GitHub/atlastrinity/src")
+import os
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
 
 from providers.factory import create_llm, get_provider_name  # type: ignore
 

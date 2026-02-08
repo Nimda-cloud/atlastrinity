@@ -77,6 +77,7 @@ CASCADE_DEFAULT_MODEL = "MODEL_CLAUDE_4_SONNET"
 
 # Map display names to Cascade-compatible model UIDs
 CASCADE_MODEL_MAP: dict[str, str] = {
+    # Premium models
     "claude-4.5-opus": "MODEL_CLAUDE_4_5_OPUS",
     "claude-4-sonnet": "MODEL_CLAUDE_4_SONNET",
     "claude-4.5-sonnet": "MODEL_PRIVATE_2",
@@ -84,6 +85,13 @@ CASCADE_MODEL_MAP: dict[str, str] = {
     "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
     "gpt-5.1": "MODEL_PRIVATE_12",
     "swe-1.5": "MODEL_SWE_1_5",
+    # Free / unlimited models
+    "deepseek-v3": "MODEL_DEEPSEEK_V3",
+    "deepseek-r1": "MODEL_DEEPSEEK_R1",
+    "swe-1": "MODEL_SWE_1",
+    "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
+    "kimi-k2.5": "kimi-k2-5",
+    "windsurf-fast": "MODEL_CHAT_11121",
 }
 
 # Max seconds to wait for Cascade AI response
@@ -317,6 +325,7 @@ class WindsurfLLM(BaseChatModel):
     """
 
     model_name: str | None = None
+    vision_model_name: str | None = None
     api_key: str | None = None
     max_tokens: int = 4096
     proxy_url: str = "http://127.0.0.1:8085"
@@ -332,6 +341,7 @@ class WindsurfLLM(BaseChatModel):
     def __init__(
         self,
         model_name: str | None = None,
+        vision_model_name: str | None = None,
         api_key: str | None = None,
         max_tokens: int | None = None,
         proxy_url: str | None = None,
@@ -342,6 +352,8 @@ class WindsurfLLM(BaseChatModel):
 
         # Model
         self.model_name = model_name or os.getenv("WINDSURF_MODEL", WINDSURF_DEFAULT_MODEL)
+        # vision_model_name accepted for CopilotLLM API compatibility (Windsurf models don't support vision)
+        self.vision_model_name = vision_model_name
 
         # Validate model is known
         if self.model_name not in WINDSURF_MODELS:
@@ -396,8 +408,13 @@ class WindsurfLLM(BaseChatModel):
                 self.ls_port = ls_port
                 self.ls_csrf = ls_csrf
                 # Prefer cascade mode (uses Cascade quota, bypasses Chat API block)
-                if forced_mode in ("", "cascade"):
+                if forced_mode == "cascade":
                     self._mode = "cascade"
+                elif forced_mode == "":
+                    if (self.model_name or "") in CASCADE_MODEL_MAP:
+                        self._mode = "cascade"
+                    else:
+                        self._mode = "local"
                 else:
                     self._mode = "local"
 
@@ -820,6 +837,36 @@ class WindsurfLLM(BaseChatModel):
 
             # Step 3: QueueCascadeMessage
             # Combine all messages into a single user prompt
+            tool_instructions = ""
+            if self._tools:
+                tools_desc_lines: list[str] = []
+                for tool in self._tools:
+                    if isinstance(tool, dict):
+                        name = tool.get("name", "tool")
+                        description = tool.get("description", "")
+                    else:
+                        name = getattr(tool, "name", getattr(tool, "__name__", "tool"))
+                        description = getattr(tool, "description", "")
+                    if name:
+                        tools_desc_lines.append(f"- {name}: {description}")
+                tools_desc = "\n".join(tools_desc_lines)
+
+                tool_instructions = (
+                    "CRITICAL: If you need to use tools, you MUST respond ONLY in the following JSON format. "
+                    "Any other text outside the JSON will cause a system error.\n\n"
+                    "AVAILABLE TOOLS:\n"
+                    f"{tools_desc}\n\n"
+                    "JSON FORMAT (ONLY IF USING TOOLS):\n"
+                    "{\n"
+                    '  "tool_calls": [\n'
+                    '    { "name": "tool_name", "args": { ... } }\n'
+                    "  ],\n"
+                    '  "final_answer": "Immediate feedback in UKRAINIAN (e.g., \'Зараз перевірю...\')."\n'
+                    "}\n\n"
+                    "If text response is enough (no tools needed), answer normally in Ukrainian.\n"
+                    "If you ALREADY checked results (ToolMessages provided), provide a final summary in plain text.\n"
+                )
+
             prompt_parts: list[str] = []
             for m in messages:
                 content = m.content
@@ -832,7 +879,10 @@ class WindsurfLLM(BaseChatModel):
                             text_parts.append(item)
                     content = " ".join(text_parts)
                 if isinstance(m, SystemMessage):
-                    prompt_parts.insert(0, f"[System]: {content}")
+                    system_content = str(content)
+                    if tool_instructions:
+                        system_content = system_content + "\n\n" + tool_instructions
+                    prompt_parts.insert(0, f"[System]: {system_content}")
                 elif isinstance(m, AIMessage):
                     prompt_parts.append(f"[Assistant]: {content}")
                 else:
@@ -1139,8 +1189,15 @@ class WindsurfLLM(BaseChatModel):
         """Synchronous generation."""
         try:
             if self._mode == "cascade":
-                content = self._call_cascade(messages)
-                return self._process_content(content)
+                try:
+                    content = self._call_cascade(messages)
+                    return self._process_content(content)
+                except RuntimeError as e:
+                    if "not enough credits" in str(e).lower() and self._refresh_ls_connection():
+                        payload = self._build_connect_rpc_payload(messages)
+                        content = self._call_local_ls(payload)
+                        return self._process_content(content)
+                    raise
             if self._mode == "local":
                 payload = self._build_connect_rpc_payload(messages)
                 content = self._call_local_ls(payload)
@@ -1199,7 +1256,14 @@ class WindsurfLLM(BaseChatModel):
         """Streaming invoke compatible with CopilotLLM interface."""
         try:
             if self._mode == "cascade":
-                content = self._call_cascade(messages)
+                try:
+                    content = self._call_cascade(messages)
+                except RuntimeError as e:
+                    if "not enough credits" in str(e).lower() and self._refresh_ls_connection():
+                        payload = self._build_connect_rpc_payload(messages)
+                        content = self._call_local_ls(payload)
+                    else:
+                        raise
             elif self._mode == "local":
                 payload = self._build_connect_rpc_payload(messages)
                 content = self._call_local_ls(payload)

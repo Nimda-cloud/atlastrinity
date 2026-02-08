@@ -89,7 +89,7 @@ class BaseAgent:
         """
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        from providers.copilot import CopilotLLM
+        from providers.factory import create_llm
 
         from ..config_loader import config
         from ..logger import logger
@@ -114,9 +114,17 @@ class BaseAgent:
         # 2. Initialize dedicated thinker
         # We need to ensure providers is in path, usually it's there via agent init overrides
         try:
-            thinker_llm = CopilotLLM(model_name=model_name)
+            thinker_llm = create_llm(model_name=model_name)
         except ImportError:
-            logger.error("Could not import CopilotLLM. Ensure 'providers' is in sys.path")
+<<<<<<< /Users/hawk/Documents/GitHub/atlastrinity/src/brain/agents/base_agent.py
+<<<<<<< /Users/hawk/Documents/GitHub/atlastrinity/src/brain/agents/base_agent.py
+            logger.error("Could not import LLM provider factory. Ensure 'providers' is in sys.path")
+=======
+            logger.error("Could not import create_llm. Ensure 'providers' is in sys.path")
+>>>>>>> /Users/hawk/.windsurf/worktrees/atlastrinity/atlastrinity-f6cd4b96/src/brain/agents/base_agent.py
+=======
+            logger.error("Could not import create_llm. Ensure 'providers' is in sys.path")
+>>>>>>> /Users/hawk/.windsurf/worktrees/atlastrinity/atlastrinity-f6cd4b96/src/brain/agents/base_agent.py
             return {"success": False, "analysis": "Reflexion failed due to import error"}
 
         full_analysis = ""

@@ -27,7 +27,7 @@ from typing import Any, cast
 from langchain_core.messages import HumanMessage, SystemMessage
 from PIL import Image
 
-from providers.copilot import CopilotLLM
+from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
 from src.brain.context import shared_context
@@ -137,7 +137,7 @@ class Grisha(BaseAgent):
             raise ValueError(
                 "[GRISHA] Strategy model not configured. Please set 'models.reasoning' or 'agents.grisha.strategy_model' in config.yaml"
             )
-        self.strategist = CopilotLLM(model_name=strategy_model)
+        self.strategist = create_llm(model_name=strategy_model)
 
         # Phase 2: Execution Model (for MCP tool calls, like Tetyana)
         execution_model = agent_config.get("model") or config.get("models.default")
@@ -145,7 +145,7 @@ class Grisha(BaseAgent):
             raise ValueError(
                 "[GRISHA] Execution model not configured. Please set 'models.default' or 'agents.grisha.model' in config.yaml"
             )
-        self.executor = CopilotLLM(model_name=execution_model)
+        self.executor = create_llm(model_name=execution_model)
 
         # Phase 3: Verdict & Vision Models
         vision_model_name = (
@@ -158,12 +158,12 @@ class Grisha(BaseAgent):
             raise ValueError(
                 "[GRISHA] Vision model not configured. Please set 'models.vision' or 'agents.grisha.vision_model' in config.yaml"
             )
-        self.llm = CopilotLLM(model_name=vision_model_name, vision_model_name=vision_model_name)
+        self.llm = create_llm(model_name=vision_model_name, vision_model_name=vision_model_name)
 
         verdict_model = agent_config.get("verdict_model")
         if not verdict_model or not verdict_model.strip():
             verdict_model = strategy_model  # Fallback to strategy model
-        self.verdict_llm = CopilotLLM(model_name=verdict_model)
+        self.verdict_llm = create_llm(model_name=verdict_model)
 
         # General settings
         self.temperature = agent_config.get("temperature", 0.3)

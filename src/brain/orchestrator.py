@@ -3268,13 +3268,13 @@ class Trinity:
         """Background LLM-based discovery extraction."""
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        from providers.copilot import CopilotLLM
+        from providers.factory import create_llm
         from src.brain.memory import long_term_memory
 
         try:
             # Use fast model for extraction
             extraction_model = config.get("models.chat") or config.get("models.default")
-            llm = CopilotLLM(model_name=extraction_model)
+            llm = create_llm(model_name=extraction_model)
 
             prompt = f"""Analyze this tool output and extract CRITICAL VALUES that should be remembered for later steps.
 

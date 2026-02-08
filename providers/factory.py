@@ -64,8 +64,11 @@ def create_llm(
     if chosen_provider == "windsurf":
         from .windsurf import WindsurfLLM
 
+        kwargs.pop("vision_model_name", None)
+
         return WindsurfLLM(
             model_name=model_name,
+            vision_model_name=vision_model_name,
             api_key=api_key,
             max_tokens=max_tokens,
             **kwargs,

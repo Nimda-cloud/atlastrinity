@@ -505,11 +505,23 @@ class VoiceManager:
             if str(PROJECT_ROOT) not in sys.path:
                 sys.path.insert(0, str(PROJECT_ROOT))
 
-            from providers.copilot import CopilotLLM
+            from providers.factory import create_llm
 
             # Use default model for translation as it's usually fast enough
             model = config.get("models.default", "gpt-4o")
-            self._translator_llm = CopilotLLM(model_name=model, max_tokens=1000, temperature=0.1)
+<<<<<<< /Users/hawk/Documents/GitHub/atlastrinity/src/brain/voice/tts.py
+<<<<<<< /Users/hawk/Documents/GitHub/atlastrinity/src/brain/voice/tts.py
+            self._translator_llm = create_llm(
+                model_name=model,
+                max_tokens=1000,
+                temperature=0.1,
+            )
+=======
+            self._translator_llm = create_llm(model_name=model, max_tokens=1000)
+>>>>>>> /Users/hawk/.windsurf/worktrees/atlastrinity/atlastrinity-f6cd4b96/src/brain/voice/tts.py
+=======
+            self._translator_llm = create_llm(model_name=model, max_tokens=1000)
+>>>>>>> /Users/hawk/.windsurf/worktrees/atlastrinity/atlastrinity-f6cd4b96/src/brain/voice/tts.py
         return self._translator_llm
 
     async def translate_to_ukrainian(self, text: str) -> str:

@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath(root))
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from providers.copilot import CopilotLLM
+from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config_loader import config
 from src.brain.context import shared_context
@@ -118,7 +118,7 @@ class Tetyana(BaseAgent):
                 "[TETYANA] Model not configured. Please set 'models.default' or 'agents.tetyana.model' in config.yaml"
             )
 
-        self.llm = CopilotLLM(model_name=final_model)
+        self.llm = create_llm(model_name=final_model)
 
         # Specialized models for Reasoning and Reflexion - fallback to global or final_model
         reasoning_model = (
@@ -137,8 +137,8 @@ class Tetyana(BaseAgent):
                 "[TETYANA] Reflexion model not configured. Please set 'models.reasoning' or 'agents.tetyana.reflexion_model' in config.yaml"
             )
 
-        self.reasoning_llm = CopilotLLM(model_name=reasoning_model)
-        self.reflexion_llm = CopilotLLM(model_name=reflexion_model)
+        self.reasoning_llm = create_llm(model_name=reasoning_model)
+        self.reflexion_llm = create_llm(model_name=reflexion_model)
 
         # NEW: Vision model for complex GUI tasks (screenshot analysis)
         vision_model = (
@@ -148,7 +148,7 @@ class Tetyana(BaseAgent):
             # Fallback to main model if vision not explicitly set, but Main must exist
             vision_model = final_model
 
-        self.vision_llm = CopilotLLM(model_name=vision_model, vision_model_name=vision_model)
+        self.vision_llm = create_llm(model_name=vision_model, vision_model_name=vision_model)
 
         self.temperature = agent_config.get("temperature", 0.5)
         self.current_step: int = 0

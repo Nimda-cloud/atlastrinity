@@ -13,9 +13,10 @@ os.environ.setdefault("COPILOT_API_KEY", "dummy")
 
 # --- Minimal dependency stubs (to keep tests runnable without heavy optional deps) ---
 
-# Stub providers.copilot (agents import this)
+# Stub providers.copilot and providers.factory (agents import create_llm from factory)
 providers_mod = types.ModuleType("providers")
 providers_copilot_mod = types.ModuleType("providers.copilot")
+providers_factory_mod = types.ModuleType("providers.factory")
 
 
 class _StubCopilotLLM:
@@ -26,10 +27,17 @@ class _StubCopilotLLM:
         return SimpleNamespace(content="{}")
 
 
+def _stub_create_llm(*args, **kwargs):
+    return _StubCopilotLLM(*args, **kwargs)
+
+
 providers_copilot_mod.CopilotLLM = _StubCopilotLLM  # type: ignore
+providers_factory_mod.create_llm = _stub_create_llm  # type: ignore
 providers_mod.copilot = providers_copilot_mod  # type: ignore
+providers_mod.factory = providers_factory_mod  # type: ignore
 sys.modules.setdefault("providers", providers_mod)
 sys.modules.setdefault("providers.copilot", providers_copilot_mod)
+sys.modules.setdefault("providers.factory", providers_factory_mod)
 
 
 # Stub langgraph.graph used during Trinity graph build

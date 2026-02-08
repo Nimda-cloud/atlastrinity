@@ -265,7 +265,7 @@ async def generate_test_scenario(
     Returns:
         Dict with task description, steps, and expected outcome
     """
-    from providers.copilot import CopilotLLM
+    from providers.factory import create_llm
 
     # Select tools for the chain
     selected_tools = tools[:chain_length] if len(tools) >= chain_length else tools
@@ -314,7 +314,7 @@ Generate the test scenario:"""
 
         try:
             # Get model from config, fallback to gpt-4o if not set
-            llm = CopilotLLM(model_name=config.get("models.sandbox"))
+            llm = create_llm(model_name=config.get("models.sandbox"))
             response = await llm.ainvoke(prompt)
         except Exception as copilot_err:
             print(
@@ -393,7 +393,7 @@ async def analyze_test_result(
     scenario_context: str,
 ) -> dict:
     """Use LLM to determine if test step passed."""
-    from providers.copilot import CopilotLLM
+    from providers.factory import create_llm
 
     # Ensure config loaded
     from src.brain.config_loader import config
@@ -421,7 +421,7 @@ Respond with: PASS or FAIL followed by a brief explanation (max 30 words)."""
     try:
         try:
             # Get model from config, fallback to gpt-4o if not set
-            llm = CopilotLLM(model_name=config.get("models.sandbox"))
+            llm = create_llm(model_name=config.get("models.sandbox"))
             response = await llm.ainvoke(prompt)
         except Exception:
             # Fallback to Mistral

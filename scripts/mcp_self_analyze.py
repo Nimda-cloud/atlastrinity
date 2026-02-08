@@ -213,7 +213,7 @@ async def live_verify_tool(
     This is the 'живе тестування' - the LLM reasons about what arguments
     to use, executes the tool, and analyzes whether the result is correct.
     """
-    from providers.copilot import CopilotLLM
+    from providers.factory import create_llm
 
     result = {
         "tool": tool_name,
@@ -245,7 +245,7 @@ Example for list_directory: {{"path": "/tmp"}}
 Generate arguments for '{tool_name}':"""
 
     try:
-        llm = CopilotLLM(model_name="gpt-4.1")
+        llm = create_llm(model_name="gpt-4.1")
 
         # Step 1: Generate arguments
         gen_response = await llm.ainvoke(generate_prompt)
