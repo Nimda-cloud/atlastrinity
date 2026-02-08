@@ -4,7 +4,7 @@ Usage:
   scripts/check_mcp_preflight.py [--config PATH]
 
 Defaults to global config at ~/.config/atlastrinity/mcp/config.json or falls
-back to project src/mcp_server/config.json when not found.
+back to project config/mcp_servers.json.template when not found.
 """
 
 import argparse
