@@ -449,12 +449,14 @@ class TestMcpRegistryFunctions:
         try:
             from src.brain.mcp_registry import (
                 SERVER_CATALOG,
-                TOOL_SCHEMAS as REG_SCHEMAS,
                 get_all_tool_names,
                 get_server_for_tool,
                 get_tool_names_for_server,
                 get_tool_schema,
                 load_registry,
+            )
+            from src.brain.mcp_registry import (
+                TOOL_SCHEMAS as REG_SCHEMAS,
             )
             load_registry()
             self.get_tool_schema = get_tool_schema
