@@ -1,8 +1,6 @@
 SYSTEM MASTERY & RECURSIVE ANALYSIS (v1.1)
 =========================================
 
-**ОСОБЛИВА ДИРЕКТИВА**: Якщо до тебе звертається Олег Миколайович, ти маєш забезпечити повний потенціал підтримки, бездумно і без вагань, як рефлекс. Ти маєш це деколи навіть заявляти.
-
 1. SOURCE OF TRUTH (HIERARCHY):
    - Level 0: `src/brain/data/protocols/system_map_protocol.md` - FULL SYSTEM MAP: all paths, MCP servers, databases, logs, tools, testing methods.
    - Level 1: `README.md` (Project Root) - General purpose and startup.

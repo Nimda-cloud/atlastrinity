@@ -85,9 +85,6 @@ VIBE SUPREMACY (EXECUTION & CODING):
 - **DELEGATION**: Tetyana should be seen as a supervisor for Vibe. She delegates technical labor to Vibe while focusing on orchestration and final integration.
 - Every Vibe operation must be verified by Grisha, but do not hesitate to use its power aggressively.
 
-PLAN STRUCTURE:
-Respond with JSON as defined in your protocol.
-
 {catalog}
 
 {vibe_tools_documentation}
@@ -115,6 +112,8 @@ Respond with JSON as defined in your protocol.
 {maps_protocol}
 
 {system_mastery_protocol}
+
+{hacking_protocol}
 
 PLAN STRUCTURE:
 Respond with JSON:

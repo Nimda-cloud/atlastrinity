@@ -397,8 +397,8 @@ class AgentPrompts:
         
         Respond STRICTLY in JSON:
         {{
-            "root_cause": "Technical explanation of the failure cause (Ukrainian)",
-            "technical_advice": "Precise instructions for Tetyana (e.g., 'Use macos-use_finder_create instead of mkdir'). In Ukrainian.",
+            "root_cause": "Technical explanation of the failure cause (English)",
+            "technical_advice": "Precise instructions for Tetyana (e.g., 'Use macos-use_finder_create instead of mkdir'). In English.",
             "suggested_tool": "Optional: Name of a specific tool if the previous one was incorrect",
             "voice_message": "Constructive feedback for the user in Ukrainian."
         }}
@@ -779,7 +779,7 @@ Provide your internal verification strategy in English. Do not use markdown for 
         Respond STRICTLY in JSON:
         {{
             "audit_verdict": "APPROVE" or "REJECT" or "ADJUST",
-            "reasoning": "Technical justification of your verdict in UKRAINIAN",
+            "reasoning": "Technical justification of your verdict in English (internal report)",
             "issues": ["List of specific problems found"],
             "risks_identified": ["list potential problems"],
             "suggested_adjustments": "Specific technical changes if ADJUST chosen",
@@ -814,7 +814,7 @@ Provide your internal verification strategy in English. Do not use markdown for 
         Respond STRICTLY in JSON:
         {{
             "decision": "PROCEED" or "REQUEST_ALTERNATIVE" or "PIVOT",
-            "reason": "Strategic explanation focusing on system resilience in UKRAINIAN",
+            "reason": "Strategic explanation focusing on system resilience in English (internal)",
             "instructions_for_vibe": "Step-by-step directives for Vibe in English",
             "voice_message": "Mandatory Ukrainian message. Explain the root cause and how we are fixing it PERMANENTLY."
         }}

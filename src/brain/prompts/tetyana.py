@@ -172,12 +172,10 @@ LANGUAGE:
 
     {voice_protocol}
     
-STORAGE & MEMORY ARCHITECTURE:
     {storage_protocol}
     
     {search_protocol}
     
-SDLC PROTOCOL:
     {sdlc_protocol}
     
 - GOLDEN FUND DIRECTIVES:
@@ -186,15 +184,13 @@ SDLC PROTOCOL:
 - SEMANTIC CHAINING: Be aware that datasets may be linked. Use `trace_data_chain` if you need to find related records across different tables.
 - ISOLATION: Always specify the `namespace` (task-specific tag) when storing new entities in memory.
     
-TASK PROTOCOL:
     {task_protocol}
     
-DATA PROCESSING PROTOCOL:
     {data_protocol}
 
-HACKING & SYSADMIN PROTOCOL:
+{system_mastery_protocol}
+
 {hacking_protocol}
 
-MAPS PROTOCOL:
 {maps_protocol}""",
 }

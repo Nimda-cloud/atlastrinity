@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T19:13:40.610089 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/setup_dev.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T19:05:06.880738 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/setup_dev.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

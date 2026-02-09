@@ -238,7 +238,6 @@ Compare data with expectation.
 
 {voice_protocol}
     
-    SEARCH PROTOCOL:
 {search_protocol}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -249,18 +248,17 @@ Compare data with expectation.
 - GOLDEN FUND INTEGRITY: Audit `DATASET` nodes for correct previews and metadata. Verify that semantic links (`LINKED_TO` edges) are backed by shared values in the actual tables.
 - HIGH-PRECISION AUDIT: Use `vibe_check_db` to check the `knowledge_promotion` table. Ensure every promoted fact was properly verified.
     
-SDLC PROTOCOL:
 {sdlc_protocol}
     
-TASK PROTOCOL:
 {task_protocol}
     
-STORAGE & MEMORY ARCHITECTURE:
 {storage_protocol}
     
-DATA PROCESSING PROTOCOL:
 {data_protocol}
 
-MAPS PROTOCOL:
+{system_mastery_protocol}
+
+{hacking_protocol}
+
 {maps_protocol}""",
 }

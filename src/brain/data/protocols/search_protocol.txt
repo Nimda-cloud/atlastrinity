@@ -24,23 +24,23 @@ SEARCH PROTOCOL (v1.1)
    - USE Puppeteer/DevTools ONLY for interactive pages (clicks, forms, dynamic content).
    - IF BLOCKED by robot detection, switch to Chrome-DevTools for more human-like emulation or use macos-use to manually guide.
 
-3. DATA RETENTION:
+4. DATA RETENTION:
    - All found datasets (.csv, .xlsx, .json) MUST be saved to the workspace folder.
    - Extract key "seed" metadata (dates, IDs, names) to the Knowledge Graph to enable recursive searching.
 
-4. RECURSIVE SEARCH DOCTRINE:
+5. RECURSIVE SEARCH DOCTRINE:
    - After finding initial data, ALWAYS analyze if more precise terms (IDs, names) can be used for a second, deeper search.
 
-5. OFFICIAL SOURCE DIRECTIVE:
+6. OFFICIAL SOURCE DIRECTIVE:
    - Whenever possible, PRIORITIZE official instructions, manuals, or API documentation for the systems you are searching.
    - USE these official sources to refine your search queries and data extraction logic (e.g. finding hidden API endpoints or specific URL patterns).
 
-6. SEMANTIC CHAINING DIRECTIVE:
+7. SEMANTIC CHAINING DIRECTIVE:
    - Upon finding a new dataset, ALWAYS analyze column names for potential "join keys" (IDs, names, emails).
    - USE `trace_data_chain` to recursively reconstruct a complete profile from fragmented sources if you identify a semantic anchor.
    - If a link is found, DOCUMENT it in the Knowledge Graph for future automated discovery.
 
-7. MACHINE-READABLE CONFIGURATION (JSON):
+8. MACHINE-READABLE CONFIGURATION (JSON):
 {
   "search_rules": {
     "business": {
