@@ -10,18 +10,7 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
-from typing import Any, Dict, List, Optional, Union
-
-# Type aliases
-ContentItem = Union[str, dict[str, Any]]
-
-# Load environment variables from global .env
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
-except ImportError:
-    pass  # dotenv not available, use system env vars
+from typing import Any
 
 import grpc
 import httpx
@@ -39,7 +28,15 @@ from pydantic import PrivateAttr
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # Type aliases
-ContentItem = Union[str, dict[str, Any]]
+ContentItem = str | dict[str, Any]
+
+# Load environment variables from global .env
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
+except ImportError:
+    pass  # dotenv not available, use system env vars
 
 # ─── Windsurf Free Models ────────────────────────────────────────────────────
 # Only FREE tier models from Windsurf/Codeium

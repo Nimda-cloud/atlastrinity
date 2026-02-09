@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import IO, Any, Union, cast
+from typing import IO, Any, cast
 
 import yaml
 

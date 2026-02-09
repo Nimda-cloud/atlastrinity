@@ -34,6 +34,7 @@ import time
 # Load environment variables from global .env
 try:
     from dotenv import load_dotenv
+
     load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
 except ImportError:
     pass  # dotenv not available, use system env vars
@@ -53,7 +54,7 @@ except ImportError as e:
 DEFAULT_PORT = 8085
 SUPPORTED_MODELS = {
     "deepseek-v3": "deepseek-v3",
-    "deepseek-r1": "deepseek-r1", 
+    "deepseek-r1": "deepseek-r1",
     "swe-1": "swe-1",
     "swe-1.5": "swe-1.5",
     "grok-code-fast-1": "grok-code-fast-1",
@@ -61,6 +62,7 @@ SUPPORTED_MODELS = {
 }
 
 # ─── Colors ────────────────────────────────────────────────────────────
+
 
 class C:
     BOLD = "\033[1m"
@@ -71,219 +73,218 @@ class C:
     DIM = "\033[2m"
     RESET = "\033[0m"
 
+
 def log(msg: str) -> None:
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] {C.CYAN}[VibeProxy]{C.RESET} {msg}")
+
 
 def info(msg: str) -> None:
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] {C.GREEN}[VibeProxy]{C.RESET} {msg}")
 
+
 def warn(msg: str) -> None:
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] {C.YELLOW}[VibeProxy]{C.RESET} {msg}")
+
 
 def error(msg: str) -> None:
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] {C.RED}[VibeProxy]{C.RESET} {msg}")
 
+
 # ─── Proxy Handler ─────────────────────────────────────────────────────
+
 
 class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
     """Simple OpenAI-compatible proxy handler for VIBE Windsurf requests."""
-    
+
     start_time: float = 0.0
-    
+
     def log_message(self, format: str, *args) -> None:
         """Suppress default HTTP logging."""
-    
+
     def do_GET(self) -> None:
         """Handle GET requests (models list, health check)."""
-        if self.path == "/v1/models":
+        if self.path in {"/v1/models"}:
             self.send_models_response()
-        elif self.path == "/health" or self.path == "/":
+        elif self.path in {"/health", "/"}:
             self.send_health_response()
         else:
             self.send_error(404, "Not Found")
-    
+
     def do_POST(self) -> None:
         """Handle POST requests (chat completions)."""
-        if self.path == "/v1/chat/completions" or self.path == "/chat/completions":
+        if self.path in {"/v1/chat/completions", "/chat/completions"}:
             self.handle_chat_completion()
         else:
             self.send_error(404, "Not Found")
-    
+
     def send_models_response(self) -> None:
         """Send available models list."""
         models = []
         for model_name in SUPPORTED_MODELS:
-            models.append({
-                "id": model_name,
-                "object": "model",
-                "created": 1700000000,
-                "owned_by": "windsurf-free"
-            })
-        
-        response = {
-            "object": "list",
-            "data": models
-        }
-        
+            models.append(
+                {
+                    "id": model_name,
+                    "object": "model",
+                    "created": 1700000000,
+                    "owned_by": "windsurf-free",
+                }
+            )
+
+        response = {"object": "list", "data": models}
+
         self.send_json_response(response)
-    
+
     def send_health_response(self) -> None:
         """Send health check response."""
         response = {
             "status": "healthy",
             "service": "vibe-windsurf-proxy",
             "models": list(SUPPORTED_MODELS.keys()),
-            "uptime": time.time() - self.start_time
+            "uptime": time.time() - self.start_time,
         }
         self.send_json_response(response)
-    
+
     def handle_chat_completion(self) -> None:
         """Handle chat completion request using direct Windsurf API."""
         try:
             # Parse request
-            content_length = int(self.headers.get('Content-Length', 0))
+            content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
                 self.send_error(400, "Empty request body")
                 return
-            
+
             body = self.rfile.read(content_length)
-            request_data = json.loads(body.decode('utf-8'))
-            
+            request_data = json.loads(body.decode("utf-8"))
+
             # Extract parameters
-            model = request_data.get('model', 'deepseek-v3')
-            messages = request_data.get('messages', [])
-            
+            model = request_data.get("model", "deepseek-v3")
+            messages = request_data.get("messages", [])
+
             # Validate model
             if model not in SUPPORTED_MODELS:
                 self.send_error_response(f"Unsupported model: {model}", 400)
                 return
-            
+
             # Convert messages to Windsurf format
             windsurf_messages = []
             for msg in messages:
-                role = msg.get('role', 'user')
-                content = msg.get('content', '')
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
                 windsurf_messages.append({"role": role, "content": content})
-            
+
             # Call Windsurf directly
             llm = WindsurfLLM(model_name=model)
-            
+
             # Make the API call
             start_time = time.time()
             response = llm.invoke(windsurf_messages)
             elapsed = time.time() - start_time
-            
+
             # Extract content
-            if hasattr(response, 'content'):
+            if hasattr(response, "content"):
                 content = str(response.content)
             else:
                 content = str(response)
-            
+
             # Create OpenAI-compatible response
             openai_response = {
                 "id": f"vibe-ws-{int(time.time())}",
                 "object": "chat.completion",
                 "created": int(time.time()),
                 "model": model,
-                "choices": [{
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": content
-                    },
-                    "finish_reason": "stop"
-                }],
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": content},
+                        "finish_reason": "stop",
+                    }
+                ],
                 "usage": {
                     "prompt_tokens": 0,  # Windsurf doesn't provide token counts
                     "completion_tokens": 0,
-                    "total_tokens": 0
+                    "total_tokens": 0,
                 },
-                "vibe_proxy": {
-                    "elapsed_seconds": round(elapsed, 2),
-                    "provider": "windsurf-direct"
-                }
+                "vibe_proxy": {"elapsed_seconds": round(elapsed, 2), "provider": "windsurf-direct"},
             }
-            
+
             log(f"✅ {model} response in {elapsed:.2f}s")
             self.send_json_response(openai_response)
-            
+
         except json.JSONDecodeError as e:
             error(f"JSON decode error: {e}")
             self.send_error_response("Invalid JSON in request body", 400)
         except Exception as e:
             error(f"Request error: {e}")
             self.send_error_response(f"Windsurf API error: {e!s}", 500)
-    
+
     def send_json_response(self, data: dict) -> None:
         """Send JSON response."""
-        response_body = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        
+        response_body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+
         self.send_response(200)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(response_body)))
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(response_body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
-        
+
         self.wfile.write(response_body)
-    
+
     def send_error_response(self, message: str, status_code: int = 500) -> None:
         """Send error response in OpenAI format."""
         error_data = {
-            "error": {
-                "message": message,
-                "type": "invalid_request_error",
-                "code": "api_error"
-            }
+            "error": {"message": message, "type": "invalid_request_error", "code": "api_error"}
         }
-        
-        response_body = json.dumps(error_data).encode('utf-8')
-        
+
+        response_body = json.dumps(error_data).encode("utf-8")
+
         self.send_response(status_code)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Content-Length', str(len(response_body)))
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(response_body)))
         self.end_headers()
-        
+
         self.wfile.write(response_body)
+
 
 # ─── Server Management ─────────────────────────────────────────────────
 
+
 def run(port: int = DEFAULT_PORT) -> None:
     """Start the VIBE Windsurf proxy server."""
-    
+
     # Check environment
     api_key = os.getenv("WINDSURF_API_KEY")
     if not api_key:
         error("WINDSURF_API_KEY environment variable not set!")
         error("Run: python tools/get_windsurf_token.py --key-only")
         sys.exit(1)
-    
+
     # Mask key for display
     masked_key = api_key[:15] + "..." + api_key[-8:] if len(api_key) > 20 else api_key
     info(f"API Key: {masked_key}")
     info(f"Supported models: {', '.join(SUPPORTED_MODELS.keys())}")
-    
+
     # Start server
     log(f"Starting VIBE Windsurf Proxy on port {port}")
-    
+
     VibeWindsurfProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)
     socketserver.TCPServer.allow_reuse_address = True
     httpd = socketserver.TCPServer(server_address, VibeWindsurfProxyHandler)
-    
+
     info(f"Serving at http://127.0.0.1:{port}")
     info(f"OpenAI-compatible endpoint: http://127.0.0.1:{port}/v1/chat/completions")
     info(f"Models list: http://127.0.0.1:{port}/v1/models")
     info(f"Health check: http://127.0.0.1:{port}/health")
-    
+
     # Setup signal handlers
     shutting_down = False
-    
+
     def shutdown_handler(signum, frame):
         nonlocal shutting_down
         if shutting_down:
@@ -292,14 +293,15 @@ def run(port: int = DEFAULT_PORT) -> None:
         log("Shutting down proxy...")
         httpd.server_close()
         sys.exit(0)
-    
+
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
-    
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         shutdown_handler(None, None)
+
 
 # ─── Entry Point ───────────────────────────────────────────────────────
 
@@ -312,9 +314,9 @@ Examples:
   %(prog)s                          # Default port 8085
   %(prog)s --port 8086               # Custom port
   %(prog)s --port 8085               # Standard VIBE port
-        """
+        """,
     )
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to listen on")
     args = parser.parse_args()
-    
+
     run(port=args.port)
