@@ -10,7 +10,10 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Dict, List, Optional, Union
+
+# Type aliases
+ContentItem = Union[str, dict[str, Any]]
 
 # Load environment variables from global .env
 try:
@@ -36,7 +39,7 @@ from pydantic import PrivateAttr
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # Type aliases
-ContentItem = str | dict[str, Any]
+ContentItem = Union[str, dict[str, Any]]
 
 # ─── Windsurf Free Models ────────────────────────────────────────────────────
 # Only FREE tier models from Windsurf/Codeium
@@ -52,13 +55,13 @@ WINDSURF_MODELS: dict[str, str] = {
     "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
     "gpt-5.1": "MODEL_PRIVATE_12",
     "swe-1.5": "MODEL_SWE_1_5",
-    "windsurf-fast": "MODEL_CHAT_11121",
     # Free / unlimited models
     "deepseek-v3": "MODEL_DEEPSEEK_V3",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
     "kimi-k2.5": "kimi-k2-5",
+    "windsurf-fast": "MODEL_CHAT_11121",
 }
 
 # For backward compat

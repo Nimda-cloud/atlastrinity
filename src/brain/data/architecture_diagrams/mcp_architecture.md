@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-09T11:23:57.989124 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe/agents/accept-edits.toml.template -->
+
+
+<!-- AUTO-UPDATED: 2026-02-09T11:21:14.283339 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/config.yaml.template -->
+
+
 <!-- AUTO-UPDATED: 2026-02-09T10:03:37.935136 -->
 <!-- Modified: scripts/setup_dev.py, scripts/verify_db_tables.py -->
 

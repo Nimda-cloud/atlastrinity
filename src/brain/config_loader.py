@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import IO, Any, cast
+from typing import IO, Any, Union, cast
 
 import yaml
 
@@ -10,7 +10,7 @@ try:
 except ImportError:  # pragma: no cover
 
     def dotenv_values(
-        dotenv_path: str | os.PathLike[str] | None = None,
+        dotenv_path: str | os.PathLike | None = None,
         stream: IO[str] | None = None,
         verbose: bool = False,
         interpolate: bool = True,

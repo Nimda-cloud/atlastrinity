@@ -45,16 +45,16 @@ models:
   provider: "copilot"                   # LLM provider: copilot | windsurf
 
   # Default models for different purposes
-  # Using gpt-4o as default for GitHub Copilot API
+  # Using gpt-4.1 as default for GitHub Copilot API (most stable)
   # You can change these to your preferred models (e.g., "claude-3.5-sonnet", "gpt-4o-mini", etc.)
-  default: "gpt-4o"                    # Default LLM for agents
+  default: "gpt-4.1"                    # Default LLM for agents (most stable)
   vision: "gpt-4o"                     # Vision/multimodal tasks
   reasoning: "oswe-vscode-secondary"      # Raptor reasoning
   code_analysis: "grok-code-fast-1"      # Fast coding analysis
   consolidation: "oswe-vscode-secondary"          # Memory consolidation (Raptor native)
   
   # Fallbacks (used when primary unavailable)
-  fallback: "gpt-4o"                   # Fallback model
+  fallback: "gpt-4.1"                   # Fallback model (most stable)
   
   # Sandbox model (used by mcp_sandbox.py)
   sandbox: "oswe-vscode-secondary"

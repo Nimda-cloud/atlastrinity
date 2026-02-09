@@ -132,29 +132,20 @@ LLM_PROVIDER=copilot             # Перевизначити провайдер
 Copilot надає доступ до моделей через `api.githubcopilot.com`.
 Множник показує витрату premium requests (0x = безкоштовно).
 
-#### Безкоштовні моделі (0x)
+#### Copilot: Моделі та доступність
+| Модель | Тип | Доступність | Описання |
+|--------|------|-----------|---------|
+| **gpt-4.1** | Premium | ✅ Безкошні | Latest GPT-4 model (рекомендовано) |
+| **gpt-4o** | Premium | ✅ Безкошні | Multimodal, швидіння |
+| **gpt-4o-mini** | Premium | ✅ Безкошні | Швидіння, швидкий аналіз |
+| **gpt-5-mini** | Premium | ✅ Безкошні | Новий GPT-5 модель |
+| **grok-code-fast-1** | Premium | ✅ Безкошні | Швидкий аналіз коду |
+| **oswe-vscode-secondary** | Premium | ✅ Безкошні | Raptor reasoning |
+| **claude-3.5-sonnet** | Premium | ✅ Безкошні | Аналітичний Claude |
+| **o3-mini** | Premium | ✅ Безкошні | Reasoning модель |
+| **claude-4.5-opus** | Premium | ❌ Платні | Найкраща модель |
 
-| Модель | API ID | Опис |
-|--------|--------|------|
-| GPT-4.1 | `gpt-4.1` | Reasoning, глибокий аналіз |
-| GPT-4o | `gpt-4o` | Основна модель для чату |
-| GPT-5 mini | `gpt-5-mini` | Швидка нова модель |
-| Grok Code Fast 1 | `grok-code-fast-1` | Швидкий аналіз коду (xAI) |
-| Raptor mini (Preview) | `oswe-vscode-secondary` | Нативна модель Copilot |
-
-#### Платні моделі (потребують premium requests)
-
-| Модель | Множник | Провайдер |
-|--------|---------|-----------|
-| Claude Haiku 4.5 | 0.33x | Anthropic |
-| Claude Opus 4.5 | 3x | Anthropic |
-| Claude Opus 4.6 | 3x | Anthropic |
-| Claude Sonnet 4 | 1x | Anthropic |
-| Claude Sonnet 4.5 | 1x | Anthropic |
-| Gemini 2.5 Pro | 1x | Google |
-| Gemini 3 Flash (Preview) | 0.33x | Google |
-| Gemini 3 Pro (Preview) | 1x | Google |
-| GPT-5 | 1x | OpenAI |
+**Примітка:** Всі перелічені моделі доступні безкошно для GitHub Copilot токенів.
 | GPT-5-Codex (Preview) | 1x | OpenAI |
 | GPT-5.1 | 1x | OpenAI |
 | GPT-5.1-Codex | 1x | OpenAI |
@@ -194,10 +185,10 @@ python scripts/universal_proxy.py
 - `deepseek-*`, `swe-*`, `kimi-*` → Windsurf
 - `X-Provider` header або `LLM_PROVIDER` env для примусового вибору
 
-**Альтернативні проксі (якщо потрібні окремо):**
+**VIBE проксі (спеціалізовані):**
 ```bash
-python scripts/copilot_proxy.py      # Тільки Copilot
-python scripts/windsurf_proxy.py     # Тільки Windsurf (порт 8086)
+python providers/proxy/copilot_vibe_proxy.py      # Copilot (порт 8086)
+python providers/proxy/vibe_windsurf_proxy.py     # Windsurf (порт 8085)
 ```
 
 ---
@@ -284,9 +275,9 @@ python scripts/universal_proxy.py
 # Список моделей:    http://127.0.0.1:8085/v1/models
 ```
 
-**Окремий Windsurf проксі (порт 8086):**
+**VIBE Windsurf проксі (порт 8085):**
 ```bash
-python scripts/windsurf_proxy.py --port 8086
+python providers/proxy/vibe_windsurf_proxy.py --port 8085
 ```
 
 ---
@@ -380,7 +371,7 @@ llm = create_llm(model_name="deepseek-v3", provider="windsurf")
 
 ### Windsurf: resource_exhausted
 - **Причина:** Rate limit або неправильний формат запиту
-- **Рішення:** Використовуйте проксі: `python scripts/windsurf_proxy.py`
+- **Рішення:** Використовуйте VIBE проксі: `python providers/proxy/vibe_windsurf_proxy.py`
 
 ### Windsurf: DB not found
 - **Причина:** Windsurf не встановлено або не залогінено

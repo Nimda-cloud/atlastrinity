@@ -1,7 +1,7 @@
 # Accept-edits agent configuration for Vibe
 # Auto-approves file reads/writes; bash requires confirmation
 
-active_model = "gpt-5-mini"
+active_model = "deepseek-v3"
 system_prompt_id = "cli"
 
 # File tools — auto-approved for applying edits

@@ -1,7 +1,7 @@
 # Plan agent configuration for Vibe
 # Conservative mode: read-only exploration, write/execute require confirmation
 
-active_model = "raptor-mini"
+active_model = "deepseek-v3"
 system_prompt_id = "cli"
 
 # Read-only tools — safe for exploration

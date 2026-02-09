@@ -6,7 +6,7 @@ import os
 import sys
 from collections.abc import Callable
 from io import BytesIO
-from typing import Any, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 # Load environment variables from global .env
 try:
@@ -30,8 +30,7 @@ from PIL import Image
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # Type aliases for better type safety
-ContentItem = str | dict[str, Any]
-
+ContentItem = Union[str, dict[str, Any]]
 
 class CopilotLLM(BaseChatModel):
     # Model translation: custom names -> real API model names
@@ -474,9 +473,7 @@ class CopilotLLM(BaseChatModel):
                         error_json = response.json()
                         error_code = error_json.get("error", {}).get("code", "")
                         if error_code == "model_not_supported":
-                            print(
-                                f"[COPILOT] Model not supported: {payload.get('model')}", flush=True
-                            )
+                            print(f"[COPILOT] Model not supported: {payload.get('model')}", flush=True)
                     except:
                         pass
 

@@ -21,10 +21,13 @@
 #
 # === FALLBACK CHAIN ===
 # Models to try if active_model fails (in order)
-fallback_chain = ["gpt-4.1", "gpt-4o", "deepseek-v3", "devstral-2"]
+# Optimized for Copilot + Windsurf hybrid usage
+# NOTE: This is for VIBE only - NOT system reasoning!
+# System reasoning uses oswe-vscode-secondary from config.yaml
+fallback_chain = ["gpt-4.1", "deepseek-v3", "deepseek-r1", "gpt-4o"]
 
 # Current selection (change based on your provider):
-active_model = "gpt-4.1"
+active_model = "deepseek-v3"         # Windsurf FREE model for testing
 
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
@@ -65,12 +68,12 @@ backend = "generic"
 
 [[providers]]
 name = "copilot"
-api_base = "http://127.0.0.1:8085"
+api_base = "http://127.0.0.1:8086"
 api_key_env_var = "COPILOT_SESSION_TOKEN"
 api_style = "openai"
 backend = "generic"
 requires_proxy = true
-proxy_command = "python3 ${PROJECT_ROOT}/scripts/universal_proxy.py"
+proxy_command = "python3 ${PROJECT_ROOT}/providers/proxy/copilot_vibe_proxy.py"
 requires_token_exchange = true
 
 [[providers]]
@@ -80,7 +83,7 @@ api_key_env_var = "WINDSURF_API_KEY"
 api_style = "openai"
 backend = "generic"
 requires_proxy = true
-proxy_command = "python3 ${PROJECT_ROOT}/scripts/universal_proxy.py"
+proxy_command = "python3 ${PROJECT_ROOT}/providers/proxy/vibe_windsurf_proxy.py"
 requires_token_exchange = false
 
 # =============================================================================
@@ -191,7 +194,7 @@ permission = "ask"
 [[mcp_servers]]
 name = "devtools"
 transport = "stdio"
-command = "python3"
+command = "${PROJECT_ROOT}/.venv/bin/python"
 args = ["-m", "src.mcp_server.devtools_server"]
 env = { PYTHONPATH = "${PROJECT_ROOT}" }
 description = "Developer Tools (Linter, Analysis, MCP Inspector CLI & Sandbox)"
