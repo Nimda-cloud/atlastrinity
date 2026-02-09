@@ -847,11 +847,27 @@ def setup_xcodebuild_mcp():
             ["xcodebuild", "-version"], capture_output=True, text=True, check=False
         )
         if result.returncode != 0:
-            print_warning("Повний Xcode не встановлено (тільки Command Line Tools)")
-            print_info("XcodeBuildMCP потребує повний Xcode 16.x+ для роботи")
-            print_info("Встановіть Xcode з Mac App Store для iOS/macOS розробки")
-            print_info("Пропускаємо встановлення XcodeBuildMCP...")
-            return False
+            # xcodebuild fails when xcode-select points to CLT, even if Xcode.app exists
+            xcode_app = Path("/Applications/Xcode.app")
+            if xcode_app.exists():
+                print_warning("xcode-select вказує на Command Line Tools, але Xcode.app знайдено")
+                print_info("Переключення на повний Xcode...")
+                try:
+                    subprocess.run(
+                        ["sudo", "xcode-select", "-s", "/Applications/Xcode.app/Contents/Developer"],
+                        check=True,
+                    )
+                    print_success("Переключено на повний Xcode")
+                except subprocess.CalledProcessError as e:
+                    print_error(f"Не вдалося переключитись: {e}")
+                    print_info("Запустіть вручну: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer")
+                    return False
+            else:
+                print_warning("Повний Xcode не встановлено (тільки Command Line Tools)")
+                print_info("XcodeBuildMCP потребує повний Xcode 16.x+ для роботи")
+                print_info("Встановіть Xcode з Mac App Store для iOS/macOS розробки")
+                print_info("Пропускаємо встановлення XcodeBuildMCP...")
+                return False
     except FileNotFoundError:
         print_warning("xcodebuild не знайдено")
         print_info("Пропускаємо встановлення XcodeBuildMCP...")

@@ -482,7 +482,7 @@ class TestMcpRegistryFunctions:
             pytest.skip("Registry not loadable")
 
         no_server = []
-        for tool_name, schema in self.reg_schemas.items():
+        for tool_name, _schema in self.reg_schemas.items():
             server = self.get_server_for_tool(tool_name)
             if server is None:
                 no_server.append(tool_name)
@@ -525,11 +525,13 @@ class TestPerServerToolInventory:
                 "vibe_session_resume", "vibe_ask", "vibe_execute_subcommand",
                 "vibe_list_sessions", "vibe_session_details", "vibe_reload_config",
                 "vibe_check_db", "vibe_get_system_context", "vibe_which",
+                "vibe_test_in_sandbox",
             ]),
             ("memory", [
                 "create_entities", "add_observations", "get_entity",
                 "list_entities", "search", "create_relation", "delete_entity",
                 "ingest_verified_dataset", "trace_data_chain",
+                "query_db", "batch_add_nodes", "get_db_schema", "bulk_ingest_table",
             ]),
             ("graph", [
                 "get_graph_json", "generate_mermaid", "get_node_details",
@@ -544,6 +546,7 @@ class TestPerServerToolInventory:
             ]),
             ("duckduckgo-search", [
                 "duckduckgo_search", "business_registry_search", "open_data_search",
+                "structured_data_search",
             ]),
             ("golden-fund", [
                 "search_golden_fund", "store_blob", "retrieve_blob",
@@ -574,11 +577,13 @@ class TestPerServerToolInventory:
                 "vibe_session_resume", "vibe_ask", "vibe_execute_subcommand",
                 "vibe_list_sessions", "vibe_session_details", "vibe_reload_config",
                 "vibe_check_db", "vibe_get_system_context", "vibe_which",
+                "vibe_test_in_sandbox",
             ]),
             ("memory", [
                 "create_entities", "add_observations", "get_entity",
                 "list_entities", "search", "create_relation", "delete_entity",
                 "ingest_verified_dataset", "trace_data_chain",
+                "query_db", "batch_add_nodes", "get_db_schema", "bulk_ingest_table",
             ]),
             ("graph", [
                 "get_graph_json", "generate_mermaid", "get_node_details",
@@ -593,6 +598,7 @@ class TestPerServerToolInventory:
             ]),
             ("duckduckgo-search", [
                 "duckduckgo_search", "business_registry_search", "open_data_search",
+                "structured_data_search",
             ]),
             ("golden-fund", [
                 "search_golden_fund", "store_blob", "retrieve_blob",
