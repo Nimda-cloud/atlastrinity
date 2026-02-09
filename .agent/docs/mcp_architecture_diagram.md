@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T20:13:57.197826 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/voice/tts.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T20:09:38.952084 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/mode_router.py -->
 

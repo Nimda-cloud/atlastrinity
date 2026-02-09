@@ -638,10 +638,16 @@ def run(port: int = DEFAULT_PORT) -> None:
     log(f"OpenAI-compatible endpoint: http://127.0.0.1:{port}/v1/chat/completions")
     log(f"Models list: http://127.0.0.1:{port}/v1/models")
 
+    _shutting_down = False
+
     def shutdown_handler(signum, frame):
+        nonlocal _shutting_down
+        if _shutting_down:
+            return
+        _shutting_down = True
         log("Shutting down proxy...")
-        httpd.shutdown()
-        sys.exit(0)
+        httpd.server_close()
+        os._exit(0)
 
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
