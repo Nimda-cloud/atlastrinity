@@ -30,7 +30,7 @@ from ..logger import logger
 
 # Lazy imports for optional dependencies
 try:
-    from ukrainian_tts import UkrainianTTS  # type: ignore[reportAttributeAccessIssue]
+    from ukrainian_tts.tts import TTS as UkrainianTTS  # type: ignore[reportAttributeAccessIssue]
     from ukrainian_tts.tts import Voices
 except ImportError:
     UkrainianTTS = None  # type: ignore[reportAssignmentType]
