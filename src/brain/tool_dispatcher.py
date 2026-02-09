@@ -86,6 +86,9 @@ class ToolDispatcher:
         "vibe_configure_provider",
         "vibe_session_resume",
         "vibe_reload_config",
+        "vibe_check_db",
+        "vibe_get_system_context",
+        "vibe_test_in_sandbox",
         "debug",
         "fix",
         "implement",
@@ -788,7 +791,6 @@ class ToolDispatcher:
                 "generate_statistics",
                 "create_visualization",
                 "data_cleaning",
-                "predictive_modeling",
                 "data_aggregation",
                 "read_metadata",
                 "interpret_column_data",
@@ -1440,6 +1442,14 @@ class ToolDispatcher:
             "reload": "vibe_reload_config",
             "reload_config": "vibe_reload_config",
             "vibe_reload_config": "vibe_reload_config",
+            "check_db": "vibe_check_db",
+            "vibe_check_db": "vibe_check_db",
+            "system_context": "vibe_get_system_context",
+            "get_system_context": "vibe_get_system_context",
+            "vibe_get_system_context": "vibe_get_system_context",
+            "test_in_sandbox": "vibe_test_in_sandbox",
+            "sandbox": "vibe_test_in_sandbox",
+            "vibe_test_in_sandbox": "vibe_test_in_sandbox",
         }
         resolved_tool = vibe_map.get(tool_name, tool_name)
         if not resolved_tool.startswith("vibe_"):

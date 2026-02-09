@@ -1056,13 +1056,11 @@ class Trinity:
                     "atlas",
                 )
 
-            prefix = (
-                "Гріша знову виявив недоліки: "
-                if attempt > 0
-                else "Гріша відхилив початковий план: "
+            # Voice: concise Ukrainian only; English issues stay in logs for Tetyana
+            fallback_prefix = (
+                "Гріша знову виявив недоліки." if attempt > 0 else "Гріша відхилив початковий план."
             )
-            issues = "; ".join(res.issues) if res.issues else "Невідома причина"
-            await self._speak("grisha", res.voice_message or f"{prefix}{issues}")
+            await self._speak("grisha", res.voice_message or fallback_prefix)
 
             if attempt >= max_retries and res.fixed_plan:
                 await self._speak("grisha", "Я переписав план самостійно.")
@@ -2714,9 +2712,10 @@ class Trinity:
 
         voice_msg = ""
         if isinstance(help_resp, dict):
-            voice_msg = help_resp.get("voice_message") or help_resp.get("reason") or str(help_resp)
-        else:
-            voice_msg = str(help_resp)
+            voice_msg = help_resp.get("voice_message", "")
+        # Fallback: concise Ukrainian instead of dumping English reason/dict
+        if not voice_msg or len(voice_msg) < 3:
+            voice_msg = "Атлас надає допомогу Тетяні."
 
         await self._speak("atlas", voice_msg)
 
@@ -2852,12 +2851,13 @@ class Trinity:
                     result.error += f" Issues: {', '.join(verify_result.issues)}"
 
                 # Provide rich feedback for the next execution attempt
-                feedback = f"Крок не пройшов перевірку. {verify_result.voice_message or verify_result.description}"
+                # Voice: concise Ukrainian only; full English description stays in logs for Tetyana
+                voice_msg = verify_result.voice_message or f"Крок {step_id} не пройшов перевірку."
                 await self._log(
                     f"Verification rejected step {step_id}: {verify_result.description}",
                     "orchestrator",
                 )
-                await self._speak("grisha", feedback)
+                await self._speak("grisha", voice_msg)
 
                 # Update current_plan step description if possible to include feedback for Tetyana
                 # (Optional but useful for self-correction)

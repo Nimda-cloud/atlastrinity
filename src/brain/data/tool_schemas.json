@@ -127,41 +127,22 @@
     },
     "description": "Retrieve raw data blob"
   },
-  "c7_query": {
-    "server": "context7",
-    "alias_for": "get-library-docs"
-  },
-  "c7_get_context": {
-    "server": "context7",
-    "alias_for": "get-library-docs"
-  },
   "c7_search": {
     "server": "context7",
-    "alias_for": "resolve-library-id"
-  },
-  "c7_info": {
-    "server": "context7",
-    "alias_for": "get-library-docs"
-  },
-  "c7_list_libraries": {
-    "server": "context7",
-    "alias_for": "resolve-library-id"
-  },
-  "resolve-library-id": {
-    "server": "context7",
     "required": [
-      "libraryName"
+      "term"
     ],
     "optional": [],
     "types": {
-      "libraryName": "str"
+      "term": "str"
     },
-    "description": "Resolves a library name to a Context7-compatible ID. Use this first to get the exact ID for get-library-docs."
+    "description": "Search for libraries by name. Returns matching library IDs for use with c7_query."
   },
-  "get-library-docs": {
+  "c7_query": {
     "server": "context7",
     "required": [
-      "context7CompatibleLibraryID"
+      "projectIdentifier",
+      "query"
     ],
     "optional": [
       "topic",
@@ -169,12 +150,36 @@
       "page"
     ],
     "types": {
-      "context7CompatibleLibraryID": "str",
+      "projectIdentifier": "str",
+      "query": "str",
       "topic": "str",
       "mode": "str",
       "page": "int"
     },
-    "description": "Fetches documentation for a library. Requires a Context7-compatible library ID (e.g., /org/project)."
+    "description": "Fetches documentation for a library. Requires a Context7-compatible project identifier (e.g., /org/project)."
+  },
+  "c7_info": {
+    "server": "context7",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get Context7 server info and status."
+  },
+  "c7_get_context": {
+    "server": "context7",
+    "alias_for": "c7_query"
+  },
+  "c7_list_libraries": {
+    "server": "context7",
+    "alias_for": "c7_search"
+  },
+  "resolve-library-id": {
+    "server": "context7",
+    "alias_for": "c7_search"
+  },
+  "get-library-docs": {
+    "server": "context7",
+    "alias_for": "c7_query"
   },
   "vibe_analyze_error": {
     "server": "vibe",
@@ -855,6 +860,56 @@
     },
     "description": "HIGH-PRECISION INGESTION: Validates, creates structured table, indexes in KG, and discovers semantic links."
   },
+  "query_db": {
+    "server": "memory",
+    "required": [
+      "query"
+    ],
+    "optional": [],
+    "types": {
+      "query": "str"
+    },
+    "description": "Execute a raw SQL query against the system database (READ-ONLY). Used for technical audits."
+  },
+  "get_db_schema": {
+    "server": "memory",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Retrieve the database schema (tables and columns) for technical audits."
+  },
+  "batch_add_nodes": {
+    "server": "memory",
+    "required": [
+      "nodes"
+    ],
+    "optional": [
+      "namespace"
+    ],
+    "types": {
+      "nodes": "list",
+      "namespace": "str"
+    },
+    "description": "Optimized batch insertion of multiple nodes into the Knowledge Graph."
+  },
+  "bulk_ingest_table": {
+    "server": "memory",
+    "required": [
+      "file_path",
+      "table_name"
+    ],
+    "optional": [
+      "namespace",
+      "task_id"
+    ],
+    "types": {
+      "file_path": "str",
+      "table_name": "str",
+      "namespace": "str",
+      "task_id": "str"
+    },
+    "description": "Ingest a large table (CSV/JSON/XLSX) into the Knowledge Graph as a DATASET node."
+  },
   "trace_data_chain": {
     "server": "memory",
     "required": [
@@ -1305,6 +1360,20 @@
     },
     "description": "SPECIALIZED: Search Ukrainian Open Data Portal (data.gov.ua) for datasets (.csv, .xlsx, .json)"
   },
+  "structured_data_search": {
+    "server": "duckduckgo-search",
+    "required": [
+      "query"
+    ],
+    "optional": [
+      "step_id"
+    ],
+    "types": {
+      "query": "str",
+      "step_id": "str"
+    },
+    "description": "SPECIALIZED: Search for structured data sources (CSV, XLSX, JSON) on data.gov.ua"
+  },
   "github_whoami": {
     "server": "github",
     "required": [],
@@ -1582,11 +1651,77 @@
     "types": {},
     "description": "Reload the Vibe configuration from disk"
   },
+  "vibe_test_in_sandbox": {
+    "server": "vibe",
+    "required": [
+      "test_script",
+      "target_files",
+      "command"
+    ],
+    "optional": [
+      "dependencies",
+      "timeout_s"
+    ],
+    "types": {
+      "test_script": "str",
+      "target_files": "dict",
+      "command": "str",
+      "dependencies": "list",
+      "timeout_s": "float"
+    },
+    "description": "Execute a test script in an isolated temporary sandbox with mock files"
+  },
+  "devtools_list_processes": {
+    "server": "devtools",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "List all processes tracked by the AtlasTrinity Watchdog (PID, type, CPU usage, health)."
+  },
+  "devtools_restart_mcp_server": {
+    "server": "devtools",
+    "required": [
+      "server_name"
+    ],
+    "optional": [],
+    "types": {
+      "server_name": "str"
+    },
+    "description": "Gracefully restart a specific MCP server."
+  },
+  "devtools_kill_process": {
+    "server": "devtools",
+    "required": [
+      "pid"
+    ],
+    "optional": [
+      "hard"
+    ],
+    "types": {
+      "pid": "int",
+      "hard": "bool"
+    },
+    "description": "Forcefully terminate or kill a specific process by PID."
+  },
   "devtools_check_mcp_health": {
     "server": "devtools",
     "required": [],
     "optional": [],
     "description": "Run the system-wide MCP health check script. Ping all enabled servers and report their status."
+  },
+  "devtools_get_system_map": {
+    "server": "devtools",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get the complete AtlasTrinity system map: all paths, MCP servers, databases, logs, tools."
+  },
+  "devtools_test_all_mcp_native": {
+    "server": "devtools",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Test ALL enabled MCP servers natively by spawning each server process and listing tools via stdio JSON-RPC."
   },
   "devtools_launch_inspector": {
     "server": "devtools",
@@ -1743,26 +1878,6 @@
     },
     "description": "Clean and preprocess data."
   },
-  "predictive_modeling": {
-    "server": "data-analysis",
-    "required": [
-      "data_source",
-      "target_variable"
-    ],
-    "optional": [
-      "model_type",
-      "test_size",
-      "output_format"
-    ],
-    "types": {
-      "data_source": "str",
-      "target_variable": "str",
-      "model_type": "str",
-      "test_size": "float",
-      "output_format": "str"
-    },
-    "description": "Build predictive models using machine learning algorithms"
-  },
   "data_aggregation": {
     "server": "data-analysis",
     "required": [
@@ -1848,6 +1963,35 @@
       "schema": "str"
     },
     "description": "Get schema information (columns, types) for a specific PostgreSQL table."
+  },
+  "postgres_execute": {
+    "server": "postgres",
+    "required": [
+      "query"
+    ],
+    "optional": [],
+    "types": {
+      "query": "str"
+    },
+    "description": "Execute write queries (INSERT/UPDATE/DELETE) against the PostgreSQL database."
+  },
+  "postgres_schema_alter": {
+    "server": "postgres",
+    "required": [
+      "query"
+    ],
+    "optional": [],
+    "types": {
+      "query": "str"
+    },
+    "description": "Execute schema modifications (ALTER TABLE, CREATE INDEX) on PostgreSQL."
+  },
+  "postgres_health_check": {
+    "server": "postgres",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Check PostgreSQL server health, connectivity, and performance metrics."
   },
   "devtools_update_architecture_diagrams": {
     "server": "devtools",

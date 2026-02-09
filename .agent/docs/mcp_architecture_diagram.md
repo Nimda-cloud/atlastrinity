@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T19:05:06.880738 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/setup_dev.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-08T18:33:08.108450 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/setup_dev.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T18:18:48.833899 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, tests/test_all_mcp_tools.py -->
 

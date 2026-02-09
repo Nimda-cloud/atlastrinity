@@ -135,7 +135,8 @@
       "vibe_set_mode",
       "vibe_configure_provider",
       "vibe_session_resume",
-      "vibe_reload_config"
+      "vibe_reload_config",
+      "vibe_test_in_sandbox"
     ],
     "when_to_use": "ONLY for software development, writing code/scripts, fixing hard errors (self-healing), and deep system state inspection via DB.",
     "integration_notes": {
@@ -165,7 +166,11 @@
       "list_entities",
       "delete_entity",
       "ingest_verified_dataset",
-      "trace_data_chain"
+      "trace_data_chain",
+      "query_db",
+      "batch_add_nodes",
+      "get_db_schema",
+      "bulk_ingest_table"
     ],
     "when_to_use": "Storing or recalling facts, entities, and historical observations about the user, system, or codebase."
   },
@@ -233,7 +238,10 @@
       "Structured results (title, url)"
     ],
     "key_tools": [
-      "duckduckgo_search"
+      "duckduckgo_search",
+      "business_registry_search",
+      "open_data_search",
+      "structured_data_search"
     ],
     "when_to_use": "Quick web searches when puppeteer is overkill."
   },
@@ -341,15 +349,18 @@
       "devtools_check_types_ts",
       "devtools_run_context_check",
       "devtools_analyze_trace",
-      "devtools_get_system_map",
-      "devtools_test_all_mcp_native",
       "mcp_inspector_list_tools",
       "mcp_inspector_call_tool",
       "mcp_inspector_list_resources",
       "mcp_inspector_read_resource",
       "mcp_inspector_list_prompts",
       "mcp_inspector_get_prompt",
-      "mcp_inspector_get_schema"
+      "mcp_inspector_get_schema",
+      "devtools_get_system_map",
+      "devtools_test_all_mcp_native",
+      "devtools_list_processes",
+      "devtools_restart_mcp_server",
+      "devtools_kill_process"
     ],
     "when_to_use": "Validating code quality, project health, auto-updating diagrams, deep MCP server inspection/testing, and finding ANY system path (logs, DBs, configs). Critical for agent-led system maintenance.",
     "priority_note": "FIRST call 'devtools_get_system_map' when you need to locate logs, databases, configs, or any system path. Use 'devtools_test_all_mcp_native' for quick smoke test of all servers. Use 'mcp_inspector_*' for discovery and 'devtools_run_mcp_sandbox' for full operational verification."

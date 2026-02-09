@@ -854,13 +854,20 @@ def setup_xcodebuild_mcp():
                 print_info("Переключення на повний Xcode...")
                 try:
                     subprocess.run(
-                        ["sudo", "xcode-select", "-s", "/Applications/Xcode.app/Contents/Developer"],
+                        [
+                            "sudo",
+                            "xcode-select",
+                            "-s",
+                            "/Applications/Xcode.app/Contents/Developer",
+                        ],
                         check=True,
                     )
                     print_success("Переключено на повний Xcode")
                 except subprocess.CalledProcessError as e:
                     print_error(f"Не вдалося переключитись: {e}")
-                    print_info("Запустіть вручну: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer")
+                    print_info(
+                        "Запустіть вручну: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+                    )
                     return False
             else:
                 print_warning("Повний Xcode не встановлено (тільки Command Line Tools)")

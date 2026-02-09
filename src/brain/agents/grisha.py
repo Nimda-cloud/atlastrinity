@@ -788,6 +788,7 @@ class Grisha(BaseAgent):
                 "confidence": parsed_verdict["confidence"],
                 "reasoning": parsed_verdict["reasoning"],
                 "issues": parsed_verdict["issues"],
+                "voice_summary_uk": parsed_verdict.get("voice_summary_uk", ""),
                 "full_analysis": reasoning_result.get("analysis", ""),
             }
 
@@ -803,12 +804,14 @@ class Grisha(BaseAgent):
         confidence = self._extract_confidence(analysis_text, verified)
         reasoning = self._extract_reasoning(analysis_text)
         issues = self._extract_issues(analysis_text, verified)
+        voice_summary_uk = self._extract_voice_summary_uk(analysis_text)
 
         return {
             "verified": verified,
             "confidence": confidence,
             "reasoning": reasoning,
             "issues": issues,
+            "voice_summary_uk": voice_summary_uk,
         }
 
     def _extract_verdict(self, analysis_text: str, analysis_upper: str) -> bool:
@@ -1034,6 +1037,25 @@ class Grisha(BaseAgent):
         if not verified and not issues:
             issues.append("Verification criteria not met")
         return issues
+
+    def _extract_voice_summary_uk(self, analysis_text: str) -> str:
+        """Extracts the concise Ukrainian voice summary from LLM analysis."""
+        match = re.search(
+            r"(?:VOICE_SUMMARY_UK|ГОЛОСОВИЙ_ПІДСУМОК)[:\s]*(.*?)(?=\n- \*\*|\n\*\*|\Z)",
+            analysis_text,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if match:
+            summary = match.group(1).strip().strip('"').strip("'")
+            # Validate: must be primarily Cyrillic (Ukrainian), not English
+            cyrillic = len(re.findall(r"[а-яА-ЯіІєЄїЇґҐ]", summary))
+            latin = len(re.findall(r"[a-zA-Z]", summary))
+            if cyrillic > latin and len(summary) > 5:
+                # Truncate to ~150 chars for TTS speed
+                if len(summary) > 150:
+                    summary = summary[:147] + "..."
+                return summary
+        return ""
 
     def _filter_contradictory_issues(self, issues: list[str]) -> list[str]:
         """Removes issues that contradict successful verification."""
@@ -1358,28 +1380,33 @@ class Grisha(BaseAgent):
     def _generate_plan_voice_message(
         self, approved: bool, issues: list[str], analysis_text: str
     ) -> str:
-        """Generates the Ukrainian voice message for the plan verdict."""
-        if approved:
-            return "План схвалено. Симуляція успішна."
+        """Generates concise Ukrainian voice message for plan verdict.
 
+        Keeps it short for TTS. Full details stay in description for Tetyana.
+        """
+        if approved:
+            return "План схвалено. Починаю виконання."
+
+        # Try to use LLM-generated Ukrainian summary first
         summary_ukrainian = ""
         if "SUMMARY_UKRAINIAN:" in analysis_text:
-            summary_ukrainian = analysis_text.rsplit("SUMMARY_UKRAINIAN:", maxsplit=1)[-1].strip()
+            raw_summary = analysis_text.rsplit("SUMMARY_UKRAINIAN:", maxsplit=1)[-1].strip()
+            # Take first sentence only for TTS brevity
+            first_sentence = raw_summary.split(".")[0].strip()
+            if first_sentence and len(first_sentence) > 10:
+                # Validate it's actually Ukrainian
+                cyrillic = len(re.findall(r"[а-яА-ЯіІєЄїЇґҐ]", first_sentence))
+                if cyrillic > len(re.findall(r"[a-zA-Z]", first_sentence)):
+                    summary_ukrainian = first_sentence[:120]
 
-        if issues:
-            issues_count = len(issues)
-            voice_issues = []
-            for issue in issues[:3]:
-                # Simple heuristic to make issue more readable
-                clean_issue = issue.replace("Step", "Крок").replace("Missing", "Відсутній")
-                clean_issue = clean_issue.replace("IP", "ІП-адреса").replace("path", "шлях")
-                voice_issues.append(clean_issue[:80])
+        if summary_ukrainian:
+            return f"План потребує доопрацювання. {summary_ukrainian}."
 
-            if issues_count > 3:
-                return f"План потребує доопрацювання. Знайдено {issues_count} проблем. Головні: {'; '.join(voice_issues)}. Ще {issues_count - 3} додаткових."
-            return f"План потребує доопрацювання. Проблеми: {'; '.join(voice_issues)}."
+        issues_count = len(issues)
+        if issues_count > 0:
+            return f"План потребує доопрацювання. Знайдено {issues_count} проблем."
 
-        return f"План потребує доопрацювання. {summary_ukrainian}"
+        return "План потребує доопрацювання."
 
     async def _attempt_plan_fix(
         self, user_request: str, failed_plan_text: str, audit_feedback: str
@@ -1825,7 +1852,7 @@ class Grisha(BaseAgent):
             confidence=1.0,
             description="Intermediate step - auto-approved",
             issues=[],
-            voice_message=f"Step {step_id} is intermediate, continuing task execution",
+            voice_message="",  # No voice for intermediate steps — saves TTS time
         )
 
     async def _handle_verification_failure(
@@ -1964,28 +1991,36 @@ class Grisha(BaseAgent):
         return result_obj
 
     def _generate_voice_message(self, verdict: dict, step: dict) -> str:
-        """Generate detailed Ukrainian voice message based on verdict."""
+        """Generate concise Ukrainian voice message for TTS.
+
+        IMPORTANT: Voice messages go to TTS and must be:
+        - Short (max ~150 chars) for fast playback
+        - 100% Ukrainian, zero English words
+        - Clear and to the point
+
+        Full English reasoning stays in 'description' field for Tetyana.
+        """
         step_id = step.get("id", "невідомий")
-        reasoning = verdict.get("reasoning", "")
 
+        # 1. Prefer the LLM-generated Ukrainian summary from VOICE_SUMMARY_UK
+        voice_summary = verdict.get("voice_summary_uk", "").strip()
+        if voice_summary and len(voice_summary) > 5:
+            return voice_summary
+
+        # 2. Fallback: generate concise Ukrainian message locally
         if verdict.get("verified"):
-            msg = f"Крок {step_id} успішно верифіковано. "
-            if reasoning and len(reasoning) < 200:
-                msg += f"Деталі: {reasoning}"
-            return msg
+            return f"Крок {step_id} підтверджено."
+
         issues = verdict.get("issues", [])
-        issues_text = "; ".join(issues) if issues else "критерії не виконані"
+        if issues:
+            # Take first issue only, truncate for TTS
+            first_issue = str(issues[0])[:80]
+            # Strip English if present — just give the verdict
+            if re.search(r"[a-zA-Z]{3,}", first_issue):
+                return f"Крок {step_id} не пройшов перевірку."
+            return f"Крок {step_id} не пройшов. {first_issue}."
 
-        msg = f"Крок {step_id} не пройшов перевірку. "
-        msg += f"Виявлені проблеми: {issues_text}. "
-
-        # Add snippet of reasoning if it's informative
-        if reasoning and "пр" not in reasoning.lower()[:10]:  # avoid repeating "проблеми"
-            msg += f"Аналіз: {reasoning[:1000]}"
-            if len(reasoning) > 1000:
-                msg += "..."
-
-        return msg
+        return f"Крок {step_id} не пройшов перевірку."
 
     async def analyze_failure(
         self,
@@ -2476,10 +2511,11 @@ class Grisha(BaseAgent):
             if issues:
                 logger.warning(f"[GRISHA] Audit Issues: {issues}")
 
-            # Fallback voice message if missing
+            # Fallback voice message if missing — concise Ukrainian only
             if not audit_result.get("voice_message"):
+                verdict_uk = "прийнято" if verdict == "APPROVE" else "відхилено"
                 audit_result["voice_message"] = (
-                    f"Аудит завершено з результатом {verdict}. {str(audit_result.get('reasoning', ''))[:200]}"
+                    f"Аудит виправлення завершено. Результат: {verdict_uk}."
                 )
 
             return audit_result

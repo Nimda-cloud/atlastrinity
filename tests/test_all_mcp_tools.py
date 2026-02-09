@@ -126,9 +126,7 @@ def get_schema_tools_for_server(server_name: str) -> list[str]:
 
 def get_all_schema_tools_for_server(server_name: str) -> list[str]:
     """Get ALL tool names (including aliases) for a server."""
-    return [
-        name for name, schema in TOOL_SCHEMAS.items() if schema.get("server") == server_name
-    ]
+    return [name for name, schema in TOOL_SCHEMAS.items() if schema.get("server") == server_name]
 
 
 def get_catalog_key_tools(server_name: str) -> list[str]:
@@ -139,11 +137,11 @@ def get_catalog_key_tools(server_name: str) -> list[str]:
 
 def get_config_servers() -> dict[str, dict]:
     """Get all enabled servers from mcp_servers.json.template."""
-    servers = {}
-    for name, cfg in MCP_SERVERS_CONFIG.get("mcpServers", {}).items():
-        if not name.startswith("_"):
-            servers[name] = cfg
-    return servers
+    return {
+        name: cfg
+        for name, cfg in MCP_SERVERS_CONFIG.get("mcpServers", {}).items()
+        if not name.startswith("_")
+    }
 
 
 CONFIG_SERVERS = get_config_servers()
@@ -205,10 +203,14 @@ class TestToolSchemasConsistency:
 
     def test_schema_servers_are_known(self):
         """Every server referenced in schemas should be in catalog or config."""
-        all_known_servers = set(CONFIG_SERVERS.keys()) | set(MCP_CATALOG.keys()) | {
-            "system",
-            "local",
-        }
+        all_known_servers = (
+            set(CONFIG_SERVERS.keys())
+            | set(MCP_CATALOG.keys())
+            | {
+                "system",
+                "local",
+            }
+        )
         unknown = set()
         for tool_name, schema in TOOL_SCHEMAS.items():
             server = schema.get("server", "")
@@ -254,9 +256,7 @@ class TestCatalogKeyToolsCoverage:
         for tool in key_tools:
             if tool not in TOOL_SCHEMAS:
                 missing.append(tool)
-        assert not missing, (
-            f"[{server_name}] key_tools missing from tool_schemas.json: {missing}"
-        )
+        assert not missing, f"[{server_name}] key_tools missing from tool_schemas.json: {missing}"
 
     @pytest.mark.parametrize("server_name", list(MCP_CATALOG.keys()))
     def test_catalog_key_tools_reference_correct_server(self, server_name: str):
@@ -272,10 +272,10 @@ class TestCatalogKeyToolsCoverage:
             if schema_server and schema_server != server_name:
                 # Aliases might reference different names
                 if "alias_for" not in schema:
-                    mismatched.append(f"{tool}: schema says '{schema_server}', catalog says '{server_name}'")
-        assert not mismatched, (
-            f"[{server_name}] key_tools with wrong server: {mismatched}"
-        )
+                    mismatched.append(
+                        f"{tool}: schema says '{schema_server}', catalog says '{server_name}'"
+                    )
+        assert not mismatched, f"[{server_name}] key_tools with wrong server: {mismatched}"
 
 
 # =============================================================================
@@ -357,9 +357,7 @@ class TestToolDispatcherRouting:
             vibe_map_keys = set(re.findall(r'"(\w+)"', vibe_map_match.group(1)))
 
         # Extract VIBE_SYNONYMS
-        synonyms_match = re.search(
-            r"VIBE_SYNONYMS\s*=\s*\[([^\]]+)\]", source, re.DOTALL
-        )
+        synonyms_match = re.search(r"VIBE_SYNONYMS\s*=\s*\[([^\]]+)\]", source, re.DOTALL)
         vibe_synonyms = set()
         if synonyms_match:
             vibe_synonyms = set(re.findall(r'"(\w+)"', synonyms_match.group(1)))
@@ -371,9 +369,7 @@ class TestToolDispatcherRouting:
             if tool not in all_routable:
                 not_routable.append(tool)
 
-        assert not not_routable, (
-            f"Vibe tools not routable via dispatcher: {not_routable}"
-        )
+        assert not not_routable, f"Vibe tools not routable via dispatcher: {not_routable}"
 
     def test_macos_map_covers_key_tools(self):
         """All macos-use key_tools should be in MACOS_MAP values or direct tools."""
@@ -395,16 +391,18 @@ class TestToolDispatcherRouting:
 
         # This is informational - macos-use tools may be direct-routed
         if not_mapped:
-            print(f"INFO: macos-use key_tools not in MACOS_MAP values (may be direct): {not_mapped}")
+            print(
+                f"INFO: macos-use key_tools not in MACOS_MAP values (may be direct): {not_mapped}"
+            )
 
     def test_golden_fund_synonyms_include_all_tools(self):
         """Golden Fund schema tools should be routable."""
         gf_schema_tools = get_schema_tools_for_server("golden-fund")
 
-        missing_from_schemas = [
-            tool for tool in gf_schema_tools if tool not in TOOL_SCHEMAS
-        ]
-        assert not missing_from_schemas, f"Golden Fund tools missing from schemas: {missing_from_schemas}"
+        missing_from_schemas = [tool for tool in gf_schema_tools if tool not in TOOL_SCHEMAS]
+        assert not missing_from_schemas, (
+            f"Golden Fund tools missing from schemas: {missing_from_schemas}"
+        )
 
     def test_devtools_tools_routable(self):
         """All devtools schema tools should be routable."""
@@ -420,9 +418,7 @@ class TestToolDispatcherRouting:
         da_schema_tools = get_schema_tools_for_server("data-analysis")
 
         # Extract data_analysis_tools list
-        match = re.search(
-            r'data_analysis_tools\s*=\s*\[([^\]]+)\]', source, re.DOTALL
-        )
+        match = re.search(r"data_analysis_tools\s*=\s*\[([^\]]+)\]", source, re.DOTALL)
         validation_tools = set()
         if match:
             validation_tools = set(re.findall(r'"(\w+)"', match.group(1)))
@@ -458,6 +454,7 @@ class TestMcpRegistryFunctions:
             from src.brain.mcp_registry import (
                 TOOL_SCHEMAS as REG_SCHEMAS,
             )
+
             load_registry()
             self.get_tool_schema = get_tool_schema
             self.get_server_for_tool = get_server_for_tool
@@ -518,44 +515,105 @@ class TestPerServerToolInventory:
     @pytest.mark.parametrize(
         "server_name,expected_tools",
         [
-            ("vibe", [
-                "vibe_prompt", "vibe_analyze_error", "vibe_implement_feature",
-                "vibe_code_review", "vibe_smart_plan", "vibe_get_config",
-                "vibe_configure_model", "vibe_set_mode", "vibe_configure_provider",
-                "vibe_session_resume", "vibe_ask", "vibe_execute_subcommand",
-                "vibe_list_sessions", "vibe_session_details", "vibe_reload_config",
-                "vibe_check_db", "vibe_get_system_context", "vibe_which",
-                "vibe_test_in_sandbox",
-            ]),
-            ("memory", [
-                "create_entities", "add_observations", "get_entity",
-                "list_entities", "search", "create_relation", "delete_entity",
-                "ingest_verified_dataset", "trace_data_chain",
-                "query_db", "batch_add_nodes", "get_db_schema", "bulk_ingest_table",
-            ]),
-            ("graph", [
-                "get_graph_json", "generate_mermaid", "get_node_details",
-                "get_related_nodes",
-            ]),
-            ("redis", [
-                "redis_get", "redis_set", "redis_keys", "redis_delete",
-                "redis_info", "redis_ttl", "redis_hgetall", "redis_hset",
-            ]),
-            ("whisper-stt", [
-                "transcribe_audio", "record_and_transcribe",
-            ]),
-            ("duckduckgo-search", [
-                "duckduckgo_search", "business_registry_search", "open_data_search",
-                "structured_data_search",
-            ]),
-            ("golden-fund", [
-                "search_golden_fund", "store_blob", "retrieve_blob",
-                "ingest_dataset", "probe_entity", "add_knowledge_node",
-                "analyze_and_store", "get_dataset_insights",
-            ]),
-            ("react-devtools", [
-                "react_get_introspection_script",
-            ]),
+            (
+                "vibe",
+                [
+                    "vibe_prompt",
+                    "vibe_analyze_error",
+                    "vibe_implement_feature",
+                    "vibe_code_review",
+                    "vibe_smart_plan",
+                    "vibe_get_config",
+                    "vibe_configure_model",
+                    "vibe_set_mode",
+                    "vibe_configure_provider",
+                    "vibe_session_resume",
+                    "vibe_ask",
+                    "vibe_execute_subcommand",
+                    "vibe_list_sessions",
+                    "vibe_session_details",
+                    "vibe_reload_config",
+                    "vibe_check_db",
+                    "vibe_get_system_context",
+                    "vibe_which",
+                    "vibe_test_in_sandbox",
+                ],
+            ),
+            (
+                "memory",
+                [
+                    "create_entities",
+                    "add_observations",
+                    "get_entity",
+                    "list_entities",
+                    "search",
+                    "create_relation",
+                    "delete_entity",
+                    "ingest_verified_dataset",
+                    "trace_data_chain",
+                    "query_db",
+                    "batch_add_nodes",
+                    "get_db_schema",
+                    "bulk_ingest_table",
+                ],
+            ),
+            (
+                "graph",
+                [
+                    "get_graph_json",
+                    "generate_mermaid",
+                    "get_node_details",
+                    "get_related_nodes",
+                ],
+            ),
+            (
+                "redis",
+                [
+                    "redis_get",
+                    "redis_set",
+                    "redis_keys",
+                    "redis_delete",
+                    "redis_info",
+                    "redis_ttl",
+                    "redis_hgetall",
+                    "redis_hset",
+                ],
+            ),
+            (
+                "whisper-stt",
+                [
+                    "transcribe_audio",
+                    "record_and_transcribe",
+                ],
+            ),
+            (
+                "duckduckgo-search",
+                [
+                    "duckduckgo_search",
+                    "business_registry_search",
+                    "open_data_search",
+                    "structured_data_search",
+                ],
+            ),
+            (
+                "golden-fund",
+                [
+                    "search_golden_fund",
+                    "store_blob",
+                    "retrieve_blob",
+                    "ingest_dataset",
+                    "probe_entity",
+                    "add_knowledge_node",
+                    "analyze_and_store",
+                    "get_dataset_insights",
+                ],
+            ),
+            (
+                "react-devtools",
+                [
+                    "react_get_introspection_script",
+                ],
+            ),
         ],
     )
     def test_expected_tools_in_source(self, server_name: str, expected_tools: list[str]):
@@ -570,41 +628,99 @@ class TestPerServerToolInventory:
     @pytest.mark.parametrize(
         "server_name,expected_tools",
         [
-            ("vibe", [
-                "vibe_prompt", "vibe_analyze_error", "vibe_implement_feature",
-                "vibe_code_review", "vibe_smart_plan", "vibe_get_config",
-                "vibe_configure_model", "vibe_set_mode", "vibe_configure_provider",
-                "vibe_session_resume", "vibe_ask", "vibe_execute_subcommand",
-                "vibe_list_sessions", "vibe_session_details", "vibe_reload_config",
-                "vibe_check_db", "vibe_get_system_context", "vibe_which",
-                "vibe_test_in_sandbox",
-            ]),
-            ("memory", [
-                "create_entities", "add_observations", "get_entity",
-                "list_entities", "search", "create_relation", "delete_entity",
-                "ingest_verified_dataset", "trace_data_chain",
-                "query_db", "batch_add_nodes", "get_db_schema", "bulk_ingest_table",
-            ]),
-            ("graph", [
-                "get_graph_json", "generate_mermaid", "get_node_details",
-                "get_related_nodes",
-            ]),
-            ("redis", [
-                "redis_get", "redis_set", "redis_keys", "redis_delete",
-                "redis_info", "redis_ttl", "redis_hgetall", "redis_hset",
-            ]),
-            ("whisper-stt", [
-                "transcribe_audio", "record_and_transcribe",
-            ]),
-            ("duckduckgo-search", [
-                "duckduckgo_search", "business_registry_search", "open_data_search",
-                "structured_data_search",
-            ]),
-            ("golden-fund", [
-                "search_golden_fund", "store_blob", "retrieve_blob",
-                "ingest_dataset", "probe_entity", "add_knowledge_node",
-                "analyze_and_store", "get_dataset_insights",
-            ]),
+            (
+                "vibe",
+                [
+                    "vibe_prompt",
+                    "vibe_analyze_error",
+                    "vibe_implement_feature",
+                    "vibe_code_review",
+                    "vibe_smart_plan",
+                    "vibe_get_config",
+                    "vibe_configure_model",
+                    "vibe_set_mode",
+                    "vibe_configure_provider",
+                    "vibe_session_resume",
+                    "vibe_ask",
+                    "vibe_execute_subcommand",
+                    "vibe_list_sessions",
+                    "vibe_session_details",
+                    "vibe_reload_config",
+                    "vibe_check_db",
+                    "vibe_get_system_context",
+                    "vibe_which",
+                    "vibe_test_in_sandbox",
+                ],
+            ),
+            (
+                "memory",
+                [
+                    "create_entities",
+                    "add_observations",
+                    "get_entity",
+                    "list_entities",
+                    "search",
+                    "create_relation",
+                    "delete_entity",
+                    "ingest_verified_dataset",
+                    "trace_data_chain",
+                    "query_db",
+                    "batch_add_nodes",
+                    "get_db_schema",
+                    "bulk_ingest_table",
+                ],
+            ),
+            (
+                "graph",
+                [
+                    "get_graph_json",
+                    "generate_mermaid",
+                    "get_node_details",
+                    "get_related_nodes",
+                ],
+            ),
+            (
+                "redis",
+                [
+                    "redis_get",
+                    "redis_set",
+                    "redis_keys",
+                    "redis_delete",
+                    "redis_info",
+                    "redis_ttl",
+                    "redis_hgetall",
+                    "redis_hset",
+                ],
+            ),
+            (
+                "whisper-stt",
+                [
+                    "transcribe_audio",
+                    "record_and_transcribe",
+                ],
+            ),
+            (
+                "duckduckgo-search",
+                [
+                    "duckduckgo_search",
+                    "business_registry_search",
+                    "open_data_search",
+                    "structured_data_search",
+                ],
+            ),
+            (
+                "golden-fund",
+                [
+                    "search_golden_fund",
+                    "store_blob",
+                    "retrieve_blob",
+                    "ingest_dataset",
+                    "probe_entity",
+                    "add_knowledge_node",
+                    "analyze_and_store",
+                    "get_dataset_insights",
+                ],
+            ),
         ],
     )
     def test_expected_tools_in_schemas(self, server_name: str, expected_tools: list[str]):
@@ -640,9 +756,7 @@ class TestExtraToolsTracking:
                 truly_untracked.append(tool)
 
         if truly_untracked:
-            print(
-                f"WARNING [{server_name}]: Source tools not in schemas: {truly_untracked}"
-            )
+            print(f"WARNING [{server_name}]: Source tools not in schemas: {truly_untracked}")
 
 
 # =============================================================================

@@ -70,7 +70,9 @@ SAFE_TEST_ARGS: dict[str, dict[str, dict]] = {
         },
         "delete_entity": {"name": "__runtime_test__"},
         "query_db": {"query": "SELECT 1"},
-        "batch_add_nodes": {"nodes": [{"name": "__batch_test__", "entityType": "test", "observations": ["batch"]}]},
+        "batch_add_nodes": {
+            "nodes": [{"name": "__batch_test__", "entityType": "test", "observations": ["batch"]}]
+        },
         "bulk_ingest_table": {"file_path": "/tmp/__nonexistent__.csv", "table_name": "test"},
         "ingest_verified_dataset": {
             "file_path": "/tmp/__nonexistent__.csv",
@@ -150,7 +152,9 @@ SAFE_TEST_ARGS: dict[str, dict[str, dict]] = {
         "devtools_check_types_python": {"path": str(PROJECT_ROOT / "src" / "__init__.py")},
         "devtools_check_types_ts": {},
         "devtools_analyze_trace": {},
-        "devtools_run_context_check": {"test_file": str(PROJECT_ROOT / "tests" / "logic_tests" / "sample_scenarios.yaml")},
+        "devtools_run_context_check": {
+            "test_file": str(PROJECT_ROOT / "tests" / "logic_tests" / "sample_scenarios.yaml")
+        },
         "devtools_launch_inspector": {"server_name": "memory"},
         "devtools_restart_mcp_server": {"server_name": "__test__"},
         "devtools_kill_process": {"pid": 999999, "hard": False},
@@ -160,7 +164,11 @@ SAFE_TEST_ARGS: dict[str, dict[str, dict]] = {
         "mcp_inspector_list_tools": {"server_name": "memory"},
         "mcp_inspector_list_resources": {"server_name": "memory"},
         "mcp_inspector_list_prompts": {"server_name": "memory"},
-        "mcp_inspector_call_tool": {"server_name": "memory", "tool_name": "list_entities", "arguments": "{}"},
+        "mcp_inspector_call_tool": {
+            "server_name": "memory",
+            "tool_name": "list_entities",
+            "arguments": "{}",
+        },
         "mcp_inspector_read_resource": {"server_name": "memory", "uri": "test://"},
         "mcp_inspector_get_prompt": {"server_name": "memory", "prompt_name": "test"},
         "mcp_inspector_get_schema": {"server_name": "memory", "tool_name": "search"},
@@ -189,7 +197,11 @@ SAFE_TEST_ARGS: dict[str, dict[str, dict]] = {
         "read_file": {"path": str(PROJECT_ROOT / "README.md")},
         "get_file_info": {"path": str(PROJECT_ROOT / "README.md")},
         "list_allowed_directories": {},
-        "search_files": {"path": str(PROJECT_ROOT / "src"), "pattern": "*.py", "excludePatterns": []},
+        "search_files": {
+            "path": str(PROJECT_ROOT / "src"),
+            "pattern": "*.py",
+            "excludePatterns": [],
+        },
         "directory_tree": {"path": str(PROJECT_ROOT / "src"), "depth": 1},
     },
     "sequential-thinking": {
@@ -234,6 +246,7 @@ SAFE_TEST_ARGS: dict[str, dict[str, dict]] = {
 # ═══════════════════════════════════════════════════════════════════════════════
 #  JSON-RPC helpers
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def make_jsonrpc(method: str, params: dict, req_id: int) -> str:
     return json.dumps({"jsonrpc": "2.0", "id": req_id, "method": method, "params": params})
@@ -285,6 +298,7 @@ def parse_responses(stdout: str) -> dict[int, dict]:
 # ═══════════════════════════════════════════════════════════════════════════════
 #  Core test runner
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def read_response(proc, timeout: float = 10.0) -> dict | None:
     """Read a single JSON-RPC response line from the process stdout.
@@ -387,11 +401,18 @@ def test_server(name: str, cfg: dict, only_tool: str | None = None) -> dict:
 
     try:
         # 1. Initialize
-        send_msg(proc, make_jsonrpc("initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "runtime-test", "version": "1.0"},
-        }, 1))
+        send_msg(
+            proc,
+            make_jsonrpc(
+                "initialize",
+                {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "runtime-test", "version": "1.0"},
+                },
+                1,
+            ),
+        )
         init_timeout = 30 if name in ("data-analysis", "vibe", "devtools") else 15
         init_resp = read_response(proc, timeout=init_timeout)
         if not init_resp:
@@ -404,11 +425,16 @@ def test_server(name: str, cfg: dict, only_tool: str | None = None) -> dict:
             return result
 
         # 2. Send initialized notification
-        send_msg(proc, json.dumps({
-            "jsonrpc": "2.0",
-            "method": "notifications/initialized",
-            "params": {},
-        }))
+        send_msg(
+            proc,
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "method": "notifications/initialized",
+                    "params": {},
+                }
+            ),
+        )
         time.sleep(0.2)  # Give server time to process
 
         # 3. List tools
@@ -425,17 +451,43 @@ def test_server(name: str, cfg: dict, only_tool: str | None = None) -> dict:
         for tool_name, args in test_args.items():
             if only_tool and tool_name != only_tool:
                 continue
-            send_msg(proc, make_jsonrpc("tools/call", {
-                "name": tool_name,
-                "arguments": args,
-            }, req_id))
+            send_msg(
+                proc,
+                make_jsonrpc(
+                    "tools/call",
+                    {
+                        "name": tool_name,
+                        "arguments": args,
+                    },
+                    req_id,
+                ),
+            )
 
             # Per-tool timeout: longer for heavy tools
             tool_timeout = 10
             if name == "vibe" or "lint" in tool_name or "sandbox" in tool_name:
                 tool_timeout = 30
             if "test_all" in tool_name or "update_architecture" in tool_name:
-                tool_timeout = 45
+                tool_timeout = 60
+            # devtools heavy tools that spawn subprocesses
+            heavy_devtools = (
+                "devtools_check_mcp_health",
+                "devtools_run_global_lint",
+                "devtools_check_security",
+                "devtools_run_mcp_sandbox",
+                "devtools_test_all_mcp_native",
+                "mcp_inspector_list_tools",
+                "mcp_inspector_call_tool",
+                "mcp_inspector_list_resources",
+                "mcp_inspector_read_resource",
+                "mcp_inspector_list_prompts",
+                "mcp_inspector_get_prompt",
+                "mcp_inspector_get_schema",
+            )
+            if tool_name in heavy_devtools:
+                tool_timeout = 60
+            if tool_name == "devtools_run_mcp_sandbox":
+                tool_timeout = 120
 
             resp = read_response(proc, timeout=tool_timeout)
             if resp:
@@ -528,12 +580,18 @@ def print_report(results: list[dict]):
                     total_tools_ok += 1
                     preview = tool_result.get("preview", "")
                     preview_short = preview[:80].replace("\n", " ") if preview else ""
-                    print(f"     {t_icon} {tool_name}: OK{f'  → {preview_short}' if preview_short else ''}")
+                    print(
+                        f"     {t_icon} {tool_name}: OK{f'  → {preview_short}' if preview_short else ''}"
+                    )
                 elif t_status == "error_result":
-                    total_tools_ok += 1  # Expected errors (e.g. file not found) are still valid responses
+                    total_tools_ok += (
+                        1  # Expected errors (e.g. file not found) are still valid responses
+                    )
                     preview = tool_result.get("preview", "")
                     preview_short = preview[:80].replace("\n", " ") if preview else ""
-                    print(f"     {t_icon} {tool_name}: returned error (expected){f'  → {preview_short}' if preview_short else ''}")
+                    print(
+                        f"     {t_icon} {tool_name}: returned error (expected){f'  → {preview_short}' if preview_short else ''}"
+                    )
                 else:
                     total_tools_error += 1
                     err = tool_result.get("error", "")
@@ -562,11 +620,14 @@ def print_report(results: list[dict]):
 #  Main
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def main():
     parser = argparse.ArgumentParser(description="Runtime MCP Server Test Suite")
     parser.add_argument("--server", "-s", help="Test only this server")
     parser.add_argument("--tool", "-t", help="Test only this tool (requires --server)")
-    parser.add_argument("--list", "-l", action="store_true", help="Only list tools, don't call them")
+    parser.add_argument(
+        "--list", "-l", action="store_true", help="Only list tools, don't call them"
+    )
     args = parser.parse_args()
 
     if not CONFIG_PATH.exists():
