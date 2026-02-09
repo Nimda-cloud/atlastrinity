@@ -1258,6 +1258,9 @@ class Trinity:
 
             # Simple intent routing (chat, solo_task, etc.)
             # Pass ModeProfile through so chat() uses LLM classification, not keywords
+            # Note: deep_chat intent maps to "chat" via ModeProfile.intent property,
+            # but "deep_chat" is kept here defensively. Mode-specific behavior
+            # (llm_deep, prompt_template, protocols) is driven by ModeProfile, not intent.
             mode_profile = analysis.get("mode_profile")
             if intent in ["chat", "deep_chat", "recall", "status", "solo_task"]:
                 response = analysis.get("initial_response") or await self.atlas.chat(

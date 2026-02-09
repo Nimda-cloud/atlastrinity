@@ -233,7 +233,7 @@ class TestModeRouterNormalization:
 
 
 class TestModeRouterFallback:
-    """Test fallback_classify() — emergency heuristic."""
+    """Test fallback_classify() — structural-only emergency heuristic (no keywords)."""
 
     @pytest.fixture
     def router(self):
@@ -241,34 +241,50 @@ class TestModeRouterFallback:
         return ModeRouter()
 
     def test_short_request_is_chat(self, router):
+        """≤3 words, no question mark → chat."""
         profile = router.fallback_classify("Привіт!")
         assert profile.mode == "chat"
 
+    def test_short_greeting_is_chat(self, router):
+        """Single word → chat."""
+        profile = router.fallback_classify("Дякую")
+        assert profile.mode == "chat"
+
+    def test_short_question_is_solo_task(self, router):
+        """≤3 words BUT has question mark → solo_task (not chat)."""
+        profile = router.fallback_classify("Як справи?")
+        assert profile.mode == "solo_task"
+
+    def test_question_is_solo_task(self, router):
+        """Question mark → solo_task (research/lookup)."""
+        profile = router.fallback_classify("Яка зараз погода у Львові?")
+        assert profile.mode == "solo_task"
+
     def test_long_request_is_task(self, router):
+        """≥15 words → task (complex, needs planning)."""
         profile = router.fallback_classify(
             "Відкрий Finder, створи нову папку на робочому столі, перейменуй її на Проект "
             "і скопіюй туди всі файли з Downloads"
         )
         assert profile.mode == "task"
 
-    def test_question_is_solo_task(self, router):
-        profile = router.fallback_classify("Яка зараз погода у Львові?")
-        assert profile.mode == "solo_task"
-
-    def test_code_request_is_development(self, router):
-        profile = router.fallback_classify("Виправ баг у модулі")
-        assert profile.mode == "development"
-
-    def test_action_verb_is_task(self, router):
-        profile = router.fallback_classify("відкрий terminal")
+    def test_long_request_has_high_complexity(self, router):
+        """Long request → task with high complexity."""
+        profile = router.fallback_classify(
+            "Мені потрібно створити повний проект з бекендом фронтендом базою даних "
+            "і деплоєм на сервер з моніторингом і алертами"
+        )
         assert profile.mode == "task"
-
-    def test_create_action_is_task(self, router):
-        profile = router.fallback_classify("створи папку")
-        assert profile.mode == "task"
+        assert profile.complexity == "high"
 
     def test_medium_request_defaults_to_solo_task(self, router):
+        """4-14 words, no question → solo_task (safe default with tools)."""
         profile = router.fallback_classify("Покажи мені останні новини")
+        assert profile.mode == "solo_task"
+
+    def test_medium_imperative_defaults_to_solo_task(self, router):
+        """Medium-length imperative without question → solo_task (no keyword matching)."""
+        profile = router.fallback_classify("Відкрий terminal і перевір")
         assert profile.mode == "solo_task"
 
 

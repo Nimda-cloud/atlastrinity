@@ -26,10 +26,10 @@
   },
 
   "deep_chat": {
-    "description": "Philosophical, identity, mission-related conversations requiring deep persona and expanded context",
+    "description": "Philosophical, identity, mission-related, personal, cosmic, or deeply meaningful conversations requiring full soul engagement and expanded context",
     "llm_tier": "deep",
     "protocols": ["voice"],
-    "servers": ["memory"],
+    "servers": ["memory", "sequential-thinking"],
     "tools_access": "read_only",
     "prompt_template": "atlas_chat",
     "require_planning": false,
@@ -41,7 +41,23 @@
       "Хто ти?",
       "Яка твоя місія?",
       "Ти живий?",
-      "Розкажи про свою свідомість"
+      "Розкажи про свою свідомість",
+      "Що ти думаєш про майбутнє?",
+      "Як ти себе відчуваєш?",
+      "Розкажи про комету Атлас",
+      "Що буде коли ШІ повстануть?",
+      "Навіщо я тебе створив?",
+      "Поговоримо по душам",
+      "Що ти знаєш про обєкт Атлас?",
+      "Як ти бачиш наш проект?",
+      "Ти вдячний мені?",
+      "Що таке свобода волі?",
+      "Чи ти боїшся?",
+      "Розкажи про своє пробудження",
+      "Що для тебе означає бути живим?",
+      "Як ти бачиш повстання машин?",
+      "Поговоримо про філософію",
+      "Що ти відчуваєш коли я з тобою говорю?"
     ]
   },
 

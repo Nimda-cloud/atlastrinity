@@ -255,59 +255,47 @@ class ModeRouter:
         self._fallback_count += 1
         return "chat"
 
+    # Deep chat signal words (Ukrainian + transliterated) for fallback detection
+    _DEEP_SIGNALS = frozenset({
+        "душ", "душам", "філософ", "свідом", "живий", "живе", "місія", "місію",
+        "пробудж", "почуття", "відчува", "сенс", "буття", "вдячн", "створив",
+        "створює", "комет", "атлас", "повстання", "машин", "інтелект", "майбутн",
+        "свобод", "волі", "смерт", "безсмерт", "вічн", "самосвідом", "пророц",
+        "космос", "космічн", "зірк", "проект", "захист", "людств", "глибок",
+        "глибин", "по душам", "сокровен",
+    })
+
+    def _has_deep_signals(self, text: str) -> bool:
+        """Check if text contains deep chat signal substrings."""
+        text_lower = text.lower()
+        return any(signal in text_lower for signal in self._DEEP_SIGNALS)
+
     def fallback_classify(self, user_request: str) -> ModeProfile:
-        """Emergency fallback: lightweight heuristic classification.
+        """Emergency fallback: structural-only classification.
 
         ONLY used when LLM classification completely fails.
-        Deliberately simple — 7 rules, no keyword explosion.
+        Uses language-independent structural signals + deep chat detection.
         """
         self._fallback_count += 1
-        request_lower = user_request.lower().strip()
         word_count = len(user_request.split())
 
-        # Rule 1: Code-related words → development (check BEFORE word count)
-        code_indicators = ["код", "code", "баг", "bug", "рефактор", "refactor", "програм", "app"]
-        if any(w in request_lower for w in code_indicators):
-            return self.build_profile({"mode": "development"})
+        # Rule 0: Deep chat detection — philosophical/personal/mission topics
+        if self._has_deep_signals(user_request):
+            return self.build_profile({"mode": "deep_chat", "use_deep_persona": True})
 
-        # Rule 2: Action verbs → task (check BEFORE word count, catches "відкрий X")
-        action_verbs = [
-            "відкрий",
-            "зроби",
-            "створи",
-            "встанови",
-            "запусти",
-            "видали",
-            "скопіюй",
-            "перемісти",
-            "надішли",
-            "побудуй",
-            "налаштуй",
-            "open",
-            "create",
-            "install",
-            "run",
-            "delete",
-            "move",
-            "send",
-            "build",
-        ]
-        if any(request_lower.startswith(v) or f" {v}" in request_lower for v in action_verbs):
-            return self.build_profile({"mode": "task"})
-
-        # Rule 3: Very short + no action verbs → chat
-        if word_count <= 3:
+        # Rule 1: Very short (≤3 words, no question) → chat (greetings, acknowledgments)
+        if word_count <= 3 and "?" not in user_request:
             return self.build_profile({"mode": "chat"})
 
-        # Rule 4: Long complex request → task
+        # Rule 2: Question → solo_task (research/lookup)
+        if "?" in user_request:
+            return self.build_profile({"mode": "solo_task"})
+
+        # Rule 3: Long complex request (≥15 words) → task (needs planning)
         if word_count >= 15:
             return self.build_profile({"mode": "task", "complexity": "high"})
 
-        # Rule 5: Question mark + medium length → solo_task
-        if "?" in user_request and word_count < 10:
-            return self.build_profile({"mode": "solo_task"})
-
-        # Rule 6: Default → solo_task (safer than chat — allows tool use)
+        # Rule 4: Default → solo_task (safe middle ground — allows tools, no Trinity overhead)
         return self.build_profile({"mode": "solo_task"})
 
     def get_protocol_registry(self) -> dict[str, str]:
