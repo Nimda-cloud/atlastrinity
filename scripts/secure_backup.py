@@ -12,7 +12,10 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from cryptography.fernet import Fernet
+try:
+    from cryptography.fernet import Fernet
+except ImportError:
+    Fernet = None  # Lazy: will be imported after pip install if needed
 
 
 class SecureBackupManager:
@@ -50,6 +53,8 @@ class SecureBackupManager:
 
     def generate_key(self) -> bytes:
         """Generate encryption key for backup"""
+        if Fernet is None:
+            raise ImportError("cryptography package is required for secure backup")
         return Fernet.generate_key()
 
     def get_backup_key(self) -> bytes:
@@ -70,6 +75,8 @@ class SecureBackupManager:
 
     def encrypt_file(self, input_path: Path, output_path: Path, key: bytes) -> bool:
         """Encrypt a file with Fernet encryption"""
+        if Fernet is None:
+            raise ImportError("cryptography package is required for encryption")
         try:
             fernet = Fernet(key)
 
@@ -88,6 +95,8 @@ class SecureBackupManager:
 
     def decrypt_file(self, input_path: Path, output_path: Path, key: bytes) -> bool:
         """Decrypt a file with Fernet encryption"""
+        if Fernet is None:
+            raise ImportError("cryptography package is required for decryption")
         try:
             fernet = Fernet(key)
 

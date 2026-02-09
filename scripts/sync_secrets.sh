@@ -7,8 +7,9 @@ set -e
 ENV_FILE="$HOME/.config/atlastrinity/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
-    echo "❌ Local .env file not found at $ENV_FILE"
-    exit 1
+    echo "ℹ️  .env ще не створено в $ENV_FILE (це нормально для fresh install)."
+    echo "   Додайте API ключі в $ENV_FILE та запустіть цей скрипт знову."
+    exit 0
 fi
 
 if ! command -v gh &> /dev/null; then

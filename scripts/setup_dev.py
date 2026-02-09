@@ -1236,7 +1236,10 @@ def sync_configs():
                 except Exception as e:
                     print_warning(f"Could not sync .env: {e}")
         else:
-            print_warning(f"Local .env not found at {env_src}")
+            print_info(
+                f"Local .env не знайдено в {env_src} (це нормально для fresh install). "
+                f"Секрети зберігаються в {env_dst}"
+            )
 
         return True
     except Exception as e:
@@ -1378,6 +1381,9 @@ def backup_databases():
         except ImportError:
             print_info("Модуль 'cryptography' відсутній. Встановлення...")
             _pip_install_safe("cryptography")
+            import importlib
+
+            importlib.invalidate_caches()
 
         from scripts.secure_backup import SecureBackupManager
 
@@ -1391,9 +1397,8 @@ def backup_databases():
             print_error("Помилка при створенні безпечного бекапу")
 
     except ImportError as e:
-        print_error(f"Модуль безпечного бекапу не знайдено: {e}")
-        print_warning("Використання старого методу бекапу...")
-        # Fallback to old method
+        print_warning(f"Модуль безпечного бекапу недоступний: {e}")
+        print_info("Використання legacy методу бекапу (без шифрування)...")
         _legacy_backup_databases()
     except Exception as e:
         print_error(f"Помилка при створенні бекапу: {e}")
@@ -1461,6 +1466,9 @@ def restore_databases():
         except ImportError:
             print_info("Модуль 'cryptography' відсутній. Встановлення...")
             _pip_install_safe("cryptography")
+            import importlib
+
+            importlib.invalidate_caches()
 
         from scripts.secure_backup import SecureBackupManager
 
