@@ -89,8 +89,28 @@ def check_python_version():
     if current_version == REQUIRED_PYTHON:
         print_success(f"Python {current_version} знайдено")
         return True
+    
     print_warning(f"Поточна версія Python: {current_version}")
-    print_info(f"Рекомендовано використовувати {REQUIRED_PYTHON} для повної сумісності.")
+    
+    # Proactive installation/fix
+    if shutil.which("brew"):
+        print_info(f"Спроба оновити Python до {REQUIRED_PYTHON} через Homebrew...")
+        try:
+            # brew install python@3.12 installs the latest in that branch
+            # If we want EXACTLY 3.12.12, brew might not provide it as a separate formula easily
+            # but we can try to update the branch
+            subprocess.run(["brew", "upgrade", "python@3.12"], check=False)
+            
+            # Re-check after potential upgrade
+            # Wait a bit for filesystem
+            time.sleep(1)
+            # We can't easily change the running process python version, 
+            # so we inform the user to restart if we detect a change was made or still mismatched.
+            print_info(f"Рекомендуємо переконатися, що у вас встановлено {REQUIRED_PYTHON}.")
+            print_info("Якщо ви використовуєте pyenv: pyenv install 3.12.12 && pyenv global 3.12.12")
+        except Exception as e:
+            print_warning(f"Не вдалося автоматично оновити Python: {e}")
+    
     return True  # Дозволяємо продовжити, але з попередженням
 
 

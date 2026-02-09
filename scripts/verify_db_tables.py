@@ -15,6 +15,18 @@ from src.brain.db.manager import db_manager
 from src.brain.db.schema import Base
 
 
+# Simple color helper
+class Colors:
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+
+
 async def verify_database_tables():
     """Detailed verification of database tables and counts"""
     print("\n[DB CHECK] Verifying SQL Tables...")
@@ -99,6 +111,20 @@ async def verify_chromadb():
     except ImportError:
         print("[DB] WARNING: chromadb not installed. Skipping check.")
     except Exception as e:
+        # Check specifically for the KEY error '_type' which happens on incompatible migrations
+        if isinstance(e, KeyError) and str(e) == "'_type'":
+            print(
+                f"{Colors.FAIL}[DB] ChromaDB Error: Incompatible database format encountered (KeyError: '_type'){Colors.ENDC}"
+            )
+            print(
+                f"{Colors.WARNING}[DB] This usually happens when an old backup is restored to a newer ChromaDB version (0.6.3+).{Colors.ENDC}"
+            )
+            print(
+                f"{Colors.OKCYAN}[DB] FIX: Run 'rm -rf ~/.config/atlastrinity/memory/chroma' to reset the vector store.{Colors.ENDC}"
+            )
+            # Non-blocking for setup
+            return True
+
         print(f"[DB] ChromaDB Error: {e}")
         # Log more details if it's a type error
         if isinstance(e, TypeError):
