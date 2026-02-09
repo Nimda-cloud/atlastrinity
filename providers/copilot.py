@@ -8,6 +8,14 @@ from collections.abc import Callable
 from io import BytesIO
 from typing import Any, cast
 
+# Load environment variables from global .env
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
+except ImportError:
+    pass  # dotenv not available, use system env vars
+
 import httpx
 import requests
 from langchain_core.language_models import BaseChatModel

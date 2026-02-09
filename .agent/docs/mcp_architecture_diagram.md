@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-09T10:03:37.935136 -->
+<!-- Modified: scripts/setup_dev.py, scripts/verify_db_tables.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T20:34:59.490439 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/orchestrator.py -->
 

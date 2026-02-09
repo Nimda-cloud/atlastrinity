@@ -89,9 +89,9 @@ def check_python_version():
     if current_version == REQUIRED_PYTHON:
         print_success(f"Python {current_version} знайдено")
         return True
-    
+
     print_warning(f"Поточна версія Python: {current_version}")
-    
+
     # Proactive installation/fix
     if shutil.which("brew"):
         print_info(f"Спроба оновити Python до {REQUIRED_PYTHON} через Homebrew...")
@@ -100,17 +100,19 @@ def check_python_version():
             # If we want EXACTLY 3.12.12, brew might not provide it as a separate formula easily
             # but we can try to update the branch
             subprocess.run(["brew", "upgrade", "python@3.12"], check=False)
-            
+
             # Re-check after potential upgrade
             # Wait a bit for filesystem
             time.sleep(1)
-            # We can't easily change the running process python version, 
+            # We can't easily change the running process python version,
             # so we inform the user to restart if we detect a change was made or still mismatched.
             print_info(f"Рекомендуємо переконатися, що у вас встановлено {REQUIRED_PYTHON}.")
-            print_info("Якщо ви використовуєте pyenv: pyenv install 3.12.12 && pyenv global 3.12.12")
+            print_info(
+                "Якщо ви використовуєте pyenv: pyenv install 3.12.12 && pyenv global 3.12.12"
+            )
         except Exception as e:
             print_warning(f"Не вдалося автоматично оновити Python: {e}")
-    
+
     return True  # Дозволяємо продовжити, але з попередженням
 
 
@@ -1861,6 +1863,9 @@ def main():
         print_info("Прокидаємо новий API ключ у глобальну конфігурацію...")
         sync_configs()
 
+    # Provider Token Setup
+    setup_provider_tokens()
+
     # Frontend Security & Env Verification
     ensure_frontend_config()
 
@@ -2061,6 +2066,79 @@ def main():
 
     print("  - MCP Inspector: Дебаг MCP серверів (npx @modelcontextprotocol/inspector)")
     print("=" * 60 + "\n")
+
+
+def setup_provider_tokens():
+    """Автоматична установка токенів провайдерів (тільки якщо їх немає в локальному .env)."""
+    print_step("Перевірка токенів провайдерів...")
+
+    # Check if local .env exists and has tokens
+    env_path = PROJECT_ROOT / ".env"
+
+    # Skip if .env doesn't exist (fresh install scenario)
+    if not env_path.exists():
+        print_info("Локальний .env не знайдено - токени будуть встановлені при першому запуску")
+        return
+
+    # Load existing tokens from local .env
+    existing_tokens = {}
+    with open(env_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("COPILOT_API_KEY="):
+                existing_tokens["copilot"] = line.split("=", 1)[1].strip()
+            elif line.startswith("WINDSURF_API_KEY="):
+                existing_tokens["windsurf"] = line.split("=", 1)[1].strip()
+
+    # Check if we have valid tokens
+    has_copilot = existing_tokens.get("copilot") and len(existing_tokens["copilot"]) > 10
+    has_windsurf = existing_tokens.get("windsurf") and existing_tokens["windsurf"].startswith(
+        "sk-ws-"
+    )
+
+    if has_copilot and has_windsurf:
+        print_success("Токени провайдерів вже налаштовано в локальному .env")
+        # Sync to global location
+        sync_configs()
+        return
+
+    # Only proceed if we need to setup tokens
+    print_info("Деякі токени відсутні, спробуємо автоматичне налаштування...")
+
+    # Setup Windsurf token (only if missing or invalid)
+    if not has_windsurf:
+        print_info("Спроба отримати Windsurf токен автоматично...")
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "providers.utils.get_windsurf_token"],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+            )
+
+            if result.returncode == 0 and "sk-ws-" in result.stdout:
+                print_success("Windsurf токен отримано та синхронізовано")
+            else:
+                print_warning("Не вдалося отримати Windsurf токен автоматично")
+                print_info("Будь ласка, запустіть вручну:")
+                print_info("  python -m providers token windsurf")
+        except Exception as e:
+            print_warning(f"Помилка при отриманні Windsurf токена: {e}")
+    else:
+        print_success("Windsurf токен вже налаштовано")
+
+    # Setup Copilot token (only if missing or invalid)
+    if not has_copilot:
+        print_info("Для Copilot токена потрібна ручна установка")
+        print_info("Будь ласка, запустіть:")
+        print_info("  python -m providers token copilot --method vscode")
+        print_info("  Або отримайте токен вручну з GitHub Copilot")
+    else:
+        print_success("Copilot токен вже налаштовано")
+
+    # Sync to global location if we made changes
+    sync_configs()
+    print_info("Перевірка токенів провайдерів завершена")
 
 
 if __name__ == "__main__":

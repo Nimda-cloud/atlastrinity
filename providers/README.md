@@ -1,22 +1,43 @@
-# AtlasTrinity LLM Providers
+# Providers Module
 
-Система підтримує два LLM провайдери: **GitHub Copilot** та **Windsurf (Codeium)**.
-Вибір провайдера визначається в `config.yaml` або через змінну середовища `LLM_PROVIDER`.
+Централізований модуль для всіх LLM провайдерів AtlasTrinity.
 
----
+## Структура
+
+```
+providers/
+├── __init__.py              # Основний експорт модуля
+├── __main__.py              # CLI інтерфейс
+├── factory.py               # Фабрика провайдерів
+├── copilot.py               # Copilot провайдер
+├── windsurf.py              # Windsurf провайдер
+├── utils/                   # Всі утиліти
+│   ├── __init__.py
+│   ├── switch_provider.py   # Перемикання провайдерів
+│   ├── get_copilot_token.py # Токени Copilot
+│   └── get_windsurf_token.py # Токени Windsurf
+└── tests/                   # Тестові утиліти
+    ├── __init__.py
+    ├── test_windsurf_config.py
+    └── quick_windsurf_test.py
+```
 
 ## Швидкий старт
 
 ```bash
 # 1. Отримати токен Copilot (ghu_)
-python -m providers.get_copilot_token --method vscode --update-env
+python -m providers token copilot --method vscode --update-env
 
 # 2. Отримати токен Windsurf (sk-ws-)
-python -m providers.get_windsurf_token
+python -m providers token windsurf
 
 # 3. Перевірити токени
-python -m providers.get_copilot_token --test
-python -m providers.get_windsurf_token --test
+python -m providers token copilot --test
+python -m providers token windsurf --test
+
+# 4. Перемкнути провайдер
+python -m providers switch windsurf
+python -m providers status
 ```
 
 ---

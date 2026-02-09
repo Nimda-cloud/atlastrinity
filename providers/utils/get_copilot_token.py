@@ -49,10 +49,10 @@ COPILOT_HEADERS = {
     "User-Agent": "GithubCopilot/1.144.0",
 }
 
-# Paths — providers/ is inside project root
-PROJECT_ROOT = Path(__file__).parent.parent
+# Paths — providers/utils/ is inside project root
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 GLOBAL_ENV = Path.home() / ".config" / "atlastrinity" / ".env"
-LOCAL_ENV = PROJECT_ROOT / ".env"
+PROJECT_ENV = PROJECT_ROOT / ".env"
 
 # IDE database paths (macOS)
 VSCODE_STATE_DB = (
@@ -415,17 +415,35 @@ def update_env_file(env_path: Path, token: str) -> bool:
 
 
 def update_all_env(token: str) -> None:
-    """Update token in LOCAL .env only.
+    """Update token in PROJECT .env.
 
-    Providers read from GLOBAL ~/.config/atlastrinity/.env via config.py load_dotenv.
-    Scripts write to LOCAL .env which is the source of truth for the project.
+    The .env file in project root is the source of truth for all environment variables.
+    System reads from this file and syncs to global location.
     """
-    step("Оновлення локального .env")
+    step("Оновлення .env файлу проекту")
 
-    if update_env_file(LOCAL_ENV, token):
-        info(f"Оновлено: {LOCAL_ENV}")
+    if update_env_file(PROJECT_ENV, token):
+        info(f"Оновлено: {PROJECT_ENV}")
+        # Sync to global location using existing setup script
+        try:
+            import subprocess
+            import sys
+
+            result = subprocess.run(
+                [sys.executable, str(PROJECT_ROOT / "scripts" / "setup_dev.py")],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+            )
+
+            if result.returncode == 0:
+                print(f"  {C.GREEN}✅ Синхронізовано з глобальним .env{C.RESET}")
+            else:
+                print(f"  {C.YELLOW}⚠️  Синхронізація пропущена{C.RESET}")
+        except Exception:
+            print(f"  {C.YELLOW}⚠️  Синхронізація пропущена{C.RESET}")
     else:
-        warn(f"Нічого не змінено в {LOCAL_ENV}")
+        warn(f"Нічого не змінено в {PROJECT_ENV}")
 
 
 # ─── Test Current Token ─────────────────────────────────────────────────────
@@ -435,9 +453,9 @@ def test_current_token() -> bool:
     """Test the currently configured COPILOT_API_KEY."""
     step("Перевірка поточного COPILOT_API_KEY")
 
-    # Load from local .env first, then global
+    # Load from project .env first, then global
     token = None
-    for env_path in [LOCAL_ENV, GLOBAL_ENV]:
+    for env_path in [PROJECT_ENV, GLOBAL_ENV]:
         if env_path.exists():
             for line in env_path.read_text().splitlines():
                 if line.startswith("COPILOT_API_KEY="):
@@ -470,9 +488,10 @@ def test_current_token() -> bool:
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 
-def main():
+def main() -> None:
+    """Main entry point for Copilot token retrieval."""
     parser = argparse.ArgumentParser(
-        description="GitHub Copilot Token Retriever — отримання ghu_ токена для AtlasTrinity",
+        description="GitHub Copilot Token Retriever",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Приклади:
@@ -602,6 +621,9 @@ def main():
 
     print()
 
+
+# Export main function for module imports
+__all__ = ["main"]
 
 if __name__ == "__main__":
     main()

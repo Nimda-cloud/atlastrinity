@@ -49,9 +49,9 @@ WINDSURF_STATE_DB = (
     / "state.vscdb"
 )
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 GLOBAL_ENV = Path.home() / ".config" / "atlastrinity" / ".env"
-LOCAL_ENV = PROJECT_ROOT / ".env"
+PROJECT_ENV = PROJECT_ROOT / ".env"
 
 # Keys in state.vscdb
 KEY_CODEIUM_CONFIG = "codeium.windsurf"
@@ -371,15 +371,15 @@ def _set_env_var(env_path: Path, key: str, value: str) -> bool:
 
 
 def update_env_windsurf(auth: WindsurfAuth) -> None:
-    """Update all Windsurf-related variables in LOCAL .env only.
+    """Update all Windsurf-related variables in PROJECT .env.
 
-    Providers read from GLOBAL ~/.config/atlastrinity/.env via config.py load_dotenv.
-    Scripts write to LOCAL .env which is the source of truth for the project.
+    The .env file in project root is the source of truth for all environment variables.
+    System reads from this file and syncs to global location.
     """
-    step("Оновлення локального .env (Windsurf)")
+    step("Оновлення .env файлу проекту (Windsurf)")
 
-    if not LOCAL_ENV.exists():
-        warn(f"Файл не знайдено: {LOCAL_ENV}")
+    if not PROJECT_ENV.exists():
+        warn(f"Файл не знайдено: {PROJECT_ENV}")
         return
 
     vars_to_set = {
@@ -395,12 +395,30 @@ def update_env_windsurf(auth: WindsurfAuth) -> None:
     changed = False
     for key, value in vars_to_set.items():
         if value:
-            changed |= _set_env_var(LOCAL_ENV, key, value)
+            changed |= _set_env_var(PROJECT_ENV, key, value)
 
     if changed:
-        info(f"Оновлено: {LOCAL_ENV}")
+        info(f"Оновлено: {PROJECT_ENV}")
+        # Sync to global location using existing setup script
+        try:
+            import subprocess
+            import sys
+
+            result = subprocess.run(
+                [sys.executable, str(PROJECT_ROOT / "scripts" / "setup_dev.py")],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+            )
+
+            if result.returncode == 0:
+                print(f"  {C.GREEN}✅ Синхронізовано з глобальним .env{C.RESET}")
+            else:
+                print(f"  {C.YELLOW}⚠️  Синхронізація пропущена{C.RESET}")
+        except Exception:
+            print(f"  {C.YELLOW}⚠️  Синхронізація пропущена{C.RESET}")
     else:
-        print(f"  {C.DIM}Без змін: {LOCAL_ENV}{C.RESET}")
+        print(f"  {C.DIM}Без змін: {PROJECT_ENV}{C.RESET}")
 
 
 # ─── Token Test ──────────────────────────────────────────────────────────────
@@ -497,7 +515,8 @@ def output_json(auth: WindsurfAuth) -> None:
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 
-def main():
+def main() -> None:
+    """Main entry point for Windsurf token extraction."""
     parser = argparse.ArgumentParser(
         description="Windsurf / Codeium Token Extractor — витягує API ключ з локальної БД Windsurf",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -582,6 +601,9 @@ def main():
 
     print()
 
+
+# Export main function for module imports
+__all__ = ["main"]
 
 if __name__ == "__main__":
     main()

@@ -12,6 +12,14 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
+# Load environment variables from global .env
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
+except ImportError:
+    pass  # dotenv not available, use system env vars
+
 import grpc
 import httpx
 import requests
@@ -1059,11 +1067,13 @@ class WindsurfLLM(BaseChatModel):
 
         Strategy:
         1. Check for error messages (permission_denied, not enough credits)
-        2. Find the bot response using proto field 5 pattern near bot- UUID:
-           The AI response text is encoded as proto field 5 (tag 0x2A),
-           wire type 2, and appears in the same message as bot-<uuid>.
-           The response text also appears duplicated at field 4 (tag 0x27).
-        3. Fallback: search for the summary in the last frames.
+        2. Find the bot response near bot-<uuid> marker:
+           The AI response text is encoded at proto field 15 (tag 0x7A,
+           wire type 2) inside nested sub-messages that also contain
+           the bot-<uuid> identifier.  The response appears in items
+           structured as: 0a [sub-msg] → 08 [varint] 12 [sub-msg] → 7a [len] text.
+           We also scan field 5 (0x2A) and field 4 (0x22) as fallback.
+        3. Fallback: search for readable text in the last frames.
         """
         # Phase 1: Check for errors in all frames
         for frame in frames:
@@ -1073,104 +1083,76 @@ class WindsurfLLM(BaseChatModel):
                 raise RuntimeError("Windsurf Cascade: resource exhausted (quota limit)")
 
         # Phase 2: Find bot response using proto byte pattern
-        # The bot message appears as: ...{response_text}...{response_text}...*z{len}bot-{uuid}
-        # Where * = 0x2A (field 5, wire type 2) and z = 0x7A (field 15, wire type 2)
-        # The response text is at field 5 or field 4 in the same sub-message
+        # Target tags: 0x7A = field 15 wire type 2, 0x2A = field 5, 0x22 = field 4
+        target_tags = (0x7A, 0x2A, 0x22)
         for i in range(len(frames) - 1, 1, -1):  # Search backwards
             frame = frames[i]
             bot_idx = frame.find(b"bot-")
             if bot_idx < 0:
                 continue
 
-            # Look for proto field 5 strings (tag 0x2A) in the vicinity of bot-
-            # The bot response is in the same sub-message, typically within 500 bytes before bot-
+            # Search in a window before bot- marker
             search_start = max(0, bot_idx - 2000)
             window = frame[search_start:bot_idx]
 
-            # Scan for field 5 (0x2A) length-delimited strings in the window
-            offset = 0
+            # Scan for length-delimited strings at target field tags
             candidates: list[str] = []
-            while offset < len(window) - 2:
-                if window[offset] == 0x2A:  # field 5, wire type 2
-                    offset += 1
-                    # Read varint length
-                    ln = 0
-                    shift = 0
-                    while offset < len(window):
-                        b = window[offset]
+            for tag_byte in target_tags:
+                offset = 0
+                while offset < len(window) - 2:
+                    if window[offset] == tag_byte:
                         offset += 1
-                        ln |= (b & 0x7F) << shift
-                        shift += 7
-                        if not (b & 0x80):
-                            break
-                    if 1 <= ln <= 10000 and offset + ln <= len(window):
-                        payload = window[offset : offset + ln]
-                        try:
-                            text = payload.decode("utf-8")
-                            if text and len(text) >= 1:
-                                candidates.append(text)
-                        except UnicodeDecodeError:
-                            pass
-                        offset += ln
+                        # Read varint length
+                        ln = 0
+                        shift = 0
+                        while offset < len(window):
+                            b = window[offset]
+                            offset += 1
+                            ln |= (b & 0x7F) << shift
+                            shift += 7
+                            if not (b & 0x80):
+                                break
+                        if 1 <= ln <= 10000 and offset + ln <= len(window):
+                            payload = window[offset : offset + ln]
+                            try:
+                                text = payload.decode("utf-8")
+                                if text and len(text) >= 1:
+                                    candidates.append(text)
+                            except UnicodeDecodeError:
+                                pass
+                            offset += ln
                     else:
-                        pass  # Skip invalid
-                else:
-                    offset += 1
-
-            # Also scan for field 4 (0x22) strings
-            offset = 0
-            while offset < len(window) - 2:
-                if window[offset] == 0x22:  # field 4, wire type 2
-                    offset += 1
-                    ln = 0
-                    shift = 0
-                    while offset < len(window):
-                        b = window[offset]
                         offset += 1
-                        ln |= (b & 0x7F) << shift
-                        shift += 7
-                        if not (b & 0x80):
-                            break
-                    if 1 <= ln <= 10000 and offset + ln <= len(window):
-                        payload = window[offset : offset + ln]
-                        try:
-                            text = payload.decode("utf-8")
-                            if text and len(text) >= 1:
-                                candidates.append(text)
-                        except UnicodeDecodeError:
-                            pass
-                        offset += ln
-                    else:
-                        pass
-                else:
-                    offset += 1
 
-            # Filter candidates: skip UUIDs, model names, noise
+            # Filter candidates: skip UUIDs, model names, noise, binary garbage
             filtered: list[str] = []
-            user_prefix = user_text[:30].strip()
+            user_stripped = user_text.strip()
             for c in candidates:
                 c = c.strip()
                 if not c:
+                    continue
+                # Reject strings with control characters (binary proto fragments)
+                if any(ord(ch) < 32 and ch not in "\n\r\t" for ch in c):
                     continue
                 if c.count("-") >= 4 and len(c) < 50:
                     continue  # UUID
                 if c.startswith(("MODEL_", "file://", "http", "bot-")):
                     continue
-                if user_prefix and c == user_text.strip():
+                if user_stripped and c == user_stripped:
                     continue  # Exact user input echo
                 filtered.append(c)
 
             if filtered:
-                # The response text appears duplicated; return the first unique one
-                return filtered[0]
+                # Return the longest printable candidate (dedup by content)
+                return max(filtered, key=len)
 
-        # Phase 3: Fallback - look for summary text in last frames (field 15)
+        # Phase 3: Fallback - look for readable text in the last frames
         for i in range(len(frames) - 1, max(1, len(frames) - 5), -1):
-            strings = _proto_find_strings(frames[i], min_len=15)
+            strings = _proto_find_strings(frames[i], min_len=5)
             for s in strings:
                 s = s.strip()
                 if (
-                    len(s) > 20
+                    len(s) > 2
                     and s.count("-") < 3
                     and not s.startswith(("file://", "http", "MODEL_", "{", "<"))
                 ):

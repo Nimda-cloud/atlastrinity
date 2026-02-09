@@ -1,9 +1,30 @@
-# Mistral Vibe Configuration (Native Format)
+# =============================================================================
+# VIBE CLI CONFIGURATION
+# =============================================================================
+# Vibe is a code editor agent that uses LLM providers for code assistance
 # Official documentation: https://docs.mistral.ai/mistral-vibe/introduction/configuration
 
-# Active model for Vibe (Copilot/GPT-4o is now the default)
+# =============================================================================
+# ACTIVE MODEL SELECTION
+# =============================================================================
+# Choose ONE active model based on your provider:
+#
+# === FOR COPILOT PROVIDER ===
+# active_model = "gpt-4.1"           # Latest GPT-4 model
+# active_model = "gpt-4o"            # GPT-4o (multimodal)
+# active_model = "grok-code-fast-1"  # Fast coding analysis
+#
+# === FOR WINDSURF PROVIDER ===
+# active_model = "deepseek-v3"       # Free general purpose
+# active_model = "deepseek-r1"       # Free reasoning model
+# active_model = "kimi-k2.5"         # Free coding model
+#
+# === FALLBACK CHAIN ===
+# Models to try if active_model fails (in order)
+fallback_chain = ["gpt-4.1", "gpt-4o", "deepseek-v3", "devstral-2"]
+
+# Current selection (change based on your provider):
 active_model = "gpt-4.1"
-fallback_chain = ["gpt-4.1", "gpt-4o", "devstral-2"]
 
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
