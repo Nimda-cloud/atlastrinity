@@ -532,17 +532,19 @@ class Trinity:
             logger.error(f"[TRINITY] Failed to resume from snapshot: {e}")
 
     async def _speak(self, agent_id: str, text: str) -> None:
-        """Voice wrapper with config-driven sanitization"""
+        """Voice wrapper with config-driven sanitization.
+
+        IMPORTANT: Chat message is ALWAYS added to state['messages'] for UI display,
+        regardless of TTS filters. Only voice playback is gated by sanitization/length.
+        """
 
         voice_config = behavior_engine.get_output_processing("voice")
 
-        # 1. Clean up text for TTS using config rules
         import hashlib
         import re
         import time
 
-        # Deduplication Logic
-        # Calculate hash of the raw text to identify duplicates
+        # Deduplication Logic (applies to both UI and TTS)
         msg_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
         now = time.time()
         last_time = self._spoken_history.get(msg_hash, 0)
@@ -561,6 +563,19 @@ class Trinity:
                 k: v for k, v in self._spoken_history.items() if current_time - v < 120
             }
 
+        # === ALWAYS add original text to UI chat log ===
+        if hasattr(self, "state") and self.state is not None:
+            if "messages" not in self.state:
+                self.state["messages"] = []
+
+            msg = AIMessage(content=text, name=agent_id.upper())
+            msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
+            self.state["messages"].append(msg)
+            asyncio.create_task(self._save_chat_message("ai", text, agent_id))
+
+        await self._log(text, source=agent_id, type="voice")
+
+        # === TTS processing (may skip playback, but UI message is already stored) ===
         processed_text = text
         for rule in voice_config.get("sanitization_rules", []):
             pattern = rule.get("pattern")
@@ -570,38 +585,26 @@ class Trinity:
 
         processed_text = processed_text.strip()
 
-        # If text is empty or outside length limits, skip
+        # If text is empty or outside length limits, skip TTS only
         min_len = voice_config.get("min_length", 2)
         max_len = voice_config.get("max_length", 5000)
-        if not processed_text or len(processed_text) < min_len or len(processed_text) > max_len:
+        if not processed_text or len(processed_text) < min_len:
+            logger.info(f"[VOICE] Text too short for TTS ({len(processed_text)} chars), skipping voice")
             return
+        if len(processed_text) > max_len:
+            logger.info(f"[VOICE] Text too long for TTS ({len(processed_text)} chars), truncating for voice")
+            processed_text = processed_text[:max_len]
 
-        # 2. Prepare text via TTS engine (Sanitize + Translate if needed)
-        # This ensures Chat and Voice are 100% synchronized
         final_text = await self.voice.prepare_speech_text(processed_text)
         if not final_text:
+            logger.info("[VOICE] prepare_speech_text returned empty, skipping voice")
             return
 
-        print(f"[{agent_id.upper()}] Speaking: {final_text}", file=sys.stderr)
+        print(f"[{agent_id.upper()}] Speaking: {final_text[:100]}", file=sys.stderr)
 
-        # 3. Synchronize with UI chat log
-        if hasattr(self, "state") and self.state is not None:
-            if "messages" not in self.state:
-                self.state["messages"] = []
-
-            # Avoid duplicate messages if this was already in the history (e.g. during resumption)
-            # We only append if it's the latest message (real-time generated)
-            msg = AIMessage(content=final_text, name=agent_id.upper())
-            msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
-            self.state["messages"].append(msg)
-            asyncio.create_task(self._save_chat_message("ai", final_text, agent_id))
-
-        await self._log(final_text, source=agent_id, type="voice")
         try:
-            # Pass PREPARED text to voice
             await self.voice.speak(agent_id, final_text)
         except asyncio.CancelledError:
-            # Re-raise to allow the task cancellation to proceed
             raise
         except Exception as e:
             print(f"TTS Error: {e}", file=sys.stderr)

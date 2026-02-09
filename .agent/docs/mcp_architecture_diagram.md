@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-08T20:32:58.578968 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/copilot_proxy.py, scripts/universal_proxy.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-08T20:13:57.197826 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/voice/tts.py -->
 
