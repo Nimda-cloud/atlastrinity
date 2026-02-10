@@ -1408,7 +1408,14 @@ class Trinity:
                 f"[ORCHESTRATOR] Segment {i + 1} completed: status={segment_result.get('status')}"
             )
 
-            # Combine responses
+            # --- CRITICAL FIX: Immediate feedback for chat segments ---
+            # If this is a chat-like segment, speak the result NOW before moving to the next segment
+            # (which might be a time-consuming task planning phase)
+            if segment.mode in ["chat", "deep_chat", "recall", "status", "solo_task"]:
+                if segment_result.get("result"):
+                    await self._speak("atlas", segment_result["result"])
+
+            # Combine responses for the final session history
             if segment_result.get("result"):
                 if combined_response:
                     combined_response += "\n\n"
