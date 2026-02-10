@@ -36,24 +36,50 @@ def _load_profiles() -> None:
     """Load mode profiles and segmentation config."""
     global _MODE_PROFILES, _SEGMENTATION_CONFIG
     try:
+        # Load mode profiles from JSON
         if os.path.exists(_PROFILES_PATH):
             with open(_PROFILES_PATH, encoding="utf-8") as f:
                 data = json.load(f)
 
-            _SEGMENTATION_CONFIG = data.get("_meta", {}).get("segmentation", {})
-            data.pop("_meta", None)
-            data.pop("_protocol_registry", None)
-            _MODE_PROFILES = data
+            _MODE_PROFILES = data.copy()
+            _MODE_PROFILES.pop("_meta", None)
+            _MODE_PROFILES.pop("_protocol_registry", None)
+            
+            logger.info(f"[SEGMENTER] Loaded {len(_MODE_PROFILES)} mode profiles")
+        else:
+            logger.warning(f"[SEGMENTER] Mode profiles not found at {_PROFILES_PATH}")
+            _MODE_PROFILES = {}
+
+        # Load segmentation config from config.yaml
+        try:
+            from .config_loader import CONFIG_ROOT
+        except ImportError:
+            # Fallback for direct execution
+            from ..config_loader import CONFIG_ROOT
+        config_path = CONFIG_ROOT / "config.yaml"
+        if config_path.exists():
+            import yaml
+            with open(config_path, encoding="utf-8") as f:
+                config_data = yaml.safe_load(f)
+            
+            _SEGMENTATION_CONFIG = config_data.get("segmentation", {})
             logger.info(
-                f"[SEGMENTER] Loaded segmentation config: enabled={_SEGMENTATION_CONFIG.get('enabled')}"
+                f"[SEGMENTER] Loaded segmentation config from config.yaml: enabled={_SEGMENTATION_CONFIG.get('enabled')}"
             )
         else:
-            logger.warning(f"[SEGMENTER] Profiles not found at {_PROFILES_PATH}")
-            # Set default config
-            _SEGMENTATION_CONFIG = {"enabled": False, "max_segments": 5}
+            # Fallback to mode_profiles.json
+            if os.path.exists(_PROFILES_PATH):
+                with open(_PROFILES_PATH, encoding="utf-8") as f:
+                    data = json.load(f)
+                _SEGMENTATION_CONFIG = data.get("_meta", {}).get("segmentation", {})
+                logger.info("[SEGMENTER] Using fallback config from mode_profiles.json")
+            else:
+                logger.warning("[SEGMENTER] No segmentation config found, using defaults")
+                _SEGMENTATION_CONFIG = {"enabled": False, "max_segments": 5}
+                
     except Exception as e:
-        logger.error(f"[SEGMENTER] Failed to load profiles: {e}")
-        # Set default config on error
+        logger.error(f"[SEGMENTER] Failed to load configuration: {e}")
+        # Set safe defaults
         _SEGMENTATION_CONFIG = {"enabled": False, "max_segments": 5}
 
 
@@ -176,8 +202,17 @@ class RequestSegmenter:
 
         # Get LLM provider config from segmentation settings
         llm_config = _SEGMENTATION_CONFIG.get("llm_provider", {})
-        provider = llm_config.get("provider", "copilot")
-        model = llm_config.get("model", "gpt-4.1")
+        
+        # Use global config as fallback
+        try:
+            from .config_loader import config
+        except ImportError:
+            # Fallback for direct execution
+            from ..config_loader import config
+        global_models = config.get("models", {})
+        
+        provider = llm_config.get("provider", global_models.get("provider", "copilot"))
+        model = llm_config.get("model", global_models.get("default", "gpt-4.1"))
         tier = llm_config.get("tier", "standard")
         temperature = llm_config.get("temperature", 0.1)
         

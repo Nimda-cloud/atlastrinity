@@ -2,34 +2,7 @@
   "_meta": {
     "version": "1.1.0",
     "description": "Declarative mode profiles for LLM-first routing. Each mode defines which protocols, servers, prompts, and LLM settings to use. The ModeRouter selects a mode via LLM classification, then builds full execution profile from these defaults.",
-    "modes_summary": "chat (simple talk) | deep_chat (philosophy/identity) | solo_task (research with tools) | task (Trinity execution) | development (Vibe + Trinity coding)",
-    "segmentation": {
-      "enabled": true,
-      "description": "Intelligently split mixed requests into separate mode segments for optimal processing",
-      "split_strategy": "llm_semantic",
-      "max_segments": 5,
-      "min_segment_length": 3,
-      "llm_provider": {
-        "provider": "copilot",
-        "model": "gpt-4.1",
-        "tier": "standard",
-        "temperature": 0.1,
-        "max_tokens": 2000,
-        "reasoning_effort": "medium"
-      },
-      "segmentation_rules": {
-        "preserve_context": true,
-        "maintain_order": true,
-        "allow_merging": true,
-        "priority_weight": 0.3,
-        "context_weight": 0.7
-      },
-      "post_processing": {
-        "enable_refinement": true,
-        "allow_context_enrichment": true,
-        "validate_segment_integrity": true
-      }
-    }
+    "modes_summary": "chat (simple talk) | deep_chat (philosophy/identity) | solo_task (research with tools) | task (Trinity execution) | development (Vibe + Trinity coding)"
   },
 
   "chat": {

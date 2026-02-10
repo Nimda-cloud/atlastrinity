@@ -157,6 +157,57 @@ orchestrator:
   recovery_voice_agent: atlas  # Which agent explains the recovery strategy
 
 # =============================================================================
+# INTELLIGENT SEGMENTATION CONFIGURATION
+# =============================================================================
+# LLM-based request segmentation for multi-mode processing
+
+segmentation:
+  # Enable/disable intelligent segmentation
+  enabled: true
+  
+  # LLM provider configuration for segmentation
+  # Inherits from global models.default if not specified
+  llm_provider:
+    # Override global provider for segmentation (optional)
+    # provider: "copilot"  # copilot | windsurf (inherited from models.provider)
+    
+    # Override model for segmentation (optional)
+    model: "gpt-4.1"           # Model for semantic analysis
+    
+    # LLM parameters for segmentation
+    temperature: 0.1            # Low temperature for consistent segmentation
+    max_tokens: 2000            # Sufficient for complex requests
+    
+    # Tier selection (optional)
+    tier: "standard"            # standard | deep (deep for complex reasoning)
+  
+  # Segmentation strategy and rules
+  strategy: "llm_semantic"       # llm_semantic | keyword_fallback
+  
+  # Limits and constraints
+  max_segments: 5              # Maximum segments per request
+  min_segment_length: 3        # Minimum words per segment (except chat)
+  
+  # Segmentation behavior
+  rules:
+    preserve_context: true      # Use conversation history for context
+    maintain_order: true        # Keep original request order
+    allow_merging: true         # Merge consecutive similar segments
+    priority_weight: 0.3        # Weight for mode priority in sorting
+    context_weight: 0.7         # Weight for original order in sorting
+  
+  # Post-processing and validation
+  post_processing:
+    enable_refinement: true     # Refine segments after initial split
+    allow_context_enrichment: true  # Add context to segments
+    validate_segment_integrity: true  # Validate segment quality
+    
+  # Fallback configuration
+  fallback:
+    enable_keyword_fallback: true  # Use keyword-based segmentation if LLM fails
+    keyword_threshold: 0.6         # Confidence threshold for keyword matching
+
+# =============================================================================
 # SECURITY CONFIGURATION
 # =============================================================================
 
