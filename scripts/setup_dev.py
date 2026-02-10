@@ -902,26 +902,12 @@ def setup_xcodebuild_mcp():
         print_info("Пропускаємо встановлення XcodeBuildMCP...")
         return False
 
-    # Clone if not exists
-    if not xcode_mcp_path.exists():
-        print_info("Клонування XcodeBuildMCP з GitHub...")
-        try:
-            subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "https://github.com/cameroncooke/XcodeBuildMCP.git",
-                    str(xcode_mcp_path),
-                ],
-                check=True,
-                cwd=PROJECT_ROOT,
-            )
-            print_success("XcodeBuildMCP клоновано")
-        except subprocess.CalledProcessError as e:
-            print_error(f"Помилка клонування: {e}")
-            return False
-    else:
-        print_success("XcodeBuildMCP вже існує")
+    # Ensure source exists - since it's now tracked, we just verify it
+    if not xcode_mcp_path.exists() or not (xcode_mcp_path / "package.json").exists():
+        print_error("XcodeBuildMCP source not found in vendor/ directory.")
+        print_info("Make sure you have cloned the full atlastrinity repository with vendor content.")
+        return False
+    print_success("XcodeBuildMCP source verified")
 
     # Check if already built
     built_binary = xcode_mcp_path / ".smithery" / "stdio" / "index.cjs"

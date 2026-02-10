@@ -1,0 +1,102 @@
+{
+  "name": "xcodebuildmcp",
+  "version": "2.0.0-beta.1",
+  "mcpName": "com.xcodebuildmcp/XcodeBuildMCP",
+  "iOSTemplateVersion": "v1.0.8",
+  "macOSTemplateVersion": "v1.0.5",
+  "type": "module",
+  "module": "src/smithery.ts",
+  "exports": {
+    ".": "./build/cli.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "xcodebuildmcp": "build/cli.js",
+    "xcodebuildmcp-doctor": "build/doctor-cli.js"
+  },
+  "scripts": {
+    "build": "npm run build:tsup && npx smithery build --transport stdio",
+    "dev": "npm run generate:version && npx smithery dev",
+    "build:tsup": "npm run generate:version && tsup",
+    "dev:tsup": "npm run build:tsup && tsup --watch",
+    "generate:version": "npx tsx scripts/generate-version.ts",
+    "bundle:axe": "scripts/bundle-axe.sh",
+    "lint": "eslint 'src/**/*.{js,ts}'",
+    "lint:fix": "eslint 'src/**/*.{js,ts}' --fix",
+    "format": "prettier --write 'src/**/*.{js,ts}'",
+    "format:check": "prettier --check 'src/**/*.{js,ts}'",
+    "typecheck": "npx tsc --noEmit && npx tsc -p tsconfig.test.json",
+    "typecheck:tests": "npx tsc -p tsconfig.test.json",
+    "verify:smithery-bundle": "bash scripts/verify-smithery-bundle.sh",
+    "inspect": "npx @modelcontextprotocol/inspector node build/cli.js mcp",
+    "doctor": "node build/doctor-cli.js",
+    "docs:update": "npx tsx scripts/update-tools-docs.ts",
+    "docs:update:dry-run": "npx tsx scripts/update-tools-docs.ts --dry-run --verbose",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
+  },
+  "files": [
+    "build",
+    "bundled",
+    "plugins",
+    "manifests"
+  ],
+  "keywords": [
+    "xcodebuild",
+    "mcp",
+    "modelcontextprotocol",
+    "xcode",
+    "ios",
+    "macos",
+    "simulator"
+  ],
+  "author": "Cameron Cooke",
+  "license": "MIT",
+  "description": "XcodeBuildMCP is a ModelContextProtocol server that provides tools for Xcode project management, simulator management, and app utilities.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cameroncooke/XcodeBuildMCP.git"
+  },
+  "homepage": "https://www.async-let.com/blog/xcodebuild-mcp/",
+  "bugs": {
+    "url": "https://github.com/cameroncooke/XcodeBuildMCP/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@sentry/cli": "^3.1.0",
+    "@sentry/node": "^10.37.0",
+    "bplist-parser": "^0.3.2",
+    "chokidar": "^5.0.0",
+    "uuid": "^11.1.0",
+    "yaml": "^2.4.5",
+    "yargs": "^17.7.2",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@bacons/xcode": "^1.0.0-alpha.24",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.23.0",
+    "@smithery/cli": "^3.7.0",
+    "@types/chokidar": "^1.7.5",
+    "@types/node": "^22.13.6",
+    "@types/yargs": "^17.0.33",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.5",
+    "playwright": "^1.53.0",
+    "prettier": "3.6.2",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.4",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.28.0",
+    "vitest": "^3.2.4",
+    "xcode": "^3.0.1"
+  }
+}

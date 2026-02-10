@@ -1,0 +1,14 @@
+schemaVersion: 1
+enabledWorkflows: ["simulator", "ui-automation", "debugging"]
+sessionDefaults:
+  workspacePath: ./CalculatorApp.xcworkspace
+  scheme: CalculatorApp
+  configuration: Debug
+  simulatorId: B38FE93D-578B-454B-BE9A-C6FA0CE5F096
+  useLatestOS: true
+  arch: arm64
+  suppressWarnings: false
+  derivedDataPath: ./iOS_Calculator/.derivedData
+  preferXcodebuild: true
+  platform: iOS
+  bundleId: com.example.calculatorapp

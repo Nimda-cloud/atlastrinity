@@ -1,0 +1,108 @@
+import * as z from 'zod';
+import type { ToolResponse } from '../../../types/common.ts';
+import { log } from '../../../utils/logging/index.ts';
+import type { CommandExecutor } from '../../../utils/execution/index.ts';
+import { getDefaultCommandExecutor } from '../../../utils/execution/index.ts';
+import {
+  createSessionAwareTool,
+  getSessionAwareToolSchemaShape,
+} from '../../../utils/typed-tool-factory.ts';
+
+const baseSchemaObject = z.object({
+  simulatorId: z
+    .string()
+    .optional()
+    .describe(
+      'UUID of the simulator to use (obtained from list_sims). Provide EITHER this OR simulatorName, not both',
+    ),
+  simulatorName: z
+    .string()
+    .optional()
+    .describe(
+      "Name of the simulator (e.g., 'iPhone 16'). Provide EITHER this OR simulatorId, not both",
+    ),
+  bundleId: z.string().describe('Bundle identifier of the app to stop'),
+});
+
+// Internal schema requires simulatorId (factory resolves simulatorName → simulatorId)
+const internalSchemaObject = z.object({
+  simulatorId: z.string(),
+  simulatorName: z.string().optional(),
+  bundleId: z.string(),
+});
+
+export type StopAppSimParams = z.infer<typeof internalSchemaObject>;
+
+export async function stop_app_simLogic(
+  params: StopAppSimParams,
+  executor: CommandExecutor,
+): Promise<ToolResponse> {
+  const simulatorId = params.simulatorId;
+  const simulatorDisplayName = params.simulatorName
+    ? `"${params.simulatorName}" (${simulatorId})`
+    : simulatorId;
+
+  log('info', `Stopping app ${params.bundleId} in simulator ${simulatorId}`);
+
+  try {
+    const command = ['xcrun', 'simctl', 'terminate', simulatorId, params.bundleId];
+    const result = await executor(command, 'Stop App in Simulator', false, undefined);
+
+    if (!result.success) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Stop app in simulator operation failed: ${result.error}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `App ${params.bundleId} stopped successfully in simulator ${simulatorDisplayName}`,
+        },
+      ],
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log('error', `Error stopping app in simulator: ${errorMessage}`);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Stop app in simulator operation failed: ${errorMessage}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+const publicSchemaObject = z.strictObject(
+  baseSchemaObject.omit({
+    simulatorId: true,
+    simulatorName: true,
+    bundleId: true,
+  } as const).shape,
+);
+
+export const schema = getSessionAwareToolSchemaShape({
+  sessionAware: publicSchemaObject,
+  legacy: baseSchemaObject,
+});
+
+export const handler = createSessionAwareTool<StopAppSimParams>({
+  internalSchema: internalSchemaObject as unknown as z.ZodType<StopAppSimParams, unknown>,
+  logicFunction: stop_app_simLogic,
+  getExecutor: getDefaultCommandExecutor,
+  requirements: [
+    { oneOf: ['simulatorId', 'simulatorName'], message: 'Provide simulatorId or simulatorName' },
+    { allOf: ['bundleId'], message: 'bundleId is required' },
+  ],
+  exclusivePairs: [['simulatorId', 'simulatorName']],
+});

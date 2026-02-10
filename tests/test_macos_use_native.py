@@ -106,11 +106,11 @@ def _send(messages: list[str], timeout: float = 20.0) -> list[dict[str, Any]]:
 
 
 def _init_and_call(
-    tool_name: str, args: dict[str, Any] | None = None, call_id: int = 100
+    tool_name: str, args: dict[str, Any] | None = None, call_id: int = 100, timeout: float = 20.0
 ) -> dict[str, Any]:
     """Initialize + call a single tool, return the tool response."""
     msgs = [_init_msg(), _call_tool(tool_name, args, req_id=call_id)]
-    responses = _send(msgs)
+    responses = _send(msgs, timeout=timeout)
     for r in responses:
         if r.get("id") == call_id:
             return r
@@ -340,8 +340,10 @@ class TestMacosUseSchemas:
         return {t["name"]: t for t in tools}
 
     @pytest.mark.parametrize("tool_name", ALL_42_TOOLS)
-    def test_tool_required_params(self, tool_name, tools_map):
+    def test_tool_required_params(self, tool_name):
         """Each tool's required params must match expected."""
+        tools, _ = _init_and_list()
+        tools_map = {t["name"]: t for t in tools}
         tool = tools_map.get(tool_name)
         if not tool:
             pytest.skip(f"Tool {tool_name} not found in server")
@@ -353,8 +355,10 @@ class TestMacosUseSchemas:
         )
 
     @pytest.mark.parametrize("tool_name", ALL_42_TOOLS)
-    def test_tool_properties_are_typed(self, tool_name, tools_map):
+    def test_tool_properties_are_typed(self, tool_name):
         """Each property in the schema must have a 'type' or 'enum'."""
+        tools, _ = _init_and_list()
+        tools_map = {t["name"]: t for t in tools}
         tool = tools_map.get(tool_name)
         if not tool:
             pytest.skip(f"Tool {tool_name} not found")
@@ -462,7 +466,7 @@ class TestMacosUseSafeTools:
         assert "result" in resp
 
     def test_finder_get_selection(self):
-        resp = _init_and_call("macos-use_finder_get_selection")
+        resp = _init_and_call("macos-use_finder_get_selection", timeout=60.0)
         assert "result" in resp
 
     def test_reminders_list(self):

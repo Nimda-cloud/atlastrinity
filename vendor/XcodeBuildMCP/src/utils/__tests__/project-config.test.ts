@@ -1,0 +1,216 @@
+import { describe, expect, it } from 'vitest';
+import path from 'node:path';
+import { parse as parseYaml } from 'yaml';
+import { createMockFileSystemExecutor } from '../../test-utils/mock-executors.ts';
+import { loadProjectConfig, persistSessionDefaultsToProjectConfig } from '../project-config.ts';
+
+const cwd = '/repo';
+const configPath = path.join(cwd, '.xcodebuildmcp', 'config.yaml');
+const configDir = path.join(cwd, '.xcodebuildmcp');
+
+type MockWrite = { path: string; content: string };
+
+type MockFsFixture = {
+  fs: ReturnType<typeof createMockFileSystemExecutor>;
+  writes: MockWrite[];
+  mkdirs: string[];
+};
+
+function createFsFixture(options?: { exists?: boolean; readFile?: string }): MockFsFixture {
+  const writes: MockWrite[] = [];
+  const mkdirs: string[] = [];
+  const exists = options?.exists ?? false;
+  const readFileContent = options?.readFile;
+
+  const fs = createMockFileSystemExecutor({
+    existsSync: (targetPath) => (targetPath === configPath ? exists : false),
+    readFile: async (targetPath) => {
+      if (targetPath !== configPath) {
+        throw new Error(`Unexpected readFile path: ${targetPath}`);
+      }
+      if (readFileContent == null) {
+        throw new Error('readFile called but no readFile content was provided');
+      }
+      return readFileContent;
+    },
+    writeFile: async (targetPath, content) => {
+      writes.push({ path: targetPath, content });
+    },
+    mkdir: async (targetPath) => {
+      mkdirs.push(targetPath);
+    },
+  });
+
+  return { fs, writes, mkdirs };
+}
+
+describe('project-config', () => {
+  describe('loadProjectConfig', () => {
+    it('should return found=false when config does not exist', async () => {
+      const { fs } = createFsFixture({ exists: false });
+      const result = await loadProjectConfig({ fs, cwd });
+      expect(result).toEqual({ found: false });
+    });
+
+    it('should normalize mutual exclusivity and resolve relative paths', async () => {
+      const yaml = [
+        'schemaVersion: 1',
+        'enabledWorkflows: simulator,device',
+        'debug: true',
+        'axePath: "./bin/axe"',
+        'sessionDefaults:',
+        '  projectPath: "./App.xcodeproj"',
+        '  workspacePath: "./App.xcworkspace"',
+        '  simulatorName: "iPhone 16"',
+        '  simulatorId: "SIM-1"',
+        '  derivedDataPath: "./.derivedData"',
+        '',
+      ].join('\n');
+
+      const { fs } = createFsFixture({ exists: true, readFile: yaml });
+      const result = await loadProjectConfig({ fs, cwd });
+
+      if (!result.found) throw new Error('expected config to be found');
+
+      const defaults = result.config.sessionDefaults ?? {};
+      expect(result.config.enabledWorkflows).toEqual(['simulator', 'device']);
+      expect(result.config.debug).toBe(true);
+      expect(result.config.axePath).toBe(path.join(cwd, 'bin', 'axe'));
+      expect(defaults.workspacePath).toBe(path.join(cwd, 'App.xcworkspace'));
+      expect(defaults.projectPath).toBeUndefined();
+      expect(defaults.simulatorId).toBe('SIM-1');
+      expect(defaults.simulatorName).toBeUndefined();
+      expect(defaults.derivedDataPath).toBe(path.join(cwd, '.derivedData'));
+      expect(result.notices.length).toBeGreaterThan(0);
+    });
+
+    it('should normalize debuggerBackend and resolve template paths', async () => {
+      const yaml = [
+        'schemaVersion: 1',
+        'debuggerBackend: lldb',
+        'iosTemplatePath: "./templates/ios"',
+        'macosTemplatePath: "/opt/templates/macos"',
+        '',
+      ].join('\n');
+
+      const { fs } = createFsFixture({ exists: true, readFile: yaml });
+      const result = await loadProjectConfig({ fs, cwd });
+
+      if (!result.found) throw new Error('expected config to be found');
+
+      expect(result.config.debuggerBackend).toBe('lldb-cli');
+      expect(result.config.iosTemplatePath).toBe(path.join(cwd, 'templates', 'ios'));
+      expect(result.config.macosTemplatePath).toBe('/opt/templates/macos');
+    });
+
+    it('should resolve file URLs in session defaults and top-level paths', async () => {
+      const yaml = [
+        'schemaVersion: 1',
+        'axePath: "file:///repo/bin/axe"',
+        'sessionDefaults:',
+        '  workspacePath: "file:///repo/App.xcworkspace"',
+        '  derivedDataPath: "file:///repo/.derivedData"',
+        '',
+      ].join('\n');
+
+      const { fs } = createFsFixture({ exists: true, readFile: yaml });
+      const result = await loadProjectConfig({ fs, cwd });
+
+      if (!result.found) throw new Error('expected config to be found');
+
+      expect(result.config.axePath).toBe('/repo/bin/axe');
+      const defaults = result.config.sessionDefaults ?? {};
+      expect(defaults.workspacePath).toBe('/repo/App.xcworkspace');
+      expect(defaults.derivedDataPath).toBe('/repo/.derivedData');
+    });
+
+    it('should return an error result when schemaVersion is unsupported', async () => {
+      const yaml = ['schemaVersion: 2', 'sessionDefaults:', '  scheme: "App"', ''].join('\n');
+      const { fs } = createFsFixture({ exists: true, readFile: yaml });
+
+      const result = await loadProjectConfig({ fs, cwd });
+      expect(result.found).toBe(false);
+      expect('error' in result).toBe(true);
+      if ('error' in result) {
+        expect(result.error).toBeInstanceOf(Error);
+      }
+    });
+
+    it('should return an error result when YAML does not parse to an object', async () => {
+      const { fs } = createFsFixture({ exists: true, readFile: '- item' });
+
+      const result = await loadProjectConfig({ fs, cwd });
+      expect(result.found).toBe(false);
+      expect('error' in result).toBe(true);
+      if ('error' in result) {
+        expect(result.error.message).toBe('Project config must be an object');
+      }
+    });
+  });
+
+  describe('persistSessionDefaultsToProjectConfig', () => {
+    it('should merge patches, delete exclusive keys, and preserve unknown sections', async () => {
+      const yaml = [
+        'schemaVersion: 1',
+        'debug: true',
+        'enabledWorkflows:',
+        '  - simulator',
+        'sessionDefaults:',
+        '  scheme: "Old"',
+        '  simulatorName: "OldSim"',
+        'server:',
+        '  enabledWorkflows:',
+        '    - simulator',
+        '',
+      ].join('\n');
+
+      const { fs, writes, mkdirs } = createFsFixture({ exists: true, readFile: yaml });
+
+      await persistSessionDefaultsToProjectConfig({
+        fs,
+        cwd,
+        patch: { scheme: 'New', simulatorId: 'SIM-1' },
+        deleteKeys: ['simulatorName'],
+      });
+
+      expect(mkdirs).toContain(configDir);
+      expect(writes.length).toBe(1);
+      expect(writes[0].path).toBe(configPath);
+
+      const parsed = parseYaml(writes[0].content) as {
+        schemaVersion: number;
+        debug?: boolean;
+        enabledWorkflows?: string[];
+        sessionDefaults?: Record<string, unknown>;
+        server?: { enabledWorkflows?: string[] };
+      };
+
+      expect(parsed.schemaVersion).toBe(1);
+      expect(parsed.debug).toBe(true);
+      expect(parsed.enabledWorkflows).toEqual(['simulator']);
+      expect(parsed.sessionDefaults?.scheme).toBe('New');
+      expect(parsed.sessionDefaults?.simulatorId).toBe('SIM-1');
+      expect(parsed.sessionDefaults?.simulatorName).toBeUndefined();
+      expect(parsed.server?.enabledWorkflows).toEqual(['simulator']);
+    });
+
+    it('should overwrite invalid existing config with a minimal valid config', async () => {
+      const { fs, writes } = createFsFixture({ exists: true, readFile: '- not-an-object' });
+
+      await persistSessionDefaultsToProjectConfig({
+        fs,
+        cwd,
+        patch: { scheme: 'App' },
+      });
+
+      expect(writes.length).toBe(1);
+      const parsed = parseYaml(writes[0].content) as {
+        schemaVersion: number;
+        sessionDefaults?: Record<string, unknown>;
+      };
+
+      expect(parsed.schemaVersion).toBe(1);
+      expect(parsed.sessionDefaults?.scheme).toBe('App');
+    });
+  });
+});
