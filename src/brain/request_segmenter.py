@@ -52,10 +52,10 @@ def _load_profiles() -> None:
 
         # Load segmentation config from config.yaml
         try:
-            from .config_loader import CONFIG_ROOT
+            from brain.config_loader import CONFIG_ROOT
         except ImportError:
             # Fallback for direct execution
-            from ..config_loader import CONFIG_ROOT
+            from src.brain.config_loader import CONFIG_ROOT
         config_path = CONFIG_ROOT / "config.yaml"
         if config_path.exists():
             import yaml
@@ -66,16 +66,15 @@ def _load_profiles() -> None:
             logger.info(
                 f"[SEGMENTER] Loaded segmentation config from config.yaml: enabled={_SEGMENTATION_CONFIG.get('enabled')}"
             )
+        # Fallback to mode_profiles.json
+        elif os.path.exists(_PROFILES_PATH):
+            with open(_PROFILES_PATH, encoding="utf-8") as f:
+                data = json.load(f)
+            _SEGMENTATION_CONFIG = data.get("_meta", {}).get("segmentation", {})
+            logger.info("[SEGMENTER] Using fallback config from mode_profiles.json")
         else:
-            # Fallback to mode_profiles.json
-            if os.path.exists(_PROFILES_PATH):
-                with open(_PROFILES_PATH, encoding="utf-8") as f:
-                    data = json.load(f)
-                _SEGMENTATION_CONFIG = data.get("_meta", {}).get("segmentation", {})
-                logger.info("[SEGMENTER] Using fallback config from mode_profiles.json")
-            else:
-                logger.warning("[SEGMENTER] No segmentation config found, using defaults")
-                _SEGMENTATION_CONFIG = {"enabled": False, "max_segments": 5}
+            logger.warning("[SEGMENTER] No segmentation config found, using defaults")
+            _SEGMENTATION_CONFIG = {"enabled": False, "max_segments": 5}
                 
     except Exception as e:
         logger.error(f"[SEGMENTER] Failed to load configuration: {e}")
@@ -205,10 +204,10 @@ class RequestSegmenter:
         
         # Use global config as fallback
         try:
-            from .config_loader import config
+            from brain.config_loader import config
         except ImportError:
             # Fallback for direct execution
-            from ..config_loader import config
+            from src.brain.config_loader import config
         global_models = config.get("models", {})
         
         provider = llm_config.get("provider", global_models.get("provider", "copilot"))
