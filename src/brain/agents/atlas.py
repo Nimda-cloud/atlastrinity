@@ -234,7 +234,9 @@ class Atlas(BaseAgent):
                 and len(user_request.split()) > 8
                 and profile.mode not in ["chat"]  # Removed deep_chat from exclusion
             ):
-                logger.info(f"[ATLAS] Attempting segmentation for mode={profile.mode}, words={len(user_request.split())}")
+                logger.info(
+                    f"[ATLAS] Attempting segmentation for mode={profile.mode}, words={len(user_request.split())}"
+                )
                 try:
                     segments = await request_segmenter.split_request(
                         user_request, history or [], context or {}
@@ -244,18 +246,24 @@ class Atlas(BaseAgent):
                             f"[ATLAS] Multi-mode segmentation: {len(segments)} segments detected"
                         )
                         for i, seg in enumerate(segments):
-                            logger.info(f"[ATLAS] Segment {i+1}: mode={seg.mode}, text='{seg.text[:50]}...'")
+                            logger.info(
+                                f"[ATLAS] Segment {i + 1}: mode={seg.mode}, text='{seg.text[:50]}...'"
+                            )
                         analysis["segments"] = segments
                         analysis["is_segmented"] = True
                         analysis["segment_count"] = len(segments)
                     else:
-                        logger.info(f"[ATLAS] Segmentation resulted in 1 segment, proceeding as single mode")
+                        logger.info(
+                            "[ATLAS] Segmentation resulted in 1 segment, proceeding as single mode"
+                        )
                         analysis["is_segmented"] = False
                 except Exception as e:
                     logger.warning(f"[ATLAS] Segmentation failed: {e}")
                     analysis["is_segmented"] = False
             else:
-                logger.info(f"[ATLAS] Segmentation skipped: request_segmenter={bool(request_segmenter)}, words={len(user_request.split())}, mode={profile.mode}")
+                logger.info(
+                    f"[ATLAS] Segmentation skipped: request_segmenter={bool(request_segmenter)}, words={len(user_request.split())}, mode={profile.mode}"
+                )
                 analysis["is_segmented"] = False
 
             # Ensure initial_response key always exists for backward compatibility

@@ -126,11 +126,11 @@ class RequestSegmenter:
             List of RequestSegment objects
         """
         self._segmentation_count += 1
-        
+
         logger.info(f"[SEGMENTER] Starting segmentation #{self._segmentation_count}")
         logger.info(f"[SEGMENTER] Request: '{user_request[:100]}...'")
         logger.info(f"[SEGMENTER] Config enabled: {_SEGMENTATION_CONFIG.get('enabled')}")
-        
+
         # Check if segmentation is enabled
         if not _SEGMENTATION_CONFIG.get("enabled", False):
             logger.warning("[SEGMENTER] Segmentation disabled in config")
@@ -147,10 +147,11 @@ class RequestSegmenter:
             if segments:
                 logger.info(f"[SEGMENTER] LLM segmentation: {len(segments)} segments")
                 for i, seg in enumerate(segments):
-                    logger.info(f"[SEGMENTER] LLM Segment {i+1}: mode={seg.mode}, text='{seg.text[:50]}...'")
+                    logger.info(
+                        f"[SEGMENTER] LLM Segment {i + 1}: mode={seg.mode}, text='{seg.text[:50]}...'"
+                    )
                 return self._sort_and_merge_segments(segments)
-            else:
-                logger.info("[SEGMENTER] LLM segmentation returned no segments")
+            logger.info("[SEGMENTER] LLM segmentation returned no segments")
         except Exception as e:
             logger.warning(f"[SEGMENTER] LLM segmentation failed: {e}")
 
@@ -160,7 +161,9 @@ class RequestSegmenter:
         segments = self._keyword_segmentation(user_request)
         logger.info(f"[SEGMENTER] Keyword fallback: {len(segments)} segments")
         for i, seg in enumerate(segments):
-            logger.info(f"[SEGMENTER] Keyword Segment {i+1}: mode={seg.mode}, text='{seg.text[:50]}...'")
+            logger.info(
+                f"[SEGMENTER] Keyword Segment {i + 1}: mode={seg.mode}, text='{seg.text[:50]}...'"
+            )
         return self._sort_and_merge_segments(segments)
 
     async def _llm_segmentation(
@@ -338,10 +341,10 @@ Return JSON format:
         return seg_config.get("priority", 999)
 
     def _sort_and_merge_segments(self, segments: list[RequestSegment]) -> list[RequestSegment]:
-        """Sort segments by priority and merge compatible segments."""
+        """Preserve original order while using priority for stability and merge compatible segments."""
 
-        # Sort by priority (lower number = higher priority)
-        segments.sort(key=lambda s: s.priority)
+        # Sort by start_pos to maintain original request order, then by priority for stability
+        segments.sort(key=lambda s: (s.start_pos, s.priority))
 
         # Merge consecutive segments of same mode
         merged = []
@@ -381,7 +384,7 @@ Return JSON format:
             logger.warning(
                 f"[SEGMENTER] Too many segments ({len(merged)}), limiting to {max_segments}"
             )
-            # Keep highest priority segments
+            # Keep highest priority segments from original order
             merged = merged[:max_segments]
 
         return merged
