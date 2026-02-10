@@ -305,12 +305,20 @@ class RequestSegmenter:
 
         prompt = """You are an advanced request segmentation expert. Your task is to intelligently analyze user requests and split them into logical segments by intent mode.
 
-AVAILABLE MODES:
-- chat: Simple greetings, small talk, thanks, acknowledgments (1-6 words)
-- deep_chat: Philosophical, identity, mission, soul, consciousness topics (deep, meaningful)
-- solo_task: Research, lookup, info retrieval with tools (weather, search, read files)
-- task: Direct execution requiring planning and tools (create, open, install, send)
-- development: Software development, coding, debugging, testing
+AVAILABLE MODES (in priority order - LOWER NUMBER = HIGHER PRIORITY):
+1. deep_chat: Philosophical, identity, mission, soul, consciousness topics (PRIORITY: 1 - HIGHEST)
+2. chat: Simple greetings, small talk, thanks, acknowledgments (PRIORITY: 2)
+3. solo_task: Research, lookup, info retrieval with tools (PRIORITY: 3)
+4. task: Direct execution requiring planning and tools (PRIORITY: 4)
+5. development: Software development, coding, debugging, testing (PRIORITY: 5 - LOWEST)
+
+CRITICAL PRIORITY RULES:
+- ALWAYS detect deep_chat mode FIRST for philosophical/identity questions
+- deep_chat has PRIORITY 1 and should be processed before any other mode
+- Look for questions about: creation, mission, consciousness, identity, soul, freedom, future
+- Numbered questions (1., 2., 3.) about identity/mission → deep_chat mode
+- Technical tasks with tools → task mode (PRIORITY 4)
+- Simple conversation → chat mode (PRIORITY 2)
 
 SEGMENTATION PRINCIPLES:
 1. Analyze semantic intent, not just keywords
@@ -322,17 +330,19 @@ SEGMENTATION PRINCIPLES:
 7. Maximum 5 segments per request (focus on most important splits)
 
 SPECIAL HANDLING FOR QUESTIONS:
-- Questions about identity, creation, mission, consciousness → deep_chat mode
-- Technical tasks with tools → task mode
+- Questions about identity, creation, mission, consciousness → deep_chat mode (PRIORITY 1)
+- Technical tasks with tools → task mode (PRIORITY 4)
 - Multiple questions should be separate segments
 - Numbered questions (1., 2., 3.) are ALWAYS separate segments
+- DEEP_CHAT questions must be processed FIRST before any task segments
 
 CONTEXTUAL ANALYSIS:
 - Consider conversation history for context
 - Identify transitions between different types of tasks
-- Look for intent shifts (e.g., greeting → task → question)
+- Look for intent shifts (e.g., greeting → deep_chat → task)
 - Prioritize user's natural flow and intent
 - Pay attention to explicit numbering (1., 2., 3.)
+- RESPECT PRIORITY ORDER: deep_chat (1) comes before task (4)
 
 OUTPUT FORMAT:
 Return JSON format:
@@ -349,7 +359,7 @@ Return JSON format:
   ]
 }
 
-Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable. CRITICAL: Always create separate segments for numbered questions."""
+Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable. CRITICAL: Always create separate segments for numbered questions and ensure deep_chat gets PRIORITY 1."""
 
         return prompt
 
@@ -569,15 +579,14 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
         # Create segments for each question
         for i, part in enumerate(question_parts):
             if part and len(part.split()) >= 3:
+                is_deep_chat = any(
+                    word in part.lower() for word in ["створили", "місія", "особистість"]
+                )
                 segments.append(
                     RequestSegment(
                         text=part,
-                        mode="deep_chat"
-                        if any(
-                            word in part.lower() for word in ["створили", "місія", "особистість"]
-                        )
-                        else "chat",
-                        priority=1,
+                        mode="deep_chat" if is_deep_chat else "chat",
+                        priority=1 if is_deep_chat else 2,  # Fixed: deep_chat=1, chat=2 according to mode_profiles.json
                         reason=f"Question segmentation {i + 1}",
                         start_pos=user_request.find(part) if part in user_request else 0,
                         end_pos=user_request.find(part) + len(part)
@@ -593,7 +602,7 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
                 RequestSegment(
                     text=task_part,
                     mode="task",
-                    priority=2,
+                    priority=4,  # Fixed: task mode should have priority 4 according to mode_profiles.json
                     reason="MCP testing task",
                     start_pos=user_request.find(task_part),
                     end_pos=user_request.find(task_part) + len(task_part),

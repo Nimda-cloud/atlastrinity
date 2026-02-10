@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T19:21:07.261151 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/data/mode_profiles.json -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T19:09:54.534583 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, package.json, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
