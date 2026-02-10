@@ -164,6 +164,7 @@ if [ -d "$HOME/.config/atlastrinity" ]; then
         
         # Clean ChromaDB specifically before removing the whole config
         rm -rf "$HOME/.config/atlastrinity/memory/chroma" 2>/dev/null || true
+        rm -rf "$HOME/.config/atlastrinity/data/golden_fund" 2>/dev/null || true
         
         rm -rf "$HOME/.config/atlastrinity"
         

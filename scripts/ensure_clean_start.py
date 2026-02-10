@@ -21,10 +21,12 @@ TARGET_SIGNATURES = [
     "mcp-server-sequential-thinking",
     "mcp-server-filesystem",
     "uvicorn",
+    "redis-server",
+    "redis-cli",
 ]
 
 # Ports to check and free
-TARGET_PORTS = [8000, 8080, 8085, 8090]  # Brain, Vibe, Proxy, etc.
+TARGET_PORTS = [8000, 8080, 8085, 8086, 8090, 6379]  # Brain, Vibe, Proxies, Redis, etc.
 
 
 def get_process_list() -> list[tuple[int, str]]:

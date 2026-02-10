@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T22:42:29.572462 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/request_segmenter.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-10T21:07:44.514138 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/request_segmenter.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-10T20:55:22.836313 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/request_segmenter.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T19:55:50.280995 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/orchestrator.py -->
 

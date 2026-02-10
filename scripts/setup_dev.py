@@ -1760,6 +1760,57 @@ def verify_llm_providers():
         print_warning(f"Не вдалося перевірити LLM провайдери: {e}")
 
 
+def run_preflight_cleanup():
+    """Runs ensure_clean_start.py to kill lingering processes"""
+    print_step("Запуск передпольотної очистки процесів...")
+    try:
+        cleanup_script = PROJECT_ROOT / "scripts" / "ensure_clean_start.py"
+        if cleanup_script.exists():
+            subprocess.run([sys.executable, str(cleanup_script)], check=False)
+            print_success("Очищення процесів завершено")
+        else:
+            print_warning("Скрипт ensure_clean_start.py не знайдено")
+    except Exception as e:
+        print_warning(f"Помилка при очищенні процесв: {e}")
+
+
+def check_database_health():
+    """Перевірка здоров'я баз даних (SQLite, Redis, ChromaDB)"""
+    print_step("Перевірка здоров'я баз даних...")
+
+    # 1. SQLite
+    db_path = CONFIG_ROOT / "atlastrinity.db"
+    if db_path.exists():
+        try:
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("SELECT 1")
+            print_success("SQLite: OK")
+        except Exception as e:
+            print_error(f"SQLite пошкоджено: {e}")
+    else:
+        print_warning("SQLite: База відсутня (буде створена)")
+
+    # 2. Redis
+    if shutil.which("redis-cli"):
+        try:
+            res = subprocess.run(["redis-cli", "ping"], capture_output=True, text=True, timeout=2)
+            if "PONG" in res.stdout:
+                print_success("Redis: OK")
+            else:
+                print_warning("Redis: Не відповідає")
+        except Exception:
+            print_warning("Redis: Недоступний (перевірте brew services)")
+
+    # 3. ChromaDB (Vector)
+    chroma_path = CONFIG_ROOT / "memory" / "chroma"
+    if chroma_path.exists():
+        print_success("ChromaDB (Memory): Директорія знайдена")
+
+    golden_chroma = CONFIG_ROOT / "data" / "golden_fund" / "chroma_db"
+    if golden_chroma.exists():
+        print_success("ChromaDB (Golden Fund): Директорія знайдена")
+
+
 def main():
     print(
         f"\n{Colors.HEADER}{Colors.BOLD}╔══════════════════════════════════════════╗{Colors.ENDC}",
@@ -1790,6 +1841,9 @@ def main():
         restore_databases()
         return
 
+    # 0. Pre-flight Cleanup
+    run_preflight_cleanup()
+
     check_python_version()
     ensure_directories()
 
@@ -1800,12 +1854,16 @@ def main():
         restore_databases()
 
     if not check_system_tools():
-        print_error("Homebrew є обов'язковим! Встановіть його та спробуйте знову.")
+        print_error("Критичні інструменти відсутні. Зупинка.")
         sys.exit(1)
+
+    install_brew_deps()
+
+    # New Health Check
+    check_database_health()
 
     if not check_venv():
         sys.exit(1)
-    install_brew_deps()  # Встановлення системних залежностей (includes ensure_database)
 
     # Preflight: verify MCP package versions (npx invocations)
     issues = verify_mcp_package_versions()

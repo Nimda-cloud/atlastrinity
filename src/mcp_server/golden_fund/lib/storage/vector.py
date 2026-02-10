@@ -2,22 +2,21 @@
 Vector Storage Adapter for Golden Fund (ChromaDB)
 """
 
+# import numpy as np  # unused
+# Check for chromadb availability
+import importlib.util
 import json
 import logging
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# import numpy as np  # unused
+CHROMA_AVAILABLE = importlib.util.find_spec("chromadb") is not None
 
-# Try importing chromadb, handle failure for CI/Bootstrap
-try:
+if CHROMA_AVAILABLE:
     import chromadb
-
-    CHROMA_AVAILABLE = True
-except ImportError:
-    CHROMA_AVAILABLE = False
 
 from .types import StorageResult
 
@@ -46,17 +45,42 @@ class VectorStorage:
 
         if self.enabled:
             try:
-                self.persistence_path.mkdir(parents=True, exist_ok=True)
-                self.client = chromadb.PersistentClient(path=str(self.persistence_path))
-                self.collection = self.client.get_or_create_collection(name=self.collection_name)
-                logger.info(f"VectorStorage (ChromaDB) initialized at {self.persistence_path}")
+                self._initialize_chroma()
             except Exception as e:
                 logger.error(f"Failed to initialize ChromaDB: {e}")
-                self.enabled = False
+                # Self-healing: if it's a metadata/schema error, wipe and retry
+                if "_type" in str(e) or "metadata" in str(e).lower() or "version" in str(e).lower():
+                    logger.warning(
+                        "Detected potential ChromaDB corruption. Attempting self-healing (wipe and retry)..."
+                    )
+                    try:
+                        if self.persistence_path.exists():
+                            # Move to backup instead of outright delete for safety
+                            backup_path = self.persistence_path.with_name(
+                                f"{self.persistence_path.name}_corrupted_{int(time.time())}"
+                            )
+                            self.persistence_path.rename(backup_path)
+                            logger.info(f"Moved corrupted ChromaDB to {backup_path}")
+
+                        self._initialize_chroma()
+                        logger.info("Self-healing successful. Fresh ChromaDB initialized.")
+                    except Exception as retry_e:
+                        logger.error(f"Self-healing failed: {retry_e}")
+                        self.enabled = False
+                else:
+                    self.enabled = False
         else:
             logger.warning(
                 "ChromaDB not available. VectorStorage disabled or running in simulation mode."
             )
+
+    def _initialize_chroma(self):
+        """Internal helper to initialize Chroma client and collection."""
+
+        self.persistence_path.mkdir(parents=True, exist_ok=True)
+        self.client = chromadb.PersistentClient(path=str(self.persistence_path))
+        self.collection = self.client.get_or_create_collection(name=self.collection_name)
+        logger.info(f"VectorStorage (ChromaDB) initialized at {self.persistence_path}")
 
     def store(self, data: dict[str, Any] | list[dict[str, Any]]) -> StorageResult:
         """Store data with generated embeddings."""

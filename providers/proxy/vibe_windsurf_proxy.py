@@ -177,7 +177,8 @@ class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
                 windsurf_messages.append({"role": role, "content": content})
 
             # Call Windsurf directly
-            llm = WindsurfLLM(model_name=model)
+            # Force direct_mode=True to avoid proxy-to-proxy deadlock loop (port 8085 calling itself)
+            llm = WindsurfLLM(model_name=model, direct_mode=True)
 
             # Make the API call
             start_time = time.time()
@@ -218,8 +219,12 @@ class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
             error(f"JSON decode error: {e}")
             self.send_error_response("Invalid JSON in request body", 400)
         except Exception as e:
-            error(f"Request error: {e}")
-            self.send_error_response(f"Windsurf API error: {e!s}", 500)
+            # Check for broken pipe in generic exception as well
+            if "[Errno 32] Broken pipe" in str(e) or (isinstance(e, OSError) and e.errno == 32):
+                pass
+            else:
+                error(f"Request error: {e}")
+                self.send_error_response(f"Windsurf API error: {e!s}", 500)
 
     def send_json_response(self, data: dict) -> None:
         """Send JSON response."""
@@ -282,8 +287,13 @@ def run(port: int = DEFAULT_PORT) -> None:
 
     VibeWindsurfProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(server_address, VibeWindsurfProxyHandler)
+
+    # Use ThreadingTCPServer for concurrent requests
+    class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    httpd = ThreadedTCPServer(server_address, VibeWindsurfProxyHandler)
 
     info(f"Serving at http://127.0.0.1:{port}")
     info(f"OpenAI-compatible endpoint: http://127.0.0.1:{port}/v1/chat/completions")
