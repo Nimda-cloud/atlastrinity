@@ -180,7 +180,6 @@ class RequestSegmenter:
         model = llm_config.get("model", "gpt-4.1")
         tier = llm_config.get("tier", "standard")
         temperature = llm_config.get("temperature", 0.1)
-        max_tokens = llm_config.get("max_tokens", 2000)
         
         logger.info(f"[SEGMENTER] Using LLM provider: {provider}/{model} (tier={tier}, temp={temperature})")
 
@@ -201,8 +200,9 @@ class RequestSegmenter:
 
         try:
             # Use appropriate LLM based on configuration
-            if tier == "deep" and hasattr(atlas, 'deep_llm'):
-                response = await atlas.deep_llm.ainvoke(messages)
+            if tier == "deep" and hasattr(atlas, 'llm'):
+                # For deep tier, use standard LLM with enhanced parameters
+                response = await atlas.llm.ainvoke(messages)
             else:
                 response = await atlas.llm.ainvoke(messages)
             
@@ -268,7 +268,6 @@ class RequestSegmenter:
 
     def _build_intelligent_system_prompt(self) -> str:
         """Build system prompt for LLM segmentation."""
-        segmentation_rules = _SEGMENTATION_CONFIG.get("segmentation_rules", {})
         
         prompt = """You are an advanced request segmentation expert. Your task is to intelligently analyze user requests and split them into logical segments by intent mode.
 
