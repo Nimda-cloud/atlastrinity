@@ -1394,7 +1394,9 @@ class Trinity:
                 f"[ORCHESTRATOR] Processing segment {i + 1}/{len(segments)}: "
                 f"mode={segment.mode}, priority={segment.priority}, text='{segment.text[:50]}...'"
             )
-            logger.info(f"[ORCHESTRATOR] Segment {i+1} profile: tools_access={segment.profile.tools_access if segment.profile else 'None'}, trinity_required={segment.profile.trinity_required if segment.profile else 'None'}")
+            logger.info(
+                f"[ORCHESTRATOR] Segment {i + 1} profile: tools_access={segment.profile.tools_access if segment.profile else 'None'}, trinity_required={segment.profile.trinity_required if segment.profile else 'None'}"
+            )
 
             # Process each segment with its specific mode profile
             segment_result = await self._process_single_segment(
@@ -1402,7 +1404,9 @@ class Trinity:
             )
 
             results.append(segment_result)
-            logger.info(f"[ORCHESTRATOR] Segment {i+1} completed: status={segment_result.get('status')}")
+            logger.info(
+                f"[ORCHESTRATOR] Segment {i + 1} completed: status={segment_result.get('status')}"
+            )
 
             # Combine responses
             if segment_result.get("result"):

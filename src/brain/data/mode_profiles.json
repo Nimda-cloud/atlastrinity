@@ -8,7 +8,27 @@
       "description": "Intelligently split mixed requests into separate mode segments for optimal processing",
       "split_strategy": "llm_semantic",
       "max_segments": 5,
-      "min_segment_length": 3
+      "min_segment_length": 3,
+      "llm_provider": {
+        "provider": "copilot",
+        "model": "gpt-4.1",
+        "tier": "standard",
+        "temperature": 0.1,
+        "max_tokens": 2000,
+        "reasoning_effort": "medium"
+      },
+      "segmentation_rules": {
+        "preserve_context": true,
+        "maintain_order": true,
+        "allow_merging": true,
+        "priority_weight": 0.3,
+        "context_weight": 0.7
+      },
+      "post_processing": {
+        "enable_refinement": true,
+        "allow_context_enrichment": true,
+        "validate_segment_integrity": true
+      }
     }
   },
 

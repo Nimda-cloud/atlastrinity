@@ -174,98 +174,199 @@ class RequestSegmenter:
     ) -> list[RequestSegment]:
         """Use LLM to intelligently split request into segments."""
 
-        # Build segmentation prompt
-        prompt = self._build_segmentation_prompt(user_request, history, context)
+        # Get LLM provider config from segmentation settings
+        llm_config = _SEGMENTATION_CONFIG.get("llm_provider", {})
+        provider = llm_config.get("provider", "copilot")
+        model = llm_config.get("model", "gpt-4.1")
+        tier = llm_config.get("tier", "standard")
+        temperature = llm_config.get("temperature", 0.1)
+        max_tokens = llm_config.get("max_tokens", 2000)
+        
+        logger.info(f"[SEGMENTER] Using LLM provider: {provider}/{model} (tier={tier}, temp={temperature})")
+
+        # Build enhanced segmentation prompt with context awareness
+        prompt = self._build_enhanced_segmentation_prompt(user_request, history, context)
 
         # Import here to avoid circular imports
         from .agents.atlas import Atlas
 
-        # Use standard LLM for segmentation (not deep persona)
+        # Use configured LLM for segmentation
         atlas = Atlas()
-        system_prompt = """You are a request segmentation expert. Analyze the user's request and split it into logical segments by intent mode.
-
-Available modes:
-- chat: Simple greetings, small talk, thanks, acknowledgments (1-6 words)
-- deep_chat: Philosophical, identity, mission, soul, consciousness topics
-- solo_task: Research, lookup, info retrieval with tools (weather, search, read files)
-- task: Direct execution requiring planning and tools (create, open, install, send)
-- development: Software development, coding, debugging, testing
-
-Rules:
-1. Split mixed requests into separate segments
-2. Each segment should have one clear intent
-3. Preserve original wording and context
-4. Order segments logically
-5. Minimum 3 words per segment (except chat)
-
-Return JSON format:
-{
-  "segments": [
-    {
-      "text": "segment text",
-      "mode": "mode_name", 
-      "reason": "why this mode",
-      "start_pos": 0,
-      "end_pos": 15
-    }
-  ]
-}"""
-
+        system_prompt = self._build_intelligent_system_prompt()
+        
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
 
         try:
-            response = await atlas.llm.ainvoke(messages)
+            # Use appropriate LLM based on configuration
+            if tier == "deep" and hasattr(atlas, 'deep_llm'):
+                response = await atlas.deep_llm.ainvoke(messages)
+            else:
+                response = await atlas.llm.ainvoke(messages)
+            
             result = json.loads(response.content)
+            logger.info(f"[SEGMENTER] LLM response: {len(result.get('segments', []))} segments proposed")
 
-            segments = []
-            for seg_data in result.get("segments", []):
-                segment = RequestSegment(
-                    text=seg_data.get("text", ""),
-                    mode=seg_data.get("mode", "chat"),
-                    priority=self._get_mode_priority(seg_data.get("mode", "chat")),
-                    reason=seg_data.get("reason", ""),
-                    start_pos=seg_data.get("start_pos", 0),
-                    end_pos=seg_data.get("end_pos", 0),
-                )
-                segments.append(segment)
-
+            # Validate and refine segments based on configuration
+            segments = self._validate_and_refine_segments(result.get("segments", []), user_request)
+            
             return segments
 
         except Exception as e:
-            logger.error(f"[SEGMENTER] LLM segmentation parsing failed: {e}")
+            logger.error(f"[SEGMENTER] LLM segmentation failed: {e}")
             return []
 
-    def _build_segmentation_prompt(
+    def _build_enhanced_segmentation_prompt(
         self,
         user_request: str,
         history: list[Any] | None,
         context: dict[str, Any] | None,
     ) -> str:
-        """Build prompt for LLM segmentation."""
-
+        """Build prompt for LLM segmentation with context awareness."""
+        segmentation_rules = _SEGMENTATION_CONFIG.get("segmentation_rules", {})
+        
         prompt_parts = [
-            f"User Request: {user_request}",
+            "REQUEST TO ANALYZE:",
+            f'"{user_request}"',
+            ""
         ]
 
-        if history:
-            prompt_parts.append(f"Recent History: {history[-3:]!s}")
+        # Add conversation context if available
+        if history and segmentation_rules.get("preserve_context", True):
+            recent_history = history[-3:] if len(history) > 3 else history
+            prompt_parts.extend([
+                "CONVERSATION CONTEXT:",
+                f"Recent messages: {recent_history!s}",
+                ""
+            ])
 
-        if context:
-            prompt_parts.append(f"Context: {context!s}")
+        # Add additional context if provided
+        if context and segmentation_rules.get("preserve_context", True):
+            prompt_parts.extend([
+                "ADDITIONAL CONTEXT:",
+                f"Context data: {context!s}",
+                ""
+            ])
 
-        prompt_parts.extend(
-            [
-                "",
-                "Split this request into logical segments by intent mode.",
-                "Consider mixed requests like greetings + tasks, or multiple different task types.",
-                "Each segment should be processed with its optimal mode.",
-            ]
-        )
+        # Add segmentation guidance
+        prompt_parts.extend([
+            "TASK:",
+            "Split this request into logical segments by intent mode.",
+            "",
+            "ANALYSIS GUIDELINES:",
+            "- Look for natural transitions between different types of intent",
+            "- Consider the user's flow and conversational context", 
+            "- Each segment should be processed with its optimal mode",
+            "- Maintain the original order from the user's request",
+            "- Focus on semantic meaning, not just keywords",
+            ""
+        ])
 
         return "\n".join(prompt_parts)
+
+    def _build_intelligent_system_prompt(self) -> str:
+        """Build system prompt for LLM segmentation."""
+        segmentation_rules = _SEGMENTATION_CONFIG.get("segmentation_rules", {})
+        
+        prompt = """You are an advanced request segmentation expert. Your task is to intelligently analyze user requests and split them into logical segments by intent mode.
+
+AVAILABLE MODES:
+- chat: Simple greetings, small talk, thanks, acknowledgments (1-6 words)
+- deep_chat: Philosophical, identity, mission, soul, consciousness topics (deep, meaningful)
+- solo_task: Research, lookup, info retrieval with tools (weather, search, read files)
+- task: Direct execution requiring planning and tools (create, open, install, send)
+- development: Software development, coding, debugging, testing
+
+SEGMENTATION PRINCIPLES:
+1. Analyze semantic intent, not just keywords
+2. Preserve conversational flow and context
+3. Each segment should have one clear, primary intent
+4. Maintain original order from user request
+5. Consider context and conversation history
+6. Minimum 3 words per segment (except chat mode)
+7. Maximum 5 segments per request (focus on most important splits)
+
+CONTEXTUAL ANALYSIS:
+- Consider conversation history for context
+- Identify transitions between different types of tasks
+- Look for intent shifts (e.g., greeting → task → question)
+- Prioritize user's natural flow and intent
+
+OUTPUT FORMAT:
+Return JSON format:
+{
+  "segments": [
+    {
+      "text": "exact segment text from request",
+      "mode": "mode_name", 
+      "reason": "why this mode based on intent analysis",
+      "start_pos": 0,
+      "end_pos": 15,
+      "confidence": 0.95
+    }
+  ]
+}
+
+Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable."""
+        
+        return prompt
+
+    def _validate_and_refine_segments(
+        self,
+        segments: list[dict[str, Any]],
+        user_request: str,
+    ) -> list[RequestSegment]:
+        """Validate and refine segments based on configuration."""
+        refined_segments = []
+        post_processing_config = _SEGMENTATION_CONFIG.get("post_processing", {})
+        
+        for segment in segments:
+            text = segment.get("text", "")
+            mode = segment.get("mode", "chat")
+            reason = segment.get("reason", "")
+            start_pos = segment.get("start_pos", 0)
+            end_pos = segment.get("end_pos", 0)
+            
+            # Validate segment integrity
+            if post_processing_config.get("validate_segment_integrity", True):
+                if not self._validate_segment_integrity(text, mode, user_request):
+                    logger.warning(f"[SEGMENTER] Invalid segment: mode={mode}, text='{text[:30]}...'")
+                    continue
+            
+            # Create RequestSegment with proper profile
+            request_segment = RequestSegment(
+                text=text,
+                mode=mode,
+                priority=self._get_mode_priority(mode),
+                reason=reason,
+                start_pos=start_pos,
+                end_pos=end_pos,
+            )
+            
+            refined_segments.append(request_segment)
+        
+        logger.info(f"[SEGMENTER] Refined {len(refined_segments)} valid segments")
+        return refined_segments
+    
+    def _validate_segment_integrity(self, text: str, mode: str, full_request: str) -> bool:
+        """Validate that segment is properly formed and makes sense."""
+        min_length = _SEGMENTATION_CONFIG.get("min_segment_length", 3)
+        
+        # Check minimum length (except for chat mode)
+        if mode != "chat" and len(text.split()) < min_length:
+            return False
+        
+        # Check if text exists in original request
+        if text not in full_request:
+            return False
+        
+        # Check if mode is valid
+        if mode not in _MODE_PROFILES:
+            return False
+        
+        return True
 
     def _keyword_segmentation(self, user_request: str) -> list[RequestSegment]:
         """Fallback keyword-based segmentation using mode profiles."""

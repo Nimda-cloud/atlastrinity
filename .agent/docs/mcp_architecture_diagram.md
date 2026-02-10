@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T17:59:16.145159 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/atlas.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T17:56:27.852194 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/agents/atlas.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
