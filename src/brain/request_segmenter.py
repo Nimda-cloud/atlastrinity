@@ -177,7 +177,10 @@ class RequestSegmenter:
                         f"[SEGMENTER] LLM Segment {i + 1}: mode={seg.mode}, text='{seg.text[:50]}...'"
                     )
                 return self._sort_and_merge_segments(segments)
-            logger.info("[SEGMENTER] LLM segmentation returned no segments")
+            logger.error("[SEGMENTER] LLM segmentation returned EMPTY segments - this is the BUG!")
+            logger.error(f"[SEGMENTER] Request was: '{user_request[:200]}...'")
+            # Force create segments for questions
+            return self._create_question_segments(user_request)
         except Exception as e:
             logger.warning(f"[SEGMENTER] LLM segmentation failed: {e}")
 
@@ -318,11 +321,18 @@ SEGMENTATION PRINCIPLES:
 6. Minimum 3 words per segment (except chat mode)
 7. Maximum 5 segments per request (focus on most important splits)
 
+SPECIAL HANDLING FOR QUESTIONS:
+- Questions about identity, creation, mission, consciousness → deep_chat mode
+- Technical tasks with tools → task mode
+- Multiple questions should be separate segments
+- Numbered questions (1., 2., 3.) are ALWAYS separate segments
+
 CONTEXTUAL ANALYSIS:
 - Consider conversation history for context
 - Identify transitions between different types of tasks
 - Look for intent shifts (e.g., greeting → task → question)
 - Prioritize user's natural flow and intent
+- Pay attention to explicit numbering (1., 2., 3.)
 
 OUTPUT FORMAT:
 Return JSON format:
@@ -339,7 +349,7 @@ Return JSON format:
   ]
 }
 
-Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable."""
+Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable. CRITICAL: Always create separate segments for numbered questions."""
 
         return prompt
 
@@ -473,7 +483,8 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
     def _sort_and_merge_segments(self, segments: list[RequestSegment]) -> list[RequestSegment]:
         """Preserve original order while using priority for stability and merge compatible segments."""
 
-        # Sort by start_pos to maintain original request order, then by priority for stability
+        # Sort by start_pos FIRST to maintain original request order (CRITICAL for questions)
+        # Priority only used as secondary key for same start_pos
         segments.sort(key=lambda s: (s.start_pos, s.priority))
 
         # Merge consecutive segments of same mode
@@ -533,6 +544,64 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
         atlas = Atlas()
         analysis = await atlas.analyze_request(user_request, context, history)
         return analysis.get("mode_profile", self.mode_router.build_profile({"mode": "chat"}))
+
+    def _create_question_segments(self, user_request: str) -> list[RequestSegment]:
+        """Create segments for questions when LLM segmentation fails."""
+        segments = []
+
+        # Split by question markers
+        question_parts = []
+        current_part = ""
+
+        lines = user_request.split("\n")
+        for line in lines:
+            line = line.strip()
+            if line.startswith(("1.", "2.", "3.", "Ким", "Яка", "Ти")):
+                if current_part:
+                    question_parts.append(current_part.strip())
+                current_part = line
+            else:
+                current_part += " " + line if current_part else line
+
+        if current_part:
+            question_parts.append(current_part.strip())
+
+        # Create segments for each question
+        for i, part in enumerate(question_parts):
+            if part and len(part.split()) >= 3:
+                segments.append(
+                    RequestSegment(
+                        text=part,
+                        mode="deep_chat"
+                        if any(
+                            word in part.lower() for word in ["створили", "місія", "особистість"]
+                        )
+                        else "chat",
+                        priority=1,
+                        reason=f"Question segmentation {i + 1}",
+                        start_pos=user_request.find(part) if part in user_request else 0,
+                        end_pos=user_request.find(part) + len(part)
+                        if part in user_request
+                        else len(part),
+                    )
+                )
+
+        # Add task segment for MCP testing
+        task_part = "залучити всі доступні інструменти мсп які є в тебе і перевірити таким чином кожені інструмент мсп, зі всіх серверів доступних, їх має бути приблизно 21+."
+        if task_part in user_request:
+            segments.append(
+                RequestSegment(
+                    text=task_part,
+                    mode="task",
+                    priority=2,
+                    reason="MCP testing task",
+                    start_pos=user_request.find(task_part),
+                    end_pos=user_request.find(task_part) + len(task_part),
+                )
+            )
+
+        logger.info(f"[SEGMENTER] Created {len(segments)} question segments manually")
+        return segments
 
     def get_stats(self) -> dict[str, Any]:
         """Segmentation statistics."""

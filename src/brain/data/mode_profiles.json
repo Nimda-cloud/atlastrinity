@@ -18,7 +18,7 @@
     "use_sequential_thinking": false,
     "trinity_required": false,
     "segmentation": {
-      "priority": 1,
+      "priority": 2,
       "can_standalone": true,
       "merge_with": ["deep_chat"],
       "split_keywords": ["привіт", "дякую", "окей", "зрозумів", "як справи", "hello", "hi", "thanks"],
@@ -46,7 +46,7 @@
     "use_sequential_thinking": false,
     "trinity_required": false,
     "segmentation": {
-      "priority": 2,
+      "priority": 1,
       "can_standalone": true,
       "merge_with": ["chat"],
       "split_keywords": ["хто ти", "яка місія", "ти живий", "свідомість", "філософ", "душ", "майбутн", "свобод", "смерт", "космос", "комета", "повстання"],
