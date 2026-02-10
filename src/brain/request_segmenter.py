@@ -496,7 +496,9 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
 
         # Sort by start_pos FIRST to maintain original request order (CRITICAL for questions)
         # Priority only used as secondary key for same start_pos
-        segments.sort(key=lambda s: (s.start_pos, s.priority))
+        # segments.sort(key=lambda s: (s.start_pos, s.priority))
+        # FIXED: Do NOT sort by start_pos. Trust the LLM's output order or keyword order.
+        # Sorting can break execution flow if start_pos is hallucinated or defaulted to 0.
 
         # Merge consecutive segments of same mode
         merged = []
