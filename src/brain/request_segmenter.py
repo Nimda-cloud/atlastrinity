@@ -586,7 +586,9 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
                     RequestSegment(
                         text=part,
                         mode="deep_chat" if is_deep_chat else "chat",
-                        priority=1 if is_deep_chat else 2,  # Fixed: deep_chat=1, chat=2 according to mode_profiles.json
+                        priority=1
+                        if is_deep_chat
+                        else 2,  # Fixed: deep_chat=1, chat=2 according to mode_profiles.json
                         reason=f"Question segmentation {i + 1}",
                         start_pos=user_request.find(part) if part in user_request else 0,
                         end_pos=user_request.find(part) + len(part)

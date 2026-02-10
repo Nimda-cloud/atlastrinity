@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T19:22:51.653527 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/request_segmenter.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T19:21:07.261151 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/data/mode_profiles.json -->
 
