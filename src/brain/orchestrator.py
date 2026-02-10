@@ -1465,23 +1465,34 @@ class Trinity:
         plan = await self._planning_loop(segment_analysis, segment.text, is_subtask, history)
 
         if plan and plan.steps:
-            steps_before = len(self.state.get("step_results", []))
+            step_results = self.state.get("step_results")
+            steps_before = len(step_results) if isinstance(step_results, list) else 0
             await self._create_db_task(segment.text, plan)
             await self._execute_steps_recursive(plan.steps)
-            
+
             # Evaluate this segment immediately for better feedback
-            current_results = self.state.get("step_results", [])[steps_before:]
+            all_results = self.state.get("step_results")
+            current_results = all_results[steps_before:] if isinstance(all_results, list) else []
+
             evaluation = await self._evaluate_and_remember(
-                segment.text, 
-                intent=segment.mode, 
-                results=current_results,
-                silent_if_fail=True
+                segment.text,
+                intent=segment.mode,
+                results=current_results if isinstance(current_results, list) else None,
+                silent_if_fail=True,
             )
-            
-            report = evaluation.get("final_report") if evaluation else "Завдання виконано."
+
+            report = (
+                evaluation.get("final_report")
+                if isinstance(evaluation, dict)
+                else "Завдання виконано."
+            )
             return {"status": "completed", "result": report, "mode": segment.mode}
-            
-        return {"status": "completed", "result": "Планування не виявило необхідних кроків.", "mode": segment.mode}
+
+        return {
+            "status": "completed",
+            "result": "Планування не виявило необхідних кроків.",
+            "mode": segment.mode,
+        }
 
     async def _handle_single_mode_request(
         self, user_request: str, history, images, analysis, is_subtask: bool
@@ -1537,11 +1548,11 @@ class Trinity:
         self._trigger_backups()
 
     async def _evaluate_and_remember(
-        self, 
-        user_request: str, 
-        intent: str | None = None, 
+        self,
+        user_request: str,
+        intent: str | None = None,
         results: list[dict[str, Any]] | None = None,
-        silent_if_fail: bool = False
+        silent_if_fail: bool = False,
     ) -> dict[str, Any] | None:
         """Evaluate execution quality and save to LTM."""
         # Skip evaluation for simple chat/informative intents to avoid duplicated greetings
@@ -1549,13 +1560,16 @@ class Trinity:
             logger.debug(f"[ORCHESTRATOR] Skipping evaluation for intent: {intent}")
             return None
 
-        actual_results = results if results is not None else self.state.get("step_results", [])
-        if not actual_results and intent != "segmented":
+        actual_results = results if isinstance(results, list) else self.state.get("step_results", [])
+        if not isinstance(actual_results, list) or (not actual_results and intent != "segmented"):
              logger.debug("[ORCHESTRATOR] No results to evaluate")
              return None
 
+        # Clean list to ensure it only contains dicts for evaluate_execution
+        clean_results = [r for r in actual_results if isinstance(r, dict)]
+
         try:
-            evaluation = await self.atlas.evaluate_execution(user_request, actual_results)
+            evaluation = await self.atlas.evaluate_execution(user_request, clean_results)
 
             if evaluation.get("achieved"):
                 msg = evaluation.get("final_report") or "Завдання успішно виконано."
@@ -1564,7 +1578,9 @@ class Trinity:
                 if intent != "segmented":
                     await self._speak("atlas", msg)
             elif not silent_if_fail:
-                await self._log("Evaluation indicated task was not fully achieved", "system", "warning")
+                await self._log(
+                    "Evaluation indicated task was not fully achieved", "system", "warning"
+                )
 
             if evaluation.get("should_remember") and evaluation.get("quality_score", 0) >= 0.7:
                 await self._save_to_ltm(user_request, evaluation)
@@ -1572,7 +1588,7 @@ class Trinity:
             # Update DB Task
             if self.state.get("db_task_id"):
                 await self._mark_db_golden_path()
-                
+
             return evaluation
         except Exception as e:
             logger.error(f"Evaluation failed: {e}")
