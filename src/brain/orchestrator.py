@@ -1560,10 +1560,12 @@ class Trinity:
             logger.debug(f"[ORCHESTRATOR] Skipping evaluation for intent: {intent}")
             return None
 
-        actual_results = results if isinstance(results, list) else self.state.get("step_results", [])
+        actual_results = (
+            results if isinstance(results, list) else self.state.get("step_results", [])
+        )
         if not isinstance(actual_results, list) or (not actual_results and intent != "segmented"):
-             logger.debug("[ORCHESTRATOR] No results to evaluate")
-             return None
+            logger.debug("[ORCHESTRATOR] No results to evaluate")
+            return None
 
         # Clean list to ensure it only contains dicts for evaluate_execution
         clean_results = [r for r in actual_results if isinstance(r, dict)]
