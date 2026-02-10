@@ -156,18 +156,24 @@ fi
 
 if [ -d "$HOME/.config/atlastrinity" ]; then
     if [ "$DELETE_MODELS" == "n" ] && [ -d "$HOME/.config/atlastrinity/models" ]; then
-        # Preserve models
+        # Preserve models and memory structure, but clean ChromaDB
+        echo "   -> Збереження моделей, очищення ChromaDB..."
         TEMP_MODELS="/tmp/atlastrinity_models_backup"
         rm -rf "$TEMP_MODELS"
         mv "$HOME/.config/atlastrinity/models" "$TEMP_MODELS"
+        
+        # Clean ChromaDB specifically before removing the whole config
+        rm -rf "$HOME/.config/atlastrinity/memory/chroma" 2>/dev/null || true
         
         rm -rf "$HOME/.config/atlastrinity"
         
         # Recreate and restore
         mkdir -p "$HOME/.config/atlastrinity"
+        mkdir -p "$HOME/.config/atlastrinity/memory"
         mv "$TEMP_MODELS" "$HOME/.config/atlastrinity/models"
-        echo "✅ ~/.config/atlastrinity видалено (Models збережено)"
+        echo "✅ ~/.config/atlastrinity видалено (Models збережено, ChromaDB очищено)"
     else
+        # Full deletion including ChromaDB
         rm -rf "$HOME/.config/atlastrinity"
         # Also cleanup the often-auto-created stanza_resources in Home if it exists
         rm -rf "$HOME/stanza_resources"

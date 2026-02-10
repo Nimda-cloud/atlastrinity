@@ -35,6 +35,10 @@ rm -rf ~/Library/Caches/atlastrinity* 2>/dev/null
 echo "  • Очищення локального кешу конфігурації..."
 rm -rf ~/.config/atlastrinity/cache/* 2>/dev/null
 
+# Очищення ChromaDB (фікс для несовместимих версій)
+echo "  • Очищення ChromaDB vector store..."
+rm -rf ~/.config/atlastrinity/memory/chroma/* 2>/dev/null
+
 # Очищення Redis (ВИБІРКОВЕ - зберігаємо сесії!)
 echo "  • Очищення Redis (cache only, preserving sessions)..."
 # Видаляємо тільки кеш-ключі, зберігаючи сесії та історію завдань
