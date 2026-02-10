@@ -9,7 +9,7 @@ import os
 import sys
 
 # Add project root to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.brain.request_segmenter import request_segmenter
 
@@ -18,31 +18,31 @@ def demo_mixed_request():
     """Demo: Mixed chat + development + task request."""
     print("🎯 Demo 1: Mixed Request Segmentation")
     print("=" * 50)
-    
+
     user_request = "Привіт! Як справи? Мені потрібно створити React компонент для калькулятора, виправити баг в модулі авторизації і відправ email з результатами"
-    
+
     print("📝 Input Request:")
     print(f"   {user_request}")
     print()
-    
+
     # This would normally use LLM, but we'll use keyword fallback for demo
     segments = request_segmenter._keyword_segmentation(user_request)
-    
+
     print("🔍 Segmentation Results:")
     print(f"   Found {len(segments)} segments")
     print()
-    
+
     for i, segment in enumerate(segments, 1):
         print(f"   Segment {i}: [{segment.mode.upper()}]")
         print(f"   ├─ Text: '{segment.text}'")
         print(f"   ├─ Priority: {segment.priority}")
         print(f"   └─ Reason: {segment.reason}")
         print()
-    
+
     print("💡 How this would be processed:")
     print("   1. Chat segment → Simple response (no tools)")
     print("   2. Development segment → Vibe + Trinity planning")
-    print("   3. Development segment → Vibe + Trinity planning") 
+    print("   3. Development segment → Vibe + Trinity planning")
     print("   4. Task segment → Trinity planning")
     print()
 
@@ -51,26 +51,28 @@ def demo_philosophical_task():
     """Demo: Philosophical + development request."""
     print("🎯 Demo 2: Philosophical + Development")
     print("=" * 50)
-    
-    user_request = "Хто ти насправді? І як мені створити API endpoint для користувачів з аутентифікацією?"
-    
+
+    user_request = (
+        "Хто ти насправді? І як мені створити API endpoint для користувачів з аутентифікацією?"
+    )
+
     print("📝 Input Request:")
     print(f"   {user_request}")
     print()
-    
+
     segments = request_segmenter._keyword_segmentation(user_request)
-    
+
     print("🔍 Segmentation Results:")
     print(f"   Found {len(segments)} segments")
     print()
-    
+
     for i, segment in enumerate(segments, 1):
         print(f"   Segment {i}: [{segment.mode.upper()}]")
         print(f"   ├─ Text: '{segment.text}'")
         print(f"   ├─ Priority: {segment.priority}")
         print(f"   └─ Reason: {segment.reason}")
         print()
-    
+
     print("💡 How this would be processed:")
     print("   1. Deep Chat segment → Deep persona + memory")
     print("   2. Development segment → Vibe + Trinity planning")
@@ -81,26 +83,26 @@ def demo_simple_chat():
     """Demo: Simple chat (no segmentation needed)."""
     print("🎯 Demo 3: Simple Chat (No Segmentation)")
     print("=" * 50)
-    
+
     user_request = "Привіт! Як справи?"
-    
+
     print("📝 Input Request:")
     print(f"   {user_request}")
     print()
-    
+
     segments = request_segmenter._keyword_segmentation(user_request)
-    
+
     print("🔍 Segmentation Results:")
     print(f"   Found {len(segments)} segments")
     print()
-    
+
     for i, segment in enumerate(segments, 1):
         print(f"   Segment {i}: [{segment.mode.upper()}]")
         print(f"   ├─ Text: '{segment.text}'")
         print(f"   ├─ Priority: {segment.priority}")
         print(f"   └─ Reason: {segment.reason}")
         print()
-    
+
     print("💡 How this would be processed:")
     print("   Single segment → Direct chat response (no tools, no planning)")
     print()
@@ -110,16 +112,16 @@ def demo_configuration():
     """Show current segmentation configuration."""
     print("⚙️  Current Segmentation Configuration")
     print("=" * 50)
-    
+
     from src.brain.request_segmenter import _MODE_PROFILES, _SEGMENTATION_CONFIG
-    
+
     print("🔧 Segmentation Settings:")
     print(f"   Enabled: {_SEGMENTATION_CONFIG.get('enabled')}")
     print(f"   Strategy: {_SEGMENTATION_CONFIG.get('split_strategy')}")
     print(f"   Max Segments: {_SEGMENTATION_CONFIG.get('max_segments')}")
     print(f"   Min Segment Length: {_SEGMENTATION_CONFIG.get('min_segment_length')}")
     print()
-    
+
     print("📋 Available Modes:")
     for mode_name, mode_config in _MODE_PROFILES.items():
         seg_config = mode_config.get("segmentation", {})
@@ -135,12 +137,12 @@ def main():
     print("🚀 AtlasTrinity Request Segmentation Demo")
     print("=" * 60)
     print()
-    
+
     demo_configuration()
     demo_simple_chat()
     demo_mixed_request()
     demo_philosophical_task()
-    
+
     print("✅ Demo completed!")
     print()
     print("📊 Final Statistics:")

@@ -227,13 +227,17 @@ class Atlas(BaseAgent):
                 from ..request_segmenter import request_segmenter
             except ImportError:
                 request_segmenter = None
-            
+
             # If segmentation is enabled and request is complex, try to split
-            if (request_segmenter and len(user_request.split()) > 8 and 
-                profile.mode not in ["chat", "deep_chat"]):
-                
+            if (
+                request_segmenter
+                and len(user_request.split()) > 8
+                and profile.mode not in ["chat", "deep_chat"]
+            ):
                 try:
-                    segments = await request_segmenter.split_request(user_request, history or [], context or {})
+                    segments = await request_segmenter.split_request(
+                        user_request, history or [], context or {}
+                    )
                     if len(segments) > 1:
                         logger.info(
                             f"[ATLAS] Multi-mode segmentation: {len(segments)} segments detected"

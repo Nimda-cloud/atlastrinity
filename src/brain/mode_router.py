@@ -15,7 +15,7 @@ Usage:
 
     # Single mode classification
     profile = await mode_router.classify(user_request, history, context)
-    
+
     # Multi-mode segmentation
     segments = await request_segmenter.split_request(user_request, history, context)
     # profile.mode, profile.protocols, profile.servers, etc.
