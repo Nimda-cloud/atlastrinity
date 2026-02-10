@@ -1,4 +1,16 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T17:09:30.915185 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-10T15:29:45.813640 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-10T15:19:24.121975 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T14:38:36.156243 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/clean-cache.sh, scripts/fresh_install.sh -->
 

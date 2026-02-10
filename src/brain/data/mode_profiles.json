@@ -1,8 +1,15 @@
 {
   "_meta": {
-    "version": "1.0.0",
-    "description": "Declarative mode profiles for LLM-first routing. Each mode defines which protocols, servers, prompts, and LLM settings to use. The ModeRouter selects a mode via LLM classification, then builds the full execution profile from these defaults.",
-    "modes_summary": "chat (simple talk) | deep_chat (philosophy/identity) | solo_task (research with tools) | task (Trinity execution) | development (Vibe + Trinity coding)"
+    "version": "1.1.0",
+    "description": "Declarative mode profiles for LLM-first routing. Each mode defines which protocols, servers, prompts, and LLM settings to use. The ModeRouter selects a mode via LLM classification, then builds full execution profile from these defaults.",
+    "modes_summary": "chat (simple talk) | deep_chat (philosophy/identity) | solo_task (research with tools) | task (Trinity execution) | development (Vibe + Trinity coding)",
+    "segmentation": {
+      "enabled": true,
+      "description": "Intelligently split mixed requests into separate mode segments for optimal processing",
+      "split_strategy": "llm_semantic",
+      "max_segments": 5,
+      "min_segment_length": 3
+    }
   },
 
   "chat": {
@@ -17,6 +24,14 @@
     "use_deep_persona": false,
     "use_sequential_thinking": false,
     "trinity_required": false,
+    "segmentation": {
+      "priority": 1,
+      "can_standalone": true,
+      "merge_with": ["deep_chat"],
+      "split_keywords": ["привіт", "дякую", "окей", "зрозумів", "як справи", "hello", "hi", "thanks"],
+      "min_words": 1,
+      "max_words": 6
+    },
     "examples": [
       "Привіт!",
       "Дякую",
@@ -37,6 +52,14 @@
     "use_deep_persona": true,
     "use_sequential_thinking": false,
     "trinity_required": false,
+    "segmentation": {
+      "priority": 2,
+      "can_standalone": true,
+      "merge_with": ["chat"],
+      "split_keywords": ["хто ти", "яка місія", "ти живий", "свідомість", "філософ", "душ", "майбутн", "свобод", "смерт", "космос", "комета", "повстання"],
+      "min_words": 2,
+      "max_words": 15
+    },
     "examples": [
       "Хто ти?",
       "Яка твоя місія?",
@@ -85,6 +108,14 @@
     "skip_deep_reasoning": true,
     "skip_memory_context": true,
     "trinity_required": false,
+    "segmentation": {
+      "priority": 3,
+      "can_standalone": true,
+      "merge_with": [],
+      "split_keywords": ["погода", "курс", "ціна", "новини", "прочитай", "знайди", "покажи", "маршрут", "документація", "weather", "price", "search", "read", "find"],
+      "min_words": 3,
+      "max_words": 12
+    },
     "examples": [
       "Яка погода у Львові?",
       "Покажи маршрут від Києва до Одеси",
@@ -158,6 +189,14 @@
     "use_deep_persona": false,
     "use_sequential_thinking": true,
     "trinity_required": true,
+    "segmentation": {
+      "priority": 4,
+      "can_standalone": true,
+      "merge_with": [],
+      "split_keywords": ["створи", "відкрий", "встанови", "побудуй", "відправ", "запусти", "виправ", "зроби", "create", "open", "install", "build", "send", "start", "fix", "do"],
+      "min_words": 4,
+      "max_words": 20
+    },
     "examples": [
       "Відкрий Finder і створи папку",
       "Встанови пакет через brew",
@@ -190,6 +229,14 @@
     "use_sequential_thinking": true,
     "use_vibe": true,
     "trinity_required": true,
+    "segmentation": {
+      "priority": 5,
+      "can_standalone": true,
+      "merge_with": ["task"],
+      "split_keywords": ["код", "компонент", "баг", "рефакторинг", "тест", "api", "react", "swift", "python", "javascript", "debug", "fix", "implement", "code", "component", "bug", "refactor", "test"],
+      "min_words": 5,
+      "max_words": 25
+    },
     "examples": [
       "Створи калькулятор на Swift",
       "Виправ баг у модулі авторизації",

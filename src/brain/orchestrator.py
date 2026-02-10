@@ -1269,6 +1269,13 @@ class Trinity:
             # but "deep_chat" is kept here defensively. Mode-specific behavior
             # (llm_deep, prompt_template, protocols) is driven by ModeProfile, not intent.
             mode_profile = analysis.get("mode_profile")
+            
+            # Handle segmented requests
+            if analysis.get("is_segmented", False):
+                return await self._handle_segmented_request(
+                    user_request, history, images, analysis, is_subtask
+                )
+            
             if intent in ["chat", "deep_chat", "recall", "status", "solo_task"]:
                 response = analysis.get("initial_response") or await self.atlas.chat(
                     user_request,
@@ -1365,6 +1372,123 @@ class Trinity:
         )
         self.active_task = None
         return {"status": "completed", "result": self.state["step_results"]}
+
+    async def _handle_segmented_request(
+        self, user_request: str, history, images, analysis, is_subtask: bool
+    ) -> dict[str, Any]:
+        """Handle requests that were split into multiple mode segments."""
+        segments = analysis.get("segments", [])
+        if not segments:
+            # Fallback to single mode processing
+            return await self._handle_single_mode_request(
+                user_request, history, images, analysis, is_subtask
+            )
+        
+        logger.info(f"[ORCHESTRATOR] Processing {len(segments)} segments sequentially")
+        
+        results = []
+        combined_response = ""
+        
+        for i, segment in enumerate(segments):
+            logger.info(
+                f"[ORCHESTRATOR] Processing segment {i+1}/{len(segments)}: "
+                f"mode={segment.mode}, text='{segment.text[:50]}...'"
+            )
+            
+            # Process each segment with its specific mode profile
+            segment_result = await self._process_single_segment(
+                segment, history, images, is_subtask
+            )
+            
+            results.append(segment_result)
+            
+            # Combine responses
+            if segment_result.get("result"):
+                if combined_response:
+                    combined_response += "\n\n"
+                combined_response += f"[{segment.mode.upper()}] {segment_result['result']}"
+        
+        # Save combined result to session
+        await self._save_chat_message("user", user_request)
+        await self._save_chat_message("assistant", combined_response)
+        
+        return {
+            "status": "completed",
+            "result": combined_response,
+            "type": "segmented",
+            "segments": len(segments),
+            "segment_results": results
+        }
+    
+    async def _process_single_segment(
+        self, segment, history, images, is_subtask: bool
+    ) -> dict[str, Any]:
+        """Process a single segment with its mode profile."""
+        
+        # Use the segment's mode profile for processing
+        if segment.mode in ["chat", "deep_chat", "recall", "status", "solo_task"]:
+            # Simple modes - use Atlas directly
+            response = await self.atlas.chat(
+                segment.text,
+                history=history,
+                use_deep_persona=segment.profile.use_deep_persona if segment.profile else False,
+                intent=segment.mode,
+                on_preamble=self._speak,
+                images=images,
+                mode_profile=segment.profile,
+            )
+            return {"status": "completed", "result": response, "mode": segment.mode}
+        
+        else:
+            # Complex modes (task, development) - need full planning
+            # Create temporary analysis for this segment
+            segment_analysis = {
+                "intent": segment.mode,
+                "mode_profile": segment.profile,
+                "use_deep_persona": segment.profile.use_deep_persona if segment.profile else False,
+                "enriched_request": segment.text,
+                "complexity": segment.profile.complexity if segment.profile else "medium"
+            }
+            
+            # Run planning for this segment
+            self.state["system_state"] = SystemState.PLANNING.value
+            plan = await self._planning_loop(
+                segment_analysis, segment.text, is_subtask, history
+            )
+            
+            if plan and plan.steps:
+                await self._create_db_task(segment.text, plan)
+                await self._execute_steps_recursive(plan.steps)
+                return {"status": "completed", "result": "Segment executed", "mode": segment.mode}
+            else:
+                return {"status": "completed", "result": "No plan for segment", "mode": segment.mode}
+    
+    async def _handle_single_mode_request(
+        self, user_request: str, history, images, analysis, is_subtask: bool
+    ) -> dict[str, Any]:
+        """Fallback for when segmentation fails but we have a mode profile."""
+        mode_profile = analysis.get("mode_profile")
+        intent = analysis.get("intent", "chat")
+        
+        if intent in ["chat", "deep_chat", "recall", "status", "solo_task"]:
+            response = await self.atlas.chat(
+                user_request,
+                history=history,
+                use_deep_persona=analysis.get("use_deep_persona", False),
+                intent=intent,
+                on_preamble=self._speak,
+                images=images,
+                mode_profile=mode_profile,
+            )
+            return {"status": "completed", "result": response, "type": intent}
+        
+        # Fallback to planning for complex modes
+        self.state["system_state"] = SystemState.PLANNING.value
+        plan = await self._planning_loop(analysis, user_request, is_subtask, history)
+        if plan:
+            await self._create_db_task(user_request, plan)
+            return plan
+        return {"status": "error", "error": "Failed to process request"}
 
     async def _handle_post_execution_phase(
         self,

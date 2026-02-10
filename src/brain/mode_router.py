@@ -5,14 +5,19 @@ Replaces scattered keyword-based heuristics with LLM intelligence.
 
 Architecture:
     1. LLM classifies user request → mode (chat/deep_chat/solo_task/task/development)
-    2. ModeRouter builds ModeProfile from mode_profiles.json defaults
-    3. LLM can override/extend defaults for edge cases
-    4. Lightweight keyword fallback ONLY if LLM fails
+    2. RequestSegmenter splits mixed requests into mode-specific segments
+    3. ModeRouter builds ModeProfile from mode_profiles.json defaults
+    4. LLM can override/extend defaults for edge cases
+    5. Lightweight keyword fallback ONLY if LLM fails
 
 Usage:
-    from src.brain.mode_router import mode_router
+    from src.brain.mode_router import mode_router, request_segmenter
 
+    # Single mode classification
     profile = await mode_router.classify(user_request, history, context)
+    
+    # Multi-mode segmentation
+    segments = await request_segmenter.split_request(user_request, history, context)
     # profile.mode, profile.protocols, profile.servers, etc.
 """
 

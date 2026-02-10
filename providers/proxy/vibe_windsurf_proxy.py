@@ -233,7 +233,11 @@ class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
-        self.wfile.write(response_body)
+        try:
+            self.wfile.write(response_body)
+        except BrokenPipeError:
+            # Client closed connection - ignore silently
+            pass
 
     def send_error_response(self, message: str, status_code: int = 500) -> None:
         """Send error response in OpenAI format."""
@@ -248,7 +252,11 @@ class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(response_body)))
         self.end_headers()
 
-        self.wfile.write(response_body)
+        try:
+            self.wfile.write(response_body)
+        except BrokenPipeError:
+            # Client closed connection - ignore silently
+            pass
 
 
 # ─── Server Management ─────────────────────────────────────────────────

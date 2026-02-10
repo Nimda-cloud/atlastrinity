@@ -221,6 +221,32 @@ class Atlas(BaseAgent):
             analysis["intent"] = profile.intent
             analysis["use_deep_persona"] = profile.use_deep_persona
 
+            # Check for multi-mode segmentation
+            # Import here to avoid circular imports
+            try:
+                from ..request_segmenter import request_segmenter
+            except ImportError:
+                request_segmenter = None
+            
+            # If segmentation is enabled and request is complex, try to split
+            if (request_segmenter and len(user_request.split()) > 8 and 
+                profile.mode not in ["chat", "deep_chat"]):
+                
+                try:
+                    segments = await request_segmenter.split_request(user_request, context, history)
+                    if len(segments) > 1:
+                        logger.info(
+                            f"[ATLAS] Multi-mode segmentation: {len(segments)} segments detected"
+                        )
+                        analysis["segments"] = segments
+                        analysis["is_segmented"] = True
+                        analysis["segment_count"] = len(segments)
+                except Exception as e:
+                    logger.warning(f"[ATLAS] Segmentation failed: {e}")
+                    analysis["is_segmented"] = False
+            else:
+                analysis["is_segmented"] = False
+
             # Ensure initial_response key always exists for backward compatibility
             analysis.setdefault("initial_response", None)
 
