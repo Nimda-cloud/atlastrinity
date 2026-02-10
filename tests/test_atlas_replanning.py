@@ -9,7 +9,6 @@ sys.path.insert(0, os.path.abspath(root))
 from unittest.mock import AsyncMock, MagicMock
 
 from src.brain.agents.atlas import Atlas
-from src.brain.prompts import AgentPrompts
 
 
 async def test_replanning_feedback():

@@ -11,7 +11,6 @@ Usage:
     python scripts/switch_provider.py --status
 """
 
-import os
 import shutil
 import sys
 from pathlib import Path

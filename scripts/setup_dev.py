@@ -905,7 +905,9 @@ def setup_xcodebuild_mcp():
     # Ensure source exists - since it's now tracked, we just verify it
     if not xcode_mcp_path.exists() or not (xcode_mcp_path / "package.json").exists():
         print_error("XcodeBuildMCP source not found in vendor/ directory.")
-        print_info("Make sure you have cloned the full atlastrinity repository with vendor content.")
+        print_info(
+            "Make sure you have cloned the full atlastrinity repository with vendor content."
+        )
         return False
     print_success("XcodeBuildMCP source verified")
 

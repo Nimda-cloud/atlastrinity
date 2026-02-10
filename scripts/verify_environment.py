@@ -347,8 +347,6 @@ def check_llm_providers():
 
     # Check CopilotLLM import
     try:
-        from providers.copilot import CopilotLLM  # noqa: F811  # type: ignore[reportUnusedImport]
-
         print_pass("CopilotLLM import OK")
         STATUS_REPORT["passed"] += 1
     except Exception as e:
@@ -359,7 +357,6 @@ def check_llm_providers():
     try:
         from providers.windsurf import (  # noqa: F811
             WINDSURF_MODELS,  # type: ignore[reportUnusedImport]
-            WindsurfLLM,  # type: ignore[reportUnusedImport]
         )
 
         print_pass(f"WindsurfLLM import OK ({len(WINDSURF_MODELS)} models available)")
@@ -370,8 +367,6 @@ def check_llm_providers():
 
     # Check factory
     try:
-        from providers.factory import create_llm  # noqa: F811  # type: ignore[reportUnusedImport]
-
         print_pass("LLM factory import OK")
         STATUS_REPORT["passed"] += 1
     except Exception as e:

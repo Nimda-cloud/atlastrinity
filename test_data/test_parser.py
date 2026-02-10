@@ -2,7 +2,6 @@
 Test script for the data parsing component.
 """
 
-import os
 import sys
 from pathlib import Path
 

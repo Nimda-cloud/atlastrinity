@@ -23,7 +23,6 @@ import os
 import struct
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -36,7 +35,6 @@ os.environ.setdefault("COPILOT_MODEL", "gpt-4o")
 
 from langchain_core.messages import (
     AIMessage,
-    BaseMessage,
     HumanMessage,
     SystemMessage,
     ToolMessage,
@@ -537,7 +535,6 @@ class TestCopilotParity:
     """Verify WindsurfLLM exposes the same interface as CopilotLLM."""
 
     def test_shared_interface(self):
-        from providers.copilot import CopilotLLM
 
         windsurf_methods = set(dir(WindsurfLLM))
         # Key methods that must exist in both

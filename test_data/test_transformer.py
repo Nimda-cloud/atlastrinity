@@ -2,7 +2,6 @@
 Test script for the data transformation component.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -10,8 +9,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from etl_module.src.parsing import DataFormat, DataParser
-from etl_module.src.transformation import DataTransformer, TransformResult
+from etl_module.src.parsing import DataParser
+from etl_module.src.transformation import DataTransformer
 
 
 def test_csv_transformation():

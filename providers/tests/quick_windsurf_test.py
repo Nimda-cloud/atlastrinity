@@ -6,7 +6,6 @@ Quick Windsurf Test with Configuration
 Simple test script to verify Windsurf provider works with system configuration.
 """
 
-import os
 import sys
 from pathlib import Path
 

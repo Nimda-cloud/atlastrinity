@@ -1,8 +1,8 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.brain.message_bus import AgentMsg, MessageType, message_bus
+from src.brain.message_bus import MessageType
 from src.brain.parallel_healing import HealingStatus, parallel_healing_manager
 
 
