@@ -44,7 +44,7 @@ def _load_profiles() -> None:
             _MODE_PROFILES = data.copy()
             _MODE_PROFILES.pop("_meta", None)
             _MODE_PROFILES.pop("_protocol_registry", None)
-            
+
             logger.info(f"[SEGMENTER] Loaded {len(_MODE_PROFILES)} mode profiles")
         else:
             logger.warning(f"[SEGMENTER] Mode profiles not found at {_PROFILES_PATH}")
@@ -59,9 +59,10 @@ def _load_profiles() -> None:
         config_path = CONFIG_ROOT / "config.yaml"
         if config_path.exists():
             import yaml
+
             with open(config_path, encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
-            
+
             _SEGMENTATION_CONFIG = config_data.get("segmentation", {})
             logger.info(
                 f"[SEGMENTER] Loaded segmentation config from config.yaml: enabled={_SEGMENTATION_CONFIG.get('enabled')}"
@@ -75,7 +76,7 @@ def _load_profiles() -> None:
         else:
             logger.warning("[SEGMENTER] No segmentation config found, using defaults")
             _SEGMENTATION_CONFIG = {"enabled": False, "max_segments": 5}
-                
+
     except Exception as e:
         logger.error(f"[SEGMENTER] Failed to load configuration: {e}")
         # Set safe defaults
@@ -201,7 +202,7 @@ class RequestSegmenter:
 
         # Get LLM provider config from segmentation settings
         llm_config = _SEGMENTATION_CONFIG.get("llm_provider", {})
-        
+
         # Use global config as fallback
         try:
             from brain.config_loader import config
@@ -209,13 +210,15 @@ class RequestSegmenter:
             # Fallback for direct execution
             from src.brain.config_loader import config
         global_models = config.get("models", {})
-        
+
         provider = llm_config.get("provider", global_models.get("provider", "copilot"))
         model = llm_config.get("model", global_models.get("default", "gpt-4.1"))
         tier = llm_config.get("tier", "standard")
         temperature = llm_config.get("temperature", 0.1)
-        
-        logger.info(f"[SEGMENTER] Using LLM provider: {provider}/{model} (tier={tier}, temp={temperature})")
+
+        logger.info(
+            f"[SEGMENTER] Using LLM provider: {provider}/{model} (tier={tier}, temp={temperature})"
+        )
 
         # Build enhanced segmentation prompt with context awareness
         prompt = self._build_enhanced_segmentation_prompt(user_request, history, context)
@@ -226,7 +229,7 @@ class RequestSegmenter:
         # Use configured LLM for segmentation
         atlas = Atlas()
         system_prompt = self._build_intelligent_system_prompt()
-        
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
@@ -234,18 +237,20 @@ class RequestSegmenter:
 
         try:
             # Use appropriate LLM based on configuration
-            if tier == "deep" and hasattr(atlas, 'llm'):
+            if tier == "deep" and hasattr(atlas, "llm"):
                 # For deep tier, use standard LLM with enhanced parameters
                 response = await atlas.llm.ainvoke(messages)
             else:
                 response = await atlas.llm.ainvoke(messages)
-            
+
             result = json.loads(response.content)
-            logger.info(f"[SEGMENTER] LLM response: {len(result.get('segments', []))} segments proposed")
+            logger.info(
+                f"[SEGMENTER] LLM response: {len(result.get('segments', []))} segments proposed"
+            )
 
             # Validate and refine segments based on configuration
             segments = self._validate_and_refine_segments(result.get("segments", []), user_request)
-            
+
             return segments
 
         except Exception as e:
@@ -260,49 +265,41 @@ class RequestSegmenter:
     ) -> str:
         """Build prompt for LLM segmentation with context awareness."""
         segmentation_rules = _SEGMENTATION_CONFIG.get("segmentation_rules", {})
-        
-        prompt_parts = [
-            "REQUEST TO ANALYZE:",
-            f'"{user_request}"',
-            ""
-        ]
+
+        prompt_parts = ["REQUEST TO ANALYZE:", f'"{user_request}"', ""]
 
         # Add conversation context if available
         if history and segmentation_rules.get("preserve_context", True):
             recent_history = history[-3:] if len(history) > 3 else history
-            prompt_parts.extend([
-                "CONVERSATION CONTEXT:",
-                f"Recent messages: {recent_history!s}",
-                ""
-            ])
+            prompt_parts.extend(
+                ["CONVERSATION CONTEXT:", f"Recent messages: {recent_history!s}", ""]
+            )
 
         # Add additional context if provided
         if context and segmentation_rules.get("preserve_context", True):
-            prompt_parts.extend([
-                "ADDITIONAL CONTEXT:",
-                f"Context data: {context!s}",
-                ""
-            ])
+            prompt_parts.extend(["ADDITIONAL CONTEXT:", f"Context data: {context!s}", ""])
 
         # Add segmentation guidance
-        prompt_parts.extend([
-            "TASK:",
-            "Split this request into logical segments by intent mode.",
-            "",
-            "ANALYSIS GUIDELINES:",
-            "- Look for natural transitions between different types of intent",
-            "- Consider the user's flow and conversational context", 
-            "- Each segment should be processed with its optimal mode",
-            "- Maintain the original order from the user's request",
-            "- Focus on semantic meaning, not just keywords",
-            ""
-        ])
+        prompt_parts.extend(
+            [
+                "TASK:",
+                "Split this request into logical segments by intent mode.",
+                "",
+                "ANALYSIS GUIDELINES:",
+                "- Look for natural transitions between different types of intent",
+                "- Consider the user's flow and conversational context",
+                "- Each segment should be processed with its optimal mode",
+                "- Maintain the original order from the user's request",
+                "- Focus on semantic meaning, not just keywords",
+                "",
+            ]
+        )
 
         return "\n".join(prompt_parts)
 
     def _build_intelligent_system_prompt(self) -> str:
         """Build system prompt for LLM segmentation."""
-        
+
         prompt = """You are an advanced request segmentation expert. Your task is to intelligently analyze user requests and split them into logical segments by intent mode.
 
 AVAILABLE MODES:
@@ -343,7 +340,7 @@ Return JSON format:
 }
 
 Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable."""
-        
+
         return prompt
 
     def _validate_and_refine_segments(
@@ -354,20 +351,22 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
         """Validate and refine segments based on configuration."""
         refined_segments = []
         post_processing_config = _SEGMENTATION_CONFIG.get("post_processing", {})
-        
+
         for segment in segments:
             text = segment.get("text", "")
             mode = segment.get("mode", "chat")
             reason = segment.get("reason", "")
             start_pos = segment.get("start_pos", 0)
             end_pos = segment.get("end_pos", 0)
-            
+
             # Validate segment integrity
             if post_processing_config.get("validate_segment_integrity", True):
                 if not self._validate_segment_integrity(text, mode, user_request):
-                    logger.warning(f"[SEGMENTER] Invalid segment: mode={mode}, text='{text[:30]}...'")
+                    logger.warning(
+                        f"[SEGMENTER] Invalid segment: mode={mode}, text='{text[:30]}...'"
+                    )
                     continue
-            
+
             # Create RequestSegment with proper profile
             request_segment = RequestSegment(
                 text=text,
@@ -377,29 +376,26 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
                 start_pos=start_pos,
                 end_pos=end_pos,
             )
-            
+
             refined_segments.append(request_segment)
-        
+
         logger.info(f"[SEGMENTER] Refined {len(refined_segments)} valid segments")
         return refined_segments
-    
+
     def _validate_segment_integrity(self, text: str, mode: str, full_request: str) -> bool:
         """Validate that segment is properly formed and makes sense."""
         min_length = _SEGMENTATION_CONFIG.get("min_segment_length", 3)
-        
+
         # Check minimum length (except for chat mode)
         if mode != "chat" and len(text.split()) < min_length:
             return False
-        
+
         # Check if text exists in original request
         if text not in full_request:
             return False
-        
+
         # Check if mode is valid
-        if mode not in _MODE_PROFILES:
-            return False
-        
-        return True
+        return mode in _MODE_PROFILES
 
     def _keyword_segmentation(self, user_request: str) -> list[RequestSegment]:
         """Fallback keyword-based segmentation using mode profiles."""
