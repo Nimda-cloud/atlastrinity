@@ -2291,7 +2291,14 @@ class Trinity:
             await self._log(f"Step {step_id} Attempt {attempt} failed: {last_error}", "warning")
 
             # Strategy Routing
-            strategy = error_router.decide(last_error, attempt)
+            # Build context for behavior engine pattern matching
+            router_context = {
+                "task_type": str(self.state.get("task_type", "unknown")),
+                "step": step,
+                "step_id": step_id,
+                "repeated_failures": attempt > 1,
+            }
+            strategy = error_router.decide(last_error, attempt, context=router_context)
             logger.info(f"[ORCHESTRATOR] Recovery Strategy: {strategy.action} ({strategy.reason})")
 
             should_retry, override_result = await self._handle_step_error_strategy(
@@ -2868,6 +2875,14 @@ class Trinity:
                     "orchestrator",
                 )
                 await self._speak("grisha", voice_msg)
+                # Also log detailed reason so it appears in the chat thread for the user
+                if verify_result.description and verify_result.description != voice_msg:
+                    reason_text = verify_result.description[:500]
+                    await self._log(
+                        f"Причина відхилення кроку {step_id}: {reason_text}",
+                        "grisha",
+                        "verification",
+                    )
 
                 # Update current_plan step description if possible to include feedback for Tetyana
                 # (Optional but useful for self-correction)

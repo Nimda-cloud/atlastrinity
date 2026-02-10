@@ -64,18 +64,18 @@ class SmartErrorRouter:
 
     # Logic: requires code modification (Vibe)
     LOGIC_PATTERNS = [
-        r"syntax\s+error",
-        r"name\s+error",
-        r"type\s+error",
-        r"attribute\s+error",
-        r"key\s+error",
-        r"index\s+error",
-        r"value\s+error",
-        r"assertion\s+error",
-        r"import\s+error",
-        r"module\s+not\s+found",
-        r"indentation\s+error",
-        r"unbound\s+local\s+error",
+        r"syntax\s*error",
+        r"name\s*error",
+        r"type\s*error",
+        r"attribute\s*error",
+        r"key\s*error",
+        r"index\s*error",
+        r"value\s*error",
+        r"assertion\s*error",
+        r"import\s*error",
+        r"module\s*not\s*found",
+        r"indentation\s*error",
+        r"unbound\s*local\s*error",
     ]
 
     # State: requires system restart/reload
@@ -114,6 +114,8 @@ class SmartErrorRouter:
         r"verification.*failed",
         r"max\s+attempts\s+reached.*verification",
         r"0/\d+\s+successful",
+        r"recursion\s+detected",
+        r"recursion\s+loop",
     ]
 
     def __init__(self):
@@ -148,9 +150,64 @@ class SmartErrorRouter:
         self._cache[error_str] = category
         return category
 
-    def decide(self, error: Any, attempt: int = 1) -> RecoveryStrategy:
-        """Decides the recovery strategy based on error and attempt count"""
-        category = self.classify(str(error))
+    def decide(
+        self, error: Any, attempt: int = 1, context: dict[str, Any] | None = None
+    ) -> RecoveryStrategy:
+        """Decides the recovery strategy based on error and attempt count.
+
+        Args:
+            error: The exception or error string
+            attempt: Current attempt number (1-based)
+            context: Optional context dictionary for pattern matching
+        """
+        error_str = str(error)
+
+        # 1. Try Config-Driven Pattern Matching first
+        try:
+            from .behavior_engine import behavior_engine
+
+            # Build match context
+            match_ctx = context or {}
+            match_ctx["error"] = error_str
+            match_ctx["attempt"] = attempt
+            match_ctx["error_contains"] = error_str  # Special key for flexible matching
+
+            pattern = behavior_engine.match_pattern(match_ctx, "adaptive_behavior")
+
+            if pattern:
+                action_cfg = pattern.action
+
+                # Map config action to RecoveryStrategy
+                # Default to VIBE_HEAL if not specified but looks proactive
+                strategy_action = action_cfg.get("strategy_action")
+
+                if not strategy_action:
+                    # Heuristic mapping based on config fields
+                    if action_cfg.get("server") == "vibe":
+                        strategy_action = "VIBE_HEAL"
+                    elif action_cfg.get("fallback_strategy") == "browser_automation":
+                        # Special case for web fallback - mapping to RETRY for now as Orchestrator
+                        # doesn't handle tool switching natively yet.
+                        # Future: Implement CHANGE_TOOL strategy.
+                        strategy_action = "RETRY"
+                    elif action_cfg.get("retry_with_sudo"):
+                        strategy_action = "ASK_USER"  # Sudo requires user permissions usually
+
+                if strategy_action:
+                    return RecoveryStrategy(
+                        action=strategy_action,
+                        backoff=float(action_cfg.get("backoff", 0.0)),
+                        max_retries=int(action_cfg.get("max_retries", 2)),
+                        context_needed=action_cfg.get("context_needed", True),
+                        reason=f"Matched adaptive pattern: {pattern.name}",
+                    )
+        except ImportError:
+            pass  # Fallback to hardcoded logic if engine not available
+        except Exception as e:
+            logger.warning(f"[ROUTER] Pattern matching failed: {e}")
+
+        # 2. Hardcoded Logic (Fallback)
+        category = self.classify(error_str)
 
         logger.info(f"[ROUTER] Error classified as: {category.value} (Attempt {attempt})")
 
@@ -185,7 +242,8 @@ class SmartErrorRouter:
             # Fast Fail -> Self-Healing Protocol
             # We skip simple retries for logic errors because re-running buggy code won't fix it
             return RecoveryStrategy(
-                action="SELF_HEALING",
+                # FIX: Orchestrator expects VIBE_HEAL, not SELF_HEALING
+                action="VIBE_HEAL",
                 backoff=0.0,
                 max_retries=2,  # Give Vibe 2 shots using Reflection
                 context_needed=True,
@@ -194,8 +252,10 @@ class SmartErrorRouter:
 
         if category == ErrorCategory.STATE:
             # Immediate Restart with State Preservation
+            # FIX: Orchestrator expects RESTART usually, or we define SELF_HEALING_RESTART handling?
+            # Orchestrator handles RESTART. SELF_HEALING_RESTART is undefined in orchestrator.
             return RecoveryStrategy(
-                action="SELF_HEALING_RESTART",
+                action="RESTART",
                 reason="System state corruption detected. Initiating Phoenix Protocol (Snapshot -> Restart -> Resume).",
             )
 

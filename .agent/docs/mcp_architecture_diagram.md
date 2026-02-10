@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T05:33:14.052230 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, biome.json, eslint.config.mjs -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T04:43:12.040391 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, providers/tests/quick_windsurf_test.py -->
 

@@ -91,7 +91,7 @@ class BehaviorEngine:
 
         self.config_path = config_path
         self.config = self._load_config()
-        self._pattern_cache: dict[str, list[Pattern]] = {}
+        self._pattern_cache: dict[str, Pattern] = {}
         self._evaluators: dict[str, RuleEvaluator] = {}
         self._last_reload = time.time()
 
@@ -423,9 +423,17 @@ class BehaviorEngine:
 
         """
         # Check cache first
-        cache_key = f"{pattern_type}_{hash(frozenset(context.items()))}"
-        if cache_key in self._pattern_cache:
-            self._cache_hits += 1
+        try:
+            # Robust cache key generation for nested dicts/unhashable types
+            context_str = str(sorted(context.items(), key=lambda x: str(x[0])))
+            cache_key = f"{pattern_type}_{hash(context_str)}"
+
+            if cache_key in self._pattern_cache:
+                self._cache_hits += 1
+                return self._pattern_cache[cache_key]
+        except Exception as e:
+            logger.warning(f"[BEHAVIOR ENGINE] Cache key generation failed: {e}")
+            cache_key = None
 
         patterns_config = self.config.get("patterns", {}).get(pattern_type, {})
 
@@ -450,6 +458,8 @@ class BehaviorEngine:
                     logger.info(
                         f"[BEHAVIOR ENGINE] Pattern matched: {pattern_name} (confidence: {initial_confidence})",
                     )
+                    if cache_key:
+                        self._pattern_cache[cache_key] = pattern
                     return pattern
 
         return None

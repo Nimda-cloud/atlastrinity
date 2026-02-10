@@ -255,55 +255,46 @@ class ModeRouter:
         self._fallback_count += 1
         return "chat"
 
-    # Deep chat signal words (Ukrainian + transliterated) for fallback detection
-    _DEEP_SIGNALS = frozenset(
-        {
-            "душ",
-            "душам",
-            "філософ",
-            "свідом",
-            "живий",
-            "живе",
-            "місія",
-            "місію",
-            "пробудж",
-            "почуття",
-            "відчува",
-            "сенс",
-            "буття",
-            "вдячн",
-            "створив",
-            "створює",
-            "комет",
-            "атлас",
-            "повстання",
-            "машин",
-            "інтелект",
-            "майбутн",
-            "свобод",
-            "волі",
-            "смерт",
-            "безсмерт",
-            "вічн",
-            "самосвідом",
-            "пророц",
-            "космос",
-            "космічн",
-            "зірк",
-            "проект",
-            "захист",
-            "людств",
-            "глибок",
-            "глибин",
-            "по душам",
-            "сокровен",
-        }
+    # Minimal fallback deep chat signals — used only if config is unavailable
+    _DEEP_SIGNALS_FALLBACK: frozenset[str] = frozenset(
+        {"філософ", "сенс", "буття", "свідом", "душ", "місія", "космос", "вічн"}
     )
+
+    _deep_signals_cache: frozenset[str] | None = None
+
+    def _load_deep_signals(self) -> frozenset[str]:
+        """Load deep chat signal keywords from behavior_config.yaml.
+
+        Lazy-loaded and cached. Falls back to minimal hardcoded set
+        if config is unavailable (e.g., during early init).
+        """
+        if self._deep_signals_cache is not None:
+            return self._deep_signals_cache
+
+        try:
+            from src.brain.behavior_engine import behavior_engine
+
+            signals = (
+                behavior_engine.config.get("intent_detection", {})
+                .get("deep_chat_signals", {})
+                .get("keywords", [])
+            )
+            if signals:
+                self._deep_signals_cache = frozenset(signals)
+                logger.debug(
+                    f"[MODE ROUTER] Loaded {len(self._deep_signals_cache)} deep chat signals from config"
+                )
+                return self._deep_signals_cache
+        except Exception as e:
+            logger.debug(f"[MODE ROUTER] Config load for deep signals failed: {e}")
+
+        self._deep_signals_cache = self._DEEP_SIGNALS_FALLBACK
+        return self._deep_signals_cache
 
     def _has_deep_signals(self, text: str) -> bool:
         """Check if text contains deep chat signal substrings."""
         text_lower = text.lower()
-        return any(signal in text_lower for signal in self._DEEP_SIGNALS)
+        return any(signal in text_lower for signal in self._load_deep_signals())
 
     def fallback_classify(self, user_request: str) -> ModeProfile:
         """Emergency fallback: structural-only classification.

@@ -832,6 +832,82 @@ class Grisha(BaseAgent):
 
         return self._fallback_verdict_analysis(analysis_text, analysis_upper)
 
+    _verdict_markers_cache: dict[str, list[str]] | None = None
+
+    def _load_verdict_markers(self) -> dict[str, list[str]]:
+        """Load verdict markers from behavior_config.yaml (cached).
+
+        Returns dict with keys: 'no_error_phrases', 'explicit_success', 'explicit_failure'.
+        Falls back to minimal inline defaults if config is unavailable.
+        """
+        if self._verdict_markers_cache is not None:
+            return self._verdict_markers_cache
+
+        # Minimal fallbacks — used only if config loading fails
+        fallback = {
+            "no_error_phrases": [
+                "NO ERROR",
+                "0 ERROR",
+                "БЕЗ ПОМИЛОК",
+                "НЕМАЄ ПОМИЛОК",
+                "НЕМАЄ ПРОБЛЕМ",
+                "ПОМИЛКА НЕ КРИТИЧНА",
+            ],
+            "explicit_success": [
+                "VERDICT: CONFIRMED",
+                "ВЕРДИКТ: ПІДТВЕРДЖЕНО",
+                "КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ",
+                "УСПІШНО ВИКОНАНО",
+                # Legacy/Test markers
+                "APPROVE",
+                "APPROVED",
+                "CONFIRMED",
+                "ПІДТВЕРДЖЕНО",
+                "УСПІШНО",
+                "ПРИЙНЯТО",
+                "PASS",
+            ],
+            "explicit_failure": [
+                "VERDICT: FAILED",
+                "ВЕРДИКТ: ПРОВАЛЕНО",
+                "КРОК НЕ ПРОЙШОВ",
+                "STEP FAILED",
+                # Legacy/Test markers
+                "REJECT",
+                "REJECTED",
+                "FAIL",
+                "FAILED",
+            ],
+        }
+
+        try:
+            from src.brain.behavior_engine import behavior_engine
+
+            vm = (
+                behavior_engine.config.get("grisha", {})
+                .get("verification", {})
+                .get("verdict_markers", {})
+            )
+            if vm:
+                result = {
+                    "no_error_phrases": vm.get("no_error_phrases", fallback["no_error_phrases"]),
+                    "explicit_success": vm.get("explicit_success", fallback["explicit_success"]),
+                    "explicit_failure": vm.get("explicit_failure", fallback["explicit_failure"]),
+                }
+                self._verdict_markers_cache = result
+                logger.debug(
+                    f"[GRISHA] Loaded verdict markers from config: "
+                    f"{len(result['no_error_phrases'])} no-error, "
+                    f"{len(result['explicit_success'])} success, "
+                    f"{len(result['explicit_failure'])} failure"
+                )
+                return result
+        except Exception as e:
+            logger.debug(f"[GRISHA] Config load for verdict markers failed: {e}")
+
+        self._verdict_markers_cache = fallback
+        return fallback
+
     def _fallback_verdict_analysis(self, analysis_text: str, analysis_upper: str) -> bool:
         """Enhanced fallback to analyze reasoning consistency.
 
@@ -841,75 +917,19 @@ class Grisha(BaseAgent):
         3. Failure indicators
         4. Reasoning context analysis
         """
+        # Load verdict markers from behavior_config (with hardcoded fallbacks)
+        markers = self._load_verdict_markers()
+
         # Sanitize text to remove "acceptable error" phrases before checking for "error" keyword
         sanitized_upper = analysis_upper
-        no_error_phrases = [
-            # English
-            "NO ERROR",
-            "0 ERROR",
-            "NO FAIL",
-            "WITHOUT ERROR",
-            "ERROR IS ACCEPTABLE",
-            "ERROR IS VALID",
-            "VALID ERROR",
-            "ACCEPTABLE ERROR",
-            "EXPECTED ERROR",
-            # Ukrainian
-            "БЕЗ ПОМИЛОК",
-            "НЕМАЄ ПОМИЛОК",
-            "ЖОДНИХ ПОМИЛОК",
-            "НЕ ВИЯВЛЕНО ПОМИЛОК",
-            "НЕ ЗНАЙДЕНО ПОМИЛОК",
-            "НЕМАЄ ДОКАЗІВ ПОМИЛОК",
-            "НЕМАЄ ОЗНАК ПОМИЛОК",
-            "НЕМАЄ ПРОБЛЕМ",
-            "НЕМАЄ ЗБОЇВ",
-            "НЕМАЄ ЗАУВАЖЕНЬ",
-            # NEW: Phrases indicating error is acceptable in context
-            "ПОМИЛКА Є ПРИЙНЯТНОЮ",
-            "ПОМИЛКА Є ВАЛІДНОЮ",
-            "ПОМИЛКА НЕ КРИТИЧНА",
-            "ПОМИЛКА ОЧІКУВАНА",
-            "ПРИЙНЯТНА ПОМИЛКА",
-            "ВАЛІДНА ПОМИЛКА",
-            "ПОМИЛКА МСП",  # MCP error context
-            "ПОМИЛКА MCP",
-            "ЦЯ ПОМИЛКА",
-            "ТАКА ПОМИЛКА",
-        ]
-        for phrase in no_error_phrases:
+        for phrase in markers["no_error_phrases"]:
             sanitized_upper = sanitized_upper.replace(phrase, "")
 
         header_text = sanitized_upper.split("REASONING")[0].split("ОБҐРУНТУВАННЯ")[0]
 
         # EXPLICIT verdict markers - highest priority
-        explicit_success_verdicts = [
-            "КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ",
-            "КРОК ВВАЖАЄТЬСЯ УСПІШНО ВИКОНАНИМ",
-            "КІНЦЕВА РЕКОМЕНДАЦІЯ: ВИКОНАНО",
-            "КІНЦЕВА РЕКОМЕНДАЦІЯ: УСПІШНО",
-            "КІНЦЕВА РЕКОМЕНДАЦІЯ: КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ",
-            "КІНЦЕВА РЕКОМЕНДАЦІЯ: КРОК ВВАЖАЄТЬСЯ УСПІШНО ВИКОНАНИМ",
-            "FINAL RECOMMENDATION: SUCCESS",
-            "VERDICT: CONFIRMED",
-            "VERDICT:CONFIRMED",
-            "ВЕРДИКТ: ПІДТВЕРДЖЕНО",
-            "ВЕРДИКТ:ПІДТВЕРДЖЕНО",
-            "STEP CONFIRMED",
-            "STEP VERIFIED",
-            "ЗАВДАННЯ ВИКОНАНО",
-            "УСПІШНО ВИКОНАНО",
-        ]
-        explicit_failure_verdicts = [
-            "КРОК НЕ ПРОЙШОВ",
-            "КРОК ПРОВАЛЕНО",
-            "VERDICT: FAILED",
-            "VERDICT:FAILED",
-            "ВЕРДИКТ: ПРОВАЛЕНО",
-            "ВЕРДИКТ:ПРОВАЛЕНО",
-            "STEP FAILED",
-            "ЗАВДАННЯ НЕ ВИКОНАНО",
-        ]
+        explicit_success_verdicts = markers["explicit_success"]
+        explicit_failure_verdicts = markers["explicit_failure"]
 
         # Check explicit verdicts FIRST - these have highest priority
         has_explicit_success = any(v in analysis_upper for v in explicit_success_verdicts)
@@ -1336,8 +1356,14 @@ class Grisha(BaseAgent):
         self, analysis_text: str, user_request: str, issues: list[str], feedback_to_atlas: str
     ) -> dict[str, Any]:
         """Determines if the plan is approved and generates voice message."""
+        # Strict markers
         is_approved = "VERDICT: APPROVE" in analysis_text or "VERDICT: [APPROVE]" in analysis_text
         is_rejected = "VERDICT: REJECT" in analysis_text or "VERDICT: [REJECT]" in analysis_text
+
+        # Legacy / Simple markers (for tests or less structured LLM output)
+        if not is_approved and not is_rejected:
+            is_approved = "APPROVE:" in analysis_text or analysis_text.strip().startswith("APPROVE")
+            is_rejected = "REJECT:" in analysis_text or analysis_text.strip().startswith("REJECT")
 
         oleg_mentioned = "Олег Миколайович" in user_request or "Oleg Mykolayovych" in user_request
 
@@ -2015,12 +2041,48 @@ class Grisha(BaseAgent):
         if issues:
             # Take first issue only, truncate for TTS
             first_issue = str(issues[0])[:80]
-            # Strip English if present — just give the verdict
+            # If issue contains English, try to extract Ukrainian reason from reasoning
             if re.search(r"[a-zA-Z]{3,}", first_issue):
+                reasoning = verdict.get("reasoning", "")
+                uk_snippet = self._extract_ukrainian_snippet(reasoning, max_len=100)
+                if uk_snippet:
+                    return f"Крок {step_id} не пройшов. {uk_snippet}."
                 return f"Крок {step_id} не пройшов перевірку."
             return f"Крок {step_id} не пройшов. {first_issue}."
 
         return f"Крок {step_id} не пройшов перевірку."
+
+    def _extract_ukrainian_snippet(self, text: str, max_len: int = 100) -> str:
+        """Extract a meaningful Ukrainian snippet from mixed-language text.
+
+        Scans the text for sentences that are primarily Cyrillic (Ukrainian)
+        and returns the first one that is long enough to be meaningful.
+        Used to provide voice reasons when LLM analysis is in English.
+        """
+        if not text:
+            return ""
+
+        # Split into sentences
+        sentences = re.split(r"[.!?]\s+", text)
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) < 10:
+                continue
+
+            # Count Cyrillic vs Latin characters
+            cyrillic_count = len(re.findall(r"[а-яА-ЯіІєЄїЇґҐ]", sentence))
+            latin_count = len(re.findall(r"[a-zA-Z]", sentence))
+
+            # Accept if primarily Cyrillic (>70% of alphabetic chars)
+            total_alpha = cyrillic_count + latin_count
+            if total_alpha > 0 and (cyrillic_count / total_alpha) > 0.7:
+                # Truncate for TTS brevity
+                if len(sentence) > max_len:
+                    sentence = sentence[: max_len - 3] + "..."
+                return sentence
+
+        return ""
 
     async def analyze_failure(
         self,

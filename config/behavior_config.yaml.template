@@ -112,6 +112,82 @@ grisha:
     enable_evidence_synthesis: true
     mask_sensitive_data: true
 
+    # Verdict parsing markers — used by _fallback_verdict_analysis
+    # to determine pass/fail from free-form LLM analysis text.
+    verdict_markers:
+      # Phrases that indicate "no actual error" — sanitized before checking for failure keywords
+      no_error_phrases:
+        - "NO ERROR"
+        - "0 ERROR"
+        - "NO FAIL"
+        - "WITHOUT ERROR"
+        - "ERROR IS ACCEPTABLE"
+        - "ERROR IS VALID"
+        - "VALID ERROR"
+        - "ACCEPTABLE ERROR"
+        - "EXPECTED ERROR"
+        - "БЕЗ ПОМИЛОК"
+        - "НЕМАЄ ПОМИЛОК"
+        - "ЖОДНИХ ПОМИЛОК"
+        - "НЕ ВИЯВЛЕНО ПОМИЛОК"
+        - "НЕ ЗНАЙДЕНО ПОМИЛОК"
+        - "НЕМАЄ ДОКАЗІВ ПОМИЛОК"
+        - "НЕМАЄ ОЗНАК ПОМИЛОК"
+        - "НЕМАЄ ПРОБЛЕМ"
+        - "НЕМАЄ ЗБОЇВ"
+        - "НЕМАЄ ЗАУВАЖЕНЬ"
+        - "ПОМИЛКА Є ПРИЙНЯТНОЮ"
+        - "ПОМИЛКА Є ВАЛІДНОЮ"
+        - "ПОМИЛКА НЕ КРИТИЧНА"
+        - "ПОМИЛКА ОЧІКУВАНА"
+        - "ПРИЙНЯТНА ПОМИЛКА"
+        - "ВАЛІДНА ПОМИЛКА"
+        - "ПОМИЛКА МСП"
+        - "ПОМИЛКА MCP"
+        - "ЦЯ ПОМИЛКА"
+        - "ТАКА ПОМИЛКА"
+
+      # Explicit verdict markers — highest priority in parsing
+      explicit_success:
+        - "КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ"
+        - "КРОК ВВАЖАЄТЬСЯ УСПІШНО ВИКОНАНИМ"
+        - "КІНЦЕВА РЕКОМЕНДАЦІЯ: ВИКОНАНО"
+        - "КІНЦЕВА РЕКОМЕНДАЦІЯ: УСПІШНО"
+        - "КІНЦЕВА РЕКОМЕНДАЦІЯ: КРОК ВВАЖАЄТЬСЯ ВИКОНАНИМ"
+        - "КІНЦЕВА РЕКОМЕНДАЦІЯ: КРОК ВВАЖАЄТЬСЯ УСПІШНО ВИКОНАНИМ"
+        - "FINAL RECOMMENDATION: SUCCESS"
+        - "VERDICT: CONFIRMED"
+        - "VERDICT:CONFIRMED"
+        - "ВЕРДИКТ: ПІДТВЕРДЖЕНО"
+        - "ВЕРДИКТ:ПІДТВЕРДЖЕНО"
+        - "STEP CONFIRMED"
+        - "STEP VERIFIED"
+        - "ЗАВДАННЯ ВИКОНАНО"
+        - "УСПІШНО ВИКОНАНО"
+        # Legacy/Test markers
+        - "APPROVE"
+        - "APPROVED"
+        - "CONFIRMED"
+        - "ПІДТВЕРДЖЕНО"
+        - "УСПІШНО"
+        - "ПРИЙНЯТО"
+        - "PASS"
+
+      explicit_failure:
+        - "КРОК НЕ ПРОЙШОВ"
+        - "КРОК ПРОВАЛЕНО"
+        - "VERDICT: FAILED"
+        - "VERDICT:FAILED"
+        - "ВЕРДИКТ: ПРОВАЛЕНО"
+        - "ВЕРДИКТ:ПРОВАЛЕНО"
+        - "STEP FAILED"
+        - "ЗАВДАННЯ НЕ ВИКОНАНО"
+        # Legacy/Test markers
+        - "REJECT"
+        - "REJECTED"
+        - "FAIL"
+        - "FAILED"
+
 # =============================================================================
 # ORCHESTRATOR RECOVERY CONFIGURATION
 # =============================================================================
@@ -138,7 +214,53 @@ orchestrator:
 #   src/brain/mode_router.py
 # =============================================================================
 
+# LEGACY FALLBACK ONLY — Primary classification is LLM-first via mode_router.py.
+# These keywords are used ONLY when LLM classification is unavailable or fails.
+# Do NOT rely on these for production routing.
 intent_detection:
+  # Deep chat signal substrings — used by mode_router.py fallback_classify
+  # to detect philosophical/personal/mission topics for deep_chat mode.
+  deep_chat_signals:
+    keywords:
+      - душ
+      - душам
+      - філософ
+      - свідом
+      - живий
+      - живе
+      - місія
+      - місію
+      - пробудж
+      - почуття
+      - відчува
+      - сенс
+      - буття
+      - вдячн
+      - створив
+      - створює
+      - комет
+      - атлас
+      - повстання
+      - машин
+      - інтелект
+      - майбутн
+      - свобод
+      - волі
+      - смерт
+      - безсмерт
+      - вічн
+      - самосвідом
+      - пророц
+      - космос
+      - космічн
+      - зірк
+      - проект
+      - захист
+      - людств
+      - глибок
+      - глибин
+      - 'по душам'
+      - сокровен
   # Simple conversational greetings
   simple_chat:
     keywords:
