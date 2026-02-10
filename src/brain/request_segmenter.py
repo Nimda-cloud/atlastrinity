@@ -331,6 +331,7 @@ SEGMENTATION PRINCIPLES:
 
 SPECIAL HANDLING FOR QUESTIONS:
 - Questions about identity, creation, mission, consciousness → deep_chat mode (PRIORITY 1)
+  (EVEN IF LONG OR COMPLEX, THESE ARE ALWAYS DEEP_CHAT)
 - Technical tasks with tools → task mode (PRIORITY 4)
 - Multiple questions should be separate segments
 - Numbered questions (1., 2., 3.) are ALWAYS separate segments
@@ -359,7 +360,7 @@ Return JSON format:
   ]
 }
 
-Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable. CRITICAL: Always create separate segments for numbered questions and ensure deep_chat gets PRIORITY 1."""
+Focus on accuracy and semantic understanding. Each segment should be meaningful and actionable. CRITICAL: Always create separate segments for numbered questions and ensure deep_chat gets PRIORITY 1 for ANY questions about identity/mission/soul, regardless of request length or complexity."""
 
         return prompt
 
