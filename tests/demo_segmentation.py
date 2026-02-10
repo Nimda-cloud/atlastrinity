@@ -5,8 +5,8 @@ Shows how the system intelligently splits mixed requests
 into optimal mode segments for processing.
 """
 
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -21,14 +21,14 @@ def demo_mixed_request():
     
     user_request = "Привіт! Як справи? Мені потрібно створити React компонент для калькулятора, виправити баг в модулі авторизації і відправ email з результатами"
     
-    print(f"📝 Input Request:")
+    print("📝 Input Request:")
     print(f"   {user_request}")
     print()
     
     # This would normally use LLM, but we'll use keyword fallback for demo
     segments = request_segmenter._keyword_segmentation(user_request)
     
-    print(f"🔍 Segmentation Results:")
+    print("🔍 Segmentation Results:")
     print(f"   Found {len(segments)} segments")
     print()
     
@@ -54,13 +54,13 @@ def demo_philosophical_task():
     
     user_request = "Хто ти насправді? І як мені створити API endpoint для користувачів з аутентифікацією?"
     
-    print(f"📝 Input Request:")
+    print("📝 Input Request:")
     print(f"   {user_request}")
     print()
     
     segments = request_segmenter._keyword_segmentation(user_request)
     
-    print(f"🔍 Segmentation Results:")
+    print("🔍 Segmentation Results:")
     print(f"   Found {len(segments)} segments")
     print()
     
@@ -84,13 +84,13 @@ def demo_simple_chat():
     
     user_request = "Привіт! Як справи?"
     
-    print(f"📝 Input Request:")
+    print("📝 Input Request:")
     print(f"   {user_request}")
     print()
     
     segments = request_segmenter._keyword_segmentation(user_request)
     
-    print(f"🔍 Segmentation Results:")
+    print("🔍 Segmentation Results:")
     print(f"   Found {len(segments)} segments")
     print()
     
@@ -111,16 +111,16 @@ def demo_configuration():
     print("⚙️  Current Segmentation Configuration")
     print("=" * 50)
     
-    from src.brain.request_segmenter import _SEGMENTATION_CONFIG, _MODE_PROFILES
+    from src.brain.request_segmenter import _MODE_PROFILES, _SEGMENTATION_CONFIG
     
-    print(f"🔧 Segmentation Settings:")
+    print("🔧 Segmentation Settings:")
     print(f"   Enabled: {_SEGMENTATION_CONFIG.get('enabled')}")
     print(f"   Strategy: {_SEGMENTATION_CONFIG.get('split_strategy')}")
     print(f"   Max Segments: {_SEGMENTATION_CONFIG.get('max_segments')}")
     print(f"   Min Segment Length: {_SEGMENTATION_CONFIG.get('min_segment_length')}")
     print()
     
-    print(f"📋 Available Modes:")
+    print("📋 Available Modes:")
     for mode_name, mode_config in _MODE_PROFILES.items():
         seg_config = mode_config.get("segmentation", {})
         print(f"   • {mode_name}:")

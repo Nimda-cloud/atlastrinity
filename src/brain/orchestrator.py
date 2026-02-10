@@ -1439,29 +1439,27 @@ class Trinity:
             )
             return {"status": "completed", "result": response, "mode": segment.mode}
         
-        else:
-            # Complex modes (task, development) - need full planning
-            # Create temporary analysis for this segment
-            segment_analysis = {
-                "intent": segment.mode,
-                "mode_profile": segment.profile,
-                "use_deep_persona": segment.profile.use_deep_persona if segment.profile else False,
-                "enriched_request": segment.text,
-                "complexity": segment.profile.complexity if segment.profile else "medium"
-            }
-            
-            # Run planning for this segment
-            self.state["system_state"] = SystemState.PLANNING.value
-            plan = await self._planning_loop(
-                segment_analysis, segment.text, is_subtask, history
-            )
-            
-            if plan and plan.steps:
-                await self._create_db_task(segment.text, plan)
-                await self._execute_steps_recursive(plan.steps)
-                return {"status": "completed", "result": "Segment executed", "mode": segment.mode}
-            else:
-                return {"status": "completed", "result": "No plan for segment", "mode": segment.mode}
+        # Complex modes (task, development) - need full planning
+        # Create temporary analysis for this segment
+        segment_analysis = {
+            "intent": segment.mode,
+            "mode_profile": segment.profile,
+            "use_deep_persona": segment.profile.use_deep_persona if segment.profile else False,
+            "enriched_request": segment.text,
+            "complexity": segment.profile.complexity if segment.profile else "medium"
+        }
+
+        # Run planning for this segment
+        self.state["system_state"] = SystemState.PLANNING.value
+        plan = await self._planning_loop(
+            segment_analysis, segment.text, is_subtask, history
+        )
+
+        if plan and plan.steps:
+            await self._create_db_task(segment.text, plan)
+            await self._execute_steps_recursive(plan.steps)
+            return {"status": "completed", "result": "Segment executed", "mode": segment.mode}
+        return {"status": "completed", "result": "No plan for segment", "mode": segment.mode}
     
     async def _handle_single_mode_request(
         self, user_request: str, history, images, analysis, is_subtask: bool
@@ -1487,7 +1485,6 @@ class Trinity:
         plan = await self._planning_loop(analysis, user_request, is_subtask, history)
         if plan:
             await self._create_db_task(user_request, plan)
-            return plan
         return {"status": "error", "error": "Failed to process request"}
 
     async def _handle_post_execution_phase(

@@ -233,7 +233,7 @@ class Atlas(BaseAgent):
                 profile.mode not in ["chat", "deep_chat"]):
                 
                 try:
-                    segments = await request_segmenter.split_request(user_request, context, history)
+                    segments = await request_segmenter.split_request(user_request, history or [], context or {})
                     if len(segments) > 1:
                         logger.info(
                             f"[ATLAS] Multi-mode segmentation: {len(segments)} segments detected"

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T17:13:52.452228 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/proxy/vibe_windsurf_proxy.py, src/brain/agents/atlas.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T17:09:30.915185 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

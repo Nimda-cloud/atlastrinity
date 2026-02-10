@@ -18,11 +18,11 @@ Usage:
 
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from .logger import logger
-from .mode_router import ModeRouter, ModeProfile
+from .mode_router import ModeProfile, ModeRouter
 
 # Load mode profiles for segmentation rules
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -243,10 +243,10 @@ Return JSON format:
         ]
         
         if history:
-            prompt_parts.append(f"Recent History: {str(history[-3:])}")
+            prompt_parts.append(f"Recent History: {history[-3:]!s}")
         
         if context:
-            prompt_parts.append(f"Context: {str(context)}")
+            prompt_parts.append(f"Context: {context!s}")
         
         prompt_parts.extend([
             "",
@@ -314,7 +314,7 @@ Return JSON format:
                     end_pos=len(user_request)
                 ))
         
-        return segments if segments else [RequestSegment(
+        return segments or [RequestSegment(
             text=user_request,
             mode="chat",
             priority=1,

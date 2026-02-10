@@ -7,14 +7,14 @@ integrated with mode_profiles.json configuration.
 
 import asyncio
 import json
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.brain.request_segmenter import request_segmenter, RequestSegment
 from src.brain.mode_router import mode_router
+from src.brain.request_segmenter import RequestSegment, request_segmenter
 
 
 async def test_basic_segmentation():

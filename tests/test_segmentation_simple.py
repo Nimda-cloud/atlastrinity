@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Simple Test for Request Segmentation (without LLM calls)"""
 
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.brain.request_segmenter import RequestSegmenter, RequestSegment
+from src.brain.request_segmenter import RequestSegment, RequestSegmenter
 
 
 def test_keyword_segmentation():
@@ -57,7 +57,7 @@ def test_mode_priority():
     print(f"Sorted priorities: {priorities}")
     
     # Should be sorted: [1, 3, 4, 5]
-    assert priorities == sorted(priorities), f"Segments not sorted correctly"
+    assert priorities == sorted(priorities), "Segments not sorted correctly"
     print("✅ Priority ordering test passed!")
 
 
