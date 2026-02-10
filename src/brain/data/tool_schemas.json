@@ -319,447 +319,488 @@
     "optional": [],
     "description": "Retrieve current operational context (Session ID, latest tasks, last errors) for focused analysis"
   },
-  "macos-use_open_application_and_traverse": {
+  "macos-use_run_applescript": {
     "server": "macos-use",
-    "required": [
-      "identifier"
-    ],
+    "required": ["script"],
+    "optional": ["template", "aiGenerate", "description", "debug", "timeout", "validate"],
+    "types": {
+      "script": "str",
+      "template": "str",
+      "aiGenerate": "bool",
+      "description": "str",
+      "debug": "bool",
+      "timeout": "int",
+      "validate": "bool"
+    },
+    "description": "Ultimate AppleScript tool with AI generation, templates, debugging, and validation."
+  },
+  "macos-use_open_app": {
+    "server": "macos-use",
+    "required": ["identifier"],
     "optional": [],
     "types": {
       "identifier": "str"
     },
-    "description": "Open/activate app and traverse accessibility tree"
+    "description": "Opens the application with the specified bundle identifier or name."
   },
   "macos-use_click_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "x",
-      "y"
-    ],
-    "optional": [
-      "pid",
-      "showAnimation",
-      "animationDuration"
-    ],
+    "required": ["x", "y"],
+    "optional": ["pid", "showAnimation", "animationDuration"],
     "types": {
-      "pid": "int",
       "x": "float",
       "y": "float",
+      "pid": "int",
       "showAnimation": "bool",
       "animationDuration": "float"
     },
-    "description": "Click coordinates (x, y) and traverse tree"
+    "description": "Simulates a click and traverses the accessibility tree."
   },
   "macos-use_type_and_traverse": {
     "server": "macos-use",
-    "required": [
-      "text"
-    ],
-    "optional": [
-      "pid"
-    ],
+    "required": ["text"],
+    "optional": ["pid"],
     "types": {
-      "pid": "int",
-      "text": "str"
+      "text": "str",
+      "pid": "int"
     },
-    "description": "Type text and traverse tree"
-  },
-  "macos-use_press_key_and_traverse": {
-    "server": "macos-use",
-    "required": [
-      "keyName"
-    ],
-    "optional": [
-      "pid",
-      "modifierFlags"
-    ],
-    "types": {
-      "pid": "int",
-      "keyName": "str",
-      "modifierFlags": "list"
-    },
-    "description": "Press key (Return, Tab, Escape, etc.) with modifiers"
+    "description": "Simulates typing text and traverses the accessibility tree."
   },
   "macos-use_refresh_traversal": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "pid"
-    ],
+    "optional": ["pid"],
     "types": {
       "pid": "int"
     },
-    "description": "Update accessibility tree traversal"
-  },
-  "macos-use_scroll_and_traverse": {
-    "server": "macos-use",
-    "required": [
-      "direction"
-    ],
-    "optional": [
-      "pid",
-      "amount"
-    ],
-    "types": {
-      "pid": "int",
-      "direction": "str",
-      "amount": "float"
-    },
-    "description": "Scroll wheel action and traverse tree"
-  },
-  "macos-use_right_click_and_traverse": {
-    "server": "macos-use",
-    "required": [
-      "x",
-      "y"
-    ],
-    "optional": [
-      "pid"
-    ],
-    "types": {
-      "pid": "int",
-      "x": "float",
-      "y": "float"
-    },
-    "description": "Right-click and traverse tree"
-  },
-  "macos-use_double_click_and_traverse": {
-    "server": "macos-use",
-    "required": [
-      "x",
-      "y"
-    ],
-    "optional": [
-      "pid"
-    ],
-    "types": {
-      "pid": "int",
-      "x": "float",
-      "y": "float"
-    },
-    "description": "Double-click and traverse tree"
-  },
-  "macos-use_drag_and_drop_and_traverse": {
-    "server": "macos-use",
-    "required": [
-      "startX",
-      "startY",
-      "endX",
-      "endY"
-    ],
-    "optional": [
-      "pid"
-    ],
-    "types": {
-      "pid": "int",
-      "startX": "float",
-      "startY": "float",
-      "endX": "float",
-      "endY": "float"
-    },
-    "description": "Drag and drop action and traverse tree"
-  },
-  "macos-use_window_management": {
-    "server": "macos-use",
-    "required": [
-      "action"
-    ],
-    "optional": [
-      "pid",
-      "x",
-      "y",
-      "width",
-      "height"
-    ],
-    "types": {
-      "pid": "int",
-      "action": "str",
-      "x": "float",
-      "y": "float",
-      "width": "float",
-      "height": "float"
-    },
-    "description": "Manage windows: move, resize, minimize, maximize, make_front"
-  },
-  "execute_command": {
-    "server": "macos-use",
-    "required": [
-      "command"
-    ],
-    "optional": [],
-    "types": {
-      "command": "str"
-    },
-    "description": "Execute shell command (PRIMARY terminal access)"
+    "description": "Traverses the accessibility tree of the specified PID or frontmost app."
   },
   "macos-use_take_screenshot": {
     "server": "macos-use",
     "required": [],
-    "optional": [],
-    "types": {},
-    "description": "Capture screen as Base64 PNG"
+    "optional": ["path", "region", "monitor", "quality", "format", "ocr"],
+    "types": {
+      "path": "str",
+      "region": "dict",
+      "monitor": "int",
+      "quality": "str",
+      "format": "str",
+      "ocr": "bool"
+    },
+    "description": "Enhanced screenshot tool with region, monitor, and OCR support."
   },
   "macos-use_analyze_screen": {
     "server": "macos-use",
     "required": [],
-    "optional": [],
-    "types": {},
-    "description": "Apple Vision OCR - analyze screen text"
+    "optional": ["region", "language", "confidence", "format"],
+    "types": {
+      "region": "dict",
+      "language": "str",
+      "confidence": "bool",
+      "format": "str"
+    },
+    "description": "Enhanced OCR and UI analysis tool."
+  },
+  "macos-use_press_key_and_traverse": {
+    "server": "macos-use",
+    "required": ["keyName"],
+    "optional": ["pid", "modifierFlags"],
+    "types": {
+      "keyName": "str",
+      "pid": "int",
+      "modifierFlags": "list"
+    },
+    "description": "Simulates pressing a key with modifiers and traverses the tree."
+  },
+  "macos-use_scroll_and_traverse": {
+    "server": "macos-use",
+    "required": ["direction"],
+    "optional": ["pid", "amount"],
+    "types": {
+      "direction": "str",
+      "pid": "int",
+      "amount": "int"
+    },
+    "description": "Simulates a mouse scroll."
+  },
+  "macos-use_right_click_and_traverse": {
+    "server": "macos-use",
+    "required": ["x", "y"],
+    "optional": ["pid"],
+    "types": {
+      "x": "float",
+      "y": "float",
+      "pid": "int"
+    },
+    "description": "Simulates a right-click."
+  },
+  "macos-use_double_click_and_traverse": {
+    "server": "macos-use",
+    "required": ["x", "y"],
+    "optional": ["pid"],
+    "types": {
+      "x": "float",
+      "y": "float",
+      "pid": "int"
+    },
+    "description": "Simulates a double-click."
+  },
+  "macos-use_drag_and_drop_and_traverse": {
+    "server": "macos-use",
+    "required": ["startX", "startY", "endX", "endY"],
+    "optional": ["pid"],
+    "types": {
+      "startX": "float",
+      "startY": "float",
+      "endX": "float",
+      "endY": "float",
+      "pid": "int"
+    },
+    "description": "Simulates a drag and drop action."
+  },
+  "macos-use_window_management": {
+    "server": "macos-use",
+    "required": ["action"],
+    "optional": ["pid", "x", "y", "width", "height", "groupId", "snapshotPath"],
+    "types": {
+      "action": "str",
+      "pid": "int",
+      "x": "float",
+      "y": "float",
+      "width": "float",
+      "height": "float",
+      "groupId": "str",
+      "snapshotPath": "str"
+    },
+    "description": "Manage windows: move, resize, minimize, maximize, etc."
   },
   "macos-use_set_clipboard": {
     "server": "macos-use",
-    "required": [
-      "text"
-    ],
-    "optional": [
-      "showAnimation",
-      "animationDuration"
-    ],
+    "required": ["text"],
+    "optional": ["html", "image", "addToHistory", "showAnimation", "animationDuration"],
     "types": {
       "text": "str",
+      "html": "str",
+      "image": "str",
+      "addToHistory": "bool",
       "showAnimation": "bool",
       "animationDuration": "float"
     },
-    "description": "Set clipboard content"
+    "description": "Set clipboard content with rich text and history support."
   },
   "macos-use_get_clipboard": {
     "server": "macos-use",
     "required": [],
-    "optional": [],
-    "types": {},
-    "description": "Get clipboard content"
+    "optional": ["format", "history", "limit"],
+    "types": {
+      "format": "str",
+      "history": "bool",
+      "limit": "int"
+    },
+    "description": "Retrieve current clipboard or history."
+  },
+  "macos-use_clipboard_history": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["clear", "limit"],
+    "types": {
+      "clear": "bool",
+      "limit": "int"
+    },
+    "description": "Manage or view clipboard history."
+  },
+  "macos-use_voice_control": {
+    "server": "macos-use",
+    "required": ["command"],
+    "optional": ["language", "confidence"],
+    "types": {
+      "command": "str",
+      "language": "str",
+      "confidence": "float"
+    },
+    "description": "Execute voice commands."
+  },
+  "macos-use_process_management": {
+    "server": "macos-use",
+    "required": ["action"],
+    "optional": ["pid", "name", "priority", "duration"],
+    "types": {
+      "action": "str",
+      "pid": "int",
+      "name": "str",
+      "priority": "str",
+      "duration": "int"
+    },
+    "description": "List, kill, or monitor processes."
+  },
+  "macos-use_system_monitoring": {
+    "server": "macos-use",
+    "required": ["metric"],
+    "optional": ["duration", "interval", "alert", "threshold"],
+    "types": {
+      "metric": "str",
+      "duration": "int",
+      "interval": "int",
+      "alert": "bool",
+      "threshold": "float"
+    },
+    "description": "Monitor system resources."
   },
   "macos-use_system_control": {
     "server": "macos-use",
-    "required": [
-      "action"
-    ],
-    "optional": [],
+    "required": ["action"],
+    "optional": ["value"],
     "types": {
-      "action": "str"
+      "action": "str",
+      "value": "float"
     },
-    "description": "System control (media, volume, brightness)"
-  },
-  "macos-use_get_time": {
-    "server": "macos-use",
-    "required": [],
-    "optional": [
-      "timezone"
-    ],
-    "types": {
-      "timezone": "str"
-    },
-    "description": "Returns current system time"
+    "description": "Control system parameters like volume and brightness."
   },
   "macos-use_fetch_url": {
     "server": "macos-use",
-    "required": [
-      "url"
-    ],
+    "required": ["url"],
     "optional": [],
     "types": {
       "url": "str"
     },
-    "description": "Fetch URL and convert HTML to markdown/text"
+    "description": "Fetch URL content and parse HTML to text."
   },
-  "macos-use_list_tools_dynamic": {
+  "macos-use_get_time": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["timezone", "format", "customFormat", "convertTo"],
+    "types": {
+      "timezone": "str",
+      "format": "str",
+      "customFormat": "str",
+      "convertTo": "str"
+    },
+    "description": "Retrieve current time or convert timezones."
+  },
+  "macos-use_countdown_timer": {
+    "server": "macos-use",
+    "required": ["seconds"],
+    "optional": ["message", "notification"],
+    "types": {
+      "seconds": "int",
+      "message": "str",
+      "notification": "bool"
+    },
+    "description": "Start a countdown timer."
+  },
+  "macos-use_applescript_templates": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["list", "create", "name", "script", "description"],
+    "types": {
+      "list": "bool",
+      "create": "str",
+      "name": "str",
+      "script": "str",
+      "description": "str"
+    },
+    "description": "Manage AppleScript templates."
+  },
+  "macos-use_calendar_events": {
+    "server": "macos-use",
+    "required": ["start", "end"],
+    "optional": [],
+    "types": {
+      "start": "str",
+      "end": "str"
+    },
+    "description": "Fetch calendar events."
+  },
+  "macos-use_create_event": {
+    "server": "macos-use",
+    "required": ["title", "date"],
+    "optional": ["endDate", "location", "notes", "attendees", "recurring", "reminder"],
+    "types": {
+      "title": "str",
+      "date": "str",
+      "endDate": "str",
+      "location": "str",
+      "notes": "str",
+      "attendees": "list",
+      "recurring": "str",
+      "reminder": "int"
+    },
+    "description": "Create a calendar event."
+  },
+  "macos-use_reminders": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["list"],
+    "types": {
+      "list": "str"
+    },
+    "description": "Fetch incomplete reminders."
+  },
+  "macos-use_create_reminder": {
+    "server": "macos-use",
+    "required": ["title"],
+    "optional": [],
+    "types": {
+      "title": "str"
+    },
+    "description": "Create a new reminder."
+  },
+  "macos-use_spotlight_search": {
+    "server": "macos-use",
+    "required": ["query"],
+    "optional": [],
+    "types": {
+      "query": "str"
+    },
+    "description": "Search for files via Spotlight."
+  },
+  "macos-use_send_notification": {
+    "server": "macos-use",
+    "required": ["title", "message"],
+    "optional": ["schedule", "sound", "persistent", "template"],
+    "types": {
+      "title": "str",
+      "message": "str",
+      "schedule": "str",
+      "sound": "str",
+      "persistent": "bool",
+      "template": "str"
+    },
+    "description": "Send a macOS notification."
+  },
+  "macos-use_notification_schedule": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["clear", "list"],
+    "types": {
+      "clear": "bool",
+      "list": "bool"
+    },
+    "description": "Manage scheduled notifications."
+  },
+  "macos-use_notes_list_folders": {
     "server": "macos-use",
     "required": [],
     "optional": [],
-    "description": "List all available native macOS tools and schemas"
+    "types": {},
+    "description": "List Apple Notes folders."
+  },
+  "macos-use_notes_create_note": {
+    "server": "macos-use",
+    "required": ["body"],
+    "optional": ["folder"],
+    "types": {
+      "body": "str",
+      "folder": "str"
+    },
+    "description": "Create a note in Apple Notes."
+  },
+  "macos-use_notes_get_content": {
+    "server": "macos-use",
+    "required": ["name"],
+    "optional": [],
+    "types": {
+      "name": "str"
+    },
+    "description": "Get content of an Apple Note."
+  },
+  "macos-use_mail_send": {
+    "server": "macos-use",
+    "required": ["to", "subject", "body"],
+    "optional": ["cc", "bcc", "html", "attachments", "draft"],
+    "types": {
+      "to": "str",
+      "subject": "str",
+      "body": "str",
+      "cc": "str",
+      "bcc": "str",
+      "html": "bool",
+      "attachments": "list",
+      "draft": "bool"
+    },
+    "description": "Send an email via Apple Mail."
+  },
+  "macos-use_mail_read_inbox": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["limit"],
+    "types": {
+      "limit": "int"
+    },
+    "description": "Read Apple Mail inbox subjects."
+  },
+  "macos-use_finder_list_files": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["path", "filter", "sort", "order", "limit", "metadata"],
+    "types": {
+      "path": "str",
+      "filter": "str",
+      "sort": "str",
+      "order": "str",
+      "limit": "int",
+      "metadata": "bool"
+    },
+    "description": "List files via Finder."
+  },
+  "macos-use_finder_get_selection": {
+    "server": "macos-use",
+    "required": [],
+    "optional": ["metadata"],
+    "types": {
+      "metadata": "bool"
+    },
+    "description": "Get current Finder selection."
+  },
+  "macos-use_finder_open_path": {
+    "server": "macos-use",
+    "required": ["path"],
+    "optional": [],
+    "types": {
+      "path": "str"
+    },
+    "description": "Open a path in Finder."
+  },
+  "macos-use_finder_move_to_trash": {
+    "server": "macos-use",
+    "required": ["path"],
+    "optional": [],
+    "types": {
+      "path": "str"
+    },
+    "description": "Move an item to Trash via Finder."
   },
   "macos-use_list_running_apps": {
     "server": "macos-use",
     "required": [],
     "optional": [],
     "types": {},
-    "description": "List all running applications with PIDs and metadata"
+    "description": "List all running applications."
   },
   "macos-use_list_browser_tabs": {
     "server": "macos-use",
     "required": [],
-    "optional": [
-      "browser"
-    ],
+    "optional": ["browser"],
     "types": {
       "browser": "str"
     },
-    "description": "List open browser tabs with titles and URLs"
+    "description": "List open browser tabs."
   },
   "macos-use_list_all_windows": {
     "server": "macos-use",
     "required": [],
     "optional": [],
     "types": {},
-    "description": "List all open windows with positions and metadata"
+    "description": "List all open windows."
   },
-  "macos-use_notes_create_note": {
-    "server": "macos-use",
-    "required": [
-      "body"
-    ],
-    "optional": [
-      "folder"
-    ],
-    "types": {
-      "body": "str",
-      "folder": "str"
-    },
-    "description": "Create new note in Apple Notes"
-  },
-  "macos-use_notes_list_folders": {
+  "macos-use_list_tools_dynamic": {
     "server": "macos-use",
     "required": [],
-    "optional": [],
-    "description": "List all folders in Apple Notes"
-  },
-  "macos-use_notes_get_content": {
-    "server": "macos-use",
-    "required": [
-      "name"
-    ],
-    "optional": [],
+    "optional": ["toolName"],
     "types": {
-      "name": "str"
+      "toolName": "str"
     },
-    "description": "Get HTML body of note by name"
-  },
-  "macos-use_mail_send": {
-    "server": "macos-use",
-    "required": [
-      "to",
-      "subject",
-      "body"
-    ],
-    "optional": [],
-    "types": {
-      "to": "str",
-      "subject": "str",
-      "body": "str"
-    },
-    "description": "Send email via Apple Mail"
-  },
-  "macos-use_mail_read_inbox": {
-    "server": "macos-use",
-    "required": [],
-    "optional": [
-      "limit"
-    ],
-    "types": {
-      "limit": "int"
-    },
-    "description": "Read recent message subjects from inbox"
-  },
-  "macos-use_finder_list_files": {
-    "server": "macos-use",
-    "required": [],
-    "optional": [
-      "path"
-    ],
-    "types": {
-      "path": "str"
-    },
-    "description": "List files in frontmost Finder window or path"
-  },
-  "macos-use_finder_get_selection": {
-    "server": "macos-use",
-    "required": [],
-    "optional": [],
-    "description": "Get POSIX paths of currently selected items in Finder"
-  },
-  "macos-use_finder_open_path": {
-    "server": "macos-use",
-    "required": [
-      "path"
-    ],
-    "optional": [],
-    "types": {
-      "path": "str"
-    },
-    "description": "Open POSIX path in Finder"
-  },
-  "macos-use_finder_move_to_trash": {
-    "server": "macos-use",
-    "required": [
-      "path"
-    ],
-    "optional": [],
-    "types": {
-      "path": "str"
-    },
-    "description": "Move item to Trash via Finder"
-  },
-  "macos-use_calendar_events": {
-    "server": "macos-use",
-    "required": [
-      "start",
-      "end"
-    ],
-    "optional": [],
-    "types": {
-      "start": "str",
-      "end": "str"
-    },
-    "description": "Fetch calendar events for date range (ISO8601)"
-  },
-  "macos-use_create_event": {
-    "server": "macos-use",
-    "required": [
-      "title",
-      "date"
-    ],
-    "optional": [],
-    "types": {
-      "title": "str",
-      "date": "str"
-    },
-    "description": "Create new calendar event"
-  },
-  "macos-use_reminders": {
-    "server": "macos-use",
-    "required": [],
-    "optional": [
-      "list"
-    ],
-    "types": {
-      "list": "str"
-    },
-    "description": "Fetch incomplete reminders"
-  },
-  "macos-use_create_reminder": {
-    "server": "macos-use",
-    "required": [
-      "title"
-    ],
-    "optional": [],
-    "types": {
-      "title": "str"
-    },
-    "description": "Create new reminder"
-  },
-  "macos-use_spotlight_search": {
-    "server": "macos-use",
-    "required": [
-      "query"
-    ],
-    "optional": [],
-    "types": {
-      "query": "str"
-    },
-    "description": "File search using Spotlight (mdfind)"
-  },
-  "macos-use_send_notification": {
-    "server": "macos-use",
-    "required": [
-      "title",
-      "message"
-    ],
-    "optional": [],
-    "types": {
-      "title": "str",
-      "message": "str"
-    },
-    "description": "Send native macOS notification"
+    "description": "List available tools dynamically."
   },
   "create_entities": {
     "server": "memory",
@@ -1134,17 +1175,6 @@
       "nextThoughtNeeded": "bool"
     },
     "description": "Perform step-by-step reasoning for complex tasks."
-  },
-  "macos-use_run_applescript": {
-    "server": "macos-use",
-    "required": [
-      "script"
-    ],
-    "optional": [],
-    "types": {
-      "script": "str"
-    },
-    "description": "Execute raw AppleScript"
   },
   "create_or_update_file": {
     "server": "github",

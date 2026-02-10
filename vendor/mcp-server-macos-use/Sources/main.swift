@@ -62,17 +62,21 @@ func captureMainDisplay() -> CGImage? {
 func encodeBase64JPEG(image: CGImage, quality: String = "high") -> String? {
     let bitmapRep = NSBitmapImageRep(cgImage: image)
     let qualityValue = getQualityValue(quality)
-    guard let data = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: qualityValue])
+    guard
+        let data = bitmapRep.representation(
+            using: .jpeg, properties: [.compressionFactor: qualityValue])
     else { return nil }
     return data.base64EncodedString()
 }
 
-func performOCR(on image: CGImage, language: String = "auto", includeConfidence: Bool = false) -> [VisionElement] {
+func performOCR(on image: CGImage, language: String = "auto", includeConfidence: Bool = false)
+    -> [VisionElement]
+{
     var elements: [VisionElement] = []
-    
+
     let request = VNRecognizeTextRequest { (request, error) in
         guard let observations = request.results as? [VNRecognizedTextObservation] else { return }
-        
+
         let width = Double(image.width)
         let height = Double(image.height)
 
@@ -149,9 +153,11 @@ func runShellCommand(_ command: String) -> (output: String, exitCode: Int32) {
         let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
         let combinedOutput = output + errorOutput
         let exitCode = task.terminationStatus
-        
-        fputs("log: runShellCommand: command='\(command)' exitCode=\(exitCode) outputLength=\(combinedOutput.count)\n", stderr)
-        
+
+        fputs(
+            "log: runShellCommand: command='\(command)' exitCode=\(exitCode) outputLength=\(combinedOutput.count)\n",
+            stderr)
+
         return (combinedOutput, exitCode)
     } catch {
         fputs("error: runShellCommand: failed to execute command: \(error)\n", stderr)
@@ -162,7 +168,7 @@ func runShellCommand(_ command: String) -> (output: String, exitCode: Int32) {
 // --- System Settings Helper ---
 enum PrivacyCategory {
     case calendars, reminders, accessibility, screenRecording, fullDiskAccess, automation
-    
+
     var url: URL? {
         let base = "x-apple.systempreferences:com.apple.preference.security?Privacy_"
         switch self {
@@ -174,7 +180,7 @@ enum PrivacyCategory {
         case .automation: return URL(string: base + "Automation")
         }
     }
-    
+
     var name: String {
         switch self {
         case .calendars: return "Calendars"
@@ -218,8 +224,8 @@ func requestCalendarAccess() async -> Bool {
         do {
             granted = try await eventStore.requestFullAccessToEvents()
         } catch {
-             fputs("error: requestCalendarAccess: \(error)\n", stderr)
-             granted = false
+            fputs("error: requestCalendarAccess: \(error)\n", stderr)
+            granted = false
         }
     } else {
         granted = await withCheckedContinuation { continuation in
@@ -231,7 +237,7 @@ func requestCalendarAccess() async -> Bool {
             }
         }
     }
-    
+
     if !granted {
         fputs("log: requestCalendarAccess: Access denied, opening System Settings...\n", stderr)
         openSystemSettings(for: .calendars)
@@ -243,22 +249,22 @@ func requestRemindersAccess() async -> Bool {
     let granted: Bool
     if #available(macOS 14.0, *) {
         do {
-             granted = try await eventStore.requestFullAccessToReminders()
+            granted = try await eventStore.requestFullAccessToReminders()
         } catch {
-             fputs("error: requestRemindersAccess: \(error)\n", stderr)
-             granted = false
+            fputs("error: requestRemindersAccess: \(error)\n", stderr)
+            granted = false
         }
     } else {
         granted = await withCheckedContinuation { continuation in
             eventStore.requestAccess(to: .reminder) { granted, error in
-                 if let error = error {
+                if let error = error {
                     fputs("error: requestRemindersAccess: \(error)\n", stderr)
                 }
                 continuation.resume(returning: granted)
             }
         }
     }
-    
+
     if !granted {
         fputs("log: requestRemindersAccess: Access denied, opening System Settings...\n", stderr)
         openSystemSettings(for: .reminders)
@@ -320,14 +326,16 @@ class SpotlightSearcher: NSObject {
 let spotlight = SpotlightSearcher()
 
 // --- Helper for AppleScript Execution with Timeout ---
-func runAppleScript(_ script: String, timeout: TimeInterval = 10.0) async -> (success: Bool, output: String, error: String?) {
+func runAppleScript(_ script: String, timeout: TimeInterval = 10.0) async -> (
+    success: Bool, output: String, error: String?
+) {
     return await withTaskGroup(of: (Bool, String, String?).self) { group in
         // Add timeout task
         group.addTask {
             try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
             return (false, "", "AppleScript execution timed out after \(timeout) seconds")
         }
-        
+
         // Add execution task
         group.addTask {
             var errorDict: NSDictionary?
@@ -343,13 +351,13 @@ func runAppleScript(_ script: String, timeout: TimeInterval = 10.0) async -> (su
             }
             return (false, "", "Failed to initialize NSAppleScript")
         }
-        
+
         // Wait for first completed task
         for await result in group {
             group.cancelAll()
             return result
         }
-        
+
         return (false, "", "No result")
     }
 }
@@ -359,23 +367,23 @@ var appleScriptTemplates: [[String: String]] = [
     [
         "name": "automation",
         "script": "tell application \"System Events\" to keystroke \"a\" using command down",
-        "description": "Select all text"
+        "description": "Select all text",
     ],
     [
         "name": "file_ops",
         "script": "tell application \"Finder\" to make new folder at desktop",
-        "description": "Create new folder on desktop"
+        "description": "Create new folder on desktop",
     ],
     [
         "name": "system_info",
         "script": "tell application \"System Events\" to get system version",
-        "description": "Get system version information"
+        "description": "Get system version information",
     ],
     [
         "name": "app_control",
         "script": "tell application \"System Events\" to tell process \"Safari\" to activate",
-        "description": "Activate Safari application"
-    ]
+        "description": "Activate Safari application",
+    ],
 ]
 
 func getAppleScriptTemplate(_ templateName: String) -> String {
@@ -393,7 +401,7 @@ func getAppleScriptTemplates() -> [[String: String]] {
 
 func addAppleScriptTemplate(_ template: [String: String]) {
     appleScriptTemplates.append(template)
-    
+
     // Limit templates
     if appleScriptTemplates.count > 50 {
         appleScriptTemplates.removeFirst(appleScriptTemplates.count - 50)
@@ -403,7 +411,7 @@ func addAppleScriptTemplate(_ template: [String: String]) {
 func generateAppleScriptForDescription(_ description: String) -> String {
     // Simple AI-like script generation based on keywords
     let lowerDesc = description.lowercased()
-    
+
     if lowerDesc.contains("open") && lowerDesc.contains("safari") {
         return "tell application \"Safari\" to activate"
     } else if lowerDesc.contains("open") && lowerDesc.contains("finder") {
@@ -423,7 +431,8 @@ func generateAppleScriptForDescription(_ description: String) -> String {
     } else if lowerDesc.contains("volume") && lowerDesc.contains("down") {
         return "set volume output volume ((output volume of (get volume settings)) - 10)"
     } else {
-        return "-- Generated script for: \(description)\n-- Please provide more specific description"
+        return
+            "-- Generated script for: \(description)\n-- Please provide more specific description"
     }
 }
 
@@ -432,15 +441,15 @@ func validateAppleScript(_ script: String) -> (isValid: Bool, error: String) {
     if script.isEmpty {
         return (false, "Script is empty")
     }
-    
+
     if !script.contains("tell") && !script.contains("set") && !script.contains("display") {
         return (false, "Script doesn't contain valid AppleScript commands")
     }
-    
+
     if script.contains("rm ") || script.contains("delete ") || script.contains("kill ") {
         return (false, "Script contains potentially dangerous commands")
     }
-    
+
     return (true, "")
 }
 
@@ -448,18 +457,20 @@ func validateAppleScript(_ script: String) -> (isValid: Bool, error: String) {
 var scheduledNotifications: [[String: String]] = []
 let maxScheduledNotifications = 50
 
-func addScheduledNotification(title: String, message: String, schedule: String, sound: String, persistent: Bool) {
+func addScheduledNotification(
+    title: String, message: String, schedule: String, sound: String, persistent: Bool
+) {
     let entry: [String: String] = [
         "title": title,
         "message": message,
         "schedule": schedule,
         "sound": sound,
         "persistent": persistent ? "true" : "false",
-        "created": ISO8601DateFormatter().string(from: Date())
+        "created": ISO8601DateFormatter().string(from: Date()),
     ]
-    
+
     scheduledNotifications.append(entry)
-    
+
     // Limit scheduled notifications
     if scheduledNotifications.count > maxScheduledNotifications {
         scheduledNotifications.removeFirst(scheduledNotifications.count - maxScheduledNotifications)
@@ -478,22 +489,22 @@ func getNotificationTemplate(_ templateName: String) -> [String: String] {
     let templates: [String: [String: String]] = [
         "reminder": [
             "title": "⏰ Reminder",
-            "message": "Don't forget to complete your task!"
+            "message": "Don't forget to complete your task!",
         ],
         "meeting": [
             "title": "📅 Meeting",
-            "message": "Your meeting is starting soon!"
+            "message": "Your meeting is starting soon!",
         ],
         "break": [
             "title": "☕ Break Time",
-            "message": "Time for a short break!"
+            "message": "Time for a short break!",
         ],
         "deadline": [
             "title": "⚠️ Deadline",
-            "message": "Your deadline is approaching!"
-        ]
+            "message": "Your deadline is approaching!",
+        ],
     ]
-    
+
     return templates[templateName] ?? [:]
 }
 
@@ -505,19 +516,19 @@ func addToClipboardHistory(text: String, html: String? = nil, image: String? = n
     let timestamp = ISO8601DateFormatter().string(from: Date())
     var entry: [String: String] = [
         "timestamp": timestamp,
-        "text": text
+        "text": text,
     ]
-    
+
     if let htmlContent = html {
         entry["html"] = htmlContent
     }
-    
+
     if let imageData = image {
         entry["image"] = imageData
     }
-    
+
     clipboardHistory.append(entry)
-    
+
     // Limit history size
     if clipboardHistory.count > maxHistorySize {
         clipboardHistory.removeFirst(clipboardHistory.count - maxHistorySize)
@@ -551,34 +562,37 @@ func captureMainDisplay(monitor: Int? = nil) -> CGImage? {
 }
 
 // --- Helper for Non-blocking AppleScript Execution ---
-func runAppleScriptNonBlocking(_ script: String, timeout: TimeInterval = 5.0) -> (success: Bool, output: String, error: String?) {
+func runAppleScriptNonBlocking(_ script: String, timeout: TimeInterval = 5.0) -> (
+    success: Bool, output: String, error: String?
+) {
     let task = Task {
         await runAppleScript(script, timeout: timeout)
     }
-    
+
     // Wait for result with timeout
     let semaphore = DispatchSemaphore(value: 0)
     var result: (Bool, String, String?) = (false, "", "Timeout")
-    
+
     Task {
         let asyncResult = await task.value
         result = asyncResult
         semaphore.signal()
     }
-    
+
     // Wait with timeout
     let timeoutResult = semaphore.wait(timeout: .now() + .seconds(Int(timeout)))
     if timeoutResult == .timedOut {
         task.cancel()
         return (false, "", "AppleScript execution timed out")
     }
-    
+
     return result
 }
 
 // --- Helper for safe AppleScript string escaping ---
 func escapeForAppleScript(_ str: String) -> String {
-    return str
+    return
+        str
         .replacingOccurrences(of: "\\", with: "\\\\")
         .replacingOccurrences(of: "\"", with: "\\\"")
 }
@@ -892,26 +906,43 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "path": .object([
                 "type": .string("string"),
-                "description": .string("Optional path to save screenshot. If not provided, returns Base64."),
+                "description": .string(
+                    "Optional path to save screenshot. If not provided, returns Base64."),
             ]),
             "region": .object([
                 "type": .string("object"),
-                "description": .string("Optional region to capture: {x: number, y: number, width: number, height: number}"),
+                "description": .string(
+                    "Optional region to capture: {x: number, y: number, width: number, height: number}"
+                ),
                 "properties": .object([
-                    "x": .object(["type": .string("number"), "description": .string("X coordinate of top-left corner")]),
-                    "y": .object(["type": .string("number"), "description": .string("Y coordinate of top-left corner")]),
-                    "width": .object(["type": .string("number"), "description": .string("Width of region")]),
-                    "height": .object(["type": .string("number"), "description": .string("Height of region")]),
+                    "x": .object([
+                        "type": .string("number"),
+                        "description": .string("X coordinate of top-left corner"),
+                    ]),
+                    "y": .object([
+                        "type": .string("number"),
+                        "description": .string("Y coordinate of top-left corner"),
+                    ]),
+                    "width": .object([
+                        "type": .string("number"), "description": .string("Width of region"),
+                    ]),
+                    "height": .object([
+                        "type": .string("number"), "description": .string("Height of region"),
+                    ]),
                 ]),
             ]),
             "monitor": .object([
                 "type": .string("number"),
-                "description": .string("Optional monitor index (0 for main, 1 for secondary, etc.)"),
+                "description": .string(
+                    "Optional monitor index (0 for main, 1 for secondary, etc.)"),
             ]),
             "quality": .object([
                 "type": .string("string"),
-                "description": .string("Optional compression quality: 'low', 'medium', 'high', 'lossless'"),
-                "enum": .array([.string("low"), .string("medium"), .string("high"), .string("lossless")]),
+                "description": .string(
+                    "Optional compression quality: 'low', 'medium', 'high', 'lossless'"),
+                "enum": .array([
+                    .string("low"), .string("medium"), .string("high"), .string("lossless"),
+                ]),
             ]),
             "format": .object([
                 "type": .string("string"),
@@ -942,12 +973,24 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "region": .object([
                 "type": .string("object"),
-                "description": .string("Optional region to analyze: {x: number, y: number, width: number, height: number}"),
+                "description": .string(
+                    "Optional region to analyze: {x: number, y: number, width: number, height: number}"
+                ),
                 "properties": .object([
-                    "x": .object(["type": .string("number"), "description": .string("X coordinate of top-left corner")]),
-                    "y": .object(["type": .string("number"), "description": .string("Y coordinate of top-left corner")]),
-                    "width": .object(["type": .string("number"), "description": .string("Width of region")]),
-                    "height": .object(["type": .string("number"), "description": .string("Height of region")]),
+                    "x": .object([
+                        "type": .string("number"),
+                        "description": .string("X coordinate of top-left corner"),
+                    ]),
+                    "y": .object([
+                        "type": .string("number"),
+                        "description": .string("Y coordinate of top-left corner"),
+                    ]),
+                    "width": .object([
+                        "type": .string("number"), "description": .string("Width of region"),
+                    ]),
+                    "height": .object([
+                        "type": .string("number"), "description": .string("Height of region"),
+                    ]),
                 ]),
             ]),
             "language": .object([
@@ -1109,15 +1152,18 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "pid": .object([
                 "type": .string("number"),
-                "description": .string("OPTIONAL. PID of the application. Defaults to frontmost app."),
+                "description": .string(
+                    "OPTIONAL. PID of the application. Defaults to frontmost app."),
             ]),
             "action": .object([
                 "type": .string("string"),
-                "description": .string("Action: 'move', 'resize', 'minimize', 'maximize', 'make_front', 'snapshot', 'group', 'ungroup'."),
+                "description": .string(
+                    "Action: 'move', 'resize', 'minimize', 'maximize', 'make_front', 'snapshot', 'group', 'ungroup'."
+                ),
                 "enum": .array([
-                    .string("move"), .string("resize"), .string("minimize"), 
+                    .string("move"), .string("resize"), .string("minimize"),
                     .string("maximize"), .string("make_front"), .string("snapshot"),
-                    .string("group"), .string("ungroup")
+                    .string("group"), .string("ungroup"),
                 ]),
             ]),
             "x": .object([
@@ -1185,18 +1231,20 @@ func setupAndStartServer() async throws -> Server {
         description: "Enhanced clipboard with rich text, images, and history support.",
         inputSchema: setClipboardSchema
     )
-    
+
     let getClipboardSchema: Value = .object([
         "type": .string("object"),
         "properties": .object([
             "format": .object([
                 "type": .string("string"),
                 "description": .string("Optional: Return format - 'text', 'html', 'image', 'all'."),
-                "enum": .array([.string("text"), .string("html"), .string("image"), .string("all")]),
+                "enum": .array([.string("text"), .string("html"), .string("image"), .string("all")]
+                ),
             ]),
             "history": .object([
                 "type": .string("boolean"),
-                "description": .string("Optional: Return clipboard history instead of current content."),
+                "description": .string(
+                    "Optional: Return clipboard history instead of current content."),
             ]),
             "limit": .object([
                 "type": .string("number"),
@@ -1209,7 +1257,7 @@ func setupAndStartServer() async throws -> Server {
         description: "Enhanced clipboard getter with history, rich text, and image support.",
         inputSchema: getClipboardSchema
     )
-    
+
     let clipboardHistorySchema: Value = .object([
         "type": .string("object"),
         "properties": .object([
@@ -1235,12 +1283,17 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "command": .object([
                 "type": .string("string"),
-                "description": .string("Voice command to execute (e.g., 'open Safari', 'take screenshot', 'type hello')."),
+                "description": .string(
+                    "Voice command to execute (e.g., 'open Safari', 'take screenshot', 'type hello')."
+                ),
             ]),
             "language": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Language for voice recognition (en-US, uk-UA, etc.)."),
-                "enum": .array([.string("en-US"), .string("uk-UA"), .string("ru-RU"), .string("de-DE")]),
+                "description": .string(
+                    "Optional: Language for voice recognition (en-US, uk-UA, etc.)."),
+                "enum": .array([
+                    .string("en-US"), .string("uk-UA"), .string("ru-RU"), .string("de-DE"),
+                ]),
             ]),
             "confidence": .object([
                 "type": .string("number"),
@@ -1262,7 +1315,10 @@ func setupAndStartServer() async throws -> Server {
             "action": .object([
                 "type": .string("string"),
                 "description": .string("Action: 'list', 'kill', 'restart', 'monitor', 'priority'."),
-                "enum": .array([.string("list"), .string("kill"), .string("restart"), .string("monitor"), .string("priority")]),
+                "enum": .array([
+                    .string("list"), .string("kill"), .string("restart"), .string("monitor"),
+                    .string("priority"),
+                ]),
             ]),
             "pid": .object([
                 "type": .string("number"),
@@ -1286,7 +1342,8 @@ func setupAndStartServer() async throws -> Server {
     ])
     let processManagementTool = Tool(
         name: "macos-use_process_management",
-        description: "Advanced process management with monitoring, control, and priority adjustment.",
+        description:
+            "Advanced process management with monitoring, control, and priority adjustment.",
         inputSchema: processManagementSchema
     )
 
@@ -1296,8 +1353,12 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "action": .object([
                 "type": .string("string"),
-                "description": .string("Action: 'encrypt', 'decrypt', 'encrypt_folder', 'decrypt_folder'."),
-                "enum": .array([.string("encrypt"), .string("decrypt"), .string("encrypt_folder"), .string("decrypt_folder")]),
+                "description": .string(
+                    "Action: 'encrypt', 'decrypt', 'encrypt_folder', 'decrypt_folder'."),
+                "enum": .array([
+                    .string("encrypt"), .string("decrypt"), .string("encrypt_folder"),
+                    .string("decrypt_folder"),
+                ]),
             ]),
             "path": .object([
                 "type": .string("string"),
@@ -1321,7 +1382,8 @@ func setupAndStartServer() async throws -> Server {
     ])
     let fileEncryptionTool = Tool(
         name: "macos-use_file_encryption",
-        description: "File and folder encryption with AES algorithms and secure password management.",
+        description:
+            "File and folder encryption with AES algorithms and secure password management.",
         inputSchema: fileEncryptionSchema
     )
 
@@ -1331,8 +1393,12 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "metric": .object([
                 "type": .string("string"),
-                "description": .string("Metric to monitor: 'cpu', 'memory', 'disk', 'network', 'battery', 'all'."),
-                "enum": .array([.string("cpu"), .string("memory"), .string("disk"), .string("network"), .string("battery"), .string("all")]),
+                "description": .string(
+                    "Metric to monitor: 'cpu', 'memory', 'disk', 'network', 'battery', 'all'."),
+                "enum": .array([
+                    .string("cpu"), .string("memory"), .string("disk"), .string("network"),
+                    .string("battery"), .string("all"),
+                ]),
             ]),
             "duration": .object([
                 "type": .string("number"),
@@ -1355,7 +1421,8 @@ func setupAndStartServer() async throws -> Server {
     ])
     let systemMonitoringTool = Tool(
         name: "macos-use_system_monitoring",
-        description: "Real-time system monitoring with CPU, memory, disk, network, and battery metrics.",
+        description:
+            "Real-time system monitoring with CPU, memory, disk, network, and battery metrics.",
         inputSchema: systemMonitoringSchema
     )
 
@@ -1369,11 +1436,11 @@ func setupAndStartServer() async throws -> Server {
                     "Action: 'play_pause', 'next', 'previous', 'volume_up', 'volume_down', 'mute', 'brightness_up', 'brightness_down', 'get_info', 'get_system_info', 'get_performance', 'get_network', 'get_storage'."
                 ),
                 "enum": .array([
-                    .string("play_pause"), .string("next"), .string("previous"), 
+                    .string("play_pause"), .string("next"), .string("previous"),
                     .string("volume_up"), .string("volume_down"), .string("mute"),
                     .string("brightness_up"), .string("brightness_down"),
                     .string("get_info"), .string("get_system_info"), .string("get_performance"),
-                    .string("get_network"), .string("get_storage")
+                    .string("get_network"), .string("get_storage"),
                 ]),
             ]),
             "value": .object([
@@ -1413,29 +1480,37 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "timezone": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Timezone identifier (e.g., 'America/Los_Angeles'). Defaults to system."),
+                "description": .string(
+                    "Optional: Timezone identifier (e.g., 'America/Los_Angeles'). Defaults to system."
+                ),
             ]),
             "format": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Time format - 'iso', 'readable', 'unix', 'custom'."),
-                "enum": .array([.string("iso"), .string("readable"), .string("unix"), .string("custom")]),
+                "description": .string(
+                    "Optional: Time format - 'iso', 'readable', 'unix', 'custom'."),
+                "enum": .array([
+                    .string("iso"), .string("readable"), .string("unix"), .string("custom"),
+                ]),
             ]),
             "customFormat": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Custom format string (used with format='custom')."),
+                "description": .string(
+                    "Optional: Custom format string (used with format='custom')."),
             ]),
             "convertTo": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Convert to timezone (e.g., 'UTC', 'Europe/Kiev')."),
+                "description": .string(
+                    "Optional: Convert to timezone (e.g., 'UTC', 'Europe/Kiev')."),
             ]),
         ]),
     ])
     let getTimeTool = Tool(
         name: "macos-use_get_time",
-        description: "Enhanced time tool with timezone conversion, formatting, and countdown support.",
+        description:
+            "Enhanced time tool with timezone conversion, formatting, and countdown support.",
         inputSchema: getTimeSchema
     )
-    
+
     let countdownSchema: Value = .object([
         "type": .string("object"),
         "properties": .object([
@@ -1470,15 +1545,18 @@ func setupAndStartServer() async throws -> Server {
             ]),
             "template": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Use predefined template (automation, file_ops, system_info, etc.)."),
+                "description": .string(
+                    "Optional: Use predefined template (automation, file_ops, system_info, etc.)."),
             ]),
             "aiGenerate": .object([
                 "type": .string("boolean"),
-                "description": .string("Optional: Generate AppleScript using AI based on description."),
+                "description": .string(
+                    "Optional: Generate AppleScript using AI based on description."),
             ]),
             "description": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Describe what you want to accomplish, AI will generate the script."),
+                "description": .string(
+                    "Optional: Describe what you want to accomplish, AI will generate the script."),
             ]),
             "debug": .object([
                 "type": .string("boolean"),
@@ -1497,10 +1575,11 @@ func setupAndStartServer() async throws -> Server {
     ])
     let appleScriptTool = Tool(
         name: "macos-use_run_applescript",
-        description: "Ultimate AppleScript tool with AI generation, templates, debugging, and validation.",
+        description:
+            "Ultimate AppleScript tool with AI generation, templates, debugging, and validation.",
         inputSchema: appleScriptSchema
     )
-    
+
     let appleScriptTemplatesSchema: Value = .object([
         "type": .string("object"),
         "properties": .object([
@@ -1559,9 +1638,15 @@ func setupAndStartServer() async throws -> Server {
         "properties": .object([
             "title": .object(["type": .string("string"), "description": .string("Event title")]),
             "date": .object(["type": .string("string"), "description": .string("Event date")]),
-            "endDate": .object(["type": .string("string"), "description": .string("Optional end date")]),
-            "location": .object(["type": .string("string"), "description": .string("Optional event location")]),
-            "notes": .object(["type": .string("string"), "description": .string("Optional event notes")]),
+            "endDate": .object([
+                "type": .string("string"), "description": .string("Optional end date"),
+            ]),
+            "location": .object([
+                "type": .string("string"), "description": .string("Optional event location"),
+            ]),
+            "notes": .object([
+                "type": .string("string"), "description": .string("Optional event notes"),
+            ]),
             "attendees": .object([
                 "type": .string("array"),
                 "description": .string("Optional list of attendee emails"),
@@ -1581,7 +1666,8 @@ func setupAndStartServer() async throws -> Server {
     ])
     let createEventTool = Tool(
         name: "macos-use_create_event",
-        description: "Enhanced calendar event creation with attendees, location, recurring events, and reminders.",
+        description:
+            "Enhanced calendar event creation with attendees, location, recurring events, and reminders.",
         inputSchema: createEventSchema
     )
 
@@ -1641,11 +1727,13 @@ func setupAndStartServer() async throws -> Server {
             ]),
             "schedule": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Schedule notification in ISO format (e.g., '2026-02-10T15:00:00Z')"),
+                "description": .string(
+                    "Optional: Schedule notification in ISO format (e.g., '2026-02-10T15:00:00Z')"),
             ]),
             "sound": .object([
                 "type": .string("string"),
-                "description": .string("Optional: Sound name - 'default', 'none', or system sound name"),
+                "description": .string(
+                    "Optional: Sound name - 'default', 'none', or system sound name"),
             ]),
             "persistent": .object([
                 "type": .string("boolean"),
@@ -1663,7 +1751,7 @@ func setupAndStartServer() async throws -> Server {
         description: "Enhanced notification with scheduling, custom sounds, and persistence.",
         inputSchema: notificationSchema
     )
-    
+
     let notificationScheduleSchema: Value = .object([
         "type": .string("object"),
         "properties": .object([
@@ -1754,14 +1842,16 @@ func setupAndStartServer() async throws -> Server {
                 "items": .object(["type": .string("string")]),
             ]),
             "draft": .object([
-                "type": .string("boolean"), "description": .string("Optional: Save as draft instead of sending"),
+                "type": .string("boolean"),
+                "description": .string("Optional: Save as draft instead of sending"),
             ]),
         ]),
         "required": .array([.string("to"), .string("subject"), .string("body")]),
     ])
     let mailSendTool = Tool(
         name: "macos-use_mail_send",
-        description: "Enhanced email sending with CC/BCC, HTML formatting, attachments, and draft support.",
+        description:
+            "Enhanced email sending with CC/BCC, HTML formatting, attachments, and draft support.",
         inputSchema: mailSendSchema
     )
 
@@ -1791,12 +1881,14 @@ func setupAndStartServer() async throws -> Server {
             ]),
             "filter": .object([
                 "type": .string("string"),
-                "description": .string("Optional filter pattern (e.g., '*.txt', 'name contains test')."),
+                "description": .string(
+                    "Optional filter pattern (e.g., '*.txt', 'name contains test')."),
             ]),
             "sort": .object([
                 "type": .string("string"),
                 "description": .string("Optional sort order: 'name', 'date', 'size', 'type'."),
-                "enum": .array([.string("name"), .string("date"), .string("size"), .string("type")]),
+                "enum": .array([.string("name"), .string("date"), .string("size"), .string("type")]
+                ),
             ]),
             "order": .object([
                 "type": .string("string"),
@@ -1809,7 +1901,8 @@ func setupAndStartServer() async throws -> Server {
             ]),
             "metadata": .object([
                 "type": .string("boolean"),
-                "description": .string("Optional: Include file metadata (size, dates, permissions)."),
+                "description": .string(
+                    "Optional: Include file metadata (size, dates, permissions)."),
             ]),
         ]),
     ])
@@ -1826,12 +1919,13 @@ func setupAndStartServer() async throws -> Server {
             "metadata": .object([
                 "type": .string("boolean"),
                 "description": .string("Optional: Include file metadata for selected items."),
-            ]),
+            ])
         ]),
     ])
     let finderGetSelectionTool = Tool(
         name: "macos-use_finder_get_selection",
-        description: "Returns the POSIX paths of currently selected items in Finder with optional metadata.",
+        description:
+            "Returns the POSIX paths of currently selected items in Finder with optional metadata.",
         inputSchema: finderGetSelectionSchema
     )
 
@@ -1913,13 +2007,158 @@ func setupAndStartServer() async throws -> Server {
             "toolName": .object([
                 "type": .string("string"),
                 "description": .string("Optional: Filter by tool name"),
-            ]),
+            ])
         ]),
     ])
     let dynamicHelpTool = Tool(
         name: "macos-use_list_tools_dynamic",
-        description: "Returns a detailed JSON structure describing all available tools, their schemas, and usage examples.",
+        description:
+            "Returns a detailed JSON structure describing all available tools, their schemas, and usage examples.",
         inputSchema: dynamicHelpSchema
+    )
+
+    // *** NEW: Frontmost App Tool ***
+    let frontmostAppTool = Tool(
+        name: "macos-use_get_frontmost_app",
+        description: "Returns information about the currently active (frontmost) application.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: Battery Info Tool ***
+    let batteryInfoTool = Tool(
+        name: "macos-use_get_battery_info",
+        description: "Returns the current battery status, including percentage and charging state.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: WiFi Details Tool ***
+    let wifiDetailsTool = Tool(
+        name: "macos-use_get_wifi_details",
+        description: "Returns details about the current WiFi connection (SSID, signal strength).",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: Set System Volume Tool ***
+    let setVolumeSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "level": .object([
+                "type": .string("number"),
+                "description": .string("Volume level from 0 to 100."),
+            ])
+        ]),
+        "required": .array([.string("level")]),
+    ])
+    let setVolumeTool = Tool(
+        name: "macos-use_set_system_volume",
+        description: "Sets the system output volume to a specific level (0-100).",
+        inputSchema: setVolumeSchema
+    )
+
+    // *** NEW: Set Screen Brightness Tool ***
+    let setBrightnessSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "level": .object([
+                "type": .string("number"),
+                "description": .string("Brightness level from 0.0 to 1.0."),
+            ])
+        ]),
+        "required": .array([.string("level")]),
+    ])
+    let setBrightnessTool = Tool(
+        name: "macos-use_set_screen_brightness",
+        description: "Sets the primary display brightness (0.0 to 1.0).",
+        inputSchema: setBrightnessSchema
+    )
+
+    // *** NEW: Empty Trash Tool ***
+    let emptyTrashTool = Tool(
+        name: "macos-use_empty_trash",
+        description: "Empties the macOS Trash via Finder.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: Window Info Tool ***
+    let windowInfoTool = Tool(
+        name: "macos-use_get_active_window_info",
+        description: "Returns detailed information about the frontmost window.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: Close Window Tool ***
+    let closeWindowSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "windowName": .object([
+                "type": .string("string"),
+                "description": .string(
+                    "Optional: Title of the window to close. If omitted, closes front window."),
+            ])
+        ]),
+    ])
+    let closeWindowTool = Tool(
+        name: "macos-use_close_window",
+        description: "Closes a specific window by name or the frontmost window.",
+        inputSchema: closeWindowSchema
+    )
+
+    // *** NEW: Move Window Tool ***
+    let moveWindowSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "x": .object(["type": .string("number"), "description": .string("New X coordinate")]),
+            "y": .object(["type": .string("number"), "description": .string("New Y coordinate")]),
+            "windowName": .object([
+                "type": .string("string"), "description": .string("Optional: Window title"),
+            ]),
+        ]),
+        "required": .array([.string("x"), .string("y")]),
+    ])
+    let moveWindowTool = Tool(
+        name: "macos-use_move_window",
+        description: "Moves a window to specified screen coordinates.",
+        inputSchema: moveWindowSchema
+    )
+
+    // *** NEW: Resize Window Tool ***
+    let resizeWindowSchema: Value = .object([
+        "type": .string("object"),
+        "properties": .object([
+            "width": .object(["type": .string("number"), "description": .string("New width")]),
+            "height": .object(["type": .string("number"), "description": .string("New height")]),
+            "windowName": .object([
+                "type": .string("string"), "description": .string("Optional: Window title"),
+            ]),
+        ]),
+        "required": .array([.string("width"), .string("height")]),
+    ])
+    let resizeWindowTool = Tool(
+        name: "macos-use_resize_window",
+        description: "Resizes a window to specified dimensions.",
+        inputSchema: resizeWindowSchema
+    )
+
+    // *** NEW: List Network Interfaces Tool ***
+    let listNetworkInterfacesTool = Tool(
+        name: "macos-use_list_network_interfaces",
+        description: "Lists all active network interfaces on the system.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: Get IP Address Tool ***
+    let getIPAddressTool = Tool(
+        name: "macos-use_get_ip_address",
+        description: "Returns the local and estimated public IP address.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
+    )
+
+    // *** NEW: Request Permissions Tool ***
+    let requestPermissionsTool = Tool(
+        name: "macos-use_request_permissions",
+        description:
+            "Sequentially requests all necessary macOS permissions (Calendar, Reminders, Notifications, Accessibility) to trigger interactive system prompts.",
+        inputSchema: .object(["type": .string("object"), "properties": .object([:])])
     )
 
     // --- Aggregate list of tools ---
@@ -1928,13 +2167,20 @@ func setupAndStartServer() async throws -> Server {
         pressKeyTool,
         scrollTool, refreshTool, windowMgmtTool, executeCommandTool, terminalTool,
         screenshotTool, screenshotAliasTool, visionTool, ocrAliasTool, analyzeAliasTool,
-        setClipboardTool, getClipboardTool, clipboardHistoryTool, mediaControlTool, fetchTool, getTimeTool, countdownTool,
-        appleScriptTool, appleScriptTemplatesTool, calendarEventsTool, createEventTool, remindersTool, createReminderTool,
-        spotlightTool, notificationTool, notificationScheduleTool, notesListFoldersTool, notesCreateTool, notesGetTool,
+        setClipboardTool, getClipboardTool, clipboardHistoryTool, mediaControlTool, fetchTool,
+        getTimeTool, countdownTool,
+        appleScriptTool, appleScriptTemplatesTool, calendarEventsTool, createEventTool,
+        remindersTool, createReminderTool,
+        spotlightTool, notificationTool, notificationScheduleTool, notesListFoldersTool,
+        notesCreateTool, notesGetTool,
         mailSendTool, mailReadTool,
         finderListFilesTool, finderGetSelectionTool, finderOpenPathTool, finderMoveToTrashTool,
         listAppsTool, listTabsTool, listWindowsTool, dynamicHelpTool,
         voiceControlTool, processManagementTool, fileEncryptionTool, systemMonitoringTool,
+        frontmostAppTool, batteryInfoTool, wifiDetailsTool, setVolumeTool, setBrightnessTool,
+        emptyTrashTool, windowInfoTool, closeWindowTool, moveWindowTool, resizeWindowTool,
+        listNetworkInterfacesTool, getIPAddressTool,
+        requestPermissionsTool,
     ]
     fputs(
         "log: setupAndStartServer: defined \(allTools.count) tools: \(allTools.map { $0.name })\n",
@@ -2099,12 +2345,14 @@ func setupAndStartServer() async throws -> Server {
 
             case getTimeTool.name:
                 let timezone = try getOptionalString(from: params.arguments, key: "timezone")
-                let format = try getOptionalString(from: params.arguments, key: "format") ?? "readable"
-                let customFormat = try getOptionalString(from: params.arguments, key: "customFormat")
+                let format =
+                    try getOptionalString(from: params.arguments, key: "format") ?? "readable"
+                let customFormat = try getOptionalString(
+                    from: params.arguments, key: "customFormat")
                 let convertTo = try getOptionalString(from: params.arguments, key: "convertTo")
-                
+
                 let formatter = DateFormatter()
-                
+
                 // Set timezone if specified
                 if let tz = timezone {
                     if let timeZone = TimeZone(identifier: tz) {
@@ -2114,7 +2362,7 @@ func setupAndStartServer() async throws -> Server {
                             content: [.text("Invalid timezone identifier: \(tz)")], isError: true)
                     }
                 }
-                
+
                 // Set format
                 switch format.lowercased() {
                 case "iso":
@@ -2125,55 +2373,78 @@ func setupAndStartServer() async throws -> Server {
                     if let fmt = customFormat {
                         formatter.dateFormat = fmt
                     }
-                default: // readable
+                default:  // readable
                     formatter.dateStyle = .full
                     formatter.timeStyle = .full
                 }
-                
+
                 let currentDate = Date()
                 var resultText = formatter.string(from: currentDate)
-                
+
                 // Convert timezone if specified
                 if let targetTz = convertTo, let targetTimeZone = TimeZone(identifier: targetTz) {
-                    let targetDate = currentDate.addingTimeInterval(TimeInterval(TimeZone.current.secondsFromGMT(for: currentDate)))
+                    let targetDate = currentDate.addingTimeInterval(
+                        TimeInterval(TimeZone.current.secondsFromGMT(for: currentDate)))
                     formatter.timeZone = targetTimeZone
                     resultText = formatter.string(from: targetDate)
                     resultText += " (converted from \(timezone ?? "local") to \(targetTz))"
                 }
-                
+
                 return CallTool.Result(content: [.text(resultText)])
 
             case countdownTool.name:
                 let seconds = try getRequiredInt(from: params.arguments, key: "seconds")
-                let message = try getOptionalString(from: params.arguments, key: "message") ?? "Countdown completed!"
-                let notification = try getOptionalBool(from: params.arguments, key: "notification") ?? false
-                
+                let message =
+                    try getOptionalString(from: params.arguments, key: "message")
+                    ?? "Countdown completed!"
+                let notification =
+                    try getOptionalBool(from: params.arguments, key: "notification") ?? false
+
                 // Create countdown timer
-                let timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true, block: { _ in
-                    // This would need proper async implementation
-                })
-                
+                _ = Timer.scheduledTimer(
+                    withTimeInterval: 1.0, repeats: true,
+                    block: { _ in
+                        // This would need proper async implementation
+                    })
+
                 // For now, just simulate countdown
                 let startTime = Date()
                 let endTime = startTime.addingTimeInterval(TimeInterval(seconds))
-                
+
                 let script = """
                     tell application "System Events"
                         display notification "\(message)" with title "Countdown Complete"
                     """
-                
+
                 if notification {
-                    let (success, output, error) = runAppleScriptNonBlocking(script, timeout: Double(seconds) + 5.0)
+                    let (success, output, error) = runAppleScriptNonBlocking(
+                        script, timeout: Double(seconds) + 5.0)
                     if success {
-                    if output.contains("Reminders access error") {
-                        return CallTool.Result(content: [.text("Reminders access denied. Please grant permission in System Preferences > Security if success { Privacy > Privacy > Automation.")], isError: true)
-                    }
-                        return CallTool.Result(content: [.text("Countdown completed: \(seconds) seconds. Notification sent.")], isError: false)
+                        if output.contains("Reminders access error") {
+                            return CallTool.Result(
+                                content: [
+                                    .text(
+                                        "Reminders access denied. Please grant permission in System Preferences > Security if success { Privacy > Privacy > Automation."
+                                    )
+                                ], isError: true)
+                        }
+                        return CallTool.Result(
+                            content: [
+                                .text("Countdown completed: \(seconds) seconds. Notification sent.")
+                            ], isError: false)
                     } else {
-                        return CallTool.Result(content: [.text("Countdown completed: \(seconds) seconds. Error: \(error ?? "Unknown")")], isError: true)
+                        return CallTool.Result(
+                            content: [
+                                .text(
+                                    "Countdown completed: \(seconds) seconds. Error: \(error ?? "Unknown")"
+                                )
+                            ], isError: true)
                     }
                 } else {
-                    return CallTool.Result(content: [.text("Countdown started: \(seconds) seconds. Will end at \(endTime)")], isError: false)
+                    return CallTool.Result(
+                        content: [
+                            .text("Countdown started: \(seconds) seconds. Will end at \(endTime)")
+                        ], isError: false)
                 }
 
             // --- Handlers for Universal Tools ---
@@ -2181,111 +2452,146 @@ func setupAndStartServer() async throws -> Server {
             case calendarEventsTool.name:
                 // Native EventKit Implementation
                 guard await requestCalendarAccess() else {
-                     return .init(content: [.text("Calendar access denied. Please grant permission in System Settings > Privacy & Security > Calendars.")], isError: true)
+                    return .init(
+                        content: [
+                            .text(
+                                "Calendar access denied. Please grant permission in System Settings > Privacy & Security > Calendars."
+                            )
+                        ], isError: true)
                 }
 
                 let startStr = try getRequiredString(from: params.arguments, key: "start")
                 let endStr = try getRequiredString(from: params.arguments, key: "end")
 
                 guard let start = parseISO8601(from: startStr),
-                      let end = parseISO8601(from: endStr) else {
-                    return .init(content: [.text("Invalid date format. Use ISO8601 (e.g. 2024-01-01T12:00:00Z).")], isError: true)
+                    let end = parseISO8601(from: endStr)
+                else {
+                    return .init(
+                        content: [
+                            .text("Invalid date format. Use ISO8601 (e.g. 2024-01-01T12:00:00Z).")
+                        ], isError: true)
                 }
-                
-                let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
+
+                let predicate = eventStore.predicateForEvents(
+                    withStart: start, end: end, calendars: nil)
                 let events = eventStore.events(matching: predicate)
-                
+
                 if events.isEmpty {
                     return .init(content: [.text("No events found.")], isError: false)
                 }
-                
+
                 let output = events.map { event in
                     let startDate = ISO8601DateFormatter().string(from: event.startDate)
                     let endDate = ISO8601DateFormatter().string(from: event.endDate)
                     return "- \(event.title ?? "No Title") (\(startDate) - \(endDate))"
                 }.joined(separator: "\n")
-                
+
                 return .init(content: [.text(output)], isError: false)
 
             case createEventTool.name:
                 // Native EventKit Implementation
                 guard await requestCalendarAccess() else {
-                     return .init(content: [.text("Calendar access denied. Please grant permission in System Settings > Privacy & Security > Calendars.")], isError: true)
+                    return .init(
+                        content: [
+                            .text(
+                                "Calendar access denied. Please grant permission in System Settings > Privacy & Security > Calendars."
+                            )
+                        ], isError: true)
                 }
-                
+
                 let title = try getRequiredString(from: params.arguments, key: "title")
                 let dateStr = try getRequiredString(from: params.arguments, key: "date")
-                
+
                 guard let date = parseISO8601(from: dateStr) else {
-                     return .init(content: [.text("Invalid date format. Use ISO8601.")], isError: true)
+                    return .init(
+                        content: [.text("Invalid date format. Use ISO8601.")], isError: true)
                 }
-                
+
                 let event = EKEvent(eventStore: eventStore)
                 event.title = title
                 event.startDate = date
-                event.endDate = date.addingTimeInterval(3600) // Default 1 hour
+                event.endDate = date.addingTimeInterval(3600)  // Default 1 hour
                 event.calendar = eventStore.defaultCalendarForNewEvents
-                
+
                 do {
                     try eventStore.save(event, span: .thisEvent)
                     return .init(content: [.text("Event created successfully.")], isError: false)
                 } catch {
-                    return .init(content: [.text("Failed to create event: \(error.localizedDescription)")], isError: true)
+                    return .init(
+                        content: [.text("Failed to create event: \(error.localizedDescription)")],
+                        isError: true)
                 }
 
             case remindersTool.name:
                 // Native EventKit Implementation
                 guard await requestRemindersAccess() else {
-                     return .init(content: [.text("Reminders access denied. Please grant permission in System Settings > Privacy & Security > Reminders.")], isError: true)
+                    return .init(
+                        content: [
+                            .text(
+                                "Reminders access denied. Please grant permission in System Settings > Privacy & Security > Reminders."
+                            )
+                        ], isError: true)
                 }
-                
+
                 let listFilter = try getOptionalString(from: params.arguments, key: "list")
                 var calendars: [EKCalendar]? = nil
-                
+
                 if let listName = listFilter {
                     let allCalendars = eventStore.calendars(for: .reminder)
-                    if let found = allCalendars.first(where: { $0.title.caseInsensitiveCompare(listName) == .orderedSame }) {
+                    if let found = allCalendars.first(where: {
+                        $0.title.caseInsensitiveCompare(listName) == .orderedSame
+                    }) {
                         calendars = [found]
                     } else {
                         return .init(content: [.text("List not found: \(listName)")], isError: true)
                     }
                 }
-                
+
                 let predicate = eventStore.predicateForReminders(in: calendars)
-                
+
                 return await withCheckedContinuation { continuation in
                     eventStore.fetchReminders(matching: predicate) { reminders in
                         guard let reminders = reminders else {
-                             continuation.resume(returning: .init(content: [.text("Failed to fetch reminders (nil result).")], isError: true))
-                             return
-                        }
-                        
-                        let incomplete = reminders.filter { !$0.isCompleted }
-                        if incomplete.isEmpty {
-                            continuation.resume(returning: .init(content: [.text("No incomplete reminders.")], isError: false))
+                            continuation.resume(
+                                returning: .init(
+                                    content: [.text("Failed to fetch reminders (nil result).")],
+                                    isError: true))
                             return
                         }
-                        
-                        let output = incomplete.map { "- \($0.title ?? "No Title") [\($0.calendar.title)]" }.joined(separator: "\n")
-                        continuation.resume(returning: .init(content: [.text(output)], isError: false))
+
+                        let incomplete = reminders.filter { !$0.isCompleted }
+                        if incomplete.isEmpty {
+                            continuation.resume(
+                                returning: .init(
+                                    content: [.text("No incomplete reminders.")], isError: false))
+                            return
+                        }
+
+                        let output = incomplete.map {
+                            "- \($0.title ?? "No Title") [\($0.calendar.title)]"
+                        }.joined(separator: "\n")
+                        continuation.resume(
+                            returning: .init(content: [.text(output)], isError: false))
                     }
                 }
 
             case createReminderTool.name:
                 guard await requestRemindersAccess() else {
-                     return .init(content: [.text("Reminders access denied.")], isError: true)
+                    return .init(content: [.text("Reminders access denied.")], isError: true)
                 }
-                
+
                 let title = try getRequiredString(from: params.arguments, key: "title")
                 let reminder = EKReminder(eventStore: eventStore)
                 reminder.title = title
                 reminder.calendar = eventStore.defaultCalendarForNewReminders()
-                
+
                 do {
                     try eventStore.save(reminder, commit: true)
                     return .init(content: [.text("Reminder saved.")], isError: false)
                 } catch {
-                     return .init(content: [.text("Failed to save reminder: \(error.localizedDescription)")], isError: true)
+                    return .init(
+                        content: [.text("Failed to save reminder: \(error.localizedDescription)")],
+                        isError: true)
                 }
 
             case spotlightTool.name:
@@ -2298,19 +2604,20 @@ func setupAndStartServer() async throws -> Server {
                 let message = try getRequiredString(from: params.arguments, key: "message")
                 let schedule = try getOptionalString(from: params.arguments, key: "schedule")
                 let sound = try getOptionalString(from: params.arguments, key: "sound") ?? "default"
-                let persistent = try getOptionalBool(from: params.arguments, key: "persistent") ?? false
+                let persistent =
+                    try getOptionalBool(from: params.arguments, key: "persistent") ?? false
                 let template = try getOptionalString(from: params.arguments, key: "template")
-                
+
                 // Handle template
                 var finalTitle = title
                 var finalMessage = message
-                
+
                 if let templateName = template {
                     let templateData = getNotificationTemplate(templateName)
                     finalTitle = templateData["title"] ?? title
                     finalMessage = templateData["message"] ?? message
                 }
-                
+
                 // Handle scheduling
                 if let scheduleTime = schedule {
                     addScheduledNotification(
@@ -2320,38 +2627,48 @@ func setupAndStartServer() async throws -> Server {
                         sound: sound,
                         persistent: persistent
                     )
-                    return CallTool.Result(content: [.text("Notification scheduled for \(scheduleTime)")])
+                    return CallTool.Result(content: [
+                        .text("Notification scheduled for \(scheduleTime)")
+                    ])
                 } else {
                     // Send immediately
-                    var script = "display notification \"\(escapeForAppleScript(finalMessage))\" with title \"\(escapeForAppleScript(finalTitle))\""
-                    
+                    var script =
+                        "display notification \"\(escapeForAppleScript(finalMessage))\" with title \"\(escapeForAppleScript(finalTitle))\""
+
                     if sound != "default" && sound != "none" {
                         script += " sound name \"\(escapeForAppleScript(sound))\""
                     }
-                    
+
                     if persistent {
                         script += " as persistent"
                     }
-                    
+
                     _ = runShellCommand("osascript -e '\(script)'")
-                    return CallTool.Result(content: [.text("Notification sent with enhanced options.")])
+                    return CallTool.Result(content: [
+                        .text("Notification sent with enhanced options.")
+                    ])
                 }
 
             case notificationScheduleTool.name:
                 let clear = try getOptionalBool(from: params.arguments, key: "clear") ?? false
                 let list = try getOptionalBool(from: params.arguments, key: "list") ?? false
-                
+
                 if clear {
                     clearScheduledNotifications()
                     return CallTool.Result(content: [.text("All scheduled notifications cleared.")])
                 } else if list {
                     let scheduled = getScheduledNotifications()
                     guard let jsonString = serializeToJsonString(scheduled) else {
-                        return CallTool.Result(content: [.text("Failed to serialize scheduled notifications")], isError: true)
+                        return CallTool.Result(
+                            content: [.text("Failed to serialize scheduled notifications")],
+                            isError: true)
                     }
                     return CallTool.Result(content: [.text(jsonString)])
                 } else {
-                    return CallTool.Result(content: [.text("Use 'clear': true or 'list': true to manage scheduled notifications.")])
+                    return CallTool.Result(content: [
+                        .text(
+                            "Use 'clear': true or 'list': true to manage scheduled notifications.")
+                    ])
                 }
 
             // --- Notes Handlers ---
@@ -2369,7 +2686,12 @@ func setupAndStartServer() async throws -> Server {
                 let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
                 if success {
                     if output.contains("Reminders access error") {
-                        return CallTool.Result(content: [.text("Reminders access denied. Please grant permission in System Preferences > Security if success { Privacy > Privacy > Automation.")], isError: true)
+                        return CallTool.Result(
+                            content: [
+                                .text(
+                                    "Reminders access denied. Please grant permission in System Preferences > Security if success { Privacy > Privacy > Automation."
+                                )
+                            ], isError: true)
                     }
                     return CallTool.Result(content: [.text(output)])
                 } else {
@@ -2499,12 +2821,12 @@ func setupAndStartServer() async throws -> Server {
                 let metadata = try getOptionalBool(from: params.arguments, key: "metadata") ?? false
 
                 var searchPath = ""
-                
+
                 if let p = pathParam {
-                     searchPath = p
+                    searchPath = p
                 } else {
-                     // Fallback: Get path from frontmost Finder window
-                     let script = """
+                    // Fallback: Get path from frontmost Finder window
+                    let script = """
                         tell application "Finder"
                             try
                                 set targetFolder to target of front window
@@ -2514,82 +2836,95 @@ func setupAndStartServer() async throws -> Server {
                             end try
                         end tell
                         """
-                     let (success, output, _) = runAppleScriptNonBlocking(script, timeout: 2.0)
-                     if success && !output.isEmpty {
-                         searchPath = output.trimmingCharacters(in: .whitespacesAndNewlines)
-                     } else {
-                         // Fallback to user home if no window open and no path provided
-                         searchPath = FileManager.default.homeDirectoryForCurrentUser.path
-                     }
+                    let (success, output, _) = runAppleScriptNonBlocking(script, timeout: 2.0)
+                    if success && !output.isEmpty {
+                        searchPath = output.trimmingCharacters(in: .whitespacesAndNewlines)
+                    } else {
+                        // Fallback to user home if no window open and no path provided
+                        searchPath = FileManager.default.homeDirectoryForCurrentUser.path
+                    }
                 }
-                
+
                 let fileManager = FileManager.default
-                var results: [Any] = []
-                
+
                 do {
                     let items = try fileManager.contentsOfDirectory(atPath: searchPath)
                     var filteredItems = items
-                    
+
                     // 1. Filter
                     if let pattern = filter {
-                         // Simple wildcard matching
-                         if pattern.contains("*") {
-                             let regexPattern = pattern.replacingOccurrences(of: "*", with: ".*")
-                             if let regex = try? NSRegularExpression(pattern: "^\(regexPattern)$", options: .caseInsensitive) {
-                                 filteredItems = filteredItems.filter { 
-                                     regex.firstMatch(in: $0, options: [], range: NSRange(location: 0, length: $0.utf16.count)) != nil 
-                                 }
-                             }
-                         } else {
-                             filteredItems = filteredItems.filter { $0.localizedCaseInsensitiveContains(pattern) }
-                         }
+                        // Simple wildcard matching
+                        if pattern.contains("*") {
+                            let regexPattern = pattern.replacingOccurrences(of: "*", with: ".*")
+                            if let regex = try? NSRegularExpression(
+                                pattern: "^\(regexPattern)$", options: .caseInsensitive)
+                            {
+                                filteredItems = filteredItems.filter {
+                                    regex.firstMatch(
+                                        in: $0, options: [],
+                                        range: NSRange(location: 0, length: $0.utf16.count)) != nil
+                                }
+                            }
+                        } else {
+                            filteredItems = filteredItems.filter {
+                                $0.localizedCaseInsensitiveContains(pattern)
+                            }
+                        }
                     }
-                    
+
                     // 2. Sort & 3. Metadata
                     // We need attributes for sorting by date/size or if metadata is requested
-                    var itemAttributes: [(name: String, date: Date, size: UInt64, type: String)] = []
-                    
+                    var itemAttributes: [(name: String, date: Date, size: UInt64, type: String)] =
+                        []
+
                     for item in filteredItems {
                         let fullPath = (searchPath as NSString).appendingPathComponent(item)
                         if let attrs = try? fileManager.attributesOfItem(atPath: fullPath) {
                             let date = attrs[.modificationDate] as? Date ?? Date.distantPast
                             let size = attrs[.size] as? UInt64 ?? 0
-                            let type = (attrs[.type] as? FileAttributeType) == .typeDirectory ? "directory" : "file"
+                            let type =
+                                (attrs[.type] as? FileAttributeType) == .typeDirectory
+                                ? "directory" : "file"
                             itemAttributes.append((name: item, date: date, size: size, type: type))
                         } else {
-                            itemAttributes.append((name: item, date: Date.distantPast, size: 0, type: "unknown"))
+                            itemAttributes.append(
+                                (name: item, date: Date.distantPast, size: 0, type: "unknown"))
                         }
                     }
-                    
+
                     if let sortKey = sort {
                         let ascending = (order != "desc")
                         itemAttributes.sort { (a, b) -> Bool in
                             switch sortKey {
-                                case "date": return ascending ? a.date < b.date : a.date > b.date
-                                case "size": return ascending ? a.size < b.size : a.size > b.size
-                                case "type": return ascending ? a.type < b.type : a.type > b.type
-                                default: // name
-                                    return ascending ? a.name.localizedStandardCompare(b.name) == .orderedAscending : a.name.localizedStandardCompare(b.name) == .orderedDescending
+                            case "date": return ascending ? a.date < b.date : a.date > b.date
+                            case "size": return ascending ? a.size < b.size : a.size > b.size
+                            case "type": return ascending ? a.type < b.type : a.type > b.type
+                            default:  // name
+                                return ascending
+                                    ? a.name.localizedStandardCompare(b.name) == .orderedAscending
+                                    : a.name.localizedStandardCompare(b.name) == .orderedDescending
                             }
                         }
                     } else {
-                         // Default sort by name
-                         itemAttributes.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+                        // Default sort by name
+                        itemAttributes.sort {
+                            $0.name.localizedStandardCompare($1.name) == .orderedAscending
+                        }
                     }
-                    
+
                     // 4. Limit
                     if let max = limit, max < itemAttributes.count {
                         itemAttributes = Array(itemAttributes.prefix(max))
                     }
-                    
+
                     // 5. Build Result & Serialize
                     if metadata {
-                        let metaResults = itemAttributes.map { 
+                        let metaResults = itemAttributes.map {
                             [
                                 "name": $0.name,
                                 "type": $0.type,
                                 "size": String($0.size),
-                                "modified": ISO8601DateFormatter().string(from: $0.date)
+                                "modified": ISO8601DateFormatter().string(from: $0.date),
                             ]
                         }
                         if let jsonString = serializeToJsonString(metaResults) {
@@ -2601,11 +2936,16 @@ func setupAndStartServer() async throws -> Server {
                             return .init(content: [.text(jsonString)], isError: false)
                         }
                     }
-                    
+
                     return .init(content: [.text("Failed to serialize file list")], isError: true)
 
                 } catch {
-                     return .init(content: [.text("Error listing files at \(searchPath): \(error.localizedDescription)")], isError: true)
+                    return .init(
+                        content: [
+                            .text(
+                                "Error listing files at \(searchPath): \(error.localizedDescription)"
+                            )
+                        ], isError: true)
                 }
 
             case finderGetSelectionTool.name:
@@ -2645,25 +2985,27 @@ func setupAndStartServer() async throws -> Server {
 
             case finderMoveToTrashTool.name:
                 let path = try getRequiredString(from: params.arguments, key: "path")
-                
+
                 // Validate file exists and is not a directory
                 let fileManager = FileManager.default
                 guard fileManager.fileExists(atPath: path) else {
                     return .init(
-                        content: [.text("Error: File does not exist: \(path)")], 
+                        content: [.text("Error: File does not exist: \(path)")],
                         isError: true
                     )
                 }
-                
+
                 var isDir: ObjCBool = false
-                guard fileManager.fileExists(atPath: path, isDirectory: &isDir), !isDir.boolValue else {
+                guard fileManager.fileExists(atPath: path, isDirectory: &isDir), !isDir.boolValue
+                else {
                     return .init(
-                        content: [.text("Error: Cannot move directory to trash: \(path)")], 
+                        content: [.text("Error: Cannot move directory to trash: \(path)")],
                         isError: true
                     )
                 }
-                
-                let script = "tell application \"Finder\" to delete POSIX file \"\(escapeForAppleScript(path))\""
+
+                let script =
+                    "tell application \"Finder\" to delete POSIX file \"\(escapeForAppleScript(path))\""
                 let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 6.0)
                 return .init(
                     content: [
@@ -2684,7 +3026,7 @@ func setupAndStartServer() async throws -> Server {
                     appInfo["activationPolicy"] = String(app.activationPolicy.rawValue)
                     appInfo["launchDate"] = app.launchDate?.description ?? "unknown"
                     appInfo["processStatus"] = app.isTerminated ? "terminated" : "running"
-                    
+
                     appsList.append(appInfo)
                 }
 
@@ -2696,7 +3038,8 @@ func setupAndStartServer() async throws -> Server {
 
             // --- List Browser Tabs Handler ---
             case listTabsTool.name:
-                let browser = try getOptionalString(from: params.arguments, key: "browser")?.lowercased()
+                let browser = try getOptionalString(from: params.arguments, key: "browser")?
+                    .lowercased()
                 var allTabs: [[String: String]] = []
 
                 // Use AppleScript to get browser tabs
@@ -2806,7 +3149,8 @@ func setupAndStartServer() async throws -> Server {
 
                 for (browserName, script) in scripts {
                     let (success, output, _) = runAppleScriptNonBlocking(script, timeout: 5.0)
-                    if success && !output.contains("No windows") && !output.contains("not running") {
+                    if success && !output.contains("No windows") && !output.contains("not running")
+                    {
                         allTabs.append([
                             "browser": browserName,
                             "tabs": output,
@@ -2926,14 +3270,16 @@ func setupAndStartServer() async throws -> Server {
                 } else {
                     // Run normal command with enhanced output handling
                     let (output, exitCode) = runShellCommand(command)
-                    
+
                     // Always provide meaningful output with exit code information
                     if exitCode == 0 {
                         if output.isEmpty {
-                            let confirmation = "Command executed successfully: \(command)\nExit Code: \(exitCode)"
+                            let confirmation =
+                                "Command executed successfully: \(command)\nExit Code: \(exitCode)"
                             return .init(content: [.text(confirmation)], isError: false)
                         } else {
-                            let enhancedOutput = "Command: \(command)\nExit Code: \(exitCode)\nOutput:\n\(output)"
+                            let enhancedOutput =
+                                "Command: \(command)\nExit Code: \(exitCode)\nOutput:\n\(output)"
                             return .init(content: [.text(enhancedOutput)], isError: false)
                         }
                     } else {
@@ -2941,7 +3287,8 @@ func setupAndStartServer() async throws -> Server {
                             let errorMsg = "Command failed with exit code \(exitCode): \(command)"
                             return .init(content: [.text(errorMsg)], isError: true)
                         } else {
-                            let enhancedOutput = "Command: \(command)\nExit Code: \(exitCode) (FAILED)\nOutput:\n\(output)"
+                            let enhancedOutput =
+                                "Command: \(command)\nExit Code: \(exitCode) (FAILED)\nOutput:\n\(output)"
                             return .init(content: [.text(enhancedOutput)], isError: true)
                         }
                     }
@@ -2951,127 +3298,151 @@ func setupAndStartServer() async throws -> Server {
                 let path = try getOptionalString(from: params.arguments, key: "path")
                 let region = try getOptionalObject(from: params.arguments, key: "region")
                 let monitor = try getOptionalInt(from: params.arguments, key: "monitor")
-                let quality = try getOptionalString(from: params.arguments, key: "quality") ?? "high"
+                let quality =
+                    try getOptionalString(from: params.arguments, key: "quality") ?? "high"
                 let format = try getOptionalString(from: params.arguments, key: "format") ?? "png"
                 let ocr = try getOptionalBool(from: params.arguments, key: "ocr") ?? false
-                
+
                 guard let image = captureMainDisplay(monitor: monitor) else {
                     fputs("error: screenshot: Capture failed, checking permissions...\n", stderr)
                     if #available(macOS 11.0, *) {
                         if !CGPreflightScreenCaptureAccess() {
-                             openSystemSettings(for: .screenRecording)
-                             return .init(content: [.text("Screen Recording access denied. Opening System Settings > Privacy & Security > Screen Recording.")], isError: true)
+                            openSystemSettings(for: .screenRecording)
+                            return .init(
+                                content: [
+                                    .text(
+                                        "Screen Recording access denied. Opening System Settings > Privacy & Security > Screen Recording."
+                                    )
+                                ], isError: true)
                         }
                     }
-                    return .init(content: [.text("Failed to capture screen. Please ensure the app has Screen Recording permissions.")], isError: true)
+                    return .init(
+                        content: [
+                            .text(
+                                "Failed to capture screen. Please ensure the app has Screen Recording permissions."
+                            )
+                        ], isError: true)
                 }
-                
+
                 // Apply region selection if specified
                 var finalImage = image
                 if let regionDict = region {
-                    if let xValue = regionDict["x"], let yValue = regionDict["y"], 
-                       let widthValue = regionDict["width"], let heightValue = regionDict["height"],
-                       let x = xValue.doubleValue, let y = yValue.doubleValue,
-                       let width = widthValue.doubleValue, let height = heightValue.doubleValue {
-                        
+                    if let xValue = regionDict["x"], let yValue = regionDict["y"],
+                        let widthValue = regionDict["width"],
+                        let heightValue = regionDict["height"],
+                        let x = xValue.doubleValue, let y = yValue.doubleValue,
+                        let width = widthValue.doubleValue, let height = heightValue.doubleValue
+                    {
+
                         let rect = CGRect(x: x, y: y, width: width, height: height)
                         if let croppedImage = image.cropping(to: rect) {
                             finalImage = croppedImage
                         }
                     }
                 }
-                
+
                 if let savePath = path {
                     // Save to file with compression
                     let imageWidth = CGFloat(finalImage.width)
                     let imageHeight = CGFloat(finalImage.height)
-                    let nsImage = NSImage(cgImage: finalImage, size: NSSize(width: imageWidth, height: imageHeight))
-                    
+                    let nsImage = NSImage(
+                        cgImage: finalImage, size: NSSize(width: imageWidth, height: imageHeight))
+
                     var imageData: Data?
-                    
+
                     switch format.lowercased() {
                     case "jpg", "jpeg":
                         if let tiffData = nsImage.tiffRepresentation,
-                           let bitmapRep = NSBitmapImageRep(data: tiffData) {
+                            let bitmapRep = NSBitmapImageRep(data: tiffData)
+                        {
                             let qualityValue = getQualityValue(quality)
-                            imageData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: qualityValue])
+                            imageData = bitmapRep.representation(
+                                using: .jpeg, properties: [.compressionFactor: qualityValue])
                         }
                     case "webp":
                         // WebP support would require additional library, fallback to PNG
                         fallthrough
-                    default: // PNG
+                    default:  // PNG
                         if let tiffData = nsImage.tiffRepresentation,
-                           let bitmapRep = NSBitmapImageRep(data: tiffData) {
+                            let bitmapRep = NSBitmapImageRep(data: tiffData)
+                        {
                             imageData = bitmapRep.representation(using: .png, properties: [:])
                         }
                     }
-                    
+
                     guard let data = imageData else {
-                        return .init(content: [.text("Failed to process screenshot")], isError: true)
+                        return .init(
+                            content: [.text("Failed to process screenshot")], isError: true)
                     }
-                    
+
                     do {
                         try data.write(to: URL(fileURLWithPath: savePath))
-                        
+
                         var content: [Tool.Content] = [.text("Screenshot saved to: \(savePath)")]
-                        
+
                         if ocr {
                             let ocrResults = performOCR(on: finalImage)
                             if let jsonString = serializeToJsonString(ocrResults) {
                                 content.append(.text("\nOCR Results:\n\(jsonString)"))
                             }
                         }
-                        
+
                         return .init(content: content, isError: false)
                     } catch {
-                        return .init(content: [.text("Failed to save screenshot: \(error)")], isError: true)
+                        return .init(
+                            content: [.text("Failed to save screenshot: \(error)")], isError: true)
                     }
                 } else {
                     // Return Base64 with compression
                     guard let base64 = encodeBase64JPEG(image: finalImage, quality: quality) else {
                         return .init(content: [.text("Failed to encode screenshot")], isError: true)
                     }
-                    
+
                     var content: [Tool.Content] = [.text(base64)]
-                    
+
                     if ocr {
                         let ocrResults = performOCR(on: finalImage)
                         if let jsonString = serializeToJsonString(ocrResults) {
                             content.append(.text("\nOCR Results:\n\(jsonString)"))
                         }
                     }
-                    
+
                     return .init(content: content, isError: false)
                 }
 
             case visionTool.name, ocrAliasTool.name, analyzeAliasTool.name:
                 let region = try getOptionalObject(from: params.arguments, key: "region")
-                let language = try getOptionalString(from: params.arguments, key: "language") ?? "auto"
-                let confidence = try getOptionalBool(from: params.arguments, key: "confidence") ?? false
+                let language =
+                    try getOptionalString(from: params.arguments, key: "language") ?? "auto"
+                let confidence =
+                    try getOptionalBool(from: params.arguments, key: "confidence") ?? false
                 let format = try getOptionalString(from: params.arguments, key: "format") ?? "json"
-                
+
                 guard let image = captureMainDisplay() else {
                     return .init(
                         content: [.text("Failed to capture screen for analysis")], isError: true)
                 }
-                
+
                 // Apply region selection if specified
                 var finalImage = image
                 if let regionDict = region {
-                    if let xValue = regionDict["x"], let yValue = regionDict["y"], 
-                       let widthValue = regionDict["width"], let heightValue = regionDict["height"],
-                       let x = xValue.doubleValue, let y = yValue.doubleValue,
-                       let width = widthValue.doubleValue, let height = heightValue.doubleValue {
-                        
+                    if let xValue = regionDict["x"], let yValue = regionDict["y"],
+                        let widthValue = regionDict["width"],
+                        let heightValue = regionDict["height"],
+                        let x = xValue.doubleValue, let y = yValue.doubleValue,
+                        let width = widthValue.doubleValue, let height = heightValue.doubleValue
+                    {
+
                         let rect = CGRect(x: x, y: y, width: width, height: height)
                         if let croppedImage = image.cropping(to: rect) {
                             finalImage = croppedImage
                         }
                     }
                 }
-                
-                let elements = performOCR(on: finalImage, language: language, includeConfidence: confidence)
-                
+
+                let elements = performOCR(
+                    on: finalImage, language: language, includeConfidence: confidence)
+
                 switch format.lowercased() {
                 case "text":
                     let textContent = elements.map { $0.text }.joined(separator: "\n")
@@ -3084,11 +3455,11 @@ func setupAndStartServer() async throws -> Server {
                     } else {
                         return .init(content: [.text(textContent)], isError: false)
                     }
-                default: // json
+                default:  // json
                     guard let jsonString = serializeToJsonString(elements) else {
                         return .init(
                             content: [.text("Failed to serialize vision results")], isError: true)
-                        }
+                    }
                     return .init(content: [.text(jsonString)], isError: false)
                 }
 
@@ -3283,22 +3654,23 @@ func setupAndStartServer() async throws -> Server {
                 let text = try getRequiredString(from: params.arguments, key: "text")
                 let html = try getOptionalString(from: params.arguments, key: "html")
                 let image = try getOptionalString(from: params.arguments, key: "image")
-                let addToHistory = try getOptionalBool(from: params.arguments, key: "addToHistory") ?? true
-                
+                let addToHistory =
+                    try getOptionalBool(from: params.arguments, key: "addToHistory") ?? true
+
                 // Enhanced clipboard with rich text and image support
                 NSPasteboard.general.clearContents()
-                
+
                 var result = "Clipboard updated."
-                
+
                 // Set plain text
                 NSPasteboard.general.setString(text, forType: .string)
-                
+
                 // Set HTML if provided
                 if let htmlContent = html {
                     NSPasteboard.general.setString(htmlContent, forType: .html)
                     result += " HTML content added."
                 }
-                
+
                 // Set image if provided
                 if let imageData = image, let imageNSData = Data(base64Encoded: imageData) {
                     let nsImage = NSImage(data: imageNSData)
@@ -3307,24 +3679,26 @@ func setupAndStartServer() async throws -> Server {
                         result += " Image added."
                     }
                 }
-                
+
                 // Add to history if requested
                 if addToHistory {
                     addToClipboardHistory(text: text, html: html, image: image)
                     result += " Added to history."
                 }
-                
+
                 return .init(content: [.text(result)], isError: false)
 
             case getClipboardTool.name:
                 let format = try getOptionalString(from: params.arguments, key: "format") ?? "text"
                 let history = try getOptionalBool(from: params.arguments, key: "history") ?? false
                 let limit = try getOptionalInt(from: params.arguments, key: "limit") ?? 10
-                
+
                 if history {
                     let historyData = getClipboardHistory(limit: limit)
                     guard let jsonString = serializeToJsonString(historyData) else {
-                        return .init(content: [.text("Failed to serialize clipboard history")], isError: true)
+                        return .init(
+                            content: [.text("Failed to serialize clipboard history")], isError: true
+                        )
                     }
                     return .init(content: [.text(jsonString)], isError: false)
                 } else {
@@ -3352,10 +3726,12 @@ func setupAndStartServer() async throws -> Server {
                             allContent["html"] = htmlContent
                         }
                         guard let jsonString = serializeToJsonString(allContent) else {
-                            return .init(content: [.text("Failed to serialize all clipboard content")], isError: true)
+                            return .init(
+                                content: [.text("Failed to serialize all clipboard content")],
+                                isError: true)
                         }
                         return .init(content: [.text(jsonString)], isError: false)
-                    default: // text
+                    default:  // text
                         let textContent = NSPasteboard.general.string(forType: .string) ?? ""
                         return .init(content: [.text(textContent)], isError: false)
                     }
@@ -3364,14 +3740,16 @@ func setupAndStartServer() async throws -> Server {
             case clipboardHistoryTool.name:
                 let clear = try getOptionalBool(from: params.arguments, key: "clear") ?? false
                 let limit = try getOptionalInt(from: params.arguments, key: "limit") ?? 50
-                
+
                 if clear {
                     clearClipboardHistory()
                     return .init(content: [.text("Clipboard history cleared.")], isError: false)
                 } else {
                     let historyData = getClipboardHistory(limit: limit)
                     guard let jsonString = serializeToJsonString(historyData) else {
-                        return .init(content: [.text("Failed to serialize clipboard history")], isError: true)
+                        return .init(
+                            content: [.text("Failed to serialize clipboard history")], isError: true
+                        )
                     }
                     return .init(content: [.text(jsonString)], isError: false)
                 }
@@ -3396,12 +3774,12 @@ func setupAndStartServer() async throws -> Server {
                     script = "tell application \"System Events\" to key code 145"
                 case "get_info":
                     let infoScript = """
-                    set volumeInfo to get volume settings
-                    set currentVolume to output volume of volumeInfo
-                    set isMuted to output muted of volumeInfo
-                    set brightnessInfo to (brightness of (display 1))
-                    return "Volume: " & currentVolume & "%, Muted: " & isMuted & ", Brightness: " & brightnessInfo
-                    """
+                        set volumeInfo to get volume settings
+                        set currentVolume to output volume of volumeInfo
+                        set isMuted to output muted of volumeInfo
+                        set brightnessInfo to (brightness of (display 1))
+                        return "Volume: " & currentVolume & "%, Muted: " & isMuted & ", Brightness: " & brightnessInfo
+                        """
                     let osascript = Process()
                     osascript.launchPath = "/usr/bin/osascript"
                     osascript.arguments = ["-e", infoScript]
@@ -3409,10 +3787,12 @@ func setupAndStartServer() async throws -> Server {
                     osascript.standardOutput = pipe
                     osascript.launch()
                     osascript.waitUntilExit()
-                    
+
                     let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unknown"
-                    
+                    let output =
+                        String(data: data, encoding: .utf8)?.trimmingCharacters(
+                            in: .whitespacesAndNewlines) ?? "Unknown"
+
                     return .init(content: [.text("System Info: \(output)")], isError: false)
                 case "get_system_info":
                     let processInfo = ProcessInfo.processInfo
@@ -3424,43 +3804,67 @@ func setupAndStartServer() async throws -> Server {
                     let processorCount = processInfo.activeProcessorCount
                     let uptime = processInfo.systemUptime
                     let uptimeString = String(format: "%.2f hours", uptime / 3600.0)
-                    
-                    return .init(content: [.text("System: \(osVersion)\nMemory: \(memoryString)\nProcessors: \(processorCount)\nUptime: \(uptimeString)")], isError: false)
-                
+
+                    return .init(
+                        content: [
+                            .text(
+                                "System: \(osVersion)\nMemory: \(memoryString)\nProcessors: \(processorCount)\nUptime: \(uptimeString)"
+                            )
+                        ], isError: false)
+
                 case "get_storage":
                     let fileManager = FileManager.default
                     do {
                         let attributes = try fileManager.attributesOfFileSystem(forPath: "/")
                         if let size = attributes[.systemSize] as? Int64,
-                           let free = attributes[.systemFreeSize] as? Int64 {
+                            let free = attributes[.systemFreeSize] as? Int64
+                        {
                             let formatter = ByteCountFormatter()
                             formatter.countStyle = .file
                             let total = formatter.string(fromByteCount: size)
                             let available = formatter.string(fromByteCount: free)
                             let used = formatter.string(fromByteCount: size - free)
-                            return .init(content: [.text("Storage: Total \(total), Used \(used), Available \(available)")], isError: false)
+                            return .init(
+                                content: [
+                                    .text(
+                                        "Storage: Total \(total), Used \(used), Available \(available)"
+                                    )
+                                ], isError: false)
                         } else {
-                            return .init(content: [.text("Error: Could not retrieve storage attributes")], isError: true)
+                            return .init(
+                                content: [.text("Error: Could not retrieve storage attributes")],
+                                isError: true)
                         }
                     } catch {
-                        return .init(content: [.text("Error retrieving storage info: \(error.localizedDescription)")], isError: true)
+                        return .init(
+                            content: [
+                                .text(
+                                    "Error retrieving storage info: \(error.localizedDescription)")
+                            ], isError: true)
                     }
 
                 case "get_network":
-                     // Native Host info
-                     let host = Host.current()
-                     let addresses = host.addresses.joined(separator: ", ")
-                     return .init(content: [.text("Hostname: \(host.localizedName ?? "Unknown")\nIP Addresses: \(addresses)")], isError: false)
+                    // Native Host info
+                    let host = Host.current()
+                    let addresses = host.addresses.joined(separator: ", ")
+                    return .init(
+                        content: [
+                            .text(
+                                "Hostname: \(host.localizedName ?? "Unknown")\nIP Addresses: \(addresses)"
+                            )
+                        ], isError: false)
 
                 case "get_performance":
-                     // Keep top for performance as it is most detailed
-                     let command = "top -l 1 | head -10"
-                     let (output, exitCode) = runShellCommand(command)
-                     if exitCode == 0 {
-                         return .init(content: [.text(output)], isError: false)
-                     } else {
-                          return .init(content: [.text("Failed to get performance stats: \(output)")], isError: true)
-                     }
+                    // Keep top for performance as it is most detailed
+                    let command = "top -l 1 | head -10"
+                    let (output, exitCode) = runShellCommand(command)
+                    if exitCode == 0 {
+                        return .init(content: [.text(output)], isError: false)
+                    } else {
+                        return .init(
+                            content: [.text("Failed to get performance stats: \(output)")],
+                            isError: true)
+                    }
 
                 default: break
                 }
@@ -3478,41 +3882,50 @@ func setupAndStartServer() async throws -> Server {
             case appleScriptTool.name:
                 let script = try getRequiredString(from: params.arguments, key: "script")
                 let template = try getOptionalString(from: params.arguments, key: "template")
-                let aiGenerate = try getOptionalBool(from: params.arguments, key: "aiGenerate") ?? false
+                let aiGenerate =
+                    try getOptionalBool(from: params.arguments, key: "aiGenerate") ?? false
                 let description = try getOptionalString(from: params.arguments, key: "description")
                 let debug = try getOptionalBool(from: params.arguments, key: "debug") ?? false
                 let timeout = try getOptionalInt(from: params.arguments, key: "timeout") ?? 10
                 let validate = try getOptionalBool(from: params.arguments, key: "validate") ?? false
-                
+
                 var finalScript = script
-                
+
                 // Handle template usage
                 if let templateName = template {
                     finalScript = getAppleScriptTemplate(templateName)
                 }
-                
+
                 // Handle AI generation
                 if aiGenerate && description != nil {
                     finalScript = generateAppleScriptForDescription(description!)
                 }
-                
+
                 // Validate script if requested
                 if validate {
                     let validationResult = validateAppleScript(finalScript)
                     if !validationResult.isValid {
                         return CallTool.Result(
-                            content: [.text("AppleScript validation failed: \(validationResult.error)")], 
+                            content: [
+                                .text("AppleScript validation failed: \(validationResult.error)")
+                            ],
                             isError: true
                         )
                     }
                 }
-                
+
                 // Execute with enhanced options
-                let (success, output, error) = runAppleScriptNonBlocking(finalScript, timeout: Double(timeout))
-                
+                let (success, output, error) = runAppleScriptNonBlocking(
+                    finalScript, timeout: Double(timeout))
+
                 if success {
                     if output.contains("Reminders access error") {
-                        return CallTool.Result(content: [.text("Reminders access denied. Please grant permission in System Preferences > Security if success { Privacy > Privacy > Automation.")], isError: true)
+                        return CallTool.Result(
+                            content: [
+                                .text(
+                                    "Reminders access denied. Please grant permission in System Preferences > Security if success { Privacy > Privacy > Automation."
+                                )
+                            ], isError: true)
                     }
                     var resultText = output
                     if debug {
@@ -3539,58 +3952,80 @@ func setupAndStartServer() async throws -> Server {
                 let name = try getOptionalString(from: params.arguments, key: "name")
                 let script = try getOptionalString(from: params.arguments, key: "script")
                 let description = try getOptionalString(from: params.arguments, key: "description")
-                
+
                 if list {
                     let templates = getAppleScriptTemplates()
                     guard let jsonString = serializeToJsonString(templates) else {
-                        return CallTool.Result(content: [.text("Failed to serialize templates")], isError: true)
+                        return CallTool.Result(
+                            content: [.text("Failed to serialize templates")], isError: true)
                     }
                     return CallTool.Result(content: [.text(jsonString)])
                 } else if create != nil && name != nil && script != nil {
                     let newTemplate: [String: String] = [
                         "name": name!,
                         "script": script!,
-                        "description": description ?? "Custom template"
+                        "description": description ?? "Custom template",
                     ]
                     addAppleScriptTemplate(newTemplate)
-                    return CallTool.Result(content: [.text("Template '\(name!)' created successfully.")])
+                    return CallTool.Result(content: [
+                        .text("Template '\(name!)' created successfully.")
+                    ])
                 } else {
-                    return CallTool.Result(content: [.text("Use 'list': true or 'create': true with name and script to manage templates.")])
+                    return CallTool.Result(content: [
+                        .text(
+                            "Use 'list': true or 'create': true with name and script to manage templates."
+                        )
+                    ])
                 }
 
             case voiceControlTool.name:
                 let command = try getRequiredString(from: params.arguments, key: "command")
-                let language = try getOptionalString(from: params.arguments, key: "language") ?? "en-US"
-                let confidence = try getOptionalDouble(from: params.arguments, key: "confidence") ?? 0.7
-                
+                let _ = try getOptionalString(from: params.arguments, key: "language") ?? "en-US"
+                let _ = try getOptionalDouble(from: params.arguments, key: "confidence") ?? 0.7
+
                 // Simple voice command processing
                 let lowerCommand = command.lowercased()
                 var result = "Voice command processed: '\(command)'"
-                
+
                 if lowerCommand.contains("open") && lowerCommand.contains("safari") {
                     let script = "tell application \"Safari\" to activate"
-                    let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
-                    result = success ? "Opened Safari via voice command" : "Failed to open Safari: \(error ?? "Unknown")"
+                    let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+
+                    result =
+                        success
+                        ? "Opened Safari via voice command"
+                        : "Failed to open Safari: \(error ?? "Unknown")"
                 } else if lowerCommand.contains("screenshot") {
-                    let script = "tell application \"System Events\" to keystroke \"3\" using command down"
-                    let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
-                    result = success ? "Took screenshot via voice command" : "Failed to take screenshot: \(error ?? "Unknown")"
+                    let script =
+                        "tell application \"System Events\" to keystroke \"3\" using command down"
+                    let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+
+                    result =
+                        success
+                        ? "Took screenshot via voice command"
+                        : "Failed to take screenshot: \(error ?? "Unknown")"
                 } else if lowerCommand.contains("type") {
                     let textToType = lowerCommand.replacingOccurrences(of: "type ", with: "")
                     let script = "tell application \"System Events\" to keystroke \"\(textToType)\""
-                    let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
-                    result = success ? "Typed '\(textToType)' via voice command" : "Failed to type: \(error ?? "Unknown")"
+                    let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+
+                    result =
+                        success
+                        ? "Typed '\(textToType)' via voice command"
+                        : "Failed to type: \(error ?? "Unknown")"
                 }
-                
+
                 return CallTool.Result(content: [.text(result)])
 
             case processManagementTool.name:
                 let action = try getRequiredString(from: params.arguments, key: "action")
                 let pid = try getOptionalInt(from: params.arguments, key: "pid")
-                let name = try getOptionalString(from: params.arguments, key: "name")
-                let priority = try getOptionalString(from: params.arguments, key: "priority") ?? "normal"
+                let _ = try getOptionalString(from: params.arguments, key: "name")
+
+                let priority =
+                    try getOptionalString(from: params.arguments, key: "priority") ?? "normal"
                 let duration = try getOptionalInt(from: params.arguments, key: "duration") ?? 10
-                
+
                 switch action.lowercased() {
                 case "list":
                     let runningApps = NSWorkspace.shared.runningApplications
@@ -3600,94 +4035,122 @@ func setupAndStartServer() async throws -> Server {
                             "pid": String(app.processIdentifier),
                             "name": app.localizedName ?? "Unknown",
                             "bundleId": app.bundleIdentifier ?? "",
-                            "activationPolicy": String(app.activationPolicy.rawValue)
+                            "activationPolicy": String(app.activationPolicy.rawValue),
                         ])
                     }
                     guard let jsonString = serializeToJsonString(appsList) else {
-                        return CallTool.Result(content: [.text("Failed to serialize process list")], isError: true)
+                        return CallTool.Result(
+                            content: [.text("Failed to serialize process list")], isError: true)
                     }
                     return CallTool.Result(content: [.text(jsonString)])
-                    
+
                 case "kill":
                     if let targetPid = pid {
-                        let script = "tell application \"System Events\" to set unix process id of process \(targetPid) to 0"
-                        let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
-                                            } else {
-                        return CallTool.Result(content: [.text("PID required for kill action")], isError: true)
+                        let script =
+                            "tell application \"System Events\" to set unix process id of process \(targetPid) to 0"
+                        _ = runAppleScriptNonBlocking(
+                            script, timeout: 5.0)
+
+                    } else {
+                        return CallTool.Result(
+                            content: [.text("PID required for kill action")], isError: true)
                     }
-                    
+
                 case "priority":
                     if let targetPid = pid {
                         let priorityValue = priority == "high" ? 15 : priority == "low" ? 5 : 10
-                        let script = "tell application \"System Events\" to set unix process id of process \(targetPid) to \(priorityValue)"
-                        let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
-                        return CallTool.Result(content: [.text(success ? "Process \(targetPid) priority set to \(priority)" : "Failed to set priority: \(error ?? "Unknown")")])
+                        let script =
+                            "tell application \"System Events\" to set unix process id of process \(targetPid) to \(priorityValue)"
+                        let (success, _, error) = runAppleScriptNonBlocking(
+                            script, timeout: 5.0)
+
+                        return CallTool.Result(content: [
+                            .text(
+                                success
+                                    ? "Process \(targetPid) priority set to \(priority)"
+                                    : "Failed to set priority: \(error ?? "Unknown")")
+                        ])
                     } else {
-                        return CallTool.Result(content: [.text("PID required for priority action")], isError: true)
+                        return CallTool.Result(
+                            content: [.text("PID required for priority action")], isError: true)
                     }
-                    
+
                 case "monitor":
                     let startTime = Date()
-                    let endTime = startTime.addingTimeInterval(TimeInterval(duration))
+                    _ = startTime.addingTimeInterval(TimeInterval(duration))
                     let script = """
                         tell application "System Events"
-                            set processList to every process
-                            set output to ""
-                            repeat with p in processList
-                                set output to output & (unix id of p as string) & ":" & (name of p as string) & linefeed
-                            end repeat
-                            return output
+                            try
+                                set processList to every process
+                                set outputText to ""
+                                repeat with p in processList
+                                    set outputText to outputText & (unix id of p as string) & ":" & (name of p as string) & linefeed
+                                end repeat
+                                return outputText
+                            on error errMsg
+                                return "Error: " & errMsg
+                            end try
                         end tell
-                    on error errMsg
-                        return "Reminders access error: " end tell errMsg
-                    end try
-                    on error errMsg
-                        return "Calendar access error: " end tell errMsg
-                    end try
-                    """
-                    let (success, output, error) = runAppleScriptNonBlocking(script, timeout: Double(duration) + 5.0)
-                    return CallTool.Result(content: [.text(success ? output : "Monitoring failed: \(error ?? "Unknown")")])
-                    
+                        """
+                    let (success, output, error) = runAppleScriptNonBlocking(
+                        script, timeout: Double(duration) + 5.0)
+
+                    return CallTool.Result(content: [
+                        .text(success ? output : "Monitoring failed: \(error ?? "Unknown")")
+                    ])
+
                 default:
-                    return CallTool.Result(content: [.text("Unsupported action: \(action)")], isError: true)
+                    return CallTool.Result(
+                        content: [.text("Unsupported action: \(action)")], isError: true)
                 }
 
             case fileEncryptionTool.name:
                 let action = try getRequiredString(from: params.arguments, key: "action")
                 let path = try getRequiredString(from: params.arguments, key: "path")
-                let password = try getRequiredString(from: params.arguments, key: "password")
-                let algorithm = try getOptionalString(from: params.arguments, key: "algorithm") ?? "AES256"
+                _ = try getRequiredString(from: params.arguments, key: "password")
+                _ = try getOptionalString(from: params.arguments, key: "algorithm") ?? "AES256"
                 let outputPath = try getOptionalString(from: params.arguments, key: "output")
-                
+
                 // Simple file encryption simulation
                 let fileManager = FileManager.default
                 guard fileManager.fileExists(atPath: path) else {
-                    return CallTool.Result(content: [.text("File not found: \(path)")], isError: true)
+                    return CallTool.Result(
+                        content: [.text("File not found: \(path)")], isError: true)
                 }
-                
-                let finalOutputPath = outputPath ?? "\(path).\(action == "encrypt" ? ".encrypted" : ".decrypted")"
-                
+
+                let finalOutputPath =
+                    outputPath ?? "\(path).\(action == "encrypt" ? ".encrypted" : ".decrypted")"
+
                 switch action.lowercased() {
                 case "encrypt":
                     // Simulate encryption by copying file
                     do {
                         try fileManager.copyItem(atPath: path, toPath: finalOutputPath)
-                        return CallTool.Result(content: [.text("File encrypted successfully: \(finalOutputPath)")])
+                        return CallTool.Result(content: [
+                            .text("File encrypted successfully: \(finalOutputPath)")
+                        ])
                     } catch {
-                        return CallTool.Result(content: [.text("Encryption failed: \(error.localizedDescription)")], isError: true)
+                        return CallTool.Result(
+                            content: [.text("Encryption failed: \(error.localizedDescription)")],
+                            isError: true)
                     }
-                    
+
                 case "decrypt":
                     // Simulate decryption by copying file
                     do {
                         try fileManager.copyItem(atPath: path, toPath: finalOutputPath)
-                        return CallTool.Result(content: [.text("File decrypted successfully: \(finalOutputPath)")])
+                        return CallTool.Result(content: [
+                            .text("File decrypted successfully: \(finalOutputPath)")
+                        ])
                     } catch {
-                        return CallTool.Result(content: [.text("Decryption failed: \(error.localizedDescription)")], isError: true)
+                        return CallTool.Result(
+                            content: [.text("Decryption failed: \(error.localizedDescription)")],
+                            isError: true)
                     }
-                    
+
                 default:
-                    return CallTool.Result(content: [.text("Unsupported action: \(action)")], isError: true)
+                    return CallTool.Result(
+                        content: [.text("Unsupported action: \(action)")], isError: true)
                 }
 
             case systemMonitoringTool.name:
@@ -3695,68 +4158,74 @@ func setupAndStartServer() async throws -> Server {
                 let duration = try getOptionalInt(from: params.arguments, key: "duration") ?? 10
                 let interval = try getOptionalInt(from: params.arguments, key: "interval") ?? 2
                 let alert = try getOptionalBool(from: params.arguments, key: "alert") ?? false
-                let threshold = try getOptionalDouble(from: params.arguments, key: "threshold") ?? 80.0
-                
+                let threshold =
+                    try getOptionalDouble(from: params.arguments, key: "threshold") ?? 80.0
+
                 var monitoringResults: [String: Any] = [
                     "metric": metric,
                     "duration": duration,
                     "interval": interval,
                     "alert": alert,
                     "threshold": threshold,
-                    "timestamp": ISO8601DateFormatter().string(from: Date())
+                    "timestamp": ISO8601DateFormatter().string(from: Date()),
                 ]
-                
+
                 switch metric.lowercased() {
                 case "cpu":
                     // Simulate CPU monitoring
                     let cpuUsage = Double.random(in: 20...90)
                     monitoringResults["current_usage"] = cpuUsage
                     monitoringResults["alert_triggered"] = cpuUsage > threshold
-                    
+
                     if alert && cpuUsage > threshold {
-                        monitoringResults["alert_message"] = "CPU usage (\(cpuUsage)%) exceeds threshold (\(threshold)%)"
+                        monitoringResults["alert_message"] =
+                            "CPU usage (\(cpuUsage)%) exceeds threshold (\(threshold)%)"
                     }
-                    
+
                 case "memory":
                     // Simulate memory monitoring
                     let memoryUsage = Double.random(in: 30...85)
                     monitoringResults["current_usage"] = memoryUsage
                     monitoringResults["alert_triggered"] = memoryUsage > threshold
-                    
+
                     if alert && memoryUsage > threshold {
-                        monitoringResults["alert_message"] = "Memory usage (\(memoryUsage)%) exceeds threshold (\(threshold)%)"
+                        monitoringResults["alert_message"] =
+                            "Memory usage (\(memoryUsage)%) exceeds threshold (\(threshold)%)"
                     }
-                    
+
                 case "disk":
                     // Simulate disk monitoring
                     let diskUsage = Double.random(in: 40...75)
                     monitoringResults["current_usage"] = diskUsage
                     monitoringResults["alert_triggered"] = diskUsage > threshold
-                    
+
                     if alert && diskUsage > threshold {
-                        monitoringResults["alert_message"] = "Disk usage (\(diskUsage)%) exceeds threshold (\(threshold)%)"
+                        monitoringResults["alert_message"] =
+                            "Disk usage (\(diskUsage)%) exceeds threshold (\(threshold)%)"
                     }
-                    
+
                 case "network":
                     // Simulate network monitoring
                     let networkUsage = Double.random(in: 0...50)
                     monitoringResults["current_usage"] = networkUsage
                     monitoringResults["alert_triggered"] = networkUsage > threshold
-                    
+
                     if alert && networkUsage > threshold {
-                        monitoringResults["alert_message"] = "Network usage (\(networkUsage)%) exceeds threshold (\(threshold)%)"
+                        monitoringResults["alert_message"] =
+                            "Network usage (\(networkUsage)%) exceeds threshold (\(threshold)%)"
                     }
-                    
+
                 case "battery":
                     // Simulate battery monitoring
                     let batteryLevel = Double.random(in: 15...95)
                     monitoringResults["current_level"] = batteryLevel
                     monitoringResults["alert_triggered"] = batteryLevel < threshold
-                    
+
                     if alert && batteryLevel < threshold {
-                        monitoringResults["alert_message"] = "Battery level (\(batteryLevel)%) below threshold (\(threshold)%)"
+                        monitoringResults["alert_message"] =
+                            "Battery level (\(batteryLevel)%) below threshold (\(threshold)%)"
                     }
-                    
+
                 case "all":
                     // Simulate all metrics
                     monitoringResults["cpu"] = Double.random(in: 20...90)
@@ -3764,15 +4233,177 @@ func setupAndStartServer() async throws -> Server {
                     monitoringResults["disk"] = Double.random(in: 40...75)
                     monitoringResults["network"] = Double.random(in: 0...50)
                     monitoringResults["battery"] = Double.random(in: 15...95)
-                    
+
                 default:
-                    return CallTool.Result(content: [.text("Unsupported metric: \(metric)")], isError: true)
+                    return CallTool.Result(
+                        content: [.text("Unsupported metric: \(metric)")], isError: true)
                 }
-                
-                let convertedResults = monitoringResults.mapValues { value in if let stringValue = value as? String { stringValue } else { String(describing: value) } }; guard let jsonString = serializeToJsonString(convertedResults) else {
-                    return CallTool.Result(content: [.text("Failed to serialize monitoring results")], isError: true)
+
+                let convertedResults = monitoringResults.mapValues { value in
+                    if let stringValue = value as? String {
+                        stringValue
+                    } else {
+                        String(describing: value)
+                    }
+                }
+                guard let jsonString = serializeToJsonString(convertedResults) else {
+                    return CallTool.Result(
+                        content: [.text("Failed to serialize monitoring results")], isError: true)
                 }
                 return CallTool.Result(content: [.text(jsonString)])
+
+            case frontmostAppTool.name:
+                let script =
+                    "tell application \"System Events\" to return name of first process whose frontmost is true"
+                let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? output : "Error: \(error ?? "Unknown")")
+                ])
+
+            case batteryInfoTool.name:
+                let script = "do shell script \"pmset -g batt\""
+                let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? output : "Error: \(error ?? "Unknown")")
+                ])
+
+            case wifiDetailsTool.name:
+                let script =
+                    "do shell script \"/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I\""
+                let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? output : "Error: \(error ?? "Unknown")")
+                ])
+
+            case setVolumeTool.name:
+                let level = try getRequiredDouble(from: params.arguments, key: "level")
+                let script = "set volume output volume \(level)"
+                let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? "Volume set to \(level)" : "Error: \(error ?? "Unknown")")
+                ])
+
+            case setBrightnessTool.name:
+                let level = try getRequiredDouble(from: params.arguments, key: "level")
+                _ = "do shell script \"brightness \(level)\" "  // Requires brightness CLI tool often, or AppleScript
+                // Fallback to AppleScript if brightness CLI not found
+                let appleScript =
+                    "tell application \"System Events\" to repeat with v in (every desktop) \n set brightness of v to \(level) \n end repeat"
+                let (success, _, error) = runAppleScriptNonBlocking(appleScript, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? "Brightness set to \(level)" : "Error: \(error ?? "Unknown")")
+                ])
+
+            case emptyTrashTool.name:
+                let script = "tell application \"Finder\" to empty the trash"
+                let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? "Trash emptied" : "Error: \(error ?? "Unknown")")
+                ])
+
+            case windowInfoTool.name:
+                let script = """
+                    tell application "System Events"
+                        set frontProcess to first process whose frontmost is true
+                        set windowName to name of front window of frontProcess
+                        set windowBounds to bounds of front window of frontProcess
+                        return windowName & "|" & (item 1 of windowBounds as string) & "," & (item 2 of windowBounds as string) & "," & (item 3 of windowBounds as string) & "," & (item 4 of windowBounds as string)
+                    end tell
+                    """
+                let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? output : "Error: \(error ?? "Unknown")")
+                ])
+
+            case closeWindowTool.name:
+                let windowName = try getOptionalString(from: params.arguments, key: "windowName")
+                let script =
+                    windowName != nil
+                    ? "tell application \"System Events\" to click (first button whose subrole is \"AXCloseButton\") of window \"\(windowName!)\" of (first process whose frontmost is true)"
+                    : "tell application \"System Events\" to click (first button whose subrole is \"AXCloseButton\") of front window of (first process whose frontmost is true)"
+                let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? "Window closed" : "Error: \(error ?? "Unknown")")
+                ])
+
+            case moveWindowTool.name:
+                let x = try getRequiredDouble(from: params.arguments, key: "x")
+                let y = try getRequiredDouble(from: params.arguments, key: "y")
+                let windowName = try getOptionalString(from: params.arguments, key: "windowName")
+                let target = windowName != nil ? "window \"\(windowName!)\"" : "front window"
+                let script =
+                    "tell application \"System Events\" to set position of \(target) of (first process whose frontmost is true) to {\(x), \(y)}"
+                let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? "Window moved" : "Error: \(error ?? "Unknown")")
+                ])
+
+            case resizeWindowTool.name:
+                let width = try getRequiredDouble(from: params.arguments, key: "width")
+                let height = try getRequiredDouble(from: params.arguments, key: "height")
+                let windowName = try getOptionalString(from: params.arguments, key: "windowName")
+                let target = windowName != nil ? "window \"\(windowName!)\"" : "front window"
+                let script =
+                    "tell application \"System Events\" to set size of \(target) of (first process whose frontmost is true) to {\(width), \(height)}"
+                let (success, _, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? "Window resized" : "Error: \(error ?? "Unknown")")
+                ])
+
+            case listNetworkInterfacesTool.name:
+                let script = "do shell script \"networksetup -listallhardwareports\""
+                let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? output : "Error: \(error ?? "Unknown")")
+                ])
+
+            case getIPAddressTool.name:
+                let script =
+                    "do shell script \"ipconfig getifaddr en0; curl -s https://ifconfig.me\""
+                let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 5.0)
+                return CallTool.Result(content: [
+                    .text(success ? output : "Error: \(error ?? "Unknown")")
+                ])
+
+            case requestPermissionsTool.name:
+                fputs("log: handler(CallTool): request_permissions triggered\n", stderr)
+                var status = "Permission Request Status:\n"
+
+                // 1. Notifications
+                let center = UNUserNotificationCenter.current()
+                let options: UNAuthorizationOptions = [.alert, .sound, .badge]
+                let (notifGranted, notifError) = await withCheckedContinuation {
+                    (continuation: CheckedContinuation<(Bool, Error?), Never>) in
+                    center.requestAuthorization(options: options) { granted, error in
+                        continuation.resume(returning: (granted, error))
+                    }
+                }
+                status +=
+                    "- Notifications: \(notifGranted ? "GRANTED" : "DENIED (\(notifError?.localizedDescription ?? "None"))")\n"
+
+                // 2. Calendar
+                let calGranted = await requestCalendarAccess()
+                status +=
+                    "- Calendar: \(calGranted ? "GRANTED" : "DENIED (Prompted/Settings opened)")\n"
+
+                // 3. Reminders
+                let remGranted = await requestRemindersAccess()
+                status +=
+                    "- Reminders: \(remGranted ? "GRANTED" : "DENIED (Prompted/Settings opened)")\n"
+
+                // 4. Accessibility & Automation (Trigger a dummy script)
+                let dummyScript = "tell application \"System Events\" to get name of first process"
+                let (scriptSuccess, _, scriptError) = runAppleScriptNonBlocking(
+                    dummyScript, timeout: 2.0)
+                status +=
+                    "- Automation/Accessibility: \(scriptSuccess ? "GRANTED" : "DENIED (\(scriptError ?? "Check Privacy settings"))")\n"
+
+                if !notifGranted || !calGranted || !remGranted || !scriptSuccess {
+                    status +=
+                        "\nNOTE: If any permissions were denied, please check 'System Settings > Privacy & Security' and enable access for your terminal or the 'mcp-server-macos-use' binary."
+                }
+
+                return CallTool.Result(content: [.text(status)])
 
             default:
                 fputs(
@@ -3864,11 +4495,11 @@ struct MCPServer {
     private static func checkAndSetupPermissions() {
         let markerPath = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".macos_mcp_setup_complete")
-        
+
         if !FileManager.default.fileExists(atPath: markerPath.path) {
             fputs("log: main: First run detected - setting up permissions...\n", stderr)
             setupPermissions()
-            
+
             do {
                 try "".write(to: markerPath, atomically: true, encoding: .utf8)
                 fputs("log: main: First run marker created\n", stderr)
@@ -3879,29 +4510,33 @@ struct MCPServer {
             fputs("log: main: Permissions already configured\n", stderr)
         }
     }
-    
+
     private static func setupPermissions() {
         // Setup accessibility permissions - trigger prompt
         fputs("log: main: Checking Accessibility permissions...\n", stderr)
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
         let accessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
-        
+
         if !accessibilityEnabled {
-            fputs("warning: main: Accessibility permissions not granted. Opening settings...\n", stderr)
+            fputs(
+                "warning: main: Accessibility permissions not granted. Opening settings...\n",
+                stderr)
             openSystemSettings(for: .accessibility)
         }
-        
+
         // Request Calendar/Reminders permissions via EventStore preflight
         fputs("log: main: Requesting Calendar & Reminders permissions...\n", stderr)
         Task {
             _ = await requestCalendarAccess()
             _ = await requestRemindersAccess()
         }
-        
+
         // Screen Recording Check (Preflight)
         if #available(macOS 11.0, *) {
             if !CGPreflightScreenCaptureAccess() {
-                fputs("warning: main: Screen Recording permissions not granted. Opening settings...\n", stderr)
+                fputs(
+                    "warning: main: Screen Recording permissions not granted. Opening settings...\n",
+                    stderr)
                 openSystemSettings(for: .screenRecording)
             }
         }

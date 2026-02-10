@@ -42,27 +42,50 @@ export const ENHANCED_TOOLS: EnhancedToolDefinition[] = [
   // Visual Testing / Screenshots
   {
     name: 'enhanced_screenshot',
-    description: 'Take high-quality screenshots with multiple format support',
+    description: 'Take high-quality screenshots with region selection, compression, and OCR support',
     macosToolName: 'macos-use_take_screenshot',
     schema: z.object({
-      path: z.string().describe('Absolute path to save the screenshot'),
-      format: z.enum(['png', 'jpg', 'pdf']).optional().describe('Image format (default: png)'),
+      path: z.string().optional().describe('Absolute path to save the screenshot'),
+      region: z.object({
+        x: z.number(),
+        y: z.number(),
+        width: z.number(),
+        height: z.number(),
+      }).optional().describe('Optional region to capture'),
+      monitor: z.number().optional().describe('Optional monitor index (0 for main)'),
+      quality: z.enum(['low', 'medium', 'high', 'lossless']).optional().describe('Compression quality'),
+      format: z.enum(['png', 'jpg', 'webp']).optional().describe('Image format (default: png)'),
+      ocr: z.boolean().optional().describe('Run OCR on screenshot and return text'),
     }),
   },
   {
     name: 'ocr_analysis',
-    description: 'Perform OCR (text recognition) on a screenshot or image',
-    macosToolName: 'macos-use_perform_ocr',
+    description: 'Perform OCR (text recognition) on the screen or a specific region',
+    macosToolName: 'macos-use_analyze_screen',
     schema: z.object({
-      imagePath: z.string().describe('Path to the image file to analyze'),
+      region: z.object({
+        x: z.number(),
+        y: z.number(),
+        width: z.number(),
+        height: z.number(),
+      }).optional().describe('Optional region to analyze'),
+      language: z.enum(['en', 'uk', 'ru', 'auto']).optional().describe('Language hint (default: auto)'),
+      confidence: z.boolean().optional().describe('Include confidence scores (default: false)'),
+      format: z.enum(['json', 'text', 'both']).optional().describe('Output format (default: both)'),
     }),
   },
   {
     name: 'ui_analysis',
-    description: 'Analyze UI elements in a screenshot for accessibility and layout',
-    macosToolName: 'macos-use_analyze_ui',
+    description: 'Analyze UI elements on the screen or a specific region',
+    macosToolName: 'macos-use_analyze_screen',
     schema: z.object({
-      imagePath: z.string().describe('Path to the image file to analyze'),
+      region: z.object({
+        x: z.number(),
+        y: z.number(),
+        width: z.number(),
+        height: z.number(),
+      }).optional().describe('Optional region to analyze'),
+      format: z.enum(['json', 'text', 'both']).optional().describe('Output format (default: both)'),
     }),
   },
 
@@ -110,11 +133,14 @@ export const ENHANCED_TOOLS: EnhancedToolDefinition[] = [
   // Clipboard
   {
     name: 'enhanced_clipboard',
-    description: 'Get or set clipboard content with history support',
+    description: 'Get or set clipboard content with history and rich text support',
     macosToolName: 'macos-use_set_clipboard',
     schema: z.object({
       text: z.string().describe('Text to copy to clipboard'),
+      html: z.string().optional().describe('Optional HTML content'),
+      image: z.string().optional().describe('Optional base64 image data'),
       addToHistory: z.boolean().optional().describe('Whether to add to history (default: true)'),
+      showAnimation: z.boolean().optional().describe('Show visual feedback (default: true)'),
     }),
   },
   

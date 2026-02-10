@@ -8,7 +8,7 @@ import asyncio
 import json
 import subprocess
 import time
-from typing import Any, Dict
+from typing import Any
 
 
 class FixedMacOSToolsBridge:
