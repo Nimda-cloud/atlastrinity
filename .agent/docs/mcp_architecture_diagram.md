@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T14:38:36.156243 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/clean-cache.sh, scripts/fresh_install.sh -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T14:27:17.863773 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/behavior_config.yaml.template, scripts/verify_self_healing_config.py -->
 
