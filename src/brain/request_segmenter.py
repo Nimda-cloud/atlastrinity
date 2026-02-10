@@ -119,41 +119,48 @@ class RequestSegmenter:
 
         Args:
             user_request: Full user request text
-            history: Conversation history for context
-            context: Additional context information
+            history: Conversation history
+            context: Additional context
 
         Returns:
-            List of RequestSegment objects ordered by execution priority
+            List of RequestSegment objects
         """
         self._segmentation_count += 1
-
+        
+        logger.info(f"[SEGMENTER] Starting segmentation #{self._segmentation_count}")
+        logger.info(f"[SEGMENTER] Request: '{user_request[:100]}...'")
+        logger.info(f"[SEGMENTER] Config enabled: {_SEGMENTATION_CONFIG.get('enabled')}")
+        
         # Check if segmentation is enabled
         if not _SEGMENTATION_CONFIG.get("enabled", False):
-            # Return single segment with full request
-            profile = await self._classify_full_request(user_request, history, context)
+            logger.warning("[SEGMENTER] Segmentation disabled in config")
             return [
                 RequestSegment(
-                    text=user_request,
-                    mode=profile.mode,
-                    priority=1,
-                    reason="Segmentation disabled",
-                    profile=profile,
+                    text=user_request, mode="chat", priority=1, reason="Segmentation disabled"
                 )
             ]
 
         # Try LLM-based segmentation first
         try:
+            logger.info("[SEGMENTER] Trying LLM-based segmentation")
             segments = await self._llm_segmentation(user_request, history, context)
             if segments:
                 logger.info(f"[SEGMENTER] LLM segmentation: {len(segments)} segments")
+                for i, seg in enumerate(segments):
+                    logger.info(f"[SEGMENTER] LLM Segment {i+1}: mode={seg.mode}, text='{seg.text[:50]}...'")
                 return self._sort_and_merge_segments(segments)
+            else:
+                logger.info("[SEGMENTER] LLM segmentation returned no segments")
         except Exception as e:
             logger.warning(f"[SEGMENTER] LLM segmentation failed: {e}")
 
         # Fallback to keyword-based segmentation
+        logger.info("[SEGMENTER] Falling back to keyword-based segmentation")
         self._fallback_count += 1
         segments = self._keyword_segmentation(user_request)
         logger.info(f"[SEGMENTER] Keyword fallback: {len(segments)} segments")
+        for i, seg in enumerate(segments):
+            logger.info(f"[SEGMENTER] Keyword Segment {i+1}: mode={seg.mode}, text='{seg.text[:50]}...'")
         return self._sort_and_merge_segments(segments)
 
     async def _llm_segmentation(
