@@ -1408,12 +1408,10 @@ class Trinity:
                 f"[ORCHESTRATOR] Segment {i + 1} completed: status={segment_result.get('status')}"
             )
 
-            # --- CRITICAL FIX: Immediate feedback for chat segments ---
-            # If this is a chat-like segment, speak the result NOW before moving to the next segment
-            # (which might be a time-consuming task planning phase)
-            if segment.mode in ["chat", "deep_chat", "recall", "status", "solo_task"]:
-                if segment_result.get("result"):
-                    await self._speak("atlas", segment_result["result"])
+            # --- CRITICAL FIX: Immediate feedback for all segments ---
+            # Speak the result NOW before moving to the next segment
+            if segment_result.get("result") and not is_subtask:
+                await self._speak("atlas", segment_result["result"])
 
             # Combine responses for the final session history
             if segment_result.get("result"):
@@ -1467,10 +1465,23 @@ class Trinity:
         plan = await self._planning_loop(segment_analysis, segment.text, is_subtask, history)
 
         if plan and plan.steps:
+            steps_before = len(self.state.get("step_results", []))
             await self._create_db_task(segment.text, plan)
             await self._execute_steps_recursive(plan.steps)
-            return {"status": "completed", "result": "Segment executed", "mode": segment.mode}
-        return {"status": "completed", "result": "No plan for segment", "mode": segment.mode}
+            
+            # Evaluate this segment immediately for better feedback
+            current_results = self.state.get("step_results", [])[steps_before:]
+            evaluation = await self._evaluate_and_remember(
+                segment.text, 
+                intent=segment.mode, 
+                results=current_results,
+                silent_if_fail=True
+            )
+            
+            report = evaluation.get("final_report") if evaluation else "Завдання виконано."
+            return {"status": "completed", "result": report, "mode": segment.mode}
+            
+        return {"status": "completed", "result": "Планування не виявило необхідних кроків.", "mode": segment.mode}
 
     async def _handle_single_mode_request(
         self, user_request: str, history, images, analysis, is_subtask: bool
@@ -1525,21 +1536,35 @@ class Trinity:
         await self._notify_task_finished(session_id)
         self._trigger_backups()
 
-    async def _evaluate_and_remember(self, user_request: str, intent: str | None = None):
+    async def _evaluate_and_remember(
+        self, 
+        user_request: str, 
+        intent: str | None = None, 
+        results: list[dict[str, Any]] | None = None,
+        silent_if_fail: bool = False
+    ) -> dict[str, Any] | None:
         """Evaluate execution quality and save to LTM."""
         # Skip evaluation for simple chat/informative intents to avoid duplicated greetings
         if intent in ["chat", "deep_chat", "solo_task", "recall", "status"]:
             logger.debug(f"[ORCHESTRATOR] Skipping evaluation for intent: {intent}")
-            return
+            return None
+
+        actual_results = results if results is not None else self.state.get("step_results", [])
+        if not actual_results and intent != "segmented":
+             logger.debug("[ORCHESTRATOR] No results to evaluate")
+             return None
 
         try:
-            evaluation = await self.atlas.evaluate_execution(
-                user_request, self.state["step_results"]
-            )
+            evaluation = await self.atlas.evaluate_execution(user_request, actual_results)
 
             if evaluation.get("achieved"):
                 msg = evaluation.get("final_report") or "Завдання успішно виконано."
-                await self._speak("atlas", msg)
+                # We don't speak here if it's a global evaluation of a segmented request
+                # (because segments already spoke their own reports)
+                if intent != "segmented":
+                    await self._speak("atlas", msg)
+            elif not silent_if_fail:
+                await self._log("Evaluation indicated task was not fully achieved", "system", "warning")
 
             if evaluation.get("should_remember") and evaluation.get("quality_score", 0) >= 0.7:
                 await self._save_to_ltm(user_request, evaluation)
@@ -1547,8 +1572,11 @@ class Trinity:
             # Update DB Task
             if self.state.get("db_task_id"):
                 await self._mark_db_golden_path()
+                
+            return evaluation
         except Exception as e:
             logger.error(f"Evaluation failed: {e}")
+            return None
 
     async def _save_to_ltm(self, user_request, evaluation):
         """Save successful strategy to Long-term Memory."""

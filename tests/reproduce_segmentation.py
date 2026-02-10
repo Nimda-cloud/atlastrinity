@@ -55,13 +55,15 @@ async def test_segmentation():
     try:
         segments = await request_segmenter.split_request(mixed_request)
         for i, seg in enumerate(segments):
-            print(f"Segment {i + 1}: Mode={seg.mode}, Text='{seg.text[:50]}...', Priority={seg.priority}")
-        
+            print(
+                f"Segment {i + 1}: Mode={seg.mode}, Text='{seg.text[:50]}...', Priority={seg.priority}"
+            )
+
         if segments[0].mode == "deep_chat" and segments[1].mode in ["task", "solo_task"]:
             print("✅ SUCCESS: Mixed request correctly segmented and ordered.")
         else:
             print(f"❌ FAILURE: Unexpected segmentation order: {[s.mode for s in segments]}")
-            
+
     except Exception as e:
         print(f"⚠️ Error during mixed request test: {e}")
 
