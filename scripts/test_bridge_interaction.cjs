@@ -1,8 +1,8 @@
 const {
   MacOSToolsBridgeClient,
 } = require('../vendor/XcodeBuildMCP/build/integrations/macos-tools-bridge/client.js');
-const path = require('path');
-const process = require('process');
+const path = require('node:path');
+const process = require('node:process');
 
 async function main() {
   console.log('--- ULTIMATE BRIDGE INTERACTION TESTING ---');

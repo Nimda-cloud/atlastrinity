@@ -1,9 +1,9 @@
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
-import ts from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
-import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
+import ts from 'typescript-eslint';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -73,5 +73,5 @@ export default ts.config(
       '*.config.mjs',
       'vite.config.ts',
     ],
-  }
+  },
 );
