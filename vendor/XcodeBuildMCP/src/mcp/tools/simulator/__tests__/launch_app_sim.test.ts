@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as z from 'zod';
-import { createMockExecutor } from '../../../../test-utils/mock-executors.ts';
 import { sessionStore } from '../../../../utils/session-store.ts';
 import { schema, handler, launch_app_simLogic } from '../launch_app_sim.ts';
 
@@ -71,7 +70,7 @@ describe('launch_app_sim tool', () => {
   describe('Logic Behavior (Literal Returns)', () => {
     it('should launch app successfully with simulatorId', async () => {
       let callCount = 0;
-      const sequencedExecutor = async (command: string[]) => {
+      const sequencedExecutor = async (_command: string[]) => {
         callCount++;
         if (callCount === 1) {
           return {
@@ -179,7 +178,7 @@ describe('launch_app_sim tool', () => {
 
     it('should display friendly name when simulatorName is provided alongside resolved simulatorId', async () => {
       let callCount = 0;
-      const sequencedExecutor = async (command: string[]) => {
+      const sequencedExecutor = async (_command: string[]) => {
         callCount++;
         if (callCount === 1) {
           return {
@@ -311,7 +310,7 @@ describe('launch_app_sim tool', () => {
 
     it('should handle launch failure', async () => {
       let callCount = 0;
-      const mockExecutor = async (command: string[]) => {
+      const mockExecutor = async (_command: string[]) => {
         callCount++;
         if (callCount === 1) {
           return {

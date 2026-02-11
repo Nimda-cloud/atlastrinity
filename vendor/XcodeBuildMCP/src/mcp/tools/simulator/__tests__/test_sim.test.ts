@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as z from 'zod';
 import { sessionStore } from '../../../../utils/session-store.ts';
-import { schema, handler, test_simLogic } from '../test_sim.ts';
+import { schema, handler } from '../test_sim.ts';
 
 describe('test_sim tool', () => {
   beforeEach(() => {

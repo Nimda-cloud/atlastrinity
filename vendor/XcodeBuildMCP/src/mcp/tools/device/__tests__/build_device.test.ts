@@ -9,7 +9,6 @@ import * as z from 'zod';
 import {
   createMockCommandResponse,
   createMockExecutor,
-  createNoopExecutor,
 } from '../../../../test-utils/mock-executors.ts';
 import { schema, handler, buildDeviceLogic } from '../build_device.ts';
 import { sessionStore } from '../../../../utils/session-store.ts';

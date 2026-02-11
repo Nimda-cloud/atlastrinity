@@ -31,7 +31,7 @@ client.stdout.on('data', (data) => {
           resolve(response.result);
         }
       }
-    } catch (_e) {
+    } catch {
       // Ignore parse errors for partial lines
     }
   }

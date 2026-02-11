@@ -9,7 +9,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as z from 'zod';
 
 import { schema, handler } from '../stop_mac_app.ts';
 import { stop_mac_appLogic } from '../stop_mac_app.ts';

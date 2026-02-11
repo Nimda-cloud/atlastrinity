@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as z from 'zod';
 import {
-  createMockExecutor,
   createMockFileSystemExecutor,
   createNoopExecutor,
   createMockCommandResponse,

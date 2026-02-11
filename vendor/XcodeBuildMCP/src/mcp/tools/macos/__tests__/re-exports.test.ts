@@ -73,7 +73,7 @@ describe('macos tool module exports', () => {
     ];
 
     it('should have all required exports', () => {
-      toolModules.forEach(({ module, name }) => {
+      toolModules.forEach(({ module, name: _name }) => {
         expect(module).toHaveProperty('schema');
         expect(module).toHaveProperty('handler');
       });

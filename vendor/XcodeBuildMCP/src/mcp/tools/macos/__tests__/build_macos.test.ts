@@ -225,7 +225,7 @@ describe('build_macos plugin', () => {
         return mockExecutor(command);
       };
 
-      const result = await buildMacOSLogic(
+      const _result = await buildMacOSLogic(
         {
           projectPath: '/path/to/project.xcodeproj',
           scheme: 'MyScheme',
@@ -258,7 +258,7 @@ describe('build_macos plugin', () => {
         return mockExecutor(command);
       };
 
-      const result = await buildMacOSLogic(
+      const _result = await buildMacOSLogic(
         {
           projectPath: '/path/to/project.xcodeproj',
           scheme: 'MyScheme',
@@ -299,7 +299,7 @@ describe('build_macos plugin', () => {
         return mockExecutor(command);
       };
 
-      const result = await buildMacOSLogic(
+      const _result = await buildMacOSLogic(
         {
           projectPath: '/path/to/project.xcodeproj',
           scheme: 'MyScheme',
@@ -335,7 +335,7 @@ describe('build_macos plugin', () => {
         return mockExecutor(command);
       };
 
-      const result = await buildMacOSLogic(
+      const _result = await buildMacOSLogic(
         {
           projectPath: '/path/to/project.xcodeproj',
           scheme: 'MyScheme',
@@ -369,7 +369,7 @@ describe('build_macos plugin', () => {
         return mockExecutor(command);
       };
 
-      const result = await buildMacOSLogic(
+      const _result = await buildMacOSLogic(
         {
           projectPath: '/Users/dev/My Project/MyProject.xcodeproj',
           scheme: 'MyScheme',
@@ -402,7 +402,7 @@ describe('build_macos plugin', () => {
         return mockExecutor(command);
       };
 
-      const result = await buildMacOSLogic(
+      const _result = await buildMacOSLogic(
         {
           workspacePath: '/path/to/workspace.xcworkspace',
           scheme: 'MyScheme',

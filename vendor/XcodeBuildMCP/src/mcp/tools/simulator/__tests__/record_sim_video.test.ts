@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 // Import the tool and logic
-import { schema, handler, record_sim_videoLogic } from '../record_sim_video.ts';
+import { handler, record_sim_videoLogic } from '../record_sim_video.ts';
 import { createMockFileSystemExecutor } from '../../../../test-utils/mock-executors.ts';
 
 const DUMMY_EXECUTOR: any = (async () => ({ success: true })) as any; // CommandExecutor stub

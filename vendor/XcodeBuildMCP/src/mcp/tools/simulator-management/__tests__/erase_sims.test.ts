@@ -34,8 +34,8 @@ describe('erase_sims tool (single simulator)', () => {
         'An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=405):\nUnable to erase contents and settings in current state: Booted\n';
       const mock = createMockExecutor({ success: false, error: bootedError });
       const res = await erase_simsLogic({ simulatorId: 'UD1' }, mock);
-      expect((res.content?.[1] as any).text).toContain('Tool hint');
-      expect((res.content?.[1] as any).text).toContain('shutdownFirst: true');
+      expect((res.content![1] as any).text).toContain('Tool hint');
+      expect((res.content![1] as any).text).toContain('shutdownFirst: true');
     });
 
     it('performs shutdown first when shutdownFirst=true', async () => {

@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import * as z from 'zod';
+import { describe, it, expect } from 'vitest';
 
 import simulatorsResource, { simulatorsResourceLogic } from '../simulators.ts';
 import {
