@@ -71,7 +71,7 @@
       "transport": "stdio",
       "command": "node",
       "args": [
-        "${PROJECT_ROOT}/vendor/XcodeBuildMCP/dist/index.js",
+        "${PROJECT_ROOT}/vendor/XcodeBuildMCP/build/cli.js",
         "mcp"
       ],
       "connect_timeout": 120,

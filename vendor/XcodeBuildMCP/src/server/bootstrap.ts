@@ -8,7 +8,7 @@ import { getRegisteredWorkflows, registerWorkflowsFromManifest } from '../utils/
 import { bootstrapRuntime } from '../runtime/bootstrap-runtime.ts';
 import { getXcodeToolsBridgeManager } from '../integrations/xcode-tools-bridge/index.ts';
 import { getMcpBridgeAvailability } from '../integrations/xcode-tools-bridge/core.ts';
-import { registerMacOSTools } from '../integrations/macos-tools-bridge/index.ts';
+import { registerBridgedTools } from '../integrations/macos-tools-bridge/index.ts';
 import { resolveWorkspaceRoot } from '../daemon/socket-path.ts';
 import { detectXcodeRuntime } from '../utils/xcode-process.ts';
 import { readXcodeIdeState } from '../utils/xcode-state-reader.ts';
@@ -179,6 +179,6 @@ export async function bootstrapServer(
 
   await registerResources(server);
   
-  // Register enhanced macOS tools
-  await registerMacOSTools(server);
+  // Register all bridged native tools (macOS-use + Google Maps)
+  await registerBridgedTools(server);
 }
