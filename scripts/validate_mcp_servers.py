@@ -299,7 +299,11 @@ def main():
         print(f"\n{Colors.WARNING}⚠ Застарілі сервери (не використовуються):{Colors.ENDC}")
         for r in sorted(results, key=lambda x: x["name"]):
             if r["status"] == "deprecated":
-                desc = r["description"] if len(r["description"]) < 60 else r["description"][:57] + "..."
+                desc = (
+                    r["description"]
+                    if len(r["description"]) < 60
+                    else r["description"][:57] + "..."
+                )
                 print(f"  - {r['name']}: {desc} ({r['type']})")
 
     print()

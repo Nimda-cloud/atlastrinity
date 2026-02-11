@@ -23,7 +23,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DESKTOP = Path.home() / "Desktop"
 
@@ -75,19 +74,30 @@ def _ensure_test_files():
 # Swift MCP server binaries
 SWIFT_SERVERS = {
     "macos-use": {
-        "binary": PROJECT_ROOT / "vendor" / "mcp-server-macos-use" / ".build" / "release" / "mcp-server-macos-use",
+        "binary": PROJECT_ROOT
+        / "vendor"
+        / "mcp-server-macos-use"
+        / ".build"
+        / "release"
+        / "mcp-server-macos-use",
         "description": "macOS-use Automation (UI, system, files, clipboard, etc.)",
         "test_all_tools": [
             # -- Safe target: open TextEdit first so UI tools don't hit Windsurf --
             ("macos-use_open_application_and_traverse", {"identifier": "TextEdit"}),
             # UI Automation (targets TextEdit via frontmost after opening it)
-            ("macos-use_click_and_traverse", {"x": 300, "y": 400, "traverseBefore": False, "traverseAfter": False}),
+            (
+                "macos-use_click_and_traverse",
+                {"x": 300, "y": 400, "traverseBefore": False, "traverseAfter": False},
+            ),
             ("macos-use_right_click_and_traverse", {"x": 300, "y": 400}),
             ("macos-use_press_key_and_traverse", {"keyName": "Escape"}),
             ("macos-use_double_click_and_traverse", {"x": 300, "y": 400}),
             ("macos-use_type_and_traverse", {"text": ""}),
             ("macos-use_scroll_and_traverse", {"direction": "down", "amount": 1}),
-            ("macos-use_drag_and_drop_and_traverse", {"startX": 300, "startY": 400, "endX": 310, "endY": 410}),
+            (
+                "macos-use_drag_and_drop_and_traverse",
+                {"startX": 300, "startY": 400, "endX": 310, "endY": 410},
+            ),
             # App & Window Management
             ("macos-use_refresh_traversal", {"pid": 1}),
             ("macos-use_list_running_apps", {}),
@@ -145,8 +155,14 @@ SWIFT_SERVERS = {
             ("macos-use_send_notification", {"title": "Bridge Test", "message": "Validator OK"}),
             ("macos-use_notification_schedule", {"list": True}),
             # Productivity
-            ("macos-use_calendar_events", {"start": "2026-02-10T00:00:00Z", "end": "2026-02-10T23:59:59Z"}),
-            ("macos-use_create_event", {"title": "__bridge_test__", "date": "2099-12-31T00:00:00Z", "duration": 5}),
+            (
+                "macos-use_calendar_events",
+                {"start": "2026-02-10T00:00:00Z", "end": "2026-02-10T23:59:59Z"},
+            ),
+            (
+                "macos-use_create_event",
+                {"title": "__bridge_test__", "date": "2099-12-31T00:00:00Z", "duration": 5},
+            ),
             ("macos-use_reminders", {}),
             ("macos-use_create_reminder", {"title": "__bridge_test_reminder__"}),
             # Notes
@@ -154,7 +170,15 @@ SWIFT_SERVERS = {
             ("macos-use_notes_create_note", {"body": "Bridge validator test note"}),
             ("macos-use_notes_get_content", {"name": "__nonexistent_note__"}),
             # Mail
-            ("macos-use_mail_send", {"to": "test@test.invalid", "subject": "bridge test", "body": "test", "draft": True}),
+            (
+                "macos-use_mail_send",
+                {
+                    "to": "test@test.invalid",
+                    "subject": "bridge test",
+                    "body": "test",
+                    "draft": True,
+                },
+            ),
             ("macos-use_mail_read_inbox", {"limit": 1}),
             # Networking & Utilities
             ("macos-use_fetch_url", {"url": "https://httpbin.org/get"}),
@@ -162,7 +186,14 @@ SWIFT_SERVERS = {
             ("macos-use_countdown_timer", {"seconds": 1, "message": "test"}),
             # Voice & Security
             ("macos-use_voice_control", {"command": "test", "language": "en-US"}),
-            ("macos-use_file_encryption", {"action": "encrypt", "path": "/tmp/atlas_bridge_enc_test.txt", "password": "atlas-test-2026"}),
+            (
+                "macos-use_file_encryption",
+                {
+                    "action": "encrypt",
+                    "path": "/tmp/atlas_bridge_enc_test.txt",
+                    "password": "atlas-test-2026",
+                },
+            ),
             # Terminal aliases
             ("execute_command", {"command": "echo atlas-bridge-ok"}),
             ("terminal", {"command": "echo terminal-alias-ok"}),
@@ -238,7 +269,12 @@ SWIFT_SERVERS = {
         ],
     },
     "googlemaps": {
-        "binary": PROJECT_ROOT / "vendor" / "mcp-server-googlemaps" / ".build" / "release" / "mcp-server-googlemaps",
+        "binary": PROJECT_ROOT
+        / "vendor"
+        / "mcp-server-googlemaps"
+        / ".build"
+        / "release"
+        / "mcp-server-googlemaps",
         "description": "Google Maps (geocoding, directions, places, etc.)",
         "env_override": {"GOOGLE_MAPS_API_KEY": _load_google_maps_api_key()},
         "test_all_tools": [
@@ -246,8 +282,14 @@ SWIFT_SERVERS = {
             ("maps_reverse_geocode", {"lat": 48.8584, "lng": 2.2945}),
             ("maps_search_places", {"query": "restaurants near Eiffel Tower"}),
             ("maps_place_details", {"place_id": "ChIJLU7jZClu5kcR4PcOOO6p3I0"}),
-            ("maps_directions", {"origin": "Eiffel Tower, Paris", "destination": "Louvre Museum, Paris"}),
-            ("maps_distance_matrix", {"origins": "Eiffel Tower, Paris", "destinations": "Louvre Museum, Paris"}),
+            (
+                "maps_directions",
+                {"origin": "Eiffel Tower, Paris", "destination": "Louvre Museum, Paris"},
+            ),
+            (
+                "maps_distance_matrix",
+                {"origins": "Eiffel Tower, Paris", "destinations": "Louvre Museum, Paris"},
+            ),
             ("maps_street_view", {"location": "48.8584,2.2945"}),
             ("maps_static_map", {"center": "48.8584,2.2945", "zoom": 14}),
             ("maps_elevation", {"locations": "48.8584,2.2945"}),
@@ -325,7 +367,9 @@ class MCPStdioClient:
             fail(f"Failed to start process: {e}")
             return False
 
-    async def send_request(self, method: str, params: dict | None = None, timeout: float = 15.0) -> dict[str, Any]:
+    async def send_request(
+        self, method: str, params: dict | None = None, timeout: float = 15.0
+    ) -> dict[str, Any]:
         if not self.process or not self.process.stdin or not self.process.stdout:
             return {"error": "Process not running"}
 
@@ -369,7 +413,7 @@ class MCPStdioClient:
                 if msg.get("id") == req_id:
                     return msg
                 # Mismatched id — skip (stale response from previous call)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return {"error": f"Timeout after {timeout}s"}
         except json.JSONDecodeError as e:
             return {"error": f"Invalid JSON: {e}"}
@@ -377,20 +421,28 @@ class MCPStdioClient:
             return {"error": f"Request failed: {e}"}
 
     async def initialize(self) -> dict[str, Any]:
-        return await self.send_request("initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "atlas-bridge-validator", "version": "1.0.0"},
-        })
+        return await self.send_request(
+            "initialize",
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "atlas-bridge-validator", "version": "1.0.0"},
+            },
+        )
 
     async def send_initialized(self) -> None:
         """Send initialized notification (no response expected)."""
         if not self.process or not self.process.stdin:
             return
-        notification = json.dumps({
-            "jsonrpc": "2.0",
-            "method": "notifications/initialized",
-        }) + "\n"
+        notification = (
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "method": "notifications/initialized",
+                }
+            )
+            + "\n"
+        )
         self.process.stdin.write(notification.encode())
         await self.process.stdin.drain()
 
@@ -398,10 +450,14 @@ class MCPStdioClient:
         return await self.send_request("tools/list", {})
 
     async def call_tool(self, name: str, arguments: dict) -> dict[str, Any]:
-        return await self.send_request("tools/call", {
-            "name": name,
-            "arguments": arguments,
-        }, timeout=30.0)
+        return await self.send_request(
+            "tools/call",
+            {
+                "name": name,
+                "arguments": arguments,
+            },
+            timeout=30.0,
+        )
 
     async def stop(self):
         if self.process:
@@ -423,7 +479,7 @@ class ValidationResult:
         self.init_ok = False
         self.tools_discovered: list[str] = []
         self.catalog_missing: list[str] = []  # In catalog but not in server
-        self.server_extra: list[str] = []     # In server but not in catalog
+        self.server_extra: list[str] = []  # In server but not in catalog
         self.tool_call_results: list[dict] = []
         self.errors: list[str] = []
 
@@ -475,7 +531,9 @@ async def validate_server(server_id: str, config: dict) -> ValidationResult:
     protocol_version = init_result.get("protocolVersion", "unknown")
     capabilities = init_result.get("capabilities", {})
 
-    ok(f"Initialize OK - {server_info.get('name', '?')} v{server_info.get('version', '?')} (protocol: {protocol_version})")
+    ok(
+        f"Initialize OK - {server_info.get('name', '?')} v{server_info.get('version', '?')} (protocol: {protocol_version})"
+    )
     info(f"Capabilities: {json.dumps(capabilities, indent=None)}")
     result.init_ok = True
 
@@ -537,7 +595,9 @@ async def validate_server(server_id: str, config: dict) -> ValidationResult:
         for tool_name, tool_args in all_test_tools:
             if tool_name not in actual:
                 warn(f"Skipping {tool_name} (not available on server)")
-                result.tool_call_results.append({"tool": tool_name, "status": "skipped", "elapsed_ms": 0})
+                result.tool_call_results.append(
+                    {"tool": tool_name, "status": "skipped", "elapsed_ms": 0}
+                )
                 continue
 
             # Auto-reconnect if previous tool crashed the server
@@ -582,7 +642,9 @@ async def validate_server(server_id: str, config: dict) -> ValidationResult:
                 if is_error:
                     # Some tools may return "error" for invalid test inputs -- that's expected
                     # We mark as "tool_error" but it still means the bridge call worked
-                    warn(f"{tool_name}: tool-level error ({elapsed * 1000:.0f}ms): {text_content[:80]}")
+                    warn(
+                        f"{tool_name}: tool-level error ({elapsed * 1000:.0f}ms): {text_content[:80]}"
+                    )
                     call_result_entry["status"] = "tool_error"
                     call_result_entry["error"] = text_content
                 else:
@@ -630,7 +692,9 @@ async def main():
 
     for r in results:
         status = f"{Colors.GREEN}PASS{Colors.END}" if r.passed else f"{Colors.RED}FAIL{Colors.END}"
-        print(f"  {r.server_id:<15} [{status}]  tools: {len(r.tools_discovered):<4} catalog_diff: {len(r.catalog_missing)} missing, {len(r.server_extra)} extra")
+        print(
+            f"  {r.server_id:<15} [{status}]  tools: {len(r.tools_discovered):<4} catalog_diff: {len(r.catalog_missing)} missing, {len(r.server_extra)} extra"
+        )
 
         total_tools += len(r.tools_discovered)
         for tc in r.tool_call_results:
@@ -654,13 +718,21 @@ async def main():
         print(f"  Tool calls total: {total_calls}")
         print(f"    {Colors.GREEN}OK:         {total_calls_ok}{Colors.END}")
         if total_calls_tool_error > 0:
-            print(f"    {Colors.YELLOW}Tool error: {total_calls_tool_error} (bridge worked, tool returned error for test input){Colors.END}")
+            print(
+                f"    {Colors.YELLOW}Tool error: {total_calls_tool_error} (bridge worked, tool returned error for test input){Colors.END}"
+            )
         if total_calls_error > 0:
             print(f"    {Colors.RED}Bridge err: {total_calls_error}{Colors.END}")
         if total_calls_skipped > 0:
             print(f"    {Colors.CYAN}Skipped:    {total_calls_skipped}{Colors.END}")
-        bridge_success_rate = (total_calls_ok + total_calls_tool_error) / max(total_calls - total_calls_skipped, 1) * 100
-        print(f"  Bridge success rate: {bridge_success_rate:.1f}% ({total_calls_ok + total_calls_tool_error}/{total_calls - total_calls_skipped} calls got a response)")
+        bridge_success_rate = (
+            (total_calls_ok + total_calls_tool_error)
+            / max(total_calls - total_calls_skipped, 1)
+            * 100
+        )
+        print(
+            f"  Bridge success rate: {bridge_success_rate:.1f}% ({total_calls_ok + total_calls_tool_error}/{total_calls - total_calls_skipped} calls got a response)"
+        )
 
     catalog_total = sum(len(c.get("expected_catalog_tools", [])) for c in SWIFT_SERVERS.values())
     print(f"  Catalog definitions: {catalog_total}")
@@ -685,11 +757,17 @@ async def main():
 
     print()
     if all_passed and total_calls_error == 0:
-        print(f"  {Colors.GREEN}{Colors.BOLD}All Swift MCP servers validated. All tools respond via bridge protocol.{Colors.END}")
+        print(
+            f"  {Colors.GREEN}{Colors.BOLD}All Swift MCP servers validated. All tools respond via bridge protocol.{Colors.END}"
+        )
     elif all_passed:
-        print(f"  {Colors.YELLOW}{Colors.BOLD}Servers OK but {total_calls_error} bridge-level errors detected.{Colors.END}")
+        print(
+            f"  {Colors.YELLOW}{Colors.BOLD}Servers OK but {total_calls_error} bridge-level errors detected.{Colors.END}"
+        )
     else:
-        print(f"  {Colors.RED}{Colors.BOLD}Some servers failed validation. See details above.{Colors.END}")
+        print(
+            f"  {Colors.RED}{Colors.BOLD}Some servers failed validation. See details above.{Colors.END}"
+        )
 
     print()
     return 0 if all_passed else 1
