@@ -852,6 +852,95 @@ const MACOS_USE_TOOLS: BridgedToolDefinition[] = [
     priority: 1,
     tags: ['permissions', 'accessibility', 'setup', 'onboarding'],
   },
+
+  // --- Terminal / Command Execution ---
+  {
+    name: 'execute_command',
+    description: 'Execute a terminal command in a persistent shell session (maintains CWD)',
+    backendId: MACOS_USE,
+    remoteToolName: 'execute_command',
+    schema: z.object({
+      command: z.string().describe('The shell command to execute'),
+    }),
+    categories: [ToolCategory.SCRIPTING],
+    priority: 1,
+    tags: ['terminal', 'command', 'shell', 'execute', 'bash'],
+  },
+  {
+    name: 'terminal',
+    description: 'Alias for execute_command - run a terminal command in a persistent shell session',
+    backendId: MACOS_USE,
+    remoteToolName: 'terminal',
+    schema: z.object({
+      command: z.string().describe('The shell command to execute'),
+    }),
+    categories: [ToolCategory.SCRIPTING],
+    priority: 2,
+    tags: ['terminal', 'command', 'shell', 'alias'],
+  },
+
+  // --- Aliases: Screenshot & OCR ---
+  {
+    name: 'screenshot',
+    description: 'Alias for macos-use_take_screenshot - take screenshots with region, multi-monitor, compression, and OCR',
+    backendId: MACOS_USE,
+    remoteToolName: 'screenshot',
+    schema: z.object({
+      path: z.string().optional().describe('Absolute path to save the screenshot'),
+      region: regionParam,
+      monitor: z.number().optional().describe('Monitor index (0 for main)'),
+      quality: z.enum(['low', 'medium', 'high', 'lossless']).optional().describe('Compression quality'),
+      format: z.enum(['png', 'jpg', 'webp']).optional().describe('Image format (default: png)'),
+      ocr: z.boolean().optional().describe('Run OCR on screenshot and return text'),
+    }),
+    categories: [ToolCategory.VISUAL_TESTING],
+    priority: 2,
+    tags: ['screenshot', 'capture', 'screen', 'alias'],
+  },
+  {
+    name: 'ocr',
+    description: 'Alias for macos-use_analyze_screen - perform OCR text recognition on the screen',
+    backendId: MACOS_USE,
+    remoteToolName: 'ocr',
+    schema: z.object({
+      region: regionParam,
+      language: z.enum(['en', 'uk', 'ru', 'auto']).optional().describe('Language hint (default: auto)'),
+      confidence: z.boolean().optional().describe('Include confidence scores'),
+      format: z.enum(['json', 'text', 'both']).optional().describe('Output format (default: both)'),
+    }),
+    categories: [ToolCategory.VISUAL_TESTING],
+    priority: 2,
+    tags: ['ocr', 'text-recognition', 'screen', 'alias'],
+  },
+  {
+    name: 'analyze',
+    description: 'Alias for macos-use_analyze_screen - perform OCR text recognition on the screen',
+    backendId: MACOS_USE,
+    remoteToolName: 'analyze',
+    schema: z.object({
+      region: regionParam,
+      language: z.enum(['en', 'uk', 'ru', 'auto']).optional().describe('Language hint (default: auto)'),
+      confidence: z.boolean().optional().describe('Include confidence scores'),
+      format: z.enum(['json', 'text', 'both']).optional().describe('Output format (default: both)'),
+    }),
+    categories: [ToolCategory.VISUAL_TESTING],
+    priority: 3,
+    tags: ['analyze', 'ocr', 'text-recognition', 'alias'],
+  },
+
+  // --- Meta Tools ---
+  {
+    name: 'macos-use_list_tools_dynamic',
+    description: 'Returns a detailed JSON structure describing all available tools, their schemas, and usage examples',
+    backendId: MACOS_USE,
+    remoteToolName: 'macos-use_list_tools_dynamic',
+    schema: z.object({
+      toolName: z.string().optional().describe('Filter by tool name'),
+    }),
+    categories: [ToolCategory.META],
+    priority: 3,
+    tags: ['tools', 'list', 'schema', 'help', 'meta', 'dynamic'],
+  },
 ];
 
 // ─── Google Maps Tools ──────────────────────────────────────────────────────

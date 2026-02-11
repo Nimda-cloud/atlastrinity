@@ -196,6 +196,13 @@ def validate_server(name: str, config: dict) -> dict:
         result["type"] = "disabled"
         return result
 
+    # Check for deprecated servers
+    description = config.get("description", "")
+    if "DEPRECATED" in description:
+        result["status"] = "deprecated"
+        result["type"] = "deprecated"
+        return result
+
     command = config.get("command", "")
 
     # Визначаємо тип сервера
@@ -250,6 +257,7 @@ def main():
     ok_count = sum(1 for r in results if r["status"] == "ok")
     error_count = sum(1 for r in results if r["status"] == "error")
     disabled_count = sum(1 for r in results if r["disabled"])
+    deprecated_count = sum(1 for r in results if r["status"] == "deprecated")
 
     print(f"Усього серверів: {total}")
     print_success(f"Дієздатні: {ok_count}")
@@ -257,6 +265,8 @@ def main():
         print_error(f"Помилки: {error_count}")
     if disabled_count > 0:
         print_info(f"Вимкнені: {disabled_count}")
+    if deprecated_count > 0:
+        print_warning(f"Застарілі: {deprecated_count}")
 
     # Детальна таблиця
     print(f"\n{Colors.BOLD}Деталі:{Colors.ENDC}\n")
@@ -264,11 +274,11 @@ def main():
     print("-" * 60)
 
     for r in sorted(results, key=lambda x: (x.get("tier", 99), x["name"])):
-        status_icon = "✓" if r["status"] == "ok" else ("✗" if r["status"] == "error" else "⊝")
+        status_icon = "✓" if r["status"] == "ok" else ("✗" if r["status"] == "error" else ("⊝" if r["status"] == "deprecated" else "⊝"))
         status_color = (
             Colors.OKGREEN
             if r["status"] == "ok"
-            else (Colors.FAIL if r["status"] == "error" else Colors.WARNING)
+            else (Colors.FAIL if r["status"] == "error" else (Colors.WARNING if r["status"] == "deprecated" else Colors.WARNING))
         )
 
         print(
@@ -283,6 +293,14 @@ def main():
         if r["status"] == "ok":
             desc = r["description"] if len(r["description"]) < 60 else r["description"][:57] + "..."
             print(f"  - {r['name']}: {desc} ({r['type']})")
+
+    # Show deprecated servers
+    if deprecated_count > 0:
+        print(f"\n{Colors.WARNING}⚠ Застарілі сервери (не використовуються):{Colors.ENDC}")
+        for r in sorted(results, key=lambda x: x["name"]):
+            if r["status"] == "deprecated":
+                desc = r["description"] if len(r["description"]) < 60 else r["description"][:57] + "..."
+                print(f"  - {r['name']}: {desc} ({r['type']})")
 
     print()
 

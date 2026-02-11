@@ -2958,21 +2958,19 @@ func setupAndStartServer() async throws -> Server {
 
             case finderGetSelectionTool.name:
                 let script = """
-                    tell application "Finder"
-                        set theSelection to selection
-                        if (count of theSelection) is 0 then return "Nothing selected."
-                        set pathList to {}
-                        repeat with anItem in theSelection
-                            set end of pathList to POSIX path of (anItem as text)
-                        end repeat
-                        set AppleScript's text item delimiters to "\n"
-                        return pathList as string
-                    end tell
+                    try
+                        tell application "Finder"
+                            set theSelection to selection
+                            if (count of theSelection) is 0 then return "Nothing selected."
+                            set pathList to {}
+                            repeat with anItem in theSelection
+                                set end of pathList to POSIX path of (anItem as text)
+                            end repeat
+                            set AppleScript's text item delimiters to "\n"
+                            return pathList as string
+                        end tell
                     on error errMsg
-                        return "Reminders access error: " end tell errMsg
-                    end try
-                    on error errMsg
-                        return "Calendar access error: " end tell errMsg
+                        return "Finder selection error: " & errMsg
                     end try
                     """
                 let (success, output, error) = runAppleScriptNonBlocking(script, timeout: 6.0)
@@ -4377,27 +4375,24 @@ func setupAndStartServer() async throws -> Server {
                 fputs("log: handler(CallTool): request_permissions triggered\n", stderr)
                 var status = "Permission Request Status:\n"
 
-                // 1. Notifications
-                let center = UNUserNotificationCenter.current()
-                let options: UNAuthorizationOptions = [.alert, .sound, .badge]
-                let (notifGranted, notifError) = await withCheckedContinuation {
-                    (continuation: CheckedContinuation<(Bool, Error?), Never>) in
-                    center.requestAuthorization(options: options) { granted, error in
-                        continuation.resume(returning: (granted, error))
-                    }
-                }
-                status +=
-                    "- Notifications: \(notifGranted ? "GRANTED" : "DENIED (\(notifError?.localizedDescription ?? "None"))")\n"
+                // 1. Notifications — skip UNUserNotificationCenter entirely.
+                // ANY access to UNUserNotificationCenter (including .current() and
+                // .notificationSettings()) crashes CLI binaries with SIGABRT because
+                // bundleProxyForCurrentProcess is nil when there is no .app bundle.
+                // We verify notification delivery via osascript instead.
+                let notifCheck = "display notification \"permission check\" with title \"MCP\""
+                let (notifOk, _, _) = runAppleScriptNonBlocking(notifCheck, timeout: 3.0)
+                status += "- Notifications: \(notifOk ? "GRANTED (osascript)" : "DENIED (osascript)")\n"
 
                 // 2. Calendar
-                let calGranted = await requestCalendarAccess()
+                let calGranted = await requestCalendarAccess(openSettings: false)
                 status +=
-                    "- Calendar: \(calGranted ? "GRANTED" : "DENIED (Prompted/Settings opened)")\n"
+                    "- Calendar: \(calGranted ? "GRANTED" : "DENIED")\n"
 
                 // 3. Reminders
-                let remGranted = await requestRemindersAccess()
+                let remGranted = await requestRemindersAccess(openSettings: false)
                 status +=
-                    "- Reminders: \(remGranted ? "GRANTED" : "DENIED (Prompted/Settings opened)")\n"
+                    "- Reminders: \(remGranted ? "GRANTED" : "DENIED")\n"
 
                 // 4. Accessibility & Automation (Trigger a dummy script)
                 let dummyScript = "tell application \"System Events\" to get name of first process"
@@ -4406,7 +4401,7 @@ func setupAndStartServer() async throws -> Server {
                 status +=
                     "- Automation/Accessibility: \(scriptSuccess ? "GRANTED" : "DENIED (\(scriptError ?? "Check Privacy settings"))")\n"
 
-                if !notifGranted || !calGranted || !remGranted || !scriptSuccess {
+                if !calGranted || !remGranted || !scriptSuccess {
                     status +=
                         "\nNOTE: If any permissions were denied, please check 'System Settings > Privacy & Security' and enable access for your terminal or the 'mcp-server-macos-use' binary."
                 }
