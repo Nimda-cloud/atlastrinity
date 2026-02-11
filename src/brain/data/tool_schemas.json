@@ -320,9 +320,18 @@
     "description": "Retrieve current operational context (Session ID, latest tasks, last errors) for focused analysis"
   },
   "macos-use_run_applescript": {
-    "server": "macos-use",
-    "required": ["script"],
-    "optional": ["template", "aiGenerate", "description", "debug", "timeout", "validate"],
+    "server": "xcodebuild",
+    "required": [
+      "script"
+    ],
+    "optional": [
+      "template",
+      "aiGenerate",
+      "description",
+      "debug",
+      "timeout",
+      "validate"
+    ],
     "types": {
       "script": "str",
       "template": "str",
@@ -334,19 +343,43 @@
     },
     "description": "Ultimate AppleScript tool with AI generation, templates, debugging, and validation."
   },
-  "macos-use_open_app": {
-    "server": "macos-use",
-    "required": ["identifier"],
-    "optional": [],
+  "macos-use_open_application_and_traverse": {
+    "server": "xcodebuild",
+    "required": [
+      "identifier"
+    ],
+    "optional": [
+      "traverseBefore",
+      "traverseAfter",
+      "showDiff",
+      "onlyVisibleElements",
+      "showAnimation",
+      "animationDuration",
+      "delayAfterAction"
+    ],
     "types": {
-      "identifier": "str"
+      "identifier": "str",
+      "traverseBefore": "bool",
+      "traverseAfter": "bool",
+      "showDiff": "bool",
+      "onlyVisibleElements": "bool",
+      "showAnimation": "bool",
+      "animationDuration": "float",
+      "delayAfterAction": "float"
     },
-    "description": "Opens the application with the specified bundle identifier or name."
+    "description": "Opens the application with the specified bundle identifier or name and traverses accessibility tree."
   },
   "macos-use_click_and_traverse": {
-    "server": "macos-use",
-    "required": ["x", "y"],
-    "optional": ["pid", "showAnimation", "animationDuration"],
+    "server": "xcodebuild",
+    "required": [
+      "x",
+      "y"
+    ],
+    "optional": [
+      "pid",
+      "showAnimation",
+      "animationDuration"
+    ],
     "types": {
       "x": "float",
       "y": "float",
@@ -357,9 +390,13 @@
     "description": "Simulates a click and traverses the accessibility tree."
   },
   "macos-use_type_and_traverse": {
-    "server": "macos-use",
-    "required": ["text"],
-    "optional": ["pid"],
+    "server": "xcodebuild",
+    "required": [
+      "text"
+    ],
+    "optional": [
+      "pid"
+    ],
     "types": {
       "text": "str",
       "pid": "int"
@@ -367,18 +404,27 @@
     "description": "Simulates typing text and traverses the accessibility tree."
   },
   "macos-use_refresh_traversal": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["pid"],
+    "optional": [
+      "pid"
+    ],
     "types": {
       "pid": "int"
     },
     "description": "Traverses the accessibility tree of the specified PID or frontmost app."
   },
   "macos-use_take_screenshot": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["path", "region", "monitor", "quality", "format", "ocr"],
+    "optional": [
+      "path",
+      "region",
+      "monitor",
+      "quality",
+      "format",
+      "ocr"
+    ],
     "types": {
       "path": "str",
       "region": "dict",
@@ -390,9 +436,14 @@
     "description": "Enhanced screenshot tool with region, monitor, and OCR support."
   },
   "macos-use_analyze_screen": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["region", "language", "confidence", "format"],
+    "optional": [
+      "region",
+      "language",
+      "confidence",
+      "format"
+    ],
     "types": {
       "region": "dict",
       "language": "str",
@@ -402,9 +453,14 @@
     "description": "Enhanced OCR and UI analysis tool."
   },
   "macos-use_press_key_and_traverse": {
-    "server": "macos-use",
-    "required": ["keyName"],
-    "optional": ["pid", "modifierFlags"],
+    "server": "xcodebuild",
+    "required": [
+      "keyName"
+    ],
+    "optional": [
+      "pid",
+      "modifierFlags"
+    ],
     "types": {
       "keyName": "str",
       "pid": "int",
@@ -413,9 +469,14 @@
     "description": "Simulates pressing a key with modifiers and traverses the tree."
   },
   "macos-use_scroll_and_traverse": {
-    "server": "macos-use",
-    "required": ["direction"],
-    "optional": ["pid", "amount"],
+    "server": "xcodebuild",
+    "required": [
+      "direction"
+    ],
+    "optional": [
+      "pid",
+      "amount"
+    ],
     "types": {
       "direction": "str",
       "pid": "int",
@@ -424,9 +485,14 @@
     "description": "Simulates a mouse scroll."
   },
   "macos-use_right_click_and_traverse": {
-    "server": "macos-use",
-    "required": ["x", "y"],
-    "optional": ["pid"],
+    "server": "xcodebuild",
+    "required": [
+      "x",
+      "y"
+    ],
+    "optional": [
+      "pid"
+    ],
     "types": {
       "x": "float",
       "y": "float",
@@ -435,9 +501,14 @@
     "description": "Simulates a right-click."
   },
   "macos-use_double_click_and_traverse": {
-    "server": "macos-use",
-    "required": ["x", "y"],
-    "optional": ["pid"],
+    "server": "xcodebuild",
+    "required": [
+      "x",
+      "y"
+    ],
+    "optional": [
+      "pid"
+    ],
     "types": {
       "x": "float",
       "y": "float",
@@ -446,9 +517,16 @@
     "description": "Simulates a double-click."
   },
   "macos-use_drag_and_drop_and_traverse": {
-    "server": "macos-use",
-    "required": ["startX", "startY", "endX", "endY"],
-    "optional": ["pid"],
+    "server": "xcodebuild",
+    "required": [
+      "startX",
+      "startY",
+      "endX",
+      "endY"
+    ],
+    "optional": [
+      "pid"
+    ],
     "types": {
       "startX": "float",
       "startY": "float",
@@ -459,9 +537,19 @@
     "description": "Simulates a drag and drop action."
   },
   "macos-use_window_management": {
-    "server": "macos-use",
-    "required": ["action"],
-    "optional": ["pid", "x", "y", "width", "height", "groupId", "snapshotPath"],
+    "server": "xcodebuild",
+    "required": [
+      "action"
+    ],
+    "optional": [
+      "pid",
+      "x",
+      "y",
+      "width",
+      "height",
+      "groupId",
+      "snapshotPath"
+    ],
     "types": {
       "action": "str",
       "pid": "int",
@@ -475,9 +563,17 @@
     "description": "Manage windows: move, resize, minimize, maximize, etc."
   },
   "macos-use_set_clipboard": {
-    "server": "macos-use",
-    "required": ["text"],
-    "optional": ["html", "image", "addToHistory", "showAnimation", "animationDuration"],
+    "server": "xcodebuild",
+    "required": [
+      "text"
+    ],
+    "optional": [
+      "html",
+      "image",
+      "addToHistory",
+      "showAnimation",
+      "animationDuration"
+    ],
     "types": {
       "text": "str",
       "html": "str",
@@ -489,9 +585,13 @@
     "description": "Set clipboard content with rich text and history support."
   },
   "macos-use_get_clipboard": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["format", "history", "limit"],
+    "optional": [
+      "format",
+      "history",
+      "limit"
+    ],
     "types": {
       "format": "str",
       "history": "bool",
@@ -500,9 +600,12 @@
     "description": "Retrieve current clipboard or history."
   },
   "macos-use_clipboard_history": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["clear", "limit"],
+    "optional": [
+      "clear",
+      "limit"
+    ],
     "types": {
       "clear": "bool",
       "limit": "int"
@@ -510,9 +613,14 @@
     "description": "Manage or view clipboard history."
   },
   "macos-use_voice_control": {
-    "server": "macos-use",
-    "required": ["command"],
-    "optional": ["language", "confidence"],
+    "server": "xcodebuild",
+    "required": [
+      "command"
+    ],
+    "optional": [
+      "language",
+      "confidence"
+    ],
     "types": {
       "command": "str",
       "language": "str",
@@ -521,9 +629,16 @@
     "description": "Execute voice commands."
   },
   "macos-use_process_management": {
-    "server": "macos-use",
-    "required": ["action"],
-    "optional": ["pid", "name", "priority", "duration"],
+    "server": "xcodebuild",
+    "required": [
+      "action"
+    ],
+    "optional": [
+      "pid",
+      "name",
+      "priority",
+      "duration"
+    ],
     "types": {
       "action": "str",
       "pid": "int",
@@ -534,9 +649,16 @@
     "description": "List, kill, or monitor processes."
   },
   "macos-use_system_monitoring": {
-    "server": "macos-use",
-    "required": ["metric"],
-    "optional": ["duration", "interval", "alert", "threshold"],
+    "server": "xcodebuild",
+    "required": [
+      "metric"
+    ],
+    "optional": [
+      "duration",
+      "interval",
+      "alert",
+      "threshold"
+    ],
     "types": {
       "metric": "str",
       "duration": "int",
@@ -547,9 +669,13 @@
     "description": "Monitor system resources."
   },
   "macos-use_system_control": {
-    "server": "macos-use",
-    "required": ["action"],
-    "optional": ["value"],
+    "server": "xcodebuild",
+    "required": [
+      "action"
+    ],
+    "optional": [
+      "value"
+    ],
     "types": {
       "action": "str",
       "value": "float"
@@ -557,8 +683,10 @@
     "description": "Control system parameters like volume and brightness."
   },
   "macos-use_fetch_url": {
-    "server": "macos-use",
-    "required": ["url"],
+    "server": "xcodebuild",
+    "required": [
+      "url"
+    ],
     "optional": [],
     "types": {
       "url": "str"
@@ -566,9 +694,14 @@
     "description": "Fetch URL content and parse HTML to text."
   },
   "macos-use_get_time": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["timezone", "format", "customFormat", "convertTo"],
+    "optional": [
+      "timezone",
+      "format",
+      "customFormat",
+      "convertTo"
+    ],
     "types": {
       "timezone": "str",
       "format": "str",
@@ -578,9 +711,14 @@
     "description": "Retrieve current time or convert timezones."
   },
   "macos-use_countdown_timer": {
-    "server": "macos-use",
-    "required": ["seconds"],
-    "optional": ["message", "notification"],
+    "server": "xcodebuild",
+    "required": [
+      "seconds"
+    ],
+    "optional": [
+      "message",
+      "notification"
+    ],
     "types": {
       "seconds": "int",
       "message": "str",
@@ -589,9 +727,15 @@
     "description": "Start a countdown timer."
   },
   "macos-use_applescript_templates": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["list", "create", "name", "script", "description"],
+    "optional": [
+      "list",
+      "create",
+      "name",
+      "script",
+      "description"
+    ],
     "types": {
       "list": "bool",
       "create": "str",
@@ -602,8 +746,11 @@
     "description": "Manage AppleScript templates."
   },
   "macos-use_calendar_events": {
-    "server": "macos-use",
-    "required": ["start", "end"],
+    "server": "xcodebuild",
+    "required": [
+      "start",
+      "end"
+    ],
     "optional": [],
     "types": {
       "start": "str",
@@ -612,9 +759,19 @@
     "description": "Fetch calendar events."
   },
   "macos-use_create_event": {
-    "server": "macos-use",
-    "required": ["title", "date"],
-    "optional": ["endDate", "location", "notes", "attendees", "recurring", "reminder"],
+    "server": "xcodebuild",
+    "required": [
+      "title",
+      "date"
+    ],
+    "optional": [
+      "endDate",
+      "location",
+      "notes",
+      "attendees",
+      "recurring",
+      "reminder"
+    ],
     "types": {
       "title": "str",
       "date": "str",
@@ -628,17 +785,21 @@
     "description": "Create a calendar event."
   },
   "macos-use_reminders": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["list"],
+    "optional": [
+      "list"
+    ],
     "types": {
       "list": "str"
     },
     "description": "Fetch incomplete reminders."
   },
   "macos-use_create_reminder": {
-    "server": "macos-use",
-    "required": ["title"],
+    "server": "xcodebuild",
+    "required": [
+      "title"
+    ],
     "optional": [],
     "types": {
       "title": "str"
@@ -646,8 +807,10 @@
     "description": "Create a new reminder."
   },
   "macos-use_spotlight_search": {
-    "server": "macos-use",
-    "required": ["query"],
+    "server": "xcodebuild",
+    "required": [
+      "query"
+    ],
     "optional": [],
     "types": {
       "query": "str"
@@ -655,9 +818,17 @@
     "description": "Search for files via Spotlight."
   },
   "macos-use_send_notification": {
-    "server": "macos-use",
-    "required": ["title", "message"],
-    "optional": ["schedule", "sound", "persistent", "template"],
+    "server": "xcodebuild",
+    "required": [
+      "title",
+      "message"
+    ],
+    "optional": [
+      "schedule",
+      "sound",
+      "persistent",
+      "template"
+    ],
     "types": {
       "title": "str",
       "message": "str",
@@ -669,9 +840,12 @@
     "description": "Send a macOS notification."
   },
   "macos-use_notification_schedule": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["clear", "list"],
+    "optional": [
+      "clear",
+      "list"
+    ],
     "types": {
       "clear": "bool",
       "list": "bool"
@@ -679,16 +853,20 @@
     "description": "Manage scheduled notifications."
   },
   "macos-use_notes_list_folders": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
     "optional": [],
     "types": {},
     "description": "List Apple Notes folders."
   },
   "macos-use_notes_create_note": {
-    "server": "macos-use",
-    "required": ["body"],
-    "optional": ["folder"],
+    "server": "xcodebuild",
+    "required": [
+      "body"
+    ],
+    "optional": [
+      "folder"
+    ],
     "types": {
       "body": "str",
       "folder": "str"
@@ -696,8 +874,10 @@
     "description": "Create a note in Apple Notes."
   },
   "macos-use_notes_get_content": {
-    "server": "macos-use",
-    "required": ["name"],
+    "server": "xcodebuild",
+    "required": [
+      "name"
+    ],
     "optional": [],
     "types": {
       "name": "str"
@@ -705,9 +885,19 @@
     "description": "Get content of an Apple Note."
   },
   "macos-use_mail_send": {
-    "server": "macos-use",
-    "required": ["to", "subject", "body"],
-    "optional": ["cc", "bcc", "html", "attachments", "draft"],
+    "server": "xcodebuild",
+    "required": [
+      "to",
+      "subject",
+      "body"
+    ],
+    "optional": [
+      "cc",
+      "bcc",
+      "html",
+      "attachments",
+      "draft"
+    ],
     "types": {
       "to": "str",
       "subject": "str",
@@ -721,18 +911,27 @@
     "description": "Send an email via Apple Mail."
   },
   "macos-use_mail_read_inbox": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["limit"],
+    "optional": [
+      "limit"
+    ],
     "types": {
       "limit": "int"
     },
     "description": "Read Apple Mail inbox subjects."
   },
   "macos-use_finder_list_files": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["path", "filter", "sort", "order", "limit", "metadata"],
+    "optional": [
+      "path",
+      "filter",
+      "sort",
+      "order",
+      "limit",
+      "metadata"
+    ],
     "types": {
       "path": "str",
       "filter": "str",
@@ -744,17 +943,21 @@
     "description": "List files via Finder."
   },
   "macos-use_finder_get_selection": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["metadata"],
+    "optional": [
+      "metadata"
+    ],
     "types": {
       "metadata": "bool"
     },
     "description": "Get current Finder selection."
   },
   "macos-use_finder_open_path": {
-    "server": "macos-use",
-    "required": ["path"],
+    "server": "xcodebuild",
+    "required": [
+      "path"
+    ],
     "optional": [],
     "types": {
       "path": "str"
@@ -762,8 +965,10 @@
     "description": "Open a path in Finder."
   },
   "macos-use_finder_move_to_trash": {
-    "server": "macos-use",
-    "required": ["path"],
+    "server": "xcodebuild",
+    "required": [
+      "path"
+    ],
     "optional": [],
     "types": {
       "path": "str"
@@ -771,36 +976,197 @@
     "description": "Move an item to Trash via Finder."
   },
   "macos-use_list_running_apps": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
     "optional": [],
     "types": {},
     "description": "List all running applications."
   },
   "macos-use_list_browser_tabs": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["browser"],
+    "optional": [
+      "browser"
+    ],
     "types": {
       "browser": "str"
     },
     "description": "List open browser tabs."
   },
   "macos-use_list_all_windows": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
     "optional": [],
     "types": {},
     "description": "List all open windows."
   },
   "macos-use_list_tools_dynamic": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "required": [],
-    "optional": ["toolName"],
+    "optional": [
+      "toolName"
+    ],
     "types": {
       "toolName": "str"
     },
     "description": "List available tools dynamically."
+  },
+  "execute_command": {
+    "server": "xcodebuild",
+    "required": [
+      "command"
+    ],
+    "optional": [
+      "cwd",
+      "timeout"
+    ],
+    "types": {
+      "command": "str",
+      "cwd": "str",
+      "timeout": "int"
+    },
+    "description": "Execute a shell command and return output."
+  },
+  "macos-use_get_frontmost_app": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get information about the currently active (frontmost) application."
+  },
+  "macos-use_get_active_window_info": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get detailed information about the frontmost window."
+  },
+  "macos-use_close_window": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [
+      "windowName"
+    ],
+    "types": {
+      "windowName": "str"
+    },
+    "description": "Close a specific window by name or the frontmost window."
+  },
+  "macos-use_move_window": {
+    "server": "xcodebuild",
+    "required": [
+      "x",
+      "y"
+    ],
+    "optional": [
+      "windowName"
+    ],
+    "types": {
+      "x": "float",
+      "y": "float",
+      "windowName": "str"
+    },
+    "description": "Move a window to specified screen coordinates."
+  },
+  "macos-use_resize_window": {
+    "server": "xcodebuild",
+    "required": [
+      "width",
+      "height"
+    ],
+    "optional": [
+      "windowName"
+    ],
+    "types": {
+      "width": "float",
+      "height": "float",
+      "windowName": "str"
+    },
+    "description": "Resize a window to specified dimensions."
+  },
+  "macos-use_get_battery_info": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get current battery status, percentage, and charging state."
+  },
+  "macos-use_get_wifi_details": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get current WiFi connection details (SSID, signal strength)."
+  },
+  "macos-use_set_system_volume": {
+    "server": "xcodebuild",
+    "required": [
+      "level"
+    ],
+    "optional": [],
+    "types": {
+      "level": "int"
+    },
+    "description": "Set the system output volume (0-100)."
+  },
+  "macos-use_set_screen_brightness": {
+    "server": "xcodebuild",
+    "required": [
+      "level"
+    ],
+    "optional": [],
+    "types": {
+      "level": "float"
+    },
+    "description": "Set the primary display brightness (0.0 to 1.0)."
+  },
+  "macos-use_empty_trash": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Empty the macOS Trash via Finder."
+  },
+  "macos-use_list_network_interfaces": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "List all active network interfaces on the system."
+  },
+  "macos-use_get_ip_address": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Get local and estimated public IP address."
+  },
+  "macos-use_request_permissions": {
+    "server": "xcodebuild",
+    "required": [],
+    "optional": [],
+    "types": {},
+    "description": "Request all necessary macOS permissions (Accessibility, Calendar, Reminders, Notifications)."
+  },
+  "macos-use_file_encryption": {
+    "server": "xcodebuild",
+    "required": [
+      "action",
+      "path",
+      "password"
+    ],
+    "optional": [
+      "algorithm",
+      "output"
+    ],
+    "types": {
+      "action": "str",
+      "path": "str",
+      "password": "str",
+      "algorithm": "str",
+      "output": "str"
+    },
+    "description": "File and folder encryption with AES algorithms (encrypt, decrypt, encrypt_folder, decrypt_folder)."
   },
   "create_entities": {
     "server": "memory",
@@ -1331,19 +1697,19 @@
     "alias_for": "search"
   },
   "terminal": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "alias_for": "execute_command"
   },
   "screenshot": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "alias_for": "macos-use_take_screenshot"
   },
   "ocr": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "alias_for": "macos-use_analyze_screen"
   },
   "analyze": {
-    "server": "macos-use",
+    "server": "xcodebuild",
     "alias_for": "macos-use_analyze_screen"
   },
   "duckduckgo_search": {
@@ -2390,7 +2756,7 @@
     "description": "Analyze MCP execution logs for loops, hallucinations, and inefficiencies."
   },
   "maps_geocode": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "address"
     ],
@@ -2401,7 +2767,7 @@
     "description": "Convert address to geographic coordinates"
   },
   "maps_reverse_geocode": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "lat",
       "lng"
@@ -2414,7 +2780,7 @@
     "description": "Convert coordinates to address"
   },
   "maps_search_places": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "query"
     ],
@@ -2440,7 +2806,7 @@
     "description": "Search for places with advanced filtering (types, price, open status)"
   },
   "maps_place_details": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "place_id"
     ],
@@ -2456,7 +2822,7 @@
     "description": "Get detailed info including reviews, hours, and photos"
   },
   "maps_directions": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "origin",
       "destination"
@@ -2482,7 +2848,7 @@
     "description": "Get directions with multi-stop, alternatives, and live traffic"
   },
   "maps_distance_matrix": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "origins",
       "destinations"
@@ -2495,7 +2861,7 @@
     "description": "Calculate distance and time with live traffic"
   },
   "maps_street_view": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "location"
     ],
@@ -2515,7 +2881,7 @@
     "description": "Get Street View image with optional Cyberpunk styling"
   },
   "maps_static_map": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "center"
     ],
@@ -2535,7 +2901,7 @@
     "description": "Generate static map image with optional Cyberpunk styling"
   },
   "maps_elevation": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [
       "locations"
     ],
@@ -2546,7 +2912,7 @@
     "description": "Get elevation data for locations"
   },
   "maps_open_interactive_search": {
-    "server": "googlemaps",
+    "server": "xcodebuild",
     "required": [],
     "optional": [
       "initial_query"
@@ -2555,6 +2921,22 @@
       "initial_query": "str"
     },
     "description": "Open interactive map search interface"
+  },
+  "maps_generate_link": {
+    "server": "xcodebuild",
+    "required": [
+      "location"
+    ],
+    "optional": [
+      "zoom",
+      "map_type"
+    ],
+    "types": {
+      "location": "str",
+      "zoom": "int",
+      "map_type": "str"
+    },
+    "description": "Generate a shareable Google Maps URL for specific coordinates or location"
   },
   "maps_start_tour": {
     "server": "local",

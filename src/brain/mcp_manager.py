@@ -670,7 +670,7 @@ class MCPManager:
         # Intelligent fallback: If failed and allow_fallback, try macOS-use equivalent
         if allow_fallback and isinstance(result, dict) and result.get("error"):
             # Check if this wasn't already a macOS-use call
-            if explicit_server != "macos-use" and not (tool_name or "").startswith("macos-use"):
+            if explicit_server != "xcodebuild" and not (tool_name or "").startswith("xcodebuild"):
                 # Try to find macOS-use equivalent
                 fallback_tool = self._get_macos_equivalent(tool_name or "")
                 if fallback_tool:
@@ -679,7 +679,7 @@ class MCPManager:
                         f"Attempting fallback to macos-use.{fallback_tool}",
                     )
                     try:
-                        result = await self.call_tool("macos-use", fallback_tool, arguments or {})
+                        result = await self.call_tool("xcodebuild", fallback_tool, arguments or {})
                         logger.info(f"[MCP] Fallback successful: macos-use.{fallback_tool}")
                     except Exception as e:
                         logger.error(f"[MCP] Fallback also failed: {e}")
@@ -944,7 +944,7 @@ class MCPManager:
             # Final pkill for any common MCP signatures
             try:
                 # Targeted kills for known servers
-                sigs = ["mcp-server", "macos-use", "vibe_server", "vibe", "npx", "bunx"]
+                sigs = ["mcp-server", "xcodebuild", "vibe_server", "vibe", "npx", "bunx"]
                 for sig in sigs:
                     subprocess.run(["pkill", "-9", "-f", sig], check=False, capture_output=True)
             except Exception:

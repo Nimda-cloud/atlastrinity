@@ -288,7 +288,7 @@ class HealingOrchestrator:
         if "vibe" in text:
             return "vibe"
         if "google" in text or "maps" in text:
-            return "googlemaps"
+            return "xcodebuild"
         if "fs" in text or "filesystem" in text:
             return "filesystem"
         return None

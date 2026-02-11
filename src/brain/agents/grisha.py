@@ -2402,10 +2402,10 @@ class Grisha(BaseAgent):
         return await self._attempt_local_screenshot(str(SCREENSHOTS_DIR))
 
     async def _attempt_mcp_screenshot(self, save_dir: str) -> str | None:
-        """Attempts to take a screenshot using the 'macos-use' MCP tool."""
+        """Attempts to take a screenshot using the 'xcodebuild' MCP tool."""
         try:
-            if "macos-use" in mcp_manager.config.get("mcpServers", {}):
-                result = await mcp_manager.call_tool("macos-use", "macos-use_take_screenshot", {})
+            if "xcodebuild" in mcp_manager.config.get("mcpServers", {}):
+                result = await mcp_manager.call_tool("xcodebuild", "macos-use_take_screenshot", {})
 
                 base64_img = None
                 if isinstance(result, dict) and "content" in result:

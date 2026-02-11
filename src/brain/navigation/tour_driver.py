@@ -218,7 +218,7 @@ class TourDriver:
             location_str = f"{lat},{lng}"
 
             result = await mcp_manager.call_tool(
-                "googlemaps",
+                "xcodebuild",
                 "maps_street_view",
                 {
                     "location": location_str,
@@ -318,7 +318,7 @@ class TourDriver:
             location_str = f"{lat},{lng}"
 
             result = await mcp_manager.call_tool(
-                "googlemaps",
+                "xcodebuild",
                 "maps_street_view",
                 {
                     "location": location_str,

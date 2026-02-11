@@ -83,12 +83,12 @@ atlastrinity/
 │       ├── main.ts               # Electron main
 │       └── permissions.ts        # macOS permissions
 │
-├── vendor/                       # Third-party MCP binaries (Swift)
-│   ├── mcp-server-macos-use/     # macOS Universal Commander (42+ tools)
-│   │   └── mcp-server-macos-use  # Prebuilt binary
-│   ├── mcp-server-googlemaps/    # Google Maps MCP (12 tools)
-│   │   └── .build/release/mcp-server-googlemaps  # Compiled binary
-│   └── (XcodeBuildMCP via npx)    # Xcode Build & Test (94+ tools)
+├── vendor/                       # Third-party MCP binaries
+│   ├── mcp-server-macos-use/     # macOS Universal Commander (63 tools) [bridged via XcodeBuildMCP]
+│   │   └── mcp-server-macos-use  # Swift binary (accessed through xcodebuild bridge)
+│   ├── mcp-server-googlemaps/    # Google Maps MCP (11 tools) [bridged via XcodeBuildMCP]
+│   │   └── .build/release/mcp-server-googlemaps  # Swift binary (accessed through xcodebuild bridge)
+│   └── XcodeBuildMCP/            # Unified MCP Hub (168+ tools: 94 native + 63 macOS + 11 Maps)
 │
 ├── scripts/                      # Utility Scripts (115+)
 │   ├── check_mcp_health.py       # MCP health check (CLI: --json --tools --all)
@@ -224,7 +224,7 @@ VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 ### Tier 1 — Core (Always loaded)
 | Server | Transport | Command | Source | Tools |
 |--------|-----------|---------|--------|-------|
-| `macos-use` | stdio | `vendor/mcp-server-macos-use/mcp-server-macos-use` | Swift binary | 42+ |
+| `xcodebuild` | stdio | `node vendor/XcodeBuildMCP/dist/index.js mcp` | Local Node.js | 168+ (94 native + 63 macOS bridge + 11 Maps bridge) |
 | `filesystem` | stdio | `npx @modelcontextprotocol/server-filesystem` | npm | ~10 |
 | `sequential-thinking` | stdio | `bunx @modelcontextprotocol/server-sequential-thinking` | npm | 1 |
 
@@ -234,7 +234,7 @@ VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 | `vibe` | stdio | `python3 -m src.mcp_server.vibe_server` | Local Python | 18 |
 | `memory` | stdio | `python3 -m src.mcp_server.memory_server` | Local Python | 9 |
 | `graph` | stdio | `python3 -m src.mcp_server.graph_server` | Local Python | 4 |
-| `googlemaps` | stdio | `vendor/mcp-server-googlemaps/.build/release/mcp-server-googlemaps` | Swift binary | 12 |
+| ~~`googlemaps`~~ | — | Bridged through xcodebuild | — | — |
 | `devtools` | stdio | `python3 -m src.mcp_server.devtools_server` | Local Python | 25+ |
 | `duckduckgo-search` | stdio | `python3 -m src.mcp_server.duckduckgo_search_server` | Local Python | ~5 |
 | `golden-fund` | stdio | `python3 -m src.mcp_server.golden_fund.server` | Local Python | 8 |
@@ -242,7 +242,7 @@ VIBE_WORKSPACE = CONFIG_ROOT / "vibe_workspace"
 | `github` | stdio | `npx @modelcontextprotocol/server-github` | npm | ~20 |
 | `redis` | stdio | `python3 -m src.mcp_server.redis_server` | Local Python | 5 |
 | `data-analysis` | stdio | `python3 -m src.mcp_server.data_analysis_server` | Local Python | 10 |
-| `xcodebuild` | stdio | `npx -y xcodebuildmcp@latest mcp` | npm | 94+ |
+| ~~`macos-use`~~ | — | Bridged through xcodebuild | — | — |
 | `tour-guide` | internal | Native Python (ToolDispatcher) | Internal | 6 |
 
 ### Tier 3 — Optional (On-demand)

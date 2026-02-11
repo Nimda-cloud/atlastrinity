@@ -287,7 +287,7 @@ def get_servers_for_task(task_type: str) -> list[str]:
         return servers
 
     # Default fallback
-    return ["macos-use", "filesystem"]
+    return ["xcodebuild", "filesystem"]
 
 
 def get_all_tool_names() -> list[str]:

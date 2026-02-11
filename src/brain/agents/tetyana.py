@@ -384,9 +384,9 @@ Respond in JSON:
             try:
                 # We need to construct a lightweight call since we are inside Tetyana agent class,
                 # but we have access to mcp_manager via import
-                if "macos-use" in mcp_manager.config.get("mcpServers", {}):
+                if "xcodebuild" in mcp_manager.config.get("mcpServers", {}):
                     result = await mcp_manager.call_tool(
-                        "macos-use",
+                        "xcodebuild",
                         "macos-use_take_screenshot",
                         {},
                     )
@@ -789,7 +789,7 @@ IMPORTANT:
                             )
 
                 tool_call["name"] = suggested["tool"]
-                tool_call["server"] = "macos-use"
+                tool_call["server"] = "xcodebuild"
                 logger.info(f"[TETYANA] Vision override: tool={suggested['tool']}")
 
     async def _handle_proactive_help_request(
@@ -975,8 +975,8 @@ IMPORTANT:
             tool_call["args"]["step_id"] = step.get("id")
             if (
                 (
-                    str(tool_call.get("name", "")).lower().startswith("macos-use")
-                    or tool_call.get("server") == "macos-use"
+                    str(tool_call.get("name", "")).lower().startswith("xcodebuild")
+                    or tool_call.get("server") == "xcodebuild"
                 )
                 and not tool_call["args"].get("pid")
                 and self._current_pid
@@ -1283,10 +1283,10 @@ IMPORTANT:
 
         # 4. Determine Action & Reasoning
         target_server = str(
-            step.get("realm") or step.get("tool") or step.get("server") or "macos-use"
+            step.get("realm") or step.get("tool") or step.get("server") or "xcodebuild"
         )
         if target_server == "browser":
-            target_server = "macos-use"
+            target_server = "xcodebuild"
 
         tool_call, monologue, action_block = await self._determine_tool_action(
             step, target_server, attempt, grisha_feedback, vision_result, provided_response
@@ -1457,8 +1457,8 @@ IMPORTANT:
             }
 
         # Pass all args to the tool (supports cwd, stdout_file, etc.)
-        # OPTIMIZATION: Use 'macos-use' server which now handles terminal commands natively
-        res = await mcp_manager.call_tool("macos-use", "execute_command", args)
+        # OPTIMIZATION: Use 'xcodebuild' server which now handles terminal commands natively
+        res = await mcp_manager.call_tool("xcodebuild", "execute_command", args)
         return self._format_mcp_result(res)
 
     async def _gui_click(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -1467,7 +1467,7 @@ IMPORTANT:
         x, y = args.get("x", 0), args.get("y", 0)
         pid = int(args.get("pid", 0))
         res = await mcp_manager.call_tool(
-            "macos-use", "macos-use_click_and_traverse", {"pid": pid, "x": float(x), "y": float(y)}
+            "xcodebuild", "macos-use_click_and_traverse", {"pid": pid, "x": float(x), "y": float(y)}
         )
         return self._format_mcp_result(res)
 
@@ -1477,7 +1477,7 @@ IMPORTANT:
         text = args.get("text", "")
         pid = int(args.get("pid", 0))
         res = await mcp_manager.call_tool(
-            "macos-use", "macos-use_type_and_traverse", {"pid": pid, "text": text}
+            "xcodebuild", "macos-use_type_and_traverse", {"pid": pid, "text": text}
         )
         return self._format_mcp_result(res)
 
@@ -1538,7 +1538,7 @@ IMPORTANT:
         if not key_name:
             return {"success": False, "error": "No non-modifier key specified"}
         res = await mcp_manager.call_tool(
-            "macos-use",
+            "xcodebuild",
             "macos-use_press_key_and_traverse",
             {"pid": pid, "keyName": key_name, "modifierFlags": modifiers},
         )
@@ -1549,7 +1549,7 @@ IMPORTANT:
 
         try:
             res = await mcp_manager.call_tool(
-                "macos-use", "macos-use_open_application_and_traverse", {"identifier": app_name}
+                "xcodebuild", "macos-use_open_application_and_traverse", {"identifier": app_name}
             )
             formatted = self._format_mcp_result(res)
             if formatted.get("success") and not formatted.get("error"):

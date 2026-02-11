@@ -721,7 +721,7 @@ async def maps_search(payload: dict[str, Any]):
 
         # Call MCP googlemaps tool
         result = await mcp_manager.call_tool(
-            "googlemaps",
+            "xcodebuild",
             "maps_search_places",
             {"query": query, "location": location, "radius": radius},
         )
@@ -770,7 +770,7 @@ async def maps_directions(payload: dict[str, Any]):
 
         # Call MCP googlemaps tool
         result = await mcp_manager.call_tool(
-            "googlemaps",
+            "xcodebuild",
             "maps_directions",
             {"origin": origin, "destination": destination, "mode": mode},
         )
@@ -836,7 +836,7 @@ async def maps_place_details(payload: dict[str, Any]):
             raise HTTPException(status_code=400, detail="place_id is required")
 
         result = await mcp_manager.call_tool(
-            "googlemaps", "maps_place_details", {"place_id": place_id}
+            "xcodebuild", "maps_place_details", {"place_id": place_id}
         )
 
         # Set as active place
@@ -867,7 +867,7 @@ async def maps_street_view(payload: dict[str, Any]):
         cyberpunk = payload.get("cyberpunk", True)
 
         result = await mcp_manager.call_tool(
-            "googlemaps",
+            "xcodebuild",
             "maps_street_view",
             {
                 "location": location,

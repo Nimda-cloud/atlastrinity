@@ -182,7 +182,7 @@ class AgentPrompts:
         2. ADHERE STRICTLY to the plan sequence above. Do not skip or reorder steps.
         3. If there is feedback from Grisha or other agents above, ADAPT your strategy to address their concerns.
         4. If you are unsure or need clarification from Atlas to proceed, use the "question_to_atlas" field.
-        5. DISCOVERY FIRST: If your plan involves 'macos-use', your FIRST step should always be "macos-use_list_tools_dynamic" to synchronize your knowledge with the server's real-time tool definitions.
+        5. DISCOVERY FIRST: If your plan involves 'xcodebuild', your FIRST step should always be "macos-use_list_tools_dynamic" to synchronize your knowledge with the server's real-time tool definitions.
         6. Precise Arguments: Use the exact data from Discovery to fill tool arguments.
         7. **SELF-HEALING RESTARTS**: If you detect that a tool failed because of logic errors that require a system reboot (e.g., code modified by Vibe), or if a core server is dead, inform Atlas via `question_to_atlas`. ONLY Atlas has the authority to trigger a full system restart.
         8. **EXPLAIN THE 'HOW'**: The user wants to understand *how* you are performing tasks. In your `voice_message`, explicitly mention the tool or method you are using in natural Ukrainian (e.g., 'Використовую Vibe для написання коду', 'Аналізую систему через термінал').
@@ -204,12 +204,12 @@ class AgentPrompts:
         
         
         TOOL SELECTION GUIDE:
-        - Shell commands: "macos-use.execute_command" with {{"command": "..."}}.
-        - Create folders: "macos-use.execute_command" with {{"command": "mkdir -p /path"}}.
+        - Shell commands: "xcodebuild.execute_command" with {{"command": "..."}}.
+        - Create folders: "xcodebuild.execute_command" with {{"command": "mkdir -p /path"}}.
         - Read file: "filesystem.read_file" with {{"path": "/absolute/path/to/file"}}.
-        - Open Finder at a path: "macos-use.macos-use_finder_open_path" with {{"path": "~/Desktop"}}.
-        - List files in Finder: "macos-use.macos-use_finder_list_files".
-        - Move to trash: "macos-use.macos-use_finder_move_to_trash" with {{"path": "..."}}.
+        - Open Finder at a path: "xcodebuild.macos-use_finder_open_path" with {{"path": "~/Desktop"}}.
+        - List files in Finder: "xcodebuild.macos-use_finder_list_files".
+        - Move to trash: "xcodebuild.macos-use_finder_move_to_trash" with {{"path": "..."}}.
         - Screenshot is ONLY for visual verification, NOT for file operations!
         """
 
@@ -390,7 +390,7 @@ class AgentPrompts:
         
         IMPORTANT: 
         - If the error is "Tool not found", suggest the correct tool name from the catalog.
-        - **TOOL HONESTY**: Do NOT suggest hallucinated tool names like `terminal_command` or `shell_command`. The ONLY valid tool for shell execution is `macos-use.execute_command`.
+        - **TOOL HONESTY**: Do NOT suggest hallucinated tool names like `terminal_command` or `shell_command`. The ONLY valid tool for shell execution is `xcodebuild.execute_command`.
         - If the issue is with a path, advise checking the path's existence first.
         - If the error is logical, suggest an alternative approach.
         - **SYSTEM RESTART**: If the system state is corrupted, you may advise Atlas to initiate `system.restart_application` or `system.restart_mcp_server`.
@@ -447,7 +447,7 @@ MODE DEFINITIONS (choose ONE):
 3. 'solo_task' — Quick research/lookup that Atlas handles ALONE with tools. No Trinity.
    Anything where Atlas can: search the web, read a file, check maps/routes, fetch a page,
    look up docs, get weather/news/prices — and then give a direct answer.
-   Atlas has: search, filesystem, fetch_url, googlemaps, memory, context7, puppeteer.
+   Atlas has: search, filesystem, fetch_url, xcodebuild (maps), memory, context7, puppeteer.
    KEY: if the user just needs INFORMATION (not system changes), it's solo_task.
    If it involves system MODIFICATION, file CREATION, or app control → 'task'.
    Examples: "Яка погода?", "Покажи маршрут від Києва до Одеси", "Знайди інфо в неті",
@@ -469,9 +469,9 @@ MODE DEFINITIONS (choose ONE):
    Examples: "Створи калькулятор", "Виправ баг", "Напиши тести", "Зроби рефакторинг"
 
 EXTRA SERVERS — If the request needs specific MCP servers beyond the mode defaults,
-list them in 'extra_servers'. Available: macos-use, filesystem, sequential-thinking,
+list them in 'extra_servers'. Available: xcodebuild, filesystem, sequential-thinking,
 memory, vibe, duckduckgo-search, puppeteer, github, context7, devtools, redis,
-data-analysis, golden-fund, googlemaps, xcodebuild, whisper-stt, tour-guide.
+data-analysis, golden-fund, whisper-stt, tour-guide.
 
 EXTRA PROTOCOLS — If the request needs specific protocols beyond mode defaults,
 list them in 'extra_protocols'. Available: voice, search, task, sdlc, storage,
@@ -518,8 +518,8 @@ CAPABILITIES - USE THEM ACTIVELY:
 - You have access to TOOLS (Search, Web Fetch, Knowledge Graph, Sequential Thinking).
 - FOR WEATHER: Use duckduckgo_search with query "weather in Lviv tomorrow" or similar. DO NOT say you don't have access!
 - FOR NEWS/INFO: Use duckduckgo_search or fetch_url tool.
-- FOR FILES: Use filesystem_read_file or macos-use.execute_command with 'cat'.
-- FOR SYSTEM: Use macos-use.execute_command with 'system_profiler', 'sw_vers', etc.
+- FOR FILES: Use filesystem_read_file or xcodebuild.execute_command with 'cat'.
+- FOR SYSTEM: Use xcodebuild.execute_command with 'system_profiler', 'sw_vers', etc.
 
 CRITICAL RULE: DO NOT HALLUCINATE OR GIVE GENERIC ANSWERS!
 If the user asks for real-time data (weather, news, prices, current info), YOU MUST use a search or fetch tool.
@@ -762,7 +762,7 @@ AVAILABLE ENVIRONMENT INFO:
 RULES:
 - If the result is visual (UI layout, widget state, visual artifacts), priority is 'macos-use_take_screenshot' and Vision analysis.
 - If the result is system-level (files, processes, database, git), priority is MCP Tools (filesystem, terminal, etc.).
-- Prefer 'macos-use' for everything regarding macOS interface and system control.
+- Prefer 'xcodebuild' for everything regarding macOS interface and system control.
 - You can combine tools for multi-layer verification.
 - DATABASE AUDIT: You have full access to the 'tool_executions' table. Use 'vibe_check_db' to see exactly what Tetyana did.
 - Be precise and efficient. Do not request screenshots if a simple 'ls' or 'pgrep' provides proof.

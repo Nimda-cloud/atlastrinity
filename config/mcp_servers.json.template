@@ -5,18 +5,15 @@
       "transport": "stdio",
       "command": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/mcp-server-macos-use",
       "connect_timeout": 3600,
-      "description": "UNIVERSAL macOS control (42+ tools): GUI automation, Vision/OCR, System Monitoring, Terminal, Fetch URL, Time, AppleScript, Calendar, Reminders, Notes, Mail, Finder, Spotlight, Notifications. PRIMARY server for ALL macOS interactions.",
+      "description": "DEPRECATED: Now bridged through xcodebuild. macOS control (63 tools).",
       "permissions": {
         "accessibility": true,
         "screen_recording": true
       },
-      "disabled": false,
+      "disabled": true,
       "tier": 1,
-      "agents": [
-        "tetyana",
-        "grisha"
-      ],
-      "note": "Compiled Swift binary. Replaces: fetch, time, apple-mcp, applescript, terminal."
+      "agents": [],
+      "note": "DISABLED: All 63 tools now accessible through xcodebuild bridge. Direct connection no longer needed."
     },
     "filesystem": {
       "transport": "stdio",
@@ -60,38 +57,42 @@
       "transport": "stdio",
       "command": "${PROJECT_ROOT}/vendor/mcp-server-googlemaps/.build/release/mcp-server-googlemaps",
       "connect_timeout": 60,
-      "description": "Google Maps (12 tools): geocode, reverse_geocode, search_places, place_details, directions, maps_start_tour, maps_tour_control, distance_matrix, street_view, static_map, elevation, interactive_search. Includes Cyberpunk image filter.",
+      "description": "DEPRECATED: Now bridged through xcodebuild. Google Maps (11 tools).",
       "env": {
         "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
       },
-      "disabled": false,
+      "disabled": true,
       "tier": 2,
-      "agents": [
-        "atlas",
-        "tetyana",
-        "grisha"
-      ],
-      "note": "Compiled Swift binary. Requires GOOGLE_MAPS_API_KEY in .env. Street View and Static Maps apply Cyberpunk color filter by default."
+      "agents": [],
+      "note": "DISABLED: All 11 tools now accessible through xcodebuild bridge. Direct connection no longer needed."
     },
     "_comment_tier2": "=== TIER 2: HIGH PRIORITY (Рекомендовані) ===",
     "xcodebuild": {
       "transport": "stdio",
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "xcodebuildmcp@latest",
+        "${PROJECT_ROOT}/vendor/XcodeBuildMCP/dist/index.js",
         "mcp"
       ],
       "connect_timeout": 120,
-      "description": "Xcode Build & Test Automation (iOS/macOS development): Build projects, run tests, manage simulators, analyze build logs, code coverage, device deployment. Critical for Atlas planning and iOS/macOS development workflows.",
+      "env": {
+        "MACOS_USE_BINARY_PATH": "${PROJECT_ROOT}/vendor/mcp-server-macos-use/.build/release/mcp-server-macos-use",
+        "GOOGLEMAPS_BINARY_PATH": "${PROJECT_ROOT}/vendor/mcp-server-googlemaps/.build/release/mcp-server-googlemaps",
+        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
+      },
+      "permissions": {
+        "accessibility": true,
+        "screen_recording": true
+      },
+      "description": "Unified MCP hub (168+ tools): Xcode Build/Test/Simulators (94 native tools) + macOS-use bridge (63 tools: GUI automation, Vision/OCR, System, Terminal, Calendar, Notes, Mail, Finder) + Google Maps bridge (11 tools: geocode, directions, street view, places). All native Swift backends accessed through single connection.",
       "disabled": false,
-      "tier": 2,
+      "tier": 1,
       "agents": [
         "atlas",
         "tetyana",
         "grisha"
       ],
-      "note": "Requires: macOS 14.5+, Xcode 16.x+ (full, not just Command Line Tools), Node.js 18.x+. Provides 94+ tools across 14 workflows for comprehensive iOS/macOS development."
+      "note": "Unified hub: local build with multi-backend bridge. Requires: macOS 14.5+, Xcode 16.x+, Node.js 18.x+. Bridges mcp-server-macos-use and mcp-server-googlemaps Swift binaries via stdio."
     },
     "chrome-devtools": {
       "transport": "stdio",
@@ -382,7 +383,7 @@
     "version": "5.1",
     "last_updated": "2026-02-04",
     "description": "Single source of truth for MCP server configuration. Used by Brain, Vibe, and all agents.",
-    "active_servers": 20,
+    "active_servers": 18,
     "total_servers": 21,
     "notes": [
       "Servers with 'disabled': true are not loaded by default",

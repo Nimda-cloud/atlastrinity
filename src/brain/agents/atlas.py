@@ -478,7 +478,7 @@ Respond in JSON:
                 # deep reasoning (sequential-thinking), and all other servers.
                 discovery_servers = {
                     # Tier 1: Core system
-                    "macos-use",  # GUI, terminal, fetch, time, spotlight (read ops only)
+                    "xcodebuild",  # GUI, terminal, fetch, time, spotlight (read ops only)
                     "filesystem",  # File read/write (filtered to read-only below)
                     "sequential-thinking",  # Deep reasoning
                     # Tier 2: High priority
@@ -593,7 +593,7 @@ Respond in JSON:
             target_servers = set(mode_profile.all_servers)
         else:
             target_servers = {
-                "macos-use",
+                "xcodebuild",
                 "filesystem",
                 "duckduckgo-search",
                 "sequential-thinking",

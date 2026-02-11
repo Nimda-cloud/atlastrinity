@@ -652,7 +652,7 @@ class ToolDispatcher:
 
     def _wrap_commands(self, server: str, tool: str, args: dict[str, Any]) -> None:
         """Central command wrapping for terminal tools."""
-        if server == "macos-use" and tool == "execute_command":
+        if server == "xcodebuild" and tool == "execute_command":
             cmd = args.get("command") or args.get("cmd")
             cwd = args.get("cwd") or args.get("path")
             if cwd and cmd and str(cmd).strip() and not str(cmd).startswith("cd "):
@@ -678,7 +678,7 @@ class ToolDispatcher:
     ) -> dict[str, Any]:
         """Final metrics tracking and MCP call."""
         self._total_calls += 1
-        if server == "macos-use":
+        if server == "xcodebuild":
             self._macos_use_calls += 1
 
         logger.info(f"[DISPATCHER] Calling {server}.{tool}")
@@ -975,7 +975,7 @@ class ToolDispatcher:
         if "vibe" in action or "vibe" in command:
             return "vibe"
         if any(kw in action for kw in ["click", "type", "press", "screenshot", "scroll"]):
-            return "macos-use"
+            return "xcodebuild"
         if any(kw in action for kw in ["read", "write", "list", "save", "delete"]) or path:
             return "filesystem"
         if any(kw in action for kw in ["browser", "puppeteer", "navigate", "google", "search"]):
@@ -994,7 +994,7 @@ class ToolDispatcher:
             return True
 
         # Check if it's already a macos-use tool
-        if tool_lower.startswith("macos-use") or tool_lower.startswith("macos_use_"):
+        if tool_lower.startswith("xcodebuild") or tool_lower.startswith("macos_use_"):
             return True
 
         # Check MACOS_MAP
@@ -1024,7 +1024,7 @@ class ToolDispatcher:
             if server:
                 # Still pass through server-specific handlers if they exist for normalized handling
                 handlers = {
-                    "macos-use": self._handle_macos_use,
+                    "xcodebuild": self._handle_xcodebuild_unified,
                     "filesystem": self._handle_filesystem,
                     "terminal": self._handle_terminal,
                     "vibe": self._handle_vibe,
@@ -1034,7 +1034,6 @@ class ToolDispatcher:
                     "context7": self._handle_context7,
                     "golden-fund": self._handle_golden_fund,
                     "data-analysis": self._handle_data_analysis,
-                    "xcodebuild": self._handle_xcodebuild,
                     "tour-guide": self._handle_tour,
                 }
                 if server in handlers:
@@ -1092,7 +1091,7 @@ class ToolDispatcher:
     ) -> tuple[str, str, dict[str, Any]] | None:
         """Handle strict server priority routing."""
         handlers = {
-            "macos-use": self._handle_macos_use,
+            "xcodebuild": self._handle_xcodebuild_unified,
             "filesystem": self._handle_filesystem,
             "terminal": self._handle_terminal,
             "vibe": self._handle_vibe,
@@ -1114,7 +1113,7 @@ class ToolDispatcher:
         """Route tool by name synonyms or namespaces."""
         # macOS-use & Notes
         if (
-            tool_name.startswith(("macos-use", "macos_use_", "notes_", "note_"))
+            tool_name.startswith(("xcodebuild", "macos_use_", "notes_", "note_"))
             or tool_name in self.MACOS_MAP
             or explicit_server == "notes"
         ):
@@ -1208,7 +1207,7 @@ class ToolDispatcher:
             path = args["path"]
             new_args["command"] = f"cd {path} && {full_command}"
 
-        return "macos-use", "execute_command", new_args
+        return "xcodebuild", "execute_command", new_args
 
     def _handle_data_analysis(
         self,
@@ -1240,6 +1239,28 @@ class ToolDispatcher:
             resolved_tool = "analyze_dataset"  # Default
 
         return "data-analysis", resolved_tool, args
+
+    def _handle_xcodebuild_unified(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+    ) -> tuple[str, str, dict[str, Any]]:
+        """Unified handler for xcodebuild server (native Xcode + macOS bridge + Maps bridge).
+
+        Routes to the appropriate sub-handler based on tool name prefix:
+        - macos-use_* / execute_command / MACOS_MAP -> _handle_macos_use
+        - maps_* -> direct passthrough to xcodebuild
+        - everything else -> _handle_xcodebuild (native Xcode tools)
+        """
+        if (
+            tool_name.startswith("macos-use_")
+            or tool_name in self.MACOS_MAP
+            or tool_name in ("execute_command", "terminal")
+        ):
+            return self._handle_macos_use(tool_name, args)
+        if tool_name.startswith("maps_"):
+            return "xcodebuild", tool_name, args
+        return self._handle_xcodebuild(tool_name, args)
 
     def _handle_xcodebuild(
         self,
@@ -1338,7 +1359,7 @@ class ToolDispatcher:
         if cwd and clean_args["command"] and not clean_args["command"].startswith("cd "):
             clean_args["command"] = f"cd {cwd} && {clean_args['command']}"
 
-        return "macos-use", "execute_command", clean_args
+        return "xcodebuild", "execute_command", clean_args
 
     def _handle_filesystem(
         self,
@@ -1697,8 +1718,8 @@ class ToolDispatcher:
         clean_name = self._get_clean_macos_tool_name(tool_name, args)
         resolved_tool = self.MACOS_MAP.get(clean_name, tool_name)
 
-        # FINAL SAFETY: If we still have 'macos-use' as a method name, it's definitely an error.
-        if resolved_tool == "macos-use":
+        # FINAL SAFETY: If we still have 'xcodebuild' as a method name, it's definitely an error.
+        if resolved_tool == "xcodebuild":
             resolved_tool = self._last_resort_macos_mapping(args)
 
         if resolved_tool == "macos-use_fetch_url":
@@ -1712,13 +1733,13 @@ class ToolDispatcher:
         if resolved_tool == "macos-use_open_application_and_traverse":
             self._standardize_app_identifier(args)
 
-        return "macos-use", resolved_tool, args
+        return "xcodebuild", resolved_tool, args
 
     def _get_clean_macos_tool_name(self, tool_name: str, args: dict[str, Any]) -> str:
         """Extract clean tool name from macos-use prefix or generic call."""
         if tool_name.startswith(("macos-use_", "macos_use_")):
             return tool_name[10:]
-        if tool_name == "macos-use":
+        if tool_name == "xcodebuild":
             return self._infer_macos_tool_from_args(args)
         return tool_name
 
@@ -1739,7 +1760,7 @@ class ToolDispatcher:
         return "screenshot"
 
     def _last_resort_macos_mapping(self, args: dict[str, Any]) -> str:
-        """Handle cases where tool name remains generic 'macos-use'."""
+        """Handle cases where tool name remains generic 'xcodebuild'."""
         if "command" in args or "cmd" in args:
             resolved = "execute_command"
         elif "path" in args:

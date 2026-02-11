@@ -8,21 +8,20 @@ SEARCH PROTOCOL (v1.1)
    - Level 4: Headless Browser Scraping (Puppeteer - default for speed)
    - Level 5: Deep DOM/Protocol Interaction (Chrome-DevTools - for persistence, auth, and debugging)
    - Level 6: Technical Documentation & Library Search (context7)
-   - Level 7: Geographic & Visual Location Search (googlemaps)
+   - Level 7: Geographic & Visual Location Search (xcodebuild/maps_*)
 
 2. BROWSER TOOL SELECTION:
    - **duckduckgo-search**: Use for rapid factual lookups without navigating full pages.
    - **puppeteer**: Use for standard web scraping, navigating SPAs, and basic interaction. Fastest browser option.
    - **chrome-devtools**: Use for high-precision tasks: capturing console logs, monitoring network traffic, bypass attempts, or when extreme DOM stability is needed.
-   - **macos-use**: Use for NATIVE browser interactions (managing tabs, reading URLs) or when visual/GUI verification is the primary goal.
-   - **googlemaps**: Use for ANY location-based search, Street View visualization, traffic analysis, or geographic coordinates. MANDATORY for Cyberpunk map feeds.
+   - **xcodebuild**: Use for NATIVE browser interactions (managing tabs, reading URLs), visual/GUI verification, AND all location-based search (maps_* tools), Street View, traffic analysis, coordinates. Unified hub for all macOS + Maps tools.
 
 3. EXECUTION GUIDELINES:
    - START with specialized tools (Level 2/3) for technical data (ЄДРПОУ, addresses, owners).
-   - USE googlemaps for address verification or location context BEFORE deep web scraping.
-   - PREFER macos-use_fetch_url for clean data extraction from articles/registries.
+   - USE xcodebuild maps_* tools for address verification or location context BEFORE deep web scraping.
+   - PREFER macos-use_fetch_url (via xcodebuild) for clean data extraction from articles/registries.
    - USE Puppeteer/DevTools ONLY for interactive pages (clicks, forms, dynamic content).
-   - IF BLOCKED by robot detection, switch to Chrome-DevTools for more human-like emulation or use macos-use to manually guide.
+   - IF BLOCKED by robot detection, switch to Chrome-DevTools for more human-like emulation or use xcodebuild GUI tools to manually guide.
 
 4. DATA RETENTION:
    - All found datasets (.csv, .xlsx, .json) MUST be saved to the workspace folder.

@@ -401,7 +401,7 @@ class BehaviorEngine:
                 return cast("list[str]", recommended)
 
         # Default fallback
-        default_servers = ["macos-use", "filesystem"]
+        default_servers = ["xcodebuild", "filesystem"]
         logger.debug(f"[BEHAVIOR ENGINE] Task classification fallback: {default_servers}")
         return default_servers
 

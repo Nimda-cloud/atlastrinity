@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T16:40:39.954168 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, src/brain/agents/atlas.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-10T16:38:15.415929 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/proxy/vibe_windsurf_proxy.py, scripts/ensure_clean_start.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T22:42:29.572462 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/request_segmenter.py -->
 
