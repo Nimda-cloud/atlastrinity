@@ -4492,60 +4492,55 @@ func setupAndStartServer() async throws -> Server {
 struct MCPServer {
     // Main entry point - Async
     // MARK: - Permission Check
-    private static func checkAndSetupPermissions() {
-        let markerPath = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".macos_mcp_setup_complete")
-
-        if !FileManager.default.fileExists(atPath: markerPath.path) {
-            fputs("log: main: First run detected - setting up permissions...\n", stderr)
-            setupPermissions()
-
-            do {
-                try "".write(to: markerPath, atomically: true, encoding: .utf8)
-                fputs("log: main: First run marker created\n", stderr)
-            } catch {
-                fputs("error: main: Failed to create first run marker: \(error)\n", stderr)
-            }
-        } else {
-            fputs("log: main: Permissions already configured\n", stderr)
-        }
+    private static var isInteractive: Bool {
+        // When running as MCP server via stdio (child of node/bridge), stdin is a pipe not a TTY.
+        // In that mode, we should NOT open System Settings windows or show interactive prompts.
+        return isatty(STDIN_FILENO) != 0
     }
 
-    private static func setupPermissions() {
-        // Setup accessibility permissions - trigger prompt
-        fputs("log: main: Checking Accessibility permissions...\n", stderr)
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        let accessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
+    private static func preflightPermissions() {
+        // Silent preflight: log permission status but do NOT open System Settings.
+        // Permissions are requested on-demand when tools are actually called.
+        fputs("log: main: Preflight permission check (interactive: \(isInteractive))...\n", stderr)
 
-        if !accessibilityEnabled {
-            fputs(
-                "warning: main: Accessibility permissions not granted. Opening settings...\n",
-                stderr)
-            openSystemSettings(for: .accessibility)
-        }
+        // Accessibility (silent check, no prompt)
+        let accessibilityEnabled = AXIsProcessTrusted()
+        fputs("log: main: Accessibility: \(accessibilityEnabled ? "granted" : "not granted")\n", stderr)
 
-        // Request Calendar/Reminders permissions via EventStore preflight
-        fputs("log: main: Requesting Calendar & Reminders permissions...\n", stderr)
-        Task {
-            _ = await requestCalendarAccess()
-            _ = await requestRemindersAccess()
-        }
-
-        // Screen Recording Check (Preflight)
+        // Screen Recording (silent check)
         if #available(macOS 11.0, *) {
-            if !CGPreflightScreenCaptureAccess() {
-                fputs(
-                    "warning: main: Screen Recording permissions not granted. Opening settings...\n",
-                    stderr)
-                openSystemSettings(for: .screenRecording)
-            }
+            let screenRecording = CGPreflightScreenCaptureAccess()
+            fputs("log: main: Screen Recording: \(screenRecording ? "granted" : "not granted")\n", stderr)
         }
 
-        fputs("log: main: Permission check and request sequence completed\n", stderr)
+        // Calendar/Reminders status check (read-only, no request)
+        let calStatus = EKEventStore.authorizationStatus(for: .event)
+        let remStatus = EKEventStore.authorizationStatus(for: .reminder)
+        fputs("log: main: Calendar: \(calStatus.rawValue) (0=notDetermined, 1=restricted, 2=denied, 3=authorized)\n", stderr)
+        fputs("log: main: Reminders: \(remStatus.rawValue)\n", stderr)
+
+        let calAuthorized: Bool
+        let remAuthorized: Bool
+        if #available(macOS 14.0, *) {
+            calAuthorized = calStatus == .fullAccess
+            remAuthorized = remStatus == .fullAccess
+        } else {
+            calAuthorized = calStatus == .authorized
+            remAuthorized = remStatus == .authorized
+        }
+
+        if !accessibilityEnabled || !calAuthorized || !remAuthorized {
+            fputs("warning: main: Some permissions missing. They will be requested when tools are called.\n", stderr)
+            if isInteractive {
+                fputs("info: main: Run 'macos-use_request_permissions' tool to trigger all permission dialogs.\n", stderr)
+            }
+        } else {
+            fputs("log: main: All core permissions granted.\n", stderr)
+        }
     }
 
     static func main() async {
-        checkAndSetupPermissions()
+        preflightPermissions()
         fputs("log: main: starting server (async).\n", stderr)
 
         // Configure logging if needed (optional)
