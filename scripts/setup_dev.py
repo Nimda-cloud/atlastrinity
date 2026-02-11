@@ -293,42 +293,60 @@ def check_system_tools():
             print_warning(f"Не вдалося встановити GitHub CLI: {e}")
 
     # 4. Check for Full Xcode (for XcodeBuildMCP)
-    xcode_app = Path("/Applications/Xcode.app")
+    # Search multiple locations: standard, beta, user Desktop, Spotlight
+    xcode_candidates = [
+        Path("/Applications/Xcode.app"),
+        Path("/Applications/Xcode-beta.app"),
+        Path.home() / "Desktop" / "Xcode.app",
+        Path.home() / "Desktop" / "Xcode-beta.app",
+    ]
+    # Also search via Spotlight for non-standard locations
+    try:
+        spotlight = subprocess.run(
+            ["mdfind", "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'"],
+            capture_output=True, text=True, check=False, timeout=5,
+        )
+        for line in spotlight.stdout.strip().splitlines():
+            p = Path(line.strip())
+            if p.exists() and p not in xcode_candidates:
+                xcode_candidates.append(p)
+    except Exception:
+        pass
+
+    xcode_app = next((p for p in xcode_candidates if p.exists()), None)
+
     if shutil.which("xcodebuild"):
         result = subprocess.run(
             ["xcodebuild", "-version"], capture_output=True, text=True, check=False
         )
         if result.returncode == 0:
             print_success("Повний Xcode знайдено")
-        elif xcode_app.exists():
-            print_warning("Знайдено тільки Command Line Tools, але Xcode.app існує!")
-            print(
-                f"{Colors.BOLD}Бажаєте переключитись на повний Xcode? (sudo xcode-select -s /Applications/Xcode.app){Colors.ENDC}"
-            )
-            print(
-                f"Натисніть {Colors.BOLD}Enter{Colors.ENDC} протягом 5 секунд для підтвердження..."
-            )
-
-            # Timed input
-            rlist, _, _ = select.select([sys.stdin], [], [], 5)
-            if rlist:
-                sys.stdin.readline()  # consume input
-                try:
-                    print_info("Запуск sudo xcode-select...")
-                    subprocess.run(
-                        ["sudo", "xcode-select", "-s", "/Applications/Xcode.app"], check=True
-                    )
-                    print_success("Переключено на повний Xcode")
-                except Exception as e:
-                    print_error(f"Не вдалося переключитись: {e}")
-            else:
-                print_info("Переключення скасовано (тайм-аут)")
+        elif xcode_app:
+            print_warning(f"xcode-select вказує на CLT, але Xcode знайдено: {xcode_app}")
+            xcode_dev_path = xcode_app / "Contents" / "Developer"
+            print_info(f"Автоматичне переключення: sudo xcode-select -s {xcode_dev_path}")
+            try:
+                subprocess.run(
+                    ["sudo", "xcode-select", "-s", str(xcode_dev_path)], check=True
+                )
+                print_success(f"Переключено на повний Xcode ({xcode_app.name})")
+            except Exception as e:
+                print_error(f"Не вдалося переключитись: {e}")
+                print_info(f"Спробуйте вручну: sudo xcode-select -s {xcode_dev_path}")
         else:
             print_warning("Знайдено тільки Command Line Tools (повний Xcode відсутній)")
             print_info("XcodeBuildMCP буде пропущено при налаштуванні.")
-    elif xcode_app.exists():
-        print_warning("Xcode.app знайдено, але не активовано!")
-        # Similar logic here if needed, but shutil.which would usually find it if app exists and is linked properly
+    elif xcode_app:
+        xcode_dev_path = xcode_app / "Contents" / "Developer"
+        print_warning(f"Xcode знайдено ({xcode_app}), але не активовано!")
+        print_info(f"Автоматичне переключення: sudo xcode-select -s {xcode_dev_path}")
+        try:
+            subprocess.run(
+                ["sudo", "xcode-select", "-s", str(xcode_dev_path)], check=True
+            )
+            print_success(f"Переключено на повний Xcode ({xcode_app.name})")
+        except Exception as e:
+            print_error(f"Не вдалося переключитись: {e}")
     else:
         print_warning("Xcode не знайдено")
         print_info("XcodeBuildMCP буде пропущено при налаштуванні.")
@@ -864,32 +882,44 @@ def setup_xcodebuild_mcp():
     xcode_mcp_path = PROJECT_ROOT / "vendor" / "XcodeBuildMCP"
 
     # Check if Xcode is installed (not just Command Line Tools)
+    # Search multiple locations: standard, beta, user Desktop, Spotlight
     try:
         result = subprocess.run(
             ["xcodebuild", "-version"], capture_output=True, text=True, check=False
         )
         if result.returncode != 0:
-            # xcodebuild fails when xcode-select points to CLT, even if Xcode.app exists
-            xcode_app = Path("/Applications/Xcode.app")
-            if xcode_app.exists():
-                print_warning("xcode-select вказує на Command Line Tools, але Xcode.app знайдено")
-                print_info("Переключення на повний Xcode...")
+            xcode_candidates = [
+                Path("/Applications/Xcode.app"),
+                Path("/Applications/Xcode-beta.app"),
+                Path.home() / "Desktop" / "Xcode.app",
+                Path.home() / "Desktop" / "Xcode-beta.app",
+            ]
+            try:
+                spotlight = subprocess.run(
+                    ["mdfind", "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'"],
+                    capture_output=True, text=True, check=False, timeout=5,
+                )
+                for line in spotlight.stdout.strip().splitlines():
+                    p = Path(line.strip())
+                    if p.exists() and p not in xcode_candidates:
+                        xcode_candidates.append(p)
+            except Exception:
+                pass
+
+            xcode_found = next((p for p in xcode_candidates if p.exists()), None)
+            if xcode_found:
+                xcode_dev = xcode_found / "Contents" / "Developer"
+                print_warning(f"xcode-select вказує на CLT, але Xcode знайдено: {xcode_found}")
+                print_info(f"Переключення: sudo xcode-select -s {xcode_dev}")
                 try:
                     subprocess.run(
-                        [
-                            "sudo",
-                            "xcode-select",
-                            "-s",
-                            "/Applications/Xcode.app/Contents/Developer",
-                        ],
+                        ["sudo", "xcode-select", "-s", str(xcode_dev)],
                         check=True,
                     )
-                    print_success("Переключено на повний Xcode")
+                    print_success(f"Переключено на повний Xcode ({xcode_found.name})")
                 except subprocess.CalledProcessError as e:
                     print_error(f"Не вдалося переключитись: {e}")
-                    print_info(
-                        "Запустіть вручну: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
-                    )
+                    print_info(f"Запустіть вручну: sudo xcode-select -s {xcode_dev}")
                     return False
             else:
                 print_warning("Повний Xcode не встановлено (тільки Command Line Tools)")
