@@ -304,7 +304,10 @@ def check_system_tools():
     try:
         spotlight = subprocess.run(
             ["mdfind", "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'"],
-            capture_output=True, text=True, check=False, timeout=5,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
         )
         for line in spotlight.stdout.strip().splitlines():
             p = Path(line.strip())
@@ -326,9 +329,7 @@ def check_system_tools():
             xcode_dev_path = xcode_app / "Contents" / "Developer"
             print_info(f"Автоматичне переключення: sudo xcode-select -s {xcode_dev_path}")
             try:
-                subprocess.run(
-                    ["sudo", "xcode-select", "-s", str(xcode_dev_path)], check=True
-                )
+                subprocess.run(["sudo", "xcode-select", "-s", str(xcode_dev_path)], check=True)
                 print_success(f"Переключено на повний Xcode ({xcode_app.name})")
             except Exception as e:
                 print_error(f"Не вдалося переключитись: {e}")
@@ -341,9 +342,7 @@ def check_system_tools():
         print_warning(f"Xcode знайдено ({xcode_app}), але не активовано!")
         print_info(f"Автоматичне переключення: sudo xcode-select -s {xcode_dev_path}")
         try:
-            subprocess.run(
-                ["sudo", "xcode-select", "-s", str(xcode_dev_path)], check=True
-            )
+            subprocess.run(["sudo", "xcode-select", "-s", str(xcode_dev_path)], check=True)
             print_success(f"Переключено на повний Xcode ({xcode_app.name})")
         except Exception as e:
             print_error(f"Не вдалося переключитись: {e}")
@@ -897,7 +896,10 @@ def setup_xcodebuild_mcp():
             try:
                 spotlight = subprocess.run(
                     ["mdfind", "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'"],
-                    capture_output=True, text=True, check=False, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=5,
                 )
                 for line in spotlight.stdout.strip().splitlines():
                     p = Path(line.strip())

@@ -4,7 +4,7 @@
  * Using pure dependency injection for deterministic testing
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { schema, handler, swift_package_listLogic } from '../swift_package_list.ts';
 
 describe('swift_package_list plugin', () => {

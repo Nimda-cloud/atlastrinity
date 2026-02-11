@@ -7,7 +7,7 @@
  * Uses createMockFileSystemExecutor for file system operations.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as z from 'zod';
 import { schema, handler, discover_projsLogic } from '../discover_projs.ts';
 import { createMockFileSystemExecutor } from '../../../../test-utils/mock-executors.ts';

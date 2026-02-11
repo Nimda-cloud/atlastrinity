@@ -57,7 +57,7 @@ export function createToolCatalog(tools: ToolDefinition[]): ToolCatalog {
       // Try kebab-case of MCP name (alias)
       const mcpKebab = toKebabCase(normalized);
       const aliasMatches = byMcpKebab.get(mcpKebab);
-      if (aliasMatches && aliasMatches.length === 1) {
+      if (aliasMatches?.length === 1) {
         return { tool: aliasMatches[0] };
       }
       if (aliasMatches && aliasMatches.length > 1) {

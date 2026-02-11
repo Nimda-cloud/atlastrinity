@@ -81,6 +81,14 @@ export default [
       sourceType: 'module',
       parser: tseslint.parser,
       // No project reference for scripts - use standalone parsing
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        URL: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,

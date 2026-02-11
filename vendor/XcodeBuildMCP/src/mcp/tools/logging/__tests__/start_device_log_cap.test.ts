@@ -38,7 +38,7 @@ type MockChildProcess = Mutable<ChildProcess> & {
 
 describe('start_device_log_cap plugin', () => {
   // Mock state tracking
-  let commandCalls: Array<{
+  let _commandCalls: Array<{
     command: string[];
     logPrefix?: string;
     useShell?: boolean;

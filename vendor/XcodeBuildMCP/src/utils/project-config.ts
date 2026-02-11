@@ -243,7 +243,7 @@ export async function persistSessionDefaultsToProjectConfig(
 
   const patch = removeUndefined(options.patch as Record<string, unknown>);
   const nextSessionDefaults: Partial<SessionDefaults> = {
-    ...(baseConfig.sessionDefaults ?? {}),
+    ...baseConfig.sessionDefaults,
     ...patch,
   };
 

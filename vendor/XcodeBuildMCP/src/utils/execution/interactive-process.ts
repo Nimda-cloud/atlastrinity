@@ -63,7 +63,7 @@ function createInteractiveProcess(
   const [executable, ...args] = command;
   const childProcess = spawn(executable, args, {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, ...(opts?.env ?? {}) },
+    env: { ...process.env, ...opts?.env },
     cwd: opts?.cwd,
   });
 

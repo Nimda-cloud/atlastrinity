@@ -100,23 +100,23 @@ function createDeps(overrides?: Partial<DoctorDependencies>): DoctorDependencies
     ...overrides,
     binaryChecker: {
       ...base.binaryChecker,
-      ...(overrides?.binaryChecker ?? {}),
+      ...overrides?.binaryChecker,
     },
     xcode: {
       ...base.xcode,
-      ...(overrides?.xcode ?? {}),
+      ...overrides?.xcode,
     },
     env: {
       ...base.env,
-      ...(overrides?.env ?? {}),
+      ...overrides?.env,
     },
     plugins: {
       ...base.plugins,
-      ...(overrides?.plugins ?? {}),
+      ...overrides?.plugins,
     },
     features: {
       ...base.features,
-      ...(overrides?.features ?? {}),
+      ...overrides?.features,
     },
   };
 }

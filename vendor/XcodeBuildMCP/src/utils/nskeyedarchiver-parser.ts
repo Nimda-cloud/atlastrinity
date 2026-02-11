@@ -110,7 +110,7 @@ export function parseXcuserstate(xcuserstatePath: string): XcodeStateResult {
     const buffer = readFileSync(xcuserstatePath);
     const [root] = bplistParseBuffer(buffer) as [BplistResult];
 
-    if (!root || root.$archiver !== 'NSKeyedArchiver' || !Array.isArray(root.$objects)) {
+    if (root?.$archiver !== 'NSKeyedArchiver' || !Array.isArray(root.$objects)) {
       return result;
     }
 
@@ -183,7 +183,7 @@ export function parseXcuserstateBuffer(buffer: Buffer): XcodeStateResult {
   try {
     const [root] = bplistParseBuffer(buffer) as [BplistResult];
 
-    if (!root || root.$archiver !== 'NSKeyedArchiver' || !Array.isArray(root.$objects)) {
+    if (root?.$archiver !== 'NSKeyedArchiver' || !Array.isArray(root.$objects)) {
       return result;
     }
 

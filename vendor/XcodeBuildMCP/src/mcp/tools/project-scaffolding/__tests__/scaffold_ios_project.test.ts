@@ -7,7 +7,7 @@
  * Plugin location: plugins/utilities/scaffold_ios_project.js
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import * as z from 'zod';
 import { schema, handler, scaffold_ios_projectLogic } from '../scaffold_ios_project.ts';
 import {

@@ -8,8 +8,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as z from 'zod';
 import {
   createMockExecutor,
-  createMockFileSystemExecutor,
-  createNoopExecutor,
   createMockCommandResponse,
 } from '../../../../test-utils/mock-executors.ts';
 import { schema, handler, swift_package_buildLogic } from '../swift_package_build.ts';

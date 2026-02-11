@@ -140,7 +140,7 @@ describe('build_sim tool', () => {
     });
 
     it('should handle both simulatorId and simulatorName provided', async () => {
-      const mockExecutor = createMockExecutor({ success: true, output: 'Build succeeded' });
+      const _mockExecutor = createMockExecutor({ success: true, output: 'Build succeeded' });
 
       // Should fail with XOR validation
       const result = await handler({
@@ -200,7 +200,7 @@ describe('build_sim tool', () => {
         });
       };
 
-      const result = await build_simLogic(
+      await build_simLogic(
         {
           workspacePath: '/path/to/MyProject.xcworkspace',
           scheme: 'MyScheme',
@@ -245,7 +245,7 @@ describe('build_sim tool', () => {
         });
       };
 
-      const result = await build_simLogic(
+      await build_simLogic(
         {
           projectPath: '/path/to/MyProject.xcodeproj',
           scheme: 'MyScheme',
@@ -290,7 +290,7 @@ describe('build_sim tool', () => {
         });
       };
 
-      const result = await build_simLogic(
+      const _result = await build_simLogic(
         {
           workspacePath: '/path/to/MyProject.xcworkspace',
           scheme: 'MyScheme',
@@ -342,7 +342,7 @@ describe('build_sim tool', () => {
         });
       };
 
-      const result = await build_simLogic(
+      await build_simLogic(
         {
           workspacePath: '/Users/dev/My Project/MyProject.xcworkspace',
           scheme: 'My Scheme',
@@ -387,7 +387,7 @@ describe('build_sim tool', () => {
         });
       };
 
-      const result = await build_simLogic(
+      await build_simLogic(
         {
           workspacePath: '/path/to/MyProject.xcworkspace',
           scheme: 'MyScheme',

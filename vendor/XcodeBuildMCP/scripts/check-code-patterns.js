@@ -131,9 +131,6 @@ function hasUnapprovedMockPattern(line) {
   return UNAPPROVED_MOCK_PATTERNS.some(pattern => pattern.test(line));
 }
 
-// Combined pattern checker for backward compatibility
-const VITEST_MOCKING_PATTERNS = VITEST_GENERIC_PATTERNS;
-
 // CRITICAL: ARCHITECTURAL VIOLATIONS - Utilities bypassing CommandExecutor (BANNED)
 const UTILITY_BYPASS_PATTERNS = [
   /spawn\s*\(/,                      // Direct Node.js spawn usage in utilities - BANNED
@@ -177,11 +174,6 @@ const IMPROPER_SERVER_TYPING_VIOLATIONS = [
   /mcpServer\?\s*:\s*Record<string, unknown>/,    // Typing server as Record - BANNED
   /server\.server\?\?\s*server.*as Record/,       // Complex server casting - BANNED
   /interface\s+MCPServerInterface\s*{/,           // Custom MCP interfaces when SDK types exist - BANNED
-];
-
-// ALLOWED PATTERNS for cleanup (not mocking)
-const ALLOWED_CLEANUP_PATTERNS = [
-  // All cleanup patterns removed - no exceptions allowed
 ];
 
 // Patterns that indicate TRUE dependency injection approach
@@ -495,7 +487,6 @@ function analyzeToolOrResourceFile(filePath) {
     });
     if (hasHandlerSignatureViolations) {
       // Use regex to find the violation and its line number
-      const lines = content.split('\n');
       const fullContent = content;
 
       HANDLER_SIGNATURE_VIOLATIONS.forEach(pattern => {
@@ -610,7 +601,6 @@ function main() {
   const mixed = results.filter(r => r.isMixed);
   const execSyncOnly = results.filter(r => r.hasExecSyncPatterns && !r.hasVitestMockingPatterns && true && !r.hasHandlerTestingViolations && !r.hasImproperServerTypingViolations && !r.hasDIPatterns);
   const vitestMockingOnly = results.filter(r => r.hasVitestMockingPatterns && !r.hasExecSyncPatterns && true && !r.hasHandlerTestingViolations && !r.hasImproperServerTypingViolations && !r.hasDIPatterns);
-  const typescriptOnly = results.filter(r => r.false && !r.hasExecSyncPatterns && !r.hasVitestMockingPatterns && !r.hasHandlerTestingViolations && !r.hasImproperServerTypingViolations && !r.hasDIPatterns);
   const handlerTestingOnly = results.filter(r => r.hasHandlerTestingViolations && !r.hasExecSyncPatterns && !r.hasVitestMockingPatterns && true && !r.hasImproperServerTypingViolations && !r.hasDIPatterns);
   const improperServerTypingOnly = results.filter(r => r.hasImproperServerTypingViolations && !r.hasExecSyncPatterns && !r.hasVitestMockingPatterns && !r.hasHandlerTestingViolations && !r.hasDIPatterns);
   const noPatterns = results.filter(r => !r.hasExecSyncPatterns && !r.hasVitestMockingPatterns && true && !r.hasHandlerTestingViolations && !r.hasImproperServerTypingViolations && !r.hasDIPatterns);

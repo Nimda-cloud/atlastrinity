@@ -9,11 +9,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import * as z from 'zod';
 import {
   createMockFileSystemExecutor,
   createNoopExecutor,
-  createMockExecutor,
   createMockCommandResponse,
 } from '../../../../test-utils/mock-executors.ts';
 import { schema, handler, scaffold_macos_projectLogic } from '../scaffold_macos_project.ts';
@@ -55,8 +53,8 @@ describe('scaffold_macos_project plugin', () => {
     templateManagerStub = {
       getTemplatePath: async (
         platform: string,
-        commandExecutor?: unknown,
-        fileSystemExecutor?: unknown,
+        _commandExecutor?: unknown,
+        _fileSystemExecutor?: unknown,
       ) => {
         templateManagerCall = `getTemplatePath(${platform})`;
         if (templateManagerError) {

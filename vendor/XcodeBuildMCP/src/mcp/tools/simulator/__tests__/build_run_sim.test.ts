@@ -52,7 +52,7 @@ describe('build_run_sim tool', () => {
 
     it('should handle simulator not found', async () => {
       let callCount = 0;
-      const mockExecutor: CommandExecutor = async (command) => {
+      const mockExecutor: CommandExecutor = async (_command) => {
         callCount++;
         if (callCount === 1) {
           // First call: build succeeds
@@ -115,9 +115,9 @@ describe('build_run_sim tool', () => {
 
     it('should handle successful build and run', async () => {
       // Create a mock executor that simulates full successful flow
-      let callCount = 0;
+      let _callCount = 0;
       const mockExecutor: CommandExecutor = async (command) => {
-        callCount++;
+        _callCount++;
 
         if (command.includes('xcodebuild') && command.includes('build')) {
           // First call: build succeeds
@@ -241,7 +241,7 @@ describe('build_run_sim tool', () => {
         });
       };
 
-      const result = await build_run_simLogic(
+      await build_run_simLogic(
         {
           workspacePath: '/path/to/MyProject.xcworkspace',
           scheme: 'MyScheme',
@@ -309,7 +309,7 @@ describe('build_run_sim tool', () => {
         }
       };
 
-      const result = await build_run_simLogic(
+      const _result = await build_run_simLogic(
         {
           workspacePath: '/path/to/MyProject.xcworkspace',
           scheme: 'MyScheme',
@@ -401,7 +401,7 @@ describe('build_run_sim tool', () => {
         }
       };
 
-      const result = await build_run_simLogic(
+      await build_run_simLogic(
         {
           workspacePath: '/path/to/MyProject.xcworkspace',
           scheme: 'MyScheme',
@@ -465,7 +465,7 @@ describe('build_run_sim tool', () => {
         });
       };
 
-      const result = await build_run_simLogic(
+      await build_run_simLogic(
         {
           workspacePath: '/Users/dev/My Project/MyProject.xcworkspace',
           scheme: 'My Scheme',

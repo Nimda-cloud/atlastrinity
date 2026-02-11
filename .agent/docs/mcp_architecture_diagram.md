@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T17:33:13.453451 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, vendor/mcp-server-macos-use/Sources/main.swift -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T17:31:52.593480 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/mcp_servers.json.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

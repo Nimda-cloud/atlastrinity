@@ -4,7 +4,7 @@
  * Called after tsc compilation to prepare the build directory.
  */
 
-import { chmodSync, existsSync, copyFileSync, mkdirSync } from 'fs';
+import { chmodSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 

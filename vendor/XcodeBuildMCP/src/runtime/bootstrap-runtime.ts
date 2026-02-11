@@ -55,7 +55,7 @@ export async function bootstrapRuntime(
 
   const config = getConfig();
 
-  const defaults = { ...(config.sessionDefaults ?? {}) };
+  const defaults = { ...config.sessionDefaults };
   if (Object.keys(defaults).length > 0) {
     // Auto-resolve simulatorName to simulatorId if only name is provided
     if (defaults.simulatorName && !defaults.simulatorId) {

@@ -74,7 +74,7 @@ async function defaultExecutor(
 
     const spawnOpts: Parameters<typeof spawn>[2] = {
       stdio: ['ignore', 'pipe', 'pipe'], // ignore stdin, pipe stdout/stderr
-      env: { ...process.env, ...(opts?.env ?? {}) },
+      env: { ...process.env, ...opts?.env },
       cwd: opts?.cwd,
     };
 

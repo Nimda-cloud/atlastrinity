@@ -254,7 +254,7 @@ function resolveSessionDefaults(opts: {
   const overrideDefaults = opts.overrides?.sessionDefaults;
   const fileDefaults = opts.fileConfig?.sessionDefaults;
   if (!overrideDefaults && !fileDefaults) return undefined;
-  return { ...(fileDefaults ?? {}), ...(overrideDefaults ?? {}) };
+  return { ...fileDefaults, ...overrideDefaults };
 }
 
 function resolveConfig(opts: {
@@ -444,7 +444,7 @@ export async function persistSessionDefaultsPatch(opts: {
   });
 
   const nextSessionDefaults: Partial<SessionDefaults> = {
-    ...(storeState.fileConfig?.sessionDefaults ?? {}),
+    ...storeState.fileConfig?.sessionDefaults,
     ...opts.patch,
   };
 

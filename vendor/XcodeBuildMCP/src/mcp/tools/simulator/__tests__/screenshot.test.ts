@@ -55,7 +55,7 @@ describe('screenshot plugin', () => {
       const capturedCommands: string[][] = [];
 
       // Wrap to capture commands and return appropriate mock responses
-      const capturingExecutor = async (command: string[], ...args: any[]) => {
+      const capturingExecutor = async (command: string[], ..._args: any[]) => {
         capturedCommands.push(command);
         const cmdStr = command.join(' ');
         // Return device list JSON for list command
@@ -137,7 +137,7 @@ describe('screenshot plugin', () => {
       const capturedCommands: string[][] = [];
 
       // Wrap to capture commands and return appropriate mock responses
-      const capturingExecutor = async (command: string[], ...args: any[]) => {
+      const capturingExecutor = async (command: string[], ..._args: any[]) => {
         capturedCommands.push(command);
         const cmdStr = command.join(' ');
         // Return device list JSON for list command
@@ -219,7 +219,7 @@ describe('screenshot plugin', () => {
       const capturedCommands: string[][] = [];
 
       // Wrap to capture commands and return appropriate mock responses
-      const capturingExecutor = async (command: string[], ...args: any[]) => {
+      const capturingExecutor = async (command: string[], ..._args: any[]) => {
         capturedCommands.push(command);
         const cmdStr = command.join(' ');
         // Return device list JSON for list command

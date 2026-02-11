@@ -5,13 +5,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as z from 'zod';
 import {
   schema,
   handler,
   createMockProcessManager,
   swift_package_stopLogic,
-  type ProcessManager,
 } from '../swift_package_stop.ts';
 
 /**

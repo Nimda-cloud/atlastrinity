@@ -7,8 +7,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   createMockExecutor,
-  createMockFileSystemExecutor,
-  createNoopExecutor,
   createMockCommandResponse,
 } from '../../../../test-utils/mock-executors.ts';
 import { schema, handler, swift_package_cleanLogic } from '../swift_package_clean.ts';
