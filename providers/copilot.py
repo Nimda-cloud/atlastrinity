@@ -255,6 +255,11 @@ class CopilotLLM(BaseChatModel):
         except Exception as e:
             return AIMessage(content=f"[Internal invoke error] {e}")
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=3),
+        retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError, requests.HTTPError)),
+    )
     def _get_session_token(self) -> tuple[str, str]:
         headers = {
             "Authorization": f"token {self.api_key}",
@@ -266,7 +271,7 @@ class CopilotLLM(BaseChatModel):
             response = requests.get(
                 "https://api.github.com/copilot_internal/v2/token",
                 headers=headers,
-                timeout=30,
+                timeout=15,
             )
             response.raise_for_status()
             data = response.json()
