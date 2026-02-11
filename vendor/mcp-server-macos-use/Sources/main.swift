@@ -3065,10 +3065,10 @@ func setupAndStartServer() async throws -> Server {
                         end if
                     end tell
                     on error errMsg
-                        return "Reminders access error: " end tell errMsg
+                        return "Reminders access error: " & errMsg
                     end try
                     on error errMsg
-                        return "Calendar access error: " end tell errMsg
+                        return "Calendar access error: " & errMsg
                     end try
 
                     on listToString(lst)
@@ -3095,10 +3095,10 @@ func setupAndStartServer() async throws -> Server {
                         end if
                     end tell
                     on error errMsg
-                        return "Reminders access error: " end tell errMsg
+                        return "Reminders access error: " & errMsg
                     end try
                     on error errMsg
-                        return "Calendar access error: " end tell errMsg
+                        return "Calendar access error: " & errMsg
                     end try
 
                     on listToString(lst)
@@ -3125,20 +3125,20 @@ func setupAndStartServer() async throws -> Server {
                                 end if
                             end tell
                     on error errMsg
-                        return "Reminders access error: " end tell errMsg
+                        return "Reminders access error: " & errMsg
                     end try
                     on error errMsg
-                        return "Calendar access error: " end tell errMsg
+                        return "Calendar access error: " & errMsg
                     end try
                         else
                             return "Firefox not running"
                         end if
                     end tell
                     on error errMsg
-                        return "Reminders access error: " end tell errMsg
+                        return "Reminders access error: " & errMsg
                     end try
                     on error errMsg
-                        return "Calendar access error: " end tell errMsg
+                        return "Calendar access error: " & errMsg
                     end try
                     """
 

@@ -465,6 +465,9 @@ tool_routing:
       - list_windows
       - all_windows
       - windows
+      - macos-use_list_tools_dynamic
+      - list_tools_dynamic
+      - list_tools
     priority_server: macos-use
     fallback_server: null
     tool_mapping:
@@ -477,6 +480,8 @@ tool_routing:
       list_windows: macos-use_list_all_windows
       all_windows: macos-use_list_all_windows
       windows: macos-use_list_all_windows
+      list_tools_dynamic: macos-use_list_tools_dynamic
+      list_tools: macos-use_list_tools_dynamic
 
   # Terminal/Command execution
   terminal:
