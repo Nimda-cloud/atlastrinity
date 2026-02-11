@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T20:40:28.784484 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/copilot.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T20:36:52.669093 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/prompts/atlas_chat.py -->
 
