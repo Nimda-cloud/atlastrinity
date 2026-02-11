@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T18:58:07.026876 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/validate_mcp_servers.py, scripts/validate_swift_mcp_bridge.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T18:56:48.032280 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, vendor/XcodeBuildMCP/src/mcp/resources/__tests__/simulators.test.ts -->
 

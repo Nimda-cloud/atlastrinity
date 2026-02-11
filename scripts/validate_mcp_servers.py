@@ -274,11 +274,11 @@ def main():
     print("-" * 60)
 
     for r in sorted(results, key=lambda x: (x.get("tier", 99), x["name"])):
-        status_icon = "✓" if r["status"] == "ok" else ("✗" if r["status"] == "error" else ("⊝" if r["status"] == "deprecated" else "⊝"))
+        status_icon = "✓" if r["status"] == "ok" else ("✗" if r["status"] == "error" else "⊝")
         status_color = (
             Colors.OKGREEN
             if r["status"] == "ok"
-            else (Colors.FAIL if r["status"] == "error" else (Colors.WARNING if r["status"] == "deprecated" else Colors.WARNING))
+            else (Colors.FAIL if r["status"] == "error" else Colors.WARNING)
         )
 
         print(
