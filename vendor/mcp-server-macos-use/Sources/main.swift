@@ -218,7 +218,7 @@ func resolvePid(_ pid: Int?) -> Int {
 let eventStore = EKEventStore()
 
 // --- Helper for EventKit Permissions ---
-func requestCalendarAccess() async -> Bool {
+func requestCalendarAccess(openSettings: Bool = true) async -> Bool {
     let granted: Bool
     if #available(macOS 14.0, *) {
         do {
@@ -239,13 +239,17 @@ func requestCalendarAccess() async -> Bool {
     }
 
     if !granted {
-        fputs("log: requestCalendarAccess: Access denied, opening System Settings...\n", stderr)
-        openSystemSettings(for: .calendars)
+        if openSettings {
+            fputs("log: requestCalendarAccess: Access denied, opening System Settings...\n", stderr)
+            openSystemSettings(for: .calendars)
+        } else {
+            fputs("log: requestCalendarAccess: Access denied (silent mode)\n", stderr)
+        }
     }
     return granted
 }
 
-func requestRemindersAccess() async -> Bool {
+func requestRemindersAccess(openSettings: Bool = true) async -> Bool {
     let granted: Bool
     if #available(macOS 14.0, *) {
         do {
@@ -266,8 +270,12 @@ func requestRemindersAccess() async -> Bool {
     }
 
     if !granted {
-        fputs("log: requestRemindersAccess: Access denied, opening System Settings...\n", stderr)
-        openSystemSettings(for: .reminders)
+        if openSettings {
+            fputs("log: requestRemindersAccess: Access denied, opening System Settings...\n", stderr)
+            openSystemSettings(for: .reminders)
+        } else {
+            fputs("log: requestRemindersAccess: Access denied (silent mode)\n", stderr)
+        }
     }
     return granted
 }
@@ -4498,12 +4506,12 @@ struct MCPServer {
         return isatty(STDIN_FILENO) != 0
     }
 
-    private static func preflightPermissions() {
-        // Silent preflight: log permission status but do NOT open System Settings.
-        // Permissions are requested on-demand when tools are actually called.
+    private static func preflightPermissions() async {
+        // Request Calendar/Reminders access at startup to trigger TCC dialog.
+        // Does NOT open System Settings — just triggers the native macOS permission prompt.
         fputs("log: main: Preflight permission check (interactive: \(isInteractive))...\n", stderr)
 
-        // Accessibility (silent check, no prompt)
+        // Accessibility (silent check, no prompt — requires manual setup)
         let accessibilityEnabled = AXIsProcessTrusted()
         fputs("log: main: Accessibility: \(accessibilityEnabled ? "granted" : "not granted")\n", stderr)
 
@@ -4513,34 +4521,23 @@ struct MCPServer {
             fputs("log: main: Screen Recording: \(screenRecording ? "granted" : "not granted")\n", stderr)
         }
 
-        // Calendar/Reminders status check (read-only, no request)
-        let calStatus = EKEventStore.authorizationStatus(for: .event)
-        let remStatus = EKEventStore.authorizationStatus(for: .reminder)
-        fputs("log: main: Calendar: \(calStatus.rawValue) (0=notDetermined, 1=restricted, 2=denied, 3=authorized)\n", stderr)
-        fputs("log: main: Reminders: \(remStatus.rawValue)\n", stderr)
+        // Calendar — request access (triggers TCC dialog if notDetermined), no Settings popup
+        let calGranted = await requestCalendarAccess(openSettings: false)
+        fputs("log: main: Calendar: \(calGranted ? "granted" : "not granted")\n", stderr)
 
-        let calAuthorized: Bool
-        let remAuthorized: Bool
-        if #available(macOS 14.0, *) {
-            calAuthorized = calStatus == .fullAccess
-            remAuthorized = remStatus == .fullAccess
-        } else {
-            calAuthorized = calStatus == .authorized
-            remAuthorized = remStatus == .authorized
-        }
+        // Reminders — request access (triggers TCC dialog if notDetermined), no Settings popup
+        let remGranted = await requestRemindersAccess(openSettings: false)
+        fputs("log: main: Reminders: \(remGranted ? "granted" : "not granted")\n", stderr)
 
-        if !accessibilityEnabled || !calAuthorized || !remAuthorized {
-            fputs("warning: main: Some permissions missing. They will be requested when tools are called.\n", stderr)
-            if isInteractive {
-                fputs("info: main: Run 'macos-use_request_permissions' tool to trigger all permission dialogs.\n", stderr)
-            }
+        if !accessibilityEnabled || !calGranted || !remGranted {
+            fputs("warning: main: Some permissions missing. Grant access in System Settings > Privacy & Security.\n", stderr)
         } else {
             fputs("log: main: All core permissions granted.\n", stderr)
         }
     }
 
     static func main() async {
-        preflightPermissions()
+        await preflightPermissions()
         fputs("log: main: starting server (async).\n", stderr)
 
         // Configure logging if needed (optional)

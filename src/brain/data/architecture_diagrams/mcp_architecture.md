@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-10T17:38:37.599215 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, scripts/setup_dev.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-10T17:33:13.453451 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, vendor/mcp-server-macos-use/Sources/main.swift -->
 
