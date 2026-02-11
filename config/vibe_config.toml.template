@@ -27,7 +27,7 @@
 fallback_chain = ["gpt-4.1", "deepseek-v3", "deepseek-r1", "gpt-4o"]
 
 # Current selection (change based on your provider):
-active_model = "deepseek-v3"         # Windsurf FREE model for testing
+active_model = "gpt-4.1"         # Copilot model (stable)
 
 
 # System prompt ID (refers to file in ~/.vibe/prompts/ cli.md by default)
