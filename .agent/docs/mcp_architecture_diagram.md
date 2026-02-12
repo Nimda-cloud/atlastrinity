@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T17:19:30.117445 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_storage.py, src/brain/__init__.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T16:16:48.429943 -->
 <!-- Modified: .secrets.baseline, cleanup_imports.py, definitive_cleanup.py -->
 

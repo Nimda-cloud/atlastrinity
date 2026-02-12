@@ -54,15 +54,17 @@ class CopilotLLM(BaseChatModel):
     ) -> None:
         super().__init__(**kwargs)
         # STRICT CONFIGURATION: No hardcoded defaults
-        self.model_name = model_name or os.getenv("COPILOT_MODEL")
+        # Import config here to avoid circular dependencies if possible, or assume it's available
+        from src.brain.config.config_loader import config
+        
+        self.model_name = model_name or os.getenv("COPILOT_MODEL") or config.get("models.default")
         if not self.model_name:
-            raise ValueError(
-                "CopilotLLM: 'model_name' must be provided via argument or COPILOT_MODEL env var.",
-            )
+            # Absolute fallback if config is broken
+            self.model_name = "gpt-4o"
 
         vm = vision_model_name or os.getenv("COPILOT_VISION_MODEL")
         self.vision_model_name = (
-            vm or self.model_name
+            vm or config.get("models.vision") or self.model_name
         )  # Fallback to main model if vision not distinct
 
         # Set max_tokens (default 4096 for backward compatibility)

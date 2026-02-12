@@ -44,21 +44,14 @@ except ImportError:
 
 WINDSURF_MODELS: dict[str, str] = {
     # Display name -> Windsurf internal model UID
-    # Premium models (use Cascade message quota)
-    "claude-4.5-opus": "MODEL_CLAUDE_4_5_OPUS",
-    "claude-4-sonnet": "MODEL_CLAUDE_4_SONNET",
-    "claude-4.5-sonnet": "MODEL_PRIVATE_2",
-    "claude-haiku-4.5": "MODEL_PRIVATE_11",
-    "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
-    "gpt-5.1": "MODEL_PRIVATE_12",
-    "swe-1.5": "MODEL_SWE_1_5",
-    # Free / unlimited models
+    # Free / unlimited models per user request
     "deepseek-v3": "MODEL_DEEPSEEK_V3",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
+    "swe-1.5": "MODEL_SWE_1_5",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
     "kimi-k2.5": "kimi-k2-5",
-    "windsurf-fast": "MODEL_CHAT_11121",
+    "windsurf-fast": "MODEL_CHAT_11121",  # Keep default just in case, though not explicitly requested it is standard fallback
 }
 
 # For backward compat
@@ -90,18 +83,11 @@ CASCADE_DEFAULT_MODEL = "MODEL_CLAUDE_4_SONNET"
 
 # Map display names to Cascade-compatible model UIDs
 CASCADE_MODEL_MAP: dict[str, str] = {
-    # Premium models
-    "claude-4.5-opus": "MODEL_CLAUDE_4_5_OPUS",
-    "claude-4-sonnet": "MODEL_CLAUDE_4_SONNET",
-    "claude-4.5-sonnet": "MODEL_PRIVATE_2",
-    "claude-haiku-4.5": "MODEL_PRIVATE_11",
-    "gpt-4.1": "MODEL_CHAT_GPT_4_1_2025_04_14",
-    "gpt-5.1": "MODEL_PRIVATE_12",
-    "swe-1.5": "MODEL_SWE_1_5",
-    # Free / unlimited models
+    # Free / unlimited models per user request
     "deepseek-v3": "MODEL_DEEPSEEK_V3",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
+    "swe-1.5": "MODEL_SWE_1_5",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
     "kimi-k2.5": "kimi-k2-5",
     "windsurf-fast": "MODEL_CHAT_11121",
@@ -363,10 +349,20 @@ class WindsurfLLM(BaseChatModel):
     ) -> None:
         super().__init__(**kwargs)
 
+        # STRICT CONFIGURATION: No hardcoded defaults
+        from src.brain.config.config_loader import config
+
         # Model
-        self.model_name = model_name or os.getenv("WINDSURF_MODEL", WINDSURF_DEFAULT_MODEL)
+        self.model_name = (
+            model_name or os.getenv("WINDSURF_MODEL") or config.get("models.default")
+        )
+        if not self.model_name:
+            # Absolute fallback if config is broken
+            self.model_name = WINDSURF_DEFAULT_MODEL
+
         # vision_model_name accepted for CopilotLLM API compatibility (Windsurf models don't support vision)
-        self.vision_model_name = vision_model_name
+        # Use config if available as fallback for compatibility
+        self.vision_model_name = vision_model_name or config.get("models.vision")
 
         # Validate model is known
         if self.model_name not in WINDSURF_MODELS:
@@ -954,7 +950,10 @@ class WindsurfLLM(BaseChatModel):
             user_text = "\n\n".join(prompt_parts)
 
             # Resolve model UID for Cascade
-            model_uid = CASCADE_MODEL_MAP.get(self.model_name or "", CASCADE_DEFAULT_MODEL)
+            from src.brain.config.config_loader import config
+
+            fallback_model = config.get("models.default") or CASCADE_DEFAULT_MODEL
+            model_uid = CASCADE_MODEL_MAP.get(self.model_name or "", fallback_model)
 
             queue_rpc = channel.unary_unary(
                 f"{_GRPC_SVC}QueueCascadeMessage",

@@ -866,7 +866,9 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
                 try:
                     # Current implementation uses CopilotLLM for exchange
                     # In the future, this can be dispatched by provider type
-                    llm = CopilotLLM(api_key=api_key, model_name="gpt-4o")
+                    # Use configured default model for token exchange
+                    exchange_model = config.get("models.default") or "gpt-4o"
+                    llm = CopilotLLM(api_key=api_key, model_name=exchange_model)
                     token, _ = llm._get_session_token()
                     process_env[p_conf.api_key_env_var] = token
                     logger.debug(
@@ -1182,7 +1184,7 @@ async def _handle_vibe_rate_limit(
     chain = config.fallback_chain
     if not chain:
         # Emergency default if config is empty
-        chain = ["gpt-4o", "devstral-2", "devstral-openrouter"]
+        chain = ["gpt-4o", "gpt-4.1", "deepseek-v3", "windsurf-fast"]
 
     try:
         current_idx = (

@@ -68,21 +68,21 @@ class Grisha(BaseAgent):
 
     3-Phase Verification Architecture:
 
-    Phase 1: Strategy Planning (strategy_model: gpt-4o)
+    Phase 1: Strategy Planning (configured strategy_model)
              - Analyzes step requirements and determines verification approach
              - Plans which MCP tools are needed for evidence collection
              - Outputs verification strategy in natural language
 
-    Phase 2: Tool Execution (model: gpt-4.1)
+    Phase 2: Tool Execution (configured execution model)
              - Selects and executes MCP server tools based on strategy
              - Collects evidence (logs, file contents, DB queries, etc.)
              - Similar to Tetyana's execution phase
 
-    Phase 3: Verdict Formation (verdict_model: gpt-4o, vision_model: gpt-4o)
+    Phase 3: Verdict Formation (configured verdict_model, vision_model)
              - Analyzes evidence collected from Phase 2
              - Uses vision model for screenshot analysis if needed
              - Forms logical verdict: PASS/FAIL with confidence
-             - Can fallback to gpt-4.1 if gpt-4o fails
+             - Can fallback to execution model if verdict model fails
 
     Security Functions:
     - Blocking dangerous commands via BLOCKLIST
@@ -114,13 +114,15 @@ class Grisha(BaseAgent):
     def __init__(self, vision_model: str | None = None):
         """Initialize Grisha with 3-phase verification architecture.
 
-        Phase 1: Strategy Planning (strategy_model: gpt-4o)
+
+
+        Phase 1: Strategy Planning (configured strategy_model)
                  - Analyze what needs verification and which tools to use
 
-        Phase 2: Tool Execution (model: gpt-4.1)
+        Phase 2: Tool Execution (configured execution model)
                  - Select and execute MCP server tools (similar to Tetyana)
 
-        Phase 3: Verdict Formation (verdict_model: gpt-4o, vision_model: gpt-4o)
+        Phase 3: Verdict Formation (configured verdict_model, vision_model)
                  - Analyze collected evidence and form final verdict
         """
         # Get model config (config.yaml > parameter)
