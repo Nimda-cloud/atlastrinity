@@ -143,7 +143,7 @@ class WorkingXcodeBuildMCPIntegration:
         success_count = 0
         error_count = 0
 
-        for i, test_case in enumerate(test_cases, 1):
+        for _, test_case in enumerate(test_cases, 1):
             result = await self.bridge.call_macos_tool(test_case["tool"], test_case["params"])
 
             if result.get("status") == "success":

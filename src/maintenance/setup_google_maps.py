@@ -111,7 +111,7 @@ def get_or_create_project():
         print_warning("No projects found.")
         return create_project()
 
-    for i, p in enumerate(projects):
+    for _, _ in enumerate(projects):
         pass
 
     try:

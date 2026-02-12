@@ -77,7 +77,7 @@ async def inspect_github():
                     elif msg.get("id") == 2:
                         tools = msg.get("result", {}).get("tools", [])
                         tool_names = sorted([t["name"] for t in tools])
-                        for t in tool_names:
+                        for _ in tool_names:
                             pass
                         break
 

@@ -14,7 +14,12 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated, Any, TypedDict, cast
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage  # type: ignore
+from langchain_core.messages import (  # type: ignore
+    AIMessage,
+    BaseMessage,
+    ChatMessage,
+    HumanMessage,
+)
 from langgraph.graph import END, StateGraph
 from sqlalchemy import select, update
 
@@ -43,7 +48,7 @@ from src.brain.mcp.mcp_manager import mcp_manager
 from src.brain.memory import long_term_memory
 from src.brain.memory.db.manager import db_manager
 from src.brain.memory.db.schema import (
-    ChatMessage,
+    ChatMessage as DBChatMessage,
 )
 from src.brain.memory.db.schema import LogEntry as DBLog
 from src.brain.memory.db.schema import Session as DBSession
@@ -292,9 +297,9 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
 
                 # 2. Fetch Chat History
                 chat_info = await db_sess.execute(
-                    select(ChatMessage)
-                    .where(ChatMessage.session_id == str(session_id))
-                    .order_by(ChatMessage.created_at.asc())
+                    select(DBChatMessage)
+                    .where(DBChatMessage.session_id == str(session_id))
+                    .order_by(DBChatMessage.created_at.asc())
                 )
                 db_messages = chat_info.scalars().all()
 
@@ -612,7 +617,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
 
         try:
             async with await db_manager.get_session() as session:
-                msg = ChatMessage(
+                msg = DBChatMessage(
                     session_id=self.current_session_id,
                     role=role,
                     content=str(content),
@@ -1052,7 +1057,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             self.state["current_images"] = []
 
         msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
-        self.state["messages"].append(msg)
+        cast("list[BaseMessage]", self.state["messages"]).append(msg)
         asyncio.create_task(self._save_chat_message("human", user_request))
 
         # DB Session creation

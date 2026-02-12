@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import json
 import os
-import sys
 from collections.abc import Callable
 from io import BytesIO
 from typing import Any, cast
@@ -634,7 +633,29 @@ class CopilotLLM(BaseChatModel):
             headers.pop("X-Request-Id", None)
 
             if "messages" in payload:
-                payload["messages"] = self._clean_messages_for_fallback(payload["messages"])
+                # Clean messages for fallback - remove image content
+                cleaned_messages = []
+                for msg in payload["messages"]:
+                    content = msg.get("content")
+                    if isinstance(content, list):
+                        # Extract only text content, remove images
+                        text_parts = []
+                        for item in content:
+                            if isinstance(item, dict):
+                                if item.get("type") == "text":
+                                    text_parts.append(item.get("text", ""))
+                                elif item.get("type") == "image_url":
+                                    text_parts.append("[Image content removed for compatibility]")
+                        text_only = " ".join(text_parts)
+                        cleaned_messages.append(
+                            {
+                                **msg,
+                                "content": text_only or "[Content processed for fallback]",
+                            },
+                        )
+                    else:
+                        cleaned_messages.append(msg)
+                payload["messages"] = cleaned_messages
 
             payload["model"] = os.getenv("COPILOT_FALLBACK_MODEL", "gpt-4o")
             payload["temperature"] = min(payload.get("temperature", 0.7), 0.5)

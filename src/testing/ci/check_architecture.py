@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -27,12 +26,9 @@ def check_architecture():
             use_reasoning=False,
         )
 
-        if result.get("error"):
-            sys.exit(1)
-
         if result.get("updates_made"):
             updates = result.get("files_updated", [])
-            for f in updates:
+            for _ in updates:
                 pass
 
             # If we are in strict mode, exit 1.

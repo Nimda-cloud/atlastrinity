@@ -20,7 +20,6 @@ GitHub Copilot Token Retriever
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import platform
 import re
@@ -281,13 +280,13 @@ def _search_db_for_ghu_token(db_path: Path, ide_name: str) -> str | None:
         )
         keys = [row[0] for row in cursor.fetchall()]
         if keys:
-            for k in keys:
+            for _ in keys:
                 pass
 
         # Search ALL values for ghu_ tokens (including terminal history, settings, etc.)
         found_tokens: list[str] = []
         cursor.execute("SELECT key, value FROM ItemTable")
-        for key, value in cursor.fetchall():
+        for _, value in cursor.fetchall():
             if isinstance(value, str) and "ghu_" in value:
                 for match in re.finditer(r"ghu_[A-Za-z0-9]{36}", value):
                     token = match.group(0)

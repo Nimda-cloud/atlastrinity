@@ -144,7 +144,7 @@ async def main():
             continue
         results[name] = await run_mcp_server(name, config)
 
-    for name, passed in results.items():
+    for _, _ in results.items():
         pass
 
 

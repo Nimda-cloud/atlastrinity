@@ -74,7 +74,7 @@ def validate_mcp_config(config_path: Path) -> bool:
 
     # Report results
     if all_errors:
-        for error in all_errors:
+        for _ in all_errors:
             pass
         return False
 

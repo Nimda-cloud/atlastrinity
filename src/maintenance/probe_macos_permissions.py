@@ -15,7 +15,7 @@ async def probe():
 
         tools = await mcp_manager.list_tools("macos-use")
 
-        for t in tools:
+        for _ in tools:
             pass
 
     except Exception:

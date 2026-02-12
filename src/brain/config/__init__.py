@@ -23,3 +23,29 @@ from .config import (
 )
 from .config_loader import CONFIG_ROOT as CONFIG_ROOT_LOADER
 from .config_loader import config
+
+__all__ = [
+    "BRAIN_DIR",
+    "CONFIG_ROOT",
+    "CONFIG_ROOT_LOADER",
+    "IS_MACOS",
+    "LOG_DIR",
+    "MCP_DIR",
+    "MEMORY_DIR",
+    "MODELS_DIR",
+    "NLTK_DIR",
+    "PLATFORM_NAME",
+    "PROJECT_ROOT",
+    "REPOSITORY_ROOT",
+    "SCREENSHOTS_DIR",
+    "STANZA_DIR",
+    "VIBE_WORKSPACE",
+    "VPN_DIR",
+    "WHISPER_DIR",
+    "WORKSPACE_DIR",
+    "config",
+    "deep_merge",
+    "ensure_dirs",
+    "get_log_path",
+    "get_screenshot_path",
+]

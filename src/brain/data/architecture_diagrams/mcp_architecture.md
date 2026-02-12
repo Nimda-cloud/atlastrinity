@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T21:20:27.206127 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, bandit_errors.txt -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T20:34:53.021236 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/copilot.py, providers/windsurf.py -->
 

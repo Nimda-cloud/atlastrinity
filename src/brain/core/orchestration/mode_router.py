@@ -178,7 +178,7 @@ class ModeRouter:
         mode = self._normalize_mode(raw_mode, llm_analysis)
 
         # Get defaults from profile
-        defaults = _MODE_PROFILES.get(mode, _MODE_PROFILES.get("chat", {}))
+        defaults = _MODE_PROFILES.get(mode) or _MODE_PROFILES.get("chat") or {}
 
         # Build profile: defaults + LLM overrides
         profile = ModeProfile(

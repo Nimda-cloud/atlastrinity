@@ -133,7 +133,7 @@ class FinalXcodeBuildMCPIntegration:
         success_count = 0
         error_count = 0
 
-        for i, test_case in enumerate(test_cases, 1):
+        for _, test_case in enumerate(test_cases, 1):
             result = await self.bridge.call_macos_tool(test_case["tool"], test_case["params"])
 
             if result.get("status") == "success":
@@ -212,7 +212,7 @@ class FinalXcodeBuildMCPIntegration:
             },
         ]
 
-        for example in integration_examples:
+        for _ in integration_examples:
             pass
 
     def generate_final_report(self, results, success_count, error_count):

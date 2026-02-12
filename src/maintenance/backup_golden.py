@@ -5,7 +5,6 @@ Copies the live database and analysis cache to the repository backup location.
 
 import shutil
 import sys
-from datetime import datetime
 from pathlib import Path
 
 # Paths

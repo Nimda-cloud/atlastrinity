@@ -1,6 +1,5 @@
 """Get available GitHub Copilot models"""
 
-import json
 import os
 
 import requests

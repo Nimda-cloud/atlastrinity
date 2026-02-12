@@ -47,7 +47,7 @@ async def main():
 
         if res_data.get("success"):
             if res_data.get("files_updated"):
-                for file_path in res_data["files_updated"]:
+                for _ in res_data["files_updated"]:
                     pass
             if not res_data.get("updates_made"):
                 pass

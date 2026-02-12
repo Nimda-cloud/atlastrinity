@@ -47,7 +47,7 @@ async def test_vibe_which():
 async def test_prepare_prompt_small():
     """Test that small prompts don't create files."""
     small_prompt = "Create a hello world Python script."
-    result, file_path = handle_long_prompt(small_prompt)
+    _, file_path = handle_long_prompt(small_prompt)
 
     return file_path is None
 
@@ -55,7 +55,7 @@ async def test_prepare_prompt_small():
 async def test_prepare_prompt_large():
     """Test that large prompts create files in INSTRUCTIONS_DIR."""
     large_prompt = "A" * 3000
-    result, file_path = handle_long_prompt(large_prompt)
+    _, file_path = handle_long_prompt(large_prompt)
 
     if file_path is not None and INSTRUCTIONS_DIR in file_path:
         # Cleanup test file
@@ -150,7 +150,7 @@ async def main():
     passed = sum(1 for _, p in results if p)
     total = len(results)
 
-    for name, passed_test in results:
+    for _, _ in results:
         pass
 
     return passed == total

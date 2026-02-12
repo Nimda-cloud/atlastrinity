@@ -5,12 +5,11 @@ import os
 import re
 import struct
 import subprocess
-import sys
 import threading
 import time
 import uuid
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 import grpc
 import httpx
@@ -1105,7 +1104,7 @@ class WindsurfLLM(BaseChatModel):
                     offset += 8
                 elif wt == 5:  # 32-bit
                     offset += 4
-                elif wt == 3 or wt == 4:  # Start/End group (deprecated)
+                elif wt in {3, 4}:  # Start/End group (deprecated)
                     continue
                 else:
                     break

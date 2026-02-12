@@ -46,11 +46,11 @@ def main():
         # Make the API call
         start_time = time.time()
         response = llm.invoke([{"role": "user", "content": prompt}])
-        time.time() - start_time
+        _ = time.time() - start_time
 
         # Process the response
         if hasattr(response, "content"):
-            str(response.content)
+            _ = str(response.content)
         else:
             str(response)
 

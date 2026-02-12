@@ -477,7 +477,7 @@ def print_models(auth: WindsurfAuth) -> None:
 
     if auth.models:
         step(f"Доступні моделі ({len(auth.models)} default)")
-        for i, m in enumerate(auth.models):
+        for _, _ in enumerate(auth.models):
             pass
 
     for tier, tier_models in categories.items():
@@ -488,13 +488,13 @@ def print_models(auth: WindsurfAuth) -> None:
                 "premium": C.RED,
                 "recommended": C.CYAN,
             }.get(tier, C.DIM)
-            for m in tier_models:
+            for _ in tier_models:
                 pass
 
 
 def output_json(auth: WindsurfAuth) -> None:
     """Output auth data as JSON."""
-    {
+    _ = {
         "api_key": auth.api_key,
         "installation_id": auth.installation_id,
         "api_server_url": auth.api_server_url,

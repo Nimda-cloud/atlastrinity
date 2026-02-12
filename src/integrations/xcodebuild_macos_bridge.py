@@ -423,7 +423,7 @@ async def main():
 
     results = []
 
-    for i, test_case in enumerate(test_cases, 1):
+    for _, test_case in enumerate(test_cases, 1):
         result = await enhanced_xcode.call_tool(test_case["name"], test_case["params"])
 
         if result.get("status") == "success":

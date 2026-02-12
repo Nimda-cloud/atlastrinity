@@ -106,7 +106,7 @@ class RequestSegment:
 
 def _build_segment_profile(mode: str, text: str) -> ModeProfile:
     """Build ModeProfile for a segment using mode defaults."""
-    defaults = _MODE_PROFILES.get(mode, _MODE_PROFILES.get("chat", {}))
+    defaults = _MODE_PROFILES.get(mode) or _MODE_PROFILES.get("chat") or {}
 
     return ModeProfile(
         mode=mode,

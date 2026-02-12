@@ -123,7 +123,7 @@ async def verify_integrity():
                 if missing_key_tools:
                     pass
                 if schema_issues:
-                    for issue in schema_issues:
+                    for _ in schema_issues:
                         pass
 
         except Exception as e:

@@ -1,5 +1,3 @@
-from typing import Any
-
 from src.brain.navigation.tour_driver import tour_driver
 
 

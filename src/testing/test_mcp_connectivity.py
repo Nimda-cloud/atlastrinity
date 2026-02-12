@@ -35,7 +35,7 @@ async def test_servers():
             results[server_name] = False
 
     all_ok = all(results.values())
-    for s, ok in results.items():
+    for _, _ in results.items():
         pass
 
     if all_ok:

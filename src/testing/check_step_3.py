@@ -22,7 +22,7 @@ async def check():
             ORDER BY te.created_at DESC LIMIT 5;
         """),
         )
-        for row in result:
+        for _ in result:
             pass
 
 

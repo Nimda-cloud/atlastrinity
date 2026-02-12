@@ -867,7 +867,7 @@ def _prepare_vibe_env(env: dict[str, str] | None) -> dict[str, str]:
                     # Current implementation uses CopilotLLM for exchange
                     # In the future, this can be dispatched by provider type
                     # Use configured default model for token exchange
-                    exchange_model = config.get("models.default") or "gpt-4o"
+                    exchange_model = config.models[0].name if config.models else "gpt-4o"
                     llm = CopilotLLM(api_key=api_key, model_name=exchange_model)
                     token, _ = llm._get_session_token()
                     process_env[p_conf.api_key_env_var] = token

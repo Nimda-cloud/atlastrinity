@@ -187,7 +187,7 @@ def get_or_create_project():
         print_warning("Проектів не знайдено.")
         return create_project()
 
-    for i, p in enumerate(projects):
+    for _, _ in enumerate(projects):
         pass
 
     try:

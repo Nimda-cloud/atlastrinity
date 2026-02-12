@@ -2,7 +2,6 @@
 Script to run logic tests using the new ContextCheck module.
 """
 
-import json
 import sys
 from pathlib import Path
 

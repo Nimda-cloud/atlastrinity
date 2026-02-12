@@ -71,7 +71,7 @@ def main():
     results["direct"] = test_mode("direct")
 
     # Summary
-    for mode, ok in results.items():
+    for _ in results.items():
         pass
 
     if not any(results.values()):

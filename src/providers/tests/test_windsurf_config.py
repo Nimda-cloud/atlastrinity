@@ -24,7 +24,6 @@ if str(project_root) not in sys.path:
 
 from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
 
-from src.brain.config_loader import config  # noqa: E402
 from src.providers.factory import create_llm, get_provider_name  # noqa: E402
 
 
@@ -51,10 +50,10 @@ def test_config_integration():
 
         t0 = time.time()
         result = llm.invoke(messages)
-        time.time() - t0
+        _ = time.time() - t0
 
         content = result.content[:200] if result.content else "<empty>"
-        content and "ERROR" not in content and len(content) > 1
+        _ = content and "ERROR" not in content and len(content) > 1
 
     except Exception:
         pass
@@ -74,7 +73,7 @@ def test_model_selection():
 
     os.environ["LLM_PROVIDER"] = "windsurf"
 
-    for model_name, description in models_to_test:
+    for model_name, _ in models_to_test:
         try:
             llm = create_llm(model_name=model_name)
 
@@ -86,7 +85,7 @@ def test_model_selection():
 
             t0 = time.time()
             result = llm.invoke(messages)
-            time.time() - t0
+            _ = time.time() - t0
 
             result.content[:100] if result.content else "<empty>"
 

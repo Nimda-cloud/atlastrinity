@@ -3,9 +3,6 @@ System Fixer Module
 Consolidates auto-fix and error-fixing logic for AtlasTrinity.
 """
 
-import json
-import os
-import shutil
 import sqlite3
 import subprocess
 import sys
@@ -42,7 +39,7 @@ class SystemFixer:
             ("Git Permissions", self.fix_git_permissions),
         ]
 
-        for name, fix_func in fixes:
+        for _, fix_func in fixes:
             try:
                 fix_func()
             except Exception:
@@ -60,7 +57,7 @@ class SystemFixer:
                 '"analyze_screen": "macos-use_analyze_screen"': "analyze_screen",
             }
 
-            for pattern, name in checks.items():
+            for pattern, _ in checks.items():
                 if pattern in content:
                     pass
                 else:

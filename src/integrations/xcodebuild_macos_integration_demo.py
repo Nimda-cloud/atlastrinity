@@ -168,7 +168,7 @@ class XcodeBuildMacOSIntegrationDemo:
             },
         ]
 
-        for cmd in voice_commands:
+        for _ in voice_commands:
             pass
 
     async def simulate_enhancement(self, scenario):

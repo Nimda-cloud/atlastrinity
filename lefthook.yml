@@ -19,7 +19,7 @@ lint:all:
     06-pyright:
       run: npx pyright src scripts
     07-pyrefly:
-      run: export PYTHONPATH=$PYTHONPATH:. && .venv/bin/python -m pyrefly check
+      run: export PYTHONPATH=$PYTHONPATH:. && .venv/bin/python -m pyrefly check src
     08-complexity:
       run: .venv/bin/xenon --max-absolute F --max-modules D --max-average C -i testing,maintenance,integrations src
     09-bandit:

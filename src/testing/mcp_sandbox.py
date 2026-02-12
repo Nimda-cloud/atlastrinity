@@ -460,7 +460,7 @@ async def run_scenario(
         "final_verdict": "unknown",
     }
 
-    for i, step in enumerate(steps):
+    for _, step in enumerate(steps):
         if verbose:
             pass
 
@@ -720,7 +720,7 @@ async def main_async(args):
 
     # Output
     if args.json:
-        {
+        _ = {
             "mode": "sandbox_full_test",
             "timestamp": datetime.now().isoformat(),
             "test_time_seconds": round(total_time, 2),

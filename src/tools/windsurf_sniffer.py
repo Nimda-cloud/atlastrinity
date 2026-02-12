@@ -396,7 +396,7 @@ def print_response_body(
     """Print decoded response body."""
 
     if chat.get("errors"):
-        for err in chat["errors"]:
+        for _ in chat["errors"]:
             pass
 
     if chat.get("full_response"):

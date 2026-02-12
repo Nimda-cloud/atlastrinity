@@ -2115,7 +2115,7 @@ def main():
     print_info(
         f"Доступні MCP сервери ({len(enabled_servers) if enabled_servers else len(mcp_info)}):"
     )
-    for s_id, s_desc in sorted(mcp_info):
+    for s_id, _ in sorted(mcp_info):
         # Check if actually enabled in config
         if enabled_servers and s_id not in enabled_servers:
             pass

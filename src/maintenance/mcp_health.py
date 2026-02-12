@@ -9,7 +9,6 @@ Enhanced CLI tool for checking MCP server status with:
 
 import argparse
 import asyncio
-import json
 import os
 import sys
 
@@ -153,7 +152,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
 
     if output_json:
         # JSON output for automation
-        {
+        _ = {
             "timestamp": __import__("datetime").datetime.now().isoformat(),
             "total_servers": len(results),
             "online": sum(1 for r in results.values() if r["status"] == "online"),

@@ -81,7 +81,7 @@ async def run_mcp_test():
             break
         if resp.get("id") == 2:
             tools = resp["result"]["tools"]
-            for t in tools:
+            for _ in tools:
                 pass
             break
 

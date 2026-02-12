@@ -63,7 +63,7 @@ async def test_vibe_prompt_fallback():
                     pass
 
                 # Print logs emitted to context
-                for call in mock_ctx.log.call_args_list:
+                for _ in mock_ctx.log.call_args_list:
                     pass
             except Exception:
                 import traceback

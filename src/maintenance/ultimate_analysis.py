@@ -5,11 +5,9 @@ Find maximum improvement opportunities
 """
 
 import asyncio
-import json
-import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Add src to path
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "src"))

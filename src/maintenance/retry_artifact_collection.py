@@ -26,7 +26,7 @@ async def run():
         "search_notes",
         {"tags": ["step_424"], "limit": 5},
     )
-    getattr(notes_search, "structuredContent", None) or getattr(
+    _ = getattr(notes_search, "structuredContent", None) or getattr(
         notes_search,
         "content",
         None,

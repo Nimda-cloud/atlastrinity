@@ -24,7 +24,7 @@ async def inspect():
         results = await session.execute(stmt)
         executions = results.scalars().all()
 
-        for ex in executions:
+        for _ in executions:
             pass
 
         # Get latest 5 Steps to compare IDs
@@ -32,7 +32,7 @@ async def inspect():
         results = await session.execute(stmt)
         steps = results.scalars().all()
 
-        for s in steps:
+        for _ in steps:
             pass
 
 

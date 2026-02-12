@@ -445,7 +445,7 @@ class XcodeBuildMCPTester:
         ]
 
         for enhancement in enhancements:
-            for benefit in enhancement["benefits"]:
+            for _ in enhancement["benefits"]:
                 pass
 
     def generate_report(self):

@@ -5,7 +5,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.brain.core.orchestration.orchestrator import Trinity
 from src.brain.core.orchestration.tool_dispatcher import ToolDispatcher
 from src.brain.mcp.mcp_manager import mcp_manager
 

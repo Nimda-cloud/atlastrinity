@@ -9,7 +9,6 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 from src.mcp_server.vibe_server import (
-    run_vibe_subprocess,
     vibe_ask,
     vibe_code_review,
     vibe_get_config,
