@@ -3,12 +3,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.brain.parallel_healing import HealingStatus, HealingTask, ParallelHealingManager
+from src.brain.healing.parallel_healing import HealingStatus, HealingTask, ParallelHealingManager
 
 
 @pytest.fixture
 def manager():
-    with patch("src.brain.state_manager.state_manager.available", False):
+    with patch("src.brain.core.services.state_manager.state_manager.available", False):
         mgr = ParallelHealingManager()
         return mgr
 
@@ -17,7 +17,7 @@ def manager():
 async def test_submit_healing_task(manager):
     # Mock dependencies
     with (
-        patch("src.brain.parallel_healing.asyncio.create_task") as mock_create_task,
+        patch("src.brain.healing.parallel_healing.asyncio.create_task") as mock_create_task,
         patch.object(manager, "_notify_healing_started") as mock_notify,
     ):
         task_id = await manager.submit_healing_task(
@@ -56,7 +56,7 @@ async def test_max_concurrent_tasks(manager):
 @pytest.mark.asyncio
 async def test_acknowledge_fix(manager):
     # Setup fixed queue
-    from src.brain.parallel_healing import FixedStepInfo
+    from src.brain.healing.parallel_healing import FixedStepInfo
 
     fix = FixedStepInfo(
         task_id="t1",
@@ -87,7 +87,7 @@ async def test_run_healing_workflow_success(manager):
 
     # Mock all the external calls
     with (
-        patch("src.brain.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
         patch("src.brain.agents.grisha.Grisha") as mock_grisha_cls,
         patch.object(manager, "_notify_fix_ready", new_callable=AsyncMock) as mock_notify,
         patch.object(manager, "_test_in_sandbox", new_callable=AsyncMock) as mock_sandbox,
@@ -115,7 +115,7 @@ async def test_run_healing_workflow_grisha_reject(manager):
     manager._tasks["t1"] = task
 
     with (
-        patch("src.brain.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
         patch("src.brain.agents.grisha.Grisha") as mock_grisha_cls,
         patch.object(manager, "_test_in_sandbox", new_callable=AsyncMock) as mock_sandbox,
     ):

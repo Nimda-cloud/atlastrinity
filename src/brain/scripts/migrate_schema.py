@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 from sqlalchemy import text
 
-from src.brain.db.manager import db_manager
+from src.brain.memory.db.manager import db_manager
 
 
 async def migrate():

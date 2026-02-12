@@ -1,6 +1,6 @@
 import unittest
 
-from src.brain.error_router import (  # Adjust import based on actual structure
+from src.brain.core.orchestration.error_router import (  # Adjust import based on actual structure
     error_router,
 )
 

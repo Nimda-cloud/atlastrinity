@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.brain.message_bus import MessageType
-from src.brain.parallel_healing import HealingStatus, parallel_healing_manager
+from src.brain.core.server.message_bus import MessageType
+from src.brain.healing.parallel_healing import HealingStatus, parallel_healing_manager
 
 
 @pytest.mark.asyncio
@@ -17,9 +17,9 @@ async def test_integration_parallel_healing_flow():
 
     # 2. Simulate Orchestrator submitting task
     with (
-        patch("src.brain.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
         patch("src.brain.agents.grisha.Grisha") as mock_grisha_cls,
-        patch("src.brain.message_bus.message_bus.send", new_callable=AsyncMock) as mock_send,
+        patch("src.brain.core.server.message_bus.message_bus.send", new_callable=AsyncMock) as mock_send,
     ):
         # Setup Vibe analysis & fix
         mock_mcp.side_effect = [

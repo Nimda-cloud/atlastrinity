@@ -10,9 +10,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
 
-from src.brain.db.manager import db_manager
-from src.brain.db.schema import BehavioralDeviation, Session
 from src.brain.memory import long_term_memory
+from src.brain.memory.db.manager import db_manager
+from src.brain.memory.db.schema import BehavioralDeviation, Session
 
 
 async def test_deviation_sync():

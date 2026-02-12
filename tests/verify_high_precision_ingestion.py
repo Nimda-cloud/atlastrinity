@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Mock environment
-from src.brain.db.manager import db_manager
+from src.brain.memory.db.manager import db_manager
 
 
 async def verify_ingestion_pipeline():

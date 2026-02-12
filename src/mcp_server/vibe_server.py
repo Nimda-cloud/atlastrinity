@@ -43,8 +43,8 @@ from mcp.server import FastMCP
 from mcp.server.fastmcp import Context
 from sqlalchemy import text
 
-from src.brain.db.manager import db_manager
-from src.brain.utils.security import mask_sensitive_data
+from src.brain.memory.db.manager import db_manager
+from src.brain.monitoring.utils.security import mask_sensitive_data
 
 from .vibe_config import (
     AgentMode,
@@ -128,7 +128,7 @@ logger.addHandler(sh)
 
 # Load configuration
 try:
-    from .config_loader import CONFIG_ROOT, PROJECT_ROOT, get_config_value
+    from src.brain.config.config_loader import CONFIG_ROOT, PROJECT_ROOT, get_config_value
 
     VIBE_BINARY: str = get_config_value("mcp.vibe", "binary", "vibe")
     # Timeout is now controlled by vibe_config.toml (eff_timeout logic)
@@ -2589,7 +2589,7 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
     """
     from sqlalchemy import text
 
-    from src.brain.db.manager import db_manager
+    from src.brain.memory.db.manager import db_manager
 
     # Basic SQL validation
     clean_query = query.strip().upper()

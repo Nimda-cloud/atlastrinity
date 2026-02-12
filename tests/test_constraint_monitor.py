@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.brain.constraint_monitor import ConstraintMonitor
+from src.brain.behavior.constraint_monitor import ConstraintMonitor
 
 
 @pytest.mark.asyncio
@@ -12,9 +12,9 @@ async def test_constraint_monitor_violations():
 
     with (
         patch.object(monitor, "_read_constraints", return_value=["No errors in output"]),
-        patch("src.brain.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
         patch(
-            "src.brain.parallel_healing.parallel_healing_manager.submit_healing_task",
+            "src.brain.healing.parallel_healing.parallel_healing_manager.submit_healing_task",
             new_callable=AsyncMock,
         ) as mock_submit,
     ):
@@ -40,9 +40,9 @@ async def test_constraint_monitor_compliant():
 
     with (
         patch.object(monitor, "_read_constraints", return_value=["No errors"]),
-        patch("src.brain.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
         patch(
-            "src.brain.parallel_healing.parallel_healing_manager.submit_healing_task",
+            "src.brain.healing.parallel_healing.parallel_healing_manager.submit_healing_task",
             new_callable=AsyncMock,
         ) as mock_submit,
     ):

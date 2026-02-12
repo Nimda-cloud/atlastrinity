@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from src.brain.mcp_manager import mcp_manager
+from src.brain.mcp.mcp_manager import mcp_manager
 from src.brain.memory import long_term_memory
 
 # Setup logging

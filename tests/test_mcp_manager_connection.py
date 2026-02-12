@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.brain.mcp_manager import MCPManager
+from src.brain.mcp.mcp_manager import MCPManager
 
 
 @asynccontextmanager
@@ -46,8 +46,8 @@ async def test_connect_and_cleanup(monkeypatch):
     mm = MCPManager()
 
     # Monkeypatch stdio_client and ClientSession used in the module
-    monkeypatch.setattr("src.brain.mcp_manager.stdio_client", fake_stdio_client)
-    monkeypatch.setattr("src.brain.mcp_manager.ClientSession", FakeClientSession)
+    monkeypatch.setattr("src.brain.mcp.mcp_manager.stdio_client", fake_stdio_client)
+    monkeypatch.setattr("src.brain.mcp.mcp_manager.ClientSession", FakeClientSession)
 
     server_cfg = {"command": "echo", "args": []}
 

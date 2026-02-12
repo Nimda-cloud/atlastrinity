@@ -26,12 +26,12 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
-from src.brain.config_loader import config
-from src.brain.context import shared_context
-from src.brain.logger import logger
-from src.brain.mcp_manager import mcp_manager
+from src.brain.config.config_loader import config
+from src.brain.core.orchestration.context import shared_context
+from src.brain.core.orchestration.mode_router import ModeProfile, mode_router
+from src.brain.mcp.mcp_manager import mcp_manager
 from src.brain.memory import long_term_memory
-from src.brain.mode_router import ModeProfile, mode_router
+from src.brain.monitoring.logger import logger
 from src.brain.prompts import AgentPrompts
 from src.brain.prompts.atlas_chat import (
     generate_atlas_chat_prompt,
@@ -120,8 +120,8 @@ class Atlas(BaseAgent):
         """Analyzes available MCP servers and their capabilities.
         Returns structured data for intelligent step planning.
         """
-        from ..mcp_manager import mcp_manager
-        from ..mcp_registry import SERVER_CATALOG, get_tool_names_for_server
+        from src.brain.mcp.mcp_manager import mcp_manager
+        from src.brain.mcp.mcp_registry import SERVER_CATALOG, get_tool_names_for_server
 
         mcp_config = mcp_manager.config.get("mcpServers", {})
         status = mcp_manager.get_status()
@@ -224,7 +224,7 @@ class Atlas(BaseAgent):
             # Check for multi-mode segmentation
             # Import here to avoid circular imports
             try:
-                from ..request_segmenter import request_segmenter
+                from src.brain.core.orchestration.request_segmenter import request_segmenter
             except ImportError:
                 request_segmenter = None
 
@@ -866,7 +866,7 @@ Respond in JSON:
         # Selective protocol injection: append mode-specific protocols
         protocol_context = ""
         if mode_profile:
-            from ..mcp_registry import get_protocols_text_for_mode
+            from src.brain.mcp.mcp_registry import get_protocols_text_for_mode
 
             protocol_context = get_protocols_text_for_mode(mode_profile.all_protocols)
 
@@ -978,7 +978,7 @@ Respond in JSON:
         available_tools_info: bool,
     ) -> str:
         """Execute the multi-turn chat loop with tool handling and verification."""
-        from src.brain.state_manager import state_manager
+        from src.brain.core.services.state_manager import state_manager
 
         current_turn = 0
         MAX_CHAT_TURNS = 5

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.brain.orchestrator import Trinity
+from src.brain.core.orchestration.orchestrator import Trinity
 
 
 async def test_orchestrator_planning():
@@ -39,7 +39,7 @@ async def test_orchestrator_planning():
     # Actually, let's just use a simple check: if we call run, does it reach planning?
     # We can mock state_manager to be available and see if it passes the planning phase.
 
-    from src.brain.state_manager import state_manager
+    from src.brain.core.services.state_manager import state_manager
 
     state_manager.available = True
     state_manager.publish_event = AsyncMock()

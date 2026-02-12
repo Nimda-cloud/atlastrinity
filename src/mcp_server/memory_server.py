@@ -6,11 +6,11 @@ import pandas as pd
 from mcp.server import FastMCP
 from sqlalchemy import select, text
 
-from src.brain.db.manager import db_manager
-from src.brain.db.schema import KGNode
-from src.brain.knowledge_graph import knowledge_graph
-from src.brain.logger import logger
 from src.brain.memory import long_term_memory
+from src.brain.memory.db.manager import db_manager
+from src.brain.memory.db.schema import KGNode
+from src.brain.memory.knowledge_graph import knowledge_graph
+from src.brain.monitoring.logger import logger
 
 server = FastMCP("memory")
 
@@ -193,7 +193,7 @@ async def add_observations(
     # Get existing
     from sqlalchemy import select
 
-    from src.brain.db.schema import KGNode
+    from src.brain.memory.db.schema import KGNode
 
     session = await db_manager.get_session()
     try:
@@ -453,7 +453,7 @@ async def ingest_verified_dataset(
     4. Syncs semantic preview to Vector Memory.
     """
 
-    from src.brain.data_guard import data_guard
+    from src.brain.infrastructure.data_guard import data_guard
 
     path = Path(file_path)
     if not path.exists():
@@ -510,7 +510,7 @@ async def ingest_verified_dataset(
     )
 
     # 5. Automated Semantic Linking (New)
-    from src.brain.semantic_linker import semantic_linker
+    from src.brain.memory.semantic_linker import semantic_linker
 
     links = await semantic_linker.discover_links(df, node_id, namespace=namespace)
     for link in links:

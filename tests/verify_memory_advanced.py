@@ -8,8 +8,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..")
 sys.path.insert(0, os.path.abspath(root))
 
-from src.brain.db.manager import db_manager
-from src.brain.knowledge_graph import knowledge_graph
+from src.brain.memory.db.manager import db_manager
+from src.brain.memory.knowledge_graph import knowledge_graph
 
 
 async def verify_isolation():
@@ -41,7 +41,7 @@ async def verify_isolation():
     print("2. Verifying SQL Persistence...")
     from sqlalchemy import select
 
-    from src.brain.db.schema import KGNode
+    from src.brain.memory.db.schema import KGNode
 
     async with await db_manager.get_session() as session:
         # Check task node

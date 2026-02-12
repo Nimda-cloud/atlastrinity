@@ -8,8 +8,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..", "..")
 sys.path.insert(0, os.path.abspath(root))
 
-from src.brain.db.manager import db_manager
-from src.brain.knowledge_graph import knowledge_graph
+from src.brain.memory.db.manager import db_manager
+from src.brain.memory.knowledge_graph import knowledge_graph
 
 server = FastMCP("graph")
 
@@ -94,7 +94,7 @@ async def get_node_details(node_id: str) -> dict[str, Any]:
     """Retrieve all attributes of a specific node."""
     from sqlalchemy import select
 
-    from src.brain.db.schema import KGNode
+    from src.brain.memory.db.schema import KGNode
 
     await db_manager.initialize()
     session = await db_manager.get_session()
@@ -119,7 +119,7 @@ async def get_related_nodes(node_id: str) -> dict[str, Any]:
     """Find all nodes directly connected to the specified node."""
     from sqlalchemy import or_, select
 
-    from src.brain.db.schema import KGEdge
+    from src.brain.memory.db.schema import KGEdge
 
     await db_manager.initialize()
     session = await db_manager.get_session()

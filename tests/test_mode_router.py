@@ -17,7 +17,7 @@ import pytest
 # Ensure src is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.brain.mode_router import ModeRouter
+from src.brain.core.orchestration.mode_router import ModeRouter
 
 
 class TestModeProfilesJSON:
@@ -96,7 +96,7 @@ class TestModeRouterBuildProfile:
 
     @pytest.fixture
     def router(self):
-        from src.brain.mode_router import ModeRouter
+        from src.brain.core.orchestration.mode_router import ModeRouter
 
         return ModeRouter()
 

@@ -7,7 +7,7 @@ import sys
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.brain.request_segmenter import RequestSegment, RequestSegmenter
+from src.brain.core.orchestration.request_segmenter import RequestSegment, RequestSegmenter
 
 
 def test_keyword_segmentation():
@@ -67,7 +67,7 @@ def test_mode_profiles_loading():
     """Test that mode profiles are loaded correctly."""
     print("\n=== Test: Mode Profiles Loading ===")
 
-    from src.brain.request_segmenter import _MODE_PROFILES, _SEGMENTATION_CONFIG
+    from src.brain.core.orchestration.request_segmenter import _MODE_PROFILES, _SEGMENTATION_CONFIG
 
     print(f"Loaded modes: {list(_MODE_PROFILES.keys())}")
     print(f"Segmentation enabled: {_SEGMENTATION_CONFIG.get('enabled')}")
@@ -88,7 +88,7 @@ def test_segment_profile_building():
     """Test building profiles for segments."""
     print("\n=== Test: Segment Profile Building ===")
 
-    from src.brain.request_segmenter import _build_segment_profile
+    from src.brain.core.orchestration.request_segmenter import _build_segment_profile
 
     # Test chat profile
     chat_profile = _build_segment_profile("chat", "Привіт!")
@@ -125,7 +125,7 @@ def main():
         print("✅ All simple segmentation tests passed!")
 
         # Show stats
-        from src.brain.request_segmenter import request_segmenter
+        from src.brain.core.orchestration.request_segmenter import request_segmenter
 
         stats = request_segmenter.get_stats()
         print(f"\nSegmentation Stats: {stats}")

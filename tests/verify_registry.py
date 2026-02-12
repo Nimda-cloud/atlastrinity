@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
-    from src.brain.mcp_registry import (
+    from src.brain.mcp.mcp_registry import (
         SERVER_CATALOG,
         TOOL_SCHEMAS,
         VIBE_DOCUMENTATION,

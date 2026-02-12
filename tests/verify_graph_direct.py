@@ -8,7 +8,7 @@ import sys
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from src.brain.db.manager import db_manager
+from src.brain.memory.db.manager import db_manager
 
 
 async def test_graph_generation():

@@ -34,9 +34,9 @@ class Colors:
 
 async def check_mcp(output_json: bool = False, show_tools: bool = False, check_all: bool = False):
     """Run MCP health checks for all servers."""
-    from brain.config import ensure_dirs
-    from brain.mcp_manager import mcp_manager
-    from brain.mcp_registry import SERVER_CATALOG
+    from src.brain.config import ensure_dirs
+    from src.brain.mcp.mcp_manager import mcp_manager
+    from src.brain.mcp.mcp_registry import SERVER_CATALOG
 
     ensure_dirs()
 
@@ -76,7 +76,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
 
         # Special case for internal services
         if server_name in ["system", "tour-guide"]:
-            from brain.mcp_registry import get_tool_names_for_server
+            from src.brain.mcp.mcp_registry import get_tool_names_for_server
 
             tools = get_tool_names_for_server(server_name)
             note = "Internal Trinity System" if server_name == "system" else "Internal Tour Control"
@@ -126,6 +126,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                         f"{elapsed:>6.0f}ms",
                     )
                     if show_tools:
+                        from src.brain.mcp.mcp_registry import get_tool_names_for_server
                         tool_names = sorted(
                             [t.name if hasattr(t, "name") else str(t) for t in tools]
                         )

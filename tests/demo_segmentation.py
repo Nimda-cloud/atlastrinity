@@ -11,7 +11,7 @@ import sys
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.brain.request_segmenter import request_segmenter
+from src.brain.core.orchestration.request_segmenter import request_segmenter
 
 
 def demo_mixed_request():
@@ -113,7 +113,7 @@ def demo_configuration():
     print("⚙️  Current Segmentation Configuration")
     print("=" * 50)
 
-    from src.brain.request_segmenter import _MODE_PROFILES, _SEGMENTATION_CONFIG
+    from src.brain.core.orchestration.request_segmenter import _MODE_PROFILES, _SEGMENTATION_CONFIG
 
     print("🔧 Segmentation Settings:")
     print(f"   Enabled: {_SEGMENTATION_CONFIG.get('enabled')}")

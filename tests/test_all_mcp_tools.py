@@ -443,7 +443,7 @@ class TestMcpRegistryFunctions:
     def setup_registry(self):
         """Load registry before tests."""
         try:
-            from src.brain.mcp_registry import (
+            from src.brain.mcp.mcp_registry import (
                 SERVER_CATALOG,
                 get_all_tool_names,
                 get_server_for_tool,
@@ -451,7 +451,7 @@ class TestMcpRegistryFunctions:
                 get_tool_schema,
                 load_registry,
             )
-            from src.brain.mcp_registry import (
+            from src.brain.mcp.mcp_registry import (
                 TOOL_SCHEMAS as REG_SCHEMAS,
             )
 

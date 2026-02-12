@@ -16,7 +16,7 @@ import torch
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.brain.config_loader import config
+from src.brain.config.config_loader import config
 from src.brain.voice.stt import WhisperSTT
 
 

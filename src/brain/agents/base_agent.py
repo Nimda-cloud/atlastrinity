@@ -90,10 +90,9 @@ class BaseAgent:
         from langchain_core.messages import HumanMessage, SystemMessage
 
         from providers.factory import create_llm
-
-        from ..config_loader import config
-        from ..logger import logger
-        from ..mcp_manager import mcp_manager
+        from src.brain.config.config_loader import config
+        from src.brain.mcp.mcp_manager import mcp_manager
+        from src.brain.monitoring.logger import logger
 
         agent_name = self.__class__.__name__.upper()
         logger.info(f"[{agent_name}] 🤔 Thinking deeply about: {task[:60]}...")

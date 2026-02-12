@@ -1,4 +1,5 @@
-from ..config import WORKSPACE_DIR
+from src.brain.config import WORKSPACE_DIR
+
 from .atlas import ATLAS
 from .common import DEFAULT_REALM_CATALOG, SDLC_PROTOCOL, TASK_PROTOCOL  # re-export default catalog
 from .grisha import GRISHA
@@ -85,7 +86,8 @@ class AgentPrompts:
         Returns:
             Formatted system prompt with only the relevant protocols.
         """
-        from ..mcp_registry import get_protocols_by_names
+        from src.brain.mcp.mcp_registry import get_protocols_by_names
+
         from .common import get_realm_catalog, get_vibe_documentation
 
         # Get fresh catalog

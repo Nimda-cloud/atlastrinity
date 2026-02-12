@@ -5,8 +5,8 @@ import sys
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.brain.mode_router import mode_router
-from src.brain.request_segmenter import request_segmenter
+from src.brain.core.orchestration.mode_router import mode_router
+from src.brain.core.orchestration.request_segmenter import request_segmenter
 
 
 async def test_segmentation():

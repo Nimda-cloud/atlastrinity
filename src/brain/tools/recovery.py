@@ -4,8 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src.brain.logger import logger
-from src.brain.state_manager import state_manager
+from src.brain.core.services.state_manager import state_manager
+from src.brain.monitoring.logger import logger
 
 RECOVERY_FILE = Path(".recovery_state.json")
 

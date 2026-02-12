@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.brain.behavior_engine import BehaviorEngine, WorkflowEngine
+from src.brain.behavior.behavior_engine import BehaviorEngine, WorkflowEngine
 
 
 @pytest.fixture
@@ -46,17 +46,17 @@ async def test_workflow_execution(mock_behavior_engine):
     # Mocking dependencies that might trigger import errors or side effects
     import sys
 
-    sys.modules["src.brain.db.manager"] = MagicMock()
-    sys.modules["src.brain.services_manager"] = MagicMock()
-    sys.modules["src.brain.state_manager"] = MagicMock()
+    sys.modules["src.brain.memory.db.manager"] = MagicMock()
+    sys.modules["src.brain.core.services.services_manager"] = MagicMock()
+    sys.modules["src.brain.core.services.state_manager"] = MagicMock()
 
     # Mock internal action
     mock_action = AsyncMock()
 
     # We need to monkeypatch the internal action registry for this test
     # Re-import to ensure mocks are used
-    if "src.brain.internal_actions" in sys.modules:
-        del sys.modules["src.brain.internal_actions"]
+    if "src.brain.behavior.internal_actions" in sys.modules:
+        del sys.modules["src.brain.behavior.internal_actions"]
 
     from src.brain import internal_actions
 

@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from src.brain.mcp_manager import mcp_manager
+from src.brain.mcp.mcp_manager import mcp_manager
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
@@ -21,7 +21,7 @@ async def verify():
         print("\nTesting 'memory' generic call dispatch...")
 
         # This simulates the problematic call found in logs:
-        # [DISPATCHER] Calling memory.memory with ['query', 'limit', 'step_id']
+        # [DISPATCHER] Calling memory with ['query', 'limit', 'step_id']
 
         # We explicitly call "memory" tool via dispatch_tool to test routing.
         # This simulates an agent calling dispatch_tool("memory", args).
@@ -42,7 +42,7 @@ async def verify():
             or "Atlas" in res_str
             or isinstance(res, list | dict)
         ):
-            print("SUCCESS: Dispatcher handled 'memory.memory' call!")
+            print("SUCCESS: Dispatcher handled 'memory' call!")
             print(f"Result Preview: {res_str[:200]}")
         else:
             print(f"WARNING: Unexpected result format: {res_str[:200]}")

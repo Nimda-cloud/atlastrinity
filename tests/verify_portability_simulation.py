@@ -54,7 +54,7 @@ async def test_restoration_logic():
     print("3. Initializing and Auto-fixing schema...")
     os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{MOCK_CONFIG}/atlastrinity.db"
 
-    from src.brain.db.manager import db_manager
+    from src.brain.memory.db.manager import db_manager
 
     # Initialize will trigger Base.metadata.create_all and verify_schema(fix=True)
     await db_manager.initialize()

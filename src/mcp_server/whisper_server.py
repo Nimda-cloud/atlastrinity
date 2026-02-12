@@ -4,11 +4,11 @@ from typing import Any, cast
 import httpx
 from mcp.server import FastMCP
 
-from src.brain.config_loader import config
+from src.brain.config.config_loader import config
 from src.brain.voice.stt import WhisperSTT
 
 try:
-    from .config_loader import get_config_value
+    from src.brain.config.config_loader import get_config_value
 
     STT_MODEL = get_config_value("whisper", "model", "large-v3")
     STT_LANGUAGE = get_config_value("whisper", "language", "uk")

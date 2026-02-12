@@ -10,7 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.brain.agents.atlas import Atlas, TaskPlan
-from src.brain.context import shared_context
+from src.brain.core.orchestration.context import shared_context
 
 
 class TestAtlasCore:

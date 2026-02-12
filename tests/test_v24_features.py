@@ -14,9 +14,9 @@ import src.brain.config
 src.brain.config.CONFIG_ROOT = PROJECT_ROOT / "tests" / "mock_config"
 src.brain.config.CONFIG_ROOT.mkdir(parents=True, exist_ok=True)
 
-from src.brain.db.manager import db_manager
-from src.brain.knowledge_graph import knowledge_graph
-from src.brain.semantic_linker import semantic_linker
+from src.brain.memory.db.manager import db_manager
+from src.brain.memory.knowledge_graph import knowledge_graph
+from src.brain.memory.semantic_linker import semantic_linker
 
 
 async def test_v24_logic():

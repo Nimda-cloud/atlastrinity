@@ -105,8 +105,8 @@ sys.modules.setdefault("langchain_core.messages", langchain_core_messages_mod)
 sys.modules.setdefault("ukrainian_tts", types.ModuleType("ukrainian_tts"))
 sys.modules.setdefault("ukrainian_tts.tts", types.ModuleType("ukrainian_tts.tts"))
 
-# Stub src.brain.mcp_manager to avoid importing MCP client stack in unit tests
-brain_mcp_manager_mod = types.ModuleType("src.brain.mcp_manager")
+# Stub src.brain.mcp.mcp_manager to avoid importing MCP client stack in unit tests
+brain_mcp_manager_mod = types.ModuleType("src.brain.mcp.mcp_manager")
 
 
 class _StubMCPManager:
@@ -118,14 +118,14 @@ class _StubMCPManager:
 
 
 brain_mcp_manager_mod.mcp_manager = _StubMCPManager()  # type: ignore
-sys.modules.setdefault("src.brain.mcp_manager", brain_mcp_manager_mod)
+sys.modules.setdefault("src.brain.mcp.mcp_manager", brain_mcp_manager_mod)
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import src.brain.orchestrator as orch
+import src.brain.core.orchestration.orchestrator as orch
 from src.brain.agents.tetyana import StepResult
-from src.brain.orchestrator import Trinity
+from src.brain.core.orchestration.orchestrator import Trinity
 
 
 class DummyVoice:
@@ -170,7 +170,7 @@ def _plan(steps):
 
 @pytest.fixture
 def fast_sleep(monkeypatch):
-    import src.brain.orchestrator as orch
+    import src.brain.core.orchestration.orchestrator as orch
 
     async def _no_sleep(_):
         return None

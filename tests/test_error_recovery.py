@@ -2,7 +2,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.brain.error_router import ErrorCategory, RecoveryStrategy, SmartErrorRouter
+from src.brain.core.orchestration.error_router import (
+    ErrorCategory,
+    RecoveryStrategy,
+    SmartErrorRouter,
+)
 
 
 @pytest.fixture
@@ -28,7 +32,7 @@ def test_decide_uses_behavior_engine_patterns(error_router):
     mock_pattern.action = {"strategy_action": "CUSTOM_ACTION", "backoff": 5.0, "max_retries": 10}
 
     # Mock behavior_engine
-    with patch("src.brain.behavior_engine.behavior_engine") as mock_engine:
+    with patch("src.brain.behavior.behavior_engine.behavior_engine") as mock_engine:
         mock_engine.match_pattern.return_value = mock_pattern
 
         context = {"task_type": "test_task"}
@@ -56,7 +60,7 @@ def test_decide_fallback_heuristics(error_router):
     mock_pattern_vibe.name = "vibe_pattern"
     mock_pattern_vibe.action = {"server": "vibe"}
 
-    with patch("src.brain.behavior_engine.behavior_engine") as mock_engine:
+    with patch("src.brain.behavior.behavior_engine.behavior_engine") as mock_engine:
         mock_engine.match_pattern.return_value = mock_pattern_vibe
 
         strategy = error_router.decide("Some Error", attempt=1)
@@ -67,7 +71,7 @@ def test_decide_fallback_heuristics(error_router):
     mock_pattern_sudo.name = "sudo_pattern"
     mock_pattern_sudo.action = {"retry_with_sudo": True}
 
-    with patch("src.brain.behavior_engine.behavior_engine") as mock_engine:
+    with patch("src.brain.behavior.behavior_engine.behavior_engine") as mock_engine:
         mock_engine.match_pattern.return_value = mock_pattern_sudo
 
         strategy = error_router.decide("Permission denied", attempt=1)

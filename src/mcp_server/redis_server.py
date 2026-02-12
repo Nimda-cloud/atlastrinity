@@ -10,8 +10,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(current_dir, "..", "..")
 sys.path.insert(0, os.path.abspath(root))
 
-from src.brain.config_loader import config
-from src.brain.logger import logger
+from src.brain.config.config_loader import config
+from src.brain.monitoring.logger import logger
 
 server = FastMCP("redis")
 

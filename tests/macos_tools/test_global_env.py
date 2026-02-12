@@ -62,7 +62,7 @@ def test_global_env_loading():
     # Test 2: src/brain/config_loader.py
     print("\n--- Test 2: src/brain/config_loader.py ---")  # noqa: T201
     try:
-        from src.brain.config_loader import config
+        from src.brain.config.config_loader import config
 
         # Config loader loads from global .env
         provider = config.get("models.provider")

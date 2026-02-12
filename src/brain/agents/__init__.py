@@ -1,7 +1,7 @@
 """AtlasTrinity Agents Package"""
 
-from .atlas import Atlas
-from .grisha import Grisha
-from .tetyana import Tetyana
+from src.brain.agents.atlas import Atlas
+from src.brain.agents.grisha import Grisha
+from src.brain.agents.tetyana import Tetyana
 
 __all__ = ["Atlas", "Grisha", "Tetyana"]

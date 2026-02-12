@@ -28,10 +28,11 @@ from PIL import Image
 
 from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
-from src.brain.config_loader import config
-from src.brain.context import shared_context
-from src.brain.logger import logger
-from src.brain.mcp_manager import mcp_manager
+from src.brain.config.config_loader import config
+from src.brain.core.orchestration.context import shared_context
+from src.brain.mcp.mcp_manager import mcp_manager
+from src.brain.monitoring.logger import logger
+from src.brain.monitoring.utils.security import mask_sensitive_data
 from src.brain.prompts import AgentPrompts
 from src.brain.prompts.grisha import (
     GRISHA_DEEP_VALIDATION_REASONING,
@@ -41,7 +42,6 @@ from src.brain.prompts.grisha import (
     GRISHA_PLAN_VERIFICATION_PROMPT,
     GRISHA_VERIFICATION_GOAL_ANALYSIS,
 )
-from src.brain.utils.security import mask_sensitive_data
 
 
 @dataclass
@@ -419,7 +419,7 @@ class Grisha(BaseAgent):
         No heuristics here—just data for the LLM to reason about.
         """
         try:
-            from ..mcp_manager import mcp_manager
+            from src.brain.mcp.mcp_manager import mcp_manager
 
             servers_cfg = getattr(mcp_manager, "config", {}).get("mcpServers", {})
             active_servers = [
@@ -881,7 +881,7 @@ class Grisha(BaseAgent):
         }
 
         try:
-            from src.brain.behavior_engine import behavior_engine
+            from src.brain.behavior.behavior_engine import behavior_engine
 
             vm = (
                 behavior_engine.config.get("grisha", {})
@@ -2163,8 +2163,8 @@ class Grisha(BaseAgent):
     ) -> None:
         """Save detailed rejection report to memory and notes servers for Atlas and Tetyana to access"""
 
-        from ..knowledge_graph import knowledge_graph
-        from ..message_bus import AgentMsg, MessageType, message_bus
+        from src.brain.core.server.message_bus import AgentMsg, MessageType, message_bus
+        from src.brain.memory.knowledge_graph import knowledge_graph
 
         try:
             # STEP 1: Create rejection fingerprint for recursion detection
@@ -2391,7 +2391,7 @@ class Grisha(BaseAgent):
 
     async def take_screenshot(self) -> str:
         """Captures and analyzes screenshot via Vision model."""
-        from ..config import SCREENSHOTS_DIR
+        from src.brain.config import SCREENSHOTS_DIR
 
         # 1. Try Native Swift MCP first (fastest, most reliable)
         path = await self._attempt_mcp_screenshot(str(SCREENSHOTS_DIR))

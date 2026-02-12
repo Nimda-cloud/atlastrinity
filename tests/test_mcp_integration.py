@@ -60,7 +60,7 @@ def test_mcp_servers_connect_and_list_tools():
     if not _mcp_package_available():
         pytest.skip("Python package 'mcp' is not installed")
 
-    from src.brain.mcp_manager import MCPManager
+    from src.brain.mcp.mcp_manager import MCPManager
 
     base_mgr = MCPManager()
     servers = base_mgr.config.get("mcpServers", {}) or {}

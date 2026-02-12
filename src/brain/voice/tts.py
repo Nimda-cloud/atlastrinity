@@ -24,9 +24,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from ..config import MODELS_DIR
-from ..config_loader import config
-from ..logger import logger
+from src.brain.config import MODELS_DIR
+from src.brain.config.config_loader import config
+from src.brain.monitoring.logger import logger
 
 # Lazy imports for optional dependencies
 try:
@@ -500,7 +500,7 @@ class VoiceManager:
     async def _get_translator(self):
         """Lazy load a small/fast model for translation defense."""
         if self._translator_llm is None:
-            from ..config import PROJECT_ROOT
+            from src.brain.config import PROJECT_ROOT
 
             if str(PROJECT_ROOT) not in sys.path:
                 sys.path.insert(0, str(PROJECT_ROOT))

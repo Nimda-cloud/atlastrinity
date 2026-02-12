@@ -8,9 +8,9 @@ import math
 import re
 from dataclasses import dataclass
 
-from ..logger import logger
-from ..map_state import map_state_manager
-from ..mcp_manager import mcp_manager
+from src.brain.mcp.mcp_manager import mcp_manager
+from src.brain.monitoring.logger import logger
+from src.brain.navigation.map_state import map_state_manager
 
 
 @dataclass

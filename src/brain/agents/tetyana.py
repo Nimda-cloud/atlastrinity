@@ -25,10 +25,10 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
-from src.brain.config_loader import config
-from src.brain.context import shared_context
-from src.brain.logger import logger
-from src.brain.mcp_manager import mcp_manager
+from src.brain.config.config_loader import config
+from src.brain.core.orchestration.context import shared_context
+from src.brain.mcp.mcp_manager import mcp_manager
+from src.brain.monitoring.logger import logger
 from src.brain.prompts import AgentPrompts
 
 
@@ -87,7 +87,7 @@ class Tetyana(BaseAgent):
         Cached after first access for performance.
         """
         if cls._cached_schemas is None:
-            from ..mcp_registry import TOOL_SCHEMAS
+            from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
 
             cls._cached_schemas = TOOL_SCHEMAS
         return cls._cached_schemas
@@ -184,7 +184,7 @@ class Tetyana(BaseAgent):
         """
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        from ..logger import logger
+        from src.brain.monitoring.logger import logger
 
         parent_goals = parent_goals or []
         goal_chain = [*parent_goals, global_goal]
@@ -352,7 +352,7 @@ Respond in JSON:
         import base64
         import subprocess
 
-        from ..config import SCREENSHOTS_DIR
+        from src.brain.config import SCREENSHOTS_DIR
 
         try:
             # Create screenshots directory if needed
@@ -711,8 +711,8 @@ IMPORTANT:
 
     async def _get_detailed_server_context(self, target_server: str) -> str:
         """Fetch detailed tool specifications for a specific server."""
-        from ..context import shared_context
-        from ..mcp_manager import mcp_manager
+        from src.brain.core.orchestration.context import shared_context
+        from src.brain.mcp.mcp_manager import mcp_manager
 
         configured_servers = mcp_manager.config.get("mcpServers", {})
         if (
@@ -798,7 +798,7 @@ IMPORTANT:
         step: dict[str, Any],
     ) -> StepResult | None:
         """Process question to Atlas if present in monologue."""
-        from ..message_bus import AgentMsg, MessageType, message_bus
+        from src.brain.core.server.message_bus import AgentMsg, MessageType, message_bus
 
         question = monologue.get("question_to_atlas")
         if not question:
@@ -1258,7 +1258,7 @@ IMPORTANT:
 
     async def execute_step(self, step: dict[str, Any], attempt: int = 1) -> StepResult:
         """Executes a single plan step with Advanced Reasoning."""
-        from ..state_manager import state_manager
+        from src.brain.core.services.state_manager import state_manager
 
         self.attempt_count = attempt
         step_id = step.get("id", self.current_step)
@@ -1673,7 +1673,7 @@ IMPORTANT:
         """Save artifact files and register in notes/memory for Grisha's verification."""
         import time as _time
 
-        from ..config import SCREENSHOTS_DIR, WORKSPACE_DIR
+        from src.brain.config import SCREENSHOTS_DIR, WORKSPACE_DIR
 
         try:
             ts = _time.strftime("%Y%m%d_%H%M%S")

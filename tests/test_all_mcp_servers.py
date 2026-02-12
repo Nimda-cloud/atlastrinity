@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.brain.mcp_manager import mcp_manager
+from src.brain.mcp.mcp_manager import mcp_manager
 
 
 # Color codes for terminal output

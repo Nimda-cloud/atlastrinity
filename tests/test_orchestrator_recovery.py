@@ -4,7 +4,7 @@ import pytest
 
 from src.brain.agents.grisha import VerificationResult
 from src.brain.agents.tetyana import StepResult
-from src.brain.orchestrator import Trinity
+from src.brain.core.orchestration.orchestrator import Trinity
 
 
 @pytest.mark.asyncio
@@ -62,7 +62,7 @@ async def test_recovery_uses_grisha_and_announces_grisha_message(monkeypatch):
     )
 
     # Mock notifications to prevent system calls
-    import src.brain.orchestrator as orch
+    import src.brain.core.orchestration.orchestrator as orch
 
     stub_notif = MagicMock()
     stub_notif.show_progress = MagicMock(return_value=True)

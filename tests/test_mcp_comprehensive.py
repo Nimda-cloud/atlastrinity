@@ -156,17 +156,17 @@ class TestMCPRegistry:
 
     @pytest.fixture(autouse=True)
     def setup_registry(self):
-        from src.brain.mcp_registry import load_registry
+        from src.brain.mcp.mcp_registry import load_registry
 
         load_registry()
 
     def test_catalog_loaded(self):
-        from src.brain.mcp_registry import SERVER_CATALOG
+        from src.brain.mcp.mcp_registry import SERVER_CATALOG
 
         assert len(SERVER_CATALOG) > 0, "SERVER_CATALOG is empty"
 
     def test_catalog_has_core_servers(self):
-        from src.brain.mcp_registry import SERVER_CATALOG
+        from src.brain.mcp.mcp_registry import SERVER_CATALOG
 
         core = ["macos-use", "filesystem", "sequential-thinking"]
         for name in core:
@@ -174,7 +174,7 @@ class TestMCPRegistry:
 
     def test_catalog_server_structure(self):
         """Each catalog entry must have name, tier, description, key_tools."""
-        from src.brain.mcp_registry import SERVER_CATALOG
+        from src.brain.mcp.mcp_registry import SERVER_CATALOG
 
         for name, entry in SERVER_CATALOG.items():
             assert "name" in entry, f"{name}: missing 'name'"
@@ -184,13 +184,13 @@ class TestMCPRegistry:
             assert isinstance(entry["key_tools"], list), f"{name}: 'key_tools' not a list"
 
     def test_schemas_loaded(self):
-        from src.brain.mcp_registry import TOOL_SCHEMAS
+        from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
 
         assert len(TOOL_SCHEMAS) > 0, "TOOL_SCHEMAS is empty"
 
     def test_schema_structure(self):
         """Each schema must have server, required, optional fields."""
-        from src.brain.mcp_registry import TOOL_SCHEMAS
+        from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
 
         for tool_name, schema in TOOL_SCHEMAS.items():
             if "alias_for" in schema:
@@ -202,39 +202,39 @@ class TestMCPRegistry:
             )
 
     def test_get_server_for_tool(self):
-        from src.brain.mcp_registry import get_server_for_tool
+        from src.brain.mcp.mcp_registry import get_server_for_tool
 
         assert get_server_for_tool("vibe_prompt") == "vibe"
         assert get_server_for_tool("search_golden_fund") == "golden-fund"
 
     def test_get_tool_schema(self):
-        from src.brain.mcp_registry import get_tool_schema
+        from src.brain.mcp.mcp_registry import get_tool_schema
 
         schema = get_tool_schema("vibe_prompt")
         assert schema is not None, "vibe_prompt schema not found"
         assert "prompt" in schema["required"]
 
     def test_get_all_tool_names(self):
-        from src.brain.mcp_registry import get_all_tool_names
+        from src.brain.mcp.mcp_registry import get_all_tool_names
 
         names = get_all_tool_names()
         assert len(names) > 20, f"Expected >20 tools, got {len(names)}"
 
     def test_get_tool_names_for_server(self):
-        from src.brain.mcp_registry import get_tool_names_for_server
+        from src.brain.mcp.mcp_registry import get_tool_names_for_server
 
         vibe_tools = get_tool_names_for_server("vibe")
         assert len(vibe_tools) > 0, "No tools found for vibe server"
 
     def test_get_servers_for_task(self):
-        from src.brain.mcp_registry import get_servers_for_task
+        from src.brain.mcp.mcp_registry import get_servers_for_task
 
         servers = get_servers_for_task("coding")
         assert isinstance(servers, list)
         assert len(servers) > 0
 
     def test_registry_stats(self):
-        from src.brain.mcp_registry import get_registry_stats
+        from src.brain.mcp.mcp_registry import get_registry_stats
 
         stats = get_registry_stats()
         assert stats["total_servers"] > 0
@@ -243,7 +243,7 @@ class TestMCPRegistry:
         assert stats["catalog_loaded"] is True
 
     def test_catalog_prompt_generation(self):
-        from src.brain.mcp_registry import get_server_catalog_for_prompt
+        from src.brain.mcp.mcp_registry import get_server_catalog_for_prompt
 
         prompt = get_server_catalog_for_prompt()
         assert len(prompt) > 100, "Catalog prompt too short"
@@ -261,10 +261,10 @@ class TestToolDispatcher:
 
     @pytest.fixture
     def dispatcher(self):
-        from src.brain.mcp_registry import load_registry
+        from src.brain.mcp.mcp_registry import load_registry
 
         load_registry()
-        from src.brain.tool_dispatcher import ToolDispatcher
+        from src.brain.core.orchestration.tool_dispatcher import ToolDispatcher
 
         mock_manager = MagicMock()
         mock_manager.call_tool = AsyncMock(return_value={"success": True})
@@ -819,13 +819,13 @@ class TestToolSchemasCrossValidation:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        from src.brain.mcp_registry import load_registry
+        from src.brain.mcp.mcp_registry import load_registry
 
         load_registry()
 
     def test_all_schema_servers_exist_in_config(self):
         """Every server referenced in TOOL_SCHEMAS must exist in the config."""
-        from src.brain.mcp_registry import TOOL_SCHEMAS
+        from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
 
         config = _load_mcp_config()
         config_servers = set(k for k in config.get("mcpServers", {}) if not k.startswith("_"))
@@ -843,7 +843,7 @@ class TestToolSchemasCrossValidation:
 
     def test_schema_types_are_valid(self):
         """Schema type annotations must be valid Python type strings."""
-        from src.brain.mcp_registry import TOOL_SCHEMAS
+        from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
 
         valid_types = {"str", "int", "float", "bool", "list", "dict", "any", "Any", "None"}
         for tool_name, schema in TOOL_SCHEMAS.items():
@@ -857,7 +857,7 @@ class TestToolSchemasCrossValidation:
 
     def test_required_params_have_types(self):
         """Every required parameter should have a type definition."""
-        from src.brain.mcp_registry import TOOL_SCHEMAS
+        from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
 
         for tool_name, schema in TOOL_SCHEMAS.items():
             if "alias_for" in schema:

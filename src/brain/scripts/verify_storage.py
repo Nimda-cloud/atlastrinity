@@ -17,8 +17,10 @@ logger = logging.getLogger("verify_storage")
 
 # Import system managers
 try:
-    from src.brain.db.manager import db_manager
-    from src.brain.db.schema import (
+    from src.brain.core.services.state_manager import state_manager
+    from src.brain.memory import long_term_memory
+    from src.brain.memory.db.manager import db_manager
+    from src.brain.memory.db.schema import (
         AgentMessage,
         KGEdge,
         KGNode,
@@ -29,8 +31,6 @@ try:
         TaskStep,
         ToolExecution,
     )
-    from src.brain.memory import long_term_memory
-    from src.brain.state_manager import state_manager
 except ImportError as e:
     logger.error(f"Import failed: {e}")
     sys.exit(1)

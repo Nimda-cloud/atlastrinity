@@ -2,7 +2,7 @@ import errno
 
 import pytest
 
-from src.brain.mcp_manager import MCPManager
+from src.brain.mcp.mcp_manager import MCPManager
 
 
 @pytest.mark.asyncio

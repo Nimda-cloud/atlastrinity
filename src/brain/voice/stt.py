@@ -12,9 +12,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, cast
 
-from ..config import CONFIG_ROOT
-from ..config_loader import config
-from ..logger import logger
+from src.brain.config import CONFIG_ROOT
+from src.brain.config.config_loader import config
+from src.brain.monitoring.logger import logger
 
 # Lazy import to avoid loading heavy dependencies at startup
 WHISPER_AVAILABLE = None

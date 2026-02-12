@@ -44,7 +44,7 @@ def devtools_list_processes() -> dict[str, Any]:
     Includes PID, type (vibe, mcp, proxy), CPU usage history, and health status.
     """
     try:
-        from src.brain.watchdog import watchdog
+        from src.brain.monitoring.watchdog import watchdog
 
         return watchdog.get_status()
     except Exception as e:
@@ -59,7 +59,7 @@ async def devtools_restart_mcp_server(server_name: str) -> dict[str, Any]:
         server_name: The name of the server to restart (e.g., 'vibe', 'memory', 'filesystem').
     """
     try:
-        from src.brain.mcp_manager import mcp_manager
+        from src.brain.mcp.mcp_manager import mcp_manager
 
         success = await mcp_manager.restart_server(server_name)
         return {
@@ -79,7 +79,7 @@ async def devtools_kill_process(pid: int, hard: bool = False) -> dict[str, Any]:
         hard: If True, send SIGKILL (hard kill). Otherwise SIGTERM (graceful).
     """
     try:
-        from src.brain.watchdog import watchdog
+        from src.brain.monitoring.watchdog import watchdog
 
         success = await watchdog.terminate_process(pid, hard=hard)
         return {
