@@ -115,7 +115,7 @@ const App: React.FC = () => {
       }, pollInterval);
     };
 
-    if ((window as any).__BRAIN_READY__) {
+    if (window.__BRAIN_READY__) {
       onBrainReady();
     } else {
       window.addEventListener('brain-ready', onBrainReady, { once: true });
@@ -389,5 +389,9 @@ declare global {
         HTMLElement
       >;
     }
+  }
+
+  interface Window {
+    __BRAIN_READY__?: boolean;
   }
 }

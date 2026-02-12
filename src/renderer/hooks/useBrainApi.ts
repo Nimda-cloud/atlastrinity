@@ -154,7 +154,7 @@ export const useBrainApi = () => {
             message = result;
           } else if (typeof result === 'object') {
             if (Array.isArray(result)) {
-              const steps = result.filter((r: any) => r.success).length;
+              const steps = result.filter((r: { success?: boolean }) => r.success).length;
               message = `Task completed successfully: ${steps} steps executed.`;
             } else {
               message = result.result
