@@ -28,7 +28,8 @@ from pathlib import Path
 # Add project paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+from src.brain.config.config_loader import config
+from src.providers.factory import create_llm
 
 
 class Colors:
@@ -46,7 +47,7 @@ class Colors:
 
 def load_tool_schemas() -> dict:
     """Load tool_schemas.json for validation."""
-    schema_path = PROJECT_ROOT / "src" / "brain" / "data" / "tool_schemas.json"
+    schema_path = PROJECT_ROOT / "src" / "brain" / "core" / "data" / "tool_schemas.json"
     if not schema_path.exists():
         return {}
     with open(schema_path, encoding="utf-8") as f:
@@ -213,8 +214,6 @@ async def live_verify_tool(
     This is the 'живе тестування' - the LLM reasons about what arguments
     to use, executes the tool, and analyzes whether the result is correct.
     """
-    from providers.factory import create_llm
-
     result = {
         "tool": tool_name,
         "status": "unknown",
@@ -246,7 +245,6 @@ Generate arguments for '{tool_name}':"""
 
     try:
         # Use configured reasoning model or default to gpt-4o
-        from src.brain.config.config_loader import config
         model_name = config.get("models.reasoning") or "gpt-4o"
         llm = create_llm(model_name=model_name)
 
@@ -395,7 +393,7 @@ async def live_verify_server(server_name: str, max_tools: int = 5) -> dict:
 
 async def auto_fix_issues(issues: list[dict]) -> dict:
     """Attempt to auto-fix issues using Vibe MCP."""
-    from brain.mcp_manager import mcp_manager
+    from src.brain.mcp.mcp_manager import mcp_manager
 
     fixes_attempted = []
     for issue in issues:

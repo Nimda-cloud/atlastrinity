@@ -17,9 +17,13 @@ async def test_integration_parallel_healing_flow():
 
     # 2. Simulate Orchestrator submitting task
     with (
-        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch(
+            "src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock
+        ) as mock_mcp,
         patch("src.brain.agents.grisha.Grisha") as mock_grisha_cls,
-        patch("src.brain.core.server.message_bus.message_bus.send", new_callable=AsyncMock) as mock_send,
+        patch(
+            "src.brain.core.server.message_bus.message_bus.send", new_callable=AsyncMock
+        ) as mock_send,
     ):
         # Setup Vibe analysis & fix
         mock_mcp.side_effect = [

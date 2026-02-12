@@ -293,6 +293,7 @@ class SystemConfig:
 
 config = SystemConfig()
 
+
 def get_config_value(section: str, key: str, default: Any = None) -> Any:
     """Legacy compatibility function for fetching config values."""
     path = f"{section}.{key}" if section else key

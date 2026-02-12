@@ -24,7 +24,6 @@ from typing import Any, cast
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config.config_loader import config
 from src.brain.core.orchestration.context import shared_context
@@ -37,6 +36,7 @@ from src.brain.prompts.atlas_chat import (
     generate_atlas_chat_prompt,
     generate_atlas_solo_task_prompt,
 )
+from src.providers.factory import create_llm
 
 
 @dataclass

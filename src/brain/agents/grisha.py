@@ -26,7 +26,6 @@ from typing import Any, cast
 from langchain_core.messages import HumanMessage, SystemMessage
 from PIL import Image
 
-from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config.config_loader import config
 from src.brain.core.orchestration.context import shared_context
@@ -42,6 +41,7 @@ from src.brain.prompts.grisha import (
     GRISHA_PLAN_VERIFICATION_PROMPT,
     GRISHA_VERIFICATION_GOAL_ANALYSIS,
 )
+from src.providers.factory import create_llm
 
 
 @dataclass

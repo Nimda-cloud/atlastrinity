@@ -14,6 +14,7 @@ if os.path.join(PROJECT_ROOT, "src") not in sys.path:
 
 if __name__ == "__main__":
     from src.brain.core.server.server import main
+
     main()
 else:
-    from src.brain.core.server.server import *
+    from src.brain.core.server.server import *  # noqa: F403

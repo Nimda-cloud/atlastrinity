@@ -1,0 +1,7 @@
+
+/Users/dev/Documents/GitHub/atlastrinity/src/renderer/App.tsx
+  276:24  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  277:27  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+✖ 2 problems (2 errors, 0 warnings)
+

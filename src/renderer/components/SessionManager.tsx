@@ -83,7 +83,9 @@ const SessionManager: React.FC<SessionManagerProps> = ({
           </h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleNewSession}
+              onClick={() => {
+                void handleNewSession();
+              }}
               className="group flex items-center justify-center w-8 h-8 rounded-sm border"
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -136,7 +138,9 @@ const SessionManager: React.FC<SessionManagerProps> = ({
               {sessions.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => handleRestoreSession(s.id)}
+                  onClick={() => {
+                    void handleRestoreSession(s.id);
+                  }}
                   className={`session-item p-4 border text-left rounded-sm transition-all ${
                     s.id === currentSessionId
                       ? 'border-[#00e5ff] bg-[#00e5ff]/5'

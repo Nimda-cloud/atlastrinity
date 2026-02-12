@@ -1,0 +1,14 @@
+
+/Users/dev/Documents/GitHub/atlastrinity/src/renderer/App.tsx
+  276:24  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  277:27  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+/Users/dev/Documents/GitHub/atlastrinity/src/renderer/components/SessionManager.tsx
+   86:23  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  139:27  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+/Users/dev/Documents/GitHub/atlastrinity/src/renderer/hooks/useBrainApi.ts
+  122:14  warning  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (4 errors, 1 warning)
+

@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T20:34:53.021236 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/copilot.py, providers/windsurf.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-12T20:22:32.643863 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, providers/copilot.py, providers/windsurf.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T17:19:30.117445 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/verify_storage.py, src/brain/__init__.py -->
 

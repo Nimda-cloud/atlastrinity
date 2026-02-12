@@ -36,3 +36,4 @@ snapshot_path  # noqa
 
 # LLM summarizer parameter (optional, for future use)
 llm_summarizer  # noqa
+run_manager  # noqa

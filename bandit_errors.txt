@@ -1,0 +1,952 @@
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: B112,B404,B603,B608,B405,B101,B105,B607,B110
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	using config: pyproject.toml
+[main]	INFO	running on Python 3.12.12
+Working... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:02
+Run started:2026-02-12 17:43:21.987059+00:00
+
+Test results:
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/working_integration_prototype.py:112:35
+111	                "tool": "macos-use_take_screenshot",
+112	                "params": {"path": "/tmp/xcode_screenshot.png", "format": "png"},
+113	                "xcode_use_case": "Capture Xcode IDE and simulator states",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/working_integration_prototype.py:136:35
+135	                "tool": "macos-use_finder_list_files",
+136	                "params": {"path": "/tmp", "limit": 10},
+137	                "xcode_use_case": "Enhanced file system operations",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge.py:212:39
+211	        return {
+212	            "path": params.get("path", "/tmp/screenshot.png"),
+213	            "format": params.get("format", "png"),
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge.py:218:53
+217	        """Convert OCR parameters"""
+218	        return {"imagePath": params.get("imagePath", "/tmp/screenshot.png")}
+219	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge.py:222:53
+221	        """Convert UI analysis parameters"""
+222	        return {"imagePath": params.get("imagePath", "/tmp/screenshot.png")}
+223	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge.py:409:31
+408	            "name": "enhanced_screenshot",
+409	            "params": {"path": "/tmp/enhanced_xcode_screenshot.png"},
+410	            "description": "Enhanced screenshot with multiple formats",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge_fixed.py:111:35
+110	                "macos_tool": "macos-use_take_screenshot",
+111	                "params": {"path": "/tmp/enhanced_screenshot.png", "format": "png"},
+112	                "description": "Enhanced screenshot with multiple formats",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge_fixed.py:129:35
+128	                "macos_tool": "macos-use_finder_list_files",
+129	                "params": {"path": "/tmp", "limit": 10},
+130	                "description": "Enhanced file operations with Finder integration",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge_fixed.py:201:38
+200	            "tool": "screenshot",
+201	            "custom_params": {"path": "/tmp/xcode_enhanced.png"},
+202	            "test_name": "Enhanced Screenshot",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_bridge_fixed.py:216:38
+215	            "tool": "file_operations",
+216	            "custom_params": {"path": "/tmp", "limit": 5},
+217	            "test_name": "File Operations",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:112:35
+111	                "macos_tool": "macos-use_take_screenshot",
+112	                "params": {"path": "/tmp/screenshot.png", "format": "png"},
+113	                "enhancement": "High-quality screenshots with multiple formats",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:117:40
+116	                "macos_tool": "macos-use_perform_ocr",
+117	                "params": {"imagePath": "/tmp/screenshot.png"},
+118	                "enhancement": "Text recognition from screenshots",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:122:40
+121	                "macos_tool": "macos-use_analyze_ui",
+122	                "params": {"imagePath": "/tmp/screenshot.png"},
+123	                "enhancement": "Comprehensive UI element analysis",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:150:35
+149	                "macos_tool": "macos-use_finder_list_files",
+150	                "params": {"path": "/tmp", "limit": 10},
+151	                "enhancement": "Enhanced file operations with Finder",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:155:35
+154	                "macos_tool": "macos-use_finder_open_path",
+155	                "params": {"path": "/tmp"},
+156	                "enhancement": "Advanced file management",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:322:35
+321	            "button": {"x": 100, "y": 100},
+322	            "screenshot": {"path": "/tmp/complete_test_screenshot.png"},
+323	            "ocr_analysis": {"imagePath": "/tmp/complete_test_screenshot.png"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:323:42
+322	            "screenshot": {"path": "/tmp/complete_test_screenshot.png"},
+323	            "ocr_analysis": {"imagePath": "/tmp/complete_test_screenshot.png"},
+324	            "ui_analysis": {"imagePath": "/tmp/complete_test_screenshot.png"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:324:41
+323	            "ocr_analysis": {"imagePath": "/tmp/complete_test_screenshot.png"},
+324	            "ui_analysis": {"imagePath": "/tmp/complete_test_screenshot.png"},
+325	            "system_monitor": {"metric": "cpu", "duration": 2},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:329:40
+328	            "process_monitor": {"action": "monitor", "duration": 2},
+329	            "file_operations": {"path": "/tmp", "limit": 5},
+330	            "file_manager": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_complete_integration.py:330:37
+329	            "file_operations": {"path": "/tmp", "limit": 5},
+330	            "file_manager": {"path": "/tmp"},
+331	            "clipboard_manager": {"text": "Complete XcodeBuildMCP integration"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:412:39
+411	        return {
+412	            "path": params.get("path", "/tmp/screenshot.png"),
+413	            "format": params.get("format", "png"),
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:417:53
+416	    def convert_ocr_params(self, params: dict[str, Any]) -> dict[str, Any]:
+417	        return {"imagePath": params.get("imagePath", "/tmp/screenshot.png")}
+418	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:420:53
+419	    def convert_analysis_params(self, params: dict[str, Any]) -> dict[str, Any]:
+420	        return {"imagePath": params.get("imagePath", "/tmp/screenshot.png")}
+421	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:453:43
+452	    def convert_file_params(self, params: dict[str, Any]) -> dict[str, Any]:
+453	        return {"path": params.get("path", "/tmp"), "limit": params.get("limit", 10)}
+454	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:456:43
+455	    def convert_file_manager_params(self, params: dict[str, Any]) -> dict[str, Any]:
+456	        return {"path": params.get("path", "/tmp")}
+457	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:764:31
+763	        "button": {"x": 100, "y": 100},
+764	        "screenshot": {"path": "/tmp/test_screenshot.png"},
+765	        "ocr_analysis": {"imagePath": "/tmp/test_screenshot.png"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:765:38
+764	        "screenshot": {"path": "/tmp/test_screenshot.png"},
+765	        "ocr_analysis": {"imagePath": "/tmp/test_screenshot.png"},
+766	        "ui_analysis": {"imagePath": "/tmp/test_screenshot.png"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_full_integration.py:766:37
+765	        "ocr_analysis": {"imagePath": "/tmp/test_screenshot.png"},
+766	        "ui_analysis": {"imagePath": "/tmp/test_screenshot.png"},
+767	        "system_monitor": {"metric": "cpu", "duration": 3},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_integration_demo.py:74:35
+73	                "tool": "macos-use_take_screenshot",
+74	                "params": {"path": "/tmp/xcode_screenshot.png", "format": "png"},
+75	                "description": "High-quality screenshot capture",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_integration_demo.py:80:40
+79	                "tool": "macos-use_perform_ocr",
+80	                "params": {"imagePath": "/tmp/xcode_screenshot.png"},
+81	                "description": "Extract text from screenshot",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_macos_integration_demo.py:86:40
+85	                "tool": "macos-use_analyze_ui",
+86	                "params": {"imagePath": "/tmp/xcode_screenshot.png"},
+87	                "description": "Analyze UI elements and layout",
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_mcp_tester.py:212:50
+211	                            "name": "macos-use_take_screenshot",
+212	                            "arguments": {"path": "/tmp/enhanced_screenshot.png", "format": "png"},
+213	                        },
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_mcp_tester.py:343:50
+342	                            "name": "macos-use_finder_list_files",
+343	                            "arguments": {"path": "/tmp", "limit": 10},
+344	                        },
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/integrations/xcodebuild_mcp_tester.py:482:18
+481	
+482	        with open("/tmp/xcodebuild_mcp_test_results.json", "w") as f:
+483	            json.dump(report_data, f, indent=2)
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/maintenance/schema_sync.py:49:21
+48	    project_root = Path(__file__).resolve().parent.parent.parent
+49	    live_path = Path("/tmp/mcp_tools_live_full.json")
+50	    if not live_path.exists():
+
+--------------------------------------------------
+>> Issue: [B605:start_process_with_a_shell] Starting a process with a shell: Seems safe, but may be changed in the future, consider rewriting without shell
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b605_start_process_with_a_shell.html
+   Location: src/maintenance/setup_dev.py:155:48
+154	    # 2. Ensure Node 22
+155	    if not shutil.which("node") or "v22" not in subprocess.getoutput("node --version"):
+156	        print_info("Node 22 не знайдено або версія застаріла. Встановлення node@22 через Brew...")
+
+--------------------------------------------------
+>> Issue: [B605:start_process_with_a_shell] Starting a process with a shell: Seems safe, but may be changed in the future, consider rewriting without shell
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b605_start_process_with_a_shell.html
+   Location: src/maintenance/setup_dev.py:170:48
+169	    else:
+170	        print_success(f"Node знайдено ({subprocess.getoutput('node --version').strip()})")
+171	
+
+--------------------------------------------------
+>> Issue: [B602:subprocess_popen_with_shell_equals_true] subprocess call with shell=True seems safe, but may be changed in the future, consider rewriting without shell
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b602_subprocess_popen_with_shell_equals_true.html
+   Location: src/maintenance/setup_dev.py:227:12
+226	            subprocess.run(
+227	                "curl -LsSf https://mistral.ai/vibe/install.sh | bash", shell=True, check=True
+228	            )
+229	            # Add to PATH for current session (Vibe installs to ~/.local/bin)
+230	            vibe_bin = Path.home() / ".local" / "bin"
+
+--------------------------------------------------
+>> Issue: [B602:subprocess_popen_with_shell_equals_true] subprocess call with shell=True seems safe, but may be changed in the future, consider rewriting without shell
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b602_subprocess_popen_with_shell_equals_true.html
+   Location: src/maintenance/setup_dev.py:242:12
+241	        try:
+242	            subprocess.run("curl -fsSL https://bun.sh/install | bash", shell=True, check=True)
+243	            # Add to PATH for current session
+
+--------------------------------------------------
+>> Issue: [B103:set_bad_file_permissions] Chmod setting a permissive mask 0o755 on file (local_mcp).
+   Severity: Medium   Confidence: High
+   CWE: CWE-732 (https://cwe.mitre.org/data/definitions/732.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b103_set_bad_file_permissions.html
+   Location: src/maintenance/setup_dev.py:1139:12
+1138	            # Ensure it is executable
+1139	            os.chmod(local_mcp, 0o755)
+1140	            print_success("react-devtools-mcp found and prepared")
+
+--------------------------------------------------
+>> Issue: [B103:set_bad_file_permissions] Chmod setting a permissive mask 0o755 on file (fpath).
+   Severity: Medium   Confidence: High
+   CWE: CWE-732 (https://cwe.mitre.org/data/definitions/732.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b103_set_bad_file_permissions.html
+   Location: src/maintenance/setup_dev.py:1958:28
+1957	                        try:
+1958	                            os.chmod(fpath, 0o755)
+1959	                        except Exception:
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_calls.html#b311-random
+   Location: src/maintenance/setup_google_maps.py:132:21
+131	def create_project():
+132	    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
+133	    project_id = f"atlastrinity-maps-{suffix}"
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_calls.html#b311-random
+   Location: src/maintenance/setup_maps_quick.py:209:21
+208	    """Створення нового GCP проекту з обробкою помилок"""
+209	    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
+210	    project_id = f"atlastrinity-maps-{suffix}"
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/maintenance/swift_bridge_validator.py:66:19
+65	    # Encryption test file in /tmp (avoids Desktop permission issues)
+66	    tmp_enc = Path("/tmp/atlas_bridge_enc_test.txt")
+67	    tmp_enc.write_text("atlas bridge encryption test content\n")
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/maintenance/swift_bridge_validator.py:69:23
+68	    # Clean up previous encrypted output so the tool doesn't fail on copy
+69	    tmp_enc_out = Path("/tmp/atlas_bridge_enc_test.txt..encrypted")
+70	    if tmp_enc_out.exists():
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/maintenance/swift_bridge_validator.py:113:51
+112	            # Visual Testing
+113	            ("macos-use_take_screenshot", {"path": "/tmp/atlas_bridge_test.png", "format": "png"}),
+114	            ("macos-use_analyze_screen", {}),
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/maintenance/swift_bridge_validator.py:115:36
+114	            ("macos-use_analyze_screen", {}),
+115	            ("screenshot", {"path": "/tmp/atlas_bridge_test_alias.png"}),
+116	            ("ocr", {}),
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/maintenance/swift_bridge_validator.py:193:28
+192	                    "action": "encrypt",
+193	                    "path": "/tmp/atlas_bridge_enc_test.txt",
+194	                    "password": "atlas-test-2026",
+195	                },
+196	            ),
+197	            # Terminal aliases
+198	            ("execute_command", {"command": "echo atlas-bridge-ok"}),
+
+--------------------------------------------------
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: src/providers/utils/get_copilot_token.py:115:9
+114	    req = Request(url, data=encoded, headers={"Accept": "application/json"})
+115	    with urlopen(req, timeout=30) as resp:
+116	        return json.loads(resp.read().decode())
+
+--------------------------------------------------
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: src/providers/utils/get_copilot_token.py:122:9
+121	    req = Request(url, headers={**headers, "Accept": "application/json"})
+122	    with urlopen(req, timeout=30) as resp:
+123	        return json.loads(resp.read().decode())
+
+--------------------------------------------------
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: src/providers/utils/get_windsurf_token.py:440:13
+439	        )
+440	        with urlopen(req, timeout=10) as resp:
+441	            info(f"API server responded: HTTP {resp.getcode()}")
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/final_alias_check.py:20:18
+19	    # Actually, simpler: we create a temp config for each test like before
+20	    vibe_home = f"/tmp/vibe_test_{alias}"
+21	    os.makedirs(vibe_home, exist_ok=True)
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b113_request_without_timeout.html
+   Location: src/testing/final_alias_check.py:70:7
+69	}
+70	resp = requests.get("https://api.github.com/copilot_internal/v2/token", headers=headers)
+71	token = resp.json().get("token")
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/mcp_sandbox.py:89:20
+88	# Sandbox configuration
+89	SANDBOX_ROOT = Path("/tmp/atlas_sandbox")
+90	SANDBOX_HOME = SANDBOX_ROOT / "home"
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/mcp_sandbox.py:281:38
+280	- Instead of /Users/{{USER}}/... use {SANDBOX_HOME}/...
+281	- Instead of /tmp/... use {SANDBOX_FS}/tmp/...
+282	- Create test files in {SANDBOX_HOME}/
+283	"""
+284	        if use_sandbox
+285	        else ""
+286	    )
+287	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b113_request_without_timeout.html
+   Location: src/testing/stress_test.py:23:19
+22	        try:
+23	            resp = requests.get(HEALTH_URL)
+24	            if resp.status_code == 200:
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:62:36
+61	    "macos-use_file_search": {"query": "nonexistent_mcp_test_file_xyz"},
+62	    "macos-use_read_file": {"path": "/tmp/mcp_test_dummy.txt"},
+63	    "macos-use_write_file": {"path": "/tmp/mcp_test_write.txt", "content": "test"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:63:37
+62	    "macos-use_read_file": {"path": "/tmp/mcp_test_dummy.txt"},
+63	    "macos-use_write_file": {"path": "/tmp/mcp_test_write.txt", "content": "test"},
+64	    "macos-use_list_directory": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:64:41
+63	    "macos-use_write_file": {"path": "/tmp/mcp_test_write.txt", "content": "test"},
+64	    "macos-use_list_directory": {"path": "/tmp"},
+65	    "macos-use_move_to_trash": {"path": "/tmp/mcp_test_write.txt"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:65:40
+64	    "macos-use_list_directory": {"path": "/tmp"},
+65	    "macos-use_move_to_trash": {"path": "/tmp/mcp_test_write.txt"},
+66	    "macos-use_calendar_events": {},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:76:44
+75	    "macos-use_notes_create": {"title": "MCP Test Note", "body": "test body"},
+76	    "macos-use_finder_list_files": {"path": "/tmp"},
+77	    "macos-use_finder_open_path": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:77:43
+76	    "macos-use_finder_list_files": {"path": "/tmp"},
+77	    "macos-use_finder_open_path": {"path": "/tmp"},
+78	    "macos-use_finder_get_selection": {},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:79:47
+78	    "macos-use_finder_get_selection": {},
+79	    "macos-use_finder_move_to_trash": {"path": "/tmp/mcp_test_write.txt"},
+80	    # ── filesystem ──
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:81:26
+80	    # ── filesystem ──
+81	    "read_file": {"path": "/tmp/mcp_test_fs.txt"},
+82	    "read_multiple_files": {"paths": ["/tmp/mcp_test_fs.txt"]},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:82:38
+81	    "read_file": {"path": "/tmp/mcp_test_fs.txt"},
+82	    "read_multiple_files": {"paths": ["/tmp/mcp_test_fs.txt"]},
+83	    "write_file": {"path": "/tmp/mcp_test_fs.txt", "content": "filesystem test"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:83:27
+82	    "read_multiple_files": {"paths": ["/tmp/mcp_test_fs.txt"]},
+83	    "write_file": {"path": "/tmp/mcp_test_fs.txt", "content": "filesystem test"},
+84	    "edit_file": {
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:85:16
+84	    "edit_file": {
+85	        "path": "/tmp/mcp_test_fs.txt",
+86	        "edits": [{"oldText": "filesystem test", "newText": "filesystem edited"}],
+87	        "dryRun": True,
+88	    },
+89	    "create_directory": {"path": "/tmp/mcp_test_dir_fs"},
+90	    "list_directory": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:89:33
+88	    },
+89	    "create_directory": {"path": "/tmp/mcp_test_dir_fs"},
+90	    "list_directory": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:90:31
+89	    "create_directory": {"path": "/tmp/mcp_test_dir_fs"},
+90	    "list_directory": {"path": "/tmp"},
+91	    "directory_tree": {"path": "/tmp/mcp_test_dir_fs"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:91:31
+90	    "list_directory": {"path": "/tmp"},
+91	    "directory_tree": {"path": "/tmp/mcp_test_dir_fs"},
+92	    "move_file": {
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:93:18
+92	    "move_file": {
+93	        "source": "/tmp/mcp_test_fs_mv_src.txt",
+94	        "destination": "/tmp/mcp_test_fs_mv_dst.txt",
+95	    },
+96	    "search_files": {"path": "/tmp", "pattern": "mcp_test"},
+97	    "get_file_info": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:94:23
+93	        "source": "/tmp/mcp_test_fs_mv_src.txt",
+94	        "destination": "/tmp/mcp_test_fs_mv_dst.txt",
+95	    },
+96	    "search_files": {"path": "/tmp", "pattern": "mcp_test"},
+97	    "get_file_info": {"path": "/tmp"},
+98	    "list_allowed_directories": {},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:96:29
+95	    },
+96	    "search_files": {"path": "/tmp", "pattern": "mcp_test"},
+97	    "get_file_info": {"path": "/tmp"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:97:30
+96	    "search_files": {"path": "/tmp", "pattern": "mcp_test"},
+97	    "get_file_info": {"path": "/tmp"},
+98	    "list_allowed_directories": {},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:99:32
+98	    "list_allowed_directories": {},
+99	    "read_file_lines": {"path": "/tmp/mcp_test_fs.txt", "start": 1, "end": 5},
+100	    "read_file_chunk": {"path": "/tmp/mcp_test_fs.txt", "offset": 0, "length": 100},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:100:32
+99	    "read_file_lines": {"path": "/tmp/mcp_test_fs.txt", "start": 1, "end": 5},
+100	    "read_file_chunk": {"path": "/tmp/mcp_test_fs.txt", "offset": 0, "length": 100},
+101	    "count_lines": {"path": "/tmp/mcp_test_fs.txt"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:101:28
+100	    "read_file_chunk": {"path": "/tmp/mcp_test_fs.txt", "offset": 0, "length": 100},
+101	    "count_lines": {"path": "/tmp/mcp_test_fs.txt"},
+102	    # ── sequential-thinking ──
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:232:39
+231	    "add_knowledge_node": {"content": "MCP test knowledge", "metadata": {"type": "test"}},
+232	    "analyze_and_store": {"file_path": "/tmp/mcp_test_fs.txt", "dataset_name": "mcp_test"},
+233	    "get_dataset_insights": {"dataset_name": "mcp_test"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:239:39
+238	    # ── whisper-stt ──
+239	    "transcribe_audio": {"audio_path": "/tmp/nonexistent_audio.wav"},
+240	    "record_and_transcribe": {"duration": 1},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:354:35
+353	    # ── data-analysis ──
+354	    "read_metadata": {"file_path": "/tmp/mcp_test_fs.txt"},
+355	    "analyze_dataset": {"data_source": "/tmp/mcp_test_fs.txt"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:355:39
+354	    "read_metadata": {"file_path": "/tmp/mcp_test_fs.txt"},
+355	    "analyze_dataset": {"data_source": "/tmp/mcp_test_fs.txt"},
+356	    "generate_statistics": {"data_source": "/tmp/mcp_test_fs.txt"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:356:43
+355	    "analyze_dataset": {"data_source": "/tmp/mcp_test_fs.txt"},
+356	    "generate_statistics": {"data_source": "/tmp/mcp_test_fs.txt"},
+357	    "create_visualization": {
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:358:23
+357	    "create_visualization": {
+358	        "data_source": "/tmp/mcp_test_fs.txt",
+359	        "visualization_type": "histogram",
+360	    },
+361	    "data_cleaning": {"data_source": "/tmp/mcp_test_fs.txt"},
+362	    "data_aggregation": {"data_source": "/tmp/mcp_test_fs.txt", "group_by": "col1"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:361:37
+360	    },
+361	    "data_cleaning": {"data_source": "/tmp/mcp_test_fs.txt"},
+362	    "data_aggregation": {"data_source": "/tmp/mcp_test_fs.txt", "group_by": "col1"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:362:40
+361	    "data_cleaning": {"data_source": "/tmp/mcp_test_fs.txt"},
+362	    "data_aggregation": {"data_source": "/tmp/mcp_test_fs.txt", "group_by": "col1"},
+363	    "interpret_column_data": {"file_path": "/tmp/mcp_test_fs.txt", "column_names": ["col1"]},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:363:43
+362	    "data_aggregation": {"data_source": "/tmp/mcp_test_fs.txt", "group_by": "col1"},
+363	    "interpret_column_data": {"file_path": "/tmp/mcp_test_fs.txt", "column_names": ["col1"]},
+364	    "run_pandas_code": {"code": "import pandas as pd; print(pd.__version__)"},
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_all_mcp_runtime.py:759:9
+758	    # Save results
+759	    Path("/tmp/mcp_runtime_results.json").write_text(json.dumps(all_results, indent=2, default=str))
+760	
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_native_macos_use.py:134:52
+133	        ("macos-use_finder_open_path", {"path": "/Applicatons"}),
+134	        ("macos-use_finder_move_to_trash", {"path": "/tmp/test_trash_file"}),
+135	        (
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/testing/test_native_macos_use.py:137:42
+136	            "macos-use_file_encryption",
+137	            {"action": "encrypt", "path": "/tmp/test.txt", "password": "secure_pass"},
+138	        ),
+
+--------------------------------------------------
+>> Issue: [B108:hardcoded_tmp_directory] Probable insecure usage of temp file/directory.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-377 (https://cwe.mitre.org/data/definitions/377.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b108_hardcoded_tmp_directory.html
+   Location: src/tools/windsurf_sniffer.py:826:22
+825	        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+826	        dump_file = f"/tmp/windsurf_dump_{ts}.ndjson"
+827	
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 51308
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 12
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 6
+		Medium: 84
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 2
+		Medium: 77
+		High: 11
+Files skipped (0):

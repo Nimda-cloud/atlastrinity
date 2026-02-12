@@ -23,13 +23,13 @@ sys.path.insert(0, os.path.abspath(root))
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from providers.factory import create_llm
 from src.brain.agents.base_agent import BaseAgent
 from src.brain.config.config_loader import config
 from src.brain.core.orchestration.context import shared_context
 from src.brain.mcp.mcp_manager import mcp_manager
 from src.brain.monitoring.logger import logger
 from src.brain.prompts import AgentPrompts
+from src.providers.factory import create_llm
 
 
 @dataclass

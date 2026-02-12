@@ -1,0 +1,207 @@
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:2:5 - warning: Import "BRAIN_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:3:5 - warning: Import "CONFIG_ROOT" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:4:5 - warning: Import "IS_MACOS" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:5:5 - warning: Import "LOG_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:6:5 - warning: Import "MCP_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:7:5 - warning: Import "MEMORY_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:8:5 - warning: Import "MODELS_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:9:5 - warning: Import "NLTK_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:10:5 - warning: Import "PLATFORM_NAME" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:11:5 - warning: Import "PROJECT_ROOT" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:12:5 - warning: Import "REPOSITORY_ROOT" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:13:5 - warning: Import "SCREENSHOTS_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:14:5 - warning: Import "STANZA_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:15:5 - warning: Import "VIBE_WORKSPACE" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:16:5 - warning: Import "VPN_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:17:5 - warning: Import "WHISPER_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:18:5 - warning: Import "WORKSPACE_DIR" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:19:5 - warning: Import "deep_merge" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:20:5 - warning: Import "ensure_dirs" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:21:5 - warning: Import "get_log_path" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:22:5 - warning: Import "get_screenshot_path" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:24:43 - warning: Import "CONFIG_ROOT_LOADER" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/config/__init__.py:25:28 - warning: Import "config" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/healing/system_healing.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/healing/system_healing.py:246:43 - warning: "trinity" is unknown import symbol (reportAttributeAccessIssue)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp/__init__.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp/__init__.py:1:15 - warning: Import "mcp_registry" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp/__init__.py:2:26 - warning: Import "mcp_manager" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_manager.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_manager.py:3:35 - warning: Import "MCPManager" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp_manager.py:3:47 - warning: Import "mcp_manager" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/memory/__init__.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/memory/__init__.py:1:25 - warning: Import "db_manager" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/memory/__init__.py:2:30 - warning: Import "knowledge_graph" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/memory/__init__.py:3:21 - warning: Import "LongTermMemory" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/memory/__init__.py:3:37 - warning: Import "long_term_memory" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring/__init__.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring/__init__.py:1:21 - warning: Import "logger" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring/__init__.py:2:22 - warning: Import "metrics_collector" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring/__init__.py:3:25 - warning: Import "MonitoringSystem" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring/__init__.py:3:43 - warning: Import "get_monitoring_system" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/monitoring/__init__.py:4:28 - warning: Import "notifications" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/navigation/tour_manager.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/navigation/tour_manager.py:1:20 - warning: Import "Any" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:42:44 - warning: Cannot access attribute "state" for class "VoiceOrchestrationMixin*"
+    Attribute "state" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:43:39 - warning: Cannot access attribute "state" for class "VoiceOrchestrationMixin*"
+    Attribute "state" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:44:22 - warning: Cannot access attribute "state" for class "VoiceOrchestrationMixin*"
+    Attribute "state" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:48:18 - warning: Cannot access attribute "state" for class "VoiceOrchestrationMixin*"
+    Attribute "state" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:50:38 - warning: Cannot access attribute "_save_chat_message" for class "VoiceOrchestrationMixin*"
+    Attribute "_save_chat_message" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:53:20 - warning: Cannot access attribute "_log" for class "VoiceOrchestrationMixin*"
+    Attribute "_log" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:75:33 - warning: Cannot access attribute "voice" for class "VoiceOrchestrationMixin*"
+    Attribute "voice" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:82:24 - warning: Cannot access attribute "voice" for class "VoiceOrchestrationMixin*"
+    Attribute "voice" is unknown (reportAttributeAccessIssue)
+  /Users/dev/Documents/GitHub/atlastrinity/src/brain/voice/orchestration_utils.py:111:14 - warning: Cannot access attribute "stop" for class "VoiceOrchestrationMixin*"
+    Attribute "stop" is unknown (reportAttributeAccessIssue)
+/Users/dev/Documents/GitHub/atlastrinity/src/integrations/final_working_integration.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/integrations/final_working_integration.py:135:13 - warning: Variable "i" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/integrations/final_working_integration.py:215:13 - warning: Variable "example" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/integrations/working_integration_prototype.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/integrations/working_integration_prototype.py:145:13 - warning: Variable "i" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/integrations/xcodebuild_macos_bridge.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/integrations/xcodebuild_macos_bridge.py:426:9 - warning: Variable "i" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/integrations/xcodebuild_macos_integration_demo.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/integrations/xcodebuild_macos_integration_demo.py:175:13 - warning: Variable "cmd" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/integrations/xcodebuild_mcp_tester.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/integrations/xcodebuild_mcp_tester.py:449:17 - warning: Variable "benefit" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/backup_golden.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/backup_golden.py:8:22 - warning: Import "datetime" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/db_report.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/db_report.py:12:6 - error: Import "src.brain.db.manager" could not be resolved (reportMissingImports)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/db_report.py:13:6 - error: Import "src.brain.db.schema" could not be resolved (reportMissingImports)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/debug_db.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/debug_db.py:12:6 - error: Import "src.brain.db.manager" could not be resolved (reportMissingImports)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/debug_db.py:13:6 - error: Import "src.brain.db.schema" could not be resolved (reportMissingImports)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/debug_db.py:27:13 - warning: Variable "ex" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/debug_db.py:35:13 - warning: Variable "s" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/diagram_sync.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/diagram_sync.py:50:21 - warning: Variable "file_path" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/health_checks.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/health_checks.py:12:22 - warning: Import "datetime" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/init_db.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/init_db.py:10:6 - error: Import "src.brain.db.manager" could not be resolved (reportMissingImports)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/mcp_health.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/mcp_health.py:12:8 - warning: Import "json" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/mcp_health.py:155:9 - warning: Expression value is unused (reportUnusedExpression)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/preflight_check.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/preflight_check.py:15:6 - error: Import "src.brain.mcp_preflight" could not be resolved (reportMissingImports)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/preflight_check.py:29:10 - error: Import "src.brain.mcp_preflight" could not be resolved (reportMissingImports)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/probe_macos_permissions.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/probe_macos_permissions.py:18:13 - warning: Variable "t" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/retry_artifact_collection.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/retry_artifact_collection.py:29:5 - warning: Expression value is unused (reportUnusedExpression)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_dev.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_dev.py:2118:15 - warning: Variable "s_desc" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_google_maps.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_google_maps.py:114:9 - warning: Variable "i" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_google_maps.py:114:12 - warning: Variable "p" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_maps_quick.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_maps_quick.py:190:9 - warning: Variable "i" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/setup_maps_quick.py:190:12 - warning: Variable "p" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/system_fixer.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/system_fixer.py:6:8 - warning: Import "json" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/system_fixer.py:7:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/system_fixer.py:8:8 - warning: Import "shutil" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/system_fixer.py:45:13 - warning: Variable "name" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/system_fixer.py:64:26 - warning: Variable "name" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/maintenance/ultimate_analysis.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/ultimate_analysis.py:24:9 - warning: Variable "i" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/ultimate_analysis.py:318:9 - warning: Variable "area" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/maintenance/ultimate_analysis.py:351:9 - warning: Variable "i" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/vibe_server.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/mcp_server/vibe_server.py:870:45 - warning: Cannot access attribute "get" for class "VibeConfig"
+    Attribute "get" is unknown (reportAttributeAccessIssue)
+/Users/dev/Documents/GitHub/atlastrinity/src/providers/copilot.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/copilot.py:6:8 - warning: Import "sys" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/providers/tests/test_windsurf_config.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/tests/test_windsurf_config.py:27:37 - warning: Import "config" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/tests/test_windsurf_config.py:54:9 - warning: Expression value is unused (reportUnusedExpression)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/tests/test_windsurf_config.py:57:9 - warning: Expression value is unused (reportUnusedExpression)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/tests/test_windsurf_config.py:78:21 - warning: Variable "description" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/tests/test_windsurf_config.py:91:13 - warning: Expression value is unused (reportUnusedExpression)
+/Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_copilot_token.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_copilot_token.py:288:17 - warning: Variable "k" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_copilot_token.py:294:13 - warning: Variable "key" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_windsurf_token.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_windsurf_token.py:479:13 - warning: Variable "i" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_windsurf_token.py:479:16 - warning: Variable "m" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_windsurf_token.py:490:17 - warning: Variable "m" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/utils/get_windsurf_token.py:496:5 - warning: Expression value is unused (reportUnusedExpression)
+/Users/dev/Documents/GitHub/atlastrinity/src/providers/windsurf.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/providers/windsurf.py:8:8 - warning: Import "sys" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/benchmark_atlas_models.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/benchmark_atlas_models.py:8:55 - warning: Import "Trinity" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/check_step_3.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/check_step_3.py:25:13 - warning: Variable "row" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/ci/check_architecture.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/ci/check_architecture.py:1:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/ci/check_architecture.py:35:17 - warning: Variable "f" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/ci/validate_mcp_config.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/ci/validate_mcp_config.py:77:13 - warning: Variable "error" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/demo_google_reg.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/demo_google_reg.py:8:6 - error: Import "src.brain.orchestrator" could not be resolved (reportMissingImports)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/mcp_sandbox.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/mcp_sandbox.py:463:9 - warning: Variable "i" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/mcp_sandbox.py:725:9 - warning: Expression value is unused (reportUnusedExpression)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/run_logic_tests.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/run_logic_tests.py:5:8 - warning: Import "json" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/smoke_test_memory.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/smoke_test_memory.py:2:8 - warning: Import "os" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_confirmation_flow.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_confirmation_flow.py:2:8 - warning: Import "os" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_dispatcher_sync.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_dispatcher_sync.py:2:8 - warning: Import "os" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_mcp_connectivity.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_mcp_connectivity.py:39:9 - warning: Variable "s" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_mcp_connectivity.py:39:12 - warning: Variable "ok" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_new_macos_tools.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_new_macos_tools.py:8:6 - error: Import "src.brain.orchestrator" could not be resolved (reportMissingImports)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_phoenix_flow.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_phoenix_flow.py:2:8 - warning: Import "os" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_phoenix_flow.py:15:6 - error: Import "src.brain.healing.recovery" could not be resolved (reportMissingImports)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_phoenix_flow.py:16:6 - error: Import "src.brain.system_healing" could not be resolved (reportMissingImports)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_full.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_full.py:12:5 - warning: Import "run_vibe_subprocess" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_integration.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_integration.py:50:5 - warning: Variable "result" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_integration.py:58:5 - warning: Variable "result" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_integration.py:157:9 - warning: Variable "name" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_integration.py:157:15 - warning: Variable "passed_test" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_mcp_tools.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_vibe_mcp_tools.py:67:21 - warning: Variable "call" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_watchdog.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_watchdog.py:2:8 - warning: Import "json" is not accessed (reportUnusedImport)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_watchdog.py:3:8 - warning: Import "os" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_windsurf_minimal.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_windsurf_minimal.py:50:9 - warning: Expression value is unused (reportUnusedExpression)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/test_windsurf_provider.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_windsurf_provider.py:74:9 - warning: Variable "mode" is not accessed (reportUnusedVariable)
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/test_windsurf_provider.py:74:15 - warning: Variable "ok" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_learning.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_learning.py:9:39 - warning: Import "mcp_manager" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_macos_use.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_macos_use.py:85:17 - warning: Variable "t" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_mcp_integrity.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_mcp_integrity.py:127:25 - warning: Variable "issue" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_mcp_servers_custom.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/testing/verify_mcp_servers_custom.py:148:15 - warning: Variable "passed" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/tools/get_copilot_models.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/tools/get_copilot_models.py:3:8 - warning: Import "json" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/tools/list_github_tools.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/tools/list_github_tools.py:80:29 - warning: Variable "t" is not accessed (reportUnusedVariable)
+/Users/dev/Documents/GitHub/atlastrinity/src/tools/list_missing_tools.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/tools/list_missing_tools.py:2:8 - warning: Import "os" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/tools/list_schemas.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/tools/list_schemas.py:2:8 - warning: Import "json" is not accessed (reportUnusedImport)
+/Users/dev/Documents/GitHub/atlastrinity/src/tools/windsurf_sniffer.py
+  /Users/dev/Documents/GitHub/atlastrinity/src/tools/windsurf_sniffer.py:399:13 - warning: Variable "err" is not accessed (reportUnusedVariable)
+11 errors, 123 warnings, 0 informations

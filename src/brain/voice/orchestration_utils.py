@@ -65,10 +65,14 @@ class VoiceOrchestrationMixin:
         min_len = voice_config.get("min_length", 2)
         max_len = voice_config.get("max_length", 5000)
         if not processed_text or len(processed_text) < min_len:
-            logger.info(f"[VOICE] Text too short for TTS ({len(processed_text)} chars), skipping voice")
+            logger.info(
+                f"[VOICE] Text too short for TTS ({len(processed_text)} chars), skipping voice"
+            )
             return
         if len(processed_text) > max_len:
-            logger.info(f"[VOICE] Text too long for TTS ({len(processed_text)} chars), truncating for voice")
+            logger.info(
+                f"[VOICE] Text too long for TTS ({len(processed_text)} chars), truncating for voice"
+            )
             processed_text = processed_text[:max_len]
 
         # This relies on self.voice (VoiceManager) being available on Trinity

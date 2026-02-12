@@ -18,13 +18,6 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Suppress common third-party warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="espnet2.torch_utils.device_funcs")
-warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
-warnings.filterwarnings(
-    "ignore", message=".*make_pad_mask with a list of lengths is not tracable.*"
-)
-
 # Local application imports
 from src.brain.config.config_loader import config
 from src.brain.core.services.services_manager import ServiceStatus
@@ -32,7 +25,15 @@ from src.brain.mcp.mcp_manager import mcp_manager
 from src.brain.monitoring import get_monitoring_system
 from src.brain.monitoring.logger import logger
 from src.brain.monitoring.watchdog import watchdog
+from src.brain.navigation.map_state import map_state_manager
 from src.brain.voice.stt import WhisperSTT
+
+# Suppress common third-party warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="espnet2.torch_utils.device_funcs")
+warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
+warnings.filterwarnings(
+    "ignore", message=".*make_pad_mask with a list of lengths is not tracable.*"
+)
 
 # Type hints for static type checking
 if TYPE_CHECKING:
@@ -43,7 +44,7 @@ else:
     trinity = None  # Will be initialized later
 
 # Import Trinity after all other imports to avoid circular imports
-from src.brain.core.orchestration.orchestrator import Trinity
+from src.brain.core.orchestration.orchestrator import Trinity  # noqa: E402
 
 # Force UTF-8 encoding for stdout/stderr to support Ukrainian characters in terminal
 if sys.stdout.encoding != "utf-8":
@@ -702,7 +703,7 @@ async def transcribe_audio(file_path: str):
 # Google Maps API Endpoints
 # =============================================================================
 
-from src.brain.navigation.map_state import map_state_manager
+# map_state_manager moved to top
 
 
 @app.post("/api/maps/search")

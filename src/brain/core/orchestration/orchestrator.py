@@ -235,7 +235,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             if str(project_root) not in sys.path:
                 sys.path.insert(0, str(project_root))
             try:
-                from scripts import setup_dev
+                from src.maintenance import setup_dev
 
                 await asyncio.to_thread(setup_dev.backup_databases)
             except ImportError:
@@ -244,7 +244,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
 
                 spec = importlib.util.spec_from_file_location(
                     "setup_dev",
-                    str(project_root / "scripts" / "setup_dev.py"),
+                    str(project_root / "src" / "maintenance" / "setup_dev.py"),
                 )
                 if spec and spec.loader:
                     setup_dev = importlib.util.module_from_spec(spec)
@@ -1490,7 +1490,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
     def _trigger_backups(self):
         """Trigger background database backups."""
         try:
-            from scripts.setup_dev import backup_databases
+            from src.maintenance.setup_dev import backup_databases
 
             asyncio.create_task(asyncio.to_thread(backup_databases))
         except Exception:
@@ -3248,7 +3248,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
         """Background LLM-based discovery extraction."""
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        from providers.factory import create_llm
+        from src.providers.factory import create_llm
 
         try:
             # Use fast model for extraction

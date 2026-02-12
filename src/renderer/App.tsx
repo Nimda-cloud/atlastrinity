@@ -273,8 +273,12 @@ const App: React.FC = () => {
           currentSessionId={currentSessionId}
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
-          onNewSession={handleNewSession}
-          onSessionLoaded={handleRestoreSession}
+          onNewSession={() => {
+            void handleNewSession();
+          }}
+          onSessionLoaded={(id) => {
+            void handleRestoreSession(id);
+          }}
         />
       </aside>
 

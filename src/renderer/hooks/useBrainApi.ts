@@ -119,7 +119,7 @@ export const useBrainApi = () => {
           }
         }
       }
-    } catch (_err) {
+    } catch {
       setIsConnected(false);
     }
   }, []);

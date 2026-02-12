@@ -17,17 +17,29 @@ models:
   #
   # === COPILOT (GitHub) ===
   # - API: GitHub Copilot (ghu_ token)
-  # - Models: All Copilot models (gpt-4o, gpt-4.1, gpt-5-mini, etc.)
+  # - Models:
+  #   - gpt-4o
+  #   - gpt-4.1
+  #   - gpt-5-mini
+  #   - grok-code-fast-1
+  #   - oswe-vscode-secondary
   # - Setup: python scripts/get_copilot_token.py
   #
   # === WINDSURF (Codeium) ===
   # - API: Windsurf/Codeium (sk-ws- token)
-  # - Models: FREE tier only (deepseek-v3, deepseek-r1, swe-1, grok-code-fast-1, kimi-k2.5)
+  # - Models:
+  #   - deepseek-v3
+  #   - deepseek-r1
+  #   - swe-1
+  #   - swe-1.5
+  #   - grok-code-fast-1
+  #   - kimi-k2.5
+  #   - windsurf-fast
   # - Setup: python tools/get_windsurf_token.py
   #
   # === SWITCHING PROVIDERS ===
   # 1. Change provider: "windsurf" below
-  # 2. Update model names to Windsurf models
+  # 2. Update model names to allowed Windsurf models per list above
   # 3. Run: python scripts/setup_dev.py --sync-configs
   #
   # === EXAMPLE WINDSURF CONFIGURATION ===
@@ -37,24 +49,23 @@ models:
   # code_analysis: "deepseek-v3"
   #
   # === PROXY MODE (Optional) ===
-  # Both providers can work through local proxy on port 8085:
-  #   copilot:  python scripts/copilot_proxy.py
+  # Both providers can work through local proxy on port 8086:
+  #   copilot:  python src/tools/copilot_proxy.py (DELETED - use providers directly)
   #   windsurf: python scripts/windsurf_proxy.py
   # =============================================================================
   
   provider: "copilot"                   # LLM provider: copilot | windsurf
 
   # Default models for different purposes
-  # Using gpt-4.1 as default for GitHub Copilot API (most stable)
-  # You can change these to your preferred models (e.g., "claude-3.5-sonnet", "gpt-4o-mini", etc.)
-  default: "gpt-4.1"                    # Default LLM for agents (most stable)
-  vision: "gpt-4o"                     # Vision/multimodal tasks
-  reasoning: "oswe-vscode-secondary"      # Raptor reasoning
-  code_analysis: "grok-code-fast-1"      # Fast coding analysis
-  consolidation: "oswe-vscode-secondary"          # Memory consolidation (Raptor native)
+  # STRICTLY choose from the allowed lists above.
+  default: "gpt-4o"                     # Default LLM for agents
+  vision: "gpt-4o"                      # Vision/multimodal tasks
+  reasoning: "oswe-vscode-secondary"    # Raptor reasoning
+  code_analysis: "grok-code-fast-1"     # Fast coding analysis
+  consolidation: "oswe-vscode-secondary" # Memory consolidation (Raptor native)
   
   # Fallbacks (used when primary unavailable)
-  fallback: "gpt-4.1"                   # Fallback model (most stable)
+  fallback: "gpt-4o"                    # Fallback model (most stable)
   
   # Sandbox model (used by mcp_sandbox.py)
   sandbox: "oswe-vscode-secondary"

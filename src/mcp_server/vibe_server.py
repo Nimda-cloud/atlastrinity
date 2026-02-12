@@ -55,7 +55,7 @@ from .vibe_config import (
 # Import CopilotLLM for token exchange (from project root)
 sys.path.append(str(Path(__file__).parent.parent.parent))  # Add project root to path
 try:
-    from providers.copilot import CopilotLLM
+    from src.providers.copilot import CopilotLLM
 except ImportError:
     CopilotLLM = None  # Graceful fallback if import fails
 

@@ -505,7 +505,7 @@ class VoiceManager:
             if str(PROJECT_ROOT) not in sys.path:
                 sys.path.insert(0, str(PROJECT_ROOT))
 
-            from providers.factory import create_llm
+            from src.providers.factory import create_llm
 
             # Use default model for translation as it's usually fast enough
             model = config.get("models.default", "gpt-4o")

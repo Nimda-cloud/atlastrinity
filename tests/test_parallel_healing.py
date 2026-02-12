@@ -87,7 +87,9 @@ async def test_run_healing_workflow_success(manager):
 
     # Mock all the external calls
     with (
-        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch(
+            "src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock
+        ) as mock_mcp,
         patch("src.brain.agents.grisha.Grisha") as mock_grisha_cls,
         patch.object(manager, "_notify_fix_ready", new_callable=AsyncMock) as mock_notify,
         patch.object(manager, "_test_in_sandbox", new_callable=AsyncMock) as mock_sandbox,
@@ -115,7 +117,9 @@ async def test_run_healing_workflow_grisha_reject(manager):
     manager._tasks["t1"] = task
 
     with (
-        patch("src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock) as mock_mcp,
+        patch(
+            "src.brain.mcp.mcp_manager.mcp_manager.call_tool", new_callable=AsyncMock
+        ) as mock_mcp,
         patch("src.brain.agents.grisha.Grisha") as mock_grisha_cls,
         patch.object(manager, "_test_in_sandbox", new_callable=AsyncMock) as mock_sandbox,
     ):
