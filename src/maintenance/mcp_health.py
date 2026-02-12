@@ -9,9 +9,9 @@ Enhanced CLI tool for checking MCP server status with:
 
 import argparse
 import asyncio
+import json
 import os
 import sys
-import json
 from datetime import datetime
 
 # Add src to path
@@ -65,7 +65,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
 
     if not output_json:
         print(f"\n{Colors.CYAN}{Colors.BOLD}🔍 Перевірка здоров'я MCP серверів...{Colors.ENDC}")
-        print(f"{Colors.DIM}{'='*60}{Colors.ENDC}")
+        print(f"{Colors.DIM}{'=' * 60}{Colors.ENDC}")
 
     for server_name, server_config in servers_to_check:
         tier = server_config.get("tier", 4)
@@ -82,7 +82,9 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                 "note": note,
             }
             if not output_json:
-                print(f"  {Colors.GREEN}✅ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}{len(tools):>3} tools{Colors.ENDC} (Internal)")
+                print(
+                    f"  {Colors.GREEN}✅ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}{len(tools):>3} tools{Colors.ENDC} (Internal)"
+                )
                 if show_tools:
                     for name in sorted(tools):
                         print(f"      {Colors.DIM}•{Colors.ENDC} {name}")
@@ -107,7 +109,9 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                     "response_time_ms": round(elapsed, 1),
                 }
                 if not output_json:
-                    print(f"  {Colors.GREEN}✅ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}{len(tools):>3} tools{Colors.ENDC} ({elapsed:>.1f}ms)")
+                    print(
+                        f"  {Colors.GREEN}✅ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}{len(tools):>3} tools{Colors.ENDC} ({elapsed:>.1f}ms)"
+                    )
                     if show_tools:
                         for name in tool_names:
                             print(f"      {Colors.DIM}•{Colors.ENDC} {name}")
@@ -121,7 +125,9 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                     "note": "Connected but no tools",
                 }
                 if not output_json:
-                    print(f"  {Colors.YELLOW}⚠️  {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Degraded{Colors.ENDC} (Connected, no tools)")
+                    print(
+                        f"  {Colors.YELLOW}⚠️  {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Degraded{Colors.ENDC} (Connected, no tools)"
+                    )
             else:
                 results[server_name] = {
                     "status": "offline",
@@ -129,7 +135,23 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                     "error": "Failed to get session",
                 }
                 if not output_json:
-                    print(f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Offline{Colors.ENDC} (Failed to get session)")
+                    print(
+                        f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Offline{Colors.ENDC} (Failed to get session)"
+                    )
+            
+            # Special check for xcodebuild bridge
+            if server_name == "xcodebuild" and results[server_name]["status"] == "online":
+                # Check for bridged backends
+                bridged = []
+                # Check config or predefined list
+                if config_servers.get("macos-use", {}).get("disabled"):
+                    bridged.append("macos-use (63 tools)")
+                if config_servers.get("googlemaps", {}).get("disabled"):
+                    bridged.append("googlemaps (11 tools)")
+                
+                if bridged and not output_json:
+                    print(f"      {Colors.DIM}↳ Bridging: {', '.join(bridged)}{Colors.ENDC}")
+                    results[server_name]["note"] = f"Bridges: {', '.join(bridged)}"
 
         except TimeoutError:
             results[server_name] = {
@@ -138,7 +160,9 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                 "error": "Connection timeout (30s)",
             }
             if not output_json:
-                print(f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Timeout{Colors.ENDC} (30s)")
+                print(
+                    f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Timeout{Colors.ENDC} (30s)"
+                )
 
         except Exception as e:
             results[server_name] = {
@@ -147,17 +171,24 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                 "error": str(e)[:100],
             }
             if not output_json:
-                print(f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Error{Colors.ENDC} ({str(e)[:40]}...)")
+                print(
+                    f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Error{Colors.ENDC} ({str(e)[:40]}...)"
+                )
 
     if output_json:
-        print(json.dumps({
-            "timestamp": datetime.now().isoformat(),
-            "total_servers": len(results),
-            "online": sum(1 for r in results.values() if r["status"] == "online"),
-            "offline": sum(1 for r in results.values() if r["status"] == "offline"),
-            "degraded": sum(1 for r in results.values() if r["status"] == "degraded"),
-            "servers": results,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "total_servers": len(results),
+                    "online": sum(1 for r in results.values() if r["status"] == "online"),
+                    "offline": sum(1 for r in results.values() if r["status"] == "offline"),
+                    "degraded": sum(1 for r in results.values() if r["status"] == "degraded"),
+                    "servers": results,
+                },
+                indent=2,
+            )
+        )
     else:
         # Summary
         online = sum(1 for r in results.values() if r["status"] == "online")
@@ -167,15 +198,19 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
 
         print(f"\n{Colors.CYAN}{Colors.BOLD}Підсумок:{Colors.ENDC}")
         print(f"  Всього:    {total}")
-        print(f"  Online:   {Colors.GREEN if online == total else Colors.YELLOW}{online}{Colors.ENDC}")
+        print(
+            f"  Online:   {Colors.GREEN if online == total else Colors.YELLOW}{online}{Colors.ENDC}"
+        )
         if degraded > 0:
             print(f"  Degraded: {Colors.YELLOW}{degraded}{Colors.ENDC}")
         if offline > 0:
             print(f"  Offline:  {Colors.RED}{offline}{Colors.ENDC}")
-        
+
         health_pct = (online / total * 100) if total > 0 else 0
-        print(f"  Здоров'я: {Colors.GREEN if health_pct > 90 else Colors.YELLOW if health_pct > 50 else Colors.RED}{health_pct:>.1f}%{Colors.ENDC}")
-        print(f"{Colors.DIM}{'='*60}{Colors.ENDC}\n")
+        print(
+            f"  Здоров'я: {Colors.GREEN if health_pct > 90 else Colors.YELLOW if health_pct > 50 else Colors.RED}{health_pct:>.1f}%{Colors.ENDC}"
+        )
+        print(f"{Colors.DIM}{'=' * 60}{Colors.ENDC}\n")
 
 
 def main():

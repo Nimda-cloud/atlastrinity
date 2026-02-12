@@ -35,6 +35,43 @@ class Colors:
     BOLD = "\033[1m"
 
 
+class InstallationTracker:
+    """Tracks the status of each setup phase for the final report."""
+
+    def __init__(self):
+        self.results = {
+            "DB Restore": ("Pending", Colors.WARNING or "\033[93m"),
+            "venv Creation": ("Pending", Colors.WARNING or "\033[93m"),
+            "Python Packages": ("Pending", Colors.WARNING or "\033[93m"),
+            "NPM Packages": ("Pending", Colors.WARNING or "\033[93m"),
+            "Swift Build (macos-use)": ("Pending", Colors.WARNING or "\033[93m"),
+            "Model Downloads": ("Pending", Colors.WARNING or "\033[93m"),
+            "DB Initialization": ("Pending", Colors.WARNING or "\033[93m"),
+            "Knowledge Base Setup": ("Pending", Colors.WARNING or "\033[93m"),
+            "MCP Tools Integration": ("Pending", Colors.WARNING or "\033[93m"),
+        }
+
+    def update(self, key, status, color=None):
+        if color is None:
+            color = Colors.OKGREEN
+        if key in self.results:
+            self.results[key] = (status, color)
+
+    def print_report(self):
+        print(f"\n{Colors.OKCYAN}{Colors.BOLD}🎉 Очікуваний результат:{Colors.ENDC}")
+        for key, (status, color) in self.results.items():
+            icon = (
+                "✅"
+                if color == Colors.OKGREEN
+                else "⚠️" if color == Colors.WARNING else "❌"
+            )
+            print(f"  {icon} {key:<40} {color}{status}{Colors.ENDC}")
+        print("")
+
+
+tracker = InstallationTracker()
+
+
 def print_step(msg: str):
     pass
 
@@ -546,6 +583,7 @@ def verify_golden_fund():
                 print_info("Сервер Golden Fund створить необхідні таблиці при запуску.")
             else:
                 print_success(f"Golden Fund перевірено: {len(tables)} таблиць знайдено")
+                tracker.update("Knowledge Base Setup", "Verified")
 
     except Exception as e:
         print_warning(f"Не вдалося перевірити структуру Golden Fund: {e}")
@@ -748,8 +786,10 @@ def build_swift_mcp():
 
         if binary_path.exists():
             print_success(f"Скомпільовано успішно: {binary_path}")
+            tracker.update("Swift Build (macos-use)", "Success")
             return True
         print_error("Бінарний файл не знайдено після компіляції!")
+        tracker.update("Swift Build (macos-use)", "Failed", Colors.FAIL)
         return False
     except subprocess.CalledProcessError as e:
         print_error(f"Помилка компіляції Swift: {e}")
@@ -855,18 +895,18 @@ def setup_google_maps():
             choice = sys.stdin.readline().strip().lower()
         else:
             print_info("Тайм-аут. Пропускаємо налаштування Google Maps.")
-            print_info("Ви можете запустити пізніше: python3 scripts/setup_maps_quick.py")
+            print_info("Ви можете запустити пізніше: python3 src/maintenance/setup_maps_quick.py")
             return False
 
         if choice == "y":
-            script_path = PROJECT_ROOT / "scripts" / "setup_maps_quick.py"
+            script_path = PROJECT_ROOT / "src" / "maintenance" / "setup_maps_quick.py"
             if script_path.exists():
                 subprocess.run([sys.executable, str(script_path)], check=True)
                 return True
             print_error(f"Скрипт {script_path} не знайдено!")
             print_info("Ви можете налаштувати ключ вручну в .env")
         else:
-            print_info("Пропущено. Запустіть пізніше: python3 scripts/setup_maps_quick.py")
+            print_info("Пропущено. Запустіть пізніше: python3 src/maintenance/setup_maps_quick.py")
     except Exception as e:
         print_error(f"Помилка при налаштуванні: {e}")
 
@@ -983,11 +1023,13 @@ def check_venv():
             # Use --copies to avoid symlink issues on shared volumes/VMs
             subprocess.run([exec_bin, "-m", "venv", "--copies", str(VENV_PATH)], check=True)
             print_success("Virtual environment створено (using --copies)")
+            tracker.update("venv Creation", "Created")
         except Exception as e:
             print_error(f"Не вдалося створити venv: {e}")
             return False
     else:
         print_success("Venv вже існує")
+        tracker.update("venv Creation", "Exists")
     return True
 
 
@@ -1097,6 +1139,7 @@ def install_deps():
         )
 
     print_success("Python залежності встановлено")
+    tracker.update("Python Packages", "Installed")
 
     # 2. NPM & MCP
     if shutil.which("npm"):
@@ -1142,6 +1185,7 @@ def install_deps():
             print_warning("react-devtools-mcp script not found at src/mcp_server/")
 
         print_success("NPM та MCP пакети налаштовано")
+        tracker.update("NPM Packages", "Installed")
     else:
         print_error("NPM не знайдено!")
         return False
@@ -1366,6 +1410,7 @@ def download_models():
 
     if choice == "s":
         print_success("Моделі пропущено")
+        tracker.update("Model Downloads", "Skipped")
         return
 
     # STT Download
@@ -1380,13 +1425,17 @@ def download_models():
             ]
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=900, env=env)
             print_success(f"STT модель {model_name} готова")
+            if choice == "stt":
+                tracker.update("Model Downloads", "STT Ready")
         except Exception as e:
             print_warning(f"Помилка завантаження STT: {e}")
+            tracker.update("Model Downloads", "STT Error", Colors.WARNING)
 
     # TTS Download
     if choice in ["a", "tts"]:
         try:
             print_info("Ініціалізація TTS моделей (з пакуванням)...")
+            tracker.update("Model Downloads", "Downloading...")
             python_script = f"""
 import os, sys, warnings
 warnings.filterwarnings('ignore')
@@ -1408,8 +1457,10 @@ print('TTS OK')
             cmd = [venv_python, "-W", "ignore", "-c", python_script]
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=1800, env=env)
             print_success("TTS моделі готові")
+            tracker.update("Model Downloads", "Ready")
         except Exception as e:
             print_warning(f"Помилка завантаження TTS: {e}")
+            tracker.update("Model Downloads", "TTS Error", Colors.WARNING)
 
 
 def _pip_install_safe(package: str):
@@ -1599,7 +1650,7 @@ async def verify_database_tables():
     venv_python = str(VENV_PATH / "bin" / "python")
     try:
         subprocess.run(
-            [venv_python, str(PROJECT_ROOT / "scripts" / "verify_db_tables.py")],
+            [venv_python, str(PROJECT_ROOT / "src" / "testing" / "verify_db_tables.py")],
             check=True,
         )
         return True
@@ -1788,17 +1839,17 @@ def verify_llm_providers():
 
 
 def run_preflight_cleanup():
-    """Runs ensure_clean_start.py to kill lingering processes"""
+    """Runs clean_start.py to kill lingering processes"""
     print_step("Запуск передпольотної очистки процесів...")
     try:
-        cleanup_script = PROJECT_ROOT / "scripts" / "ensure_clean_start.py"
+        cleanup_script = PROJECT_ROOT / "src" / "maintenance" / "clean_start.py"
         if cleanup_script.exists():
             subprocess.run([sys.executable, str(cleanup_script)], check=False)
             print_success("Очищення процесів завершено")
         else:
-            print_warning("Скрипт ensure_clean_start.py не знайдено")
+            print_warning("Скрипт clean_start.py не знайдено")
     except Exception as e:
-        print_warning(f"Помилка при очищенні процесв: {e}")
+        print_warning(f"Помилка при очищенні процесів: {e}")
 
 
 def check_database_health():
@@ -1872,6 +1923,7 @@ def main():
     if backup_dir.exists() and not (CONFIG_ROOT / "atlastrinity.db").exists():
         print_info("Виявлено резервні копії баз даних у репозиторії...")
         restore_databases()
+        tracker.update("DB Restore", "Restored")
 
     if not check_system_tools():
         print_error("Критичні інструменти відсутні. Зупинка.")
@@ -2067,6 +2119,8 @@ def main():
             pass
 
     print_success("✅ Налаштування завершено!")
+    tracker.update("MCP Tools Integration", "Integrated")
+    tracker.print_report()
     print_info("Кроки для початку роботи:")
 
     mcp_info = []
@@ -2191,9 +2245,10 @@ def setup_provider_tokens():
 
     # Sync to global location if we made changes
     # MCP Health Summary
-    print("")
+    print()
     try:
         from src.maintenance.mcp_health import check_mcp
+
         asyncio.run(check_mcp())
     except Exception as e:
         print(f"⚠️  Не вдалося запустити перевірку здоров'я MCP: {e}")

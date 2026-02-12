@@ -881,10 +881,10 @@ const MACOS_USE_TOOLS: BridgedToolDefinition[] = [
 
   // --- Aliases: Screenshot & OCR ---
   {
-    name: 'screenshot',
+    name: 'macos-screenshot',
     description: 'Alias for macos-use_take_screenshot - take screenshots with region, multi-monitor, compression, and OCR',
     backendId: MACOS_USE,
-    remoteToolName: 'screenshot',
+    remoteToolName: 'macos-use_take_screenshot',
     schema: z.object({
       path: z.string().optional().describe('Absolute path to save the screenshot'),
       region: regionParam,
