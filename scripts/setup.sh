@@ -19,7 +19,7 @@ fi
 # Run the Python setup script
 pushd "$(dirname "$0")/.." >/dev/null
 export PYTHONPATH="$(pwd)"
-python3 "scripts/setup_dev.py"
+python3 "src/maintenance/setup_dev.py"
 
 # Sync secrets to GitHub if possible
 echo ""

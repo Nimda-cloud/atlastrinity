@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T22:18:38.684658 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, docs/SCRIPTS_CLEANUP_PLAN.md, docs/graph_preview.mmd -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T22:04:17.900437 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, pyproject.toml -->
 

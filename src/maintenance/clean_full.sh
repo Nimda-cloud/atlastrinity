@@ -2,7 +2,7 @@
 # AtlasTrinity Full Cleanup Script
 # Очищає проект до стану fresh git clone
 # 
-# Використання: ./scripts/clean_full.sh
+# Використання: ./src/maintenance/clean_full.sh
 
 set -e
 
@@ -109,5 +109,5 @@ echo "════════════════════════�
 echo "✅ Проект очищено до git clone стану!"
 echo ""
 echo "Наступний крок:"
-echo "  python3 scripts/setup_dev.py"
+echo "  python3 src/maintenance/setup_dev.py"
 echo "════════════════════════════════════════════"

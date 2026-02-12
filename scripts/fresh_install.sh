@@ -76,7 +76,7 @@ if confirm "Create database backup before wiping?" "Y"; then
     else
         BACKUP_PYTHON="python3"
     fi
-    $BACKUP_PYTHON scripts/setup_dev.py --backup
+    $BACKUP_PYTHON src/maintenance/setup_dev.py --backup
     if [ $? -eq 0 ]; then
         echo "✅ Backup completed successfully."
     else
@@ -206,7 +206,7 @@ echo "   ОЧИЩЕННЯ ЗАВЕРШЕНО!"
 echo "=========================================="
 echo ""
 echo "Тепер запустіть:"
-echo "  1️⃣  python3.12 scripts/setup_dev.py  (або просто python3)"
+echo "  1️⃣  python3.12 src/maintenance/setup_dev.py  (або просто python3)"
 echo "  2️⃣  npm run dev"
 echo ""
 
@@ -230,8 +230,8 @@ if confirm "Бажаєте запустити налаштування (setup_de
         exit 1
     fi
     
-    echo "🚀 Запуск $PYTHON_CMD scripts/setup_dev.py $SETUP_ARGS..."
-    $PYTHON_CMD scripts/setup_dev.py $SETUP_ARGS
+    echo "🚀 Запуск $PYTHON_CMD src/maintenance/setup_dev.py $SETUP_ARGS..."
+    $PYTHON_CMD src/maintenance/setup_dev.py $SETUP_ARGS
 
     # Sync secrets to GitHub if possible
     echo ""

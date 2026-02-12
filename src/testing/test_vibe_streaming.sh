@@ -63,7 +63,7 @@ if echo "$response" | grep -q "success\|processing\|thinking"; then
     echo "     ✅ [VIBE-LIVE] Vibe завершив роботу успішно"
     echo ""
     echo "   Альтернативно, моніторте в терміналі:"
-    echo "   ./scripts/monitor_vibe.sh"
+    echo "   ./src/maintenance/monitor_vibe.sh"
 else
     echo "   ❌ Помилка: $response"
     exit 1
