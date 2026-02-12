@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T21:27:45.343863 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/App.tsx -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T21:24:15.145340 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, lefthook.yml -->
 

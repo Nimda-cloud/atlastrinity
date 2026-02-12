@@ -17,7 +17,6 @@ from typing import Annotated, Any, TypedDict, cast
 from langchain_core.messages import (  # type: ignore
     AIMessage,
     BaseMessage,
-    ChatMessage,
     HumanMessage,
 )
 from langgraph.graph import END, StateGraph
