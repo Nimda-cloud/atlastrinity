@@ -2,8 +2,8 @@
 Redirects to the new modular location: src.brain.core.server.server
 """
 
-import sys
 import os
+import sys
 
 # Ensure src is in PYTHONPATH if not already
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
