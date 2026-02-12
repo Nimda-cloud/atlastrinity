@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T21:50:16.654588 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, docs/PYREFLY_ISSUE.md, lefthook.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T21:46:07.920708 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, src/brain/core/orchestration/orchestrator.py -->
 

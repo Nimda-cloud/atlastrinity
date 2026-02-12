@@ -170,15 +170,17 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.pyrefly]
-project_includes = ["src", "scripts"]
+project_includes = ["src"]
 project_excludes = [
     "src/testing",
     "src/maintenance", 
     "src/integrations",
     "src/tools",
     "tests",
+    "scripts",
     "vendor",
     ".venv",
     "dist_venv",
     "node_modules",
 ]
+search_paths = ["."]
