@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T21:46:07.920708 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, src/brain/core/orchestration/orchestrator.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T21:27:45.343863 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/App.tsx -->
 

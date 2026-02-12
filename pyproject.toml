@@ -173,11 +173,10 @@ line-ending = "auto"
 project_includes = ["src", "scripts"]
 project_excludes = [
     "src/testing",
-    "src/maintenance",
+    "src/maintenance", 
     "src/integrations",
     "src/tools",
     "tests",
-    "scripts",
     "vendor",
     ".venv",
     "dist_venv",
