@@ -1,6 +1,6 @@
 """AtlasTrinity Voice Package"""
 
-from src.brain.voice.stt import WhisperSTT
-from src.brain.voice.tts import AgentVoice
+from .stt import WhisperSTT
+from .tts import AgentVoice
 
 __all__ = ["AgentVoice", "WhisperSTT"]

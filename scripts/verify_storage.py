@@ -6,13 +6,20 @@ from sqlalchemy import func, select
 
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from brain.db.manager import db_manager
+from brain.memory.db.manager import db_manager
 from src.brain.config_loader import config
 
 # Use dynamic DB_URL
 DB_URL = config.get("db.url", "sqlite+aiosqlite:///:memory:")
-from brain.db.schema import ConversationSummary, KGNode, Session, Task, TaskStep, ToolExecution
-from brain.memory import long_term_memory
+from brain.memory.db.schema import (
+    ConversationSummary,
+    KGNode,
+    Session,
+    Task,
+    TaskStep,
+    ToolExecution,
+)
+from brain.memory.memory import long_term_memory
 
 
 async def verify_storage():
