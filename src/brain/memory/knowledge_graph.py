@@ -12,9 +12,10 @@ from typing import Any, cast
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from .memory import long_term_memory
 from src.brain.memory.db.manager import db_manager
 from src.brain.memory.db.schema import KGEdge, KGNode
+
+from .memory import long_term_memory
 
 logger = logging.getLogger("brain.knowledge_graph")
 
