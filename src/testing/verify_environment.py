@@ -378,12 +378,12 @@ def check_llm_providers():
         STATUS_REPORT["failed"] += 1
 
     # Check universal proxy script exists
-    proxy_script = PROJECT_ROOT / "scripts" / "universal_proxy.py"
+    proxy_script = PROJECT_ROOT / "src" / "providers" / "proxy" / "copilot_vibe_proxy.py"
     if proxy_script.exists():
         print_pass("Universal proxy script found")
         STATUS_REPORT["passed"] += 1
     else:
-        print_fail("Universal proxy script MISSING (scripts/universal_proxy.py)")
+        print_fail("Universal proxy script MISSING (src/providers/proxy/copilot_vibe_proxy.py)")
         STATUS_REPORT["failed"] += 1
 
 

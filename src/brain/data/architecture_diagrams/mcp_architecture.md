@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-12T22:04:17.900437 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, lefthook.yml, pyproject.toml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T21:50:16.654588 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, docs/PYREFLY_ISSUE.md, lefthook.yml -->
 

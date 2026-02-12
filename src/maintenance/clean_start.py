@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # We match against the full command line
 TARGET_SIGNATURES = [
     "brain.server",
-    "scripts/watch_config.py",
+    "src/maintenance/watch_config.py",
     "mcp_server/vibe_server.py",
     "universal_proxy.py",
     "electron .",
