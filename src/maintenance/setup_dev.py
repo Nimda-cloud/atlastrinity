@@ -60,13 +60,9 @@ class InstallationTracker:
     def print_report(self):
         print(f"\n{Colors.OKCYAN}{Colors.BOLD}🎉 Очікуваний результат:{Colors.ENDC}")
         for key, (status, color) in self.results.items():
-            icon = (
-                "✅"
-                if color == Colors.OKGREEN
-                else "⚠️" if color == Colors.WARNING else "❌"
-            )
+            icon = "✅" if color == Colors.OKGREEN else "⚠️" if color == Colors.WARNING else "❌"
             print(f"  {icon} {key:<40} {color}{status}{Colors.ENDC}")
-        print("")
+        print()
 
 
 tracker = InstallationTracker()

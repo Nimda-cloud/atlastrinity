@@ -138,7 +138,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                     print(
                         f"  {Colors.RED}❌ {server_name:<20}{Colors.ENDC} [Tier {tier}] {Colors.BOLD}Offline{Colors.ENDC} (Failed to get session)"
                     )
-            
+
             # Special check for xcodebuild bridge
             if server_name == "xcodebuild" and results[server_name]["status"] == "online":
                 # Check for bridged backends
@@ -148,7 +148,7 @@ async def check_mcp(output_json: bool = False, show_tools: bool = False, check_a
                     bridged.append("macos-use (63 tools)")
                 if config_servers.get("googlemaps", {}).get("disabled"):
                     bridged.append("googlemaps (11 tools)")
-                
+
                 if bridged and not output_json:
                     print(f"      {Colors.DIM}↳ Bridging: {', '.join(bridged)}{Colors.ENDC}")
                     results[server_name]["note"] = f"Bridges: {', '.join(bridged)}"

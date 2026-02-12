@@ -1,2 +1,0 @@
-src/providers/windsurf.py:1256: unused variable 'run_manager' (100% confidence)
-src/providers/windsurf.py:1294: unused variable 'run_manager' (100% confidence)

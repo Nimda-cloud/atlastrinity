@@ -1,4 +1,0 @@
-
-> atlastrinity@1.0.0 verify
-> .venv/bin/python src/testing/verify_environment.py
-
