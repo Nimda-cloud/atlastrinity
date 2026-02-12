@@ -2190,7 +2190,14 @@ def setup_provider_tokens():
         print_success("Copilot токен вже налаштовано")
 
     # Sync to global location if we made changes
-    sync_configs()
+    # MCP Health Summary
+    print("")
+    try:
+        from src.maintenance.mcp_health import check_mcp
+        asyncio.run(check_mcp())
+    except Exception as e:
+        print(f"⚠️  Не вдалося запустити перевірку здоров'я MCP: {e}")
+
     print_info("Перевірка токенів провайдерів завершена")
 
 

@@ -1,0 +1,246 @@
+2026-02-13 00:00:26,686 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/dev/.config/atlastrinity/memory/chroma
+2026-02-13 00:00:26,707 - brain - INFO - [STATE] Redis connected via URL
+2026-02-13 00:00:26,717 - brain - INFO - [MEMORY] Lessons: 0 | Strategies: 1 | Discoveries: 2
+2026-02-13 00:00:26,952 - brain - INFO - [BEHAVIOR ENGINE] Loaded config with 1 pattern groups
+2026-02-13 00:00:26,952 - brain - INFO - [BEHAVIOR ENGINE] Initialized with config: /Users/dev/.config/atlastrinity/behavior_config.yaml
+2026-02-13 00:00:26,952 - brain - INFO - Loading MCP config from: /Users/dev/.config/atlastrinity/mcp/config.json
+2026-02-13 00:00:26,955 - brain - INFO - Connecting to MCP server: filesystem...
+Secure MCP Filesystem Server running on stdio
+2026-02-13 00:00:27,502 - brain - INFO - Connected to filesystem
+Client does not support MCP Roots, using allowed directories set from server args: [
+  '/Users/dev',
+  '/Users/dev/Documents/GitHub/atlastrinity',
+  '/private/tmp',
+  '/private/tmp'
+]
+2026-02-13 00:00:27,507 - brain - INFO - Connecting to MCP server: sequential-thinking...
+Resolving dependencies
+Resolved, downloaded and extracted [2]
+Saved lockfile
+Sequential Thinking MCP Server running on stdio
+2026-02-13 00:00:29,105 - brain - INFO - Connected to sequential-thinking
+2026-02-13 00:00:29,108 - brain - INFO - Connecting to MCP server: xcodebuild...
+[2026-02-12T22:00:29.773Z] [INFO] Server initialized with Sentry MCP instrumentation (version 2.0.0-beta.1)
+[2026-02-12T22:00:29.774Z] [INFO] No project config found (cwd: /Users/dev/Documents/GitHub/atlastrinity).
+[2026-02-12T22:00:31.097Z] [INFO] 🚀 Initializing server...
+[2026-02-12T22:00:31.191Z] [INFO] Registered 24 tools from workflows: session-management, simulator
+[2026-02-12T22:00:31.192Z] [INFO] Loaded resource: devices (xcodebuildmcp://devices)
+[2026-02-12T22:00:31.192Z] [INFO] Loaded resource: doctor (xcodebuildmcp://doctor)
+[2026-02-12T22:00:31.192Z] [INFO] Loaded resource: session-status (xcodebuildmcp://session-status)
+[2026-02-12T22:00:31.192Z] [INFO] Loaded resource: simulators (xcodebuildmcp://simulators)
+[2026-02-12T22:00:31.192Z] [INFO] Loaded resource: xcode-ide-state (xcodebuildmcp://xcode-ide-state)
+[2026-02-12T22:00:31.192Z] [INFO] Registered resource: devices at xcodebuildmcp://devices
+[2026-02-12T22:00:31.192Z] [INFO] Registered resource: doctor at xcodebuildmcp://doctor
+[2026-02-12T22:00:31.192Z] [INFO] Registered resource: session-status at xcodebuildmcp://session-status
+[2026-02-12T22:00:31.192Z] [INFO] Registered resource: simulators at xcodebuildmcp://simulators
+[2026-02-12T22:00:31.192Z] [INFO] Registered resource: xcode-ide-state at xcodebuildmcp://xcode-ide-state
+[2026-02-12T22:00:31.192Z] [INFO] Registered 5 resources
+[2026-02-12T22:00:31.221Z] [INFO] [bridge-registry] Backend "googlemaps" connected (PID: 86520, 11 server tools)
+[2026-02-12T22:00:31.361Z] [INFO] [bridge-registry] Backend "macos-use" connected (PID: 86519, 63 server tools)
+Fatal error in startMcpServer(): Error: Tool screenshot is already registered
+    at McpServer.tool (file:///Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js:659:19)
+    at McpServer.tool (file:///Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/node_modules/@sentry/core/build/esm/integrations/mcp-server/handlers.js:30:32)
+    at registerBridgedTools (file:///Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/build/integrations/macos-tools-bridge/index.js:62:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async bootstrapServer (file:///Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/build/server/bootstrap.js:142:3)
+    at async startMcpServer (file:///Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/build/server/start-mcp-server.js:15:5)
+    at async main (file:///Users/dev/Documents/GitHub/atlastrinity/vendor/XcodeBuildMCP/build/cli.js:28:5)
+2026-02-13 00:00:31,372 - brain - ERROR - Failed to run connection for xcodebuild: ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp/mcp_manager.py", line 375, in connection_runner
+  |     async with cast("Any", stdio_client)(server_params) as (read, write):
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/mcp/client/stdio/__init__.py", line 183, in stdio_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 783, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/mcp/client/stdio/__init__.py", line 189, in stdio_client
+    |     yield read_stream, write_stream
+    |   File "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp/mcp_manager.py", line 406, in connection_runner
+    |     async with cast("Any", _McpClientSession)(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/mcp/shared/session.py", line 238, in __aexit__
+    |     return await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 783, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/dev/Documents/GitHub/atlastrinity/src/brain/mcp/mcp_manager.py", line 411, in connection_runner
+      |     await session.initialize()
+      |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 171, in initialize
+      |     result = await self.send_request(
+      |              ^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/dev/Documents/GitHub/atlastrinity/.venv/lib/python3.12/site-packages/mcp/shared/session.py", line 306, in send_request
+      |     raise McpError(response_or_error.error)
+      | mcp.shared.exceptions.McpError: Connection closed
+      +------------------------------------
+2026-02-13 00:00:31,373 - brain - INFO - Connection task for xcodebuild exited
+2026-02-13 00:00:31,373 - brain - ERROR - Failed to connect to xcodebuild: ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2026-02-13 00:00:31,373 - brain - WARNING - get_session: failed to connect to xcodebuild: unhandled errors in a TaskGroup (1 sub-exception)
+2026-02-13 00:00:31,373 - brain - WARNING - [MCP] No session for xcodebuild, cannot list tools
+2026-02-13 00:00:31,374 - brain - INFO - Connecting to MCP server: chrome-devtools...
+2026-02-12T22:00:31.643Z mcp:log Starting Chrome DevTools MCP Server v0.12.1
+2026-02-12T22:00:31.663Z mcp:log Chrome DevTools MCP Server connected
+chrome-devtools-mcp exposes content of the browser instance to the MCP clients allowing them to inspect,
+debug, and modify any data in the browser or DevTools.
+Avoid sharing sensitive or personal information that you do not want to share with MCP clients.
+2026-02-13 00:00:31,666 - brain - INFO - Connected to chrome-devtools
+2026-02-13 00:00:31,671 - brain - INFO - Connecting to MCP server: vibe...
+2026-02-13 00:00:32,674 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/dev/.config/atlastrinity/memory/chroma
+2026-02-13 00:00:32,695 - brain - INFO - [STATE] Redis connected via URL
+2026-02-13 00:00:32,703 - brain - INFO - [MEMORY] Lessons: 0 | Strategies: 1 | Discoveries: 2
+[VIBE_MCP] WARNING: [VIBE] AGENT_MODEL_OVERRIDE not set in config, strict configuration enforced
+WARNING:vibe_mcp:[VIBE] AGENT_MODEL_OVERRIDE not set in config, strict configuration enforced
+[VIBE_MCP] INFO: [VIBE] Server initialized | Binary: vibe | Workspace: /Users/dev/.config/atlastrinity/vibe_workspace | Timeout: 600.0s
+INFO:vibe_mcp:[VIBE] Server initialized | Binary: vibe | Workspace: /Users/dev/.config/atlastrinity/vibe_workspace | Timeout: 600.0s
+INFO:vibe_config:Loading Vibe config from: /Users/dev/.config/atlastrinity/vibe_config.toml
+[VIBE_MCP] INFO: [VIBE] Loaded configuration: active_model=gpt-4.1
+INFO:vibe_mcp:[VIBE] Loaded configuration: active_model=gpt-4.1
+[VIBE_MCP] INFO: [VIBE] MCP Server starting (v3.0 Hyper-Refactored)...
+INFO:vibe_mcp:[VIBE] MCP Server starting (v3.0 Hyper-Refactored)...
+DEBUG:vibe_mcp:Workspace ready: /Users/dev/.config/atlastrinity/vibe_workspace
+[VIBE_MCP] INFO: [VIBE] Configuration loaded: 9 models, 4 providers
+INFO:vibe_mcp:[VIBE] Configuration loaded: 9 models, 4 providers
+2026-02-13 00:00:32,876 - brain - INFO - Connected to vibe
+INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest
+2026-02-13 00:00:32,879 - brain - INFO - Connecting to MCP server: memory...
+2026-02-13 00:00:33,863 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/dev/.config/atlastrinity/memory/chroma
+2026-02-13 00:00:33,883 - brain - INFO - [STATE] Redis connected via URL
+2026-02-13 00:00:33,890 - brain - INFO - [MEMORY] Lessons: 0 | Strategies: 1 | Discoveries: 2
+2026-02-13 00:00:33,911 - brain - INFO - Connected to memory
+INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest
+2026-02-13 00:00:33,913 - brain - INFO - Connecting to MCP server: graph...
+2026-02-13 00:00:34,903 - brain - INFO - [MEMORY] ChromaDB initialized at /Users/dev/.config/atlastrinity/memory/chroma
+2026-02-13 00:00:34,922 - brain - INFO - [STATE] Redis connected via URL
+2026-02-13 00:00:34,931 - brain - INFO - [MEMORY] Lessons: 0 | Strategies: 1 | Discoveries: 2
+2026-02-13 00:00:34,945 - brain - INFO - Connected to graph
+INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest
+2026-02-13 00:00:34,947 - brain - INFO - Connecting to MCP server: puppeteer...
+2026-02-13 00:00:35,613 - brain - INFO - Connected to puppeteer
+2026-02-13 00:00:35,615 - brain - INFO - Connecting to MCP server: duckduckgo-search...
+[2026-02-13 00:00:35] [SEARCH-SERVER] [INFO] Starting DuckDuckGo Search Server
+[2026-02-13 00:00:35] [SEARCH-SERVER] [INFO] Loading search protocol from: /Users/dev/Documents/GitHub/atlastrinity/src/brain/data/search_protocol.txt
+2026-02-13 00:00:35,957 - brain - INFO - Connected to duckduckgo-search
+[2026-02-13 00:00:35] [SEARCH-SERVER] [INFO] Processing request of type ListToolsRequest
+2026-02-13 00:00:35,959 - brain - INFO - Connecting to MCP server: golden-fund...
+INFO:golden_fund.connectors.ckan:CKAN Connector initialized for https://data.gov.ua/api/3
+INFO:golden_fund.storage.vector:VectorStorage (ChromaDB) initialized at /Users/dev/.config/atlastrinity/data/golden_fund/chroma_db
+INFO:golden_fund.storage.vector:VectorStorage (ChromaDB) initialized at /Users/dev/.config/atlastrinity/data/golden_fund/chroma_db
+INFO:golden_fund.storage.search:SearchStorage (SQLite/FTS5) initialized: /Users/dev/.config/atlastrinity/data/search/golden_fund_index.db
+INFO:golden_fund.validation:DataValidator initialized
+INFO:golden_fund.transformer:DataTransformer initialized
+INFO:golden_fund.storage.blob:BlobStorage initialized at /Users/dev/.config/atlastrinity/data/golden_fund/blobs/default
+2026-02-13 00:00:36,853 - brain - INFO - Connected to golden-fund
+INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest
+2026-02-13 00:00:36,855 - brain - INFO - Connecting to MCP server: context7...
+Starting Context7 MCP Server...
+Context7 MCP Server connected via stdio. Waiting for requests...
+2026-02-13 00:00:38,654 - brain - INFO - Connected to context7
+2026-02-13 00:00:38,657 - brain - INFO - Connecting to MCP server: whisper-stt...
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json:   0%|          | 0.00/53.8k [00:00<?, ?B/s]Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.11.0.json: 436kB [00:00, 10.5MB/s]                    
+INFO:stanza:Downloaded file to /Users/dev/.config/atlastrinity/models/stanza/resources.json
+INFO:stanza:Downloading default packages for language: uk (Ukrainian) ...
+INFO:stanza:File exists: /Users/dev/.config/atlastrinity/models/stanza/uk/default.zip
+INFO:stanza:Finished downloading models and saved to /Users/dev/.config/atlastrinity/models/stanza
+<torch_package_0>.word_tokenizer.py:12: SyntaxWarning: invalid escape sequence '\w'
+  |[\w""" + ACCENT + """](?:[\w'’`-""" + ACCENT + """]?[\w""" + ACCENT + """]+)*
+<torch_package_0>.word_tokenizer.py:12: SyntaxWarning: invalid escape sequence '\w'
+  |[\w""" + ACCENT + """](?:[\w'’`-""" + ACCENT + """]?[\w""" + ACCENT + """]+)*
+<torch_package_0>.word_tokenizer.py:12: SyntaxWarning: invalid escape sequence '\w'
+  |[\w""" + ACCENT + """](?:[\w'’`-""" + ACCENT + """]?[\w""" + ACCENT + """]+)*
+<torch_package_0>.word_tokenizer.py:13: SyntaxWarning: invalid escape sequence '\w'
+  |[\w""" + ACCENT + """].(?:\[\w""" + ACCENT + """].)+[\w""" + ACCENT + """]?
+<torch_package_0>.word_tokenizer.py:13: SyntaxWarning: invalid escape sequence '\['
+  |[\w""" + ACCENT + """].(?:\[\w""" + ACCENT + """].)+[\w""" + ACCENT + """]?
+<torch_package_0>.word_tokenizer.py:13: SyntaxWarning: invalid escape sequence '\w'
+  |[\w""" + ACCENT + """].(?:\[\w""" + ACCENT + """].)+[\w""" + ACCENT + """]?
+<torch_package_0>.word_tokenizer.py:14: SyntaxWarning: invalid escape sequence '\['
+  |["#$%&*+,/:;<=>@^`~…\\(\\)⟨⟩{}\[\|\]‒–—―«»“”‘’'№]
+INFO:stanza:Loading these models for language: uk (Ukrainian):
+=========================
+| Processor | Package   |
+-------------------------
+| tokenize  | iu        |
+| mwt       | iu        |
+| pos       | iu_charlm |
+=========================
+
+INFO:stanza:Using device: cpu
+INFO:stanza:Loading: tokenize
+INFO:stanza:Loading: mwt
+INFO:stanza:Loading: pos
+INFO:stanza:Done loading processors!
+2026-02-13 00:00:48,282 - brain - INFO - Connected to whisper-stt
+INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest
+2026-02-13 00:00:48,284 - brain - INFO - Connecting to MCP server: devtools...
+2026-02-13 00:00:48,634 - brain - INFO - Connected to devtools
+[02/13/26 00:00:48] INFO     Processing request of type            server.py:720
+                             ListToolsRequest                                   
+2026-02-13 00:00:48,639 - brain - INFO - Connecting to MCP server: github...
+GitHub MCP Server running on stdio
+2026-02-13 00:00:49,235 - brain - INFO - Connected to github
+2026-02-13 00:00:49,241 - brain - INFO - Connecting to MCP server: redis...
+2026-02-13 00:00:49,691 - brain - INFO - Connected to redis
+INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest
+2026-02-13 00:00:49,693 - brain - INFO - Connecting to MCP server: data-analysis...
+2026-02-13 00:00:50,459 - brain - INFO - Connected to data-analysis
+[2026-02-13 00:00:50] [DATA-ANALYSIS] [INFO] Processing request of type ListToolsRequest
+2026-02-13 00:00:50,461 - brain - INFO - Connecting to MCP server: react-devtools...
+React DevTools MCP server running on stdio
+2026-02-13 00:00:50,606 - brain - INFO - Connected to react-devtools
+Puppeteer MCP Server closed
+2026-02-13 00:00:50,615 - brain - INFO - Connection task for redis exited
+2026-02-13 00:00:50,616 - brain - INFO - Connection task for devtools exited
+2026-02-13 00:00:50,619 - brain - INFO - Connection task for sequential-thinking exited
+2026-02-13 00:00:50,621 - brain - INFO - Connection task for duckduckgo-search exited
+2026-02-13 00:00:50,621 - brain - INFO - Connection task for react-devtools exited
+2026-02-13 00:00:50,623 - brain - INFO - Connection task for filesystem exited
+2026-02-13 00:00:50,624 - brain - INFO - Connection task for chrome-devtools exited
+2026-02-13 00:00:50,625 - brain - INFO - Connection task for data-analysis exited
+2026-02-13 00:00:50,626 - brain - INFO - Connection task for context7 exited
+2026-02-13 00:00:50,627 - brain - INFO - Connection task for memory exited
+2026-02-13 00:00:50,627 - brain - INFO - Connection task for puppeteer exited
+2026-02-13 00:00:50,627 - brain - INFO - Connection task for github exited
+2026-02-13 00:00:50,628 - brain - INFO - Connection task for graph exited
+2026-02-13 00:00:50,628 - brain - INFO - Connection task for vibe exited
+2026-02-13 00:00:50,628 - brain - INFO - Connection task for golden-fund exited
+/opt/homebrew/Cellar/python@3.12/3.12.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+2026-02-13 00:00:50,645 - brain - INFO - Connection task for whisper-stt exited
+
+[96m[1m🔍 Перевірка здоров'я MCP серверів...[0m
+[2m============================================================[0m
+  [92m✅ filesystem          [0m [Tier 1] [1m 14 tools[0m (553.3ms)
+  [92m✅ sequential-thinking [0m [Tier 1] [1m  1 tools[0m (1600.8ms)
+  [91m❌ xcodebuild          [0m [Tier 1] [1mOffline[0m (Failed to get session)
+  [92m✅ chrome-devtools     [0m [Tier 4] [1m 26 tools[0m (297.6ms)
+  [92m✅ vibe                [0m [Tier 2] [1m 19 tools[0m (1207.8ms)
+  [92m✅ memory              [0m [Tier 2] [1m 14 tools[0m (1034.7ms)
+  [92m✅ graph               [0m [Tier 2] [1m  4 tools[0m (1033.3ms)
+  [92m✅ puppeteer           [0m [Tier 3] [1m  7 tools[0m (667.8ms)
+  [92m✅ duckduckgo-search   [0m [Tier 2] [1m  4 tools[0m (344.1ms)
+  [92m✅ golden-fund         [0m [Tier 2] [1m  8 tools[0m (896.4ms)
+  [92m✅ context7            [0m [Tier 3] [1m  3 tools[0m (1802.2ms)
+  [92m✅ whisper-stt         [0m [Tier 2] [1m  2 tools[0m (9626.6ms)
+  [92m✅ devtools            [0m [Tier 2] [1m 28 tools[0m (354.4ms)
+  [92m✅ github              [0m [Tier 2] [1m 26 tools[0m (602.2ms)
+  [92m✅ redis               [0m [Tier 2] [1m  8 tools[0m (452.6ms)
+  [92m✅ data-analysis       [0m [Tier 2] [1m  8 tools[0m (767.7ms)
+  [92m✅ react-devtools      [0m [Tier 3] [1m  1 tools[0m (146.4ms)
+  [92m✅ tour-guide          [0m [Tier 2] [1m  6 tools[0m (Internal)
+
+[96m[1mПідсумок:[0m
+  Всього:    18
+  Online:   [93m17[0m
+  Offline:  [91m1[0m
+  Здоров'я: [92m94.4%[0m
+[2m============================================================[0m
+

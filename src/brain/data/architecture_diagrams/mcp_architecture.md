@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T00:01:06.851575 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, scripts/setup.sh -->
+
+
 <!-- AUTO-UPDATED: 2026-02-12T22:18:38.684658 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, docs/SCRIPTS_CLEANUP_PLAN.md, docs/graph_preview.mmd -->
 
