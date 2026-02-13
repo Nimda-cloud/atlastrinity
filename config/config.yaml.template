@@ -54,21 +54,21 @@ models:
   #   windsurf: python scripts/windsurf_proxy.py
   # =============================================================================
   
-  provider: "copilot"                   # LLM provider: copilot | windsurf
+  provider: "windsurf"                  # LLM provider: copilot | windsurf
 
   # Default models for different purposes
   # STRICTLY choose from the allowed lists above.
-  default: "gpt-4o"                     # Default LLM for agents
-  vision: "gpt-4o"                      # Vision/multimodal tasks
-  reasoning: "oswe-vscode-secondary"    # Raptor reasoning
-  code_analysis: "grok-code-fast-1"     # Fast coding analysis
-  consolidation: "oswe-vscode-secondary" # Memory consolidation (Raptor native)
+  default: "deepseek-v3"                # Default LLM for agents
+  vision: "deepseek-v3"                 # Vision/multimodal tasks
+  reasoning: "deepseek-r1"              # Reasoning model
+  code_analysis: "deepseek-v3"          # Fast coding analysis
+  consolidation: "deepseek-v3"          # Memory consolidation
   
   # Fallbacks (used when primary unavailable)
-  fallback: "gpt-4o"                    # Fallback model (most stable)
+  fallback: "deepseek-v3"               # Fallback model (most stable)
   
   # Sandbox model (used by mcp_sandbox.py)
-  sandbox: "oswe-vscode-secondary"
+  sandbox: "deepseek-v3"
 
   # Agents inherit from models.default unless overridden
 
