@@ -14,42 +14,47 @@ if str(PROJECT_ROOT) not in sys.path:
 TARGET_SIGNATURES = [
     "brain.server",
     "src/maintenance/watch_config.py",
-    "src.mcp_server.vibe_server",     # Vibe Python Server
-    "copilot_vibe_proxy.py",          # Copilot Proxy
-    "vibe_windsurf_proxy.py",         # Windsurf Proxy
-    "electron .",                     # Main Electron App
-    "vite",                           # Vite Renderer Dev Server
-    "server-filesystem",              # @modelcontextprotocol/server-filesystem
-    "server-sequential-thinking",     # @modelcontextprotocol/server-sequential-thinking
-    "vendor/XcodeBuildMCP",           # Unified XcodeBuild Hub (Node)
-    "chrome-devtools-mcp",            # Chrome DevTools Protocol MCP
-    "server-puppeteer",               # @modelcontextprotocol/server-puppeteer
-    "c7-mcp-server",                  # Context7 Documentation Server
-    "server-github",                  # @modelcontextprotocol/server-github
-    "mcp-server-macos-use",           # Native macOS-use Binary
-    "mcp-server-googlemaps",          # Native Google Maps Binary
-    "memory_server",                  # Memory Graph Server (Python)
-    "graph_server",                   # Graph Visualization Server (Python)
-    "whisper_server",                 # Voice transcription Server (Python)
-    "devtools_server",                # System Self-Analysis Server (Python)
-    "duckduckgo_search_server",       # DDG Search Server (Python)
-    "golden_fund/server",             # Golden Fund Server (Python)
-    "redis_server",                   # Redis State Server (Python)
-    "data_analysis_server",           # Pandas Analysis Server (Python)
-    "postgres_server",                # Postgres DB Server (Python)
-    "react_devtools_mcp.js",          # React DevTools MCP (Node)
-    "uvicorn",                        # FastAPI/Uvicorn hosts
-    "redis-server",                   # Local Redis process
-    "redis-cli",                      # Lingering CLI connections
+    "src.mcp_server.vibe_server",  # Vibe Python Server
+    "copilot_vibe_proxy.py",  # Copilot Proxy
+    "vibe_windsurf_proxy.py",  # Windsurf Proxy
+    "electron .",  # Main Electron App
+    "vite",  # Vite Renderer Dev Server
+    "server-filesystem",  # @modelcontextprotocol/server-filesystem
+    "server-sequential-thinking",  # @modelcontextprotocol/server-sequential-thinking
+    "vendor/XcodeBuildMCP",  # Unified XcodeBuild Hub (Node)
+    "chrome-devtools-mcp",  # Chrome DevTools Protocol MCP
+    "server-puppeteer",  # @modelcontextprotocol/server-puppeteer
+    "c7-mcp-server",  # Context7 Documentation Server
+    "server-github",  # @modelcontextprotocol/server-github
+    "mcp-server-macos-use",  # Native macOS-use Binary
+    "mcp-server-googlemaps",  # Native Google Maps Binary
+    "memory_server",  # Memory Graph Server (Python)
+    "graph_server",  # Graph Visualization Server (Python)
+    "whisper_server",  # Voice transcription Server (Python)
+    "devtools_server",  # System Self-Analysis Server (Python)
+    "duckduckgo_search_server",  # DDG Search Server (Python)
+    "golden_fund/server",  # Golden Fund Server (Python)
+    "redis_server",  # Redis State Server (Python)
+    "data_analysis_server",  # Pandas Analysis Server (Python)
+    "postgres_server",  # Postgres DB Server (Python)
+    "react_devtools_mcp.js",  # React DevTools MCP (Node)
+    "uvicorn",  # FastAPI/Uvicorn hosts
+    "redis-server",  # Local Redis process
+    "redis-cli",  # Lingering CLI connections
 ]
 
 # Ports to check and free
 TARGET_PORTS = [
-    8000,                             # Brain API
-    3000, 3001,                       # UI / Vite
-    8080, 8085, 8086, 8088, 8090,     # Vibe, Proxies, Internal
-    6379,                             # Redis
-    9222,                             # Chrome Debugging
+    8000,  # Brain API
+    3000,
+    3001,  # UI / Vite
+    8080,
+    8085,
+    8086,
+    8088,
+    8090,  # Vibe, Proxies, Internal
+    6379,  # Redis
+    9222,  # Chrome Debugging
 ]
 
 
@@ -173,6 +178,7 @@ def main():
 
 class Colors:
     """ANSI color codes for terminal output."""
+
     GREEN = "\033[92m"
     YELLOW = "\033[93m"
     RED = "\033[91m"

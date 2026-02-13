@@ -286,7 +286,10 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             async with await db_manager.get_session() as db_sess:
                 # 1. Fetch Session Theme
                 sess_info = await db_sess.execute(
-                    select(DBSession).where(DBSession.id == session_id)
+                    select(DBSession).where(
+                        DBSession.id
+                        == (uuid.UUID(session_id) if isinstance(session_id, str) else session_id)
+                    )
                 )
                 db_sess_obj = sess_info.scalar()
                 if not db_sess_obj:
@@ -694,11 +697,13 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             }
 
             async with await db_manager.get_session() as db_sess:
-                await db_sess.execute(
-                    update(DBTask)
-                    .where(DBTask.id == self.state["db_task_id"])
-                    .values(metadata_blob=task_metadata)
-                )
+                task_id = self.state.get("db_task_id")
+                if task_id and isinstance(task_id, str):
+                    await db_sess.execute(
+                        update(DBTask)
+                        .where(DBTask.id == uuid.UUID(task_id))
+                        .values(metadata_blob=task_metadata)
+                    )
                 await db_sess.commit()
 
         except Exception as e:
@@ -1073,34 +1078,36 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                         try:
                             s_id = uuid.UUID(session_id)
                         except (ValueError, TypeError):
-                            logger.warning(f"[DB] Invalid session_id '{session_id}', generating new UUID.")
-                            pass
-                            
+                            logger.warning(
+                                f"[DB] Invalid session_id '{session_id}', generating new UUID."
+                            )
+
                     new_session = DBSession(
                         id=s_id,
-                        started_at=datetime.now(UTC), 
-                        metadata_blob={"theme": self.state["_theme"]}
+                        started_at=datetime.now(UTC),
+                        metadata_blob={"theme": self.state["_theme"]},
                     )
-                    
+
                     db_sess.add(new_session)
                     await db_sess.commit()
-                    
+
                     self.state["db_session_id"] = str(new_session.id)
-                    
+
                     # If we were in "current_session" mode, update it to the concrete ID
                     if session_id == "current_session":
-                         self.current_session_id = str(new_session.id)
-                         self.state["session_id"] = self.current_session_id
-                         
+                        self.current_session_id = str(new_session.id)
+                        self.state["session_id"] = self.current_session_id
+
                     logger.info(f"[DB] Session successfully created: {self.state['db_session_id']}")
-            else:
-                 if not db_manager:
-                     logger.warning("[DB] Creation skipped: db_manager is None")
-                 elif not getattr(db_manager, "available", False):
-                     logger.warning("[DB] Creation skipped: db_manager.available is False")
-                 elif "db_session_id" in self.state:
-                     logger.info(f"[DB] Creation skipped: db_session_id exists ({self.state['db_session_id']})")
-                     
+            elif not db_manager:
+                logger.warning("[DB] Creation skipped: db_manager is None")
+            elif not getattr(db_manager, "available", False):
+                logger.warning("[DB] Creation skipped: db_manager.available is False")
+            elif "db_session_id" in self.state:
+                logger.info(
+                    f"[DB] Creation skipped: db_session_id exists ({self.state['db_session_id']})"
+                )
+
         except Exception as e:
             logger.error(f"[DB] Session creation failed: {e}", exc_info=True)
 
@@ -1503,9 +1510,11 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
         """Mark task as golden path in DB."""
 
         async with await db_manager.get_session() as db_sess:
-            await db_sess.execute(
-                update(DBTask).where(DBTask.id == self.state["db_task_id"]).values(golden_path=True)
-            )
+            task_id = self.state.get("db_task_id")
+            if task_id and isinstance(task_id, str):
+                await db_sess.execute(
+                    update(DBTask).where(DBTask.id == uuid.UUID(task_id)).values(golden_path=True)
+                )
             await db_sess.commit()
 
     async def _notify_task_finished(self, session_id):
@@ -2863,9 +2872,13 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                 try:
                     duration_ms = int((asyncio.get_event_loop().time() - step_start_time) * 1000)
                     async with await db_manager.get_session() as db_sess:
+                        # Ensure db_step_id is a valid UUID string
+                        target_step_id = (
+                            uuid.UUID(db_step_id) if isinstance(db_step_id, str) else db_step_id
+                        )
                         await db_sess.execute(
                             update(DBStep)
-                            .where(DBStep.id == db_step_id)
+                            .where(DBStep.id == target_step_id)
                             .values(
                                 status="SUCCESS" if result.success else "FAILED",
                                 error_message=result.error,
