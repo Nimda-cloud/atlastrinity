@@ -120,9 +120,11 @@ mcp_enhanced:
 
 mcp:
   # === TIER 1: MUST-HAVE (Ядро системи) ===
-  macos_use:           { enabled: true }
-  filesystem:          { enabled: true }
+  # xcodebuild is the bridge for macos_use and googlemaps — must start first
   xcodebuild:          { enabled: true }
+  macos_use:           { enabled: true }   # via xcodebuild bridge
+  googlemaps:          { enabled: true }   # via xcodebuild bridge
+  filesystem:          { enabled: true }
   sequential_thinking:
     enabled: true
     model: "oswe-vscode-secondary"   # Critical for complex reasoning
@@ -141,7 +143,6 @@ mcp:
   tour_guide:          { enabled: true }
 
   # === TIER 3: ADDITIONAL (Додаткові) ===
-  googlemaps:          { enabled: true }
   puppeteer:           { enabled: true }
   context7:            { enabled: true }
   react_devtools:      { enabled: true }
