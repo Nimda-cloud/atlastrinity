@@ -81,8 +81,9 @@ LS_HEARTBEAT = "/exa.language_server_pb.LanguageServerService/Heartbeat"
 # Language Server gRPC service path prefix
 _GRPC_SVC = "/exa.language_server_pb.LanguageServerService/"
 
-# Cascade default model (must NOT be a "legacy mode" model like MODEL_CHAT_11121)
-CASCADE_DEFAULT_MODEL = "MODEL_CLAUDE_4_SONNET"
+# Cascade default model — pick first non-legacy UID from WINDSURF_MODELS
+_NON_LEGACY = [v for k, v in WINDSURF_MODELS.items() if v != "MODEL_CHAT_11121"]
+CASCADE_DEFAULT_MODEL = _NON_LEGACY[0] if _NON_LEGACY else "MODEL_DEEPSEEK_V3"
 
 # Map display names to Cascade-compatible model UIDs
 # CASCADE_MODEL_MAP mirrors WINDSURF_MODELS — single source of truth
@@ -90,6 +91,17 @@ CASCADE_MODEL_MAP: dict[str, str] = dict(WINDSURF_MODELS)
 
 # Max seconds to wait for Cascade AI response
 CASCADE_TIMEOUT = 90
+
+# Seconds to wait for first cascade frame before aborting
+CASCADE_EARLY_ABORT = 15
+
+# Mode fallback chain — ordered list of alternative modes to try on failure
+_FALLBACK_CHAIN: dict[str, list[str]] = {
+    "cascade": ["local", "proxy", "direct"],
+    "local":   ["cascade", "proxy", "direct"],
+    "proxy":   ["direct"],
+    "direct":  ["proxy"],
+}
 
 # ─── Proto Binary Helpers ────────────────────────────────────────────────────
 
@@ -397,6 +409,7 @@ class WindsurfLLM(BaseChatModel):
             self._mode = "proxy"
 
         # Auto-detect local LS if mode needs it or auto-detection
+        ls_available = False
         if self._mode in ("cascade", "local") or forced_mode == "":
             ls_port = int(os.getenv("WINDSURF_LS_PORT", "0"))
             ls_csrf = os.getenv("WINDSURF_LS_CSRF", "")
@@ -409,6 +422,7 @@ class WindsurfLLM(BaseChatModel):
             if ls_port and ls_csrf and _ls_heartbeat(ls_port, ls_csrf):
                 self.ls_port = ls_port
                 self.ls_csrf = ls_csrf
+                ls_available = True
                 # Prefer cascade mode (uses Cascade quota, bypasses Chat API block)
                 if forced_mode == "cascade":
                     self._mode = "cascade"
@@ -419,6 +433,15 @@ class WindsurfLLM(BaseChatModel):
                         self._mode = "local"
                 else:
                     self._mode = "local"
+
+        # Degrade gracefully: if cascade/local requested but LS not available
+        if self._mode in ("cascade", "local") and not ls_available:
+            print(
+                f"Warning: WINDSURF_MODE={forced_mode} but Windsurf LS not available, "
+                f"falling back to proxy mode",
+                file=sys.stderr,
+            )
+            self._mode = "proxy"
 
         self.direct_mode = self._mode == "direct"
 
@@ -978,10 +1001,18 @@ class WindsurfLLM(BaseChatModel):
             # Step 5: Wait for AI response in stream
             prev_count = 0
             stable_ticks = 0
+            elapsed_no_frames = 0
             for _ in range(CASCADE_TIMEOUT // 2):
                 time.sleep(2)
                 cur = len(raw_frames)
-                if cur > 3 and cur == prev_count:
+                # Early abort: if no frames at all after CASCADE_EARLY_ABORT seconds
+                if cur == 0:
+                    elapsed_no_frames += 2
+                    if elapsed_no_frames >= CASCADE_EARLY_ABORT:
+                        raise RuntimeError(
+                            f"Cascade stream timeout: no frames received after {CASCADE_EARLY_ABORT}s"
+                        )
+                elif cur > 3 and cur == prev_count:
                     stable_ticks += 1
                     if stable_ticks >= 3:
                         break
@@ -1302,6 +1333,31 @@ class WindsurfLLM(BaseChatModel):
 
     # ─── LangChain Interface ─────────────────────────────────────────────
 
+    def _call_mode(self, mode: str, messages: list[BaseMessage]) -> ChatResult:
+        """Execute a single mode attempt and return ChatResult."""
+        if mode == "cascade":
+            try:
+                content = self._call_cascade(messages)
+                return self._process_content(content)
+            except RuntimeError as e:
+                if "not enough credits" in str(e).lower() and self._refresh_ls_connection():
+                    payload = self._build_connect_rpc_payload(messages)
+                    content = self._call_local_ls(payload)
+                    return self._process_content(content)
+                raise
+        elif mode == "local":
+            payload = self._build_connect_rpc_payload(messages)
+            content = self._call_local_ls(payload)
+            return self._process_content(content)
+        elif mode == "direct":
+            payload = self._build_connect_rpc_payload(messages)
+            content = self._call_direct(payload)
+            return self._process_content(content)
+        else:  # proxy
+            payload = self._build_openai_payload(messages)
+            data = self._call_proxy(payload)
+            return self._process_openai_result(data, messages)
+
     def _generate(
         self,
         messages: list[BaseMessage],
@@ -1309,36 +1365,57 @@ class WindsurfLLM(BaseChatModel):
         run_manager: Any | None = None,  # noqa: ARG002
         **kwargs: Any,
     ) -> ChatResult:
-        """Synchronous generation."""
+        """Synchronous generation with automatic mode fallback."""
         # Test/dummy mode: return synthetic response without real API calls
         if self._is_test_mode:
             return self._generate_test_response(messages)
-        try:
-            if self._mode == "cascade":
-                try:
-                    content = self._call_cascade(messages)
-                    return self._process_content(content)
-                except RuntimeError as e:
-                    if "not enough credits" in str(e).lower() and self._refresh_ls_connection():
-                        payload = self._build_connect_rpc_payload(messages)
-                        content = self._call_local_ls(payload)
-                        return self._process_content(content)
-                    raise
-            if self._mode == "local":
-                payload = self._build_connect_rpc_payload(messages)
-                content = self._call_local_ls(payload)
-                return self._process_content(content)
-            if self._mode == "direct":
-                payload = self._build_connect_rpc_payload(messages)
-                content = self._call_direct(payload)
-                return self._process_content(content)
+
+        # Try primary mode, then fallback chain
+        modes_to_try = [self._mode] + _FALLBACK_CHAIN.get(self._mode, [])
+        last_error: Exception | None = None
+
+        for mode in modes_to_try:
+            # Skip LS-dependent modes if LS is not available
+            if mode in ("cascade", "local") and not (self.ls_port and self.ls_csrf):
+                continue
+            try:
+                result = self._call_mode(mode, messages)
+                if mode != self._mode:
+                    print(
+                        f"Warning: Windsurf '{self._mode}' failed, succeeded via '{mode}'",
+                        file=sys.stderr,
+                    )
+                return result
+            except Exception as e:
+                last_error = e
+                print(
+                    f"Warning: Windsurf mode '{mode}' failed: {e}",
+                    file=sys.stderr,
+                )
+
+        return ChatResult(
+            generations=[ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {last_error}"))],
+        )
+
+    async def _call_mode_async(self, mode: str, messages: list[BaseMessage]) -> ChatResult:
+        """Execute a single mode attempt asynchronously."""
+        import asyncio
+
+        if mode == "cascade":
+            content = await asyncio.to_thread(self._call_cascade, messages)
+            return self._process_content(content)
+        elif mode == "local":
+            payload = self._build_connect_rpc_payload(messages)
+            content = await self._call_local_ls_async(payload)
+            return self._process_content(content)
+        elif mode == "direct":
+            payload = self._build_connect_rpc_payload(messages)
+            content = await self._call_direct_async(payload)
+            return self._process_content(content)
+        else:  # proxy
             payload = self._build_openai_payload(messages)
-            data = self._call_proxy(payload)
+            data = await self._call_proxy_async(payload)
             return self._process_openai_result(data, messages)
-        except Exception as e:
-            return ChatResult(
-                generations=[ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {e}"))],
-            )
 
     async def _agenerate(
         self,
@@ -1347,32 +1424,73 @@ class WindsurfLLM(BaseChatModel):
         run_manager: Any | None = None,  # noqa: ARG002
         **kwargs: Any,
     ) -> ChatResult:
-        """Asynchronous generation."""
+        """Asynchronous generation with automatic mode fallback."""
         # Test/dummy mode: return synthetic response without real API calls
         if self._is_test_mode:
             return self._generate_test_response(messages)
-        try:
-            if self._mode == "cascade":
-                # Cascade is sync-only (gRPC streaming), run in thread
-                import asyncio
 
-                content = await asyncio.to_thread(self._call_cascade, messages)
-                return self._process_content(content)
-            if self._mode == "local":
-                payload = self._build_connect_rpc_payload(messages)
-                content = await self._call_local_ls_async(payload)
-                return self._process_content(content)
-            if self._mode == "direct":
-                payload = self._build_connect_rpc_payload(messages)
-                content = await self._call_direct_async(payload)
-                return self._process_content(content)
-            payload = self._build_openai_payload(messages)
-            data = await self._call_proxy_async(payload)
-            return self._process_openai_result(data, messages)
-        except Exception as e:
-            return ChatResult(
-                generations=[ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {e}"))],
+        modes_to_try = [self._mode] + _FALLBACK_CHAIN.get(self._mode, [])
+        last_error: Exception | None = None
+
+        for mode in modes_to_try:
+            if mode in ("cascade", "local") and not (self.ls_port and self.ls_csrf):
+                continue
+            try:
+                result = await self._call_mode_async(mode, messages)
+                if mode != self._mode:
+                    print(
+                        f"Warning: Windsurf '{self._mode}' failed, succeeded via '{mode}'",
+                        file=sys.stderr,
+                    )
+                return result
+            except Exception as e:
+                last_error = e
+                print(
+                    f"Warning: Windsurf mode '{mode}' failed: {e}",
+                    file=sys.stderr,
+                )
+
+        return ChatResult(
+            generations=[ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {last_error}"))],
+        )
+
+    def _call_mode_stream(self, mode: str, messages: list[BaseMessage],
+                          on_delta: Callable[[str], None] | None = None) -> str:
+        """Execute a single mode for streaming, returning raw content string."""
+        if mode == "cascade":
+            try:
+                return self._call_cascade(messages)
+            except RuntimeError as e:
+                if "not enough credits" in str(e).lower() and self._refresh_ls_connection():
+                    payload = self._build_connect_rpc_payload(messages)
+                    return self._call_local_ls(payload)
+                raise
+        elif mode == "local":
+            payload = self._build_connect_rpc_payload(messages)
+            return self._call_local_ls(payload)
+        elif mode == "direct":
+            payload = self._build_connect_rpc_payload(messages)
+            return self._call_direct(payload)
+        else:  # proxy
+            payload = self._build_openai_payload(messages, stream=True)
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}",
+            }
+            response = requests.post(
+                f"{self.proxy_url}/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                stream=True,
+                timeout=300,
             )
+            response.raise_for_status()
+            content = ""
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                content = self._parse_windsurf_openai_line(line, content, on_delta)
+            return content
 
     def invoke_with_stream(
         self,
@@ -1380,47 +1498,29 @@ class WindsurfLLM(BaseChatModel):
         *,
         on_delta: Callable[[str], None] | None = None,
     ) -> AIMessage:
-        """Streaming invoke compatible with CopilotLLM interface."""
-        try:
-            if self._mode == "cascade":
-                try:
-                    content = self._call_cascade(messages)
-                except RuntimeError as e:
-                    if "not enough credits" in str(e).lower() and self._refresh_ls_connection():
-                        payload = self._build_connect_rpc_payload(messages)
-                        content = self._call_local_ls(payload)
-                    else:
-                        raise
-            elif self._mode == "local":
-                payload = self._build_connect_rpc_payload(messages)
-                content = self._call_local_ls(payload)
-            elif self._mode == "direct":
-                payload = self._build_connect_rpc_payload(messages)
-                content = self._call_direct(payload)
-            else:
-                payload = self._build_openai_payload(messages, stream=True)
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {self.api_key}",
-                }
-                response = requests.post(
-                    f"{self.proxy_url}/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    stream=True,
-                    timeout=300,
+        """Streaming invoke with automatic mode fallback."""
+        modes_to_try = [self._mode] + _FALLBACK_CHAIN.get(self._mode, [])
+        last_error: Exception | None = None
+
+        for mode in modes_to_try:
+            if mode in ("cascade", "local") and not (self.ls_port and self.ls_csrf):
+                continue
+            try:
+                content = self._call_mode_stream(mode, messages, on_delta)
+                if mode != self._mode:
+                    print(
+                        f"Warning: Windsurf '{self._mode}' failed, succeeded via '{mode}'",
+                        file=sys.stderr,
+                    )
+                return self._build_windsurf_ai_message(content)
+            except Exception as e:
+                last_error = e
+                print(
+                    f"Warning: Windsurf stream mode '{mode}' failed: {e}",
+                    file=sys.stderr,
                 )
-                response.raise_for_status()
 
-                content = ""
-                for line in response.iter_lines():
-                    if not line:
-                        continue
-                    content = self._parse_windsurf_openai_line(line, content, on_delta)
-
-            return self._build_windsurf_ai_message(content)
-        except Exception as e:
-            return AIMessage(content=f"[WINDSURF ERROR] {e}")
+        return AIMessage(content=f"[WINDSURF ERROR] {last_error}")
 
     @staticmethod
     def _parse_windsurf_openai_line(
