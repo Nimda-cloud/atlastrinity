@@ -22,12 +22,17 @@ async def verify_model(model_id: str):
         content = response.content
         if isinstance(content, list):
             # Extract text from content blocks if necessary
-            result = "".join([block.get("text", "") if isinstance(block, dict) else str(block) for block in content])
+            result = "".join(
+                [
+                    block.get("text", "") if isinstance(block, dict) else str(block)
+                    for block in content
+                ]
+            )
         else:
             result = str(content)
-        
+
         result = result.strip()
-        
+
         if "OK" in result:
             print(f"✅ Model {model_id} is WORKING (Response: {result})")  # noqa: T201
             return True

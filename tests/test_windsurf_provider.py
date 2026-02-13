@@ -57,9 +57,7 @@ try:
     from src.brain.config.config_loader import config as _sys_config
 
     _CONFIG_DEFAULT = (
-        os.getenv("WINDSURF_MODEL")
-        or _sys_config.get("models.default")
-        or _WS_DEFAULT
+        os.getenv("WINDSURF_MODEL") or _sys_config.get("models.default") or _WS_DEFAULT
     )
     # If the resolved model isn't a known Windsurf model, fall back
     if _CONFIG_DEFAULT not in WINDSURF_MODELS:
@@ -591,7 +589,9 @@ class TestModelMaps:
 
             expected_models = get_windsurf_models()
             for name in expected_models:
-                assert name in WINDSURF_MODELS, f"Model '{name}' from all_models.json missing from WINDSURF_MODELS"
+                assert name in WINDSURF_MODELS, (
+                    f"Model '{name}' from all_models.json missing from WINDSURF_MODELS"
+                )
         except ImportError:
             # Fallback: at least check key models exist
             for name in ["deepseek-v3", "windsurf-fast"]:

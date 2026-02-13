@@ -43,7 +43,12 @@ async def main():
         content = response.content
         if isinstance(content, list):
             # Extract text from content blocks if necessary
-            code = "".join([block.get("text", "") if isinstance(block, dict) else str(block) for block in content])
+            code = "".join(
+                [
+                    block.get("text", "") if isinstance(block, dict) else str(block)
+                    for block in content
+                ]
+            )
         else:
             code = str(content)
 

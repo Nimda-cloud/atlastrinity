@@ -74,15 +74,17 @@ class C:
     RESET = "\033[0m"
 
 
-
 def info(msg: str) -> None:
     print(f"{C.GREEN}[INFO]{C.RESET} {msg}")
+
 
 def warn(msg: str) -> None:
     print(f"{C.YELLOW}[WARN]{C.RESET} {msg}", file=sys.stderr)
 
+
 def error(msg: str) -> None:
     print(f"{C.RED}[ERROR]{C.RESET} {msg}", file=sys.stderr)
+
 
 def step(msg: str) -> None:
     print(f"\n{C.BOLD}==> {msg}{C.RESET}")
