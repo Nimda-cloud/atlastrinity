@@ -28,7 +28,7 @@ patterns:
           repeated_failures: true
         min_confidence: 0.6
       action:
-        server: macos-use
+        server: xcodebuild
         tool: macos-use_fetch_url
         fallback_strategy: browser_automation
       metadata:
@@ -46,7 +46,7 @@ patterns:
       action:
         requires_vision: true
         use_ocr: true
-        server: macos-use
+        server: xcodebuild
         tool: macos-use_analyze_screen
       metadata:
         initial_confidence: 0.7
@@ -62,7 +62,7 @@ patterns:
       action:
         retry_with_sudo: true
         confirm_required: true
-        server: macos-use
+        server: xcodebuild
         tool: execute_command
       metadata:
         initial_confidence: 0.5
@@ -405,7 +405,7 @@ tool_routing:
       - screenshot
       - clipboard_get
       - clipboard_set
-    priority_server: macos-use
+    priority_server: xcodebuild
     fallback_server: null
     tool_mapping:
       get_clipboard: macos-use_get_clipboard
@@ -443,7 +443,7 @@ tool_routing:
       - vision
       - screen_analysis
       - text_recognition
-    priority_server: macos-use
+    priority_server: xcodebuild
     fallback_server: null
     tool_mapping:
       analyze_screen: macos-use_analyze_screen
@@ -468,7 +468,7 @@ tool_routing:
       - macos-use_list_tools_dynamic
       - list_tools_dynamic
       - list_tools
-    priority_server: macos-use
+    priority_server: xcodebuild
     fallback_server: null
     tool_mapping:
       list_running_apps: macos-use_list_running_apps
@@ -519,7 +519,7 @@ tool_routing:
       - cp
       - touch
       - sudo
-    priority_server: macos-use
+    priority_server: xcodebuild
     fallback_server: null
     tool_mapping:
       terminal: execute_command
@@ -527,13 +527,13 @@ tool_routing:
       run: execute_command
     routing_rules:
       - pattern: 'git.*'
-        server: macos-use
+        server: xcodebuild
         tool: execute_command
       - pattern: 'npm.*'
-        server: macos-use
+        server: xcodebuild
         tool: execute_command
       - pattern: 'curl.*'
-        server: macos-use
+        server: xcodebuild
         tool: macos-use_fetch_url
 
   # Filesystem operations
@@ -550,7 +550,7 @@ tool_routing:
       - write_file
       - tree
     priority_server: filesystem
-    fallback_server: macos-use
+    fallback_server: xcodebuild
     tool_mapping:
       filesystem: read_file
       fs: read_file
@@ -686,7 +686,7 @@ tool_routing:
       - calendar
       - reminder
       - reminders
-    priority_server: macos-use
+    priority_server: xcodebuild
     fallback_server: null
     tool_mapping:
       notes_get: macos-use_notes_get_content
