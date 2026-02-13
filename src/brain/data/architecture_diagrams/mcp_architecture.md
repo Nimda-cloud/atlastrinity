@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T05:24:33.788829 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-13T05:24:19.272489 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T05:19:45.836489 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

@@ -284,6 +284,13 @@ class MCPManager:
         )
         connect_timeout = float(config.get("connect_timeout", default_timeout))
 
+        # --- INTERNAL SERVICE PROTECTION ---
+        transport = config.get("transport")
+        command = config.get("command")
+        if transport == "internal" or command == "native":
+            logger.debug(f"[MCP] Internal/Native service '{server_name}' - skipping external connection.")
+            return None
+
         missing_env = config.get("_missing_env")
         if missing_env:
             logger.error(
@@ -972,9 +979,35 @@ class MCPManager:
             List of tool objects from the server
         """
         try:
+            # --- INTERNAL SERVICE FALLBACK ---
+            server_cfg = self.config.get("mcpServers", {}).get(server_name, {})
+            if server_cfg.get("transport") == "internal" or server_cfg.get("command") == "native":
+                from src.brain.mcp.mcp_registry import TOOL_SCHEMAS
+                
+                internal_tools = []
+                for tool_id, schema in TOOL_SCHEMAS.items():
+                    if schema.get("server") == server_name:
+                        # Create a mock tool object that has 'name', 'description', 'inputSchema'
+                        from types import SimpleNamespace
+                        tool_name = tool_id
+                        if "_" in tool_id and tool_id.startswith(f"{server_name.replace('-', '_')}_"):
+                            tool_name = tool_id[len(server_name.replace('-', '_')) + 1:]
+                        
+                        internal_tools.append(SimpleNamespace(
+                            name=tool_name,
+                            description=schema.get("description", ""),
+                            inputSchema=schema.get("parameters", schema.get("inputSchema", {}))
+                        ))
+                
+                if internal_tools:
+                    logger.debug(f"[MCP] Fetched {len(internal_tools)} tools for internal server {server_name} from registry")
+                    return internal_tools
+
             session = await self.get_session(server_name)
             if not session:
-                logger.warning(f"[MCP] No session for {server_name}, cannot list tools")
+                # If it's not a native service and we still have no session, it's a real failure
+                if not (server_cfg.get("transport") == "internal" or server_cfg.get("command") == "native"):
+                    logger.warning(f"[MCP] No session for {server_name}, cannot list tools")
                 return []
 
             result = await session.list_tools()
