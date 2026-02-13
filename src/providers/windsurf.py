@@ -5,6 +5,7 @@ import os
 import re
 import struct
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -37,21 +38,24 @@ try:
 except ImportError:
     pass  # dotenv not available, use system env vars
 
-# ─── Windsurf Free Models ────────────────────────────────────────────────────
-# Only FREE tier models from Windsurf/Codeium
-# These do not consume premium credits
+# ─── Windsurf Models (loaded from config/all_models.json) ────────────────────
+# Single source of truth: config/all_models.json, loaded via model_registry
 
-WINDSURF_MODELS: dict[str, str] = {
-    # Display name -> Windsurf internal model UID
-    # Free / unlimited models per user request
-    "deepseek-v3": "MODEL_DEEPSEEK_V3",
-    "deepseek-r1": "MODEL_DEEPSEEK_R1",
-    "swe-1": "MODEL_SWE_1",
-    "swe-1.5": "MODEL_SWE_1_5",
-    "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
-    "kimi-k2.5": "kimi-k2-5",
-    "windsurf-fast": "MODEL_CHAT_11121",  # Keep default just in case, though not explicitly requested it is standard fallback
-}
+try:
+    from src.providers.utils.model_registry import WINDSURF_UID_MAP, get_windsurf_models
+
+    WINDSURF_MODELS: dict[str, str] = get_windsurf_models()
+except Exception:
+    # Fallback if model_registry or all_models.json is unavailable
+    WINDSURF_MODELS = {
+        "deepseek-v3": "MODEL_DEEPSEEK_V3",
+        "deepseek-r1": "MODEL_DEEPSEEK_R1",
+        "swe-1": "MODEL_SWE_1",
+        "swe-1.5": "MODEL_SWE_1_5",
+        "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
+        "kimi-k2.5": "kimi-k2-5",
+        "windsurf-fast": "MODEL_CHAT_11121",
+    }
 
 # For backward compat
 WINDSURF_FREE_MODELS = WINDSURF_MODELS
@@ -81,16 +85,8 @@ _GRPC_SVC = "/exa.language_server_pb.LanguageServerService/"
 CASCADE_DEFAULT_MODEL = "MODEL_CLAUDE_4_SONNET"
 
 # Map display names to Cascade-compatible model UIDs
-CASCADE_MODEL_MAP: dict[str, str] = {
-    # Free / unlimited models per user request
-    "deepseek-v3": "MODEL_DEEPSEEK_V3",
-    "deepseek-r1": "MODEL_DEEPSEEK_R1",
-    "swe-1": "MODEL_SWE_1",
-    "swe-1.5": "MODEL_SWE_1_5",
-    "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
-    "kimi-k2.5": "kimi-k2-5",
-    "windsurf-fast": "MODEL_CHAT_11121",
-}
+# CASCADE_MODEL_MAP mirrors WINDSURF_MODELS — single source of truth
+CASCADE_MODEL_MAP: dict[str, str] = dict(WINDSURF_MODELS)
 
 # Max seconds to wait for Cascade AI response
 CASCADE_TIMEOUT = 90
@@ -363,7 +359,12 @@ class WindsurfLLM(BaseChatModel):
 
         # Validate model is known
         if self.model_name not in WINDSURF_MODELS:
-            ", ".join(sorted(WINDSURF_MODELS.keys()))
+            available = ", ".join(sorted(WINDSURF_MODELS.keys()))
+            print(
+                f"Warning: unknown Windsurf model '{self.model_name}'. "
+                f"Available: {available}",
+                file=sys.stderr,
+            )
 
         self.max_tokens = max_tokens or 4096
 

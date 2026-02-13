@@ -63,13 +63,21 @@ except ImportError as e:
 # ─── Configuration ─────────────────────────────────────────────────────
 
 DEFAULT_PORT = 8086
-SUPPORTED_MODELS = {
-    "gpt-4o": "gpt-4o",
-    "gpt-4.1": "gpt-4.1",
-    "gpt-5-mini": "gpt-5-mini",
-    "grok-code-fast-1": "grok-code-fast-1",
-    "oswe-vscode-secondary": "oswe-vscode-secondary",
-}
+
+# Load models from single source of truth: config/all_models.json
+try:
+    from providers.utils.model_registry import get_copilot_models
+
+    SUPPORTED_MODELS = get_copilot_models()
+except Exception:
+    # Fallback if model_registry or all_models.json is unavailable
+    SUPPORTED_MODELS = {
+        "gpt-4o": "gpt-4o",
+        "gpt-4.1": "gpt-4.1",
+        "gpt-5-mini": "gpt-5-mini",
+        "grok-code-fast-1": "grok-code-fast-1",
+        "oswe-vscode-secondary": "oswe-vscode-secondary",
+    }
 
 # ─── Colors ────────────────────────────────────────────────────────────
 

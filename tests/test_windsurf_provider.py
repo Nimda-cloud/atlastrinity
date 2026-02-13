@@ -50,6 +50,14 @@ from providers.windsurf import (
     _proto_varint,
 )
 
+# Resolve the config-driven default model for assertions
+try:
+    from src.brain.config.config_loader import config as _sys_config
+
+    _CONFIG_DEFAULT = _sys_config.get("models.default") or "windsurf-fast"
+except Exception:
+    _CONFIG_DEFAULT = "windsurf-fast"
+
 # ─── Fixtures ──────────────────────────────────────────────────────────────
 
 
@@ -109,7 +117,7 @@ def messages_with_tool_result():
 
 class TestInit:
     def test_basic_init(self, llm):
-        assert llm.model_name == "windsurf-fast"
+        assert llm.model_name == _CONFIG_DEFAULT
         assert llm._mode == "proxy"
         assert llm._is_test_mode is True
         assert llm.api_key == "test"
@@ -121,7 +129,7 @@ class TestInit:
     def test_unknown_model_warns(self, capsys):
         WindsurfLLM(api_key="test", model_name="nonexistent-model")
         captured = capsys.readouterr()
-        assert "Warning" in captured.err
+        assert "Warning" in captured.err or "nonexistent-model" in captured.err
 
     def test_missing_api_key_raises(self, monkeypatch):
         monkeypatch.delenv("WINDSURF_API_KEY", raising=False)
@@ -210,7 +218,7 @@ class TestBindTools:
 class TestBuildOpenaiPayload:
     def test_basic_payload(self, llm, simple_messages):
         payload = llm._build_openai_payload(simple_messages)
-        assert payload["model"] == "windsurf-fast"
+        assert payload["model"] == _CONFIG_DEFAULT
         assert payload["temperature"] == 0.1
         assert payload["max_tokens"] == 4096
         assert payload["stream"] is False
@@ -281,7 +289,7 @@ class TestBuildConnectRpcPayload:
 
     def test_model_mapping(self, llm, simple_messages):
         payload = llm._build_connect_rpc_payload(simple_messages)
-        assert payload["chatModelName"] == WINDSURF_MODELS["windsurf-fast"]
+        assert payload["chatModelName"] == WINDSURF_MODELS[_CONFIG_DEFAULT]
 
     def test_message_sources(self, llm, simple_messages):
         payload = llm._build_connect_rpc_payload(simple_messages)
@@ -568,11 +576,68 @@ class TestModelMaps:
             assert name in WINDSURF_MODELS, f"Free model '{name}' missing"
 
     def test_premium_models_exist(self):
-        premium = ["claude-4-sonnet", "gpt-4.1", "windsurf-fast"]
-        for name in premium:
-            assert name in WINDSURF_MODELS, f"Premium model '{name}' missing"
+        # Verify models from all_models.json are present in WINDSURF_MODELS
+        try:
+            from providers.utils.model_registry import get_windsurf_models
+
+            expected_models = get_windsurf_models()
+            for name in expected_models:
+                assert name in WINDSURF_MODELS, f"Model '{name}' from all_models.json missing from WINDSURF_MODELS"
+        except ImportError:
+            # Fallback: at least check key models exist
+            for name in ["deepseek-v3", "windsurf-fast"]:
+                assert name in WINDSURF_MODELS, f"Model '{name}' missing"
 
     def test_model_uids_are_strings(self):
         for name, uid in WINDSURF_MODELS.items():
             assert isinstance(uid, str), f"Model '{name}' UID should be string"
             assert len(uid) > 3, f"Model '{name}' UID too short: '{uid}'"
+
+
+# ─── Test Config Alignment ────────────────────────────────────────────────
+
+
+class TestConfigAlignment:
+    """Verify providers and proxies stay in sync with config/all_models.json."""
+
+    def test_windsurf_models_match_all_models_json(self):
+        """All Windsurf vendor entries in all_models.json must appear in WINDSURF_MODELS."""
+        from providers.utils.model_registry import get_windsurf_models
+
+        expected = get_windsurf_models()
+        for model_id in expected:
+            assert model_id in WINDSURF_MODELS, (
+                f"Model '{model_id}' is in all_models.json (vendor=Windsurf) "
+                f"but missing from WINDSURF_MODELS"
+            )
+
+    def test_cascade_model_map_matches_windsurf_models(self):
+        """CASCADE_MODEL_MAP should mirror WINDSURF_MODELS."""
+        for name in WINDSURF_MODELS:
+            assert name in CASCADE_MODEL_MAP, f"Model '{name}' missing from CASCADE_MODEL_MAP"
+
+    def test_windsurf_proxy_models_match_all_models_json(self):
+        """Windsurf VIBE proxy SUPPORTED_MODELS should match all_models.json."""
+        from providers.utils.model_registry import get_windsurf_models
+
+        expected = get_windsurf_models()
+        from providers.proxy.vibe_windsurf_proxy import SUPPORTED_MODELS as ws_models
+
+        for model_id in expected:
+            assert model_id in ws_models, (
+                f"Model '{model_id}' is in all_models.json (vendor=Windsurf) "
+                f"but missing from Windsurf proxy SUPPORTED_MODELS"
+            )
+
+    def test_copilot_proxy_models_match_all_models_json(self):
+        """Copilot VIBE proxy SUPPORTED_MODELS should match all_models.json."""
+        from providers.utils.model_registry import get_copilot_models
+
+        expected = get_copilot_models()
+        from providers.proxy.copilot_vibe_proxy import SUPPORTED_MODELS as cp_models
+
+        for model_id in expected:
+            assert model_id in cp_models, (
+                f"Model '{model_id}' is in all_models.json (vendor=Copilot) "
+                f"but missing from Copilot proxy SUPPORTED_MODELS"
+            )

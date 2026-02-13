@@ -63,14 +63,23 @@ except ImportError as e:
 # ─── Configuration ─────────────────────────────────────────────────────
 
 DEFAULT_PORT = 8085
-SUPPORTED_MODELS = {
-    "deepseek-v3": "deepseek-v3",
-    "deepseek-r1": "deepseek-r1",
-    "swe-1": "swe-1",
-    "swe-1.5": "swe-1.5",
-    "grok-code-fast-1": "grok-code-fast-1",
-    "kimi-k2.5": "kimi-k2.5",
-}
+
+# Load models from single source of truth: config/all_models.json
+try:
+    from providers.utils.model_registry import get_windsurf_models
+
+    SUPPORTED_MODELS = get_windsurf_models()
+except Exception:
+    # Fallback if model_registry or all_models.json is unavailable
+    SUPPORTED_MODELS = {
+        "deepseek-v3": "deepseek-v3",
+        "deepseek-r1": "deepseek-r1",
+        "swe-1": "swe-1",
+        "swe-1.5": "swe-1.5",
+        "grok-code-fast-1": "grok-code-fast-1",
+        "kimi-k2.5": "kimi-k2.5",
+        "windsurf-fast": "windsurf-fast",
+    }
 
 # ─── Colors ────────────────────────────────────────────────────────────
 

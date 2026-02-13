@@ -5,25 +5,61 @@
 
 set -e  # Exit on error
 
+# Determine project root (directory containing this script's parent)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 echo "🧹 =========================================="
 echo "   FRESH INSTALL SIMULATION"
 echo "   Це видалить ВСІ локальні налаштування!"
 echo "=========================================="
 echo ""
 
+# Parse arguments early
+INTERACTIVE=true
+for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
+        INTERACTIVE=false
+    fi
+done
+
+# Ensure paths are set
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# Confirm function (must be defined before first use)
+confirm() {
+    local msg=$1
+    local default=$2
+    
+    if [[ "$INTERACTIVE" == "false" ]]; then
+        return 0
+    fi
+
+    if [[ "$default" == "Y" ]]; then
+        read -t 5 -p "❓ $msg (Y/n): " choice </dev/tty || choice="Y"
+    else
+        read -t 5 -p "❓ $msg (y/N): " choice </dev/tty || choice="N"
+    fi
+    echo ""
+    if [[ "$choice" =~ ^[Yy]$ || ( -z "$choice" && "$default" == "Y" ) ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Function to display MCP servers table
 show_mcp_servers_table() {
     echo ""
     echo "🔧 MCP СЕРВЕРИ - СТАТУС І ДОСТУПНІСТЬ:"
-    echo "┌─────────────────────┬─────────────┬─────────────────┬────────────┐"
-    printf "│ %-19s │ %-11s │ %-15s │ %-10s │\n" "СЕРВЕР" "ІНСТРУМЕНТІВ" "СТАТУС" "ТИР"
-    echo "├─────────────────────┼─────────────┼─────────────────┼────────────┤"
+    echo "┌──────────────────────┬──────────────┬───────────────────┬────────┐"
+    printf "│ %-20s │ %-12s │ %-17s │ %-6s │\n" "СЕРВЕР" "ІНСТРУМЕНТІВ" "СТАТУС" "ТИР"
+    echo "├──────────────────────┼──────────────┼───────────────────┼────────┤"
 
     # Check if config exists
     CONFIG_FILE="$PROJECT_ROOT/config/mcp_servers.json.template"
     if [ ! -f "$CONFIG_FILE" ]; then
-        printf "│ %-19s │ %-11s │ %-15s │ %-10s │\n" "КОНФІГ НЕ ЗНАЙДЕНО" "N/A" "❌" "N/A"
-        echo "└─────────────────────┴─────────────┴─────────────────┴────────────┘"
+        printf "│ %-20s │ %-12s │ %-17s │ %-6s │\n" "КОНФІГ НЕ ЗНАЙДЕНО" "N/A" "❌" "N/A"
+        echo "└──────────────────────┴──────────────┴───────────────────┴────────┘"
         return
     fi
 
@@ -48,11 +84,14 @@ for server_name, server_config in servers.items():
     
     total_servers += 1
     
-    # Extract tool count from description - improved regex
+    # Extract tool count from description
     description = server_config.get('description', '')
-    # Match patterns like: (63 tools), (168+ tools), (8 tools)
-    tool_match = re.search(r'\\((\\d+)(?:\\+)?\\s*(?:tools?|інструментів?)\\)', description)
-    tool_count = tool_match.group(1) if tool_match else 'N/A'
+    # Match patterns like: (63 tools), (168+ tools), (8 tools), (18 tools)
+    tool_match = re.search(r'\((\d+)\+?\s*tools?\)', description)
+    if not tool_match:
+        # Try Ukrainian pattern
+        tool_match = re.search(r'\((\d+)\+?\s*інструментів?\)', description)
+    tool_count = tool_match.group(1) + ('+' if '+' in tool_match.group(0) else '') if tool_match else 'N/A'
     
     # Check status
     disabled = server_config.get('disabled', False)
@@ -67,25 +106,15 @@ for server_name, server_config in servers.items():
         status_icon = '✅'
     
     # Format server name (truncate if too long)
-    display_name = server_name[:18] if len(server_name) > 18 else server_name
+    display_name = server_name[:20] if len(server_name) > 20 else server_name
     
-    print(f'│ {display_name:<18} │ {str(tool_count):>11} │ {status_icon} {status:<11} │ {str(tier):>10} │')
+    print(f'│ {display_name:<20} │ {str(tool_count):>12} │ {status_icon} {status:<14} │ {str(tier):>6} │')
 
-print('└─────────────────────┴─────────────┴─────────────────┴────────────┘')
-print(f'Загалом серверів: {total_servers} | Активних: {enabled_servers} | Вимкнених: {total_servers - enabled_servers}')
+print('└──────────────────────┴──────────────┴───────────────────┴────────┘')
+print(f'  Загалом серверів: {total_servers} | Активних: {enabled_servers} | Вимкнених: {total_servers - enabled_servers}')
     "
 }
 
-INTERACTIVE=true
-for arg in "$@"; do
-    if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
-        INTERACTIVE=false
-    fi
-done
-
-# Ensure paths are set
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
-
 # Check for active virtual environment
 if [[ -n "$VIRTUAL_ENV" && "$INTERACTIVE" == "true" ]]; then
     echo "⚠️  You are currently in an ACTIVATED virtual environment: $VIRTUAL_ENV"
@@ -97,44 +126,6 @@ if [[ -n "$VIRTUAL_ENV" && "$INTERACTIVE" == "true" ]]; then
         exit 1
     fi
 fi
-
-# Confirm function
-confirm() {
-    local msg=$1
-    local default=$2
-    
-    if [[ "$INTERACTIVE" == "false" ]]; then
-        return 0
-    fi
-
-    if [[ "$default" == "Y" ]]; then
-        read -t 5 -p "❓ $msg (Y/n): " choice </dev/tty || choice="Y"
-    else
-        read -t 5 -p "❓ $msg (y/N): " choice </dev/tty || choice="N"
-    fi
-    echo ""
-    if [[ "$choice" =~ ^[Yy]$ || ( -z "$choice" && "$default" == "Y" ) ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Check for active virtual environment
-if [[ -n "$VIRTUAL_ENV" && "$INTERACTIVE" == "true" ]]; then
-    echo "⚠️  You are currently in an ACTIVATED virtual environment: $VIRTUAL_ENV"
-    echo "   Starting a fresh install from an active environment can cause issues."
-    echo "   Please run 'deactivate' first, then try again."
-    echo ""
-    if ! confirm "Do you want to continue anyway?" "N"; then
-        echo "❌ Aborted. Please deactivate and restart."
-        exit 1
-    fi
-fi
-
-
-# Ensure Brew and basic paths are available
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if ! command -v brew &> /dev/null; then
     echo "❌ Homebrew NOT found. Please install it first."
