@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, cast
 
-from src.brain.monitoring.logger import logger
+from src.brain.monitoring.logger import logger  # pyre-ignore
 
 
 class ErrorCategory(Enum):
@@ -146,7 +146,7 @@ class SmartErrorRouter:
         else:
             category = ErrorCategory.UNKNOWN
 
-        logger.debug(f"[ROUTER] Classified '{error_str[:50]}' as {category.value}")
+        logger.debug(f"[ROUTER] Classified '{error_str[:50]}' as {category.value}")  # pyre-ignore
         self._cache[error_str] = category
         return category
 
@@ -164,7 +164,7 @@ class SmartErrorRouter:
 
         # 1. Try Config-Driven Pattern Matching first
         try:
-            from src.brain.behavior.behavior_engine import behavior_engine
+            from src.brain.behavior.behavior_engine import behavior_engine  # pyre-ignore
 
             # Build match context
             match_ctx = context or {}

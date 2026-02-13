@@ -16,11 +16,17 @@ import shutil
 import sys
 from pathlib import Path
 
-from src.brain.config import CONFIG_ROOT, MCP_DIR, MODELS_DIR, WHISPER_DIR, deep_merge
+from src.brain.config import (  # pyre-ignore
+    CONFIG_ROOT,
+    MCP_DIR,
+    MODELS_DIR,
+    WHISPER_DIR,
+    deep_merge,
+)
 
 # Try to import yaml
 try:
-    import yaml
+    import yaml  # pyre-ignore
 
     # PyYAML has been moved to a separate package in some environments
     YAML_AVAILABLE = True
@@ -88,7 +94,7 @@ def sync_yaml_config(src_path: Path, dst_path: Path) -> bool:
         with open(dst_path, "w", encoding="utf-8") as f:
             f.write("# AtlasTrinity Configuration (auto-synced)\n")
             f.write(
-                f"# Last sync: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n",
+                f"# Last sync: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n",  # pyre-ignore
             )
             yaml.dump(merged, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 

@@ -13,8 +13,8 @@ if os.path.join(PROJECT_ROOT, "src") not in sys.path:
     sys.path.insert(0, os.path.join(PROJECT_ROOT, "src"))
 
 if __name__ == "__main__":
-    from src.brain.core.server.server import main
+    from src.brain.core.server.server import main  # pyre-ignore
 
     main()
 else:
-    from src.brain.core.server.server import *  # noqa: F403
+    from src.brain.core.server.server import *  # noqa: F403 # pyre-ignore

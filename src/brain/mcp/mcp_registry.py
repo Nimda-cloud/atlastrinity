@@ -7,9 +7,12 @@ Note: This file loads definitions from JSON files in src/brain/data/
 to prevent language server (Pyrefly) stack overflow crashes.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import sys
+from dataclasses import dataclass
 from typing import Any
 
 # Paths to data files
@@ -46,10 +49,16 @@ HACKING_PROTOCOL: str = ""
 MAPS_PROTOCOL: str = ""
 SYSTEM_MAP_PROTOCOL: str = ""
 
-# Cache for frequently accessed data
-_tool_lookup_cache: dict[str, str | None] = {}  # tool_name -> server_name
-_schema_cache_hits: int = 0
-_schema_cache_misses: int = 0
+
+# Internal state
+@dataclass
+class RegistryMetrics:
+    schema_cache_hits: int = 0
+    schema_cache_misses: int = 0
+
+
+_metrics = RegistryMetrics()
+_tool_lookup_cache: dict[str, str | None] = {}
 
 
 def load_registry():
@@ -238,17 +247,15 @@ def get_tool_schema(tool_name: str) -> dict[str, Any] | None:
     Resolves aliases to their canonical form.
     Uses caching for performance.
     """
-    global _schema_cache_hits, _schema_cache_misses
-
     schema = TOOL_SCHEMAS.get(tool_name)
     if schema:
-        _schema_cache_hits += 1
+        _metrics.schema_cache_hits += 1
         if "alias_for" in schema:
             canonical = TOOL_SCHEMAS.get(schema["alias_for"])
             return canonical
         return schema
 
-    _schema_cache_misses += 1
+    _metrics.schema_cache_misses += 1
     return None
 
 
@@ -278,7 +285,7 @@ def get_servers_for_task(task_type: str) -> list[str]:
     """Suggest servers based on task type.
     Now delegates to BehaviorEngine for config-driven classification.
     """
-    from src.brain.behavior.behavior_engine import behavior_engine
+    from src.brain.behavior.behavior_engine import behavior_engine  # pyre-ignore
 
     # Delegate to behavior engine (replaces 80+ lines of hardcoded conditionals)
     servers = behavior_engine.classify_task(task_type)
@@ -306,16 +313,19 @@ def get_tool_names_for_server(server_name: str) -> list[str]:
 
 def get_registry_stats() -> dict[str, Any]:
     """Get statistics about registry usage and cache performance."""
-    total_requests = _schema_cache_hits + _schema_cache_misses
-    cache_hit_rate = (_schema_cache_hits / total_requests * 100) if total_requests > 0 else 0
+    total_requests = _metrics.schema_cache_hits + _metrics.schema_cache_misses
+    cache_hit_rate: float = (
+        (float(_metrics.schema_cache_hits) / total_requests * 100) if total_requests > 0 else 0.0
+    )
 
     return {
         "total_servers": len(SERVER_CATALOG),
         "total_tools": len(TOOL_SCHEMAS),
         "cache_size": len(_tool_lookup_cache),
-        "cache_hits": _schema_cache_hits,
-        "cache_misses": _schema_cache_misses,
-        "cache_hit_rate_pct": round(cache_hit_rate, 2),
+        "cache_hits": _metrics.schema_cache_hits,
+        "cache_misses": _metrics.schema_cache_misses,
+        # Manual rounding to satisfy Pyre2 rounding overload issues
+        "cache_hit_rate_pct": float(int(cache_hit_rate * 100)) / 100.0,
         "schemas_loaded": bool(TOOL_SCHEMAS),
         "catalog_loaded": bool(SERVER_CATALOG),
     }
@@ -380,11 +390,9 @@ def get_protocols_text_for_mode(protocol_names: list[str]) -> str:
 
 def clear_caches() -> None:
     """Clear all internal caches. Useful for testing or after registry reload."""
-    global _schema_cache_hits, _schema_cache_misses  # noqa: PLW0603
-
     _tool_lookup_cache.clear()
-    _schema_cache_hits = 0
-    _schema_cache_misses = 0
+    _metrics.schema_cache_hits = 0
+    _metrics.schema_cache_misses = 0
 
 
 def validate_tool_call(tool_name: str, arguments: dict[str, Any]) -> tuple[bool, str | None]:
@@ -398,7 +406,7 @@ def validate_tool_call(tool_name: str, arguments: dict[str, Any]) -> tuple[bool,
         return True, None  # No schema = cannot validate, pass through
 
     required = schema.get("required", [])
-    missing = [arg for arg in required if arg not in arguments]
+    missing: list[str] = [str(arg) for arg in required if arg not in arguments]
 
     if missing:
         return False, f"Missing required arguments: {', '.join(missing)}"

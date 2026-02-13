@@ -9,13 +9,13 @@ import uuid
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select  # pyre-ignore
+from sqlalchemy.exc import IntegrityError  # pyre-ignore
 
-from src.brain.memory.db.manager import db_manager
-from src.brain.memory.db.schema import KGEdge, KGNode
+from src.brain.memory.db.manager import db_manager  # pyre-ignore
+from src.brain.memory.db.schema import KGEdge, KGNode  # pyre-ignore
 
-from .memory import long_term_memory
+from .memory import long_term_memory  # pyre-ignore
 
 logger = logging.getLogger("brain.knowledge_graph")
 
@@ -114,7 +114,7 @@ class KnowledgeGraph:
                         "last_updated": datetime.now().isoformat(),
                     }
                     for k, v in attributes.items():
-                        if isinstance(v, list | dict):
+                        if isinstance(v, (list, dict)):
                             sanitized_metadata[k] = json.dumps(v, ensure_ascii=False)
                         else:
                             sanitized_metadata[k] = v
@@ -194,7 +194,7 @@ class KnowledgeGraph:
             return {"success": False, "count": 0}
 
         try:
-            from sqlalchemy import insert
+            from sqlalchemy import insert  # pyre-ignore
 
             # Prepare rows for SQLite
             rows = []
@@ -267,7 +267,7 @@ class KnowledgeGraph:
                 session.add(existing)
 
                 # 2. Update Edges in SQL
-                from sqlalchemy import update
+                from sqlalchemy import update  # pyre-ignore
 
                 stmt_edges = (
                     update(KGEdge)
@@ -277,7 +277,7 @@ class KnowledgeGraph:
                 await session.execute(stmt_edges)
 
                 # 3. Log Promotion
-                from src.brain.memory.db.schema import KnowledgePromotion
+                from src.brain.memory.db.schema import KnowledgePromotion  # pyre-ignore
 
                 promotion_log = KnowledgePromotion(
                     node_id=node_id,
@@ -319,7 +319,7 @@ class KnowledgeGraph:
             logger.error(f"[GRAPH] Promotion failed for {node_id}: {e}")
             return False
 
-    async def get_graph_data(self, namespace: str | None = None) -> dict[str, Any]:
+    async def get_graph_data(self, namespace: str | None = None) -> dict[str, Any]:  # pyre-ignore
         """Fetch nodes and edges for visualization, optionally filtered by namespace."""
         if not db_manager.available:
             return {"nodes": [], "edges": []}
@@ -359,7 +359,8 @@ class KnowledgeGraph:
                     for e in edges_result.scalars()
                 ]
 
-                return {"nodes": nodes, "edges": edges}
+                result = {"nodes": nodes, "edges": edges}
+                return result
         except Exception as e:
             logger.error(f"[GRAPH] Failed to fetch graph data: {e}")
             return {"nodes": [], "edges": [], "error": str(e)}

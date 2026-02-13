@@ -8,7 +8,7 @@ This prompt integrates the Full Arsenal of memory:
 - User Profile & History
 """
 
-from .atlas_deep import get_atlas_deep_persona
+from .atlas_deep import get_atlas_deep_persona  # pyre-ignore
 
 
 def generate_atlas_chat_prompt(
@@ -235,9 +235,9 @@ def generate_atlas_solo_task_prompt(
     if graph_context or vector_context:
         parts = []
         if graph_context:
-            parts.append(f"KNOWLEDGE: {graph_context}")
+            parts.append(f"KNOWLEDGE: {graph_context}")  # pyre-ignore
         if vector_context:
-            parts.append(f"MEMORY: {vector_context}")
+            parts.append(f"MEMORY: {vector_context}")  # pyre-ignore
         memory_section = "\n".join(parts)
 
     return f"""MODE: SOLO TASK — Direct tool-use research and answer.

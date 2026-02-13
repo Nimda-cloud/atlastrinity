@@ -1,0 +1,15 @@
+{
+    "source_directories": [
+        "."
+    ],
+    "search_path": [
+        "."
+    ],
+    "site_package_search_functions": [
+        "site.getsitepackages"
+    ],
+    "exclude": [
+        "**/node_modules/**",
+        "**/.venv/**"
+    ]
+}

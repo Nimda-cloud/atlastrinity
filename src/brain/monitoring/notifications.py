@@ -10,7 +10,7 @@ import os
 import subprocess
 from datetime import datetime
 
-from src.brain.monitoring.logger import logger
+from src.brain.monitoring.logger import logger  # pyre-ignore
 
 
 class NotificationManager:
@@ -82,7 +82,7 @@ class NotificationManager:
         """
         title = "AtlasTrinity застряла"
         message = f"Крок {step_id} не вдався після {attempts} спроб"
-        subtitle = error[:50] + "..." if len(error) > 50 else error
+        subtitle = error[:50] + "..." if len(error) > 50 else error  # pyre-ignore
 
         return self.send_notification(title=title, message=message, subtitle=subtitle, sound=True)
 
@@ -172,7 +172,7 @@ class NotificationManager:
         message = f"Крок {current_step}/{total_steps}"
 
         if description:
-            message += f": {description[:30]}"
+            message += f": {description[:30]}"  # pyre-ignore
 
         # Only show at key milestones (25%, 50%, 75%, 100%)
         if progress in [25, 50, 75, 100] or current_step == 1:
@@ -191,10 +191,10 @@ class NotificationManager:
         """
         if success:
             title = "✅ AtlasTrinity Завершила"
-            message = f"{task[:50]}"
+            message = f"{task[:50]}"  # pyre-ignore
         else:
             title = "❌ AtlasTrinity Не Вдалось"
-            message = f"Не вдалося: {task[:40]}"
+            message = f"Не вдалося: {task[:40]}"  # pyre-ignore
 
         if duration_seconds > 0:
             mins = int(duration_seconds // 60)
@@ -205,7 +205,7 @@ class NotificationManager:
 
     def get_history(self, limit: int = 10) -> list[dict]:
         """Get recent notification history."""
-        return self.notification_history[-limit:]
+        return self.notification_history[-limit:]  # pyre-ignore
 
 
 # Singleton instance

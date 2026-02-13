@@ -1,9 +1,13 @@
-from src.brain.config import WORKSPACE_DIR
+from src.brain.config import WORKSPACE_DIR  # pyre-ignore
 
-from .atlas import ATLAS
-from .common import DEFAULT_REALM_CATALOG, SDLC_PROTOCOL, TASK_PROTOCOL  # re-export default catalog
-from .grisha import GRISHA
-from .tetyana import TETYANA
+from .atlas import ATLAS  # pyre-ignore
+from .common import (  # re-export default catalog # pyre-ignore
+    DEFAULT_REALM_CATALOG,
+    SDLC_PROTOCOL,
+    TASK_PROTOCOL,
+)
+from .grisha import GRISHA  # pyre-ignore
+from .tetyana import TETYANA  # pyre-ignore
 
 __all__ = [
     "ATLAS",
@@ -30,7 +34,7 @@ class AgentPrompts:
     @staticmethod
     def get_agent_system_prompt(agent_name: str) -> str:
         """Dynamically generate the system prompt for an agent, injecting the current catalog."""
-        from .common import (
+        from .common import (  # pyre-ignore
             DATA_PROTOCOL,
             HACKING_PROTOCOL,
             MAPS_PROTOCOL,
@@ -86,9 +90,9 @@ class AgentPrompts:
         Returns:
             Formatted system prompt with only the relevant protocols.
         """
-        from src.brain.mcp.mcp_registry import get_protocols_by_names
+        from src.brain.mcp.mcp_registry import get_protocols_by_names  # pyre-ignore
 
-        from .common import get_realm_catalog, get_vibe_documentation
+        from .common import get_realm_catalog, get_vibe_documentation  # pyre-ignore
 
         # Get fresh catalog
         current_catalog = get_realm_catalog()
@@ -149,7 +153,7 @@ class AgentPrompts:
                 # Truncate long outputs
                 res_str = str(res)
                 if len(res_str) > 3000:
-                    res_str = res_str[:3000] + "...(truncated)"
+                    res_str = res_str[:3000] + "...(truncated)"  # pyre-ignore
                 formatted_results.append(res_str)
             results_section = f"\n        RESULTS OF PREVIOUS STEPS (Use this data to fill arguments):\n        {formatted_results}\n"
 

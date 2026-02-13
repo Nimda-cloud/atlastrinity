@@ -172,10 +172,6 @@ line-ending = "auto"
 [tool.pyrefly]
 project_includes = ["."]
 project_excludes = [
-    "src/testing",
-    "src/maintenance", 
-    "src/integrations",
-    "src/tools",
     "tests",
     "scripts",
     "vendor",
@@ -184,3 +180,7 @@ project_excludes = [
     "node_modules",
 ]
 search-path = ["."]
+
+[tool.pyre]
+source_directories = ["."]
+search_path = ["."]

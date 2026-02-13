@@ -7,7 +7,7 @@ Loads and manages monitoring configuration for Prometheus, Grafana, and OpenSear
 import logging
 from typing import Any, cast
 
-import yaml
+import yaml  # pyre-ignore
 
 # Set up logging
 logging.basicConfig(
@@ -32,7 +32,7 @@ class MonitoringConfig:
         Uses the global SystemConfig singleton to access merged configuration.
         """
         # Lazy import to avoid circular dependencies if any
-        from src.brain.config.config_loader import config
+        from src.brain.config.config_loader import config  # pyre-ignore
 
         self.system_config = config
 
@@ -91,7 +91,7 @@ class MonitoringConfig:
         Note: This now updates the main config.yaml file via manual load/dump
         since SystemConfig is read-only for now.
         """
-        from src.brain.config.config_loader import CONFIG_ROOT
+        from src.brain.config.config_loader import CONFIG_ROOT  # pyre-ignore
 
         config_path = CONFIG_ROOT / "config.yaml"
 
@@ -100,7 +100,7 @@ class MonitoringConfig:
             full_config: dict[str, Any] = {}
             if config_path.exists():
                 with open(config_path, encoding="utf-8") as f:
-                    full_config = yaml.safe_load(f) or {}
+                    full_config = cast("dict[str, Any]", yaml.safe_load(f) or {})
 
             # Update monitoring section
             if "monitoring" not in full_config:

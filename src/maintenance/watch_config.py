@@ -1,24 +1,39 @@
-"""
-Configuration Watcher & Auto-Sync
-Monitors `config/*.template` files and automatically syncs them to `~/.config/atlastrinity/`
-preserving variable substitutions.
-"""
+from __future__ import annotations
 
 import os
 import re
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-try:
-    from watchdog.events import FileSystemEventHandler  # type: ignore
-    from watchdog.observers import Observer  # type: ignore
-except ImportError:
-    print("Warning: 'watchdog' module not found. Auto-sync will not work in watch mode.")
+if TYPE_CHECKING:
+    from watchdog.events import FileSystemEventHandler as _BaseHandler  # pyre-ignore
+    from watchdog.observers import Observer  # pyre-ignore
+else:
+    try:
+        from watchdog.events import FileSystemEventHandler as _BaseHandler
+        from watchdog.observers import Observer
+    except ImportError:
+        print("Warning: 'watchdog' module not found. Auto-sync will not work in watch mode.")
 
-    class FileSystemEventHandler:  # type: ignore
-        """Fallback for missing watchdog"""
+        class _BaseHandler:
+            """Fallback for missing watchdog"""
 
-    Observer = None  # type: ignore
+        class Observer:
+            """Fallback for missing watchdog"""
+
+            def schedule(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            def start(self) -> None:
+                pass
+
+            def stop(self) -> None:
+                pass
+
+            def join(self) -> None:
+                pass
+
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -103,7 +118,8 @@ def process_template(src_path: Path, dst_path: Path):
         print(f"Error processing template {src_path}: {e}")
 
 
-class ConfigHandler(FileSystemEventHandler):
+# pyre-ignore[invalid-inheritance]
+class ConfigHandler(_BaseHandler):
     def on_modified(self, event):
         if event.is_directory:
             return
@@ -207,8 +223,8 @@ def main():
     # Also watch .env file if it exists
     env_file = PROJECT_ROOT / ".env"
     if env_file.exists():
-
-        class EnvHandler(FileSystemEventHandler):
+        # pyre-ignore[invalid-inheritance]
+        class EnvHandler(_BaseHandler):
             def on_modified(self, event):
                 if event.src_path == str(env_file):
                     load_env()

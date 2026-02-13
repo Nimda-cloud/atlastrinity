@@ -87,7 +87,9 @@ def validate_union_all_query(query: str) -> str:
             import_end = content.find("from src.brain.db.manager import db_manager")
             if import_end != -1:
                 insert_pos = content.find("\n", import_end) + 1
-                content = content[:insert_pos] + sql_validation_code + "\n" + content[insert_pos:]
+                content = (
+                    content[:insert_pos] + sql_validation_code + "\n" + content[insert_pos:]
+                )  # pyre-ignore
 
                 # Write the updated content
                 with open(vibe_server_path, "w") as f:

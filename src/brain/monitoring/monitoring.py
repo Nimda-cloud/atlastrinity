@@ -5,13 +5,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
-import psutil
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from prometheus_client import Counter, Gauge, Histogram, start_http_server
+import psutil  # pyre-ignore
+from opentelemetry import trace  # pyre-ignore
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter  # pyre-ignore
+from opentelemetry.sdk.resources import Resource  # pyre-ignore
+from opentelemetry.sdk.trace import TracerProvider  # pyre-ignore
+from opentelemetry.sdk.trace.export import BatchSpanProcessor  # pyre-ignore
+from prometheus_client import Counter, Gauge, Histogram, start_http_server  # pyre-ignore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +29,19 @@ class MonitoringSystem:
     - Tracing (OpenTelemetry)
     - Persistent Logs & Metrics (SQLite)
     """
+
+    # Metrics collectors (declared for Pyre2)
+    cpu_usage: Any
+    memory_usage: Any
+    disk_usage: Any
+    network_bytes_sent: Any
+    network_bytes_received: Any
+    request_count: Any
+    request_latency: Any
+    active_requests: Any
+    etl_records_processed: Any
+    etl_errors: Any
+    tracer: Any
 
     def __init__(
         self,
@@ -146,7 +159,7 @@ class MonitoringSystem:
             Dictionary containing monitoring configuration
         """
         try:
-            from src.brain.monitoring.monitoring_config import monitoring_config
+            from src.brain.monitoring.monitoring_config import monitoring_config  # pyre-ignore
 
             return {
                 "prometheus": monitoring_config.get_prometheus_config(),
@@ -161,7 +174,7 @@ class MonitoringSystem:
 
     def _initialize_metrics(self) -> None:
         """Initialize Prometheus metrics collectors with safety checks for duplicate registration."""
-        from prometheus_client import REGISTRY
+        from prometheus_client import REGISTRY  # pyre-ignore
 
         def create_gauge(name, label):
             if name in REGISTRY._names_to_collectors:

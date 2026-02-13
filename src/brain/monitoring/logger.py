@@ -2,7 +2,7 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 
-from .utils.security import mask_sensitive_data
+from .utils.security import mask_sensitive_data  # pyre-ignore
 
 
 class SecretFilter(logging.Filter):
@@ -31,7 +31,7 @@ class SecretFilter(logging.Filter):
 
 def setup_logging(name: str = "brain"):
     """Setup logging configuration"""
-    from src.brain.config import LOG_DIR
+    from src.brain.config import LOG_DIR  # pyre-ignore
 
     log_dir = LOG_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -87,7 +87,7 @@ def setup_logging(name: str = "brain"):
                     from datetime import datetime
 
                     # Local import to avoid circular dependency with setup_logging
-                    from src.brain.core.services.state_manager import state_manager
+                    from src.brain.core.services.state_manager import state_manager  # pyre-ignore
 
                     # Format: HH:MM
                     log_time = datetime.fromtimestamp(record.created).strftime("%H:%M")

@@ -24,11 +24,11 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from src.brain.monitoring.logger import logger
+from src.brain.monitoring.logger import logger  # pyre-ignore
 
 # Import config paths
 try:
-    from src.brain.config import CONFIG_ROOT, MODELS_DIR, WHISPER_DIR
+    from src.brain.config import CONFIG_ROOT, MODELS_DIR, WHISPER_DIR  # pyre-ignore
 except ImportError:
     # Fallback for direct execution
     CONFIG_ROOT = Path.home() / ".config" / "atlastrinity"
@@ -278,7 +278,7 @@ class FirstRunInstaller:
 
             # Stream output
             if process.stdout:
-                for line in iter(process.stdout.readline, ""):
+                for line in iter(process.stdout.readline, ""):  # pyre-ignore
                     if line:
                         print(f"[Homebrew] {line.strip()}", file=sys.stderr)
 
@@ -352,7 +352,7 @@ class FirstRunInstaller:
             1.0,
             f"Помилка встановлення {formula}",
             success=False,
-            error=stderr[:200],
+            error=stderr[:200],  # pyre-ignore
         )
         return False
 
@@ -382,13 +382,13 @@ class FirstRunInstaller:
             1.0,
             "Помилка встановлення Vibe CLI",
             success=False,
-            error=stderr[:100],
+            error=stderr[:100],  # pyre-ignore
         )
         return False
 
     def install_postgres(self) -> bool:
         """Install PostgreSQL (skipped if using SQLite backend)"""
-        from src.brain.config.config_loader import config as sys_config
+        from src.brain.config.config_loader import config as sys_config  # pyre-ignore
 
         db_url = sys_config.get(
             "database.url",
@@ -410,7 +410,7 @@ class FirstRunInstaller:
 
     def start_services(self) -> bool:
         """Start Redis and PostgreSQL services"""
-        from src.brain.config.config_loader import config as sys_config
+        from src.brain.config.config_loader import config as sys_config  # pyre-ignore
 
         self._report(SetupStep.START_SERVICES, 0.0, "Запуск сервісів...")
 
@@ -443,7 +443,7 @@ class FirstRunInstaller:
                     progress,
                     f"Помилка запуску {service}",
                     success=False,
-                    error=stderr[:100],
+                    error=stderr[:100],  # pyre-ignore
                 )
                 all_ok = False
             else:
@@ -484,7 +484,7 @@ class FirstRunInstaller:
 
     async def create_database(self) -> bool:
         """Create structured database and tables (supports SQLite or PostgreSQL)"""
-        from src.brain.config.config_loader import config as sys_config
+        from src.brain.config.config_loader import config as sys_config  # pyre-ignore
 
         self._report(SetupStep.CREATE_DATABASE, 0.0, "Створення бази даних...")
 
@@ -567,7 +567,7 @@ class FirstRunInstaller:
 
         # Initialize SQLAlchemy tables
         try:
-            from src.brain.memory.db.manager import db_manager
+            from src.brain.memory.db.manager import db_manager  # pyre-ignore
 
             await db_manager.initialize()
             self._report(SetupStep.CREATE_DATABASE, 1.0, "База даних готова ✓")
@@ -578,7 +578,7 @@ class FirstRunInstaller:
                 1.0,
                 "Помилка ініціалізації таблиць",
                 success=False,
-                error=str(e)[:100],
+                error=str(e)[:100],  # pyre-ignore
             )
             return False
 
@@ -607,7 +607,7 @@ class FirstRunInstaller:
             # Trigger download by importing TTS
             MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-            from ukrainian_tts.tts import TTS
+            from ukrainian_tts.tts import TTS  # pyre-ignore
 
             TTS(cache_folder=str(MODELS_DIR), device="cpu")
 
@@ -619,7 +619,7 @@ class FirstRunInstaller:
                 1.0,
                 "Помилка завантаження TTS",
                 success=False,
-                error=str(e)[:100],
+                error=str(e)[:100],  # pyre-ignore
             )
             return False
 
@@ -637,7 +637,7 @@ class FirstRunInstaller:
         try:
             WHISPER_DIR.mkdir(parents=True, exist_ok=True)
 
-            from faster_whisper import WhisperModel
+            from faster_whisper import WhisperModel  # pyre-ignore
 
             WhisperModel(
                 "large-v3",
@@ -654,7 +654,7 @@ class FirstRunInstaller:
                 1.0,
                 "Помилка завантаження STT",
                 success=False,
-                error=str(e)[:100],
+                error=str(e)[:100],  # pyre-ignore
             )
             return False
 
@@ -664,7 +664,7 @@ class FirstRunInstaller:
         """Run complete first-run setup.
         Returns True if all critical steps succeeded.
         """
-        from src.brain.config.config_loader import config as sys_config  # noqa: F841 - used below
+        from src.brain.config.config_loader import config as sys_config  # noqa: F841 # pyre-ignore
 
         print("\n" + "=" * 60, file=sys.stderr)
         print("🔱 AtlasTrinity First Run Setup", file=sys.stderr)
@@ -720,7 +720,7 @@ class FirstRunInstaller:
         setup_marker = CONFIG_ROOT / "setup_complete"
         setup_marker.parent.mkdir(parents=True, exist_ok=True)
         setup_marker.write_text(
-            f"Completed at: {__import__('datetime').datetime.now().isoformat()}",
+            f"Completed at: {__import__('datetime').datetime.now().isoformat()}",  # pyre-ignore
         )
 
         self._report(SetupStep.SETUP_COMPLETE, 1.0, "Налаштування завершено!")

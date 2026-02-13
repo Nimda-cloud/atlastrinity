@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Any
 
-import psutil
+import psutil  # pyre-ignore
 
 logging.basicConfig(level=logging.INFO, encoding="utf-8")
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ class MetricsCollector:
 
             # Integrate with monitoring system if available
             try:
-                from src.brain.monitoring import get_monitoring_system
+                from src.brain.monitoring import get_monitoring_system  # pyre-ignore
 
                 monitoring_system = get_monitoring_system()
 

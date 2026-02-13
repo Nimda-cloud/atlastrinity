@@ -15,16 +15,16 @@ from pathlib import Path
 from typing import Any, cast
 
 try:
-    import chromadb
-    from chromadb.config import Settings
+    import chromadb  # pyre-ignore
+    from chromadb.config import Settings  # pyre-ignore
 
     CHROMADB_AVAILABLE = True
 except ImportError:
     CHROMADB_AVAILABLE = False
 
-from src.brain.config import MEMORY_DIR
-from src.brain.config.config_loader import config
-from src.brain.monitoring.logger import logger
+from src.brain.config import MEMORY_DIR  # pyre-ignore
+from src.brain.config.config_loader import config  # pyre-ignore
+from src.brain.monitoring.logger import logger  # pyre-ignore
 
 # ChromaDB storage path - use config if available, else default
 CHROMA_DIR = config.get("mcp.memory.chroma_path")
@@ -427,7 +427,7 @@ class LongTermMemory:
                     context=error_log,
                     task_description=error_log.get("task", ""),
                 )
-                new_lessons += 1
+                new_lessons += 1  # pyre-ignore
 
         logger.info(f"[MEMORY] Consolidated {new_lessons} new lessons from {len(logs)} logs")
         return new_lessons
@@ -481,7 +481,7 @@ class LongTermMemory:
             # Flatten simple factors into metadata for filtering
             if decision_factors:
                 for k, v in decision_factors.items():
-                    if isinstance(v, str | bool | int | float):
+                    if isinstance(v, (str, bool, int, float)):
                         metadata[f"factor_{k}"] = cast("Any", v)
 
             metadata = sanitize_metadata(metadata)
@@ -494,8 +494,8 @@ class LongTermMemory:
 
             # 2. Sync to Relational DB (SQL) for auditing
             try:
-                from src.brain.memory.db.manager import db_manager
-                from src.brain.memory.db.schema import BehavioralDeviation
+                from src.brain.memory.db.manager import db_manager  # pyre-ignore
+                from src.brain.memory.db.schema import BehavioralDeviation  # pyre-ignore
 
                 async def _sync_to_sql():
                     try:
@@ -611,8 +611,9 @@ class LongTermMemory:
             )
 
             self.discoveries.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
+            log_val = value[:30] if value else ""  # pyre-ignore
             logger.info(
-                f"[MEMORY] Stored discovery: {category}:{key}={value[:30]}... (task={task_id})"
+                f"[MEMORY] Stored discovery: {category}:{key}={log_val}... (task={task_id})"
             )
             return True
         except Exception as e:

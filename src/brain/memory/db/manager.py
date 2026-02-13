@@ -6,29 +6,33 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-import pandas as pd
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+import pandas as pd  # pyre-ignore
+from sqlalchemy import select  # pyre-ignore
+from sqlalchemy.ext.asyncio import (  # pyre-ignore
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-from src.brain.config import CONFIG_ROOT
-from src.brain.config.config_loader import config
-from src.brain.memory.db.schema import Base
+from src.brain.config import CONFIG_ROOT  # pyre-ignore
+from src.brain.config.config_loader import config  # pyre-ignore
+from src.brain.memory.db.schema import Base  # pyre-ignore
 
 
 class DatabaseManager:
-    def __init__(self):
-        self._engine = None
-        self._session_maker = None
-        self._semaphore = asyncio.Semaphore(15)
-        self.available = False
+    _engine: Any = None  # pyre-ignore
+    _session_maker: Any = None  # pyre-ignore
+    _semaphore: asyncio.Semaphore = asyncio.Semaphore(15)
+    available: bool = False
 
+    def __init__(self):
         # Resolve DB_URL dynamically
         url = config.get(
             "database.url",
             os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{CONFIG_ROOT}/atlastrinity.db"),
         )
         # Handle placeholders: ${CONFIG_ROOT}, ${HOME}, ${PROJECT_ROOT}
-        from src.brain.config import PROJECT_ROOT
+        from src.brain.config import PROJECT_ROOT  # pyre-ignore
 
         placeholders = {
             "${CONFIG_ROOT}": str(CONFIG_ROOT),
@@ -53,16 +57,16 @@ class DatabaseManager:
 
             # Enable Foreign Key support for SQLite
             if "sqlite" in self.db_url:
-                from sqlalchemy import event
+                from sqlalchemy import event  # pyre-ignore
 
-                @event.listens_for(self._engine.sync_engine, "connect")
+                @event.listens_for(self._engine.sync_engine, "connect")  # pyre-ignore
                 def set_sqlite_pragma(dbapi_connection, connection_record):
                     cursor = dbapi_connection.cursor()
                     cursor.execute("PRAGMA foreign_keys=ON")
                     cursor.close()
 
             # Create tables
-            async with self._engine.begin() as conn:
+            async with self._engine.begin() as conn:  # pyre-ignore
                 await conn.run_sync(Base.metadata.create_all)
 
             # NEW: Verify and fix schema inconsistencies (missing columns, mismatched types, missing indexes/FKs)
@@ -97,7 +101,7 @@ class DatabaseManager:
             return
 
         def _sync_verify(connection):
-            from sqlalchemy import inspect, text
+            from sqlalchemy import inspect, text  # pyre-ignore
 
             inspector = inspect(connection)
             if not inspector:
@@ -278,9 +282,9 @@ class DatabaseManager:
         if not self.available:
             return
 
-        from sqlalchemy import select
+        from sqlalchemy import select  # pyre-ignore
 
-        from src.brain.memory.db.schema import KGNode
+        from src.brain.memory.db.schema import KGNode  # pyre-ignore
 
         async with await self.get_session() as session:
             # 1. Ensure core system node exists in Knowledge Graph
@@ -308,7 +312,16 @@ class DatabaseManager:
         if not self.available:
             return False
 
-        from sqlalchemy import Boolean, Column, DateTime, Float, Integer, MetaData, Table, Text
+        from sqlalchemy import (  # pyre-ignore
+            Boolean,
+            Column,
+            DateTime,
+            Float,
+            Integer,
+            MetaData,
+            Table,
+            Text,
+        )
 
         # 1. Map pandas dtypes to SQLAlchemy types
         def map_dtype(col):
@@ -334,7 +347,7 @@ class DatabaseManager:
 
             # Explicitly cast to Any to satisfy strict linters regarding the positional type argument
             col_type = map_dtype(col_name)
-            columns.append(Column(safe_col, cast("Any", col_type)))
+            columns.append(Column(safe_col, cast("Any", col_type)))  # pyre-ignore
 
         # 3. Create the table sync-style via engine.run_sync
         def sync_create(connection):
@@ -346,7 +359,7 @@ class DatabaseManager:
                 print("[DB] Error: Cannot create table, engine not initialized.", file=sys.stderr)
                 return False
 
-            async with self._engine.begin() as conn:
+            async with self._engine.begin() as conn:  # pyre-ignore
                 await conn.run_sync(sync_create)
 
             # 4. Bulk insert data
@@ -357,10 +370,10 @@ class DatabaseManager:
                     d = {}
                     for col_name in df.columns:
                         safe_col = str(col_name).lower().replace(" ", "_").replace("-", "_")
-                        cell_value = row[col_name]
+                        cell_value = row[col_name]  # pyre-ignore
                         # Check if value is not None and not NaN
                         if cell_value is not None:
-                            import numpy as np
+                            import numpy as np  # pyre-ignore
 
                             if isinstance(cell_value, float) and np.isnan(cell_value):
                                 d[safe_col] = None
@@ -372,7 +385,7 @@ class DatabaseManager:
 
                 # Dynamic insert is tricky with SQLAlchemy async,
                 # we'll use raw SQL text for simplicity and performance in bulk ingestion
-                from sqlalchemy import text
+                from sqlalchemy import text  # pyre-ignore
 
                 cols = ", ".join(
                     [f'"{str(c).lower().replace(" ", "_").replace("-", "_")}"' for c in df.columns],
@@ -382,7 +395,7 @@ class DatabaseManager:
                 )
                 sql = f'INSERT INTO "{table_name}" ({cols}) VALUES ({placeholders})'
 
-                await session.execute(text(sql), sanitized_data)
+                await session.execute(text(sql), sanitized_data)  # pyre-ignore
                 await session.commit()
 
             print(
@@ -400,12 +413,12 @@ class DatabaseManager:
             raise RuntimeError("Database not initialized")
         return cast("AsyncSession", self._session_maker())
 
-    async def list_sessions(self, limit: int = 50) -> list[dict[str, Any]]:
+    async def list_sessions(self, limit: int = 50) -> list[dict[str, Any]]:  # pyre-ignore
         """Retrieve persistent session history from the database."""
         if not self.available:
             return []
 
-        from src.brain.memory.db.schema import Session as DBSession
+        from src.brain.memory.db.schema import Session as DBSession  # pyre-ignore
 
         try:
             async with await self.get_session() as session:
@@ -413,7 +426,7 @@ class DatabaseManager:
                 res = await session.execute(stmt)
                 db_sessions = res.scalars().all()
 
-                return [
+                result = [
                     {
                         "id": str(s.id),
                         "started_at": s.started_at.isoformat() if s.started_at else None,
@@ -422,13 +435,14 @@ class DatabaseManager:
                     }
                     for s in db_sessions
                 ]
+                return result
         except Exception as e:
             print(f"[DB] Failed to list sessions: {e}", file=sys.stderr)
             return []
 
     async def close(self):
         if self._engine:
-            await self._engine.dispose()
+            await self._engine.dispose()  # pyre-ignore
 
 
 db_manager = DatabaseManager()

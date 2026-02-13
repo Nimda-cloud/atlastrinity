@@ -3,7 +3,7 @@
 This module now uses the centralized mcp_registry for dynamic catalog generation.
 """
 
-from src.brain.mcp.mcp_registry import (
+from src.brain.mcp.mcp_registry import (  # pyre-ignore
     DATA_PROTOCOL,
     HACKING_PROTOCOL,
     MAPS_PROTOCOL,

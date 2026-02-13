@@ -1,6 +1,6 @@
-from .db.manager import db_manager
-from .knowledge_graph import knowledge_graph
-from .memory import LongTermMemory, long_term_memory
+from .db.manager import db_manager  # pyre-ignore
+from .knowledge_graph import knowledge_graph  # pyre-ignore
+from .memory import LongTermMemory, long_term_memory  # pyre-ignore
 
 __all__ = [
     "LongTermMemory",

@@ -19,10 +19,7 @@ lint:all:
     06-pyright:
       run: npx pyright src scripts
     07-pyrefly:
-      run: |
-        echo "ℹ️  Pyrefly skipped: Import resolution incompatible with src.brain.* structure"
-        echo "   ✓ Pyright (06-pyright) provides comprehensive type checking"
-        exit 0
+      run: .venv/bin/pyrefly check src
     08-complexity:
       run: .venv/bin/xenon --max-absolute F --max-modules D --max-average C -i testing,maintenance,integrations src
     09-bandit:
@@ -36,6 +33,11 @@ lint:all:
       run: npm run lint:security
     13-yaml-sync:
       run: .venv/bin/python src/maintenance/config_sync.py
+    # === CI/CD ===
+    14-actionlint:
+      run: actionlint .github/workflows/*.yml
+    15-cicd-security:
+      run: .venv/bin/zizmor .github/workflows/*.yml --min-severity high
 
 pre-commit:
   parallel: false

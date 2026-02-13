@@ -204,13 +204,13 @@ def check_system_tools():
 
     # 3. Check other tools (includes all 13 linters from lint:all + build tools)
     tools = [
-        "bun",
-        "swift",
-        "npm",
-        "vibe",
-        "gh",
-        "oxlint",
-        "knip",
+        "safety",
+        "detect-secrets",
+        "gcloud",
+        "actionlint",
+    ]
+    # Python tools that live in .venv/bin
+    venv_tools = {
         "ruff",
         "pyrefly",
         "vulture",
@@ -218,10 +218,8 @@ def check_system_tools():
         "xenon",
         "safety",
         "detect-secrets",
-        "gcloud",
-    ]
-    # Python tools that live in .venv/bin
-    venv_tools = {"ruff", "pyrefly", "vulture", "bandit", "xenon", "safety", "detect-secrets"}
+        "zizmor",
+    }
     missing = []
 
     for tool in tools:
@@ -631,6 +629,7 @@ def install_brew_deps():
     # Формули (CLI tools) - SQLite doesn't need server, only Redis for caching
     formulas = {
         "redis": "redis-cli",  # Redis для кешування активних сесій
+        "actionlint": "actionlint",
     }
 
     # Casks (GUI apps)

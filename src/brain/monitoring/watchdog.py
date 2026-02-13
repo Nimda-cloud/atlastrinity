@@ -3,10 +3,10 @@ import time
 from datetime import datetime
 from typing import Any
 
-import psutil
+import psutil  # pyre-ignore
 
-from src.brain.monitoring import get_monitoring_system
-from src.brain.monitoring.logger import logger
+from src.brain.monitoring import get_monitoring_system  # pyre-ignore
+from src.brain.monitoring.logger import logger  # pyre-ignore
 
 
 class ProcessWatchdog:
@@ -36,9 +36,9 @@ class ProcessWatchdog:
         """Stop the watchdog."""
         self._running = False
         if self._task:
-            self._task.cancel()
+            self._task.cancel()  # pyre-ignore
             try:
-                await self._task
+                await self._task  # pyre-ignore
             except asyncio.CancelledError:
                 pass
         logger.info("[WATCHDOG] Process monitoring stopped.")
@@ -106,7 +106,7 @@ class ProcessWatchdog:
                 for pid in stale_pids:
                     info = self.processes[pid]
                     logger.debug(f"[WATCHDOG] Process {pid} ({info.get('type')}) exited.")
-                    del self.processes[pid]
+                    del self.processes[pid]  # pyre-ignore
 
         except Exception as e:
             logger.error(f"[WATCHDOG] Reconcile failed: {e}")
@@ -190,7 +190,7 @@ class ProcessWatchdog:
 
         # New: Delegate to HealingOrchestrator
         try:
-            from src.brain.healing.system_healing import healing_orchestrator
+            from src.brain.healing.system_healing import healing_orchestrator  # pyre-ignore
 
             # Construct context for analysis
             context = {

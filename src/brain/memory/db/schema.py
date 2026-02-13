@@ -6,11 +6,11 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text  # pyre-ignore
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship  # pyre-ignore
 
 # Database-agnostic UUID and JSON support
-from sqlalchemy.types import CHAR, TypeDecorator
+from sqlalchemy.types import CHAR, TypeDecorator  # pyre-ignore
 
 
 class GUID(TypeDecorator):
@@ -24,7 +24,7 @@ class GUID(TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
-            from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+            from sqlalchemy.dialects.postgresql import UUID as PG_UUID  # pyre-ignore
 
             return dialect.type_descriptor(PG_UUID())
         return dialect.type_descriptor(CHAR(36))

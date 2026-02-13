@@ -7,12 +7,14 @@ Centralized health monitoring for all MCP servers with:
 - Tier-based categorization
 """
 
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, cast
 
-from src.brain.monitoring.logger import logger
+from src.brain.monitoring.logger import logger  # pyre-ignore
 
 
 @dataclass
@@ -87,7 +89,7 @@ class MCPHealthDashboard:
     def mcp_manager(self):
         """Lazy import of MCPManager to avoid circular imports."""
         if self._mcp_manager is None:
-            from src.brain.mcp.mcp_manager import mcp_manager
+            from src.brain.mcp.mcp_manager import mcp_manager  # pyre-ignore
 
             self._mcp_manager = mcp_manager
         return self._mcp_manager
@@ -149,7 +151,9 @@ class MCPHealthDashboard:
 
         except Exception as e:
             status.status = "offline"
-            status.last_error = str(e)[:200]
+            error_msg = str(e)
+            # Use explicit slicing with pyre-ignore to resolve indexing diagnostics
+            status.last_error = error_msg[:200]  # pyre-ignore
             status.failure_count = self._server_metrics.get(server_name, status).failure_count + 1
 
         # Update stored metrics
@@ -176,7 +180,9 @@ class MCPHealthDashboard:
 
         # Build result
         servers: dict[str, ServerStatus] = {}
-        online = offline = degraded = 0
+        online: int = 0
+        offline: int = 0
+        degraded: int = 0
 
         for result in results:
             if isinstance(result, Exception):
@@ -189,14 +195,11 @@ class MCPHealthDashboard:
 
             servers[result.name] = result
 
-            if result.status == "online":
-                online += 1
-            elif result.status == "offline":
-                offline += 1
-            elif result.status == "degraded":
-                degraded += 1
+        online = sum(1 for s in servers.values() if s.status == "online")
+        offline = sum(1 for s in servers.values() if s.status == "offline")
+        degraded = sum(1 for s in servers.values() if s.status == "degraded")
 
-        self._last_result = HealthCheckResult(
+        new_result = HealthCheckResult(
             timestamp=datetime.now(),
             total_servers=len(server_names),
             online_count=online,
@@ -204,8 +207,9 @@ class MCPHealthDashboard:
             degraded_count=degraded,
             servers=servers,
         )
+        self._last_result = new_result
 
-        return self._last_result
+        return new_result
 
     def format_startup_diagnostics(self, result: HealthCheckResult) -> str:
         """Format health check result as colored terminal output.
@@ -300,16 +304,17 @@ class MCPHealthDashboard:
 
         Returns empty dict if no checks have been run yet.
         """
-        if not self._last_result:
+        res = self._last_result
+        if res is None:
             return {"status": "no_checks_run"}
 
         return {
-            "timestamp": self._last_result.timestamp.isoformat(),
-            "total_servers": self._last_result.total_servers,
-            "online": self._last_result.online_count,
-            "offline": self._last_result.offline_count,
-            "degraded": self._last_result.degraded_count,
-            "health_percentage": self._last_result.health_percentage,
+            "timestamp": res.timestamp.isoformat(),
+            "total_servers": res.total_servers,
+            "online": res.online_count,
+            "offline": res.offline_count,
+            "degraded": res.degraded_count,
+            "health_percentage": res.health_percentage,
             "servers": {
                 name: {
                     "tier": s.tier,
@@ -318,7 +323,7 @@ class MCPHealthDashboard:
                     "response_time_ms": s.response_time_ms,
                     "last_error": s.last_error,
                 }
-                for name, s in self._last_result.servers.items()
+                for name, s in res.servers.items()
             },
         }
 

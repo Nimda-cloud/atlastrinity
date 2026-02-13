@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import os
@@ -252,7 +254,7 @@ class MCPManager:
         except Exception as e:
             logger.debug(f"Orphan cleanup failed for {server_name}: {e}")
 
-    async def get_session(self, server_name: str) -> "ClientSession | None":
+    async def get_session(self, server_name: str) -> ClientSession | None:
         """Get or create a persistent session for the server"""
         if _McpClientSession is None or StdioServerParameters is None or stdio_client is None:
             logger.error("MCP Python package is not installed; MCP features are unavailable")
@@ -277,7 +279,7 @@ class MCPManager:
         self,
         server_name: str,
         config: dict[str, Any],
-    ) -> "ClientSession | None":
+    ) -> ClientSession | None:
         """Establish a new connection to an MCP server"""
         default_timeout = float(
             self.config.get("mcpServers", {}).get("_defaults", {}).get("connect_timeout", 30.0),

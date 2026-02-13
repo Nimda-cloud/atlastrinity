@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-import pandas as pd
+import pandas as pd  # pyre-ignore
 
-from src.brain.memory.knowledge_graph import knowledge_graph
+from src.brain.memory.knowledge_graph import knowledge_graph  # pyre-ignore
 
 logger = logging.getLogger("brain.semantic_linker")
 
@@ -74,7 +74,7 @@ class SemanticLinker:
                         links.append(
                             {
                                 "source": new_node_id,
-                                "target": ds_node["id"],
+                                "target": str(ds_node["id"]),  # pyre-ignore
                                 "relation": "LINKED_TO",
                                 "attributes": {
                                     "shared_key": n_key,

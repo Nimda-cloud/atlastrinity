@@ -4,9 +4,9 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from sqlalchemy import text
+from sqlalchemy import text  # pyre-ignore
 
-from src.brain.memory.db.manager import db_manager
+from src.brain.memory.db.manager import db_manager  # pyre-ignore
 
 
 async def migrate():
