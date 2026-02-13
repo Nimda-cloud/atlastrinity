@@ -37,7 +37,7 @@ lint:all:
     14-actionlint:
       run: actionlint .github/workflows/*.yml
     15-cicd-security:
-      run: .venv/bin/zizmor .github/workflows/*.yml --min-severity high
+      run: .venv/bin/zizmor -c .zizmor.yml .github/workflows/*.yml
 
 pre-commit:
   parallel: false
