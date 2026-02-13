@@ -98,9 +98,9 @@ CASCADE_EARLY_ABORT = 15
 # Mode fallback chain — ordered list of alternative modes to try on failure
 _FALLBACK_CHAIN: dict[str, list[str]] = {
     "cascade": ["local", "proxy", "direct"],
-    "local":   ["cascade", "proxy", "direct"],
-    "proxy":   ["direct"],
-    "direct":  ["proxy"],
+    "local": ["cascade", "proxy", "direct"],
+    "proxy": ["direct"],
+    "direct": ["proxy"],
 }
 
 # ─── Proto Binary Helpers ────────────────────────────────────────────────────
@@ -373,8 +373,7 @@ class WindsurfLLM(BaseChatModel):
         if self.model_name not in WINDSURF_MODELS:
             available = ", ".join(sorted(WINDSURF_MODELS.keys()))
             print(
-                f"Warning: unknown Windsurf model '{self.model_name}'. "
-                f"Available: {available}",
+                f"Warning: unknown Windsurf model '{self.model_name}'. Available: {available}",
                 file=sys.stderr,
             )
 
@@ -1394,7 +1393,9 @@ class WindsurfLLM(BaseChatModel):
                 )
 
         return ChatResult(
-            generations=[ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {last_error}"))],
+            generations=[
+                ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {last_error}"))
+            ],
         )
 
     async def _call_mode_async(self, mode: str, messages: list[BaseMessage]) -> ChatResult:
@@ -1404,18 +1405,18 @@ class WindsurfLLM(BaseChatModel):
         if mode == "cascade":
             content = await asyncio.to_thread(self._call_cascade, messages)
             return self._process_content(content)
-        elif mode == "local":
+        if mode == "local":
             payload = self._build_connect_rpc_payload(messages)
             content = await self._call_local_ls_async(payload)
             return self._process_content(content)
-        elif mode == "direct":
+        if mode == "direct":
             payload = self._build_connect_rpc_payload(messages)
             content = await self._call_direct_async(payload)
             return self._process_content(content)
-        else:  # proxy
-            payload = self._build_openai_payload(messages)
-            data = await self._call_proxy_async(payload)
-            return self._process_openai_result(data, messages)
+        # proxy
+        payload = self._build_openai_payload(messages)
+        data = await self._call_proxy_async(payload)
+        return self._process_openai_result(data, messages)
 
     async def _agenerate(
         self,
@@ -1451,11 +1452,14 @@ class WindsurfLLM(BaseChatModel):
                 )
 
         return ChatResult(
-            generations=[ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {last_error}"))],
+            generations=[
+                ChatGeneration(message=AIMessage(content=f"[WINDSURF ERROR] {last_error}"))
+            ],
         )
 
-    def _call_mode_stream(self, mode: str, messages: list[BaseMessage],
-                          on_delta: Callable[[str], None] | None = None) -> str:
+    def _call_mode_stream(
+        self, mode: str, messages: list[BaseMessage], on_delta: Callable[[str], None] | None = None
+    ) -> str:
         """Execute a single mode for streaming, returning raw content string."""
         if mode == "cascade":
             try:

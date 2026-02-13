@@ -1200,7 +1200,7 @@ def install_deps():
         "eslint",
         "pyright",
         "typescript",
-        "vite"
+        "vite",
     ]
 
     missing_packages = []
@@ -1211,7 +1211,7 @@ def install_deps():
                 cwd=PROJECT_ROOT,
                 capture_output=True,
                 text=True,
-                check=False
+                check=False,
             )
             if result.returncode != 0 or "missing" in result.stderr.lower():
                 missing_packages.append(package)
@@ -1223,10 +1223,10 @@ def install_deps():
         print_info("Спроба повторного встановлення...")
         try:
             subprocess.run(
-                ["npm", "install"] + missing_packages,
+                ["npm", "install", *missing_packages],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
-                check=True
+                check=True,
             )
             print_success("Критичні пакети перевстановлено")
         except subprocess.CalledProcessError as e:
