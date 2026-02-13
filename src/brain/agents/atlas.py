@@ -992,7 +992,9 @@ Respond in JSON:
 
             if not getattr(response, "tool_calls", None):
                 if intent == "solo_task" and current_turn == 0:
-                    logger.info("[ATLAS] Solo task detected with no tool calls on turn 0. Forcing turn 1 with Auditor reminder.")
+                    logger.info(
+                        "[ATLAS] Solo task detected with no tool calls on turn 0. Forcing turn 1 with Auditor reminder."
+                    )
                     final_messages.append(response)
                     self._apply_chat_audit_logic(intent, False, current_turn, final_messages)
                     current_turn += 1

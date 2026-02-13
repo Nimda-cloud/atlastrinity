@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T01:02:44.187415 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, src/brain/core/orchestration/request_segmenter.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T00:56:14.360233 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, src/brain/core/orchestration/request_segmenter.py -->
 
