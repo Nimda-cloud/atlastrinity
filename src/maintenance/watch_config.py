@@ -6,15 +6,19 @@ preserving variable substitutions.
 
 import os
 import re
-import sys
 import time
 from pathlib import Path
 
 try:
-    from watchdog.events import FileSystemEventHandler
-    from watchdog.observers import Observer
+    from watchdog.events import FileSystemEventHandler  # type: ignore
+    from watchdog.observers import Observer  # type: ignore
 except ImportError:
-    sys.exit(1)
+    print("Warning: 'watchdog' module not found. Auto-sync will not work in watch mode.")
+
+    class FileSystemEventHandler:  # type: ignore
+        """Fallback for missing watchdog"""
+
+    Observer = None  # type: ignore
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -86,15 +90,17 @@ def process_template(src_path: Path, dst_path: Path):
             try:
                 with open(dst_path, encoding="utf-8") as f:
                     if f.read() == content:
+                        print(f"Skipping {src_path.name} (identical)")
                         return  # Content is identical, skip write
             except Exception:
                 pass  # If can't read, proceed to write
 
+        print(f"Syncing {src_path.name} -> {dst_path}")
         with open(dst_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error processing template {src_path}: {e}")
 
 
 class ConfigHandler(FileSystemEventHandler):
@@ -186,6 +192,10 @@ def main():
     ensure_github_remote_setup()
 
     if args.sync_only:
+        return
+
+    if Observer is None:
+        print("Watchdog not installed, exiting watch mode.")
         return
 
     event_handler = ConfigHandler()

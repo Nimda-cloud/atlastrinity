@@ -962,7 +962,7 @@ tool_routing:
       - interactive_search
       - search_bar
       - search_map
-    priority_server: googlemaps
+    priority_server: xcodebuild
     fallback_server: xcodebuild
     tool_mapping:
       street_view: maps_street_view
@@ -978,21 +978,21 @@ tool_routing:
       search_bar: maps_open_interactive_search
     routing_rules:
       - pattern: 'maps_.*'
-        server: googlemaps
+        server: xcodebuild
       - pattern: '.*location.*'
-        server: googlemaps
+        server: xcodebuild
         tool: maps_geocode
       - pattern: '.*route.*'
-        server: googlemaps
+        server: xcodebuild
         tool: maps_directions
       - pattern: '.*traffic.*'
-        server: googlemaps
+        server: xcodebuild
         tool: maps_distance_matrix
       - pattern: '.*search.*bar.*'
-        server: googlemaps
+        server: xcodebuild
         tool: maps_open_interactive_search
       - pattern: '.*interactive.*'
-        server: googlemaps
+        server: xcodebuild
         tool: maps_open_interactive_search
 
 # =============================================================================
