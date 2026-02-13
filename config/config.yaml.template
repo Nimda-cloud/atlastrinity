@@ -120,10 +120,9 @@ mcp_enhanced:
 
 mcp:
   # === TIER 1: MUST-HAVE (Ядро системи) ===
-  # xcodebuild is the bridge for macos_use and googlemaps — must start first
+  # xcodebuild includes 168+ tools: 94 native + 63 macos-use bridge + 11 googlemaps bridge
+  # macos_use and googlemaps are NOT separate servers — they are bridged through xcodebuild
   xcodebuild:          { enabled: true }
-  macos_use:           { enabled: true }   # via xcodebuild bridge
-  googlemaps:          { enabled: true }   # via xcodebuild bridge
   filesystem:          { enabled: true }
   sequential_thinking:
     enabled: true
