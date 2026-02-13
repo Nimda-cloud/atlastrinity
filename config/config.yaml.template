@@ -59,7 +59,7 @@ models:
   # Default models for different purposes (HYBRID CONFIGURATION)
   # Format: "provider:model_name" to override global provider
   # STRICTLY choose from the allowed lists above.
-  default: "windsurf:deepseek-v3"       # Default LLM for agents
+  default: "copilot:gpt-4o"           # Default LLM for agents (Switched from Windsurf due to quota)
   vision: "copilot:gpt-4o"              # Best for Vision/multimodal tasks
   reasoning: "windsurf:deepseek-r1"     # State-of-the-art Logic reasoning
   code_analysis: "windsurf:kimi-k2.5"   # Fast and optimized for code

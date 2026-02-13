@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T00:11:14.604885 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/build-macos.yml, .githuworkflows/release.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T23:57:28.730801 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/release.yml, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
