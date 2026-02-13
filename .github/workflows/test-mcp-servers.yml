@@ -36,6 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -107,6 +108,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -170,6 +172,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -208,6 +211,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -262,12 +266,17 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.test-tier1-servers.result }}" != "success" ]]; then
+          if [[ "${NEEDS_TEST_TIER1_SERVERS_RESULT}" != "success" ]]; then
             echo "❌ Tier 1 servers failed (critical)"
             exit 1
           fi
-          if [[ "${{ needs.mcp-health-check.result }}" != "success" ]]; then
+          if [[ "${NEEDS_MCP_HEALTH_CHECK_RESULT}" != "success" ]]; then
             echo "❌ MCP health check failed"
             exit 1
           fi
           echo "✅ MCP server tests passed"
+
+        env:
+          NEEDS_TEST_TIER1_SERVERS_RESULT: ${{ needs.test-tier1-servers.result }}
+
+          NEEDS_MCP_HEALTH_CHECK_RESULT: ${{ needs.mcp-health-check.result }}

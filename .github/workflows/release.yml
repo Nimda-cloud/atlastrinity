@@ -37,6 +37,7 @@ jobs:
         with:
           fetch-depth: 0 # Full history for changelog
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -47,16 +48,20 @@ jobs:
         id: get_version
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
+            VERSION="${INPUTS_VERSION}"
           else
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
+        env:
+          INPUTS_VERSION: ${{ inputs.version }}
 
       - name: Generate changelog
         run: |
-          python scripts/ci/generate_changelog.py "v${{ steps.get_version.outputs.version }}"
+          python scripts/ci/generate_changelog.py "v${STEPS_GET_VERSION_OUTPUTS_VERSION}"
+        env:
+          STEPS_GET_VERSION_OUTPUTS_VERSION: ${{ steps.get_version.outputs.version }}
 
       - name: Create release
         id: create_release
@@ -85,6 +90,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -129,9 +135,11 @@ jobs:
       - name: Rename DMG
         run: |
           DMG_PATH=$(find release -name "*.dmg" -maxdepth 1 | head -1)
-          NEW_NAME="AtlasTrinity-v${{ needs.create-release.outputs.version }}-macOS-arm64.dmg"
+          NEW_NAME="AtlasTrinity-v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION}-macOS-arm64.dmg"
           mv "$DMG_PATH" "release/$NEW_NAME"
           echo "DMG_NAME=$NEW_NAME" >> "$GITHUB_ENV"
+        env:
+          NEEDS_CREATE_RELEASE_OUTPUTS_VERSION: ${{ needs.create-release.outputs.version }}
 
       - name: Generate checksums
         run: |
@@ -172,6 +180,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -181,18 +190,19 @@ jobs:
       - name: Send Slack notification
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          NEEDS_CREATE_RELEASE_OUTPUTS_VERSION: ${{ needs.create-release.outputs.version }}
         if: env.SLACK_WEBHOOK_URL != ''
         run: |
           curl -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -d '{
-              "text": "🎉 AtlasTrinity v${{ needs.create-release.outputs.version }} released!",
+              "text": "🎉 AtlasTrinity v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION} released!",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*AtlasTrinity v${{ needs.create-release.outputs.version }}* has been released!\n\n<https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}|View Release>"
+                    "text": "*AtlasTrinity v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION}* has been released!\n\n<https://github.com/${{ github.repository }}/releases/tag/v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION}|View Release>"
                   }
                 }
               ]
@@ -201,9 +211,12 @@ jobs:
 
       - name: Update documentation
         run: |
-          echo "✅ Release v${{ needs.create-release.outputs.version }} completed"
+          echo "✅ Release v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION} completed"
           echo "📦 Assets uploaded"
           echo "📝 Changelog generated"
+
+        env:
+          NEEDS_CREATE_RELEASE_OUTPUTS_VERSION: ${{ needs.create-release.outputs.version }}
 
   # ============================================
   # Status Summary
@@ -220,10 +233,17 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.create-release.result }}" != "success" ]] || \
-             [[ "${{ needs.build-release-dmg.result }}" != "success" ]]; then
+          if [[ "${NEEDS_CREATE_RELEASE_RESULT}" != "success" ]] || \
+             [[ "${NEEDS_BUILD_RELEASE_DMG_RESULT}" != "success" ]]; then
             echo "❌ Release failed"
             exit 1
           fi
-          echo "✅ Release v${{ needs.create-release.outputs.version }} completed successfully"
-          echo "🚀 Download: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}"
+          echo "✅ Release v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION} completed successfully"
+          echo "🚀 Download: https://github.com/${{ github.repository }}/releases/tag/v${NEEDS_CREATE_RELEASE_OUTPUTS_VERSION}"
+
+        env:
+          NEEDS_CREATE_RELEASE_RESULT: ${{ needs.create-release.result }}
+
+          NEEDS_BUILD_RELEASE_DMG_RESULT: ${{ needs.build-release-dmg.result }}
+
+          NEEDS_CREATE_RELEASE_OUTPUTS_VERSION: ${{ needs.create-release.outputs.version }}

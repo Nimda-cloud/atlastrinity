@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -84,6 +85,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -136,6 +138,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -189,6 +192,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -227,6 +231,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -295,6 +300,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -310,14 +316,20 @@ jobs:
             echo "**Run:** #${{ github.run_number }}"
             echo ""
             echo "## Job Results"
-            echo "- Health Check: ${{ needs.health-check.result }}"
-            echo "- Security Scan: ${{ needs.security-scan.result }}"
-            echo "- Performance: ${{ needs.performance-benchmarks.result }}"
-            echo "- Database: ${{ needs.database-check.result }}"
-            echo "- Model APIs: ${{ needs.model-check.result }}"
+            echo "- Health Check: ${NEEDS_HEALTH_CHECK_RESULT}"
+            echo "- Security Scan: ${NEEDS_SECURITY_SCAN_RESULT}"
+            echo "- Performance: ${NEEDS_PERFORMANCE_BENCHMARKS_RESULT}"
+            echo "- Database: ${NEEDS_DATABASE_CHECK_RESULT}"
+            echo "- Model APIs: ${NEEDS_MODEL_CHECK_RESULT}"
           } > health-summary.md
 
           cat health-summary.md
+        env:
+          NEEDS_HEALTH_CHECK_RESULT: ${{ needs.health-check.result }}
+          NEEDS_SECURITY_SCAN_RESULT: ${{ needs.security-scan.result }}
+          NEEDS_PERFORMANCE_BENCHMARKS_RESULT: ${{ needs.performance-benchmarks.result }}
+          NEEDS_DATABASE_CHECK_RESULT: ${{ needs.database-check.result }}
+          NEEDS_MODEL_CHECK_RESULT: ${{ needs.model-check.result }}
 
       - name: Upload summary
         uses: actions/upload-artifact@v4
