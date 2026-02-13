@@ -975,13 +975,17 @@ Respond in JSON:
         user_request: str,
         intent: str,
         on_preamble: Callable[[str, str], Any] | None,
-        available_tools_info: bool,
+        available_tools_info: list[dict[str, Any]],
     ) -> str:
         """Execute the multi-turn chat loop with tool handling and verification."""
         from src.brain.core.services.state_manager import state_manager
 
         current_turn = 0
         MAX_CHAT_TURNS = 5
+
+        # Bind tools to LLM so it can generate structured tool_calls
+        if available_tools_info:
+            llm_instance = llm_instance.bind_tools(available_tools_info)
 
         while current_turn < MAX_CHAT_TURNS:
             response = await llm_instance.ainvoke(final_messages)
@@ -1093,7 +1097,7 @@ Respond in JSON:
             self.llm_deep if (mode_profile and mode_profile.llm_tier == "deep") else self.llm
         )
         result = await self._execute_chat_turns(
-            final_messages, llm_instance, user_request, intent, on_preamble, bool(tools_info)
+            final_messages, llm_instance, user_request, intent, on_preamble, tools_info
         )
         if result == "__ESCALATE__":
             logger.warning("[ATLAS] Solo research reached turn limit. Signaling escalation.")
