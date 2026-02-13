@@ -51,10 +51,19 @@ from providers.windsurf import (
 )
 
 # Resolve the config-driven default model for assertions
+# Must mirror WindsurfLLM.__init__ resolution: env var → config → constant
 try:
     from src.brain.config.config_loader import config as _sys_config
+    from providers.windsurf import WINDSURF_DEFAULT_MODEL as _WS_DEFAULT
 
-    _CONFIG_DEFAULT = _sys_config.get("models.default") or "windsurf-fast"
+    _CONFIG_DEFAULT = (
+        os.getenv("WINDSURF_MODEL")
+        or _sys_config.get("models.default")
+        or _WS_DEFAULT
+    )
+    # If the resolved model isn't a known Windsurf model, fall back
+    if _CONFIG_DEFAULT not in WINDSURF_MODELS:
+        _CONFIG_DEFAULT = _WS_DEFAULT
 except Exception:
     _CONFIG_DEFAULT = "windsurf-fast"
 

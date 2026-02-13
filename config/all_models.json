@@ -230,6 +230,28 @@
     },
     {
       "capabilities": {
+        "family": "grok",
+        "limits": {
+          "max_context_window_tokens": 128000,
+          "max_output_tokens": 8192
+        },
+        "object": "model_capabilities",
+        "supports": {
+          "streaming": true
+        },
+        "tokenizer": "o200k_base",
+        "type": "chat"
+      },
+      "id": "grok-code-fast-1",
+      "model_picker_enabled": true,
+      "name": "Grok Code Fast 1",
+      "object": "model",
+      "preview": false,
+      "vendor": "Windsurf",
+      "version": "grok-code-fast-1"
+    },
+    {
+      "capabilities": {
         "family": "windsurf-fast",
         "limits": {
           "max_context_window_tokens": 32000,
