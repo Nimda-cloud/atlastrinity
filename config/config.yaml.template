@@ -122,13 +122,12 @@ mcp:
   # === TIER 1: MUST-HAVE (Ядро системи) ===
   macos_use:           { enabled: true }
   filesystem:          { enabled: true }
+  xcodebuild:          { enabled: true }
   sequential_thinking:
     enabled: true
     model: "oswe-vscode-secondary"   # Critical for complex reasoning
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
-  googlemaps:          { enabled: true }
-  xcodebuild:          { enabled: true }
   vibe:                { enabled: true }  # Config → vibe_config.toml
   memory:              { enabled: true }
   graph:               { enabled: true }
@@ -142,6 +141,7 @@ mcp:
   tour_guide:          { enabled: true }
 
   # === TIER 3: ADDITIONAL (Додаткові) ===
+  googlemaps:          { enabled: true }
   puppeteer:           { enabled: true }
   context7:            { enabled: true }
   react_devtools:      { enabled: true }
