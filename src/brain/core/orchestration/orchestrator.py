@@ -803,7 +803,11 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
 
                 if m_type == "human" or isinstance(m, HumanMessage):
                     # Handle content which could be string or list (multi-modal)
-                    content = getattr(m, "content", "") if not isinstance(m, dict) else m.get("content", "")
+                    content = (
+                        getattr(m, "content", "")
+                        if not isinstance(m, dict)
+                        else m.get("content", "")
+                    )
                     display_text = ""
                     if isinstance(content, list):
                         for item in content:
@@ -817,7 +821,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                     # Extract timestamp from additional_kwargs or dict
                     timestamp = datetime.now().timestamp()
                     if hasattr(m, "additional_kwargs"):
-                        timestamp = m.additional_kwargs.get("timestamp", timestamp)
+                        timestamp = getattr(m, "additional_kwargs", {}).get("timestamp", timestamp)
                     elif isinstance(m, dict):
                         # Some versions of LC serialization put it in additional_kwargs dict inside kwargs
                         kwargs = m.get("kwargs", {})
@@ -835,16 +839,20 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                     )
                 elif m_type == "ai" or isinstance(m, AIMessage):
                     agent_name = "ATLAS"
-                    if hasattr(m, "name") and m.name:
-                        agent_name = m.name
+                    if hasattr(m, "name") and getattr(m, "name", None):
+                        agent_name = getattr(m, "name", "ATLAS")
                     elif isinstance(m, dict):
                         agent_name = m.get("name") or m.get("kwargs", {}).get("name") or "ATLAS"
 
-                    content = getattr(m, "content", "") if not isinstance(m, dict) else m.get("content", "")
-                    
+                    content = (
+                        getattr(m, "content", "")
+                        if not isinstance(m, dict)
+                        else m.get("content", "")
+                    )
+
                     timestamp = datetime.now().timestamp()
                     if hasattr(m, "additional_kwargs"):
-                        timestamp = m.additional_kwargs.get("timestamp", timestamp)
+                        timestamp = getattr(m, "additional_kwargs", {}).get("timestamp", timestamp)
                     elif isinstance(m, dict):
                         kwargs = m.get("kwargs", {})
                         timestamp = kwargs.get("additional_kwargs", {}).get("timestamp", timestamp)
@@ -1217,6 +1225,13 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                     mode_profile=mode_profile,
                 )
                 if response != "__ESCALATE__":
+                    # Persist response to history so it appears in UI
+                    if self.state and "messages" in self.state:
+                        msg = AIMessage(content=str(response), name="ATLAS")
+                        msg.additional_kwargs["timestamp"] = datetime.now().timestamp()
+                        self.state["messages"].append(msg)
+                        asyncio.create_task(self._save_chat_message("ai", str(response), "atlas"))
+
                     await self._speak("atlas", response)
                     return {"status": "completed", "result": response, "type": intent}
 
