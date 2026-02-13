@@ -1185,6 +1185,56 @@ def install_deps():
         print_error("NPM не знайдено!")
         return False
 
+    # Verify critical npm packages are actually installed
+    print_info("Перевірка встановлення критичних NPM пакетів...")
+    critical_npm_packages = [
+        "lefthook",
+        "@modelcontextprotocol/server-filesystem",
+        "@modelcontextprotocol/server-sequential-thinking",
+        "@modelcontextprotocol/server-puppeteer",
+        "@modelcontextprotocol/server-github",
+        "@modelcontextprotocol/server-memory",
+        "chrome-devtools-mcp",
+        "@biomejs/biome",
+        "oxlint",
+        "eslint",
+        "pyright",
+        "typescript",
+        "vite"
+    ]
+
+    missing_packages = []
+    for package in critical_npm_packages:
+        try:
+            result = subprocess.run(
+                ["npm", "list", package, "--depth=0"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            if result.returncode != 0 or "missing" in result.stderr.lower():
+                missing_packages.append(package)
+        except Exception:
+            missing_packages.append(package)
+
+    if missing_packages:
+        print_warning(f"Деякі критичні пакети не встановлені: {', '.join(missing_packages)}")
+        print_info("Спроба повторного встановлення...")
+        try:
+            subprocess.run(
+                ["npm", "install"] + missing_packages,
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                check=True
+            )
+            print_success("Критичні пакети перевстановлено")
+        except subprocess.CalledProcessError as e:
+            print_error(f"Не вдалося встановити критичні пакети: {e}")
+            return False
+    else:
+        print_success("Всі критичні NPM пакети встановлені")
+
     return True
 
 
