@@ -52,19 +52,19 @@ models:
   #   windsurf: python scripts/windsurf_proxy.py
   # =============================================================================
   
-  provider: "windsurf"                   # LLM provider: copilot | windsurf (Default)
+  provider: "copilot"                   # LLM provider: copilot | windsurf (Default)
 
   # Default models for different purposes (HYBRID CONFIGURATION)
   # Format: "provider:model_name" to override global provider
   # STRICTLY choose from the allowed lists above.
-  default: "windsurf:deepseek-v3"           # Default LLM for agents
+  default: "copilot:gpt-4o"           # Default LLM for agents
   vision: "copilot:gpt-4o"              # Best for Vision/multimodal tasks
-  reasoning: "windsurf:deepseek-v3"          # Reliable logic for multi-turn
-  code_analysis: "windsurf:deepseek-v3"       # General coding tasks
-  consolidation: "windsurf:deepseek-v3"       # Efficient state management
+  reasoning: "copilot:gpt-4o"          # Reliable logic for multi-turn
+  code_analysis: "copilot:gpt-4o"       # General coding tasks
+  consolidation: "copilot:gpt-4o"       # Efficient state management
   
   # Fallbacks (used when primary unavailable)
-  fallback: "windsurf:deepseek-v3"            # Fallback model (most stable)
+  fallback: "copilot:gpt-4.1"            # Fallback model (most stable)
   
   # Sandbox model (used by mcp_sandbox.py)
   sandbox: "copilot:gpt-4o"
