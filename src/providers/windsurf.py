@@ -33,7 +33,7 @@ ContentItem = str | dict[str, Any]
 try:
     from dotenv import load_dotenv
 
-    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
+    load_dotenv("/Users/dev/.config/atlastrinity/.env", override=True)
 except ImportError:
     pass  # dotenv not available, use system env vars
 

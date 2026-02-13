@@ -15,8 +15,6 @@ try:
 except ImportError:
     pass  # dotenv not available, use system env vars
 
-from src.brain.monitoring.logger import logger
-
 import httpx
 import requests
 from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
@@ -29,7 +27,15 @@ from langchain_core.messages import (
 )
 from langchain_core.outputs import ChatGeneration, ChatResult
 from PIL import Image
-from tenacity import retry, retry_if_exception, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from src.brain.monitoring.logger import logger
 
 # Type aliases for better type safety
 ContentItem = str | dict[str, Any]
@@ -455,7 +461,6 @@ class CopilotLLM(BaseChatModel):
 
         try:
             session_token, api_endpoint = self._get_session_token()
-            api_endpoint = "https://api.githubcopilot.com"
 
             headers = {
                 "Authorization": f"Bearer {session_token}",
@@ -610,7 +615,6 @@ class CopilotLLM(BaseChatModel):
 
         try:
             session_token, api_endpoint = self._get_session_token()
-            api_endpoint = "https://api.githubcopilot.com"
             headers = {
                 "Authorization": f"Bearer {session_token}",
                 "Content-Type": "application/json",
@@ -621,10 +625,13 @@ class CopilotLLM(BaseChatModel):
 
             def _is_transient_requests_error(exception: BaseException) -> bool:
                 if isinstance(exception, requests.HTTPError):
-                    return (
-                        exception.response is not None
-                        and exception.response.status_code in [429, 500, 502, 503, 504]
-                    )
+                    return exception.response is not None and exception.response.status_code in [
+                        429,
+                        500,
+                        502,
+                        503,
+                        504,
+                    ]
                 return isinstance(exception, (requests.Timeout, requests.ConnectionError))
 
             @retry(
@@ -649,7 +656,7 @@ class CopilotLLM(BaseChatModel):
             return self._process_json_result(response.json(), messages)
 
         except requests.exceptions.HTTPError as e:
-            return self._handle_vision_fallback(e, headers, payload, messages)
+            return self._handle_vision_fallback(e, headers, payload, messages, api_endpoint)
         except Exception as e:
             return ChatResult(
                 generations=[ChatGeneration(message=AIMessage(content=f"[COPILOT ERROR] {e}"))],
@@ -661,6 +668,7 @@ class CopilotLLM(BaseChatModel):
         headers: dict[str, str],
         payload: dict[str, Any],
         messages: list[BaseMessage],
+        api_endpoint: str = "https://api.githubcopilot.com",
     ) -> ChatResult:
         # Check for Vision error (400) and try fallback
         if not (
@@ -713,7 +721,7 @@ class CopilotLLM(BaseChatModel):
             )
             def _post_retry():
                 return requests.post(
-                    "https://api.githubcopilot.com/chat/completions",
+                    f"{api_endpoint}/chat/completions",
                     headers=headers,
                     json=payload,
                     timeout=300,
@@ -772,7 +780,6 @@ class CopilotLLM(BaseChatModel):
         on_delta: Callable[[str], None] | None = None,
     ) -> AIMessage:
         session_token, api_endpoint = self._get_session_token()
-        api_endpoint = "https://api.githubcopilot.com"
 
         # Only add Vision header when there are actual images in the messages
         has_images = self._has_image(messages)

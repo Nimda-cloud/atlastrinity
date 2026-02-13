@@ -71,7 +71,7 @@ resp = requests.get("https://api.github.com/copilot_internal/v2/token", headers=
 token = resp.json().get("token")
 
 proxy_proc = subprocess.Popen(
-    ["python3", "scripts/copilot_proxy.py"],
+    ["python3", "src/providers/proxy/copilot_vibe_proxy.py"],
     env={**os.environ, "COPILOT_SESSION_TOKEN": token},
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,

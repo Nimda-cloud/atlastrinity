@@ -9,7 +9,7 @@ os.chdir("/Users/hawk/Documents/GitHub/atlastrinity")
 # Start proxy
 print("🚀 Starting Copilot proxy...")
 proxy_proc = subprocess.Popen(
-    ["python3", "scripts/copilot_proxy.py"],
+    ["python3", "src/providers/proxy/copilot_vibe_proxy.py"],
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
 )
