@@ -42,7 +42,7 @@ except ImportError:
 # Single source of truth: config/all_models.json, loaded via model_registry
 
 try:
-    from src.providers.utils.model_registry import WINDSURF_UID_MAP, get_windsurf_models
+    from src.providers.utils.model_registry import get_windsurf_models
 
     WINDSURF_MODELS: dict[str, str] = get_windsurf_models()
 except Exception:
@@ -82,7 +82,7 @@ LS_HEARTBEAT = "/exa.language_server_pb.LanguageServerService/Heartbeat"
 _GRPC_SVC = "/exa.language_server_pb.LanguageServerService/"
 
 # Cascade default model — pick first non-legacy UID from WINDSURF_MODELS
-_NON_LEGACY = [v for k, v in WINDSURF_MODELS.items() if v != "MODEL_CHAT_11121"]
+_NON_LEGACY = [v for _, v in WINDSURF_MODELS.items() if v != "MODEL_CHAT_11121"]
 CASCADE_DEFAULT_MODEL = _NON_LEGACY[0] if _NON_LEGACY else "MODEL_DEEPSEEK_V3"
 
 # Map display names to Cascade-compatible model UIDs
