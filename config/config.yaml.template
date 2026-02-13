@@ -74,7 +74,7 @@ models:
 agents:
   atlas:
     # model: inherited from models.default 
-    deep_model: "oswe-vscode-secondary"  # Raptor reasoning and planning
+    deep_model: "gpt-4o"  # Stable alternative to Raptor
     temperature: 0.7
     max_tokens: 2000                 # Standard chat/task mode
     max_tokens_deep: 12000           # Deep persona mode (increased from 8000)
@@ -102,8 +102,7 @@ agents:
     temperature: 0.3
     max_tokens: 1500
     
-    # Two-Phase Verification Sequential-Thinking (Quantum)
-    verification_reasoning_model: "oswe-vscode-secondary" # Raptor verdict analysis
+    verification_reasoning_model: "gpt-4o" # Stable alternative to Raptor
     verification_temperature: 0.2          # Low temp for precise reasoning
     verification_max_tokens: 4000          # Sufficient for deep analysis
 
@@ -125,7 +124,7 @@ mcp:
   filesystem:          { enabled: true }
   sequential_thinking:
     enabled: true
-    model: "oswe-vscode-secondary"   # Critical for complex reasoning
+    model: "gpt-4o"   # Critical for complex reasoning
 
   # === TIER 2: HIGH PRIORITY (Рекомендовані) ===
   vibe:                { enabled: true }  # Config → vibe_config.toml
@@ -182,7 +181,7 @@ segmentation:
     # provider: "copilot"  # copilot | windsurf (inherited from models.provider)
     
     # Override model for segmentation (optional)
-    model: "gpt-4.1"           # Stable model for semantic analysis
+    model: "gpt-4o"           # Stable model for semantic analysis
     
     # LLM parameters for segmentation
     temperature: 0.1            # Low temperature for consistent segmentation
