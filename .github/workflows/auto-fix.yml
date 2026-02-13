@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
       - name: Check for changes
         id: git-check
         run: |
-          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+          git diff --exit-code || echo "changes=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit and Push changes
         if: steps.git-check.outputs.changes == 'true'
@@ -67,6 +67,6 @@ jobs:
           git config --global user.email 'olegkizyma008-rgb@users.noreply.github.com'
           git add .
           git commit -m "[Auto-Fix] Apply code formatting
-          
+
           Co-authored-by: olegkizyma008-rgb <olegkizyma008-rgb@users.noreply.github.com>"
           git push

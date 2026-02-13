@@ -24,7 +24,7 @@ jobs:
   # ============================================
   # Create Release
   # ============================================
-  
+
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for changelog
+          fetch-depth: 0 # Full history for changelog
           submodules: recursive
 
       - name: Setup Python
@@ -51,7 +51,7 @@ jobs:
           else
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
 
       - name: Generate changelog
@@ -73,13 +73,13 @@ jobs:
   # ============================================
   # Build Release Assets
   # ============================================
-  
+
   build-release-dmg:
     name: Build Release DMG
     runs-on: macos-latest
     needs: create-release
     env:
-      DMG_NAME: "" # Silence context warning, will be set via $GITHUB_ENV
+      DMG_NAME: '' # Silence context warning, will be set via $GITHUB_ENV
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -128,15 +128,15 @@ jobs:
 
       - name: Rename DMG
         run: |
-          DMG_PATH=$(ls release/*.dmg | head -1)
+          DMG_PATH=$(find release -name "*.dmg" -maxdepth 1 | head -1)
           NEW_NAME="AtlasTrinity-v${{ needs.create-release.outputs.version }}-macOS-arm64.dmg"
           mv "$DMG_PATH" "release/$NEW_NAME"
-          echo "DMG_NAME=$NEW_NAME" >> $GITHUB_ENV
+          echo "DMG_NAME=$NEW_NAME" >> "$GITHUB_ENV"
 
       - name: Generate checksums
         run: |
           cd release
-          shasum -a 256 *.dmg > checksums.txt
+          shasum -a 256 ./*.dmg > checksums.txt
           cat checksums.txt
 
       - name: Upload DMG to release
@@ -162,7 +162,7 @@ jobs:
   # ============================================
   # Post-Release Tasks
   # ============================================
-  
+
   post-release:
     name: Post-Release Tasks
     runs-on: ubuntu-latest
@@ -183,7 +183,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         if: env.SLACK_WEBHOOK_URL != ''
         run: |
-          curl -X POST $SLACK_WEBHOOK_URL \
+          curl -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -d '{
               "text": "🎉 AtlasTrinity v${{ needs.create-release.outputs.version }} released!",
@@ -208,7 +208,7 @@ jobs:
   # ============================================
   # Status Summary
   # ============================================
-  
+
   release-status:
     name: Release Status
     runs-on: ubuntu-latest

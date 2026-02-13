@@ -1370,7 +1370,7 @@ class WindsurfLLM(BaseChatModel):
             return self._generate_test_response(messages)
 
         # Try primary mode, then fallback chain
-        modes_to_try = [self._mode] + _FALLBACK_CHAIN.get(self._mode, [])
+        modes_to_try = [self._mode, *_FALLBACK_CHAIN.get(self._mode, [])]
         last_error: Exception | None = None
 
         for mode in modes_to_try:
@@ -1430,7 +1430,7 @@ class WindsurfLLM(BaseChatModel):
         if self._is_test_mode:
             return self._generate_test_response(messages)
 
-        modes_to_try = [self._mode] + _FALLBACK_CHAIN.get(self._mode, [])
+        modes_to_try = [self._mode, *_FALLBACK_CHAIN.get(self._mode, [])]
         last_error: Exception | None = None
 
         for mode in modes_to_try:
@@ -1503,7 +1503,7 @@ class WindsurfLLM(BaseChatModel):
         on_delta: Callable[[str], None] | None = None,
     ) -> AIMessage:
         """Streaming invoke with automatic mode fallback."""
-        modes_to_try = [self._mode] + _FALLBACK_CHAIN.get(self._mode, [])
+        modes_to_try = [self._mode, *_FALLBACK_CHAIN.get(self._mode, [])]
         last_error: Exception | None = None
 
         for mode in modes_to_try:

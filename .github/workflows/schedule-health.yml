@@ -14,7 +14,7 @@ jobs:
   # ============================================
   # System Health Check
   # ============================================
-  
+
   health-check:
     name: System Health Check
     runs-on: macos-latest
@@ -75,7 +75,7 @@ jobs:
   # ============================================
   # Dependency Security Scan
   # ============================================
-  
+
   security-scan:
     name: Security & Dependency Scan
     runs-on: ubuntu-latest
@@ -127,7 +127,7 @@ jobs:
   # ============================================
   # Performance Benchmarks
   # ============================================
-  
+
   performance-benchmarks:
     name: Performance Benchmarks
     runs-on: macos-latest
@@ -166,7 +166,7 @@ jobs:
   # ============================================
   # Database Integrity Check
   # ============================================
-  
+
   database-check:
     name: Database Integrity Check
     runs-on: ubuntu-latest
@@ -218,7 +218,7 @@ jobs:
   # ============================================
   # Model Availability Check
   # ============================================
-  
+
   model-check:
     name: AI Model Availability
     runs-on: ubuntu-latest
@@ -279,7 +279,7 @@ jobs:
   # ============================================
   # Status Report
   # ============================================
-  
+
   generate-report:
     name: Generate Health Report
     runs-on: ubuntu-latest
@@ -303,19 +303,20 @@ jobs:
 
       - name: Generate summary report
         run: |
-          echo "# AtlasTrinity Health Report" > health-summary.md
-          echo "" >> health-summary.md
-          echo "**Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> health-summary.md
-          echo "**Run:** #${{ github.run_number }}" >> health-summary.md
-          echo "" >> health-summary.md
-          
-          echo "## Job Results" >> health-summary.md
-          echo "- Health Check: ${{ needs.health-check.result }}" >> health-summary.md
-          echo "- Security Scan: ${{ needs.security-scan.result }}" >> health-summary.md
-          echo "- Performance: ${{ needs.performance-benchmarks.result }}" >> health-summary.md
-          echo "- Database: ${{ needs.database-check.result }}" >> health-summary.md
-          echo "- Model APIs: ${{ needs.model-check.result }}" >> health-summary.md
-          
+          {
+            echo "# AtlasTrinity Health Report"
+            echo ""
+            echo "**Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo "**Run:** #${{ github.run_number }}"
+            echo ""
+            echo "## Job Results"
+            echo "- Health Check: ${{ needs.health-check.result }}"
+            echo "- Security Scan: ${{ needs.security-scan.result }}"
+            echo "- Performance: ${{ needs.performance-benchmarks.result }}"
+            echo "- Database: ${{ needs.database-check.result }}"
+            echo "- Model APIs: ${{ needs.model-check.result }}"
+          } > health-summary.md
+
           cat health-summary.md
 
       - name: Upload summary

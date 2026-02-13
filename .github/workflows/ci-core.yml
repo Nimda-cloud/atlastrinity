@@ -267,7 +267,4 @@ jobs:
             echo "❌ One or more CI jobs failed"
             exit 1
           fi
-
-          fi
-
           echo "✅ All critical CI jobs passed successfully"

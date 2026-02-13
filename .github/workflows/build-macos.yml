@@ -23,7 +23,7 @@ jobs:
   # ============================================
   # Swift Binary Compilation
   # ============================================
-  
+
   build-swift-binary:
     name: Build Swift MCP Server
     runs-on: macos-latest
@@ -68,7 +68,7 @@ jobs:
   # ============================================
   # Python Virtual Environment
   # ============================================
-  
+
   build-python-venv:
     name: Build Python Virtual Environment
     runs-on: macos-latest
@@ -89,7 +89,7 @@ jobs:
           source dist_venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          
+
           # Clean up unnecessary files
           find dist_venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
           find dist_venv -type f -name "*.pyc" -delete
@@ -115,7 +115,7 @@ jobs:
   # ============================================
   # Electron App Build
   # ============================================
-  
+
   build-electron-app:
     name: Build Electron Application
     runs-on: macos-latest
@@ -175,7 +175,7 @@ jobs:
           fi
 
       - name: Build Electron app (unsigned)
-        if: "!inputs.sign_app"
+        if: '!inputs.sign_app'
         run: |
           npm run build:dmg
         env:
@@ -195,7 +195,7 @@ jobs:
       - name: Verify DMG creation
         run: |
           ls -lah release/
-          if [ -f release/*.dmg ]; then
+          if ls release/*.dmg 1> /dev/null 2>&1; then
             echo "✅ DMG created successfully"
             hdiutil info release/*.dmg || true
           else
@@ -222,7 +222,7 @@ jobs:
   # ============================================
   # Post-Build Validation
   # ============================================
-  
+
   validate-build:
     name: Validate macOS Build
     runs-on: macos-latest
@@ -236,15 +236,15 @@ jobs:
 
       - name: Verify DMG structure
         run: |
-          DMG_PATH=$(ls artifacts/*.dmg | head -1)
+          DMG_PATH=$(find artifacts -name "*.dmg" -maxdepth 1 | head -1)
           echo "Verifying: $DMG_PATH"
-          
+
           # Mount DMG
           hdiutil attach "$DMG_PATH" -mountpoint /Volumes/AtlasTrinity -nobrowse
-          
+
           # Check app structure
           ls -la /Volumes/AtlasTrinity/
-          
+
           if [ -d "/Volumes/AtlasTrinity/AtlasTrinity.app" ]; then
             echo "✅ App bundle found"
             ls -la /Volumes/AtlasTrinity/AtlasTrinity.app/Contents/
@@ -253,14 +253,14 @@ jobs:
             echo "❌ App bundle not found"
             exit 1
           fi
-          
+
           # Unmount
           hdiutil detach /Volumes/AtlasTrinity
 
       - name: Check code signature (if signed)
         if: ${{ inputs.sign_app }}
         run: |
-          DMG_PATH=$(ls artifacts/*.dmg | head -1)
+          DMG_PATH=$(find artifacts -name "*.dmg" -maxdepth 1 | head -1)
           hdiutil attach "$DMG_PATH" -mountpoint /Volumes/AtlasTrinity -nobrowse
           codesign -vv /Volumes/AtlasTrinity/AtlasTrinity.app
           hdiutil detach /Volumes/AtlasTrinity
@@ -268,7 +268,7 @@ jobs:
   # ============================================
   # Status Summary
   # ============================================
-  
+
   build-status:
     name: Build Status Check
     runs-on: ubuntu-latest
