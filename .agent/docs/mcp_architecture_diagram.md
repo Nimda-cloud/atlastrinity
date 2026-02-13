@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T23:52:02.779843 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T23:50:23.512038 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/release.yml, .zizmor.yml -->
 

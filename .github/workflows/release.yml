@@ -126,11 +126,11 @@ jobs:
           npm run build
           npm run build:dmg
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: '${{ secrets.APPLE_ID }}'
+          APPLE_APP_SPECIFIC_PASSWORD: '${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}'
+          APPLE_TEAM_ID: '${{ secrets.APPLE_TEAM_ID }}'
+          CSC_LINK: '${{ secrets.CSC_LINK }}'
+          CSC_KEY_PASSWORD: '${{ secrets.CSC_KEY_PASSWORD }}'
 
       - name: Rename DMG
         run: |
@@ -189,7 +189,7 @@ jobs:
 
       - name: Send Slack notification
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_URL }}'
           NEEDS_CREATE_RELEASE_OUTPUTS_VERSION: ${{ needs.create-release.outputs.version }}
         if: env.SLACK_WEBHOOK_URL != ''
         run: |
