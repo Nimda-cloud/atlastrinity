@@ -247,9 +247,12 @@ class RequestSegmenter:
             else:
                 response = await atlas.llm.ainvoke(messages)
 
-            content = str(response.content).strip()
+            # Clean non-printable characters that might cause JSONDecodeError
+            import re
+            content = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', str(response.content)).strip()
+            
             if not content:
-                logger.error("[SEGMENTER] LLM returned an empty response content")
+                logger.error("[SEGMENTER] LLM returned an empty response content (after cleaning)")
                 return []
 
             result = json.loads(content)
@@ -594,13 +597,26 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
             if part and len(part.split()) >= 3:
                 # Identity markers for deep_chat
                 is_deep_chat = any(
-                    word in part.lower() for word in ["створили", "місія", "особистість", "хто ти", "твоя душа"]
+                    word in part.lower()
+                    for word in ["створили", "місія", "особистість", "хто ти", "твоя душа"]
                 )
                 # Info-seeking markers for solo_task
                 is_info_seeking = any(
-                    word in part.lower() for word in ["розкажи", "інформація", "фільм", "хто такий", "що таке", "оціни", "режисер"]
+                    word in part.lower()
+                    for word in [
+                        "розкажи",
+                        "інформація",
+                        "фільм",
+                        "найди",
+                        "знайди",
+                        "пошукай",
+                        "хто такий",
+                        "що таке",
+                        "оціни",
+                        "режисер",
+                    ]
                 )
-                
+
                 mode = "chat"
                 if is_deep_chat:
                     mode = "deep_chat"
