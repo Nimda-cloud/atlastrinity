@@ -197,8 +197,9 @@ class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
                 windsurf_messages.append({"role": role, "content": content})
 
             # Call Windsurf directly
-            # Force direct_mode=True to avoid proxy-to-proxy deadlock loop (port 8085 calling itself)
-            llm = WindsurfLLM(model_name=model, direct_mode=True)
+            # Pass proxy_url="" to prevent the WindsurfLLM instance from trying to use THIS proxy (recursion)
+            # This allows it to use the Fallback Chain (Cascade -> Local -> Direct) safely.
+            llm = WindsurfLLM(model_name=model, proxy_url="")
 
             # Make the API call
             start_time = time.time()

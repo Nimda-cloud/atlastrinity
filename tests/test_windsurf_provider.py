@@ -53,8 +53,8 @@ from providers.windsurf import (
 # Resolve the config-driven default model for assertions
 # Must mirror WindsurfLLM.__init__ resolution: env var → config → constant
 try:
-    from src.brain.config.config_loader import config as _sys_config
     from providers.windsurf import WINDSURF_DEFAULT_MODEL as _WS_DEFAULT
+    from src.brain.config.config_loader import config as _sys_config
 
     _CONFIG_DEFAULT = (
         os.getenv("WINDSURF_MODEL")
