@@ -24,7 +24,7 @@
 # Optimized for Copilot + Windsurf hybrid usage
 # NOTE: This is for VIBE only - NOT system reasoning!
 # System reasoning uses oswe-vscode-secondary from config.yaml
-fallback_chain = ["deepseek-v3", "deepseek-r1", "gpt-4.1", "gpt-4o"]
+fallback_chain = ["oswe-vscode-secondary", "gpt-4.1", "gpt-4o", "deepseek-r1", "deepseek-v3"]
 
 # Current selection (change based on your provider):
 active_model = "gpt-4o"              # Copilot model (Switched from Windsurf due to quota)

@@ -27,14 +27,12 @@ models:
   #
   # === WINDSURF (Codeium) ===
   # - API: Windsurf/Codeium (sk-ws- token)
-  # - Models:
-  #   - deepseek-v3
-  #   - deepseek-r1
-  #   - swe-1
-  #   - swe-1.5
-  #   - grok-code-fast-1
-  #   - kimi-k2.5
-  #   - windsurf-fast
+  # - Models (Best 5):
+  #   1. deepseek-r1       (Logical reasoning & CoT)
+  #   2. deepseek-v3       (General purpose powerhouse)
+  #   3. swe-1.5           (Software engineering specialist)
+  #   4. kimi-k2.5         (Fast context & coding)
+  #   5. windsurf-fast     (Low latency efficiency)
   # - Setup: python tools/get_windsurf_token.py
   #
   # === SWITCHING PROVIDERS ===
@@ -59,17 +57,17 @@ models:
   # Default models for different purposes (HYBRID CONFIGURATION)
   # Format: "provider:model_name" to override global provider
   # STRICTLY choose from the allowed lists above.
-  default: "copilot:gpt-4o"           # Default LLM for agents (Switched from Windsurf due to quota)
+  default: "copilot:gpt-4o"           # Default LLM for agents
   vision: "copilot:gpt-4o"              # Best for Vision/multimodal tasks
-  reasoning: "windsurf:deepseek-r1"     # State-of-the-art Logic reasoning
-  code_analysis: "windsurf:kimi-k2.5"   # Fast and optimized for code
-  consolidation: "windsurf:deepseek-v3" # Efficient memory management
+  reasoning: "copilot:gpt-4.1"          # Reliable logic for multi-turn
+  code_analysis: "copilot:gpt-4o"       # General coding tasks
+  consolidation: "copilot:gpt-5-mini"    # Efficient state management
   
   # Fallbacks (used when primary unavailable)
   fallback: "copilot:gpt-4o"            # Fallback model (most stable)
   
   # Sandbox model (used by mcp_sandbox.py)
-  sandbox: "windsurf:deepseek-v3"
+  sandbox: "copilot:gpt-4o"
 
   # Agents inherit from models.default unless overridden
 

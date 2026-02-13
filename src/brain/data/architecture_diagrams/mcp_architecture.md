@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T00:18:39.316744 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe_config.toml.template -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T00:11:14.604885 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/build-macos.yml, .githuworkflows/release.yml -->
 

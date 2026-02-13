@@ -238,6 +238,7 @@ class RequestSegmenter:
             {"role": "user", "content": prompt},
         ]
 
+        response = None
         try:
             # Use appropriate LLM based on configuration
             if tier == "deep" and hasattr(atlas, "llm"):
@@ -246,7 +247,12 @@ class RequestSegmenter:
             else:
                 response = await atlas.llm.ainvoke(messages)
 
-            result = json.loads(response.content)
+            content = str(response.content).strip()
+            if not content:
+                logger.error("[SEGMENTER] LLM returned an empty response content")
+                return []
+
+            result = json.loads(content)
             logger.info(
                 f"[SEGMENTER] LLM response: {len(result.get('segments', []))} segments proposed"
             )
@@ -256,6 +262,10 @@ class RequestSegmenter:
 
             return segments
 
+        except json.JSONDecodeError as e:
+            logger.error(f"[SEGMENTER] LLM segmentation failed to parse JSON: {e}")
+            logger.debug(f"[SEGMENTER] Raw response content: {getattr(response, 'content', 'N/A')}")
+            return []
         except Exception as e:
             logger.error(f"[SEGMENTER] LLM segmentation failed: {e}")
             return []
@@ -582,17 +592,27 @@ Focus on accuracy and semantic understanding. Each segment should be meaningful 
         # Create segments for each question
         for i, part in enumerate(question_parts):
             if part and len(part.split()) >= 3:
+                # Identity markers for deep_chat
                 is_deep_chat = any(
-                    word in part.lower() for word in ["створили", "місія", "особистість"]
+                    word in part.lower() for word in ["створили", "місія", "особистість", "хто ти", "твоя душа"]
                 )
+                # Info-seeking markers for solo_task
+                is_info_seeking = any(
+                    word in part.lower() for word in ["розкажи", "інформація", "фільм", "хто такий", "що таке", "оціни", "режисер"]
+                )
+                
+                mode = "chat"
+                if is_deep_chat:
+                    mode = "deep_chat"
+                elif is_info_seeking:
+                    mode = "solo_task"
+
                 segments.append(
                     RequestSegment(
                         text=part,
-                        mode="deep_chat" if is_deep_chat else "chat",
-                        priority=1
-                        if is_deep_chat
-                        else 2,  # Fixed: deep_chat=1, chat=2 according to mode_profiles.json
-                        reason=f"Question segmentation {i + 1}",
+                        mode=mode,
+                        priority=1 if mode == "deep_chat" else (3 if mode == "solo_task" else 2),
+                        reason=f"Question segmentation {i + 1} (manual fallback)",
                         start_pos=user_request.find(part) if part in user_request else 0,
                         end_pos=user_request.find(part) + len(part)
                         if part in user_request
