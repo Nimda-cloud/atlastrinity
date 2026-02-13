@@ -190,23 +190,28 @@ jobs:
       - name: Send Slack notification
         env:
           SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_URL }}'
-          NEEDS_CREATE_RELEASE_OUTPUTS_VERSION: ${{ needs.create-release.outputs.version }}
+          VERSION: '${{ needs.create-release.outputs.version }}'
+          REPO: '${{ github.repository }}'
         if: env.SLACK_WEBHOOK_URL != ''
         run: |
+          PAYLOAD=$(cat <<EOF
+          {
+            "text": "🎉 AtlasTrinity v${VERSION} released!",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*AtlasTrinity v${VERSION}* has been released!\n\n<https://github.com/${REPO}/releases/tag/v${VERSION}|View Release>"
+                }
+              }
+            ]
+          }
+          EOF
+          )
           curl -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
-            -d '{
-              "text": "🎉 AtlasTrinity v${{ needs.create-release.outputs.version }} released!",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*AtlasTrinity v${{ needs.create-release.outputs.version }}* has been released!\n\n<https://github.com/${{ github.repository }}/releases/tag/v${{ needs.create-release.outputs.version }}|View Release>"
-                  }
-                }
-              ]
-            }'
+            -d "$PAYLOAD"
         continue-on-error: true
 
       - name: Update documentation
