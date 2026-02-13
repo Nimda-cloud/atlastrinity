@@ -11,9 +11,11 @@ from typing import Any, cast
 try:
     from dotenv import load_dotenv
 
-    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
+    load_dotenv(os.path.expanduser("~/.config/atlastrinity/.env"), override=True)
 except ImportError:
     pass  # dotenv not available, use system env vars
+
+from src.brain.monitoring.logger import logger
 
 import httpx
 import requests
@@ -27,7 +29,7 @@ from langchain_core.messages import (
 )
 from langchain_core.outputs import ChatGeneration, ChatResult
 from PIL import Image
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # Type aliases for better type safety
 ContentItem = str | dict[str, Any]
@@ -413,22 +415,43 @@ class CopilotLLM(BaseChatModel):
         """Asynchronous generation using httpx with automatic model fallback on 400 errors"""
         import tenacity
 
+        def _is_transient_error(exception: BaseException) -> bool:
+            is_transient = False
+            if isinstance(exception, httpx.HTTPStatusError):
+                is_transient = exception.response.status_code in [429, 500, 502, 503, 504]
+            else:
+                is_transient = isinstance(
+                    exception,
+                    (
+                        httpx.ConnectError,
+                        httpx.TimeoutException,
+                        httpx.NetworkError,
+                        httpx.RemoteProtocolError,
+                    ),
+                )
+            if is_transient:
+                logger.warning(f"[COPILOT] Transient error detected: {exception}. Retrying...")
+            return is_transient
+
+        def _log_retry_attempt(retry_state):
+            if retry_state.attempt_number > 1:
+                logger.info(f"[COPILOT] Retry attempt {retry_state.attempt_number} for _agenerate")
+
         # Use tenacity for retrying on network errors
         @tenacity.retry(
-            stop=tenacity.stop_after_attempt(3),
+            stop=tenacity.stop_after_attempt(5),
             wait=tenacity.wait_exponential(multiplier=1, min=2, max=10),
-            retry=tenacity.retry_if_exception_type(
-                (
-                    httpx.ConnectError,
-                    httpx.TimeoutException,
-                    httpx.NetworkError,
-                    httpx.RemoteProtocolError,
-                ),
-            ),
+            retry=tenacity.retry_if_exception(_is_transient_error),
+            before_sleep=_log_retry_attempt,
             reraise=True,
         )
         async def _do_post(client, url, headers, json):
-            return await client.post(url, headers=headers, json=json)
+            response = await client.post(url, headers=headers, json=json)
+            # Raise exception for 429 and 5xx to trigger tenacity retry
+            if response.status_code in [429, 500, 502, 503, 504]:
+                logger.debug(f"[COPILOT] Received status {response.status_code}, raising to retry")
+                response.raise_for_status()
+            return response
 
         try:
             session_token, api_endpoint = self._get_session_token()
@@ -596,12 +619,32 @@ class CopilotLLM(BaseChatModel):
             }
             payload = self._build_payload(messages)
 
-            response = requests.post(
-                f"{api_endpoint}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=300,
+            def _is_transient_requests_error(exception: BaseException) -> bool:
+                if isinstance(exception, requests.HTTPError):
+                    return (
+                        exception.response is not None
+                        and exception.response.status_code in [429, 500, 502, 503, 504]
+                    )
+                return isinstance(exception, (requests.Timeout, requests.ConnectionError))
+
+            @retry(
+                stop=stop_after_attempt(5),
+                wait=wait_exponential(multiplier=1, min=2, max=10),
+                retry=retry_if_exception(_is_transient_requests_error),
+                reraise=True,
             )
+            def _do_sync_post():
+                response = requests.post(
+                    f"{api_endpoint}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=300,
+                )
+                if response.status_code in [429, 500, 502, 503, 504]:
+                    response.raise_for_status()
+                return response
+
+            response = _do_sync_post()
             response.raise_for_status()
             return self._process_json_result(response.json(), messages)
 
