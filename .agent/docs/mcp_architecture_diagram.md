@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T11:10:53.211520 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, scripts/fresh_install.sh, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T11:08:58.559245 -->
 <!-- Modified: scripts/fresh_install.sh, src/maintenance/setup_dev.py -->
 
