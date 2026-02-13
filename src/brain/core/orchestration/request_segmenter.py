@@ -215,7 +215,7 @@ class RequestSegmenter:
         global_models = config.get("models", {})
 
         provider = llm_config.get("provider", global_models.get("provider", "copilot"))
-        model = llm_config.get("model", global_models.get("default", "gpt-4o"))
+        model = llm_config.get("model", global_models.get("default", "gpt-4.1"))
         tier = llm_config.get("tier", "standard")
         temperature = llm_config.get("temperature", 0.1)
 
