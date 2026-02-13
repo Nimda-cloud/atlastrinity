@@ -59,6 +59,13 @@ def create_llm(
     Returns:
         CopilotLLM or WindsurfLLM instance
     """
+    # Support "provider:model" syntax (e.g., "copilot:gpt-4o" or "windsurf:deepseek-v3")
+    if model_name and ":" in model_name:
+        parts = model_name.split(":", 1)
+        if parts[0].lower() in ("copilot", "windsurf"):
+            provider = parts[0]
+            model_name = parts[1]
+
     chosen_provider = (provider or get_provider_name()).lower()
 
     if chosen_provider == "windsurf":

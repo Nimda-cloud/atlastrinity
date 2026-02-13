@@ -54,21 +54,22 @@ models:
   #   windsurf: python scripts/windsurf_proxy.py
   # =============================================================================
   
-  provider: "windsurf"                  # LLM provider: copilot | windsurf
+  provider: "copilot"                   # LLM provider: copilot | windsurf (Default)
 
-  # Default models for different purposes
+  # Default models for different purposes (HYBRID CONFIGURATION)
+  # Format: "provider:model_name" to override global provider
   # STRICTLY choose from the allowed lists above.
-  default: "deepseek-v3"                # Default LLM for agents
-  vision: "deepseek-v3"                 # Vision/multimodal tasks
-  reasoning: "deepseek-r1"              # Reasoning model
-  code_analysis: "deepseek-v3"          # Fast coding analysis
-  consolidation: "deepseek-v3"          # Memory consolidation
+  default: "windsurf:deepseek-v3"       # Default LLM for agents
+  vision: "copilot:gpt-4o"              # Best for Vision/multimodal tasks
+  reasoning: "windsurf:deepseek-r1"     # State-of-the-art Logic reasoning
+  code_analysis: "windsurf:kimi-k2.5"   # Fast and optimized for code
+  consolidation: "windsurf:deepseek-v3" # Efficient memory management
   
   # Fallbacks (used when primary unavailable)
-  fallback: "deepseek-v3"               # Fallback model (most stable)
+  fallback: "copilot:gpt-4o"            # Fallback model (most stable)
   
   # Sandbox model (used by mcp_sandbox.py)
-  sandbox: "deepseek-v3"
+  sandbox: "windsurf:deepseek-v3"
 
   # Agents inherit from models.default unless overridden
 
@@ -82,22 +83,22 @@ agents:
 
   tetyana:
     # model: inherited from models.default
-    reasoning_model: "gpt-4.1"       # Efficient routing and tool selection
-    vision_model: ""             # Vision tasks, set in your config.yaml
+    reasoning_model: "copilot:gpt-4.1"  # Precision routing and tool selection
+    vision_model: "copilot:gpt-4o"      # UI state analysis
     temperature: 0.5
     max_tokens: 2000
 
   grisha:
     # Three-Phase Verification Architecture:
     # Phase 1: Strategy planning (what to verify, which tools)
-    strategy_model: "oswe-vscode-secondary" # Raptor reasoning for strategy
+    strategy_model: "copilot:gpt-4.1"   # Strategic verification planning
     
     # Phase 2: Tool selection & execution (MCP server interaction)
     # model: inherited from models.default
     
     # Phase 3: Result analysis & verdict
-    vision_model: ""             # Vision/multimodal verification, set in your config.yaml
-    verdict_model: "oswe-vscode-secondary"  # Raptor verdict reasoning
+    vision_model: "copilot:gpt-4o"      # UI/Visual verification
+    verdict_model: "copilot:gpt-4.1"    # Rigorous final verdict reasoning
     
     # General settings
     temperature: 0.3
