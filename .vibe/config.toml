@@ -1,0 +1,18 @@
+
+active_model = "calculator-expert"
+system_prompt_id = "default"
+default_mode = "auto-approve"
+
+[[providers]]
+name = "windsurf"
+api_base = "http://localhost:8085/v1"
+api_key_env_var = "WINDSURF_API_KEY"
+api_style = "openai"
+
+[[models]]
+name = "deepseek-v3"
+provider = "windsurf"
+alias = "calculator-expert"
+temperature = 0.0
+input_price = 0.0
+output_price = 0.0

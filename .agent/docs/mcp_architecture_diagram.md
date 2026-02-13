@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T22:17:01.885651 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/providers/windsurf.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T21:39:43.799852 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/all_models.json, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 

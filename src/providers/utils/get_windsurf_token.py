@@ -49,7 +49,7 @@ WINDSURF_STATE_DB = (
     / "state.vscdb"
 )
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 GLOBAL_ENV = Path.home() / ".config" / "atlastrinity" / ".env"
 PROJECT_ENV = PROJECT_ROOT / ".env"
 
@@ -74,20 +74,18 @@ class C:
     RESET = "\033[0m"
 
 
-def info(msg: str) -> None:
-    pass
 
+def info(msg: str) -> None:
+    print(f"{C.GREEN}[INFO]{C.RESET} {msg}")
 
 def warn(msg: str) -> None:
-    pass
-
+    print(f"{C.YELLOW}[WARN]{C.RESET} {msg}", file=sys.stderr)
 
 def error(msg: str) -> None:
-    pass
-
+    print(f"{C.RED}[ERROR]{C.RESET} {msg}", file=sys.stderr)
 
 def step(msg: str) -> None:
-    pass
+    print(f"\n{C.BOLD}==> {msg}{C.RESET}")
 
 
 # ─── Data Classes ────────────────────────────────────────────────────────────
@@ -463,12 +461,16 @@ def test_windsurf_token(api_key: str, api_server_url: str = "") -> bool:
 
 def print_auth_info(auth: WindsurfAuth) -> None:
     """Pretty-print Windsurf auth information."""
+    if auth.account_name:
+        print(f"Account: {C.BOLD}{auth.account_name}{C.RESET}")
     if auth.user_id:
-        pass
+        print(f"User ID: {auth.user_id}")
+    if auth.api_key:
+        print(f"API Key: {C.GREEN}{auth.api_key}{C.RESET}")
     if auth.ls_port:
-        pass
+        print(f"LS Port: {auth.ls_port}")
     if auth.ls_csrf_token:
-        pass
+        print(f"LS CSRF: {auth.ls_csrf_token[:10]}...")
 
 
 def print_models(auth: WindsurfAuth) -> None:
