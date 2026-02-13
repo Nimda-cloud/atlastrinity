@@ -14,20 +14,43 @@ if str(PROJECT_ROOT) not in sys.path:
 TARGET_SIGNATURES = [
     "brain.server",
     "src/maintenance/watch_config.py",
-    "mcp_server/vibe_server.py",
-    "universal_proxy.py",
-    "electron .",
-    "vite",
-    "mcp-server-macos-use",
-    "mcp-server-sequential-thinking",
-    "mcp-server-filesystem",
-    "uvicorn",
-    "redis-server",
-    "redis-cli",
+    "src.mcp_server.vibe_server",     # Vibe Python Server
+    "copilot_vibe_proxy.py",          # Copilot Proxy
+    "vibe_windsurf_proxy.py",         # Windsurf Proxy
+    "electron .",                     # Main Electron App
+    "vite",                           # Vite Renderer Dev Server
+    "server-filesystem",              # @modelcontextprotocol/server-filesystem
+    "server-sequential-thinking",     # @modelcontextprotocol/server-sequential-thinking
+    "vendor/XcodeBuildMCP",           # Unified XcodeBuild Hub (Node)
+    "chrome-devtools-mcp",            # Chrome DevTools Protocol MCP
+    "server-puppeteer",               # @modelcontextprotocol/server-puppeteer
+    "c7-mcp-server",                  # Context7 Documentation Server
+    "server-github",                  # @modelcontextprotocol/server-github
+    "mcp-server-macos-use",           # Native macOS-use Binary
+    "mcp-server-googlemaps",          # Native Google Maps Binary
+    "memory_server",                  # Memory Graph Server (Python)
+    "graph_server",                   # Graph Visualization Server (Python)
+    "whisper_server",                 # Voice transcription Server (Python)
+    "devtools_server",                # System Self-Analysis Server (Python)
+    "duckduckgo_search_server",       # DDG Search Server (Python)
+    "golden_fund/server",             # Golden Fund Server (Python)
+    "redis_server",                   # Redis State Server (Python)
+    "data_analysis_server",           # Pandas Analysis Server (Python)
+    "postgres_server",                # Postgres DB Server (Python)
+    "react_devtools_mcp.js",          # React DevTools MCP (Node)
+    "uvicorn",                        # FastAPI/Uvicorn hosts
+    "redis-server",                   # Local Redis process
+    "redis-cli",                      # Lingering CLI connections
 ]
 
 # Ports to check and free
-TARGET_PORTS = [8000, 8080, 8085, 8086, 8090, 6379]  # Brain, Vibe, Proxies, Redis, etc.
+TARGET_PORTS = [
+    8000,                             # Brain API
+    3000, 3001,                       # UI / Vite
+    8080, 8085, 8086, 8088, 8090,     # Vibe, Proxies, Internal
+    6379,                             # Redis
+    9222,                             # Chrome Debugging
+]
 
 
 def get_process_list() -> list[tuple[int, str]]:
@@ -59,8 +82,6 @@ def kill_process(pid, name):
 
         os.kill(pid, signal.SIGTERM)
 
-        # Give it a moment (non-blocking in this script structure,
-        # but practically we just fire SIGTERM first)
     except ProcessLookupError:
         pass
     except PermissionError:
@@ -69,20 +90,54 @@ def kill_process(pid, name):
         pass
 
 
+def get_ancestor_pids() -> set[int]:
+    """Get the set of all ancestor process IDs."""
+    ancestors = set()
+    try:
+        current_pid = os.getppid()  # Start with parent
+        while current_pid > 0:
+            ancestors.add(current_pid)
+            # Find grandparent of current_pid
+            result = subprocess.run(
+                ["ps", "-o", "ppid=", "-p", str(current_pid)],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            ppid_str = result.stdout.strip()
+            if not ppid_str:
+                break
+            current_pid = int(ppid_str)
+            if current_pid in ancestors or current_pid == 0:
+                break
+    except Exception:
+        pass
+    return ancestors
+
+
 def main():
 
     processes: list[tuple[int, str]] = get_process_list()
     terminated_pids: list[int] = []
+    ancestors = get_ancestor_pids()
+    my_pid = os.getpid()
 
+    # Process cleanup
     for item in processes:
         pid: int = item[0]
         cmd: str = item[1]
+
+        # Never kill self or any parents/ancestors
+        if pid == my_pid or pid in ancestors:
+            continue
+
         # Check against signatures
         if any(sig in cmd for sig in TARGET_SIGNATURES):
-            # Double check it's not us (though we are 'ensure_clean_start.py')
-            if "ensure_clean_start.py" in cmd:
+            # Double check it's not us
+            if "clean_start.py" in cmd:
                 continue
 
+            print(f"  • {Colors.YELLOW}Terminating process:{Colors.ENDC} {pid} ({cmd[:60]}...)")
             kill_process(pid, cmd)
             terminated_pids.append(pid)
 
@@ -95,9 +150,10 @@ def main():
             for p in pids:
                 if p:
                     pid = int(p)
-                    if pid != os.getpid():
+                    if pid != my_pid and pid not in ancestors:
                         try:
-                            os.kill(pid, signal.SIGKILL)  # Ports need force usually
+                            print(f"  • {Colors.RED}Freeing port {port}:{Colors.ENDC} PID {pid}")
+                            os.kill(pid, signal.SIGKILL)
                             terminated_pids.append(pid)
                         except ProcessLookupError:
                             pass
@@ -108,10 +164,21 @@ def main():
 
     killed_count: int = len(terminated_pids)
     if killed_count > 0:
+        print(f"✅ {Colors.GREEN}Cleaned up {killed_count} lingering processes.{Colors.ENDC}")
         # Brief pause to let OS reclaim resources
         time.sleep(1)
     else:
         pass
+
+
+class Colors:
+    """ANSI color codes for terminal output."""
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    CYAN = "\033[96m"
+    BOLD = "\033[1m"
+    ENDC = "\033[0m"
 
 
 if __name__ == "__main__":

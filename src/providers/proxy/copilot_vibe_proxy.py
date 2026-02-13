@@ -35,19 +35,29 @@ import time
 try:
     from dotenv import load_dotenv
 
-    load_dotenv("/Users/hawk/.config/atlastrinity/.env", override=True)
+    # Try local .env first, then global config .env
+    env_paths = [
+        os.path.join(os.getcwd(), ".env"),
+        os.path.expanduser("~/.config/atlastrinity/.env"),
+    ]
+    for env_path in env_paths:
+        if os.path.exists(env_path):
+            load_dotenv(env_path, override=True)
+            break
 except ImportError:
     pass  # dotenv not available, use system env vars
 
-# Add project root to path for imports
-# Add project root to path for imports
+# Add project root and src to path for imports
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+SRC_ROOT = os.path.join(PROJECT_ROOT, "src")
+for path in [PROJECT_ROOT, SRC_ROOT]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
 try:
-    from src.providers.copilot import CopilotLLM
-except ImportError:
+    from providers.copilot import CopilotLLM
+except ImportError as e:
+    print(f"FAILED to import providers.copilot: {e}", file=sys.stderr)
     sys.exit(1)
 
 # ─── Configuration ─────────────────────────────────────────────────────
@@ -75,19 +85,23 @@ class C:
 
 
 def log(msg: str) -> None:
-    time.strftime("%H:%M:%S")
+    timestamp = time.strftime("%H:%M:%S")
+    print(f"{C.DIM}[{timestamp}]{C.RESET} {msg}")
 
 
 def info(msg: str) -> None:
-    time.strftime("%H:%M:%S")
+    timestamp = time.strftime("%H:%M:%S")
+    print(f"{C.DIM}[{timestamp}]{C.RESET} {C.CYAN}INFO{C.RESET}  {msg}")
 
 
 def warn(msg: str) -> None:
-    time.strftime("%H:%M:%S")
+    timestamp = time.strftime("%H:%M:%S")
+    print(f"{C.DIM}[{timestamp}]{C.RESET} {C.YELLOW}WARN{C.RESET}  {msg}", file=sys.stderr)
 
 
 def error(msg: str) -> None:
-    time.strftime("%H:%M:%S")
+    timestamp = time.strftime("%H:%M:%S")
+    print(f"{C.DIM}[{timestamp}]{C.RESET} {C.RED}ERROR{C.RESET} {msg}", file=sys.stderr)
 
 
 # ─── Proxy Handler ─────────────────────────────────────────────────────

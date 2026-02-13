@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T02:15:17.948105 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T01:19:04.681760 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, bandit_errors.txt -->
 

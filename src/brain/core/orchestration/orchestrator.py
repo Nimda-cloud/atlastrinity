@@ -262,7 +262,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             await state_manager.clear_session(self.current_session_id)
 
         # Create a new unique session ID
-        self.current_session_id = f"session_{uuid.uuid4().hex[:8]}"
+        self.current_session_id = str(uuid.uuid4())
 
         await self._log(f"Нова сесія розпочата ({self.current_session_id})", "system")
         return {"status": "success", "session_id": self.current_session_id}
@@ -1067,14 +1067,42 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                 and "db_session_id" not in self.state
             ):
                 async with await db_manager.get_session() as db_sess:
+                    # Use existing session_id if available (and valid UUID), otherwise create new
+                    s_id = uuid.uuid4()
+                    if session_id and session_id != "current_session":
+                        try:
+                            s_id = uuid.UUID(session_id)
+                        except (ValueError, TypeError):
+                            logger.warning(f"[DB] Invalid session_id '{session_id}', generating new UUID.")
+                            pass
+                            
                     new_session = DBSession(
-                        started_at=datetime.now(UTC), metadata_blob={"theme": self.state["_theme"]}
+                        id=s_id,
+                        started_at=datetime.now(UTC), 
+                        metadata_blob={"theme": self.state["_theme"]}
                     )
+                    
                     db_sess.add(new_session)
                     await db_sess.commit()
+                    
                     self.state["db_session_id"] = str(new_session.id)
+                    
+                    # If we were in "current_session" mode, update it to the concrete ID
+                    if session_id == "current_session":
+                         self.current_session_id = str(new_session.id)
+                         self.state["session_id"] = self.current_session_id
+                         
+                    logger.info(f"[DB] Session successfully created: {self.state['db_session_id']}")
+            else:
+                 if not db_manager:
+                     logger.warning("[DB] Creation skipped: db_manager is None")
+                 elif not getattr(db_manager, "available", False):
+                     logger.warning("[DB] Creation skipped: db_manager.available is False")
+                 elif "db_session_id" in self.state:
+                     logger.info(f"[DB] Creation skipped: db_session_id exists ({self.state['db_session_id']})")
+                     
         except Exception as e:
-            logger.debug(f"DB Session creation skipped/failed: {e}")
+            logger.error(f"[DB] Session creation failed: {e}", exc_info=True)
 
         return session_id
 
