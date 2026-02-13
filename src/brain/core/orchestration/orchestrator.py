@@ -794,36 +794,68 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
         msg_list = self.state.get("messages")
         if isinstance(msg_list, list):
             for m in msg_list:
-                if isinstance(m, HumanMessage):
-                    # Handle multi-modal content (list of dicts)
+                # Support both LangChain objects and plain dicts (from Redis serialization)
+                m_type = ""
+                if hasattr(m, "type"):
+                    m_type = m.type
+                elif isinstance(m, dict):
+                    m_type = m.get("type", "")
+
+                if m_type == "human" or isinstance(m, HumanMessage):
+                    # Handle content which could be string or list (multi-modal)
+                    content = getattr(m, "content", "") if not isinstance(m, dict) else m.get("content", "")
                     display_text = ""
-                    if isinstance(m.content, list):
-                        for item in m.content:
+                    if isinstance(content, list):
+                        for item in content:
                             if isinstance(item, dict) and item.get("type") == "text":
                                 display_text += item.get("text", "")
                             elif isinstance(item, dict) and item.get("type") == "image_url":
                                 display_text += "\n[Зображення додано]"
                     else:
-                        display_text = str(m.content)
+                        display_text = str(content)
+
+                    # Extract timestamp from additional_kwargs or dict
+                    timestamp = datetime.now().timestamp()
+                    if hasattr(m, "additional_kwargs"):
+                        timestamp = m.additional_kwargs.get("timestamp", timestamp)
+                    elif isinstance(m, dict):
+                        # Some versions of LC serialization put it in additional_kwargs dict inside kwargs
+                        kwargs = m.get("kwargs", {})
+                        timestamp = kwargs.get("additional_kwargs", {}).get("timestamp", timestamp)
+                        if not timestamp and "timestamp" in m:
+                            timestamp = m["timestamp"]
 
                     messages.append(
                         {
                             "agent": "USER",
                             "text": display_text,
-                            "timestamp": m.additional_kwargs.get("timestamp")
-                            or datetime.now().timestamp(),
+                            "timestamp": timestamp,
                             "type": "text",
                         },
                     )
-                elif isinstance(m, AIMessage):
-                    # Support custom agent names (e.g. TETYANA, GRISHA) stored in .name
-                    agent_name = m.name if hasattr(m, "name") and m.name else "ATLAS"
+                elif m_type == "ai" or isinstance(m, AIMessage):
+                    agent_name = "ATLAS"
+                    if hasattr(m, "name") and m.name:
+                        agent_name = m.name
+                    elif isinstance(m, dict):
+                        agent_name = m.get("name") or m.get("kwargs", {}).get("name") or "ATLAS"
+
+                    content = getattr(m, "content", "") if not isinstance(m, dict) else m.get("content", "")
+                    
+                    timestamp = datetime.now().timestamp()
+                    if hasattr(m, "additional_kwargs"):
+                        timestamp = m.additional_kwargs.get("timestamp", timestamp)
+                    elif isinstance(m, dict):
+                        kwargs = m.get("kwargs", {})
+                        timestamp = kwargs.get("additional_kwargs", {}).get("timestamp", timestamp)
+                        if not timestamp and "timestamp" in m:
+                            timestamp = m["timestamp"]
+
                     messages.append(
                         {
                             "agent": agent_name,
-                            "text": m.content,
-                            "timestamp": m.additional_kwargs.get("timestamp")
-                            or datetime.now().timestamp(),
+                            "text": str(content),
+                            "timestamp": timestamp,
                             "type": "voice",
                         },
                     )

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-13T02:44:55.533357 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/renderer/App.tsx -->
+
+
 <!-- AUTO-UPDATED: 2026-02-13T02:35:33.094980 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, pyproject.toml, src/brain/core/orchestration/orchestrator.py -->
 
