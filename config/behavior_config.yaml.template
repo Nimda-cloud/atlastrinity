@@ -912,7 +912,7 @@ tool_routing:
       - ios_app
       - macos_app
     priority_server: xcodebuild
-    fallback_server: macos-use
+    fallback_server: xcodebuild
     tool_mapping:
       build_project: xcodebuild_build_project
       run_tests: xcodebuild_run_tests
@@ -963,7 +963,7 @@ tool_routing:
       - search_bar
       - search_map
     priority_server: googlemaps
-    fallback_server: macos-use
+    fallback_server: xcodebuild
     tool_mapping:
       street_view: maps_street_view
       static_map: maps_static_map
@@ -1005,27 +1005,27 @@ tool_routing:
 task_classification:
   gui_tasks:
     keywords: [gui, click, type, window, app, screen]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier1
 
   terminal_tasks:
     keywords: [terminal, command, shell, bash]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier1
 
   file_tasks:
     keywords: [file, read, write, directory]
-    recommended_servers: [filesystem, macos-use]
+    recommended_servers: [filesystem, xcodebuild]
     priority: tier1
 
   web_tasks:
     keywords: [search, web, internet, google, find, browser, navigate, automation, scrape, react]
-    recommended_servers: [duckduckgo-search, puppeteer, macos-use, react-devtools, googlemaps]
+    recommended_servers: [duckduckgo-search, puppeteer, xcodebuild, react-devtools]
     priority: tier2
 
   location_tasks:
     keywords: [де, адреса, карта, мапа, маршрут, пробки, трафік, затори, улица, вулиця, street, location, directions, traffic]
-    recommended_servers: [googlemaps, macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   react_tasks:
@@ -1036,37 +1036,37 @@ task_classification:
 
   calendar_tasks:
     keywords: [calendar, event, meeting]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   reminder_tasks:
     keywords: [reminder, todo, task]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   note_tasks:
     keywords: [note, notes]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   email_tasks:
     keywords: [mail, email]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   git_tasks:
     keywords: [git, commit, push, pull, branch]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   github_tasks:
     keywords: [github, repository, issue, pr]
-    recommended_servers: [github, macos-use]
+    recommended_servers: [github, xcodebuild]
     priority: tier2
 
   ios_development_tasks:
     keywords: [xcode, ios, macos, simulator, build, xcodeproj, xcworkspace, swift, swiftui, objective-c, cocoapods, carthage, spm, testflight, app_store]
-    recommended_servers: [xcodebuild, macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
     description: iOS/macOS app development, building, testing, and deployment
 
@@ -1092,12 +1092,12 @@ task_classification:
 
   time_tasks:
     keywords: [time, clock, date]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   fetch_tasks:
     keywords: [fetch, url, http, download]
-    recommended_servers: [macos-use]
+    recommended_servers: [xcodebuild]
     priority: tier2
 
   memory_tasks:
