@@ -128,17 +128,21 @@ const App: React.FC = () => {
     };
   }, [pollState, pollInterval, viewMode, setIsConnected]);
 
-  const chatMessages = useMemo(
-    () =>
-      chatHistory.map((m, idx) => ({
-        id: `chat-${m.timestamp.getTime()}-${idx}`,
+  const chatMessages = useMemo(() => {
+    return chatHistory.map((m, idx) => {
+      // Ensure we have a Date object
+      const ts = m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp);
+      const timeMs = Number.isNaN(ts.getTime()) ? Date.now() : ts.getTime();
+
+      return {
+        id: `chat-${timeMs}-${idx}`,
         agent: m.agent,
         text: m.text,
-        timestamp: m.timestamp,
+        timestamp: ts,
         type: m.type,
-      })),
-    [chatHistory],
-  );
+      };
+    });
+  }, [chatHistory]);
 
   return (
     <div className="app-container scanlines" role="application">

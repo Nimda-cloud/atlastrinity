@@ -104,7 +104,10 @@ export const useBrainApi = () => {
             setLogs(
               data.logs.map((l: { timestamp: string | number }) => ({
                 ...l,
-                timestamp: typeof l.timestamp === 'string' ? new Date(l.timestamp) : l.timestamp,
+                timestamp:
+                  typeof l.timestamp === 'number'
+                    ? new Date(l.timestamp > 10000000000 ? l.timestamp : l.timestamp * 1000)
+                    : new Date(l.timestamp),
               })),
             );
           }
@@ -113,7 +116,10 @@ export const useBrainApi = () => {
             setChatHistory(
               data.messages.map((m: { timestamp: string | number }) => ({
                 ...m,
-                timestamp: typeof m.timestamp === 'string' ? new Date(m.timestamp) : m.timestamp,
+                timestamp:
+                  typeof m.timestamp === 'number'
+                    ? new Date(m.timestamp > 10000000000 ? m.timestamp : m.timestamp * 1000)
+                    : new Date(m.timestamp),
               })),
             );
           }
