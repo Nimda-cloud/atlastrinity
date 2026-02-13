@@ -215,7 +215,7 @@ class RequestSegmenter:
         global_models = config.get("models", {})
 
         provider = llm_config.get("provider", global_models.get("provider", "copilot"))
-        model = llm_config.get("model", global_models.get("default", "gpt-4.1"))
+        model = llm_config.get("model", global_models.get("default", "gpt-4o"))
         tier = llm_config.get("tier", "standard")
         temperature = llm_config.get("temperature", 0.1)
 
@@ -231,11 +231,13 @@ class RequestSegmenter:
 
         # Use configured LLM for segmentation
         atlas = Atlas()
+        from langchain_core.messages import HumanMessage, SystemMessage
+
         system_prompt = self._build_intelligent_system_prompt()
 
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=prompt),
         ]
 
         response = None
@@ -249,8 +251,9 @@ class RequestSegmenter:
 
             # Clean non-printable characters that might cause JSONDecodeError
             import re
-            content = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', str(response.content)).strip()
-            
+
+            content = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", str(response.content)).strip()
+
             if not content:
                 logger.error("[SEGMENTER] LLM returned an empty response content (after cleaning)")
                 return []
