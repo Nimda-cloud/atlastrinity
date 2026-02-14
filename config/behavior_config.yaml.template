@@ -412,6 +412,11 @@ tool_routing:
       set_clipboard: macos-use_set_clipboard
       take_screenshot: macos-use_take_screenshot
       screenshot: macos-use_take_screenshot
+    routing_rules:
+      - pattern: 'macos-use_.*'
+        server: xcodebuild
+      - pattern: 'macos_use_.*'
+        server: xcodebuild
 
   # Browser automation
   browser:
@@ -978,6 +983,8 @@ tool_routing:
       search_bar: maps_open_interactive_search
     routing_rules:
       - pattern: 'maps_.*'
+        server: xcodebuild
+      - pattern: 'googlemaps_.*'
         server: xcodebuild
       - pattern: '.*location.*'
         server: xcodebuild
