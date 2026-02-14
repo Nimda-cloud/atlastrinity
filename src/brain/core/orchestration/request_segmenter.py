@@ -258,6 +258,12 @@ class RequestSegmenter:
                 logger.error("[SEGMENTER] LLM returned an empty response content (after cleaning)")
                 return []
 
+            # Strip markdown code fences (```json ... ```) that LLMs often wrap around JSON
+            fence_match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", content, re.DOTALL)
+            if fence_match:
+                content = fence_match.group(1).strip()
+                logger.debug("[SEGMENTER] Stripped markdown code fence from LLM response")
+
             result = json.loads(content)
             logger.info(
                 f"[SEGMENTER] LLM response: {len(result.get('segments', []))} segments proposed"
@@ -360,6 +366,8 @@ CONTEXTUAL ANALYSIS:
 - Prioritize user's natural flow and intent
 - Pay attention to explicit numbering (1., 2., 3.)
 - RESPECT PRIORITY ORDER: deep_chat (1) comes before task (4)
+
+CRITICAL: Output ONLY valid JSON. Do NOT wrap in markdown code fences (```json). Do NOT add explanatory text before or after the JSON.
 
 OUTPUT FORMAT:
 Return JSON format:

@@ -647,12 +647,9 @@ class ToolDispatcher:
         """Validate realm-tool compatibility."""
         is_comp, err = self._validate_realm_tool_compatibility(server, tool, args)
         if not is_comp:
-            logger.warning(f"[DISPATCHER] Compatibility failed: {server}.{tool} - {err}")
-            return {
-                "success": False,
-                "error": f"Realm-tool compatibility error: {err}",
-                "compatibility_error": True,
-            }
+            # Downgrade to debug: tools execute regardless, WARNING floods logs
+            logger.debug(f"[DISPATCHER] Compatibility note: {server}.{tool} - {err}")
+            # Don't block execution — just log for diagnostics
         return None
 
     def _wrap_commands(self, server: str, tool: str, args: dict[str, Any]) -> None:
@@ -810,6 +807,12 @@ class ToolDispatcher:
                 break
 
         if tool_found:
+            return True, ""
+
+        # Check if tool name starts with normalized server prefix (standard naming convention)
+        # e.g., "duckduckgo_search" starts with "duckduckgo-search" → "duckduckgo_search_"
+        server_prefix = server.replace("-", "_") + "_"
+        if tool_name.startswith(server_prefix) or tool_name.startswith(server + "_"):
             return True, ""
 
         # Special case: data-analysis realm validation

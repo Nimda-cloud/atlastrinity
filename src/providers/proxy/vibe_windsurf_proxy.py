@@ -23,6 +23,7 @@ Environment:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import http.server
 import json
 import os
@@ -308,10 +309,15 @@ def run(port: int = DEFAULT_PORT) -> None:
     VibeWindsurfProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)
 
-    # Use ThreadingTCPServer for concurrent requests
+    # Use ThreadingTCPServer with bounded thread pool to prevent thread exhaustion
+    # (RuntimeError: can't start new thread)
     class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         allow_reuse_address = True
         daemon_threads = True
+        _thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+
+        def process_request(self, request, client_address):
+            self._thread_pool.submit(self.process_request_thread, request, client_address)
 
     httpd = ThreadedTCPServer(server_address, VibeWindsurfProxyHandler)
 

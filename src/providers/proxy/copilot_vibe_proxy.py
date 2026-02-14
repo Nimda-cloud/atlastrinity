@@ -23,6 +23,7 @@ Environment:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import http.server
 import json
 import os
@@ -236,8 +237,12 @@ class CopilotVibeProxyHandler(http.server.BaseHTTPRequestHandler):
             error(f"JSON decode error: {e}")
             self.send_error_response("Invalid JSON in request body", 400)
         except Exception as e:
-            error(f"Request error: {e}")
-            self.send_error_response(f"Copilot API error: {e!s}", 500)
+            # Check for broken pipe in generic exception
+            if "[Errno 32] Broken pipe" in str(e) or (isinstance(e, OSError) and e.errno == 32):
+                pass
+            else:
+                error(f"Request error: {e}")
+                self.send_error_response(f"Copilot API error: {e!s}", 500)
 
     def send_json_response(self, data: dict) -> None:
         """Send JSON response."""
@@ -251,7 +256,11 @@ class CopilotVibeProxyHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
-        self.wfile.write(response_body)
+        try:
+            self.wfile.write(response_body)
+        except BrokenPipeError:
+            # Client closed connection - ignore silently
+            pass
 
     def send_error_response(self, message: str, status_code: int = 500) -> None:
         """Send error response in OpenAI format."""
@@ -266,7 +275,11 @@ class CopilotVibeProxyHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(response_body)))
         self.end_headers()
 
-        self.wfile.write(response_body)
+        try:
+            self.wfile.write(response_body)
+        except BrokenPipeError:
+            # Client closed connection - ignore silently
+            pass
 
 
 # ─── Server Management ─────────────────────────────────────────────────
@@ -292,8 +305,17 @@ def run(port: int = DEFAULT_PORT) -> None:
 
     CopilotVibeProxyHandler.start_time = time.time()
     server_address = ("127.0.0.1", port)
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(server_address, CopilotVibeProxyHandler)
+
+    # Use ThreadingMixIn with bounded thread pool to prevent thread exhaustion
+    class ThreadedPoolTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+        _thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+
+        def process_request(self, request, client_address):
+            self._thread_pool.submit(self.process_request_thread, request, client_address)
+
+    httpd = ThreadedPoolTCPServer(server_address, CopilotVibeProxyHandler)
 
     info(f"Serving at http://127.0.0.1:{port}")
     info(f"OpenAI-compatible endpoint: http://127.0.0.1:{port}/v1/chat/completions")
