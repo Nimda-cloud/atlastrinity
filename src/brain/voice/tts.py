@@ -430,6 +430,11 @@ class VoiceManager:
         self.history: deque[str] = deque(maxlen=5)  # History of last spoken phrases
         self.last_speak_time = 0.0
 
+        # Suppress tracer warnings specifically during voice operations
+        import warnings
+        warnings.filterwarnings("ignore", message=".*make_pad_mask.*")
+        warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm.*")
+
         # Concurrency control
 
         self._lock = asyncio.Lock()

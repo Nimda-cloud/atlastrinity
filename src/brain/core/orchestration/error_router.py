@@ -22,6 +22,7 @@ class ErrorCategory(Enum):
     PERMISSION = "permission"  # Access denied (Ask User/Atlas)
     USER_INPUT = "user_input"  # Missing info (Ask User)
     VERIFICATION = "verification"  # Grisha's verification logic failed (Immediate escalation)
+    LOOP = "loop"  # Detected repetitive cycles
     UNKNOWN = "unknown"  # Unclassified (Default fallback)
 
 
@@ -120,6 +121,8 @@ class SmartErrorRouter:
 
     def __init__(self):
         self._cache = {}
+        self._category_history: list[ErrorCategory] = []
+        self._max_history = 5
 
     def classify(self, error: str) -> ErrorCategory:
         """Classifies an error string into a category"""
@@ -208,6 +211,20 @@ class SmartErrorRouter:
 
         # 2. Hardcoded Logic (Fallback)
         category = self.classify(error_str)
+
+        # Track history for loop detection
+        self._category_history.append(category)
+        if len(self._category_history) > self._max_history:
+            self._category_history.pop(0)
+
+        # Detect Loop: Same category repeated > 3 times recently
+        if len(self._category_history) >= 4 and all(c == category for c in self._category_history[-4:]):
+            if category not in [ErrorCategory.USER_INPUT, ErrorCategory.PERMISSION]:
+                logger.warning(f"[ROUTER] 🔁 Loop detected for category {category.value}. Forcing RESTART strategy.")
+                return RecoveryStrategy(
+                    action="RESTART",
+                    reason=f"Repetitive {category.value} errors detected (Loop Pattern). Triggering system-level recovery.",
+                )
 
         logger.info(f"[ROUTER] Error classified as: {category.value} (Attempt {attempt})")
 

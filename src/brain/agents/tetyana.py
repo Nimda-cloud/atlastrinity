@@ -205,9 +205,9 @@ Analyze if this step:
 2. INDIRECTLY supports the global goal
 3. Could DEVIATE from the goal vector
 
-AUTONOMOUS DECISION RIGHT:
-You have the right to suggest a better approach if you believe your alternative
-leads to the goal more efficiently. Exercise this right responsibly.
+STRICT ALIGNMENT POLICY:
+You must strictly follow the plan unless a step is literally IMPOSSIBLE to execute (e.g., file missing, tool failed) or HARMFUL to the system.
+Do NOT suggest alternative tasks like searching for movies or general information unless it is part of the GLOBAL GOAL.
 
 Respond in JSON:
 {{
@@ -215,7 +215,7 @@ Respond in JSON:
     "confidence": 0.0-1.0,
     "reason": "Brief explanation (English)",
     "deviation_suggested": true/false,
-    "suggested_alternative": "Alternative if deviation - otherwise null",
+    "suggested_alternative": "Alternative ONLY if current step is impossible - otherwise null",
     "contribution_type": "direct|indirect|supportive|questionable"
 }}
 """

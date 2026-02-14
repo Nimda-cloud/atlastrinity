@@ -2283,12 +2283,13 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                 return False
 
             # --- RECURSION GUARD ---
-            steps_hash = hash(str(alt_steps))
+            error_hash = hash(str(alt_steps) + str(last_error))
             if not hasattr(self, "_attempted_recoveries"):
                 self._attempted_recoveries: dict[str, int] = {}
-            if self._attempted_recoveries.get(step_id) == steps_hash:
+            if self._attempted_recoveries.get(step_id) == error_hash:
+                logger.warning(f"[ORCHESTRATOR] 🔁 Step {step_id} stalled with same plan/error. Categorizing as LOOP.")
                 raise Exception(f"Recursive recovery stall detected for step {step_id}.")
-            self._attempted_recoveries[step_id] = steps_hash
+            self._attempted_recoveries[step_id] = error_hash
 
             if shared_context.is_at_max_depth(depth + 1):
                 raise Exception(f"Max recursion depth exceeded at {depth + 1} for {step_id}.")
@@ -2334,6 +2335,8 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             await self._run_step_retry_loop(step, step_id, depth, steps, i)
 
         await self._pop_recursive_goal(goal_pushed, depth)
+        if depth > 0:
+            await self._log(f"✅ Sub-tasks completed at depth {depth}. Returning to parent.", "orchestrator")
         return True
 
     def _update_current_step_id(self, step_idx: int) -> None:
