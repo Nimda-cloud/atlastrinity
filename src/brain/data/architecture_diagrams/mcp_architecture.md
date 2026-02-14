@@ -1,4 +1,24 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T18:21:57.113921 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
+<!-- AUTO-UPDATED: 2026-02-14T18:18:01.926000 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/mcp_server/golden_fund/server.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-14T18:17:54.031259 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/mcp_server/vibe_server.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-14T18:17:45.913243 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe/agents/accept-edits.toml.template -->
+
+
+<!-- AUTO-UPDATED: 2026-02-14T18:17:35.046174 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/all_models.json, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T18:19:09.274656 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/testing/benchmark_windsurf.py -->
 
