@@ -498,7 +498,7 @@ def print_models(auth: WindsurfAuth) -> None:
 
 def output_json(auth: WindsurfAuth) -> None:
     """Output auth data as JSON."""
-    _ = {
+    data = {
         "api_key": auth.api_key,
         "installation_id": auth.installation_id,
         "api_server_url": auth.api_server_url,
@@ -508,6 +508,7 @@ def output_json(auth: WindsurfAuth) -> None:
         "ls_port": auth.ls_port,
         "ls_csrf_token": auth.ls_csrf_token,
     }
+    print(json.dumps(data, indent=2))
 
 
 # ─── Main ────────────────────────────────────────────────────────────────────

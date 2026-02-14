@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T18:17:54.031259 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/mcp_server/vibe_server.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T18:17:45.913243 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/config.yaml.template, config/vibe/agents/accept-edits.toml.template -->
 

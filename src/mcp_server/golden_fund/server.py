@@ -45,14 +45,14 @@ async def search_golden_fund(query: str, mode: str | None = None) -> str:
     if mode == "semantic":
         result = vector_store.search(query)
         return str(result)
-    elif mode == "keyword":
+    if mode == "keyword":
         result = search_store.search(query)
         return str(result)
-    elif mode == "hybrid":
+    if mode == "hybrid":
         vec_res = vector_store.search(query)
         txt_res = search_store.search(query)
         return f"Hybrid Results:\nVector: {vec_res}\nText: {txt_res}"
-    elif mode == "recursive":
+    if mode == "recursive":
         return await recursive_enrichment(query)
 
     # Default: Try keyword first, then semantic, then SQL fallback
@@ -131,12 +131,20 @@ def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
     """Helper to find entity matches using keyword, vector, and SQL fallback."""
     # Try keyword first (exact matches)
     keyword_result = search_store.search(entity_id)
-    results = keyword_result.data.get("results", []) if keyword_result.success and keyword_result.data else []
+    results = (
+        keyword_result.data.get("results", [])
+        if keyword_result.success and keyword_result.data
+        else []
+    )
 
     if not results:
         # Try vector search
         search_result = vector_store.search(entity_id, limit=5)
-        results = search_result.data.get("results", []) if search_result.success and search_result.data else []
+        results = (
+            search_result.data.get("results", [])
+            if search_result.success and search_result.data
+            else []
+        )
 
     if not results:
         # Try SQL fallback
@@ -153,39 +161,45 @@ def _search_sql_fallback(query: str) -> list[dict[str, Any]]:
         # 1. Find datasets that might contain the query in their metadata
         meta_query = "SELECT table_name FROM datasets_metadata WHERE dataset_name LIKE ? OR source_url LIKE ?"
         meta_res = sql_store.query(meta_query, (f"%{query}%", f"%{query}%"))
-        
+
         tables = []
         if meta_res.success and meta_res.data:
             tables = [r["table_name"] for r in meta_res.data]
-        
+
         # 2. Also just look for the last 3 ingested tables as a broad search
-        recent_res = sql_store.query("SELECT table_name FROM datasets_metadata ORDER BY ingested_at DESC LIMIT 3")
+        recent_res = sql_store.query(
+            "SELECT table_name FROM datasets_metadata ORDER BY ingested_at DESC LIMIT 3"
+        )
         if recent_res.success and recent_res.data:
             tables.extend([r["table_name"] for r in recent_res.data])
-        
+
         tables = list(set(tables))
         all_results = []
-        
+
         for table in tables:
             # Query the table for matching content (broad search across all columns)
             # Find columns first
             cols_res = sql_store.query(f"PRAGMA table_info({table})")
             if not cols_res.success or not cols_res.data:
                 continue
-            
-            text_cols = [r["name"] for r in cols_res.data if "TEXT" in str(r["type"]).upper() or "CHAR" in str(r["type"]).upper()]
+
+            text_cols = [
+                r["name"]
+                for r in cols_res.data
+                if "TEXT" in str(r["type"]).upper() or "CHAR" in str(r["type"]).upper()
+            ]
             if not text_cols:
                 continue
-                
+
             where_clause = " OR ".join([f"{col} LIKE ?" for col in text_cols])
             search_query = f"SELECT * FROM {table} WHERE {where_clause} LIMIT 5"
             data_res = sql_store.query(search_query, tuple([f"%{query}%"] * len(text_cols)))
-            
+
             if data_res.success and data_res.data:
                 for r in data_res.data:
                     r["_source_table"] = table
                     all_results.append(r)
-        
+
         return all_results
     except Exception as e:
         logger.error(f"SQL fallback search failed: {e}")

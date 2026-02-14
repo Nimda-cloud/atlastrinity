@@ -2,11 +2,11 @@
 Ingestion Tool for Golden Fund
 """
 
-from typing import Any
 import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -177,14 +177,16 @@ def _perform_keyword_storage(df: pd.DataFrame, run_id: str, search_storage: Sear
     indexed_records: list[dict[str, Any]] = []
     for i, rec in enumerate(records):
         str_rec = {str(k): v for k, v in rec.items()}
-        indexed_records.append({
-            "id": f"{run_id}_{i}",
-            "title": str(str_rec.get("name") or str_rec.get("title") or f"Record {i}"),
-            "content": " ".join([f"{k}:{v}" for k, v in str_rec.items()]),
-            "description": f"Part of dataset {run_id}",
-            **str_rec
-        })
-    
+        indexed_records.append(
+            {
+                "id": f"{run_id}_{i}",
+                "title": str(str_rec.get("name") or str_rec.get("title") or f"Record {i}"),
+                "content": " ".join([f"{k}:{v}" for k, v in str_rec.items()]),
+                "description": f"Part of dataset {run_id}",
+                **str_rec,
+            }
+        )
+
     res = search_storage.index_documents(indexed_records)
     if res.success:
         return f"Indexed {len(records)} records for keyword search."
