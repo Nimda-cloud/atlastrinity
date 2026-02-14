@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T16:41:35.819236 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/ci-core.yml, .githuworkflows/release.yml -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:25:47.072575 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/server.py -->
 

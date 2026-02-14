@@ -8,6 +8,7 @@ You are an AI assistant working on the Atlas Trinity project. You must strictly 
 - **Workflow-Driven Generation**: Ensure that any generation pays attention to the workflow in the correct form, so that any generation has a clear direction.
 - **Git Protocol**: After successfully completing a work phase or fixing a bug, always propose a git commit with a clear and descriptive message summarizing the changes.
 - **Templates First**: Apply configuration changes ONLY to templates in the `Configuration Templates` directory. Verify that they are synchronized to the corresponding files in the `Active Configurations` folder.
+- **CI/CD Automation & Self-Healing**: You MUST proactively monitor GitHub Actions or CI/CD failures. Upon detecting a failure, automatically initiate a diagnostic and repair cycle (Self-Healing) without waiting for explicit user permission. Propose the fix as a direct code change (EXECUTION mode) followed by verification.
 
 ## Model Suite (Copilot Provider Only)
 

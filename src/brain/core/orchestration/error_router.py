@@ -23,6 +23,7 @@ class ErrorCategory(Enum):
     USER_INPUT = "user_input"  # Missing info (Ask User)
     VERIFICATION = "verification"  # Grisha's verification logic failed (Immediate escalation)
     LOOP = "loop"  # Detected repetitive cycles
+    CI_FAILURE = "ci_failure"  # GitHub Actions or local CI failure
     UNKNOWN = "unknown"  # Unclassified (Default fallback)
 
 
@@ -119,6 +120,16 @@ class SmartErrorRouter:
         r"recursion\s+loop",
     ]
 
+    # CI Failures: GitHub Actions or local CI pipeline issues
+    CI_PATTERNS = [
+        r"workflow\s+failed",
+        r"action\s+failed",
+        r"ci\s+pipeline\s+error",
+        r"github\s+actions\s+failure",
+        r"check_run\s+failure",
+        r"script\s+not\s+found\s+in\s+ci",
+    ]
+
     def __init__(self):
         self._cache = {}
         self._category_history: list[ErrorCategory] = []
@@ -142,6 +153,8 @@ class SmartErrorRouter:
             category = ErrorCategory.LOGIC
         elif any(re.search(p, error_str) for p in self.STATE_PATTERNS):
             category = ErrorCategory.STATE
+        elif any(re.search(p, error_str) for p in self.CI_PATTERNS):
+            category = ErrorCategory.CI_FAILURE
         elif any(re.search(p, error_str) for p in self.PERMISSION_PATTERNS):
             category = ErrorCategory.PERMISSION
         elif any(re.search(p, error_str) for p in self.USER_INPUT_PATTERNS):
@@ -397,6 +410,14 @@ class SmartErrorRouter:
                 action="ATLAS_PLAN",
                 context_needed=True,
                 reason="Persistent verification failure. Escalating to Atlas for strategic re-planning.",
+            )
+
+        if category == ErrorCategory.CI_FAILURE:
+            # CI Failure: Automatically trigger SystemFixer or VIBE_HEAL
+            return RecoveryStrategy(
+                action="VIBE_HEAL",
+                context_needed=True,
+                reason="CI/CD failure detected. Automatically initiating repair cycle via Self-Healing Protocol.",
             )
 
         # Unknown / Default Fallback

@@ -37,6 +37,7 @@ class SystemFixer:
             ("Log Rotation", self.fix_log_rotation),
             ("Memory Usage", self.fix_memory_usage),
             ("Git Permissions", self.fix_git_permissions),
+            ("CI/CD Failures", self.fix_ci_failures),
         ]
 
         for _, fix_func in fixes:
@@ -176,6 +177,27 @@ class SystemFixer:
             ],
             check=False,
         )
+
+    def fix_ci_failures(self):
+        """Monitor and fix CI/CD failures automatically."""
+        # 1. Check local CI logs
+        ci_logs = self.logs_dir / "ci_pipeline.log"
+        if ci_logs.exists() and ci_logs.stat().st_size > 0:
+            content = ci_logs.read_text(encoding="utf-8")
+            if "script not found" in content.lower():
+                # Trigger a scan for missing scripts
+                subprocess.run([sys.executable, "src/maintenance/diagnostics.py"], check=False)
+
+        # 2. Check for broken path patterns in workflow files
+        workflows_dir = self.project_root / ".github/workflows"
+        if workflows_dir.exists():
+            for wf in workflows_dir.glob("*.yml"):
+                content = wf.read_text(encoding="utf-8")
+                if "scripts/ci/" in content:
+                    # Automatically fix the path if we know where they are
+                    if (self.project_root / "src/testing/ci").exists():
+                        new_content = content.replace("scripts/ci/", "src/testing/ci/")
+                        wf.write_text(new_content, encoding="utf-8")
 
     def fix_git_permissions(self):
         """Fix git hook permissions."""
