@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T16:45:11.120703 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/core/orchestration/orchestrator.py, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:44:48.911274 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .cursorrules, src/brain/core/orchestration/error_router.py -->
 
