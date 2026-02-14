@@ -2581,7 +2581,7 @@ async def vibe_check_db(
     """Execute a read-only SQL SELECT query against the AtlasTrinity database OR verify files.
 
     CRITICAL: This tool ONLY accepts valid SQL SELECT statements OR a list of expected files.
-    
+
     MODES:
     1. RAW SQL: Provide `query` (e.g., "SELECT * FROM sessions").
     2. FILE CHECK: Provide `expected_files` (e.g., ["task.md", "src/main.py"]).
@@ -2615,11 +2615,11 @@ async def vibe_check_db(
     # SMART LOGIC: Construct query from expected_files if query is missing
     if not query and expected_files:
         if not isinstance(expected_files, list):
-             return {
+            return {
                 "success": False,
                 "error": "Argument 'expected_files' must be a list of strings.",
             }
-        
+
         # Build a safe query using OR conditions for the 'files' table
         # We search by 'path' ending with the filename or containing it
         conditions = []
@@ -2627,8 +2627,8 @@ async def vibe_check_db(
             # Simple sanitization: remove single quotes
             safe_f = f.replace("'", "")
             conditions.append(f"path LIKE '%{safe_f}'")
-            conditions.append(f"name = '{safe_f}'") # Also check exact name match
-        
+            conditions.append(f"name = '{safe_f}'")  # Also check exact name match
+
         if conditions:
             where_clause = " OR ".join(conditions)
             query = f"SELECT path, name, size, mtime FROM files WHERE {where_clause}"
@@ -2637,12 +2637,12 @@ async def vibe_check_db(
                 "success": False,
                 "error": "List of 'expected_files' was provided but empty.",
             }
-    
+
     if not query:
-         return {
+        return {
             "success": False,
             "error": "Either 'query' OR 'expected_files' must be provided.",
-            "usage": "vibe_check_db(query='SELECT * ...') OR vibe_check_db(expected_files=['file1.py'])"
+            "usage": "vibe_check_db(query='SELECT * ...') OR vibe_check_db(expected_files=['file1.py'])",
         }
 
     # Basic SQL validation
