@@ -436,8 +436,14 @@ class CopilotLLM(BaseChatModel):
                     ),
                 )
             if is_transient:
-                error_body = getattr(exception.response, 'text', 'No body') if isinstance(exception, httpx.HTTPStatusError) else str(exception)
-                logger.warning(f"[COPILOT] Transient error detected: {exception}. Body: {error_body[:500]}. Retrying...")
+                error_body = (
+                    getattr(exception.response, "text", "No body")
+                    if isinstance(exception, httpx.HTTPStatusError)
+                    else str(exception)
+                )
+                logger.warning(
+                    f"[COPILOT] Transient error detected: {exception}. Body: {error_body[:500]}. Retrying..."
+                )
             return is_transient
 
         def _log_retry_attempt(retry_state):
@@ -627,9 +633,14 @@ class CopilotLLM(BaseChatModel):
             def _is_transient_requests_error(exception: BaseException) -> bool:
                 if isinstance(exception, requests.HTTPError):
                     error_body = exception.response.text if exception.response else "No body"
-                    is_trans = exception.response is not None and exception.response.status_code in [429, 500, 502, 503, 504]
+                    is_trans = (
+                        exception.response is not None
+                        and exception.response.status_code in [429, 500, 502, 503, 504]
+                    )
                     if is_trans:
-                        logger.warning(f"[COPILOT] Sync transient error: {exception}. Body: {error_body[:500]}")
+                        logger.warning(
+                            f"[COPILOT] Sync transient error: {exception}. Body: {error_body[:500]}"
+                        )
                     return is_trans
                 return isinstance(exception, (requests.Timeout, requests.ConnectionError))
 

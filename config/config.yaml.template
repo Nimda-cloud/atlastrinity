@@ -162,7 +162,7 @@ orchestrator:
   max_recursion_depth: 5
   
   # Verification
-  validate_failed_steps_with_grisha: false  # Set to true to enable Auditor verification on fail
+  validate_failed_steps_with_grisha: true  # Mandated audit on fail
   recovery_voice_agent: atlas  # Which agent explains the recovery strategy
 
 # =============================================================================

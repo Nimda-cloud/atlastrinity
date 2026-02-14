@@ -1111,6 +1111,46 @@ IMPORTANT:
                 f"[TETYANA] Tool '{current_tool_name}' returned silent success (empty output)."
             )
 
+    async def _check_result_quality_reflexion(
+        self, step: dict[str, Any], tool_call: dict[str, Any], tool_result: dict[str, Any]
+    ) -> None:
+        """Internal check to see if the tool result actually meets the objective."""
+        expected = step.get("expected_result", "")
+        if not expected:
+            return
+
+        prompt = f"""TECHNICAL QUALITY REFLEXION
+Step: {step.get("action")}
+Expected Result: {expected}
+Tool Output: {str(tool_result.get("output", ""))[:1500]}
+
+Analyze: Does the tool output TRULY provide the expected result?
+If the tool returned 'success' but the output is an error message, file-not-found, or incomplete data, we should mark it as a soft failure.
+
+Respond in JSON ONLY:
+{{
+    "is_suspicious": true/false,
+    "reason": "Technical reason for suspicion or null",
+    "confidence": 0.0-1.0
+}}
+"""
+        try:
+            messages = [
+                SystemMessage(content=self.system_prompt),
+                HumanMessage(content=prompt),
+            ]
+            response = await self.llm.ainvoke(messages)
+            analysis = self._parse_response(cast("str", response.content))
+
+            if analysis.get("is_suspicious") and analysis.get("confidence", 0) > 0.7:
+                reason = analysis.get("reason", "Output does not meet expected result.")
+                logger.warning(f"[TETYANA] Result flagged as suspicious: {reason}")
+                tool_result["success"] = False
+                tool_result["error"] = f"QUALITY_FAILURE: {reason}"
+                tool_result["is_quality_failure"] = True
+        except Exception as e:
+            logger.debug(f"Reflexion check failed (ignoring): {e}")
+
     async def _perform_technical_reflexion(
         self,
         step: dict[str, Any],
@@ -1298,7 +1338,11 @@ IMPORTANT:
         tool_result = await self._execute_tool(tool_call)
         self._verify_agentic_evidence(tool_result, tool_call)
 
-        # 6. Technical Reflexion (if failed)
+        # 6. Quality Reflexion (Check if 'Success' is actually achievement)
+        if tool_result.get("success"):
+            await self._check_result_quality_reflexion(step, tool_call, tool_result)
+
+        # 7. Technical Reflexion (if failed)
         reflexion_result = await self._perform_technical_reflexion(step, tool_call, tool_result)
         if reflexion_result:
             return reflexion_result

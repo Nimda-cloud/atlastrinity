@@ -432,6 +432,7 @@ class VoiceManager:
 
         # Suppress tracer warnings specifically during voice operations
         import warnings
+
         warnings.filterwarnings("ignore", message=".*make_pad_mask.*")
         warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm.*")
 

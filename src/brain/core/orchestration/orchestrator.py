@@ -2287,7 +2287,9 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             if not hasattr(self, "_attempted_recoveries"):
                 self._attempted_recoveries: dict[str, int] = {}
             if self._attempted_recoveries.get(step_id) == error_hash:
-                logger.warning(f"[ORCHESTRATOR] 🔁 Step {step_id} stalled with same plan/error. Categorizing as LOOP.")
+                logger.warning(
+                    f"[ORCHESTRATOR] 🔁 Step {step_id} stalled with same plan/error. Categorizing as LOOP."
+                )
                 raise Exception(f"Recursive recovery stall detected for step {step_id}.")
             self._attempted_recoveries[step_id] = error_hash
 
@@ -2336,7 +2338,9 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
 
         await self._pop_recursive_goal(goal_pushed, depth)
         if depth > 0:
-            await self._log(f"✅ Sub-tasks completed at depth {depth}. Returning to parent.", "orchestrator")
+            await self._log(
+                f"✅ Sub-tasks completed at depth {depth}. Returning to parent.", "orchestrator"
+            )
         return True
 
     def _update_current_step_id(self, step_idx: int) -> None:
@@ -2417,6 +2421,15 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
 
             last_error = self._format_step_error(step_id, attempt, step_result)
             await self._log(f"Step {step_id} Attempt {attempt} failed: {last_error}", "warning")
+
+            # --- Technical Diagnosis Phase ---
+            try:
+                logs = await self._get_recent_logs(20)
+                diagnosis = await self.atlas.analyze_failure(step_id, last_error, logs)
+                await self._log(f"Technical Diagnosis: {diagnosis}", "atlas")
+                last_error = f"{last_error}\n\n[ATLAS DIAGNOSIS]: {diagnosis}"
+            except Exception as diag_err:
+                logger.warning(f"Failure diagnosis failed: {diag_err}")
 
             # Strategy Routing
             # Build context for behavior engine pattern matching

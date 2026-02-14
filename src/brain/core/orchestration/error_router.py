@@ -218,9 +218,13 @@ class SmartErrorRouter:
             self._category_history.pop(0)
 
         # Detect Loop: Same category repeated > 3 times recently
-        if len(self._category_history) >= 4 and all(c == category for c in self._category_history[-4:]):
+        if len(self._category_history) >= 4 and all(
+            c == category for c in self._category_history[-4:]
+        ):
             if category not in [ErrorCategory.USER_INPUT, ErrorCategory.PERMISSION]:
-                logger.warning(f"[ROUTER] 🔁 Loop detected for category {category.value}. Forcing RESTART strategy.")
+                logger.warning(
+                    f"[ROUTER] 🔁 Loop detected for category {category.value}. Forcing RESTART strategy."
+                )
                 return RecoveryStrategy(
                     action="RESTART",
                     reason=f"Repetitive {category.value} errors detected (Loop Pattern). Triggering system-level recovery.",

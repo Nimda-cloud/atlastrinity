@@ -1716,6 +1716,24 @@ Output the corrected plan in the same JSON format as before.
         response = await self.llm.ainvoke(messages)
         return self._parse_response(cast("str", response.content))
 
+    async def analyze_failure(self, step_id: str, error: str, logs: str) -> str:
+        """Deep technical analysis of a failure to provide context for recovery."""
+        prompt = f"""TECHNICAL FAILURE ANALYSIS
+Step ID: {step_id}
+Error: {error}
+Recent Logs:
+{logs}
+
+Provide a concise technical explanation of what went wrong and why. Focus on root causes (e.g., path mismatch, tool timeout, logic error).
+Explain in English (Technical) but keep it brief (2-3 sentences).
+"""
+        messages = [
+            SystemMessage(content=self.system_prompt),
+            HumanMessage(content=prompt),
+        ]
+        response = await self.llm.ainvoke(messages)
+        return cast("str", response.content)
+
     async def evaluate_healing_strategy(
         self,
         error: str,
