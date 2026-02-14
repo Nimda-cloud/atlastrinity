@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T16:49:07.646449 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, tests/test_phoenix_protocol_sim.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:46:49.758931 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, tests/test_ci_automation_sim.py -->
 
