@@ -2162,7 +2162,8 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
                 await state_manager.save_session(self.current_session_id, self.state)
                 if redis_client := getattr(state_manager, "redis_client", None):
                     meta = {"reason": strategy.reason, "timestamp": datetime.now().isoformat()}
-                    await redis_client.set("restart_pending", json.dumps(meta))
+                    restart_key = state_manager._key("restart_pending")
+                    await redis_client.set(restart_key, json.dumps(meta))
         except Exception as e:
             logger.error(f"Restart preparation failed: {e}")
 

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T16:44:48.911274 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .cursorrules, src/brain/core/orchestration/error_router.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:41:35.819236 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .githuworkflows/ci-core.yml, .githuworkflows/release.yml -->
 
