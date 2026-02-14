@@ -145,7 +145,7 @@ try:
 
 except Exception:
 
-    def get_config_value(section: str, key: str, default: Any = None) -> Any:
+    def get_config_value(section: str, key: str, default: Any = None) -> Any:  # vulture: ignore
         return default
 
     VIBE_BINARY = "vibe"
@@ -1238,7 +1238,7 @@ async def vibe_test_in_sandbox(
     test_script: str,
     target_files: dict[str, str],
     command: str,
-    dependencies: list[str] | None = None,
+    _dependencies: list[str] | None = None,
     timeout_s: float = 30.0,
 ) -> dict[str, Any]:
     """Execute a test script in an isolated temporary sandbox.
@@ -1247,7 +1247,7 @@ async def vibe_test_in_sandbox(
         test_script: Content of the test script (e.g., Python unit test)
         target_files: Dictionary of {filename: content} to mock/create in sandbox
         command: Command to run (e.g., "python test_script.py")
-        dependencies: (Optional) Mock dependencies or instructions
+        _dependencies: (Optional) Mock dependencies or instructions
         timeout_s: Execution timeout (default: 30s)
 
     Returns:
@@ -1775,7 +1775,7 @@ async def vibe_implement_feature(
     quality_checks: bool = True,
     iterative_review: bool = True,
     max_iterations: int = 3,
-    run_linting: bool = True,
+    _run_linting: bool = True,
     code_style: str = "ruff",
     model: str | None = None,
 ) -> dict[str, Any]:
@@ -2112,7 +2112,7 @@ async def vibe_get_config(ctx: Context) -> dict[str, Any]:
 async def vibe_configure_model(
     ctx: Context,
     model_alias: str,
-    persist: bool = False,
+    _persist: bool = False,
 ) -> dict[str, Any]:
     """Switch the active model for Vibe operations.
 
@@ -2571,12 +2571,12 @@ async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
 async def vibe_check_db(
     ctx: Context,
     query: str | None = None,
-    action: str | None = None,
+    _action: str | None = None,
     expected_files: list[str] | None = None,
-    verify_integrity: bool = False,
-    log_output: bool = False,
-    timeout_s: float | None = None,
-    cwd: str | None = None,
+    _verify_integrity: bool = False,
+    _log_output: bool = False,
+    _timeout_s: float | None = None,
+    _cwd: str | None = None,
 ) -> dict[str, Any]:
     """Execute a read-only SQL SELECT query against the AtlasTrinity database OR verify files.
 

@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T16:19:54.224718 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:07:49.820663 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .vibe/config.toml, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
