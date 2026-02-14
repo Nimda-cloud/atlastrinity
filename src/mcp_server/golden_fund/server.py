@@ -6,7 +6,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from .lib.storage import SearchStorage, VectorStorage
+from .lib.storage import SearchStorage, SQLStorage, VectorStorage
 from .lib.storage.blob import BlobStorage
 from .lib.transformer import DataTransformer
 from .tools.chain import recursive_enrichment
@@ -18,6 +18,7 @@ logger = logging.getLogger("golden_fund")
 # Initialize storage
 vector_store = VectorStorage()
 search_store = SearchStorage()
+sql_store = SQLStorage()
 transformer = DataTransformer()
 
 # Data directories
@@ -31,30 +32,43 @@ mcp = FastMCP("golden_fund")
 
 
 @mcp.tool()
-async def search_golden_fund(query: str, mode: str = "semantic") -> str:
+async def search_golden_fund(query: str, mode: str | None = None) -> str:
     """
     Search the Golden Fund knowledge base.
 
     Args:
         query: The search query.
-        mode: Search mode - 'semantic', 'keyword', 'hybrid', or 'recursive' (chains external data).
+        mode: Search mode - 'semantic', 'keyword', 'hybrid', or 'recursive'. If None, uses multi-stage fallback.
     """
     logger.info(f"Searching Golden Fund: {query} (mode={mode})")
 
     if mode == "semantic":
         result = vector_store.search(query)
+        return str(result)
     elif mode == "keyword":
         result = search_store.search(query)
+        return str(result)
     elif mode == "hybrid":
         vec_res = vector_store.search(query)
         txt_res = search_store.search(query)
         return f"Hybrid Results:\nVector: {vec_res}\nText: {txt_res}"
     elif mode == "recursive":
         return await recursive_enrichment(query)
-    else:
-        result = vector_store.search(query)
 
-    return str(result)
+    # Default: Try keyword first, then semantic, then SQL fallback
+    logger.info(f"Attempting multi-stage search for: {query}")
+    keyword_res = search_store.search(query)
+    if keyword_res.success and keyword_res.data and keyword_res.data.get("results"):
+        return str(keyword_res)
+
+    vector_res = vector_store.search(query)
+    if vector_res.success and vector_res.data and vector_res.data.get("results"):
+        return str(vector_res)
+
+    # SQL Fallback
+    logger.info("No results in indexes, attempting SQL fallback...")
+    sql_res = _search_sql_fallback(query)
+    return str(sql_res)
 
 
 blob_store = BlobStorage()
@@ -80,10 +94,8 @@ async def ingest_dataset(url: str, type: str, process_pipeline: list[str] | None
     Args:
         url: URL of the dataset or API endpoint.
         type: Type of data source (e.g., 'api', 'web_page', 'csv_url').
-        process_pipeline: List of processing steps (e.g., ['extract_entities', 'vectorize']).
+        process_pipeline: List of processing steps.
     """
-    if process_pipeline is None:
-        process_pipeline = []
     return await ingest_impl(url, type, process_pipeline)
 
 
@@ -116,21 +128,68 @@ async def probe_entity(entity_id: str, depth: int = 1) -> str:
 
 
 def _find_entity_results(entity_id: str) -> list[dict[str, Any]]:
-    """Helper to find entity matches using vector and keyword search."""
-    search_result = vector_store.search(entity_id, limit=5)
-    results = (
-        search_result.data.get("results", [])
-        if search_result.success and search_result.data
-        else []
-    )
+    """Helper to find entity matches using keyword, vector, and SQL fallback."""
+    # Try keyword first (exact matches)
+    keyword_result = search_store.search(entity_id)
+    results = keyword_result.data.get("results", []) if keyword_result.success and keyword_result.data else []
 
     if not results:
-        # Try keyword search as fallback
-        keyword_result = search_store.search(entity_id)
-        if keyword_result.success and keyword_result.data:
-            results = keyword_result.data.get("results", [])
+        # Try vector search
+        search_result = vector_store.search(entity_id, limit=5)
+        results = search_result.data.get("results", []) if search_result.success and search_result.data else []
+
+    if not results:
+        # Try SQL fallback
+        sql_res = _search_sql_fallback(entity_id)
+        if sql_res:
+            results = [{"content": r, "score": 0.5, "metadata": r} for r in sql_res]
 
     return results
+
+
+def _search_sql_fallback(query: str) -> list[dict[str, Any]]:
+    """Search for relevant tables and query them directly."""
+    try:
+        # 1. Find datasets that might contain the query in their metadata
+        meta_query = "SELECT table_name FROM datasets_metadata WHERE dataset_name LIKE ? OR source_url LIKE ?"
+        meta_res = sql_store.query(meta_query, (f"%{query}%", f"%{query}%"))
+        
+        tables = []
+        if meta_res.success and meta_res.data:
+            tables = [r["table_name"] for r in meta_res.data]
+        
+        # 2. Also just look for the last 3 ingested tables as a broad search
+        recent_res = sql_store.query("SELECT table_name FROM datasets_metadata ORDER BY ingested_at DESC LIMIT 3")
+        if recent_res.success and recent_res.data:
+            tables.extend([r["table_name"] for r in recent_res.data])
+        
+        tables = list(set(tables))
+        all_results = []
+        
+        for table in tables:
+            # Query the table for matching content (broad search across all columns)
+            # Find columns first
+            cols_res = sql_store.query(f"PRAGMA table_info({table})")
+            if not cols_res.success or not cols_res.data:
+                continue
+            
+            text_cols = [r["name"] for r in cols_res.data if "TEXT" in str(r["type"]).upper() or "CHAR" in str(r["type"]).upper()]
+            if not text_cols:
+                continue
+                
+            where_clause = " OR ".join([f"{col} LIKE ?" for col in text_cols])
+            search_query = f"SELECT * FROM {table} WHERE {where_clause} LIMIT 5"
+            data_res = sql_store.query(search_query, tuple([f"%{query}%"] * len(text_cols)))
+            
+            if data_res.success and data_res.data:
+                for r in data_res.data:
+                    r["_source_table"] = table
+                    all_results.append(r)
+        
+        return all_results
+    except Exception as e:
+        logger.error(f"SQL fallback search failed: {e}")
+        return []
 
 
 def _build_entity_profile(

@@ -2,6 +2,7 @@
 Ingestion Tool for Golden Fund
 """
 
+from typing import Any
 import logging
 import uuid
 from datetime import datetime
@@ -11,7 +12,7 @@ import pandas as pd
 
 from ..lib.parser import DataParser
 from ..lib.scraper import DataScraper
-from ..lib.storage import SQLStorage, VectorStorage
+from ..lib.storage import SearchStorage, SQLStorage, VectorStorage
 from ..lib.validation import DataValidator
 
 logger = logging.getLogger("golden_fund.tools.ingest")
@@ -61,9 +62,10 @@ async def ingest_dataset(
     validator = DataValidator()
     sql_storage = SQLStorage()
     vector_storage = VectorStorage()
+    search_storage = SearchStorage()
 
     if process_pipeline is None:
-        process_pipeline = ["parse", "store_sql", "vectorize"]
+        process_pipeline = ["parse", "store_sql", "keyword_index", "vectorize"]
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
     logger.info(f"Starting ingestion run {run_id} for {url} ({type})")
@@ -96,6 +98,10 @@ async def ingest_dataset(
     if "vectorize" in process_pipeline and parsed_df is not None:
         vec_msg = _perform_vector_storage(parsed_df, run_id, url, ext, vector_storage)
         summary_parts.append(vec_msg)
+
+    if "keyword_index" in process_pipeline and parsed_df is not None:
+        search_msg = _perform_keyword_storage(parsed_df, run_id, search_storage)
+        summary_parts.append(search_msg)
 
     if "validate" in process_pipeline and parsed_df is not None:
         val_msg = _perform_validation(parsed_df, run_id, validator)
@@ -162,3 +168,24 @@ def _perform_validation(df: pd.DataFrame, run_id: str, validator: DataValidator)
     if validation_res.success:
         return "Validation passed."
     return f"Validation warning: {validation_res.error}"
+
+
+def _perform_keyword_storage(df: pd.DataFrame, run_id: str, search_storage: SearchStorage) -> str:
+    """Helper to index all rows for keyword search."""
+    records = df.to_dict(orient="records")
+    # Add some descriptive fields for FTS5
+    indexed_records: list[dict[str, Any]] = []
+    for i, rec in enumerate(records):
+        str_rec = {str(k): v for k, v in rec.items()}
+        indexed_records.append({
+            "id": f"{run_id}_{i}",
+            "title": str(str_rec.get("name") or str_rec.get("title") or f"Record {i}"),
+            "content": " ".join([f"{k}:{v}" for k, v in str_rec.items()]),
+            "description": f"Part of dataset {run_id}",
+            **str_rec
+        })
+    
+    res = search_storage.index_documents(indexed_records)
+    if res.success:
+        return f"Indexed {len(records)} records for keyword search."
+    return f"Keyword indexing failed: {res.error}"

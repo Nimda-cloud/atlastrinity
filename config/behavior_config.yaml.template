@@ -418,6 +418,26 @@ tool_routing:
       - pattern: 'macos_use_.*'
         server: xcodebuild
 
+  # Golden Fund Ingestion & Search
+  golden_fund:
+    synonyms:
+      - ingest_dataset
+      - search_golden_fund
+      - analyze_and_store
+      - open_data
+      - legal_search
+      - case_search
+    priority_server: golden_fund
+    routing_rules:
+      - pattern: '.*dataset.*'
+        server: golden_fund
+      - pattern: '.*open.*data.*'
+        server: golden_fund
+      - pattern: '.*court.*case.*'
+        server: golden_fund
+      - pattern: '.*legal.*document.*'
+        server: golden_fund
+
   # Browser automation
   browser:
     synonyms:
