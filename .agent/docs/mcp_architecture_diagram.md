@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T18:17:35.046174 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/all_models.json, src/brain/data/architecture_diagrams/mcp_architecture.md -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T17:48:37.888496 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, config/behavior_config.yaml.template -->
 

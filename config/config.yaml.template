@@ -63,7 +63,7 @@ models:
   consolidation: "copilot:gpt-4o"       # Efficient state management
   
   # Fallbacks (used when primary unavailable)
-  fallback: "copilot:gpt-4.1"            # Fallback model (most stable)
+  fallback: "copilot:gpt-4o"            # Stable fallback
   
   # Sandbox model (used by mcp_sandbox.py)
   sandbox: "copilot:gpt-4o"
