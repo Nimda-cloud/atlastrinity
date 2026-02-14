@@ -29,7 +29,7 @@ def main():
 
     try:
         # Create LLM with windsurf provider
-        llm = create_llm(model_name="deepseek-v3", provider="windsurf")
+        llm = create_llm(model_name="swe-1.5", provider="windsurf")
         print(f"   ✅ Created: {type(llm).__name__}")
 
         # Test simple invocation
@@ -62,14 +62,14 @@ def main():
     print("   Edit ~/.config/atlastrinity/config.yaml:")
     print("   models:")
     print("     provider: 'windsurf'")
-    print("     default: 'deepseek-v3'")
+    print("     default: 'swe-1.5'")
     print("     reasoning: 'deepseek-r1'")
 
     print("\n   Or use environment variable:")
     print("   export LLM_PROVIDER=windsurf")
 
     print("\n4. Available Windsurf models:")
-    print("   Free: deepseek-v3, deepseek-r1, swe-1, grok-code-fast-1, kimi-k2.5")
+    print("   Free: swe-1.5, deepseek-r1, swe-1, grok-code-fast-1, kimi-k2.5")
     print("   Premium: claude-4-sonnet, claude-4.5-opus, gpt-4.1, gpt-5.1, swe-1.5")
 
     print("\n" + "=" * 50)

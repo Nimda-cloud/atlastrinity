@@ -60,13 +60,13 @@ def switch_to_windsurf():
             config["models"] = {}
 
         config["models"]["provider"] = "windsurf"
-        config["models"]["default"] = "deepseek-v3"
-        config["models"]["vision"] = "deepseek-v3"
+        config["models"]["default"] = "swe-1.5"
+        config["models"]["vision"] = "swe-1.5"
         config["models"]["reasoning"] = "deepseek-r1"
-        config["models"]["code_analysis"] = "deepseek-v3"
-        config["models"]["consolidation"] = "deepseek-v3"
-        config["models"]["fallback"] = "deepseek-v3"
-        config["models"]["sandbox"] = "deepseek-v3"
+        config["models"]["code_analysis"] = "swe-1.5"
+        config["models"]["consolidation"] = "swe-1.5"
+        config["models"]["fallback"] = "swe-1.5"
+        config["models"]["sandbox"] = "swe-1.5"
 
         # Update agents
         if "agents" not in config:
@@ -81,14 +81,14 @@ def switch_to_windsurf():
 
         config["agents"]["tetyana"] = {
             "reasoning_model": "deepseek-r1",
-            "vision_model": "deepseek-v3",
+            "vision_model": "swe-1.5",
             "temperature": 0.5,
             "max_tokens": 2000,
         }
 
         config["agents"]["grisha"] = {
             "strategy_model": "deepseek-r1",
-            "vision_model": "deepseek-v3",
+            "vision_model": "swe-1.5",
             "verdict_model": "deepseek-r1",
             "temperature": 0.3,
             "max_tokens": 1500,
@@ -113,7 +113,7 @@ def switch_to_windsurf():
         with open(vibe_path) as f:
             vibe_config = toml.load(f)
 
-        vibe_config["active_model"] = "deepseek-v3"
+        vibe_config["active_model"] = "swe-1.5"
 
         with open(vibe_path, "w") as f:
             toml.dump(vibe_config, f)

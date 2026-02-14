@@ -51,7 +51,7 @@ config.yaml → models.provider: "copilot" | "windsurf"
                │                      │
          CopilotLLM              WindsurfLLM
       (ghu_ token)            (sk-ws- token)
-      gpt-4o, gpt-4.1...      deepseek-v3, swe-1.5...
+      gpt-4o, gpt-4.1...      Free: swe-1.5, deepseek-r1, swe-1, grok-code-fast-1, kimi-k2.5...
                │                      │
       GitHub Copilot API       Proxy :8085 → Windsurf API
 ```
@@ -98,7 +98,7 @@ VISION_API_KEY=ghu_...           # Для vision моделей (може = COPI
 # === Windsurf (Codeium) ===
 WINDSURF_API_KEY=sk-ws-...       # API ключ Windsurf
 WINDSURF_INSTALL_ID=uuid-...     # Installation ID з Windsurf DB
-WINDSURF_MODEL=deepseek-v3       # Модель за замовчуванням (FREE tier)
+WINDSURF_MODEL=swe-1.5       # Модель за замовчуванням (FREE tier)
 
 # === Override ===
 LLM_PROVIDER=copilot             # Перевизначити провайдер через env
@@ -210,10 +210,9 @@ WindsurfLLM дозволяє використовувати **тільки бе�
 
 | Модель (для config) | Windsurf ID | Опис |
 |---------------------|-------------|------|
-| `deepseek-v3` | `MODEL_DEEPSEEK_V3` | DeepSeek V3 (0324) — потужна open-source модель |
+| `swe-1.5` | `MODEL_SWE_1_5` | Windsurf SWE-1.5 — покращена версія |
 | `deepseek-r1` | `MODEL_DEEPSEEK_R1` | DeepSeek R1 (0528) — reasoning модель |
 | `swe-1` | `MODEL_SWE_1` | Windsurf SWE-1 — спеціалізована для коду |
-| `swe-1.5` | `MODEL_SWE_1_5` | Windsurf SWE-1.5 — покращена версія |
 | `grok-code-fast-1` | `MODEL_GROK_CODE_FAST_1` | xAI Grok Code Fast — швидкий кодинг |
 | `gpt-5.1-codex` | `MODEL_PRIVATE_9` | GPT-5.1-Codex — кодова модель |
 | `gpt-5.1-codex-mini` | `MODEL_PRIVATE_19` | GPT-5.1-Codex-Mini — легша версія |
@@ -293,7 +292,7 @@ from providers.factory import create_llm
 llm = create_llm(model_name="gpt-4o")
 
 # Примусово Windsurf
-llm = create_llm(model_name="deepseek-v3", provider="windsurf")
+llm = create_llm(model_name="swe-1.5", provider="windsurf")
 
 # Примусово Copilot
 llm = create_llm(model_name="gpt-4.1", provider="copilot")
@@ -308,7 +307,7 @@ llm = CopilotLLM(model_name="gpt-4o")
 
 # Windsurf
 from providers.windsurf import WindsurfLLM
-llm = WindsurfLLM(model_name="deepseek-v3")
+llm = WindsurfLLM(model_name="swe-1.5")
 ```
 
 ### LangChain інтерфейс
@@ -338,7 +337,7 @@ llm_with_tools = llm.bind_tools([my_tool])
 ```yaml
 models:
   provider: "windsurf"      # Змінити на windsurf
-  default: "deepseek-v3"    # Використовувати free модель
+  default: "swe-1.5"    # Використовувати free модель
 ```
 
 ### Через змінну середовища
@@ -350,7 +349,7 @@ export LLM_PROVIDER=windsurf
 ### Через код
 
 ```python
-llm = create_llm(model_name="deepseek-v3", provider="windsurf")
+llm = create_llm(model_name="swe-1.5", provider="windsurf")
 ```
 
 ---

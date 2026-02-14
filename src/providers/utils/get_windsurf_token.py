@@ -59,7 +59,7 @@ KEY_AUTH_STATUS = "windsurfAuthStatus"
 KEY_AUTH_ACCOUNT = "codeium.windsurf-windsurf_auth"
 
 # Default free model for Windsurf
-DEFAULT_WINDSURF_MODEL = "deepseek-v3"
+DEFAULT_WINDSURF_MODEL = "swe-1.5"
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 

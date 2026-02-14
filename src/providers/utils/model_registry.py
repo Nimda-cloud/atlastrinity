@@ -20,10 +20,9 @@ from typing import Any
 # Display name → Windsurf/Codeium internal proto model UID
 # This is the ONLY place where Windsurf internal UIDs should be defined.
 WINDSURF_UID_MAP: dict[str, str] = {
-    "deepseek-v3": "MODEL_DEEPSEEK_V3",
+    "swe-1.5": "MODEL_SWE_1_5",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
-    "swe-1.5": "MODEL_SWE_1_5",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
     "kimi-k2.5": "kimi-k2-5",
     "windsurf-fast": "MODEL_CHAT_11121",

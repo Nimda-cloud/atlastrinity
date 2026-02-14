@@ -39,7 +39,7 @@ def test_config_integration():
     os.environ["LLM_PROVIDER"] = "windsurf"
 
     # Create LLM using factory (reads from config)
-    llm = create_llm(model_name="deepseek-v3")
+    llm = create_llm(model_name="swe-1.5")
 
     # Test basic invocation
     try:
@@ -66,7 +66,7 @@ def test_model_selection():
 
     # Test models from config
     models_to_test = [
-        ("deepseek-v3", "Free model - general purpose"),
+        ("swe-1.5", "Free model - software engineering specialist"),
         ("deepseek-r1", "Free model - reasoning"),
         ("swe-1", "Free model - coding"),
     ]

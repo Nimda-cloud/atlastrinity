@@ -48,10 +48,9 @@ try:
 except Exception:
     # Fallback if model_registry or all_models.json is unavailable
     WINDSURF_MODELS = {
-        "deepseek-v3": "MODEL_DEEPSEEK_V3",
+        "swe-1.5": "MODEL_SWE_1_5",
         "deepseek-r1": "MODEL_DEEPSEEK_R1",
         "swe-1": "MODEL_SWE_1",
-        "swe-1.5": "MODEL_SWE_1_5",
         "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",
         "kimi-k2.5": "kimi-k2-5",
         "windsurf-fast": "MODEL_CHAT_11121",
@@ -83,7 +82,7 @@ _GRPC_SVC = "/exa.language_server_pb.LanguageServerService/"
 
 # Cascade default model — pick first non-legacy UID from WINDSURF_MODELS
 _NON_LEGACY = [v for _, v in WINDSURF_MODELS.items() if v != "MODEL_CHAT_11121"]
-CASCADE_DEFAULT_MODEL = _NON_LEGACY[0] if _NON_LEGACY else "MODEL_DEEPSEEK_V3"
+CASCADE_DEFAULT_MODEL = _NON_LEGACY[0] if _NON_LEGACY else "MODEL_SWE_1_5"
 
 # Map display names to Cascade-compatible model UIDs
 # CASCADE_MODEL_MAP mirrors WINDSURF_MODELS — single source of truth

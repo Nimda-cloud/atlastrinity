@@ -9,7 +9,7 @@ Usage:
     from src.providers.factory import create_llm
 
     llm = create_llm(model_name="gpt-4o")
-    llm = create_llm(model_name="deepseek-v3", provider="windsurf")
+    llm = create_llm(model_name="swe-1.5", provider="windsurf")
 """
 
 from __future__ import annotations

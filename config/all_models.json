@@ -120,25 +120,25 @@
     },
     {
       "capabilities": {
-        "family": "deepseek-v3",
+        "family": "swe",
         "limits": {
-          "max_context_window_tokens": 64000,
-          "max_output_tokens": 8000
+          "max_context_window_tokens": 32000,
+          "max_output_tokens": 4096
         },
         "object": "model_capabilities",
         "supports": {
           "streaming": true
         },
-        "tokenizer": "deepseek",
+        "tokenizer": "o200k_base",
         "type": "chat"
       },
-      "id": "deepseek-v3",
+      "id": "swe-1.5",
       "model_picker_enabled": true,
-      "name": "DeepSeek V3",
+      "name": "SWE-1.5",
       "object": "model",
       "preview": false,
       "vendor": "Windsurf",
-      "version": "deepseek-v3"
+      "version": "swe-1.5"
     },
     {
       "capabilities": {

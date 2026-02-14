@@ -72,10 +72,9 @@ try:
 except Exception:
     # Fallback if model_registry or all_models.json is unavailable
     SUPPORTED_MODELS = {
-        "deepseek-v3": "deepseek-v3",
+        "swe-1.5": "swe-1.5",
         "deepseek-r1": "deepseek-r1",
         "swe-1": "swe-1",
-        "swe-1.5": "swe-1.5",
         "grok-code-fast-1": "grok-code-fast-1",
         "kimi-k2.5": "kimi-k2.5",
         "windsurf-fast": "windsurf-fast",
@@ -181,7 +180,7 @@ class VibeWindsurfProxyHandler(http.server.BaseHTTPRequestHandler):
             request_data = json.loads(body.decode("utf-8"))
 
             # Extract parameters
-            model = request_data.get("model", "deepseek-v3")
+            model = request_data.get("model", "swe-1.5")
             messages = request_data.get("messages", [])
 
             # Validate model

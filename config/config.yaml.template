@@ -28,11 +28,10 @@ models:
   # === WINDSURF (Codeium) ===
   # - API: Windsurf/Codeium (sk-ws- token)
   # - Models (Best 5):
-  #   1. deepseek-r1       (Logical reasoning & CoT)
-  #   2. deepseek-v3       (General purpose powerhouse)
-  #   3. swe-1.5           (Software engineering specialist)
-  #   4. kimi-k2.5         (Fast context & coding)
-  #   5. windsurf-fast     (Low latency efficiency)
+  #   1. swe-1.5           (Software engineering specialist)
+  #   2. deepseek-r1       (Logical reasoning & CoT)
+  #   3. kimi-k2.5         (Fast context & coding)
+  #   4. windsurf-fast     (Low latency efficiency)
   # - Setup: python tools/get_windsurf_token.py
   #
   # === SWITCHING PROVIDERS ===
@@ -42,9 +41,9 @@ models:
   #
   # === EXAMPLE WINDSURF CONFIGURATION ===
   # provider: "windsurf"
-  # default: "deepseek-v3"
+  # default: "swe-1.5"
   # reasoning: "deepseek-r1"
-  # code_analysis: "deepseek-v3"
+  # code_analysis: "swe-1.5"
   #
   # === PROXY MODE (Optional) ===
   # Both providers can work through local proxy on port 8086:
