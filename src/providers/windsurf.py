@@ -49,6 +49,7 @@ except Exception:
     # Fallback if model_registry or all_models.json is unavailable
     WINDSURF_MODELS = {
         "swe-1.5": "MODEL_SWE_1_5",
+        "deepseek-v3": "MODEL_DEEPSEEK_V3",
         "deepseek-r1": "MODEL_DEEPSEEK_R1",
         "swe-1": "MODEL_SWE_1",
         "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",

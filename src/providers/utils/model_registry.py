@@ -21,6 +21,7 @@ from typing import Any
 # This is the ONLY place where Windsurf internal UIDs should be defined.
 WINDSURF_UID_MAP: dict[str, str] = {
     "swe-1.5": "MODEL_SWE_1_5",
+    "deepseek-v3": "MODEL_DEEPSEEK_V3",
     "deepseek-r1": "MODEL_DEEPSEEK_R1",
     "swe-1": "MODEL_SWE_1",
     "grok-code-fast-1": "MODEL_GROK_CODE_FAST_1",

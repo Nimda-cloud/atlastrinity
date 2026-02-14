@@ -252,6 +252,28 @@
     },
     {
       "capabilities": {
+        "family": "deepseek-v3",
+        "limits": {
+          "max_context_window_tokens": 128000,
+          "max_output_tokens": 8000
+        },
+        "object": "model_capabilities",
+        "supports": {
+          "streaming": true
+        },
+        "tokenizer": "deepseek",
+        "type": "chat"
+      },
+      "id": "deepseek-v3",
+      "model_picker_enabled": true,
+      "name": "DeepSeek V3",
+      "object": "model",
+      "preview": false,
+      "vendor": "Windsurf",
+      "version": "deepseek-v3"
+    },
+    {
+      "capabilities": {
         "family": "windsurf-fast",
         "limits": {
           "max_context_window_tokens": 32000,

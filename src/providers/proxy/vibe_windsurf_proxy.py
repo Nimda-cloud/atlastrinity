@@ -74,6 +74,7 @@ except Exception:
     # Fallback if model_registry or all_models.json is unavailable
     SUPPORTED_MODELS = {
         "swe-1.5": "swe-1.5",
+        "deepseek-v3": "deepseek-v3",
         "deepseek-r1": "deepseek-r1",
         "swe-1": "swe-1",
         "grok-code-fast-1": "grok-code-fast-1",
