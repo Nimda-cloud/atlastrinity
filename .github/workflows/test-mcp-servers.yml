@@ -180,7 +180,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Validate MCP configuration schema
-        run: python scripts/ci/validate_mcp_config.py
+        run: python src/testing/ci/validate_mcp_config.py
 
       - name: Check MCP server imports
         run: |

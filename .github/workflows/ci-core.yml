@@ -58,7 +58,7 @@ jobs:
         run: npx lefthook run lint:all
 
       - name: Verify Architecture Diagrams
-        run: .venv/bin/python scripts/ci/check_architecture.py
+        run: .venv/bin/python src/testing/ci/check_architecture.py
 
   # ============================================
   # Integration Jobs
@@ -99,7 +99,7 @@ jobs:
           fi
 
           # Run sandbox test for all servers, chain len 2
-          python scripts/mcp_sandbox.py --all --chain 2
+          python src/testing/ci/mcp_sandbox.py --all --chain 2
 
   # ============================================
   # Testing Jobs
@@ -209,7 +209,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Validate MCP configuration
-        run: python scripts/ci/validate_mcp_config.py
+        run: python src/testing/ci/validate_mcp_config.py
 
       - name: Check JSON syntax
         run: |

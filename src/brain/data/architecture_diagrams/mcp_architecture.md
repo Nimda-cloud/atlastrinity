@@ -1,4 +1,12 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T16:25:47.072575 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/server.py -->
+
+
+<!-- AUTO-UPDATED: 2026-02-14T16:25:24.238482 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/brain/server.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:19:54.224718 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, .secrets.baseline, src/brain/data/architecture_diagrams/mcp_architecture.md -->
 
