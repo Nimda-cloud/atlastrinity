@@ -9,7 +9,6 @@ import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Union
 
 logger = logging.getLogger("brain.context")
 
@@ -52,20 +51,20 @@ class SharedContext:
     # Operation history (for debugging)
     operation_count: int = 0
     last_operation: str = ""
-    last_update: Optional[datetime] = None
+    last_update: datetime | None = None
     available_tools_summary: str = ""
 
     # Goal tracking for agent coordination
     current_goal: str = ""
-    parent_goal: Optional[str] = None
+    parent_goal: str | None = None
     goal_stack: list[str] = field(default_factory=list)
     recursive_depth: int = 0
     max_recursive_depth: int = field(
         default=5
     )  # Default 5, синхронізується з config при ініціалізації
-    current_step_id: Optional[int] = None
+    current_step_id: int | None = None
     total_steps: int = 0
-    _step_state_stack: list[tuple[int, Optional[int]]] = field(default_factory=list)
+    _step_state_stack: list[tuple[int, int | None]] = field(default_factory=list)
     available_mcp_catalog: str = ""
 
     # Critical Discoveries - persists important values across recursive levels
@@ -311,7 +310,7 @@ class SharedContext:
 
         return "\n".join(lines)
 
-    def is_at_max_depth(self, proposed_depth: Optional[int] = None) -> bool:
+    def is_at_max_depth(self, proposed_depth: int | None = None) -> bool:
         """Check if we've reached maximum recursion depth.
 
         Args:
@@ -347,12 +346,12 @@ class SharedContext:
 
         logger.info(f"[CONTEXT] Stored discovery: {full_key}={value[:50]}...")
 
-    def get_discovery(self, key: str, category: str = "general") -> Optional[str]:
+    def get_discovery(self, key: str, category: str = "general") -> str | None:
         """Retrieve a stored discovery."""
         full_key = f"{category}:{key}" if category != "general" else key
         return self.critical_discoveries.get(full_key)
 
-    def get_all_discoveries(self, category: Optional[str] = None) -> dict[str, str]:
+    def get_all_discoveries(self, category: str | None = None) -> dict[str, str]:
         """Get all discoveries, optionally filtered by category."""
         if category is None:
             return self.critical_discoveries.copy()
