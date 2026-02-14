@@ -2568,12 +2568,24 @@ async def vibe_reload_config(ctx: Context) -> dict[str, Any]:
 
 
 @server.tool()
-async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
-    """Execute a read-only SQL SELECT query against the AtlasTrinity database.
+async def vibe_check_db(
+    ctx: Context,
+    query: str | None = None,
+    action: str | None = None,
+    expected_files: list[str] | None = None,
+    verify_integrity: bool = False,
+    log_output: bool = False,
+    timeout_s: float | None = None,
+    cwd: str | None = None,
+) -> dict[str, Any]:
+    """Execute a read-only SQL SELECT query against the AtlasTrinity database OR verify files.
 
-    CRITICAL: This tool ONLY accepts valid SQL SELECT statements.
-    Do NOT pass natural language goals, tasks, or questions here.
-    For AI assistance or general questions, use 'vibe_prompt' or 'vibe_ask'.
+    CRITICAL: This tool ONLY accepts valid SQL SELECT statements OR a list of expected files.
+    
+    MODES:
+    1. RAW SQL: Provide `query` (e.g., "SELECT * FROM sessions").
+    2. FILE CHECK: Provide `expected_files` (e.g., ["task.md", "src/main.py"]).
+       - This works by querying the 'files' table.
 
     SCHEMA:
     - sessions: id, started_at, ended_at
@@ -2581,17 +2593,57 @@ async def vibe_check_db(ctx: Context, query: str) -> dict[str, Any]:
     - task_steps: id, task_id, sequence_number, action, tool, status, error_message
     - tool_executions: id, step_id, server_name, tool_name, arguments, result
     - logs: timestamp, level, source, message
+    - files: id, path, name, size, mtime, is_dir, last_scanned
 
     Args:
-        query: A valid SQL SELECT statement.
+        query: A valid SQL SELECT statement (optional if expected_files is provided).
+        action: (Optional) Description of the action (used for logging/logic).
+        expected_files: (Optional) List of filenames or paths to verify existence of.
+        verify_integrity: (Optional) Unused flag, kept for compatibility.
+        log_output: (Optional) Unused flag, kept for compatibility.
+        timeout_s: (Optional) Unused flag, kept for compatibility.
+        cwd: (Optional) Unused flag, kept for compatibility.
 
     Returns:
-        Query results as list of dictionaries
+        Query results as list of dictionaries OR file verification results.
 
     """
     from sqlalchemy import text
 
     from src.brain.memory.db.manager import db_manager
+
+    # SMART LOGIC: Construct query from expected_files if query is missing
+    if not query and expected_files:
+        if not isinstance(expected_files, list):
+             return {
+                "success": False,
+                "error": "Argument 'expected_files' must be a list of strings.",
+            }
+        
+        # Build a safe query using OR conditions for the 'files' table
+        # We search by 'path' ending with the filename or containing it
+        conditions = []
+        for f in expected_files:
+            # Simple sanitization: remove single quotes
+            safe_f = f.replace("'", "")
+            conditions.append(f"path LIKE '%{safe_f}'")
+            conditions.append(f"name = '{safe_f}'") # Also check exact name match
+        
+        if conditions:
+            where_clause = " OR ".join(conditions)
+            query = f"SELECT path, name, size, mtime FROM files WHERE {where_clause}"
+        else:
+            return {
+                "success": False,
+                "error": "List of 'expected_files' was provided but empty.",
+            }
+    
+    if not query:
+         return {
+            "success": False,
+            "error": "Either 'query' OR 'expected_files' must be provided.",
+            "usage": "vibe_check_db(query='SELECT * ...') OR vibe_check_db(expected_files=['file1.py'])"
+        }
 
     # Basic SQL validation
     clean_query = query.strip().upper()

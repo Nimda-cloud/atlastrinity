@@ -6,7 +6,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text  # pyre-ignore
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text  # pyre-ignore
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship  # pyre-ignore
 
 # Database-agnostic UUID and JSON support
@@ -307,3 +307,19 @@ class Discovery(Base):
     step_action: Mapped[str] = mapped_column(Text, nullable=True)  # Context of what step was doing
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
+
+class FileIndex(Base):
+    """Indexes files in the workspace for fast retrieval by Vibe/Agents."""
+
+    __tablename__ = "files"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    path: Mapped[str] = mapped_column(String(500), index=True, unique=True)
+    name: Mapped[str] = mapped_column(String(255))
+    size: Mapped[int] = mapped_column(Integer, default=0)
+    mtime: Mapped[float] = mapped_column(Float, default=0.0)
+    is_dir: Mapped[bool] = mapped_column(Boolean, default=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    last_scanned: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
