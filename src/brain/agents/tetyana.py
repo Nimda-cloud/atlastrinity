@@ -677,12 +677,12 @@ IMPORTANT:
         if any(kw in action_text for kw in ["vibe", "code", "debug", "analyze error"]):
             return "vibe.vibe_prompt"
         if any(kw in action_text for kw in ["click", "type", "press", "scroll", "open app"]):
-            return "macos-use.macos-use_take_screenshot"  # Fallback to start UI interaction
+            return "xcodebuild.macos-use_take_screenshot"  # Fallback to start UI interaction through bridge
         if any(
             kw in action_text
             for kw in ["finder", "desktop", "folder", "sort", "trash", "open path"]
         ):
-            return "macos-use.macos-use_finder_list_files"
+            return "xcodebuild.macos-use_finder_list_files"
         if "list" in action_text and "directory" in action_text:
             return "filesystem.list_directory"
         if "read" in action_text and "file" in action_text:
@@ -704,9 +704,9 @@ IMPORTANT:
                 "shell",
             ]
         ):
-            return "macos-use.execute_command"
+            return "xcodebuild.execute_command"
         if "browser" in action_text or "url" in action_text:
-            return "browser.open_url"
+            return "xcodebuild.macos-use_fetch_url"
         return None
 
     async def _get_detailed_server_context(self, target_server: str) -> str:
@@ -1119,13 +1119,18 @@ IMPORTANT:
         if not expected:
             return
 
+        reflexion_criteria = """
+1. TRUTH CHECK: Does the tool output TRULY provide the expected result?
+2. QUALITY CHECK: If the tool returned 'success' but the output is an error message, file-not-found, or incomplete data, mark as suspicious.
+3. PERSISTENCE CHECK: If the step expected data to be saved (e.g., 'save to file', 'create report'), verify the output mentions the file path or confirming status.
+   Note: 'macos-use_fetch_url' returns text content; if a file was expected, it must be followed by a save action.
+"""
         prompt = f"""TECHNICAL QUALITY REFLEXION
 Step: {step.get("action")}
 Expected Result: {expected}
 Tool Output: {str(tool_result.get("output", ""))[:1500]}
 
-Analyze: Does the tool output TRULY provide the expected result?
-If the tool returned 'success' but the output is an error message, file-not-found, or incomplete data, we should mark it as a soft failure.
+Analyze: {reflexion_criteria}
 
 Respond in JSON ONLY:
 {{

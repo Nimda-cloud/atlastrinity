@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T17:19:47.268913 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, src/mcp_server/vibe_server.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T16:58:55.797561 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/data/architecture_diagrams/mcp_architecture.md, tests/test_phoenix_protocol_sim.py -->
 
