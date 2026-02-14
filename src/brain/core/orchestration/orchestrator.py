@@ -1269,7 +1269,11 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
             await self._log(f"WARNING: Running on {PLATFORM_NAME}.", "system", type="warning")
 
         session_id = await self._initialize_run_state(user_request, session_id, images=images)
-        shared_context.push_goal(user_request)
+        try:
+            shared_context.push_goal(user_request)
+        except RecursionError as e:
+            logger.error(f"[ORCHESTRATOR] Cannot start: {e}")
+            return {"status": "error", "error": str(e)}
 
         # Plan Resolution
         plan_or_result = await self._get_run_plan(user_request, is_subtask, images=images)
@@ -2027,7 +2031,7 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
         goal_description = (
             f"Recovery sub-tasks for step {parent_prefix}"
             if parent_prefix
-            else f"Sub-plan at depth {depth}"
+            else f"Sub-plan at depth {depth} (parent: {shared_context.current_goal[:80] if shared_context.current_goal else 'root'})"
         )
         if parent_prefix or depth > 0:
             try:
@@ -2601,6 +2605,11 @@ class Trinity(TourMixin, VoiceOrchestrationMixin):
         bus_messages = await message_bus.receive("tetyana", mark_read=True)
         if bus_messages:
             step_copy["bus_messages"] = [m.to_dict() for m in bus_messages]
+
+        # Inject goal vector for directional guidance in sub-tasks
+        goal_vector = shared_context.get_goal_vector()
+        if goal_vector:
+            step_copy["goal_vector"] = goal_vector
 
         return step_copy
 

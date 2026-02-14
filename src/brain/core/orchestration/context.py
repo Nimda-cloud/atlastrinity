@@ -9,6 +9,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Optional, Union
 
 logger = logging.getLogger("brain.context")
 
@@ -51,19 +52,20 @@ class SharedContext:
     # Operation history (for debugging)
     operation_count: int = 0
     last_operation: str = ""
-    last_update: datetime | None = None
+    last_update: Optional[datetime] = None
     available_tools_summary: str = ""
 
     # Goal tracking for agent coordination
     current_goal: str = ""
-    parent_goal: str | None = None
+    parent_goal: Optional[str] = None
     goal_stack: list[str] = field(default_factory=list)
     recursive_depth: int = 0
     max_recursive_depth: int = field(
         default=5
     )  # Default 5, синхронізується з config при ініціалізації
-    current_step_id: int | None = None
+    current_step_id: Optional[int] = None
     total_steps: int = 0
+    _step_state_stack: list[tuple[int, Optional[int]]] = field(default_factory=list)
     available_mcp_catalog: str = ""
 
     # Critical Discoveries - persists important values across recursive levels
@@ -193,10 +195,20 @@ class SharedContext:
     def push_goal(self, goal: str, total_steps: int = 0) -> None:
         """Push a new goal onto the stack (entering a sub-task).
         Called by Atlas when creating a new plan.
+
+        Raises RecursionError if max depth would be exceeded.
         """
+        proposed_depth = len(self.goal_stack) + (1 if self.current_goal else 0)
+        if self.is_at_max_depth(proposed_depth):
+            raise RecursionError(
+                f"Cannot enter deeper recursion: depth {proposed_depth} "
+                f"exceeds max {self.max_recursive_depth}"
+            )
         if self.current_goal:
             self.goal_stack.append(self.current_goal)
             self.parent_goal = self.current_goal
+            # Save step state for restoration on pop
+            self._step_state_stack.append((self.total_steps, self.current_step_id))
         self.current_goal = goal
         self.total_steps = total_steps
         self.current_step_id = 0
@@ -205,17 +217,24 @@ class SharedContext:
     def pop_goal(self) -> str:
         """Pop the current goal from the stack (leaving a sub-task).
         Returns the goal that was popped.
+        Restores step tracking state from the parent level.
         """
         completed_goal = self.current_goal
         if self.goal_stack:
             self.current_goal = self.goal_stack.pop()
             self.parent_goal = self.goal_stack[-1] if self.goal_stack else None
+            # Restore step state from parent level
+            if self._step_state_stack:
+                self.total_steps, self.current_step_id = self._step_state_stack.pop()
+            else:
+                self.total_steps = 0
+                self.current_step_id = None
         else:
             self.current_goal = ""
             self.parent_goal = None
+            self.total_steps = 0
+            self.current_step_id = None
         self.recursive_depth = len(self.goal_stack)
-        self.total_steps = 0
-        self.current_step_id = None
         return completed_goal
 
     def advance_step(self) -> None:
@@ -223,9 +242,40 @@ class SharedContext:
         if self.current_step_id is not None:
             self.current_step_id += 1
 
+    def get_goal_vector(self) -> str:
+        """Get directional vector from parent goal for sub-goal orientation.
+
+        When current_goal is a sub-task (depth > 0), the parent goal
+        serves as the 'North Star' directing all sub-level execution.
+        This prevents drift when a sub-goal is ambiguous or multi-interpretable.
+        """
+        if not self.parent_goal:
+            return ""  # Top-level — no vector needed
+
+        lines = [
+            "🧭 GOAL VECTOR (higher-order direction):",
+            f"  Parent Goal: {self.parent_goal}",
+            f"  Current Sub-Goal: {self.current_goal}",
+            f"  Recursion Depth: {self.recursive_depth}",
+            "",
+            "  ⚠️ If the current sub-goal is ambiguous or has multiple interpretations,",
+            "  prioritize the approach that aligns with the Parent Goal above.",
+        ]
+
+        # Include full stack for multi-level recursion
+        if len(self.goal_stack) > 1:
+            lines.append("")
+            lines.append("  Full goal chain (highest → current):")
+            for i, g in enumerate(self.goal_stack):
+                lines.append(f"    {'  ' * i}{'└─' if i > 0 else '●'} {g}")
+            lines.append(f"    {'  ' * len(self.goal_stack)}└─ {self.current_goal}")
+
+        return "\n".join(lines)
+
     def get_goal_context(self) -> str:
         """Get formatted goal context string for agent prompts.
         This helps agents understand the current task hierarchy.
+        Includes goal vector guidance when inside a recursive sub-level.
         """
         if not self.current_goal:
             return ""
@@ -253,9 +303,15 @@ class SharedContext:
                 f"🔄 RECURSION DEPTH: {self.recursive_depth} (max: {self.max_recursive_depth})",
             )
 
+        # Inject goal vector for sub-levels
+        goal_vector = self.get_goal_vector()
+        if goal_vector:
+            lines.append("")
+            lines.append(goal_vector)
+
         return "\n".join(lines)
 
-    def is_at_max_depth(self, proposed_depth: int | None = None) -> bool:
+    def is_at_max_depth(self, proposed_depth: Optional[int] = None) -> bool:
         """Check if we've reached maximum recursion depth.
 
         Args:
@@ -291,12 +347,12 @@ class SharedContext:
 
         logger.info(f"[CONTEXT] Stored discovery: {full_key}={value[:50]}...")
 
-    def get_discovery(self, key: str, category: str = "general") -> str | None:
+    def get_discovery(self, key: str, category: str = "general") -> Optional[str]:
         """Retrieve a stored discovery."""
         full_key = f"{category}:{key}" if category != "general" else key
         return self.critical_discoveries.get(full_key)
 
-    def get_all_discoveries(self, category: str | None = None) -> dict[str, str]:
+    def get_all_discoveries(self, category: Optional[str] = None) -> dict[str, str]:
         """Get all discoveries, optionally filtered by category."""
         if category is None:
             return self.critical_discoveries.copy()

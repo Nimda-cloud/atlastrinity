@@ -1,4 +1,8 @@
 
+<!-- AUTO-UPDATED: 2026-02-14T03:14:41.693676 -->
+<!-- Modified: .agent/docs/mcp_architecture_diagram.md, src/brain/core/orchestration/request_segmenter.py, src/brain/core/orchestration/tool_dispatcher.py -->
+
+
 <!-- AUTO-UPDATED: 2026-02-14T03:00:40.493356 -->
 <!-- Modified: .agent/docs/mcp_architecture_diagram.md, config/all_models.json, config/config.yaml.template -->
 
